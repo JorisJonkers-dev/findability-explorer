@@ -1,12 +1,13 @@
 // Package seed is the terminology context's catalogue: the terminology map from the group's desk
 // research of 22 October 2026, embedded in the binary. data/terms.json and data/competitors.json
-// are copies of report/research/ in the course-material repository; replace both to update.
+// are copies of project/report/research/ in the course-material repository; replace both to update.
 package seed
 
 import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
@@ -115,9 +116,25 @@ func toCompany(r rawCompany) domain.Company {
 		title = "unverified"
 	}
 	return domain.Company{
-		Name: r.Name, Country: r.Country, Website: r.Website, Languages: r.Languages,
+		Name: r.Name, Country: r.Country, Website: r.Website, Languages: languageCodes(r.Languages),
 		GroupCompany: r.GroupCompany, BeltNames: names, HomepageTitle: title,
 	}
+}
+
+// languageCode is a language tag such as "de" or "en-GB".
+var languageCode = regexp.MustCompile(`^[a-z]{2,3}(-[A-Za-z]{2,4})?$`)
+
+// languageCodes keeps the language tag at the start of each research note ("it (catalogue via
+// Italian distributor)" is "it") and drops a note that names none ("others unverified").
+func languageCodes(raw []string) []string {
+	out := make([]string, 0, len(raw))
+	for _, r := range raw {
+		code, _, _ := strings.Cut(strings.TrimSpace(r), " ")
+		if languageCode.MatchString(code) {
+			out = append(out, code)
+		}
+	}
+	return out
 }
 
 // familyOf reads the research notes' free-text Tribelt equivalent, such as "Open spiral /

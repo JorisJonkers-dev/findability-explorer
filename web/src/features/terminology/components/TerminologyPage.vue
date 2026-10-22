@@ -134,7 +134,7 @@ function isCurrentUser(usedBy: string): boolean {
       role="region"
       aria-label="Matching terms"
       tabindex="0"
-      class="overflow-x-auto rounded-xl border border-line"
+      class="relative overflow-x-auto rounded-xl border border-line"
     >
       <table class="w-full min-w-[760px] border-collapse">
         <caption class="sr-only">{{ caption }}</caption>
@@ -157,8 +157,8 @@ function isCurrentUser(usedBy: string): boolean {
                 </span>
               </span>
             </td>
-            <td class="px-5 py-4 text-ink-2">{{ languageLabel(term.language) }}</td>
-            <td class="px-5 py-4 text-ink-2">{{ familyLabel(term.family) }}</td>
+            <td class="px-5 py-4 whitespace-nowrap text-ink-2">{{ languageLabel(term.language) }}</td>
+            <td class="px-5 py-4 whitespace-nowrap text-ink-2">{{ familyLabel(term.family) }}</td>
             <td class="px-5 py-4">
               <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0">
                 <li v-for="usedBy in term.usedBy" :key="usedBy">

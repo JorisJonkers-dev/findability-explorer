@@ -7,7 +7,7 @@ defineProps<{ rows: MatrixRow[]; label: string; caption: string }>()
 </script>
 
 <template>
-  <div role="region" :aria-label="label" tabindex="0" class="overflow-x-auto rounded-xl border border-line">
+  <div role="region" :aria-label="label" tabindex="0" class="relative overflow-x-auto rounded-xl border border-line">
     <table class="w-full min-w-[1080px] border-collapse text-[15px]">
       <caption class="sr-only">{{ caption }}</caption>
       <thead>

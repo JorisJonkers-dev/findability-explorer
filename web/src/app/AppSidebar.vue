@@ -19,33 +19,34 @@ function isActive(to: string): boolean {
 </script>
 
 <template>
-  <header
-    class="flex flex-col gap-4 border-b border-line bg-sidebar px-4 py-4 md:sticky md:top-0 md:h-screen md:w-[232px] md:flex-none md:gap-7 md:overflow-y-auto md:border-r md:border-b-0 md:px-5 md:py-7"
-  >
-    <RouterLink to="/" class="flex flex-col gap-0.5 text-ink no-underline hover:text-ink">
-      <span class="font-display text-2xl leading-none font-bold tracking-[0.01em]">Findability Explorer</span>
-      <span class="text-[13px] text-muted">How metal belts are named, and found</span>
-    </RouterLink>
+  <!-- The column runs the page's full height; its contents stay in view while the page scrolls. -->
+  <header class="border-b border-line bg-sidebar md:w-[232px] md:flex-none md:border-r md:border-b-0">
+    <div class="flex flex-col gap-4 px-4 py-4 md:sticky md:top-0 md:max-h-screen md:min-h-screen md:gap-7 md:overflow-y-auto md:px-5 md:py-7">
+      <RouterLink to="/" class="flex flex-col gap-0.5 text-ink no-underline hover:text-ink">
+        <span class="font-display text-2xl leading-none font-bold tracking-[0.01em]">Findability Explorer</span>
+        <span class="text-[13px] text-muted">How metal belts are named, and found</span>
+      </RouterLink>
 
-    <nav aria-label="Main">
-      <ul class="m-0 flex list-none flex-wrap gap-0.5 p-0 md:flex-col">
-        <li v-for="link in links" :key="link.to">
-          <RouterLink
-            :to="link.to"
-            :aria-current="isActive(link.to) ? 'page' : undefined"
-            class="block rounded-md px-3 py-2 no-underline md:py-2.5"
-            :class="isActive(link.to) ? 'bg-straw font-semibold text-on-straw hover:text-on-straw' : 'font-medium text-ink-2 hover:text-ink'"
-          >
-            {{ link.label }}
-          </RouterLink>
-        </li>
-      </ul>
-    </nav>
+      <nav aria-label="Main">
+        <ul class="m-0 flex list-none flex-wrap gap-0.5 p-0 md:flex-col">
+          <li v-for="link in links" :key="link.to">
+            <RouterLink
+              :to="link.to"
+              :aria-current="isActive(link.to) ? 'page' : undefined"
+              class="block rounded-md px-3 py-2 no-underline md:py-2.5"
+              :class="isActive(link.to) ? 'bg-straw font-semibold text-on-straw hover:text-on-straw' : 'font-medium text-ink-2 hover:text-ink'"
+            >
+              {{ link.label }}
+            </RouterLink>
+          </li>
+        </ul>
+      </nav>
 
-    <RecentScans />
+      <RecentScans />
 
-    <p class="mt-auto mb-0 hidden text-[13px] text-muted md:block">
-      Built for Tribelt B.V. in the Digital Strategy course, University of Twente.
-    </p>
+      <p class="mt-auto mb-0 hidden text-[13px] text-muted md:block">
+        Built for Tribelt B.V. in the Digital Strategy course, University of Twente.
+      </p>
+    </div>
   </header>
 </template>

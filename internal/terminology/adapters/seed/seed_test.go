@@ -85,3 +85,21 @@ func TestFamilyOf(t *testing.T) {
 		}
 	}
 }
+
+func TestLanguagesAreCodes(t *testing.T) {
+	c, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, co := range c.Companies() {
+		for _, l := range co.Languages {
+			if !languageCode.MatchString(l) || len(l) > 16 {
+				t.Errorf("%s has language %q", co.Name, l)
+			}
+		}
+	}
+	got := languageCodes([]string{"it (catalogue via Italian distributor)", "others unverified", " en-GB ", "zh"})
+	if strings.Join(got, ",") != "it,en-GB,zh" {
+		t.Fatalf("languageCodes = %q", got)
+	}
+}

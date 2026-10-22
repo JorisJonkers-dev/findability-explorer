@@ -27,7 +27,7 @@ const status = computed(() => matchingText(props.matching))
       role="region"
       aria-label="Their products and Tribelt's equivalent"
       tabindex="0"
-      class="overflow-x-auto rounded-xl border border-line"
+      class="relative overflow-x-auto rounded-xl border border-line"
     >
       <table class="w-full min-w-[640px] border-collapse">
         <thead>

@@ -1,0 +1,1530 @@
+[
+ {
+  "term": "Drahtösengliederband",
+  "language": "de",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens",
+   "Tribelt (Drahtösengliederbänder)"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/drahtoesengliederband"
+ },
+ {
+  "term": "Drahtösengliedergurte",
+  "language": "de",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Wire Belt Osterloh",
+   "Pelger (Typ 800)"
+  ],
+  "source": "https://wirebelt.de/produkte/metallfoerdergurte/eye-flex-drahtoesengliedergurte/"
+ },
+ {
+  "term": "Weitspiralgliederband",
+  "language": "de",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens",
+   "Tribelt (Weitspiralgliederbänder)"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/weitspiralgliederband"
+ },
+ {
+  "term": "Weitspiralbänder",
+  "language": "de",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/de/forderbander/weitspiralbander"
+ },
+ {
+  "term": "Weitspiral-Runddrahtgliedergurt Typ 400",
+  "language": "de",
+  "belt_family": "open_spiral",
+  "intent_tier": "spec",
+  "used_by": [
+   "Pelger"
+  ],
+  "source": "https://pelger-drahtgewebe.de/drahtgurte/drahtgurttypen-standard/weitspiral-runddrahtgliedergurte-typ-400/"
+ },
+ {
+  "term": "Spiralgurte / Spiralgliedergurte",
+  "language": "de",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Wire Belt Osterloh"
+  ],
+  "source": "https://wirebelt.de/produkte/metallfoerdergurte/spiralgurte/"
+ },
+ {
+  "term": "Spiralgeflecht-Förderbänder",
+  "language": "de",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Campbelt"
+  ],
+  "source": "https://campbelt.es/de/metallforderbander/sp/spiralgeflecht-forderbander/26"
+ },
+ {
+  "term": "Engspiralgliederband",
+  "language": "de",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/engspiralgliederband"
+ },
+ {
+  "term": "Engspiralbänder",
+  "language": "de",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/de/forderbander/engspiralbander"
+ },
+ {
+  "term": "Metall-Spiral- und Wendekurvenbänder",
+  "language": "de",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth"
+  ],
+  "source": "https://www.ashworth.com/de/metal-conveyor-belts/metal-spiral-turn-curve-belts/"
+ },
+ {
+  "term": "kurvengängig",
+  "language": "de",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "application",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/de/forderbander/tri-flex"
+ },
+ {
+  "term": "Stabgeflechtband / Stabgeflechtsgurte",
+  "language": "de",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens",
+   "Pelger (Typ 700)",
+   "Wire Belt Osterloh (Flat-Flex)"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/stabgeflechtband"
+ },
+ {
+  "term": "Drahtgeflechtband",
+  "language": "de",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/drahtgeflechtband"
+ },
+ {
+  "term": "Wabengurte / Wabenbänder",
+  "language": "de",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Wire Belt Osterloh",
+   "Campbelt"
+  ],
+  "source": "https://wirebelt.de/produkte/metallfoerdergurte/wabengurte/"
+ },
+ {
+  "term": "Flachgewalztes Backofenband",
+  "language": "de",
+  "belt_family": "other",
+  "intent_tier": "application",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/flachgewalztes-backofenband"
+ },
+ {
+  "term": "Ofenband",
+  "language": "de",
+  "belt_family": "all",
+  "intent_tier": "application",
+  "used_by": [
+   "GKD (glossary)"
+  ],
+  "source": "https://www.gkd-group.com/de-de/glossar/ofenband/"
+ },
+ {
+  "term": "Metallförderband",
+  "language": "de",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Märtens",
+   "Ashworth (Metall-Fördergurte)"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband"
+ },
+ {
+  "term": "Metallfördergurte",
+  "language": "de",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Wire Belt Osterloh"
+  ],
+  "source": "https://wirebelt.de/"
+ },
+ {
+  "term": "Drahtgurte / Drahtfördergurte",
+  "language": "de",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Pelger",
+   "Steinhaus"
+  ],
+  "source": "https://pelger-drahtgewebe.de/"
+ },
+ {
+  "term": "Edelstahl 1.4301 / 1.4401",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens",
+   "Tribelt",
+   "Pelger"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/weitspiralgliederband"
+ },
+ {
+  "term": "1.4571 / 1.4828 / 1.4841 / 1.4864 (Werkstoff)",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Pelger"
+  ],
+  "source": "https://pelger-drahtgewebe.de/drahtgurte/drahtgurttypen-standard/weitspiral-runddrahtgliedergurte-typ-400/"
+ },
+ {
+  "term": "Teilung / Gurtteilung",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Pelger",
+   "Wire Belt Osterloh"
+  ],
+  "source": "https://wirebelt.de/produkte/metallfoerdergurte/eye-flex-drahtoesengliedergurte/"
+ },
+ {
+  "term": "Querstabteilung",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/weitspiralgliederband"
+ },
+ {
+  "term": "Steigung (der Spiralen)",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens",
+   "Pelger"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/weitspiralgliederband"
+ },
+ {
+  "term": "Runddrahtspiralen Ø / Flachdrahtspiralen",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/weitspiralgliederband"
+ },
+ {
+  "term": "Spaltweite / Spaltsicherung",
+  "language": "de",
+  "belt_family": "eyelink",
+  "intent_tier": "spec",
+  "used_by": [
+   "Wire Belt Osterloh",
+   "Tribelt (variabler Spaltweite)"
+  ],
+  "source": "https://wirebelt.de/produkte/metallfoerdergurte/eye-flex-drahtoesengliedergurte/"
+ },
+ {
+  "term": "Ösenstärke",
+  "language": "de",
+  "belt_family": "eyelink",
+  "intent_tier": "spec",
+  "used_by": [
+   "Wire Belt Osterloh"
+  ],
+  "source": "https://wirebelt.de/produkte/metallfoerdergurte/eye-flex-drahtoesengliedergurte/"
+ },
+ {
+  "term": "Umlenkdurchmesser",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/weitspiralgliederband"
+ },
+ {
+  "term": "Schweißkante / Schlingenkante / Kettenkante",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens",
+   "Pelger"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/weitspiralgliederband"
+ },
+ {
+  "term": "hitzebeständig / hochhitzebeständige Chrom-Nickelstähle",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Pelger"
+  ],
+  "source": "https://pelger-drahtgewebe.de/drahtgurte/drahtgurttypen-standard/weitspiral-runddrahtgliedergurte-typ-400/"
+ },
+ {
+  "term": "Hochtemperatur-Transport",
+  "language": "de",
+  "belt_family": "open_spiral",
+  "intent_tier": "application",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/de/forderbander/weitspiralbander"
+ },
+ {
+  "term": "Fertigungstoleranzen Metallbänder",
+  "language": "de",
+  "belt_family": "spec_all",
+  "intent_tier": "problem",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/de/produkte/metallfoerderband/weitspiralgliederband"
+ },
+ {
+  "term": "eye-link belt / eyelink belt",
+  "language": "en",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth",
+   "Twentebelt",
+   "Tribelt",
+   "Campbelt (CMG)"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/eye-link-belts/"
+ },
+ {
+  "term": "loop-joined wire belt",
+  "language": "en",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/products/metal-conveyor-belt/loop-joined-wire-belt"
+ },
+ {
+  "term": "balanced weave belt",
+  "language": "en",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth",
+   "Twentebelt",
+   "Tribelt",
+   "Cambridge",
+   "Belt Technologies"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/balanced-weave-conveyor-belts/"
+ },
+ {
+  "term": "balance weave",
+  "language": "en-US",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Audubon",
+   "Lumsden"
+  ],
+  "source": "https://www.plantautomation-technology.com/products/lumsden-belting-corp/balance-weave-belts"
+ },
+ {
+  "term": "wide spiral link belt",
+  "language": "en",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens",
+   "ESFO (Wide Spiral Belt)"
+  ],
+  "source": "https://www.martens-belts.com/products/metal-conveyor-belt/wide-spiral-link-belt"
+ },
+ {
+  "term": "wide-spiral-wire link belt",
+  "language": "en",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Hein Lehmann"
+  ],
+  "source": "https://www.heinlehmann.com/en/products/wire-conveyor-belts"
+ },
+ {
+  "term": "compound balanced belt / compound balance weave",
+  "language": "en",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Tribelt",
+   "Ashworth",
+   "Audubon",
+   "Twentebelt (CB)"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/compound-balance-baking-band/"
+ },
+ {
+  "term": "tight spiral link belt",
+  "language": "en",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/products/metal-conveyor-belt/tight-spiral-link-belt"
+ },
+ {
+  "term": "spiral belt / spiral conveyor belt",
+  "language": "en",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Twentebelt (TwenteFlex)",
+   "Ashworth"
+  ],
+  "source": "https://www.twentebelt.com/conveyor-belts/twenteflex-spiral-belts/"
+ },
+ {
+  "term": "turn-curve belt / metal spiral & turn curve belts",
+  "language": "en",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/metal-spiral-turn-curve-belts/"
+ },
+ {
+  "term": "radius belt / curve spiral belt",
+  "language": "en",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "ESFO (RA)"
+  ],
+  "source": "https://www.esfo-metalbelts.com/en"
+ },
+ {
+  "term": "spiral cage belt",
+  "language": "en",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "application",
+  "used_by": [
+   "Cambridge (Cam-Grid)"
+  ],
+  "source": "https://www.bakeryandsnacks.com/Article/2013/07/12/Belt-suited-for-tight-turns-in-spiral-cage-conveyors/"
+ },
+ {
+  "term": "low tension / inside direct drive",
+  "language": "en",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "spec",
+  "used_by": [
+   "Twentebelt"
+  ],
+  "source": "https://www.twentebelt.com/conveyor-belts/twenteflex-spiral-belts/"
+ },
+ {
+  "term": "turn ratio",
+  "language": "en",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "spec",
+  "used_by": [
+   "Ashworth",
+   "Tribelt"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/omni-grid-360/"
+ },
+ {
+  "term": "flat wire belt",
+  "language": "en",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth",
+   "Lumsden",
+   "Audubon (Flatwire)",
+   "Wire Belt (Flat-Flex)"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/flat-wire-conveyor-belts/"
+ },
+ {
+  "term": "honeycomb belt",
+  "language": "en",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Wire Belt",
+   "ESFO (HO)"
+  ],
+  "source": "https://wirebelt.co.uk/products/conveyor-belts/honeycomb-conveyor-belt/"
+ },
+ {
+  "term": "rod network belt / crossrod belt / ladder belt",
+  "language": "en",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens",
+   "Hein Lehmann",
+   "Unibelt (Group 900)",
+   "ESFO (ST)"
+  ],
+  "source": "https://www.martens-belts.com/products/metal-conveyor-belt"
+ },
+ {
+  "term": "rolled baking oven belt / Z-belt / Z-baking belt",
+  "language": "en",
+  "belt_family": "other",
+  "intent_tier": "application",
+  "used_by": [
+   "Steinhaus",
+   "Unibelt",
+   "Ashworth",
+   "Märtens (flat-rolled baking oven belt)"
+  ],
+  "source": "http://www.bakingovenbelts.com/"
+ },
+ {
+  "term": "baking band",
+  "language": "en",
+  "belt_family": "closed_spiral",
+  "intent_tier": "application",
+  "used_by": [
+   "Ashworth (CB3/CB5)",
+   "Audubon",
+   "Lumsden"
+  ],
+  "source": "https://www.meshbelt.com/BakingBand.html"
+ },
+ {
+  "term": "furnace belt",
+  "language": "en",
+  "belt_family": "all",
+  "intent_tier": "application",
+  "used_by": [
+   "Audubon",
+   "The Furnace Belt Co."
+  ],
+  "source": "https://www.meshbelt.com/FURNACEBELTS.html"
+ },
+ {
+  "term": "oven belt",
+  "language": "en",
+  "belt_family": "all",
+  "intent_tier": "application",
+  "used_by": [
+   "Tribelt",
+   "Hein Lehmann"
+  ],
+  "source": "https://www.tribelt.nl/en/conveyor-belts/balanced-weave-belts"
+ },
+ {
+  "term": "metal conveyor belt(s)",
+  "language": "en",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Tribelt",
+   "Twentebelt",
+   "Ashworth",
+   "Martens",
+   "Wire Belt UK",
+   "Lesjöfors"
+  ],
+  "source": "https://www.twentebelt.com/"
+ },
+ {
+  "term": "wire mesh conveyor belt(s)",
+  "language": "en",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Unibelt",
+   "Steinhaus",
+   "Wire Belt US",
+   "Audubon"
+  ],
+  "source": "https://unibelt.nl/"
+ },
+ {
+  "term": "AISI 304 / 1.4301 (stainless steel 304)",
+  "language": "en",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Tribelt",
+   "Wire Belt UK",
+   "Fratelli Mariani"
+  ],
+  "source": "https://www.tribelt.nl/en/conveyor-belts/eye-link-belts"
+ },
+ {
+  "term": "AISI 316L / 1.4404",
+  "language": "en",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Tribelt (Tri-Flex)",
+   "Fratelli Mariani"
+  ],
+  "source": "https://www.tribelt.nl/en/conveyor-belts/tri-flex"
+ },
+ {
+  "term": "1.4571 (316Ti)",
+  "language": "en",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Wire Belt UK"
+  ],
+  "source": "https://wirebelt.co.uk/products/conveyor-belts/eye-flex-conveyor-belt/"
+ },
+ {
+  "term": "T304 SS / T310 SS / T316 SS / HCHT / Inconel 601",
+  "language": "en-US",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Ashworth"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/balanced-weave-conveyor-belts/"
+ },
+ {
+  "term": "Inconel / Nichrome alloys",
+  "language": "en-US",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Audubon"
+  ],
+  "source": "https://www.meshbelt.com/"
+ },
+ {
+  "term": "pitch / belt pitch / longitudinal pitch",
+  "language": "en",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Ashworth",
+   "Wire Belt UK",
+   "Twentebelt"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/eye-link-belts/"
+ },
+ {
+  "term": "lateral pitch / spiral pitch",
+  "language": "en",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Twentebelt",
+   "Ashworth"
+  ],
+  "source": "https://www.twentebelt.com/conveyor-belts/balanced-weave-belts/"
+ },
+ {
+  "term": "wire diameter / cross rod diameter",
+  "language": "en",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Wire Belt UK",
+   "Twentebelt",
+   "Ashworth"
+  ],
+  "source": "https://wirebelt.co.uk/products/conveyor-belts/eye-flex-conveyor-belt/"
+ },
+ {
+  "term": "mesh count / wire gauge",
+  "language": "en-US",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Ashworth"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/balanced-weave-conveyor-belts/"
+ },
+ {
+  "term": "mesh designation (e.g. B24-18-14)",
+  "language": "en-US",
+  "belt_family": "open_spiral",
+  "intent_tier": "spec",
+  "used_by": [
+   "Ashworth"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/balanced-weave-conveyor-belts/"
+ },
+ {
+  "term": "opening size / open area",
+  "language": "en-US",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Ashworth"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/balanced-weave-conveyor-belts/"
+ },
+ {
+  "term": "gap spacing / minimum gap",
+  "language": "en",
+  "belt_family": "eyelink",
+  "intent_tier": "spec",
+  "used_by": [
+   "Wire Belt UK"
+  ],
+  "source": "https://wirebelt.co.uk/products/conveyor-belts/eye-flex-conveyor-belt/"
+ },
+ {
+  "term": "sprocket pitch diameter",
+  "language": "en",
+  "belt_family": "all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Wire Belt UK"
+  ],
+  "source": "https://wirebelt.co.uk/products/conveyor-belts/eye-flex-conveyor-belt/"
+ },
+ {
+  "term": "maximum temperature °F (°C)",
+  "language": "en-US",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Ashworth"
+  ],
+  "source": "https://www.ashworth.com/metal-conveyor-belts/balanced-weave-conveyor-belts/"
+ },
+ {
+  "term": "cryogenic up to 600 °C",
+  "language": "en",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/en/conveyor-belts/eye-link-belts"
+ },
+ {
+  "term": "trouble shooting guide",
+  "language": "en",
+  "belt_family": "eyelink",
+  "intent_tier": "problem",
+  "used_by": [
+   "Wire Belt UK"
+  ],
+  "source": "https://wirebelt.co.uk/products/conveyor-belts/eye-flex-conveyor-belt/"
+ },
+ {
+  "term": "request spiral tension",
+  "language": "en",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "problem",
+  "used_by": [
+   "Ashworth"
+  ],
+  "source": "https://www.ashworth.com/support/requests/request-spiral-tension/"
+ },
+ {
+  "term": "straight belt running",
+  "language": "en",
+  "belt_family": "all",
+  "intent_tier": "problem",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/en/conveyor-belts/eye-link-belts"
+ },
+ {
+  "term": "draadogenband(en)",
+  "language": "nl",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Tribelt",
+   "ESFO (OB)"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/draadogenbanden"
+ },
+ {
+  "term": "open spiraalbanden",
+  "language": "nl",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/open-spiraalbanden"
+ },
+ {
+  "term": "breedspiraalband",
+  "language": "nl",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "ESFO (BS)"
+  ],
+  "source": "https://www.esfo-metalbelts.com/bskk-breedspiraalband"
+ },
+ {
+  "term": "gesloten spiraalbanden",
+  "language": "nl",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/gesloten-spiraalbanden"
+ },
+ {
+  "term": "rondloopband",
+  "language": "nl",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "ESFO (RA)"
+  ],
+  "source": "https://www.esfo-metalbelts.com/ra-rondloopband"
+ },
+ {
+  "term": "metalen spiraal & draaicurve riemen",
+  "language": "nl",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth (machine-translated wording)"
+  ],
+  "source": "https://www.ashworth.com/nl/"
+ },
+ {
+  "term": "spiraaltorens / vries- en koeltorens",
+  "language": "nl",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "application",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/tri-flex"
+ },
+ {
+  "term": "honingraatband / stavenband / scharnierplatenband",
+  "language": "nl",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "ESFO"
+  ],
+  "source": "https://www.esfo-metalbelts.com/"
+ },
+ {
+  "term": "gaastransportbanden / draadgaas transportbanden",
+  "language": "nl",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Unibelt"
+  ],
+  "source": "https://unibelt.nl/nl"
+ },
+ {
+  "term": "metalen transportbanden",
+  "language": "nl",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Tribelt",
+   "Ashworth (metalen banden)"
+  ],
+  "source": "https://www.tribelt.nl/"
+ },
+ {
+  "term": "ovenbanden",
+  "language": "nl",
+  "belt_family": "all",
+  "intent_tier": "application",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/open-spiraalbanden"
+ },
+ {
+  "term": "RVS304 / RVS316 (1.4301 / 1.4401)",
+  "language": "nl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/draadogenbanden"
+ },
+ {
+  "term": "steek / steekmaten",
+  "language": "nl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/draadogenbanden"
+ },
+ {
+  "term": "spoed (spiralen)",
+  "language": "nl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/tri-flex"
+ },
+ {
+  "term": "draaddikte / draaddiameter / ogendraad Ø / insteekdraad Ø",
+  "language": "nl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/gesloten-spiraalbanden"
+ },
+ {
+  "term": "cryogeen tot 600 °C",
+  "language": "nl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/draadogenbanden"
+ },
+ {
+  "term": "rechte bandloop",
+  "language": "nl",
+  "belt_family": "all",
+  "intent_tier": "problem",
+  "used_by": [
+   "Tribelt"
+  ],
+  "source": "https://www.tribelt.nl/transportbanden/tri-flex"
+ },
+ {
+  "term": "tapis à œillets / tapis métallique à oeillets",
+  "language": "fr",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens",
+   "Campbelt (CMG)"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique/tapis-a-oeillets"
+ },
+ {
+  "term": "tapis à spirales larges",
+  "language": "fr",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique/tapis-a-spirales-larges"
+ },
+ {
+  "term": "tapis métalliques spiralés",
+  "language": "fr",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Campbelt"
+  ],
+  "source": "https://campbelt.es/fr/tapis-metalliques/sp/tapis-metalliques-spirales/26"
+ },
+ {
+  "term": "tapis à spirales continues",
+  "language": "fr",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique/tapis-a-spirales-continues"
+ },
+ {
+  "term": "courroies métalliques en spirale et courbe de virage",
+  "language": "fr",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth (machine-translated wording)"
+  ],
+  "source": "https://www.ashworth.com/fr/"
+ },
+ {
+  "term": "convoyeurs courbes Flex-Turn",
+  "language": "fr",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Wire Belt"
+  ],
+  "source": "https://wirebelt.fr/"
+ },
+ {
+  "term": "grille à fils tressés / tapis plat de four",
+  "language": "fr",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique"
+ },
+ {
+  "term": "nid d'abeilles",
+  "language": "fr",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Wire Belt"
+  ],
+  "source": "https://wirebelt.fr/produits/tapis-de-convoyeur/nid-dabeilles/"
+ },
+ {
+  "term": "tapis métalliques pour convoyeurs / tapis de convoyeur",
+  "language": "fr",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Wire Belt"
+  ],
+  "source": "https://wirebelt.fr/"
+ },
+ {
+  "term": "bandes transporteuses métalliques",
+  "language": "fr",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Märtens",
+   "Codina",
+   "Ashworth (bandes métalliques)"
+  ],
+  "source": "https://codinametal.com/fr/bandes-transporteuses/"
+ },
+ {
+  "term": "acier inoxydable 1.4301",
+  "language": "fr",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique/tapis-a-spirales-larges"
+ },
+ {
+  "term": "pas des tringles transversales / tringles transversales Ø",
+  "language": "fr",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique/tapis-a-spirales-larges"
+ },
+ {
+  "term": "vide de maille",
+  "language": "fr",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique/tapis-a-spirales-larges"
+ },
+ {
+  "term": "fil rond / fil plat",
+  "language": "fr",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique/tapis-a-spirales-larges"
+ },
+ {
+  "term": "diamètre d'enroulement",
+  "language": "fr",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/fr/produits/convoyeur-metallique/tapis-a-spirales-larges"
+ },
+ {
+  "term": "taśma pętlicowa",
+  "language": "pl",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane/tasma-petlicowa"
+ },
+ {
+  "term": "taśma z ogniwami spiralnymi otwartymi",
+  "language": "pl",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane/tasma-z-ogniwami-spiralnymi-otwartymi"
+ },
+ {
+  "term": "taśmy z ogniwami spiralnymi przylegającymi",
+  "language": "pl",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane/tasmy-z-ogniwami-spiralnymi-przylegajacymi"
+ },
+ {
+  "term": "taśma prętowa pleciona / taśmy siatkowe tkane",
+  "language": "pl",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane"
+ },
+ {
+  "term": "taśma walcowana na płasko do pieców piekarniczych",
+  "language": "pl",
+  "belt_family": "other",
+  "intent_tier": "application",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane/tasma-walcowana-na-plasko-do-piecow-piekarniczych"
+ },
+ {
+  "term": "metalowe taśmy transportowe druciane / taśmy ze stali nierdzewnej / taśmy druciane",
+  "language": "pl",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane"
+ },
+ {
+  "term": "stal szlachetna 1.4301",
+  "language": "pl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane/tasma-z-ogniwami-spiralnymi-otwartymi"
+ },
+ {
+  "term": "pręty poprzeczne Ø / podział prętów",
+  "language": "pl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane/tasma-z-ogniwami-spiralnymi-otwartymi"
+ },
+ {
+  "term": "spirale z drutu okrągłego / z drutu płaskiego",
+  "language": "pl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane/tasma-z-ogniwami-spiralnymi-otwartymi"
+ },
+ {
+  "term": "odporne na wysokie temperatury",
+  "language": "pl",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane"
+ },
+ {
+  "term": "nastri a maglie a spirale larga",
+  "language": "it",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/it/"
+ },
+ {
+  "term": "nastro a spirali alternate destre e sinistre con traversino ondulato (S.A.O.) / liscio (S.A.L.)",
+  "language": "it",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Fratelli Mariani"
+  ],
+  "source": "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
+ },
+ {
+  "term": "nastri metallici e per percorsi curvi",
+  "language": "it",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth (machine-translated wording)"
+  ],
+  "source": "https://www.ashworth.com/it/"
+ },
+ {
+  "term": "nastro a gabbia a spirale / nastri in curva",
+  "language": "it",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Cambridge (IT catalogue, per search snippet; unverified wording)"
+  ],
+  "source": "https://www.tecnicaindustriale.it/cambridge_catalogues/cambridge_food_beverage_it.pdf"
+ },
+ {
+  "term": "nido d'ape",
+  "language": "it",
+  "belt_family": "other",
+  "intent_tier": "product",
+  "used_by": [
+   "Wire Belt"
+  ],
+  "source": "https://wirebelt.it/"
+ },
+ {
+  "term": "nastri trasportatori metallici / rete a spirali",
+  "language": "it",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Fratelli Mariani",
+   "Märtens (Nastro trasportatore metallico)"
+  ],
+  "source": "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
+ },
+ {
+  "term": "AISI 304 1.4301 / AISI 316L 1.4404",
+  "language": "it",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Fratelli Mariani"
+  ],
+  "source": "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
+ },
+ {
+  "term": "passo della maglia (trasversale / longitudinale)",
+  "language": "it",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Fratelli Mariani"
+  ],
+  "source": "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
+ },
+ {
+  "term": "diametro del filo della spirale / Ø filo / Ø traversino",
+  "language": "it",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Fratelli Mariani"
+  ],
+  "source": "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
+ },
+ {
+  "term": "fino a 1200°C",
+  "language": "it",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Fratelli Mariani"
+  ],
+  "source": "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
+ },
+ {
+  "term": "slittamento del nastro",
+  "language": "it",
+  "belt_family": "all",
+  "intent_tier": "problem",
+  "used_by": [
+   "Fratelli Mariani"
+  ],
+  "source": "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
+ },
+ {
+  "term": "cinta transportadora de malla gancho",
+  "language": "es",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/es/productos/cinta-transportadora-metalica/cinta-transportadora-de-malla-gancho"
+ },
+ {
+  "term": "bandas metálicas de alambre de gancho (CMG)",
+  "language": "es",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Campbelt"
+  ],
+  "source": "https://campbelt.es/es/bandas-transportadoras-metalicas/bandas-metalicas-de-alambre-de-gancho-cmg/24"
+ },
+ {
+  "term": "cinta transportadora de espiras enlazadas (superficie abierta)",
+  "language": "es",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/es/productos/cinta-transportadora-metalica/cinta-transportadora-de-espiras-enlazadas-superficie-abierta"
+ },
+ {
+  "term": "bandas metálicas de alambre de espirales",
+  "language": "es",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Campbelt"
+  ],
+  "source": "https://campbelt.es/es/bandas-transportadoras-metalicas/sp/bandas-metalicas-de-alambre-de-espirales/26"
+ },
+ {
+  "term": "cinta transportadora de espiras enlazadas (superficie tupida)",
+  "language": "es",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/es/productos/cinta-transportadora-metalica/cinta-transportadora-de-espiras-enlazadas-superficie-tupida"
+ },
+ {
+  "term": "correas metálicas en espiral y curvas de giro",
+  "language": "es",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Ashworth (machine-translated wording)"
+  ],
+  "source": "https://www.ashworth.com/es/"
+ },
+ {
+  "term": "cinta laminada para horno / bandas metálicas laminadas tipo Z",
+  "language": "es",
+  "belt_family": "other",
+  "intent_tier": "application",
+  "used_by": [
+   "Märtens",
+   "Campbelt"
+  ],
+  "source": "https://www.martens-belts.com/es/productos/cinta-transportadora-metalica/cinta-laminada-para-horno"
+ },
+ {
+  "term": "cintas transportadoras / bandas transportadoras metálicas",
+  "language": "es",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Codina",
+   "Campbelt",
+   "Märtens (cinta transportadora metálica)"
+  ],
+  "source": "https://codinametal.com/"
+ },
+ {
+  "term": "acero inoxidable 1.4301",
+  "language": "es",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/es/productos/cinta-transportadora-metalica/cinta-transportadora-de-espiras-enlazadas-superficie-abierta"
+ },
+ {
+  "term": "varillas transversales / separación de las varillas transversales",
+  "language": "es",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/es/productos/cinta-transportadora-metalica/cinta-transportadora-de-espiras-enlazadas-superficie-abierta"
+ },
+ {
+  "term": "espirales de alambre redondo / plano; inclinación de las espirales",
+  "language": "es",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Märtens"
+  ],
+  "source": "https://www.martens-belts.com/es/productos/cinta-transportadora-metalica/cinta-transportadora-de-espiras-enlazadas-superficie-abierta"
+ },
+ {
+  "term": "tratamiento térmico",
+  "language": "es",
+  "belt_family": "all",
+  "intent_tier": "application",
+  "used_by": [
+   "Codina"
+  ],
+  "source": "https://codinametal.com/cintas-transportadoras/usos-y-aplicaciones/tratamiento-termico/"
+ },
+ {
+  "term": "Eyelink-band",
+  "language": "sv",
+  "belt_family": "eyelink",
+  "intent_tier": "product",
+  "used_by": [
+   "Lesjöfors"
+  ],
+  "source": "https://www.lesjofors.com/sv/produkter/transportband/"
+ },
+ {
+  "term": "band med balanserad väv",
+  "language": "sv",
+  "belt_family": "open_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Lesjöfors"
+  ],
+  "source": "https://www.lesjofors.com/sv/produkter/transportband/"
+ },
+ {
+  "term": "compound balanced-band",
+  "language": "sv",
+  "belt_family": "closed_spiral",
+  "intent_tier": "product",
+  "used_by": [
+   "Lesjöfors"
+  ],
+  "source": "https://www.lesjofors.com/sv/produkter/transportband/"
+ },
+ {
+  "term": "Tri-Flex",
+  "language": "sv",
+  "belt_family": "tri_flex_turn_curve",
+  "intent_tier": "product",
+  "used_by": [
+   "Lesjöfors"
+  ],
+  "source": "https://www.lesjofors.com/sv/produkter/transportband/"
+ },
+ {
+  "term": "transportband (av tråd och bandstål)",
+  "language": "sv",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "Lesjöfors",
+   "Wire Belt (wirebelt.se menu)"
+  ],
+  "source": "https://www.lesjofors.com/sv/produkter/transportband/"
+ },
+ {
+  "term": "rostfritt stål / kolstål / värmebeständiga legeringar",
+  "language": "sv",
+  "belt_family": "spec_all",
+  "intent_tier": "spec",
+  "used_by": [
+   "Lesjöfors"
+  ],
+  "source": "https://www.lesjofors.com/sv/produkter/transportband/"
+ },
+ {
+  "term": "bandspårning",
+  "language": "sv",
+  "belt_family": "all",
+  "intent_tier": "problem",
+  "used_by": [
+   "Lesjöfors"
+  ],
+  "source": "https://www.lesjofors.com/sv/produkter/transportband/"
+ },
+ {
+  "term": "transportbånd ... rustfrit stål (generic; no belt-type term found)",
+  "language": "da",
+  "belt_family": "all",
+  "intent_tier": "broad",
+  "used_by": [
+   "RS Components DK (rollers, not belts)"
+  ],
+  "source": "https://dk.rs-online.com/web/p/transportbandsruller/3016323"
+ }
+]

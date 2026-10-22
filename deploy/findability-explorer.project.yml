@@ -1,0 +1,85 @@
+# deploy-kit Project Intent for the Findability Explorer: one Process serving the API and the
+# embedded web app, running website analyses in the background, reading the project's Postgres
+# database. Shape follows estate-dashboard's project file and spec/v1/examples in
+# JorisJonkers-dev/deploy-kit.
+#
+# Deployable, not live: the estate composes a project only once it is listed in participants.yml
+# and in platform.intent.yml's handover. Until then a release publishes the image and this
+# fragment, and nothing runs.
+
+apiVersion: intent.jorisjonkers.dev/v1
+kind: Project
+schemaVersion: 1.0.0
+
+project: findability-explorer # the namespace derives: findability-explorer-system; the database: findability-explorer_db
+owner: joris
+
+applications:
+  - id: findability-explorer
+    # The binary applies its goose migrations at startup (db/migrations), so it holds the owner
+    # role and startupBudget covers the migration.
+    migration: self
+
+    # No observability block: the app serves no /metrics yet.
+    exposure:
+      - name: public
+        host: digital-strategy.jorisjonkers.dev # the full FQDN, authored: the report links to it
+        # The API requires the identity the platform's forward-auth puts on every request
+        # (X-User-Id, openapi/v1/openapi.yaml), so the whole host sits behind it. Viewer links for
+        # readers without an account are the app's own business, and not built yet.
+        audience: authenticated
+        contentPolicy: strict
+        routes:
+          - { path: /, match: prefix, process: findability-explorer, surface: http }
+
+    processes:
+      - name: findability-explorer
+        lifecycle: application
+        image: findability-explorer # an alias; the lock resolves digest, uid and gid
+        runtime: none # a static Go binary needs no Runtime Profile
+
+        provides:
+          http: 8080 # matches the default ADDR; above 1024, so no CAP_NET_BIND_SERVICE
+
+        # The project's database, and the login this edge derives: the owner role's, since the app
+        # migrates itself, issued by the Secret Store and handed over as libpq variables
+        # (deploy/env/findability-explorer/base.env), rotated with a restart.
+        dependsOn:
+          - application: platform-postgres
+            surface: postgres
+            credentials: { delivery: env, rotation: { tolerates: restart } }
+
+        # The analysis worker fetches the public websites users submit, and asks Claude at
+        # api.anthropic.com to match their products. The crawler itself refuses every private,
+        # loopback and link-local address it resolves (internal/analysis/adapters/crawler).
+        egress:
+          to: internet
+          reason: >-
+            the analysis worker crawls the public websites users submit, and calls
+            api.anthropic.com for product matching
+
+        # The Anthropic API key, read once at startup. Without it product matching is off and
+        # every other feature works. A person writes it: vault kv put
+        # secret/findability-explorer-system/anthropic api-key=…
+        secrets:
+          - path: secret/data/findability-explorer-system/anthropic
+            keys: [api-key]
+            access: read
+            delivery: env
+            rotation: { tolerates: restart }
+
+        # A crawl holds up to 30 pages of 2 MiB each in memory while it extracts; GOMEMLIMIT in the
+        # env file keeps the Go heap under this.
+        placement:
+          memory: 256Mi
+          cpu: 100m
+
+        probes:
+          readiness: { path: /readyz, port: 8080 } # fails while Postgres does not answer
+          liveness: { path: /healthz, port: 8080 }
+
+        startupBudget: 30s # covers the migrations
+
+        # No volumes, so a continuous cutover is honourable. An analysis a restart interrupts is
+        # marked failed at startup and can be started again.
+        cutover: continuous

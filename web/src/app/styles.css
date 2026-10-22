@@ -1,0 +1,139 @@
+@import 'tailwindcss';
+
+/*
+ * Tempered steel: a dark steel ground, with the heat-tint colours of annealed stainless steel
+ * encoding the kind of search. Every colour is a token, so a class names its role, not its hex.
+ */
+@theme {
+  --color-ground: #161d24;
+  --color-sidebar: #131920;
+  --color-surface: #1d262f;
+  --color-raised: #253039;
+  --color-panel: #1a222a;
+  --color-pressed: #2c3742;
+  --color-hatch: #182029;
+  --color-line: #2b3743;
+  --color-field: #3a4856;
+
+  --color-ink: #e6ebef;
+  --color-ink-2: #c5cfd7;
+  --color-muted: #9aa8b4;
+
+  --color-straw: #e8c26a;
+  --color-straw-hover: #f3d894;
+  --color-straw-deep: #c9a24f;
+  --color-on-straw: #161d24;
+
+  --color-danger: #f2a39a;
+
+  /* The intent tiers, cool to hot as steel tempers: broad searches are pale, specifications straw. */
+  --color-tier-spec: #e8c26a;
+  --color-tier-product: #d4925a;
+  --color-tier-application: #a98bdb;
+  --color-tier-problem: #6fa3e8;
+  --color-tier-broad: #9fc2cf;
+
+  --font-sans: 'Barlow', system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    background-color: var(--color-ground);
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+
+  a {
+    color: var(--color-straw);
+  }
+
+  a:hover {
+    color: var(--color-straw-hover);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-straw);
+    outline-offset: 2px;
+  }
+
+  mark {
+    padding: 0 1px;
+    border-radius: 2px;
+    background-color: rgb(232 194 106 / 0.2);
+    color: var(--color-straw-hover);
+  }
+
+  input::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+  }
+
+  button:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+}
+
+/* A competitor that makes no belt of a family: the cell is struck through with fine hatching. */
+@utility hatched {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-hatch) 0 6px,
+    var(--color-ground) 6px 12px
+  );
+}
+
+/*
+ * The one moving thing: while a scan reads pages, its progress bar is a belt of links sliding
+ * slowly past, like a mesh belt on its drive. Under reduced motion the belt stands still.
+ */
+@utility belt {
+  background-color: var(--color-straw);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 9px,
+      var(--color-straw-deep) 9px 11px,
+      transparent 11px 12px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 3px,
+      rgb(22 29 36 / 0.18) 3px 4px,
+      transparent 4px 8px
+    );
+  background-size:
+    12px 100%,
+    100% 8px;
+  animation: belt-run 2.4s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes belt-run {
+  from {
+    background-position:
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      12px 0,
+      0 0;
+  }
+}

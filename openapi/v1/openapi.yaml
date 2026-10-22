@@ -1,0 +1,677 @@
+openapi: 3.1.0
+info:
+  title: findability-explorer API
+  version: 1.0.0
+  description: >-
+    The Findability Explorer: the terminology map of metal conveyor belts (who calls which belt
+    what, in which language) and on-demand analyses of a website's keywords. The Go server (ogen)
+    and the Vue client (@hey-api/openapi-ts) are both generated from this document. Change it
+    first; `task gen` regenerates both sides and `task gen:check` fails when either is stale.
+  contact:
+    name: Joris Jonkers
+    url: https://github.com/JorisJonkers-dev
+  license:
+    name: Proprietary
+    url: https://github.com/JorisJonkers-dev/findability-explorer/blob/main/LICENSE
+servers:
+  - url: https://digital-strategy.jorisjonkers.dev
+    description: Production. The SPA and the API share one origin.
+    x-internal: false
+security:
+  - forwardAuth: []
+tags:
+  - name: terminology
+    description: The terminology map, built from competitors' and Tribelt's own websites.
+  - name: analyses
+    description: On-demand keyword analyses of one website.
+paths:
+  /api/v1/terms:
+    get:
+      operationId: searchTerms
+      summary: Search the terminology map
+      description: >-
+        Returns the terms that match the query and every filter, best match first, with the count
+        of matching terms per language, tier and belt family. The query ignores case, accents and
+        the difference between ß and ss, and matches the term and its users.
+      tags: [terminology]
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Free text to look for in the term and its users.
+          schema:
+            type: string
+            maxLength: 100
+        - name: language
+          in: query
+          required: false
+          description: Only terms in this language.
+          schema:
+            $ref: "#/components/schemas/Language"
+        - name: tier
+          in: query
+          required: false
+          description: Only terms of this intent tier.
+          schema:
+            $ref: "#/components/schemas/IntentTier"
+        - name: family
+          in: query
+          required: false
+          description: Only terms for this belt family.
+          schema:
+            $ref: "#/components/schemas/BeltFamily"
+        - name: user
+          in: query
+          required: false
+          description: Only terms used by a company whose name contains this text.
+          schema:
+            type: string
+            maxLength: 100
+        - name: limit
+          in: query
+          required: false
+          description: How many terms to return.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: The matching terms and the facet counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermSearch"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/competitors:
+    get:
+      operationId: listCompetitors
+      summary: List the companies in the terminology map
+      description: >-
+        Returns every competitor and group company studied, with its names for each belt family.
+      tags: [terminology]
+      responses:
+        "200":
+          description: The companies, competitors first, by name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorList"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/analyses:
+    get:
+      operationId: listAnalyses
+      summary: List recent analyses
+      description: Returns at most `limit` analyses, newest first, without their results.
+      tags: [analyses]
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: How many analyses to return.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: The analyses.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisList"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: startAnalysis
+      summary: Start an analysis of a website
+      description: >-
+        Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host,
+        following robots.txt. The analysis runs in the background; poll it until its status is
+        done or failed.
+      tags: [analyses]
+      requestBody:
+        required: true
+        description: The website to analyse.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewAnalysis"
+            example:
+              url: https://www.twentebelt.com
+              maxPages: 15
+      responses:
+        "202":
+          description: The queued analysis.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analysis"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/analyses/{analysisId}:
+    get:
+      operationId: getAnalysis
+      summary: Get one analysis with its results
+      description: Returns the analysis, its progress, and every result found so far.
+      tags: [analyses]
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          description: The analysis's id.
+          schema:
+            type: string
+            format: uuid
+            maxLength: 36
+      responses:
+        "200":
+          description: The analysis.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analysis"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+components:
+  securitySchemes:
+    forwardAuth:
+      type: apiKey
+      in: header
+      name: X-User-Id
+      description: >-
+        Set by the platform's forward-auth at the edge, never by a client. The server refuses a
+        request without it; on a local run DEV_USER fills it in.
+  responses:
+    Problem:
+      description: An RFC 9457 problem.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Language:
+      description: A language as the terminology map records it; en-US marks American usage.
+      type: string
+      enum: [de, en, en-US, nl, fr, pl, it, es, sv, da]
+    IntentTier:
+      description: The kind of search a term represents.
+      type: string
+      enum: [spec, product, application, problem, broad]
+    BeltFamily:
+      description: >-
+        The Tribelt belt family a term names. `all` is a term for every family (a broad category),
+        `spec_all` a material or specification word that applies to every family.
+      type: string
+      enum: [eyelink, open_spiral, closed_spiral, tri_flex_turn_curve, other, all, spec_all]
+    Term:
+      description: One name for a belt, material or specification, as a company uses it.
+      type: object
+      additionalProperties: false
+      required: [term, language, family, tier, usedBy, source]
+      properties:
+        term:
+          type: string
+          maxLength: 200
+          description: The term as written on the source page.
+          example: Drahtösengliederband
+        language:
+          $ref: "#/components/schemas/Language"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        usedBy:
+          type: array
+          maxItems: 20
+          description: The companies that use the term.
+          items:
+            type: string
+            maxLength: 200
+            example: Märtens
+        source:
+          type: string
+          maxLength: 500
+          description: The page the term was taken from.
+          example: https://www.martens-belts.com/de/produkte/metallfoerderband
+    FacetCount:
+      description: How many matching terms have one value of a facet.
+      type: object
+      additionalProperties: false
+      required: [value, count]
+      properties:
+        value:
+          type: string
+          maxLength: 32
+          description: The facet value.
+          example: de
+        count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The number of matching terms with this value.
+          example: 32
+    Facets:
+      description: Counts of the terms that match the query, per facet value, ignoring that facet's own filter.
+      type: object
+      additionalProperties: false
+      required: [languages, tiers, families]
+      properties:
+        languages:
+          type: array
+          maxItems: 20
+          description: Counts per language.
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        tiers:
+          type: array
+          maxItems: 20
+          description: Counts per intent tier.
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        families:
+          type: array
+          maxItems: 20
+          description: Counts per belt family.
+          items:
+            $ref: "#/components/schemas/FacetCount"
+    TermSearch:
+      description: A page of matching terms.
+      type: object
+      additionalProperties: false
+      required: [items, total, facets]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          description: The matching terms, best match first.
+          items:
+            $ref: "#/components/schemas/Term"
+        total:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many terms match, before the limit.
+          example: 14
+        facets:
+          $ref: "#/components/schemas/Facets"
+    BeltName:
+      description: A company's own name for a belt, and the Tribelt family it corresponds to.
+      type: object
+      additionalProperties: false
+      required: [name, family]
+      properties:
+        name:
+          type: string
+          maxLength: 300
+          description: The company's product name.
+          example: TwenteFlex spiral belts
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+    Competitor:
+      description: A company in the terminology map.
+      type: object
+      additionalProperties: false
+      required: [name, country, website, languages, groupCompany, beltNames, homepageTitle]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+        country:
+          type: string
+          maxLength: 200
+          description: Where the company is based.
+          example: NL
+        website:
+          type: string
+          maxLength: 500
+          description: The company's website.
+          example: https://www.twentebelt.com
+        languages:
+          type: array
+          maxItems: 20
+          description: The languages its website is in.
+          items:
+            type: string
+            maxLength: 16
+            example: en
+        groupCompany:
+          type: boolean
+          description: True for a company in Tribelt's own group, which is never a competitor.
+        beltNames:
+          type: array
+          maxItems: 50
+          description: The company's names for its belts.
+          items:
+            $ref: "#/components/schemas/BeltName"
+        homepageTitle:
+          type: string
+          maxLength: 300
+          description: The title of its home page, or "unverified" when it could not be read.
+          example: Twentebelt | Metal conveyor belts
+    CompetitorList:
+      description: Every company in the terminology map.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          description: The companies.
+          items:
+            $ref: "#/components/schemas/Competitor"
+    NewAnalysis:
+      description: A website to analyse.
+      type: object
+      additionalProperties: false
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          minLength: 8
+          maxLength: 500
+          description: The page to start from. Only http and https on a public host.
+          example: https://www.twentebelt.com
+        maxPages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 30
+          default: 15
+          description: The most pages to fetch.
+          example: 15
+    AnalysisStatus:
+      description: Where an analysis is in its life.
+      type: string
+      enum: [queued, running, done, failed]
+    MatchingStatus:
+      description: >-
+        What happened to the product matching by the language model: pending until the crawl
+        ends, disabled when no model is configured, skipped when the budget is spent or the site
+        gave no text, then done or failed.
+      type: string
+      enum: [pending, disabled, skipped, done, failed]
+    AnalysisSummary:
+      description: An analysis without its results.
+      type: object
+      additionalProperties: false
+      required: [id, url, status, maxPages, pagesCrawled, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: The analysis's id.
+          example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
+        url:
+          type: string
+          maxLength: 500
+          description: The page the crawl started from.
+          example: https://www.twentebelt.com
+        status:
+          $ref: "#/components/schemas/AnalysisStatus"
+        failure:
+          type: string
+          maxLength: 500
+          description: Why the analysis failed; only when status is failed.
+          example: The site did not answer within 10 seconds.
+        maxPages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 30
+          description: The most pages the crawl fetches.
+          example: 15
+        pagesCrawled:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 30
+          description: How many pages were fetched so far.
+          example: 7
+        createdAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the analysis was queued.
+          example: "2026-10-22T09:30:00Z"
+        finishedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the analysis finished; only when status is done or failed.
+          example: "2026-10-22T09:31:10Z"
+    AnalysisList:
+      description: Recent analyses, newest first.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          description: The analyses.
+          items:
+            $ref: "#/components/schemas/AnalysisSummary"
+    CrawledPage:
+      description: One page the crawl fetched.
+      type: object
+      additionalProperties: false
+      required: [url, title, description, language, wordCount]
+      properties:
+        url:
+          type: string
+          maxLength: 2000
+          description: The page's address.
+          example: https://www.twentebelt.com/conveyor-belts/
+        title:
+          type: string
+          maxLength: 500
+          description: The page title.
+          example: Conveyor belts - Twentebelt
+        description:
+          type: string
+          maxLength: 1000
+          description: The meta description.
+          example: Metal conveyor belts for the food processing industry.
+        language:
+          type: string
+          maxLength: 16
+          description: The page's language, from its markup or guessed from its words.
+          example: en
+        wordCount:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000000
+          description: The number of words of visible text.
+          example: 412
+    Keyword:
+      description: A phrase the site emphasises, scored by where and how often it appears.
+      type: object
+      additionalProperties: false
+      required: [phrase, language, score, pages]
+      properties:
+        phrase:
+          type: string
+          maxLength: 200
+          description: The phrase, in lower case.
+          example: metal conveyor belts
+        language:
+          type: string
+          maxLength: 16
+          description: The language of the pages it appears on.
+          example: en
+        score:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000
+          description: Higher is more prominent; a title counts more than body text.
+          example: 42.5
+        pages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 30
+          description: On how many pages the phrase appears.
+          example: 6
+    KnownTerm:
+      description: A term from the terminology map that the site uses.
+      type: object
+      additionalProperties: false
+      required: [term, language, family, tier, occurrences, usedByTribelt]
+      properties:
+        term:
+          type: string
+          maxLength: 200
+          description: The term as the map records it.
+          example: balanced weave belt
+        usedByTribelt:
+          type: boolean
+          description: >-
+            True when Tribelt's own website uses the term too. A term the site uses and Tribelt
+            does not is a search Tribelt is missing.
+        language:
+          $ref: "#/components/schemas/Language"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        occurrences:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 10000000
+          description: How often the term appears across the crawled pages.
+          example: 9
+    SearchTerm:
+      description: A term people may search with, in one language.
+      type: object
+      additionalProperties: false
+      required: [term, language]
+      properties:
+        term:
+          type: string
+          maxLength: 200
+          description: The search term.
+          example: spiral belt
+        language:
+          type: string
+          maxLength: 16
+          description: Its language.
+          example: en
+    Equivalent:
+      description: A product on the site matched to a Tribelt belt family by the language model.
+      type: object
+      additionalProperties: false
+      required: [product, family, reason, searchTerms]
+      properties:
+        product:
+          type: string
+          maxLength: 300
+          description: The site's own name for the product.
+          example: TwenteFlex spiral belts
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        reason:
+          type: string
+          maxLength: 1000
+          description: Why the model judged the product equivalent.
+          example: A curve-going spiral-tower belt, like Tri-Flex.
+        searchTerms:
+          type: array
+          maxItems: 30
+          description: The terms the site uses for the product, per language.
+          items:
+            $ref: "#/components/schemas/SearchTerm"
+    Analysis:
+      description: An analysis with its progress and results.
+      type: object
+      additionalProperties: false
+      required: [summary, pages, keywords, knownTerms, matching, equivalents]
+      properties:
+        summary:
+          $ref: "#/components/schemas/AnalysisSummary"
+        pages:
+          type: array
+          maxItems: 30
+          description: The pages fetched, in crawl order.
+          items:
+            $ref: "#/components/schemas/CrawledPage"
+        keywords:
+          type: array
+          maxItems: 200
+          description: The site's most prominent phrases, highest score first.
+          items:
+            $ref: "#/components/schemas/Keyword"
+        knownTerms:
+          type: array
+          maxItems: 200
+          description: Terms from the terminology map found on the site, most frequent first.
+          items:
+            $ref: "#/components/schemas/KnownTerm"
+        matching:
+          $ref: "#/components/schemas/MatchingStatus"
+        equivalents:
+          type: array
+          maxItems: 50
+          description: The site's products matched to Tribelt's belt families.
+          items:
+            $ref: "#/components/schemas/Equivalent"
+    Problem:
+      description: An RFC 9457 problem detail.
+      type: object
+      additionalProperties: false
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          maxLength: 256
+          description: A URI naming the problem type.
+          example: about:blank
+        title:
+          type: string
+          maxLength: 256
+          description: A short summary of the problem type.
+          example: Invalid request
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 599
+          description: The HTTP status code.
+          example: 422
+        detail:
+          type: string
+          maxLength: 1024
+          description: What went wrong in this occurrence.
+          example: Only http and https addresses on a public host can be analysed.

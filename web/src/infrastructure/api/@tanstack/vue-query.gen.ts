@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen';
-import { getAnalysis, listAnalyses, listCompetitors, type Options, searchTerms, startAnalysis } from '../sdk.gen';
-import type { GetAnalysisData, GetAnalysisError, GetAnalysisResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse } from '../types.gen';
+import { addCompetitor, getAnalysis, getCompetitor, listAnalyses, listCompetitors, type Options, searchTerms, startAnalysis } from '../sdk.gen';
+import type { AddCompetitorData, AddCompetitorError, AddCompetitorResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -62,9 +62,9 @@ export const searchTermsOptions = (options?: Options<SearchTermsData>) => queryO
 export const listCompetitorsQueryKey = (options?: Options<ListCompetitorsData>) => createQueryKey('listCompetitors', options);
 
 /**
- * List the companies in the terminology map
+ * List every known company
  *
- * Returns every competitor and group company studied, with its names for each belt family.
+ * Returns every company the research studied and every company added since, with its names for each belt family and how often its website was scanned.
  */
 export const listCompetitorsOptions = (options?: Options<ListCompetitorsData>) => queryOptions<ListCompetitorsResponse, ListCompetitorsError, ListCompetitorsResponse, ReturnType<typeof listCompetitorsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -77,6 +77,45 @@ export const listCompetitorsOptions = (options?: Options<ListCompetitorsData>) =
         return data;
     },
     queryKey: listCompetitorsQueryKey(options)
+});
+
+/**
+ * Add a company
+ *
+ * Adds a company by its name and website. A website whose host a known company already has is refused with 409, naming that company.
+ */
+export const addCompetitorMutation = (options?: Partial<Options<AddCompetitorData>>): UseMutationOptions<AddCompetitorResponse, AddCompetitorError, Options<AddCompetitorData>> => {
+    const mutationOptions: UseMutationOptions<AddCompetitorResponse, AddCompetitorError, Options<AddCompetitorData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await addCompetitor({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getCompetitorQueryKey = (options: Options<GetCompetitorData>) => createQueryKey('getCompetitor', options);
+
+/**
+ * Get one company with its scans
+ *
+ * Returns the company and its most recent scans, newest first.
+ */
+export const getCompetitorOptions = (options: Options<GetCompetitorData>) => queryOptions<GetCompetitorResponse, GetCompetitorError, GetCompetitorResponse, ReturnType<typeof getCompetitorQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getCompetitor({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getCompetitorQueryKey(options)
 });
 
 export const listAnalysesQueryKey = (options?: Options<ListAnalysesData>) => createQueryKey('listAnalyses', options);

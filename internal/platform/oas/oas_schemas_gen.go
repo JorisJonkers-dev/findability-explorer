@@ -15,6 +15,18 @@ func (s *ProblemStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+type AddCompetitorBadRequest ProblemStatusCode
+
+func (*AddCompetitorBadRequest) addCompetitorRes() {}
+
+type AddCompetitorConflict ProblemStatusCode
+
+func (*AddCompetitorConflict) addCompetitorRes() {}
+
+type AddCompetitorUnprocessableEntity ProblemStatusCode
+
+func (*AddCompetitorUnprocessableEntity) addCompetitorRes() {}
+
 // An analysis with its progress and results.
 // Ref: #/components/schemas/Analysis
 type Analysis struct {
@@ -172,6 +184,7 @@ func (s *AnalysisStatus) UnmarshalText(data []byte) error {
 // An analysis without its results.
 // Ref: #/components/schemas/AnalysisSummary
 type AnalysisSummary struct {
+	CompetitorId OptCompetitorId `json:"competitorId"`
 	// The analysis's id.
 	ID uuid.UUID `json:"id"`
 	// The page the crawl started from.
@@ -187,6 +200,11 @@ type AnalysisSummary struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// When the analysis finished; only when status is done or failed.
 	FinishedAt OptDateTime `json:"finishedAt"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *AnalysisSummary) GetCompetitorId() OptCompetitorId {
+	return s.CompetitorId
 }
 
 // GetID returns the value of ID.
@@ -227,6 +245,11 @@ func (s *AnalysisSummary) GetCreatedAt() time.Time {
 // GetFinishedAt returns the value of FinishedAt.
 func (s *AnalysisSummary) GetFinishedAt() OptDateTime {
 	return s.FinishedAt
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *AnalysisSummary) SetCompetitorId(val OptCompetitorId) {
+	s.CompetitorId = val
 }
 
 // SetID sets the value of ID.
@@ -376,14 +399,25 @@ func (s *BeltName) SetFamily(val BeltFamily) {
 	s.Family = val
 }
 
-// A company in the terminology map.
+// A known company.
 // Ref: #/components/schemas/Competitor
 type Competitor struct {
+	ID     CompetitorId     `json:"id"`
+	Source CompetitorSource `json:"source"`
+	// The website to visit and to scan; absent when the research found none.
+	WebsiteUrl OptURI `json:"websiteUrl"`
+	// The website's host without "www.", by which scans are matched to the company.
+	Host OptString `json:"host"`
+	// How many scans of the company's website were started.
+	Scans    int32              `json:"scans"`
+	LastScan OptAnalysisSummary `json:"lastScan"`
+	// When the company was added; only for added companies.
+	AddedAt OptDateTime `json:"addedAt"`
 	// The company's name.
 	Name string `json:"name"`
 	// Where the company is based.
 	Country string `json:"country"`
-	// The company's website.
+	// The company's website as the research noted it, or the added address.
 	Website string `json:"website"`
 	// The languages its website is in.
 	Languages []string `json:"languages"`
@@ -393,6 +427,41 @@ type Competitor struct {
 	BeltNames []BeltName `json:"beltNames"`
 	// The title of its home page, or "unverified" when it could not be read.
 	HomepageTitle string `json:"homepageTitle"`
+}
+
+// GetID returns the value of ID.
+func (s *Competitor) GetID() CompetitorId {
+	return s.ID
+}
+
+// GetSource returns the value of Source.
+func (s *Competitor) GetSource() CompetitorSource {
+	return s.Source
+}
+
+// GetWebsiteUrl returns the value of WebsiteUrl.
+func (s *Competitor) GetWebsiteUrl() OptURI {
+	return s.WebsiteUrl
+}
+
+// GetHost returns the value of Host.
+func (s *Competitor) GetHost() OptString {
+	return s.Host
+}
+
+// GetScans returns the value of Scans.
+func (s *Competitor) GetScans() int32 {
+	return s.Scans
+}
+
+// GetLastScan returns the value of LastScan.
+func (s *Competitor) GetLastScan() OptAnalysisSummary {
+	return s.LastScan
+}
+
+// GetAddedAt returns the value of AddedAt.
+func (s *Competitor) GetAddedAt() OptDateTime {
+	return s.AddedAt
 }
 
 // GetName returns the value of Name.
@@ -430,6 +499,41 @@ func (s *Competitor) GetHomepageTitle() string {
 	return s.HomepageTitle
 }
 
+// SetID sets the value of ID.
+func (s *Competitor) SetID(val CompetitorId) {
+	s.ID = val
+}
+
+// SetSource sets the value of Source.
+func (s *Competitor) SetSource(val CompetitorSource) {
+	s.Source = val
+}
+
+// SetWebsiteUrl sets the value of WebsiteUrl.
+func (s *Competitor) SetWebsiteUrl(val OptURI) {
+	s.WebsiteUrl = val
+}
+
+// SetHost sets the value of Host.
+func (s *Competitor) SetHost(val OptString) {
+	s.Host = val
+}
+
+// SetScans sets the value of Scans.
+func (s *Competitor) SetScans(val int32) {
+	s.Scans = val
+}
+
+// SetLastScan sets the value of LastScan.
+func (s *Competitor) SetLastScan(val OptAnalysisSummary) {
+	s.LastScan = val
+}
+
+// SetAddedAt sets the value of AddedAt.
+func (s *Competitor) SetAddedAt(val OptDateTime) {
+	s.AddedAt = val
+}
+
 // SetName sets the value of Name.
 func (s *Competitor) SetName(val string) {
 	s.Name = val
@@ -465,7 +569,41 @@ func (s *Competitor) SetHomepageTitle(val string) {
 	s.HomepageTitle = val
 }
 
-// Every company in the terminology map.
+func (*Competitor) addCompetitorRes() {}
+
+// A company with its most recent scans.
+// Ref: #/components/schemas/CompetitorDetail
+type CompetitorDetail struct {
+	Competitor Competitor `json:"competitor"`
+	// The company's scans, newest first.
+	Scans []AnalysisSummary `json:"scans"`
+}
+
+// GetCompetitor returns the value of Competitor.
+func (s *CompetitorDetail) GetCompetitor() Competitor {
+	return s.Competitor
+}
+
+// GetScans returns the value of Scans.
+func (s *CompetitorDetail) GetScans() []AnalysisSummary {
+	return s.Scans
+}
+
+// SetCompetitor sets the value of Competitor.
+func (s *CompetitorDetail) SetCompetitor(val Competitor) {
+	s.Competitor = val
+}
+
+// SetScans sets the value of Scans.
+func (s *CompetitorDetail) SetScans(val []AnalysisSummary) {
+	s.Scans = val
+}
+
+func (*CompetitorDetail) getCompetitorRes() {}
+
+type CompetitorId string
+
+// Every known company.
 // Ref: #/components/schemas/CompetitorList
 type CompetitorList struct {
 	// The companies.
@@ -483,6 +621,49 @@ func (s *CompetitorList) SetItems(val []Competitor) {
 }
 
 func (*CompetitorList) listCompetitorsRes() {}
+
+// Where a company comes from - the desk research, or added by a user or a scan.
+// Ref: #/components/schemas/CompetitorSource
+type CompetitorSource string
+
+const (
+	CompetitorSourceResearch CompetitorSource = "research"
+	CompetitorSourceAdded    CompetitorSource = "added"
+)
+
+// AllValues returns all CompetitorSource values.
+func (CompetitorSource) AllValues() []CompetitorSource {
+	return []CompetitorSource{
+		CompetitorSourceResearch,
+		CompetitorSourceAdded,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CompetitorSource) MarshalText() ([]byte, error) {
+	switch s {
+	case CompetitorSourceResearch:
+		return []byte(s), nil
+	case CompetitorSourceAdded:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CompetitorSource) UnmarshalText(data []byte) error {
+	switch CompetitorSource(data) {
+	case CompetitorSourceResearch:
+		*s = CompetitorSourceResearch
+		return nil
+	case CompetitorSourceAdded:
+		*s = CompetitorSourceAdded
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // One page the crawl fetched.
 // Ref: #/components/schemas/CrawledPage
@@ -704,6 +885,14 @@ type GetAnalysisNotFound ProblemStatusCode
 
 func (*GetAnalysisNotFound) getAnalysisRes() {}
 
+type GetCompetitorBadRequest ProblemStatusCode
+
+func (*GetCompetitorBadRequest) getCompetitorRes() {}
+
+type GetCompetitorNotFound ProblemStatusCode
+
+func (*GetCompetitorNotFound) getCompetitorRes() {}
+
 // The kind of search a term represents.
 // Ref: #/components/schemas/IntentTier
 type IntentTier string
@@ -768,9 +957,18 @@ func (s *IntentTier) UnmarshalText(data []byte) error {
 	}
 }
 
-// A phrase the site emphasises, scored by where and how often it appears.
+// A phrase about metal belts that the site emphasises, scored by where and how often it appears.
+// Phrases without a word of the belt vocabulary, phrases that only name the site itself, and menu or
+// footer text are left out.
 // Ref: #/components/schemas/Keyword
 type Keyword struct {
+	Tier   IntentTier    `json:"tier"`
+	Family OptBeltFamily `json:"family"`
+	// The terminology map term that shares the most specific words with the phrase.
+	ClosestTerm OptString `json:"closestTerm"`
+	// True when the phrase is one of the map's own terms. A phrase that is not is a search term the map,
+	// and Tribelt, may be missing.
+	InMap bool `json:"inMap"`
 	// The phrase, in lower case.
 	Phrase string `json:"phrase"`
 	// The language of the pages it appears on.
@@ -779,6 +977,26 @@ type Keyword struct {
 	Score float64 `json:"score"`
 	// On how many pages the phrase appears.
 	Pages int32 `json:"pages"`
+}
+
+// GetTier returns the value of Tier.
+func (s *Keyword) GetTier() IntentTier {
+	return s.Tier
+}
+
+// GetFamily returns the value of Family.
+func (s *Keyword) GetFamily() OptBeltFamily {
+	return s.Family
+}
+
+// GetClosestTerm returns the value of ClosestTerm.
+func (s *Keyword) GetClosestTerm() OptString {
+	return s.ClosestTerm
+}
+
+// GetInMap returns the value of InMap.
+func (s *Keyword) GetInMap() bool {
+	return s.InMap
 }
 
 // GetPhrase returns the value of Phrase.
@@ -799,6 +1017,26 @@ func (s *Keyword) GetScore() float64 {
 // GetPages returns the value of Pages.
 func (s *Keyword) GetPages() int32 {
 	return s.Pages
+}
+
+// SetTier sets the value of Tier.
+func (s *Keyword) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// SetFamily sets the value of Family.
+func (s *Keyword) SetFamily(val OptBeltFamily) {
+	s.Family = val
+}
+
+// SetClosestTerm sets the value of ClosestTerm.
+func (s *Keyword) SetClosestTerm(val OptString) {
+	s.ClosestTerm = val
+}
+
+// SetInMap sets the value of InMap.
+func (s *Keyword) SetInMap(val bool) {
+	s.InMap = val
 }
 
 // SetPhrase sets the value of Phrase.
@@ -1068,6 +1306,9 @@ type NewAnalysis struct {
 	URL url.URL `json:"url"`
 	// The most pages to fetch.
 	MaxPages OptInt32 `json:"maxPages"`
+	// The name to add the company under when no known company has this website's host. Without it, an
+	// unknown company is added under its host.
+	CompanyName OptString `json:"companyName"`
 }
 
 // GetURL returns the value of URL.
@@ -1080,6 +1321,11 @@ func (s *NewAnalysis) GetMaxPages() OptInt32 {
 	return s.MaxPages
 }
 
+// GetCompanyName returns the value of CompanyName.
+func (s *NewAnalysis) GetCompanyName() OptString {
+	return s.CompanyName
+}
+
 // SetURL sets the value of URL.
 func (s *NewAnalysis) SetURL(val url.URL) {
 	s.URL = val
@@ -1088,6 +1334,86 @@ func (s *NewAnalysis) SetURL(val url.URL) {
 // SetMaxPages sets the value of MaxPages.
 func (s *NewAnalysis) SetMaxPages(val OptInt32) {
 	s.MaxPages = val
+}
+
+// SetCompanyName sets the value of CompanyName.
+func (s *NewAnalysis) SetCompanyName(val OptString) {
+	s.CompanyName = val
+}
+
+// A company to add.
+// Ref: #/components/schemas/NewCompetitor
+type NewCompetitor struct {
+	// The company's name.
+	Name string `json:"name"`
+	// The company's website. Only http and https on a public host.
+	URL url.URL `json:"url"`
+}
+
+// GetName returns the value of Name.
+func (s *NewCompetitor) GetName() string {
+	return s.Name
+}
+
+// GetURL returns the value of URL.
+func (s *NewCompetitor) GetURL() url.URL {
+	return s.URL
+}
+
+// SetName sets the value of Name.
+func (s *NewCompetitor) SetName(val string) {
+	s.Name = val
+}
+
+// SetURL sets the value of URL.
+func (s *NewCompetitor) SetURL(val url.URL) {
+	s.URL = val
+}
+
+// NewOptAnalysisSummary returns new OptAnalysisSummary with value set to v.
+func NewOptAnalysisSummary(v AnalysisSummary) OptAnalysisSummary {
+	return OptAnalysisSummary{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAnalysisSummary is optional AnalysisSummary.
+type OptAnalysisSummary struct {
+	Value AnalysisSummary
+	Set   bool
+}
+
+// IsSet returns true if OptAnalysisSummary was set.
+func (o OptAnalysisSummary) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAnalysisSummary) Reset() {
+	var v AnalysisSummary
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAnalysisSummary) SetTo(v AnalysisSummary) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAnalysisSummary) Get() (v AnalysisSummary, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAnalysisSummary) Or(d AnalysisSummary) AnalysisSummary {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewOptBeltFamily returns new OptBeltFamily with value set to v.
@@ -1130,6 +1456,52 @@ func (o OptBeltFamily) Get() (v BeltFamily, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBeltFamily) Or(d BeltFamily) BeltFamily {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCompetitorId returns new OptCompetitorId with value set to v.
+func NewOptCompetitorId(v CompetitorId) OptCompetitorId {
+	return OptCompetitorId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCompetitorId is optional CompetitorId.
+type OptCompetitorId struct {
+	Value CompetitorId
+	Set   bool
+}
+
+// IsSet returns true if OptCompetitorId was set.
+func (o OptCompetitorId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCompetitorId) Reset() {
+	var v CompetitorId
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCompetitorId) SetTo(v CompetitorId) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCompetitorId) Get() (v CompetitorId, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCompetitorId) Or(d CompetitorId) CompetitorId {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1360,6 +1732,52 @@ func (o OptString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptURI returns new OptURI with value set to v.
+func NewOptURI(v url.URL) OptURI {
+	return OptURI{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptURI is optional url.URL.
+type OptURI struct {
+	Value url.URL
+	Set   bool
+}
+
+// IsSet returns true if OptURI was set.
+func (o OptURI) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptURI) Reset() {
+	var v url.URL
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptURI) SetTo(v url.URL) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptURI) Get() (v url.URL, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptURI) Or(d url.URL) url.URL {
 	if v, ok := o.Get(); ok {
 		return v
 	}

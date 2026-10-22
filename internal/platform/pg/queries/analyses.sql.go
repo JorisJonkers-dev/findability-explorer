@@ -62,17 +62,21 @@ func (q *Queries) AddAnalysisEquivalentTerm(ctx context.Context, arg AddAnalysis
 }
 
 const addAnalysisKeyword = `-- name: AddAnalysisKeyword :exec
-INSERT INTO analysis_keywords (analysis_id, position, phrase, language, score, pages)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO analysis_keywords (analysis_id, position, phrase, language, score, pages, tier, family, closest_term, in_map)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
 
 type AddAnalysisKeywordParams struct {
-	AnalysisID uuid.UUID
-	Position   int64
-	Phrase     string
-	Language   string
-	Score      float64
-	Pages      int64
+	AnalysisID  uuid.UUID
+	Position    int64
+	Phrase      string
+	Language    string
+	Score       float64
+	Pages       int64
+	Tier        pgtype.Text
+	Family      pgtype.Text
+	ClosestTerm pgtype.Text
+	InMap       pgtype.Bool
 }
 
 func (q *Queries) AddAnalysisKeyword(ctx context.Context, arg AddAnalysisKeywordParams) error {
@@ -83,6 +87,10 @@ func (q *Queries) AddAnalysisKeyword(ctx context.Context, arg AddAnalysisKeyword
 		arg.Language,
 		arg.Score,
 		arg.Pages,
+		arg.Tier,
+		arg.Family,
+		arg.ClosestTerm,
+		arg.InMap,
 	)
 	return err
 }
@@ -150,6 +158,38 @@ func (q *Queries) AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams
 	return err
 }
 
+const analysisStatsByCompetitor = `-- name: AnalysisStatsByCompetitor :many
+SELECT competitor_id::text AS competitor_id, count(*)::bigint AS scans
+FROM analyses
+WHERE competitor_id IS NOT NULL
+GROUP BY competitor_id
+`
+
+type AnalysisStatsByCompetitorRow struct {
+	CompetitorID string
+	Scans        int64
+}
+
+func (q *Queries) AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error) {
+	rows, err := q.db.Query(ctx, analysisStatsByCompetitor)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnalysisStatsByCompetitorRow{}
+	for rows.Next() {
+		var i AnalysisStatsByCompetitorRow
+		if err := rows.Scan(&i.CompetitorID, &i.Scans); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countAnalysesCreatedSince = `-- name: CountAnalysesCreatedSince :one
 SELECT count(*)::bigint
 FROM analyses
@@ -169,16 +209,17 @@ func (q *Queries) CountAnalysesCreatedSince(ctx context.Context, arg CountAnalys
 }
 
 const createAnalysis = `-- name: CreateAnalysis :exec
-INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_at)
-VALUES ($1, $2, $3, 'queued', 'pending', $4, $5)
+INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_at, competitor_id)
+VALUES ($1, $2, $3, 'queued', 'pending', $4, $5, $6)
 `
 
 type CreateAnalysisParams struct {
-	ID        uuid.UUID
-	Url       string
-	MaxPages  int64
-	CreatedBy string
-	CreatedAt time.Time
+	ID           uuid.UUID
+	Url          string
+	MaxPages     int64
+	CreatedBy    string
+	CreatedAt    time.Time
+	CompetitorID pgtype.Text
 }
 
 func (q *Queries) CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) error {
@@ -188,6 +229,7 @@ func (q *Queries) CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) 
 		arg.MaxPages,
 		arg.CreatedBy,
 		arg.CreatedAt,
+		arg.CompetitorID,
 	)
 	return err
 }
@@ -242,7 +284,7 @@ func (q *Queries) FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) 
 }
 
 const getAnalysis = `-- name: GetAnalysis :one
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
 FROM analyses
 WHERE analyses.id = $1
 `
@@ -258,6 +300,7 @@ type GetAnalysisRow struct {
 	CreatedBy    string
 	CreatedAt    time.Time
 	FinishedAt   pgtype.Timestamptz
+	CompetitorID pgtype.Text
 }
 
 func (q *Queries) GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow, error) {
@@ -274,12 +317,67 @@ func (q *Queries) GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.FinishedAt,
+		&i.CompetitorID,
 	)
 	return i, err
 }
 
+const latestAnalysisPerCompetitor = `-- name: LatestAnalysisPerCompetitor :many
+SELECT DISTINCT ON (competitor_id) competitor_id::text AS competitor_id, id, url, max_pages, status,
+    failure, pages_crawled, matching, created_by, created_at, finished_at
+FROM analyses
+WHERE competitor_id IS NOT NULL
+ORDER BY competitor_id, created_at DESC, id
+`
+
+type LatestAnalysisPerCompetitorRow struct {
+	CompetitorID string
+	ID           uuid.UUID
+	Url          string
+	MaxPages     int64
+	Status       string
+	Failure      pgtype.Text
+	PagesCrawled int64
+	Matching     string
+	CreatedBy    string
+	CreatedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnalysisPerCompetitorRow, error) {
+	rows, err := q.db.Query(ctx, latestAnalysisPerCompetitor)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LatestAnalysisPerCompetitorRow{}
+	for rows.Next() {
+		var i LatestAnalysisPerCompetitorRow
+		if err := rows.Scan(
+			&i.CompetitorID,
+			&i.ID,
+			&i.Url,
+			&i.MaxPages,
+			&i.Status,
+			&i.Failure,
+			&i.PagesCrawled,
+			&i.Matching,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.FinishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAnalyses = `-- name: ListAnalyses :many
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
 FROM analyses
 ORDER BY created_at DESC, id
 LIMIT $1
@@ -296,6 +394,7 @@ type ListAnalysesRow struct {
 	CreatedBy    string
 	CreatedAt    time.Time
 	FinishedAt   pgtype.Timestamptz
+	CompetitorID pgtype.Text
 }
 
 func (q *Queries) ListAnalyses(ctx context.Context, limit int32) ([]ListAnalysesRow, error) {
@@ -318,6 +417,66 @@ func (q *Queries) ListAnalyses(ctx context.Context, limit int32) ([]ListAnalyses
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.FinishedAt,
+			&i.CompetitorID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAnalysesByCompetitor = `-- name: ListAnalysesByCompetitor :many
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
+FROM analyses
+WHERE competitor_id = $1
+ORDER BY created_at DESC, id
+LIMIT $2
+`
+
+type ListAnalysesByCompetitorParams struct {
+	CompetitorID pgtype.Text
+	Limit        int32
+}
+
+type ListAnalysesByCompetitorRow struct {
+	ID           uuid.UUID
+	Url          string
+	MaxPages     int64
+	Status       string
+	Failure      pgtype.Text
+	PagesCrawled int64
+	Matching     string
+	CreatedBy    string
+	CreatedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	CompetitorID pgtype.Text
+}
+
+func (q *Queries) ListAnalysesByCompetitor(ctx context.Context, arg ListAnalysesByCompetitorParams) ([]ListAnalysesByCompetitorRow, error) {
+	rows, err := q.db.Query(ctx, listAnalysesByCompetitor, arg.CompetitorID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAnalysesByCompetitorRow{}
+	for rows.Next() {
+		var i ListAnalysesByCompetitorRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.MaxPages,
+			&i.Status,
+			&i.Failure,
+			&i.PagesCrawled,
+			&i.Matching,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.FinishedAt,
+			&i.CompetitorID,
 		); err != nil {
 			return nil, err
 		}
@@ -402,17 +561,22 @@ func (q *Queries) ListAnalysisEquivalents(ctx context.Context, analysisID uuid.U
 }
 
 const listAnalysisKeywords = `-- name: ListAnalysisKeywords :many
-SELECT phrase, language, score, pages
+SELECT phrase, language, score, pages, coalesce(tier, 'broad')::text AS tier, coalesce(family, '')::text AS family,
+    coalesce(closest_term, '')::text AS closest_term, coalesce(in_map, false)::boolean AS in_map
 FROM analysis_keywords
 WHERE analysis_id = $1
 ORDER BY position
 `
 
 type ListAnalysisKeywordsRow struct {
-	Phrase   string
-	Language string
-	Score    float64
-	Pages    int64
+	Phrase      string
+	Language    string
+	Score       float64
+	Pages       int64
+	Tier        string
+	Family      string
+	ClosestTerm string
+	InMap       bool
 }
 
 func (q *Queries) ListAnalysisKeywords(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKeywordsRow, error) {
@@ -429,6 +593,10 @@ func (q *Queries) ListAnalysisKeywords(ctx context.Context, analysisID uuid.UUID
 			&i.Language,
 			&i.Score,
 			&i.Pages,
+			&i.Tier,
+			&i.Family,
+			&i.ClosestTerm,
+			&i.InMap,
 		); err != nil {
 			return nil, err
 		}

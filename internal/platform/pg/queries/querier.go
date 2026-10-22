@@ -17,18 +17,23 @@ type Querier interface {
 	AddAnalysisKeyword(ctx context.Context, arg AddAnalysisKeywordParams) error
 	AddAnalysisKnownTerm(ctx context.Context, arg AddAnalysisKnownTermParams) error
 	AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams) error
+	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
 	CountAnalysesCreatedSince(ctx context.Context, arg CountAnalysesCreatedSinceParams) (int64, error)
 	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) error
 	FailAnalysis(ctx context.Context, arg FailAnalysisParams) error
 	FailRunningAnalyses(ctx context.Context, arg FailRunningAnalysesParams) error
 	FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) error
 	GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow, error)
+	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
+	LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnalysisPerCompetitorRow, error)
 	ListAnalyses(ctx context.Context, limit int32) ([]ListAnalysesRow, error)
+	ListAnalysesByCompetitor(ctx context.Context, arg ListAnalysesByCompetitorParams) ([]ListAnalysesByCompetitorRow, error)
 	ListAnalysisEquivalentTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentTermsRow, error)
 	ListAnalysisEquivalents(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentsRow, error)
 	ListAnalysisKeywords(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKeywordsRow, error)
 	ListAnalysisKnownTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKnownTermsRow, error)
 	ListAnalysisPages(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPagesRow, error)
+	ListCompanies(ctx context.Context) ([]Company, error)
 	MarkAnalysisRunning(ctx context.Context, id uuid.UUID) error
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error

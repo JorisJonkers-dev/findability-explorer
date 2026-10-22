@@ -33,6 +33,10 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/persistence"
 	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
+	companiespersistence "github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/persistence"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/research"
+	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
+	companiesdomain "github.com/JorisJonkers-dev/findability-explorer/internal/companies/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpapi"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
@@ -86,7 +90,15 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		return err
 	}
 	terminology := terminologyapp.New(catalogue)
-	analysis, err := newAnalysis(ctx, logger, getenv, store, terminology)
+	now := func() time.Time { return time.Now().UTC() }
+	analysisRepo := persistence.New(store)
+	companies := companiesapp.New(
+		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
+		companiespersistence.New(store.Queries()),
+		scans{repo: analysisRepo},
+		now,
+	)
+	analysis, err := newAnalysis(ctx, logger, getenv, analysisRepo, companies, terminology, now)
 	if err != nil {
 		return err
 	}
@@ -94,7 +106,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		logger.ErrorContext(ctx, "analysis could not be recorded", "analysis", id, "error", err)
 	})
 
-	api, err := httpapi.New(logger, httpapi.Contexts{Terminology: terminology, Analysis: analysis})
+	api, err := httpapi.New(logger, httpapi.Contexts{Terminology: terminology, Analysis: analysis, Companies: companies})
 	if err != nil {
 		return err
 	}
@@ -120,8 +132,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 }
 
 // newAnalysis builds the analysis use cases and queues every analysis a restart left waiting.
-func newAnalysis(ctx context.Context, logger *slog.Logger, getenv func(string) string, store *pg.Store,
-	terminology *terminologyapp.Service,
+func newAnalysis(ctx context.Context, logger *slog.Logger, getenv func(string) string,
+	repo *persistence.Repository, directory analysisdomain.Directory, terminology *terminologyapp.Service,
+	now func() time.Time,
 ) (*analysisapp.Service, error) {
 	perHour, err := intEnv(getenv, "ANALYSES_PER_HOUR", 10)
 	if err != nil {
@@ -138,17 +151,55 @@ func newAnalysis(ctx context.Context, logger *slog.Logger, getenv func(string) s
 		logger.Warn("ANTHROPIC_API_KEY is not set: product matching is disabled")
 	}
 	svc := analysisapp.New(
-		persistence.New(store),
+		repo,
+		directory,
 		crawler.New(crawler.Options{Contact: getenv("CRAWLER_CONTACT")}),
 		match,
 		func() []analysisdomain.GlossaryTerm { return glossary(terminology.Terms()) },
-		func() time.Time { return time.Now().UTC() },
+		now,
 		analysisapp.Limits{PerUserPerHour: perHour, MonthlyTokens: int64(monthly), SiteTextChars: 60_000, QueueSize: 32},
 	)
 	if err := svc.Recover(ctx); err != nil {
 		return nil, err
 	}
 	return svc, nil
+}
+
+// scans hands the analyses of each company to the companies context by value.
+type scans struct {
+	repo *persistence.Repository
+}
+
+func (s scans) Stats(ctx context.Context) (map[string]companiesdomain.Stats, error) {
+	stats, err := s.repo.CompetitorStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]companiesdomain.Stats, len(stats))
+	for id, st := range stats {
+		last := scanOf(st.Last)
+		out[id] = companiesdomain.Stats{Count: st.Count, Last: &last}
+	}
+	return out, nil
+}
+
+func (s scans) ByCompany(ctx context.Context, id string, limit int) ([]companiesdomain.Scan, error) {
+	list, err := s.repo.ListByCompetitor(ctx, id, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]companiesdomain.Scan, 0, len(list))
+	for _, a := range list {
+		out = append(out, scanOf(a))
+	}
+	return out, nil
+}
+
+func scanOf(a analysisdomain.Analysis) companiesdomain.Scan {
+	return companiesdomain.Scan{
+		ID: a.ID, URL: a.URL, Status: string(a.Status), Failure: a.Failure, MaxPages: a.MaxPages,
+		PagesCrawled: a.PagesCrawled, CreatedAt: a.CreatedAt, FinishedAt: a.FinishedAt,
+	}
 }
 
 // glossary hands the terminology map to the analysis context by value.

@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -71,6 +72,14 @@ func (r *repo) List(_ context.Context, limit int) ([]domain.Analysis, error) {
 		return nil, err
 	}
 	return make([]domain.Analysis, limit), nil
+}
+
+func (r *repo) ListByCompetitor(context.Context, string, int) ([]domain.Analysis, error) {
+	return []domain.Analysis{}, nil
+}
+
+func (r *repo) CompetitorStats(context.Context) (map[string]domain.CompetitorStats, error) {
+	return map[string]domain.CompetitorStats{}, nil
 }
 
 func (r *repo) CountCreatedSince(context.Context, string, time.Time) (int, error) {
@@ -175,17 +184,33 @@ func pages() []domain.Page {
 	return []domain.Page{{URL: "https://x.test/", Language: "en", Title: "Spiral belt", Text: "Our spiral belt for freezers."}}
 }
 
+// directory names every website's company after its host's first label, or fails with err.
+type directory struct {
+	err      error
+	lastName string
+}
+
+func (d *directory) Resolve(_ context.Context, _ string, website *url.URL, name string) (string, error) {
+	d.lastName = name
+	if d.err != nil {
+		return "", d.err
+	}
+	host, _, _ := strings.Cut(website.Hostname(), ".")
+	return host, nil
+}
+
 func service(r *repo, c domain.Crawler, m domain.Matcher, l app.Limits) *app.Service {
-	return app.New(r, c, m, glossary, func() time.Time { return now }, l)
+	return app.New(r, &directory{}, c, m, glossary, func() time.Time { return now }, l)
 }
 
 func TestStartQueuesAValidRequest(t *testing.T) {
 	r := newRepo()
-	a, err := service(r, crawler{}, nil, limits()).Start(t.Context(), "joris", "https://x.test", 0)
+	a, err := service(r, crawler{}, nil, limits()).Start(t.Context(), "joris", "https://x.test", 0, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if a.Status != domain.StatusQueued || a.MaxPages != domain.DefaultMaxPages || a.URL != "https://x.test/" ||
+		a.CompetitorID != "x" ||
 		a.CreatedBy != "joris" || !a.CreatedAt.Equal(now) || a.Matching != domain.MatchingPending {
 		t.Fatalf("started %+v", a)
 	}
@@ -209,7 +234,7 @@ func TestStartRefuses(t *testing.T) {
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			if _, err := service(c.repo, crawler{}, nil, limits()).Start(t.Context(), "u", c.url, c.maxPages); !errors.Is(err, c.want) {
+			if _, err := service(c.repo, crawler{}, nil, limits()).Start(t.Context(), "u", c.url, c.maxPages, ""); !errors.Is(err, c.want) {
 				t.Fatalf("Start error = %v, want %v", err, c.want)
 			}
 		})
@@ -219,10 +244,10 @@ func TestStartRefuses(t *testing.T) {
 func TestStartFailsTheAnalysisWhenTheQueueIsFull(t *testing.T) {
 	r := newRepo()
 	svc := service(r, crawler{}, nil, app.Limits{PerUserPerHour: 10, QueueSize: 1})
-	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1); err != nil {
+	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1, ""); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1); !errors.Is(err, app.ErrBusy) {
+	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1, ""); !errors.Is(err, app.ErrBusy) {
 		t.Fatalf("second Start error = %v, want ErrBusy", err)
 	}
 	second := r.analyses[r.order[1]]
@@ -230,7 +255,7 @@ func TestStartFailsTheAnalysisWhenTheQueueIsFull(t *testing.T) {
 		t.Fatalf("the refused analysis is %+v", second)
 	}
 	r.failOn["Fail"] = true
-	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1); !errors.Is(err, errBoom) {
+	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1, ""); !errors.Is(err, errBoom) {
 		t.Fatalf("Start with a failing Fail = %v", err)
 	}
 }
@@ -255,7 +280,7 @@ func TestRunRecordsAllFindings(t *testing.T) {
 		{Product: "Plastic belt", Family: "plastic"},
 	}}
 	svc := service(r, crawler{pages: pages()}, m, limits())
-	a, err := svc.Start(t.Context(), "u", "https://x.test/", 5)
+	a, err := svc.Start(t.Context(), "u", "https://x.test/", 5, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,7 +325,7 @@ func TestRunMatching(t *testing.T) {
 				l.SiteTextChars = 0
 			}
 			svc := service(r, crawler{pages: c.pages}, c.matcher, l)
-			a, err := svc.Start(t.Context(), "u", "https://x.test/", 5)
+			a, err := svc.Start(t.Context(), "u", "https://x.test/", 5, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -326,7 +351,7 @@ func TestRunFailsTheAnalysisWhenNoPageComesBack(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			r := newRepo()
 			svc := service(r, c.crawl, nil, limits())
-			a, err := svc.Start(t.Context(), "u", "https://x.test/", 5)
+			a, err := svc.Start(t.Context(), "u", "https://x.test/", 5, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -368,7 +393,7 @@ func TestRunReportsWhatCouldNotBeRecorded(t *testing.T) {
 				c = crawler{}
 			}
 			svc := service(r, c, nil, limits())
-			a, err := svc.Start(t.Context(), "u", "https://x.test/", 5)
+			a, err := svc.Start(t.Context(), "u", "https://x.test/", 5, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -419,7 +444,7 @@ func TestRecoverAndWork(t *testing.T) {
 func TestWorkReportsErrors(t *testing.T) {
 	r := newRepo()
 	svc := service(r, crawler{pages: pages()}, nil, limits())
-	a, err := svc.Start(t.Context(), "u", "https://x.test/", 1)
+	a, err := svc.Start(t.Context(), "u", "https://x.test/", 1, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -456,5 +481,17 @@ func TestRecoverFailures(t *testing.T) {
 	defer cancel()
 	if err := service(r, crawler{}, nil, app.Limits{QueueSize: 1}).Recover(ctx); !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("Recover with a full queue = %v", err)
+	}
+}
+
+func TestStartNamesTheCompany(t *testing.T) {
+	d := &directory{}
+	svc := app.New(newRepo(), d, crawler{}, nil, glossary, func() time.Time { return now }, limits())
+	if _, err := svc.Start(t.Context(), "u", "https://belts.test/", 1, "Belts Ltd"); err != nil || d.lastName != "Belts Ltd" {
+		t.Fatalf("Start = %v, name %q", err, d.lastName)
+	}
+	d.err = errBoom
+	if _, err := svc.Start(t.Context(), "u", "https://belts.test/", 1, ""); !errors.Is(err, errBoom) {
+		t.Fatalf("Start with a failing directory = %v", err)
 	}
 }

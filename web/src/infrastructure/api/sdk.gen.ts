@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses } from './types.gen';
-import { zGetAnalysisPath, zGetAnalysisResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zSearchTermsQuery, zSearchTermsResponse, zStartAnalysisBody, zStartAnalysisResponse } from './zod.gen';
+import type { AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses } from './types.gen';
+import { zAddCompetitorBody, zAddCompetitorResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zSearchTermsQuery, zSearchTermsResponse, zStartAnalysisBody, zStartAnalysisResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -39,9 +39,9 @@ export const searchTerms = <ThrowOnError extends boolean = false>(options?: Opti
 });
 
 /**
- * List the companies in the terminology map
+ * List every known company
  *
- * Returns every competitor and group company studied, with its names for each belt family.
+ * Returns every company the research studied and every company added since, with its names for each belt family and how often its website was scanned.
  */
 export const listCompetitors = <ThrowOnError extends boolean = false>(options?: Options<ListCompetitorsData, ThrowOnError>): RequestResult<ListCompetitorsResponses, ListCompetitorsErrors, ThrowOnError> => (options?.client ?? client).get<ListCompetitorsResponses, ListCompetitorsErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({
@@ -52,6 +52,44 @@ export const listCompetitors = <ThrowOnError extends boolean = false>(options?: 
     responseValidator: async (data) => await zListCompetitorsResponse.parseAsync(data),
     security: [{ name: 'X-User-Id', type: 'apiKey' }],
     url: '/api/v1/competitors',
+    ...options
+});
+
+/**
+ * Add a company
+ *
+ * Adds a company by its name and website. A website whose host a known company already has is refused with 409, naming that company.
+ */
+export const addCompetitor = <ThrowOnError extends boolean = false>(options: Options<AddCompetitorData, ThrowOnError>): RequestResult<AddCompetitorResponses, AddCompetitorErrors, ThrowOnError> => (options.client ?? client).post<AddCompetitorResponses, AddCompetitorErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zAddCompetitorBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zAddCompetitorResponse.parseAsync(data),
+    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    url: '/api/v1/competitors',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get one company with its scans
+ *
+ * Returns the company and its most recent scans, newest first.
+ */
+export const getCompetitor = <ThrowOnError extends boolean = false>(options: Options<GetCompetitorData, ThrowOnError>): RequestResult<GetCompetitorResponses, GetCompetitorErrors, ThrowOnError> => (options.client ?? client).get<GetCompetitorResponses, GetCompetitorErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zGetCompetitorPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetCompetitorResponse.parseAsync(data),
+    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    url: '/api/v1/competitors/{competitorId}',
     ...options
 });
 

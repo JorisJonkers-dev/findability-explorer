@@ -10,6 +10,7 @@ import (
 	"github.com/ogen-go/ogen/ogenerrors"
 
 	analysisweb "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/web"
+	companiesweb "github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/web"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
 	terminologyweb "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/web"
@@ -19,12 +20,14 @@ import (
 type (
 	terminologyHandler = terminologyweb.Handler
 	analysisHandler    = analysisweb.Handler
+	companiesHandler   = companiesweb.Handler
 )
 
 // api is the oas.Handler: one embedded web adapter per context, plus the shared error mapping.
 type api struct {
 	*terminologyHandler
 	*analysisHandler
+	*companiesHandler
 	logger *slog.Logger
 }
 
@@ -52,6 +55,7 @@ func (identity) HandleForwardAuth(ctx context.Context, _ oas.OperationName, t oa
 type Contexts struct {
 	Terminology terminologyweb.UseCases
 	Analysis    analysisweb.UseCases
+	Companies   companiesweb.UseCases
 }
 
 // New returns the API's http.Handler, serving every path the contract declares under /api.
@@ -60,6 +64,7 @@ func New(logger *slog.Logger, c Contexts) (http.Handler, error) {
 		&api{
 			terminologyHandler: terminologyweb.New(c.Terminology),
 			analysisHandler:    analysisweb.New(c.Analysis),
+			companiesHandler:   companiesweb.New(c.Companies),
 			logger:             logger,
 		},
 		identity{},

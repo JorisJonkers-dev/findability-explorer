@@ -99,9 +99,38 @@ export type BeltName = {
 };
 
 /**
- * A company in the terminology map.
+ * A company's id, made from its name.
+ */
+export type CompetitorId = string;
+
+/**
+ * Where a company comes from - the desk research, or added by a user or a scan.
+ */
+export type CompetitorSource = 'research' | 'added';
+
+/**
+ * A known company.
  */
 export type Competitor = {
+    id: CompetitorId;
+    source: CompetitorSource;
+    /**
+     * The website to visit and to scan; absent when the research found none.
+     */
+    websiteUrl?: string;
+    /**
+     * The website's host without "www.", by which scans are matched to the company.
+     */
+    host?: string;
+    /**
+     * How many scans of the company's website were started.
+     */
+    scans: number;
+    lastScan?: AnalysisSummary;
+    /**
+     * When the company was added; only for added companies.
+     */
+    addedAt?: string;
     /**
      * The company's name.
      */
@@ -111,7 +140,7 @@ export type Competitor = {
      */
     country: string;
     /**
-     * The company's website.
+     * The company's website as the research noted it, or the added address.
      */
     website: string;
     /**
@@ -133,7 +162,32 @@ export type Competitor = {
 };
 
 /**
- * Every company in the terminology map.
+ * A company to add.
+ */
+export type NewCompetitor = {
+    /**
+     * The company's name.
+     */
+    name: string;
+    /**
+     * The company's website. Only http and https on a public host.
+     */
+    url: string;
+};
+
+/**
+ * A company with its most recent scans.
+ */
+export type CompetitorDetail = {
+    competitor: Competitor;
+    /**
+     * The company's scans, newest first.
+     */
+    scans: Array<AnalysisSummary>;
+};
+
+/**
+ * Every known company.
  */
 export type CompetitorList = {
     /**
@@ -154,6 +208,10 @@ export type NewAnalysis = {
      * The most pages to fetch.
      */
     maxPages?: number;
+    /**
+     * The name to add the company under when no known company has this website's host. Without it, an unknown company is added under its host.
+     */
+    companyName?: string;
 };
 
 /**
@@ -170,6 +228,7 @@ export type MatchingStatus = 'pending' | 'disabled' | 'skipped' | 'done' | 'fail
  * An analysis without its results.
  */
 export type AnalysisSummary = {
+    competitorId?: CompetitorId;
     /**
      * The analysis's id.
      */
@@ -238,9 +297,19 @@ export type CrawledPage = {
 };
 
 /**
- * A phrase the site emphasises, scored by where and how often it appears.
+ * A phrase about metal belts that the site emphasises, scored by where and how often it appears. Phrases without a word of the belt vocabulary, phrases that only name the site itself, and menu or footer text are left out.
  */
 export type Keyword = {
+    tier: IntentTier;
+    family?: BeltFamily;
+    /**
+     * The terminology map term that shares the most specific words with the phrase.
+     */
+    closestTerm?: string;
+    /**
+     * True when the phrase is one of the map's own terms. A phrase that is not is a search term the map, and Tribelt, may be missing.
+     */
+    inMap: boolean;
     /**
      * The phrase, in lower case.
      */
@@ -435,12 +504,90 @@ export type ListCompetitorsError = ListCompetitorsErrors[keyof ListCompetitorsEr
 
 export type ListCompetitorsResponses = {
     /**
-     * The companies, competitors first, by name.
+     * The companies: researched competitors by name, then added ones by name, then Tribelt's own group.
      */
     200: CompetitorList;
 };
 
 export type ListCompetitorsResponse = ListCompetitorsResponses[keyof ListCompetitorsResponses];
+
+export type AddCompetitorData = {
+    /**
+     * The company to add.
+     */
+    body: NewCompetitor;
+    path?: never;
+    query?: never;
+    url: '/api/v1/competitors';
+};
+
+export type AddCompetitorErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddCompetitorError = AddCompetitorErrors[keyof AddCompetitorErrors];
+
+export type AddCompetitorResponses = {
+    /**
+     * The added company.
+     */
+    201: Competitor;
+};
+
+export type AddCompetitorResponse = AddCompetitorResponses[keyof AddCompetitorResponses];
+
+export type GetCompetitorData = {
+    body?: never;
+    path: {
+        /**
+         * The company's id.
+         */
+        competitorId: CompetitorId;
+    };
+    query?: never;
+    url: '/api/v1/competitors/{competitorId}';
+};
+
+export type GetCompetitorErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetCompetitorError = GetCompetitorErrors[keyof GetCompetitorErrors];
+
+export type GetCompetitorResponses = {
+    /**
+     * The company.
+     */
+    200: CompetitorDetail;
+};
+
+export type GetCompetitorResponse = GetCompetitorResponses[keyof GetCompetitorResponses];
 
 export type ListAnalysesData = {
     body?: never;

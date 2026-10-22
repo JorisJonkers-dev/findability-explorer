@@ -36,8 +36,23 @@ export function termSearch(items: Term[], overrides: Partial<TermSearch> = {}): 
   }
 }
 
+/** A company's id, made from its name as the server makes it. */
+export function slug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Mn}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 export function competitor(name: string, overrides: Partial<Competitor> = {}): Competitor {
   return {
+    id: slug(name),
+    source: 'research',
+    websiteUrl: 'https://www.twentebelt.com/',
+    host: 'twentebelt.com',
+    scans: 0,
     name,
     country: 'NL',
     website: 'https://www.twentebelt.com',
@@ -52,6 +67,7 @@ export function competitor(name: string, overrides: Partial<Competitor> = {}): C
 export function summary(overrides: Partial<AnalysisSummary> = {}): AnalysisSummary {
   return {
     id: ANALYSIS_ID,
+    competitorId: 'twentebelt',
     url: 'https://www.twentebelt.com',
     status: 'done',
     maxPages: 15,
@@ -75,9 +91,9 @@ export function analysis(overrides: Partial<Analysis> = {}, summaryOverrides: Pa
       },
     ],
     keywords: [
-      { phrase: 'spiral belts', language: 'en', score: 12.25, pages: 3 },
-      { phrase: 'metal conveyor belts', language: 'en', score: 42.5, pages: 6 },
-      { phrase: 'förderbänder', language: 'de', score: 20, pages: 2 },
+      { phrase: 'spiral belts', language: 'en', score: 12.25, pages: 3, tier: 'product', family: 'tri_flex_turn_curve', closestTerm: 'spiral belt / spiral conveyor belt', inMap: false },
+      { phrase: 'metal conveyor belts', language: 'en', score: 42.5, pages: 6, tier: 'broad', family: 'all', closestTerm: 'metal conveyor belt(s)', inMap: true },
+      { phrase: 'förderbänder', language: 'de', score: 20, pages: 2, tier: 'broad', inMap: false },
     ],
     knownTerms: [
       { term: 'balanced weave belt', language: 'en', family: 'open_spiral', tier: 'product', occurrences: 9, usedByTribelt: false },

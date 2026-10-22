@@ -39,6 +39,7 @@ func New(store Store) *Repository {
 func (r *Repository) Create(ctx context.Context, a domain.Analysis) error {
 	if err := r.store.Queries().CreateAnalysis(ctx, queries.CreateAnalysisParams{
 		ID: a.ID, Url: a.URL, MaxPages: int64(a.MaxPages), CreatedBy: a.CreatedBy, CreatedAt: a.CreatedAt,
+		CompetitorID: optionalText(a.CompetitorID),
 	}); err != nil {
 		return fmt.Errorf("insert analysis: %w", err)
 	}
@@ -83,6 +84,51 @@ func (r *Repository) List(ctx context.Context, limit int) ([]domain.Analysis, er
 	out := make([]domain.Analysis, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, toAnalysis(row))
+	}
+	return out, nil
+}
+
+// ListByCompetitor returns at most limit analyses of one company, newest first.
+func (r *Repository) ListByCompetitor(ctx context.Context, competitorID string, limit int) ([]domain.Analysis, error) {
+	if limit < 0 || limit > math.MaxInt32 {
+		return nil, fmt.Errorf("select analyses: limit %d out of range", limit)
+	}
+	rows, err := r.store.Queries().ListAnalysesByCompetitor(ctx, queries.ListAnalysesByCompetitorParams{
+		CompetitorID: optionalText(competitorID), Limit: int32(limit),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("select analyses of %s: %w", competitorID, err)
+	}
+	out := make([]domain.Analysis, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toAnalysis(queries.ListAnalysesRow(row)))
+	}
+	return out, nil
+}
+
+// CompetitorStats counts each company's analyses and returns its newest one.
+func (r *Repository) CompetitorStats(ctx context.Context) (map[string]domain.CompetitorStats, error) {
+	q := r.store.Queries()
+	counts, err := q.AnalysisStatsByCompetitor(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("count analyses per company: %w", err)
+	}
+	latest, err := q.LatestAnalysisPerCompetitor(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("latest analysis per company: %w", err)
+	}
+	out := make(map[string]domain.CompetitorStats, len(counts))
+	for _, c := range counts {
+		out[c.CompetitorID] = domain.CompetitorStats{Count: int(c.Scans)}
+	}
+	for _, l := range latest {
+		s := out[l.CompetitorID]
+		s.Last = toAnalysis(queries.ListAnalysesRow{
+			ID: l.ID, Url: l.Url, MaxPages: l.MaxPages, Status: l.Status, Failure: l.Failure,
+			PagesCrawled: l.PagesCrawled, Matching: l.Matching, CreatedBy: l.CreatedBy, CreatedAt: l.CreatedAt,
+			FinishedAt: l.FinishedAt, CompetitorID: optionalText(l.CompetitorID),
+		})
+		out[l.CompetitorID] = s
 	}
 	return out, nil
 }
@@ -151,7 +197,8 @@ func (r *Repository) SaveFindings(ctx context.Context, id uuid.UUID, kws []domai
 		for i, k := range kws {
 			if err := q.AddAnalysisKeyword(ctx, queries.AddAnalysisKeywordParams{
 				AnalysisID: id, Position: int64(i), Phrase: clip(k.Phrase, 200), Language: clip(k.Language, 16),
-				Score: k.Score, Pages: int64(k.Pages),
+				Score: k.Score, Pages: int64(k.Pages), Tier: optionalText(k.Tier), Family: optionalText(k.Family),
+				ClosestTerm: optionalText(clip(k.Closest, 200)), InMap: pgtype.Bool{Bool: k.InMap, Valid: true},
 			}); err != nil {
 				return fmt.Errorf("insert keyword: %w", err)
 			}
@@ -218,7 +265,7 @@ func toAnalysis(row queries.ListAnalysesRow) domain.Analysis {
 	a := domain.Analysis{
 		ID: row.ID, URL: row.Url, MaxPages: int(row.MaxPages), Status: domain.Status(row.Status),
 		Failure: row.Failure.String, PagesCrawled: int(row.PagesCrawled), Matching: domain.Matching(row.Matching),
-		CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC(),
+		CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC(), CompetitorID: row.CompetitorID.String,
 	}
 	if row.FinishedAt.Valid {
 		a.FinishedAt = row.FinishedAt.Time.UTC()
@@ -245,7 +292,10 @@ func keywords(ctx context.Context, q *queries.Queries, id uuid.UUID) ([]domain.K
 	}
 	out := make([]domain.Keyword, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, domain.Keyword{Phrase: r.Phrase, Language: r.Language, Score: r.Score, Pages: int(r.Pages)})
+		out = append(out, domain.Keyword{
+			Phrase: r.Phrase, Language: r.Language, Score: r.Score, Pages: int(r.Pages),
+			Classification: domain.Classification{Tier: r.Tier, Family: r.Family, Closest: r.ClosestTerm, InMap: r.InMap},
+		})
 	}
 	return out, nil
 }
@@ -286,6 +336,9 @@ func equivalents(ctx context.Context, q *queries.Queries, id uuid.UUID) ([]domai
 }
 
 func text(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }
+
+// optionalText is s, or NULL when s is empty.
+func optionalText(s string) pgtype.Text { return pgtype.Text{String: s, Valid: s != ""} }
 
 func timestamp(t time.Time) pgtype.Timestamptz { return pgtype.Timestamptz{Time: t, Valid: true} }
 

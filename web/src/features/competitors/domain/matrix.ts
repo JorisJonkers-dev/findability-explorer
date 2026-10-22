@@ -1,5 +1,6 @@
 import type { BeltFamily, BeltName, Competitor } from '../../../infrastructure/api/types.gen'
-import { PRODUCT_FAMILIES } from '../../../shared/vocabulary'
+import { languageLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
+import { joinWords } from '../../scan/domain/results'
 import { fold } from '../../terminology/domain/fold'
 import { companyName } from '../../terminology/domain/filters'
 
@@ -91,7 +92,16 @@ export function countryName(country: string): string {
  * "unverified" or "others unverified", which is not one.
  */
 export function languageCount(languages: readonly string[]): number {
-  return languages.filter((l) => /^[a-z]{2,3}(?:-[A-Za-z]{2,4})?(?![\p{L}-])/u.test(l)).length
+  return languageCodes(languages).length
+}
+
+function languageCodes(languages: readonly string[]): string[] {
+  return languages.flatMap((l) => /^[a-z]{2,3}(?:-[A-Za-z]{2,4})?(?![\p{L}-])/u.exec(l)?.[0] ?? [])
+}
+
+/** The languages a company's website is in, for people: "English and Dutch". */
+export function languageNames(languages: readonly string[]): string {
+  return joinWords(languageCodes(languages).map(languageLabel))
 }
 
 /** The line under a company's name: "Netherlands, 2 languages". */
@@ -149,7 +159,8 @@ export function creditedCompanies(terms: readonly { usedBy: readonly string[] }[
 
 /** One company's row of the matrix. */
 export type MatrixRow = {
-  /** The registered name, which is unique. */
+  id: string
+  /** The registered name. */
   key: string
   /** The short name, shown and searched for in the terminology. */
   name: string
@@ -157,17 +168,24 @@ export type MatrixRow = {
   country: string
   cells: FamilyCell[]
   groupCompany: boolean
+  added: boolean
+  scans: number
+  websiteUrl: string | undefined
 }
 
 /** The matrix: one row per company, one cell per Tribelt belt family. */
 export function matrixRows(competitors: readonly Competitor[], users: readonly string[]): MatrixRow[] {
   return competitors.map((c) => ({
+    id: c.id,
     key: c.name,
     name: shortName(c.name, users),
     where: whereLabel(c),
     country: c.country,
     cells: PRODUCT_FAMILIES.map((family) => familyCell(c.beltNames, family)),
     groupCompany: c.groupCompany,
+    added: c.source === 'added',
+    scans: c.scans,
+    websiteUrl: c.websiteUrl,
   }))
 }
 

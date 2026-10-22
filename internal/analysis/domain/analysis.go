@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/site"
 )
 
 const (
@@ -61,24 +63,11 @@ func NewTarget(raw string) (Target, error) {
 	return Target{url: u}, nil
 }
 
-// PublicHost reports whether host may be crawled by name or literal: not empty, not a local or
-// internal name, and, when it is an IP literal, a public address.
-func PublicHost(host string) bool {
-	if addr, err := netip.ParseAddr(host); err == nil {
-		return PublicAddr(addr)
-	}
-	return strings.Contains(host, ".") && !strings.HasSuffix(host, ".localhost") &&
-		!strings.HasSuffix(host, ".local") && !strings.HasSuffix(host, ".internal")
-}
+// PublicHost reports whether host may be crawled; see site.PublicHost.
+func PublicHost(host string) bool { return site.PublicHost(host) }
 
-// PublicAddr reports whether addr is a globally routable unicast address. The crawler refuses to
-// connect anywhere else, so a public name that resolves to a private address cannot be used to
-// reach the service's own network.
-func PublicAddr(addr netip.Addr) bool {
-	addr = addr.Unmap()
-	cgnat := netip.MustParsePrefix("100.64.0.0/10")
-	return addr.IsGlobalUnicast() && !addr.IsPrivate() && !cgnat.Contains(addr)
-}
+// PublicAddr reports whether addr may be connected to; see site.PublicAddr.
+func PublicAddr(addr netip.Addr) bool { return site.PublicAddr(addr) }
 
 // URL returns the address to start from.
 func (t Target) URL() *url.URL { u := *t.url; return &u }
@@ -120,8 +109,11 @@ const (
 
 // Analysis is one analysis of a website, with what it has found so far.
 type Analysis struct {
-	ID           uuid.UUID
-	URL          string
+	ID  uuid.UUID
+	URL string
+	// CompetitorID is the company the scanned website belongs to; empty for scans made before
+	// companies were tracked.
+	CompetitorID string
 	MaxPages     int
 	Status       Status
 	Failure      string
@@ -152,6 +144,10 @@ type Repository interface {
 	Get(ctx context.Context, id uuid.UUID) (Analysis, error)
 	// List returns at most limit analyses without results, newest first.
 	List(ctx context.Context, limit int) ([]Analysis, error)
+	// ListByCompetitor returns at most limit analyses of one company, without results, newest first.
+	ListByCompetitor(ctx context.Context, competitorID string, limit int) ([]Analysis, error)
+	// CompetitorStats counts each company's analyses and returns its newest one.
+	CompetitorStats(ctx context.Context) (map[string]CompetitorStats, error)
 	// CountCreatedSince counts the analyses user started at or after since.
 	CountCreatedSince(ctx context.Context, user string, since time.Time) (int, error)
 	// TokensSince sums the language-model tokens of analyses created at or after since.
@@ -167,6 +163,18 @@ type Repository interface {
 	SaveMatching(ctx context.Context, id uuid.UUID, m Matching, eqs []Equivalent, usage Usage) error
 	Finish(ctx context.Context, id uuid.UUID, at time.Time) error
 	Fail(ctx context.Context, id uuid.UUID, reason string, at time.Time) error
+}
+
+// CompetitorStats is how often one company's website was analysed, and its newest analysis.
+type CompetitorStats struct {
+	Count int
+	Last  Analysis
+}
+
+// Directory is the port to the companies context: it names the company a website belongs to,
+// adding one under name when nobody knows the website's host yet.
+type Directory interface {
+	Resolve(ctx context.Context, user string, website *url.URL, name string) (string, error)
 }
 
 // ErrNotFound is returned for an analysis id that does not exist.

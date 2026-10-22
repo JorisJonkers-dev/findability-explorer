@@ -81,6 +81,87 @@ func decodeGetAnalysisParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// GetCompetitorParams is parameters of getCompetitor operation.
+type GetCompetitorParams struct {
+	// The company's id.
+	CompetitorId CompetitorId
+}
+
+func unpackGetCompetitorParams(packed middleware.Parameters) (params GetCompetitorParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorId",
+			In:   "path",
+		}
+		params.CompetitorId = packed[key].(CompetitorId)
+	}
+	return params
+}
+
+func decodeGetCompetitorParams(args [1]string, argsEscaped bool, r *http.Request) (params GetCompetitorParams, _ error) {
+	// Decode path: competitorId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorId = CompetitorId(paramsDotCompetitorIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListAnalysesParams is parameters of listAnalyses operation.
 type ListAnalysesParams struct {
 	// How many analyses to return.

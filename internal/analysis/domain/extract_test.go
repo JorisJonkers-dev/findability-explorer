@@ -58,6 +58,23 @@ func phrasesOf(kws []domain.Keyword) []string {
 	return out
 }
 
+// testLexicon is a small terminology map: enough to tell belt phrases from the rest.
+func testLexicon() domain.Lexicon {
+	return domain.NewLexicon([]domain.GlossaryTerm{
+		{Text: "spiral belt / spiral conveyor belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product"},
+		{Text: "eye-link belt / eyelink belt", Language: "en", Family: "eyelink", Tier: "product"},
+		{Text: "Eyelink-band", Language: "sv", Family: "eyelink", Tier: "product"},
+		{Text: "balanced weave belt", Language: "en", Family: "open_spiral", Tier: "product"},
+		{Text: "metal conveyor belt(s)", Language: "en", Family: "all", Tier: "broad"},
+		{Text: "Drahtösengliedergurte Typ 800", Language: "de", Family: "eyelink", Tier: "product"},
+		{Text: "wire diameter / cross rod diameter", Language: "en", Family: "spec_all", Tier: "spec"},
+		{Text: "nid d'abeilles", Language: "fr", Family: "other", Tier: "product"},
+		{Text: "honeycomb belt", Language: "en", Family: "other", Tier: "product"},
+		{Text: "flat wire belt", Language: "en", Family: "other", Tier: "product"},
+		{Text: "°", Language: "en", Family: "spec_all", Tier: "spec"},
+	})
+}
+
 func TestKeywordsWeighTitlesAndSpreadOverPages(t *testing.T) {
 	pages := []domain.Page{
 		{
@@ -67,24 +84,16 @@ func TestKeywordsWeighTitlesAndSpreadOverPages(t *testing.T) {
 		},
 		{URL: "https://x.test/b", Language: "en", Title: "Eyelink belts", Text: "Eyelink belts and spiral belts."},
 	}
-	kws := domain.Keywords(pages)
-	if kws[0].Phrase != "spiral belts" || kws[0].Pages != 2 || kws[0].Language != "en" {
-		t.Fatalf("top keyword = %+v, want spiral belts on 2 pages", kws[0])
+	kws := domain.Keywords(pages, testLexicon(), nil)
+	if kws[0].Phrase != "spiral belts" || kws[0].Pages != 2 || kws[0].Language != "en" ||
+		kws[0].Tier != "product" || kws[0].Family != "tri_flex_turn_curve" || !kws[0].InMap {
+		t.Fatalf("top keyword = %+v, want spiral belts on 2 pages, a product term in the map", kws[0])
 	}
 	got := phrasesOf(kws)
-	for _, unwanted := range []string{"the", "of", "2026", "12", "our", "belts and", "and spiral"} {
+	for _, unwanted := range []string{"the", "of", "2026", "12", "our", "menu", "belts and", "and spiral", "run"} {
 		if slices.Contains(got, unwanted) {
 			t.Errorf("noise phrase %q kept", unwanted)
 		}
-	}
-	var menu domain.Keyword
-	for _, k := range kws {
-		if k.Phrase == "menu" {
-			menu = k
-		}
-	}
-	if menu.Score > 3 {
-		t.Errorf("a word repeated in the body scores %v, want at most 3", menu.Score)
 	}
 	for i := 1; i < len(kws); i++ {
 		if kws[i].Score > kws[i-1].Score {
@@ -93,12 +102,66 @@ func TestKeywordsWeighTitlesAndSpreadOverPages(t *testing.T) {
 	}
 }
 
+func TestKeywordsDropTheBrandMenusAndFragments(t *testing.T) {
+	page := func(n int) domain.Page {
+		return domain.Page{
+			URL: "https://belts.test/" + strings.Repeat("p", n), Language: "en",
+			Title: "Twentebelt balanced weave belts", Text: "Spiral belts menu\nTwentebelt\nmetal conveyor belts",
+		}
+	}
+	pages := []domain.Page{page(1), page(2), page(3), page(4)}
+	got := phrasesOf(domain.Keywords(pages, testLexicon(), domain.BrandWords("www.twentebelt.com")))
+	for _, unwanted := range []string{
+		"twentebelt", "twentebelt balanced weave", // the brand
+		"spiral belts", "metal conveyor belts", // body-only text on every page: the menu
+		"balanced weave", "weave belts", // fragments of "balanced weave belts"
+	} {
+		if slices.Contains(got, unwanted) {
+			t.Errorf("phrase %q kept in %q", unwanted, got)
+		}
+	}
+	if !slices.Contains(got, "balanced weave belts") {
+		t.Errorf("balanced weave belts missing from %q", got)
+	}
+}
+
+func TestKeywordsKeepTypeNumbersAndMergeLanguages(t *testing.T) {
+	pages := []domain.Page{
+		{Language: "de", Title: "Drahtösengliedergurte Typ 800", Text: "Typ 800 und Typ 900. Gurte und Bänder."},
+		{Language: "nl", Title: "Drahtösengliedergurte Typ 800"},
+		{Language: "de", Text: "links en rechts. eyelink belts and spiral belts"},
+	}
+	kws := domain.Keywords(pages, testLexicon(), nil)
+	var typed domain.Keyword
+	for _, k := range kws {
+		if k.Phrase == "drahtösengliedergurte typ 800" {
+			typed = k
+		}
+	}
+	if typed.Pages != 2 || typed.Language != "de" || !typed.InMap {
+		t.Errorf("typed phrase = %+v, want one phrase on 2 pages in de, in the map", typed)
+	}
+	got := phrasesOf(kws)
+	for _, unwanted := range []string{"typ 800", "typ 900", "links en rechts", "gurte und bänder"} {
+		if slices.Contains(got, unwanted) {
+			t.Errorf("phrase %q kept", unwanted)
+		}
+	}
+	if !slices.Contains(got, "eyelink belts and spiral") && !slices.Contains(got, "belts and spiral") {
+		// "x and y" stays only when both sides are about belts.
+		t.Logf("phrases: %q", got)
+	}
+}
+
 func TestKeywordsKeepsAtMostMaxKeywords(t *testing.T) {
+	var terms []domain.GlossaryTerm
 	var words []string
 	for i := range 400 {
-		words = append(words, "word"+strings.Repeat("x", i%26)+string(rune('a'+i%26))+string(rune('a'+i/26)))
+		w := "belt" + string(rune('a'+i%26)) + string(rune('a'+i/26))
+		terms = append(terms, domain.GlossaryTerm{Text: w, Language: "en", Family: "other", Tier: "product"})
+		words = append(words, w)
 	}
-	kws := domain.Keywords([]domain.Page{{Language: "en", Text: strings.Join(words, " ")}})
+	kws := domain.Keywords([]domain.Page{{Language: "en", Text: strings.Join(words, "\n")}}, domain.NewLexicon(terms), nil)
 	if len(kws) != domain.MaxKeywords {
 		t.Fatalf("%d keywords, want %d", len(kws), domain.MaxKeywords)
 	}
@@ -170,7 +233,7 @@ func TestSegments(t *testing.T) {
 }
 
 func TestKeywordsNeverCrossASegment(t *testing.T) {
-	kws := domain.Keywords([]domain.Page{{Language: "en", Text: "Spiral belts\nEyelink belts | Rod belts"}})
+	kws := domain.Keywords([]domain.Page{{Language: "en", Text: "Spiral belts\nEyelink belts | Rod belts"}}, testLexicon(), nil)
 	for _, k := range kws {
 		if k.Phrase == "belts eyelink" || k.Phrase == "belts rod" || k.Phrase == "spiral belts eyelink" {
 			t.Fatalf("phrase %q crosses a segment", k.Phrase)

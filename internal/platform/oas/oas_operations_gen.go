@@ -6,7 +6,9 @@ package oas
 type OperationName = string
 
 const (
+	AddCompetitorOperation   OperationName = "AddCompetitor"
 	GetAnalysisOperation     OperationName = "GetAnalysis"
+	GetCompetitorOperation   OperationName = "GetCompetitor"
 	ListAnalysesOperation    OperationName = "ListAnalyses"
 	ListCompetitorsOperation OperationName = "ListCompetitors"
 	SearchTermsOperation     OperationName = "SearchTerms"

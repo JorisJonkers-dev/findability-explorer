@@ -24,6 +24,7 @@ type Analysis struct {
 	CreatedBy       string
 	CreatedAt       time.Time
 	FinishedAt      pgtype.Timestamptz
+	CompetitorID    pgtype.Text
 }
 
 type AnalysisEquivalent struct {
@@ -43,12 +44,16 @@ type AnalysisEquivalentTerm struct {
 }
 
 type AnalysisKeyword struct {
-	AnalysisID uuid.UUID
-	Position   int64
-	Phrase     string
-	Language   string
-	Score      float64
-	Pages      int64
+	AnalysisID  uuid.UUID
+	Position    int64
+	Phrase      string
+	Language    string
+	Score       float64
+	Pages       int64
+	Tier        pgtype.Text
+	Family      pgtype.Text
+	ClosestTerm pgtype.Text
+	InMap       pgtype.Bool
 }
 
 type AnalysisKnownTerm struct {
@@ -70,4 +75,13 @@ type AnalysisPage struct {
 	Description string
 	Language    string
 	WordCount   int64
+}
+
+type Company struct {
+	ID         string
+	Name       string
+	WebsiteUrl string
+	Host       string
+	AddedBy    string
+	AddedAt    time.Time
 }

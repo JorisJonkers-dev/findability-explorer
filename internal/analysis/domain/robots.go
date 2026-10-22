@@ -11,13 +11,13 @@ type Robots struct {
 }
 
 type robotsRule struct {
-	allow  bool
-	prefix string
+	allow   bool
+	pattern string // the rule's path, with * for any run of characters and a final $ for the end
 }
 
 // ParseRobots reads robots.txt and keeps the group for agent, or the * group when no group names
-// agent. Agent matching ignores case, as the standard (RFC 9309) requires. Wildcards inside a rule
-// are not supported: such a rule is read up to its first *, which only ever blocks more.
+// agent. Agent matching ignores case, and rules may use * and a final $, as the standard
+// (RFC 9309) defines.
 func ParseRobots(body, agent string) Robots {
 	p := robotsParser{groups: map[string][]robotsRule{}}
 	for _, line := range strings.Split(body, "\n") {
@@ -54,27 +54,52 @@ func (p *robotsParser) line(line string) {
 		p.current = append(p.current, strings.ToLower(value))
 	case "allow", "disallow":
 		p.inRules = true
-		prefix, _, _ := strings.Cut(value, "*")
-		if prefix == "" && key == "disallow" {
-			return // an empty Disallow allows everything
+		if value == "" {
+			return // an empty rule matches nothing
 		}
 		for _, a := range p.current {
-			p.groups[a] = append(p.groups[a], robotsRule{allow: key == "allow", prefix: strings.TrimSuffix(prefix, "$")})
+			p.groups[a] = append(p.groups[a], robotsRule{allow: key == "allow", pattern: value})
 		}
 	}
 }
 
-// Allowed reports whether path may be fetched: the longest matching rule wins, and on a tie the
-// allow rule.
+// Allowed reports whether path (with its query, if any) may be fetched: the matching rule with the
+// longest pattern wins, and on a tie the allow rule.
 func (r Robots) Allowed(path string) bool {
 	best, allowed := -1, true
 	for _, rule := range r.rules {
-		if !strings.HasPrefix(path, rule.prefix) {
+		if !matches(rule.pattern, path) {
 			continue
 		}
-		if n := len(rule.prefix); n > best || (n == best && rule.allow) {
+		if n := len(rule.pattern); n > best || (n == best && rule.allow) {
 			best, allowed = n, rule.allow
 		}
 	}
 	return allowed
+}
+
+// matches reports whether path starts with pattern, where * matches any run of characters and a
+// final $ means the path ends there.
+func matches(pattern, path string) bool {
+	anchored := strings.HasSuffix(pattern, "$")
+	parts := strings.Split(strings.TrimSuffix(pattern, "$"), "*")
+	if !strings.HasPrefix(path, parts[0]) {
+		return false
+	}
+	rest := path[len(parts[0]):]
+	for _, part := range parts[1:] {
+		i := strings.Index(rest, part)
+		if i < 0 {
+			return false
+		}
+		rest = rest[i+len(part):]
+	}
+	if !anchored {
+		return true
+	}
+	if len(parts) == 1 {
+		return rest == ""
+	}
+	// With a wildcard before the anchor, the last part must end the path.
+	return strings.HasSuffix(path, parts[len(parts)-1])
 }

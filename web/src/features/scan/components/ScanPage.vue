@@ -14,7 +14,9 @@ const { scan, error } = useScan(id)
 
 // The overview's quick scan arrives as ?url=; the form starts it once, and a reload does not repeat it.
 const autostart = typeof route.query.url === 'string' ? route.query.url : null
-if (autostart !== null) void router.replace({ query: {} })
+// A company page's "Scan this website" arrives as ?competitor=, which fills in its website.
+const preselect = typeof route.query.competitor === 'string' ? route.query.competitor : null
+if (autostart !== null || preselect !== null) void router.replace({ query: {} })
 
 const current = computed(() =>
   scan.value ? { url: scan.value.summary.url, maxPages: scan.value.summary.maxPages } : null,
@@ -35,7 +37,7 @@ function started(next: string): void {
         Paste a website. The scan reads up to 30 of its pages and shows the search terms the site is built around, and
         which of them Tribelt does not use yet.
       </p>
-      <ScanForm :autostart="autostart" :current="current" @started="started" />
+      <ScanForm :autostart="autostart" :current="current" :preselect="preselect" @started="started" />
     </section>
 
     <template v-if="id !== ''">

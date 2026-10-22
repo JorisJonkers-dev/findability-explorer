@@ -39,7 +39,14 @@ const known = (name: string, occurrences: number, usedByTribelt = false): KnownT
   occurrences,
   usedByTribelt,
 })
-const keyword = (phrase: string, score: number, language = 'en'): Keyword => ({ phrase, language, score, pages: 1 })
+const keyword = (phrase: string, score: number, language = 'en'): Keyword => ({
+  phrase,
+  language,
+  score,
+  pages: 1,
+  tier: 'broad',
+  inMap: false,
+})
 
 describe('the scan form', () => {
   it('offers four page budgets, fifteen to start with', async () => {
@@ -101,6 +108,123 @@ describe('the scan form', () => {
   })
 })
 
+describe('the company picker', () => {
+  const input = (wrapper: VueWrapper) => wrapper.get('input[role="combobox"]')
+  const options = (wrapper: VueWrapper) => wrapper.findAll('[role="option"]').map((o) => o.get('span span').text())
+
+  async function type(wrapper: VueWrapper, text: string) {
+    await input(wrapper).setValue(text)
+    await input(wrapper).trigger('input')
+  }
+
+  const more = {
+    'GET /api/v1/competitors': () =>
+      json({
+        items: [
+          competitor('Twentebelt', { scans: 2 }),
+          competitor('Twente Wire', { websiteUrl: 'https://twentewire.nl/', host: 'twentewire.nl', website: 'https://twentewire.nl' }),
+        ],
+      }),
+  }
+
+  it('suggests known companies as you type, and picks one with the keyboard', async () => {
+    const { wrapper } = await mountApp(api(analysis(), more), '/scan')
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+    await type(wrapper, 'twente')
+    expect(input(wrapper).attributes('aria-expanded')).toBe('true')
+    expect(options(wrapper)).toEqual(['Twentebelt', 'Twente Wire'])
+    expect(wrapper.get('[role="listbox"]').text()).toContain('Scanned 2×')
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    expect(input(wrapper).attributes('aria-activedescendant')).toBe('scan-url-option-0')
+    await input(wrapper).trigger('keydown', { key: 'ArrowUp' })
+    await input(wrapper).trigger('keydown', { key: 'ArrowUp' })
+    expect(input(wrapper).attributes('aria-activedescendant')).toBe('scan-url-option-0')
+    await input(wrapper).trigger('keydown', { key: 'ArrowUp' })
+    expect(input(wrapper).attributes('aria-activedescendant')).toBe('scan-url-option-1')
+    await input(wrapper).trigger('keydown', { key: 'Enter' })
+    expect((input(wrapper).element as HTMLInputElement).value).toBe('https://twentewire.nl/')
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+    const known = wrapper.get('#scan-url-company')
+    expect(known.text()).toContain('Twente Wire, known competitor.')
+    expect(known.text()).toContain('Not scanned yet')
+    expect(known.get('a').attributes('href')).toBe('/competitors/twente-wire')
+  })
+
+  it('picks with the mouse, closes on Escape or leaving the field, and reopens with the arrows', async () => {
+    const { wrapper } = await mountApp(api(analysis(), more), '/scan')
+    await type(wrapper, 'twentebelt')
+    await input(wrapper).trigger('keydown', { key: 'Escape' })
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+    // Escape on a closed list, and Enter with nothing picked, leave the form alone.
+    await input(wrapper).trigger('keydown', { key: 'Escape' })
+    await input(wrapper).trigger('keydown', { key: 'Enter' })
+    await input(wrapper).trigger('keydown', { key: 'ArrowUp' })
+    expect(input(wrapper).attributes('aria-expanded')).toBe('true')
+    await input(wrapper).trigger('blur')
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    await wrapper.get('[role="option"]').trigger('mousedown')
+    expect((input(wrapper).element as HTMLInputElement).value).toBe('https://www.twentebelt.com/')
+  })
+
+  it('ignores the arrows when nothing matches', async () => {
+    const { wrapper } = await mountApp(api(analysis(), more), '/scan')
+    await type(wrapper, 'nothing like it')
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    await input(wrapper).trigger('keydown', { key: 'ArrowUp' })
+    await input(wrapper).trigger('keydown', { key: 'Tab' })
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(input(wrapper).attributes('aria-activedescendant')).toBeUndefined()
+  })
+
+  it('names a new company after its host, and sends the name typed', async () => {
+    let sent: unknown = null
+    const capture = {
+      ...more,
+      'POST /api/v1/analyses': async (request: Request) => {
+        sent = await request.json()
+        return json(analysis({}, { id: NEW_ID, status: 'queued' }), 202)
+      },
+    }
+    const { wrapper } = await mountApp(api(analysis(), capture), '/scan')
+    await type(wrapper, 'https://www.example-belts.de')
+    const name = wrapper.get('#scan-url-company input[type="text"]')
+    expect((name.element as HTMLInputElement).value).toBe('Example Belts')
+    expect(wrapper.get('#scan-url-company').text()).toContain('The scan adds it as a new competitor.')
+    await name.setValue('Example Belts GmbH')
+    await name.trigger('input')
+    // A name typed by hand stays when the address changes.
+    await type(wrapper, 'https://www.example-belts.com')
+    expect((name.element as HTMLInputElement).value).toBe('Example Belts GmbH')
+    await wrapper.get('form[aria-label="Scan a website"]').trigger('submit')
+    await settle()
+    expect(sent).toEqual({ url: 'https://www.example-belts.com', maxPages: 15, companyName: 'Example Belts GmbH' })
+  })
+
+  it("leaves the name out for a known company's scan", async () => {
+    let sent: unknown = null
+    const capture = {
+      'POST /api/v1/analyses': async (request: Request) => {
+        sent = await request.json()
+        return json(analysis({}, { id: NEW_ID, status: 'queued' }), 202)
+      },
+    }
+    const { wrapper } = await mountApp(api(analysis(), capture), '/scan')
+    await fillAndSubmit(wrapper, 'https://www.twentebelt.com/')
+    expect(sent).toEqual({ url: 'https://www.twentebelt.com/', maxPages: 15 })
+  })
+
+  it("fills in a company's website from ?competitor=, unless that company is unknown", async () => {
+    const { wrapper, router } = await mountApp(api(), '/scan?competitor=twentebelt')
+    expect(router.currentRoute.value.fullPath).toBe('/scan')
+    expect((input(wrapper).element as HTMLInputElement).value).toBe('https://www.twentebelt.com/')
+    const other = await mountApp(api(), '/scan?competitor=nobody')
+    expect((other.wrapper.findAll('input[role="combobox"]').at(-1)?.element as HTMLInputElement).value).toBe('')
+  })
+})
+
 describe('a finished scan', () => {
   it('heads the result with the site, the date and what was read', async () => {
     const { wrapper } = await mountApp(api(), `/scan/${ANALYSIS_ID}`)
@@ -149,11 +273,12 @@ describe('a finished scan', () => {
   it('lists the phrases, hiding single words until asked, in one language on request', async () => {
     const { wrapper } = await mountApp(api(), `/scan/${ANALYSIS_ID}`)
     const list = wrapper.get('section[aria-labelledby="phrase-title"]')
-    const phrases = () => list.findAll('li').map((li) => li.get('span').text())
+    const phrases = () => list.findAll('li').map((li) => li.get('span.break-words').text())
     expect(phrases()).toEqual(['metal conveyor belts', 'spiral belts'])
     expect(list.get('li div[aria-hidden] div').attributes('style')).toBe('width: 100%;')
     expect(list.text()).toContain('Single words are hidden.')
-    const toggle = list.get('button[aria-pressed]')
+    const toggle = list.findAll('button').filter((b) => b.text() === 'Show single words')[0]
+    if (!toggle) throw new Error('no single-words toggle')
     await toggle.trigger('click')
     expect(toggle.attributes('aria-pressed')).toBe('true')
     expect(list.text()).toContain('Single words are shown.')
@@ -162,6 +287,23 @@ describe('a finished scan', () => {
     expect(phrases()).toEqual(['förderbänder'])
     await toggle.trigger('click')
     expect(list.text()).toContain('No phrases to show.')
+  })
+
+  it('marks each phrase as in the map or new, and shows only the new terms on request', async () => {
+    const { wrapper } = await mountApp(api(), `/scan/${ANALYSIS_ID}`)
+    const list = wrapper.get('section[aria-labelledby="phrase-title"]')
+    const phrases = () => list.findAll('li').map((li) => li.get('span.break-words').text())
+    expect(list.text()).toContain('New terms are search phrases this site uses that are not in the terminology map yet.')
+    const badges = list.findAll('li').map((li) => li.findAll('span').at(-2)?.text())
+    expect(badges).toEqual(['In the map', 'New term'])
+    expect(list.findAll('li')[0]?.text()).toContain('Broad:')
+    const kinds = list.get('[role="group"][aria-label="Which phrases"]')
+    expect(kinds.findAll('button').map((b) => b.text())).toEqual(['All', 'New terms only', 'In the map'])
+    await kinds.findAll('button')[1]?.trigger('click')
+    expect(kinds.findAll('button')[1]?.attributes('aria-pressed')).toBe('true')
+    expect(phrases()).toEqual(['spiral belts'])
+    await kinds.findAll('button')[2]?.trigger('click')
+    expect(phrases()).toEqual(['metal conveyor belts'])
   })
 
   it('opens a long list of phrases on request, and has no language filter for one language', async () => {
@@ -210,7 +352,7 @@ describe('a finished scan', () => {
   })
 
   it('names the site by its host when it is no company in the map', async () => {
-    const { wrapper } = await mountApp(api(scanWith({}, { url: 'https://www.example.com/' })), `/scan/${ANALYSIS_ID}`)
+    const { wrapper } = await mountApp(api(scanWith({}, { url: 'https://www.example.com/', competitorId: undefined })), `/scan/${ANALYSIS_ID}`)
     expect(wrapper.text()).toContain('example.com uses these on its pages.')
     expect(wrapper.text()).toContain('example.com calls it')
   })

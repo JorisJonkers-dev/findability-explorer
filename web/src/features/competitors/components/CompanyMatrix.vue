@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { familyLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
+import { scanCountLabel } from '../domain/company'
 import { type MatrixRow, moreLabel } from '../domain/matrix'
 
 defineProps<{ rows: MatrixRow[]; label: string; caption: string }>()
@@ -26,10 +27,28 @@ defineProps<{ rows: MatrixRow[]; label: string; caption: string }>()
       <tbody>
         <tr v-for="row in rows" :key="row.key" class="border-t border-line align-top">
           <th scope="row" class="px-5 py-4 text-left font-semibold">
-            <RouterLink :to="{ path: '/terminology', query: { user: row.name } }" class="text-ink no-underline hover:text-straw-hover">
-              {{ row.name }}
-            </RouterLink>
+            <span class="flex items-start justify-between gap-2">
+              <RouterLink :to="`/competitors/${row.id}`" class="text-ink no-underline hover:text-straw-hover">
+                {{ row.name }}
+              </RouterLink>
+              <a
+                v-if="row.websiteUrl"
+                :href="row.websiteUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="-m-1 flex-none rounded p-1 text-muted hover:text-straw-hover"
+              >
+                <svg aria-hidden="true" viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <path d="M9 3h4v4M13 3 7 9M11 9.5V13H3V5h3.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="sr-only">Visit {{ row.name }}'s website (opens in a new tab)</span>
+              </a>
+            </span>
             <span class="block text-sm font-normal text-muted">{{ row.where }}</span>
+            <span class="mt-1.5 flex flex-wrap gap-1.5 text-[13px] font-normal">
+              <span v-if="row.added" class="rounded-full border border-straw/60 px-2 py-px text-straw">Added</span>
+              <span v-if="row.scans > 0" class="text-muted">{{ scanCountLabel(row.scans) }}</span>
+            </span>
           </th>
           <td v-for="cell in row.cells" :key="cell.family" class="px-5 py-4" :class="cell.first === null ? 'hatched' : 'text-ink'">
             <template v-if="cell.first !== null">

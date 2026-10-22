@@ -47,28 +47,30 @@ type Glossary func() []domain.GlossaryTerm
 
 // Service runs the analysis use cases.
 type Service struct {
-	repo     domain.Repository
-	crawler  domain.Crawler
-	matcher  domain.Matcher // nil when no language model is configured
-	glossary Glossary
-	now      func() time.Time
-	limits   Limits
-	queue    chan uuid.UUID
+	repo      domain.Repository
+	directory domain.Directory
+	crawler   domain.Crawler
+	matcher   domain.Matcher // nil when no language model is configured
+	glossary  Glossary
+	now       func() time.Time
+	limits    Limits
+	queue     chan uuid.UUID
 }
 
 // New returns a Service. matcher may be nil, which disables product matching.
-func New(repo domain.Repository, crawler domain.Crawler, matcher domain.Matcher, glossary Glossary,
-	now func() time.Time, limits Limits,
+func New(repo domain.Repository, directory domain.Directory, crawler domain.Crawler, matcher domain.Matcher,
+	glossary Glossary, now func() time.Time, limits Limits,
 ) *Service {
 	return &Service{
-		repo: repo, crawler: crawler, matcher: matcher, glossary: glossary, now: now, limits: limits,
+		repo: repo, directory: directory, crawler: crawler, matcher: matcher, glossary: glossary, now: now, limits: limits,
 		queue: make(chan uuid.UUID, max(limits.QueueSize, 1)),
 	}
 }
 
-// Start validates the request, checks the user's hourly limit, stores a queued analysis and puts
-// it on the queue.
-func (s *Service) Start(ctx context.Context, user, rawURL string, maxPages int) (domain.Analysis, error) {
+// Start validates the request, checks the user's hourly limit, names the company the website
+// belongs to (adding it under companyName when it is new), stores a queued analysis and puts it
+// on the queue.
+func (s *Service) Start(ctx context.Context, user, rawURL string, maxPages int, companyName string) (domain.Analysis, error) {
 	target, err := domain.NewTarget(rawURL)
 	if err != nil {
 		return domain.Analysis{}, err
@@ -85,8 +87,12 @@ func (s *Service) Start(ctx context.Context, user, rawURL string, maxPages int) 
 	if started >= s.limits.PerUserPerHour {
 		return domain.Analysis{}, ErrRateLimited
 	}
+	competitor, err := s.directory.Resolve(ctx, user, target.URL(), companyName)
+	if err != nil {
+		return domain.Analysis{}, fmt.Errorf("name the company: %w", err)
+	}
 	a := domain.Analysis{
-		ID: uuid.New(), URL: target.String(), MaxPages: pages, Status: domain.StatusQueued,
+		ID: uuid.New(), URL: target.String(), CompetitorID: competitor, MaxPages: pages, Status: domain.StatusQueued,
 		CreatedBy: user, CreatedAt: now, Matching: domain.MatchingPending,
 	}
 	if err := s.repo.Create(ctx, a); err != nil {
@@ -192,7 +198,9 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 		}
 		return s.fail(ctx, id, reason)
 	}
-	if err := s.repo.SaveFindings(ctx, id, domain.Keywords(pages), domain.FindKnownTerms(pages, s.glossary())); err != nil {
+	glossary := s.glossary()
+	keywords := domain.Keywords(pages, domain.NewLexicon(glossary), domain.BrandWords(target.URL().Hostname()))
+	if err := s.repo.SaveFindings(ctx, id, keywords, domain.FindKnownTerms(pages, glossary)); err != nil {
 		return fmt.Errorf("save findings: %w", err)
 	}
 	matching, eqs, usage := s.match(ctx, pages)

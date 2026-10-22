@@ -17,20 +17,6 @@ export function siteHost(url: string): string {
   }
 }
 
-/** A company the scanned site may belong to: its name for people, and its website. */
-export type KnownSite = { name: string; website: string }
-
-/**
- * Who the scanned site is, for sentences such as "Twentebelt uses these": the company from the
- * terminology map whose website is on the same host, or else the host itself.
- */
-export function siteName(url: string, sites: readonly KnownSite[]): string {
-  const host = siteHost(url)
-  // A website may carry a note after the address: "https://www.cambridge-es.com (blocked …)".
-  const site = sites.find((s) => siteHost(s.website.split(' ', 1).join('')) === host)
-  return site ? site.name : host
-}
-
 const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 const TIME = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 
@@ -116,10 +102,25 @@ export type Phrase = Keyword & {
   share: number
 }
 
+/** Which phrases to show by the map: all, only those it lacks, or only its own. */
+export type PhraseKind = 'all' | 'new' | 'inMap'
+
+export const PHRASE_KINDS: readonly { value: PhraseKind; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'new', label: 'New terms only' },
+  { value: 'inMap', label: 'In the map' },
+]
+
 export type PhraseFilter = {
   /** A language code, or '' for every language. */
   language: string
   singleWords: boolean
+  kind: PhraseKind
+}
+
+function ofKind(keyword: Keyword, kind: PhraseKind): boolean {
+  if (kind === 'all') return true
+  return kind === 'inMap' ? keyword.inMap : !keyword.inMap
 }
 
 /** The phrases to show, highest score first, each with its bar's length against the top score. */
@@ -127,6 +128,7 @@ export function phrases(keywords: readonly Keyword[], filter: PhraseFilter): Phr
   const shown = keywords
     .filter((k) => filter.language === '' || k.language === filter.language)
     .filter((k) => filter.singleWords || !isSingleWord(k.phrase))
+    .filter((k) => ofKind(k, filter.kind))
     .sort((a, b) => b.score - a.score)
   const top = shown[0]?.score ?? 0
   return shown.map((k) => ({ ...k, share: top > 0 ? k.score / top : 0 }))

@@ -11,17 +11,21 @@ import (
 )
 
 var (
-	rn3AllowedHeaders = map[string]string{
+	rn7AllowedHeaders = map[string]string{
 		"GET":  "X-User-Id",
 		"POST": "Content-Type,X-User-Id",
 	}
-	rn2AllowedHeaders = map[string]string{
+	rn4AllowedHeaders = map[string]string{
 		"GET": "X-User-Id",
 	}
-	rn5AllowedHeaders = map[string]string{
-		"GET": "X-User-Id",
+	rn1AllowedHeaders = map[string]string{
+		"GET":  "X-User-Id",
+		"POST": "Content-Type,X-User-Id",
 	}
 	rn6AllowedHeaders = map[string]string{
+		"GET": "X-User-Id",
+	}
+	rn8AllowedHeaders = map[string]string{
 		"GET": "X-User-Id",
 	}
 )
@@ -94,7 +98,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET,POST",
-							allowedHeaders: rn3AllowedHeaders,
+							allowedHeaders: rn7AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -130,7 +134,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn2AllowedHeaders,
+								allowedHeaders: rn4AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -150,20 +154,59 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if len(elem) == 0 {
-					// Leaf node.
 					switch r.Method {
 					case "GET":
 						s.handleListCompetitorsRequest([0]string{}, elemIsEscaped, w, r)
+					case "POST":
+						s.handleAddCompetitorRequest([0]string{}, elemIsEscaped, w, r)
 					default:
 						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET",
-							allowedHeaders: rn5AllowedHeaders,
-							acceptPost:     "",
+							allowedMethods: "GET,POST",
+							allowedHeaders: rn1AllowedHeaders,
+							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
 					}
 
 					return
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					// Param: "competitorId"
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
+						break
+					}
+					args[0] = elem
+					elem = ""
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetCompetitorRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET",
+								allowedHeaders: rn6AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
+					}
+
 				}
 
 			case 't': // Prefix: "terms"
@@ -182,7 +225,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn6AllowedHeaders,
+							allowedHeaders: rn8AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -369,12 +412,20 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				}
 
 				if len(elem) == 0 {
-					// Leaf node.
 					switch method {
 					case "GET":
 						r.name = ListCompetitorsOperation
-						r.summary = "List the companies in the terminology map"
+						r.summary = "List every known company"
 						r.operationID = "listCompetitors"
+						r.operationGroup = ""
+						r.pathPattern = "/api/v1/competitors"
+						r.args = args
+						r.count = 0
+						return r, true
+					case "POST":
+						r.name = AddCompetitorOperation
+						r.summary = "Add a company"
+						r.operationID = "addCompetitor"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/competitors"
 						r.args = args
@@ -383,6 +434,42 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					default:
 						return
 					}
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					// Param: "competitorId"
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
+						break
+					}
+					args[0] = elem
+					elem = ""
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "GET":
+							r.name = GetCompetitorOperation
+							r.summary = "Get one company with its scans"
+							r.operationID = "getCompetitor"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/competitors/{competitorId}"
+							r.args = args
+							r.count = 1
+							return r, true
+						default:
+							return
+						}
+					}
+
 				}
 
 			case 't': // Prefix: "terms"

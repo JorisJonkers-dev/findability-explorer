@@ -16,6 +16,9 @@ import (
 
 	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/research"
+	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
+	companiesdomain "github.com/JorisJonkers-dev/findability-explorer/internal/companies/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpapi"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/seed"
@@ -24,13 +27,37 @@ import (
 
 // analyses is a stand-in for the analysis use cases, so these tests exercise the contract.
 type analyses struct {
-	startErr error
-	listErr  error
-	user     string
-	stored   domain.Analysis
+	startErr    error
+	listErr     error
+	user        string
+	companyName string
+	stored      domain.Analysis
 }
 
-func (a *analyses) Start(ctx context.Context, user, rawURL string, maxPages int) (domain.Analysis, error) {
+// companyRepo is an in-memory store of added companies.
+type companyRepo struct{ added []companiesdomain.Company }
+
+func (r *companyRepo) List(context.Context) ([]companiesdomain.Company, error) { return r.added, nil }
+
+func (r *companyRepo) Add(_ context.Context, c companiesdomain.Company) error {
+	r.added = append(r.added, c)
+	return nil
+}
+
+// companyScans reports one scan of Twentebelt, or fails with err.
+type companyScans struct{ err error }
+
+func (s companyScans) Stats(context.Context) (map[string]companiesdomain.Stats, error) {
+	last := companiesdomain.Scan{ID: uuid.New(), URL: "https://www.twentebelt.com/", Status: "done", MaxPages: 5, PagesCrawled: 5, CreatedAt: time.Now(), FinishedAt: time.Now()}
+	return map[string]companiesdomain.Stats{"twentebelt": {Count: 1, Last: &last}}, s.err
+}
+
+func (s companyScans) ByCompany(context.Context, string, int) ([]companiesdomain.Scan, error) {
+	return []companiesdomain.Scan{{ID: uuid.New(), URL: "https://www.twentebelt.com/", Status: "failed", Failure: "No page could be fetched.", MaxPages: 5, CreatedAt: time.Now()}}, s.err
+}
+
+func (a *analyses) Start(ctx context.Context, user, rawURL string, maxPages int, companyName string) (domain.Analysis, error) {
+	a.companyName = companyName
 	a.user = httpx.Subject(ctx)
 	if a.startErr != nil {
 		return domain.Analysis{}, a.startErr
@@ -57,10 +84,13 @@ func (a *analyses) List(context.Context, int) ([]domain.Analysis, error) {
 
 func done() domain.Analysis {
 	return domain.Analysis{
-		ID: uuid.New(), URL: "https://www.twentebelt.com/", MaxPages: 5, Status: domain.StatusDone,
+		ID: uuid.New(), URL: "https://www.twentebelt.com/", CompetitorID: "twentebelt", MaxPages: 5, Status: domain.StatusDone,
 		PagesCrawled: 1, CreatedAt: time.Now().UTC(), FinishedAt: time.Now().UTC(), Matching: domain.MatchingDone,
-		Pages:    []domain.PageSummary{{URL: "https://www.twentebelt.com/", Title: "Twentebelt", Language: "en", WordCount: 100}},
-		Keywords: []domain.Keyword{{Phrase: "metal conveyor belts", Language: "en", Score: 12.5, Pages: 1}},
+		Pages: []domain.PageSummary{{URL: "https://www.twentebelt.com/", Title: "Twentebelt", Language: "en", WordCount: 100}},
+		Keywords: []domain.Keyword{
+			{Phrase: "metal conveyor belts", Language: "en", Score: 12.5, Pages: 1, Classification: domain.Classification{Tier: "broad", Family: "all", Closest: "metal conveyor belt(s)", InMap: true}},
+			{Phrase: "belt options", Language: "en", Score: 2, Pages: 1, Classification: domain.Classification{Tier: "broad"}},
+		},
 		KnownTerms: []domain.KnownTerm{{
 			GlossaryTerm: domain.GlossaryTerm{Text: "balanced weave belt", Language: "en", Family: "open_spiral", Tier: "product"},
 			Occurrences:  4,
@@ -78,8 +108,13 @@ func serve(t *testing.T, a *analyses) *httptest.Server {
 	if err != nil {
 		t.Fatal(err)
 	}
+	terminology := terminologyapp.New(catalogue)
+	companies := companiesapp.New(
+		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
+		&companyRepo{}, companyScans{}, time.Now,
+	)
 	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{
-		Terminology: terminologyapp.New(catalogue), Analysis: a,
+		Terminology: terminology, Analysis: a, Companies: companies,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -166,13 +201,82 @@ func TestListCompetitors(t *testing.T) {
 	if last["groupCompany"] != true {
 		t.Fatalf("group companies are not last: %v", last)
 	}
+	for _, item := range items {
+		c := item.(map[string]any)
+		if c["id"] != "twentebelt" {
+			continue
+		}
+		if c["websiteUrl"] != "https://www.twentebelt.com/" || c["host"] != "twentebelt.com" || c["source"] != "research" ||
+			c["scans"].(float64) != 1 || c["lastScan"].(map[string]any)["competitorId"] != "twentebelt" {
+			t.Fatalf("Twentebelt = %v", c)
+		}
+		return
+	}
+	t.Fatal("no Twentebelt")
+}
+
+func TestGetAndAddCompetitor(t *testing.T) {
+	srv := serve(t, &analyses{})
+	r := call(t, srv, http.MethodGet, "/api/v1/competitors/twentebelt", "", true)
+	scans, _ := r.body["scans"].([]any)
+	if r.code != http.StatusOK || r.body["competitor"].(map[string]any)["name"] != "Twentebelt" || len(scans) != 1 ||
+		scans[0].(map[string]any)["failure"] == nil {
+		t.Fatalf("get = %d %v", r.code, r.body)
+	}
+	if r := call(t, srv, http.MethodGet, "/api/v1/competitors/nobody", "", true); r.code != http.StatusNotFound {
+		t.Errorf("unknown company status %d", r.code)
+	}
+	if r := call(t, srv, http.MethodGet, "/api/v1/competitors/Not_An_Id", "", true); r.code != http.StatusBadRequest {
+		t.Errorf("bad id status %d", r.code)
+	}
+	added := call(t, srv, http.MethodPost, "/api/v1/competitors", `{"name":"Example Belts","url":"https://www.example-belts.com"}`, true)
+	if added.code != http.StatusCreated || added.body["id"] != "example-belts" || added.body["source"] != "added" || added.body["addedAt"] == nil {
+		t.Fatalf("add = %d %v", added.code, added.body)
+	}
+	for body, want := range map[string]int{
+		`{"name":"Copy","url":"https://twentebelt.com"}`: http.StatusConflict,
+		`{"name":"Local","url":"https://localhost/"}`:    http.StatusUnprocessableEntity,
+		`{"name":"   ","url":"https://fine.example/"}`:   http.StatusUnprocessableEntity,
+	} {
+		r := call(t, srv, http.MethodPost, "/api/v1/competitors", body, true)
+		if r.code != want || r.body["detail"] == nil {
+			t.Errorf("add %s: status %d, want %d (%v)", body, r.code, want, r.body)
+		}
+	}
+	list := call(t, srv, http.MethodGet, "/api/v1/competitors", "", true)
+	if items := list.body["items"].([]any); len(items) != 29 {
+		t.Errorf("after adding: %d companies", len(items))
+	}
+}
+
+func TestCompetitorsFailures(t *testing.T) {
+	catalogue, err := seed.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminology := terminologyapp.New(catalogue)
+	companies := companiesapp.New(
+		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
+		&companyRepo{}, companyScans{err: errors.New("database down")}, time.Now,
+	)
+	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{Terminology: terminology, Analysis: &analyses{}, Companies: companies})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+	for _, path := range []string{"/api/v1/competitors", "/api/v1/competitors/twentebelt"} {
+		if r := call(t, srv, http.MethodGet, path, "", true); r.code != http.StatusInternalServerError {
+			t.Errorf("%s with failing scans: status %d", path, r.code)
+		}
+	}
 }
 
 func TestStartAnalysis(t *testing.T) {
 	a := &analyses{}
 	srv := serve(t, a)
-	r := call(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://www.twentebelt.com","maxPages":3}`, true)
-	if r.code != http.StatusAccepted || a.user != "tester" {
+	r := call(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://www.twentebelt.com","maxPages":3,"companyName":"Twente"}`, true)
+	if r.code != http.StatusAccepted || a.user != "tester" || a.companyName != "Twente" {
 		t.Fatalf("status %d, user %q: %v", r.code, a.user, r.body)
 	}
 	summary := r.body["summary"].(map[string]any)
@@ -208,7 +312,11 @@ func TestGetAndListAnalyses(t *testing.T) {
 	if r.code != http.StatusOK {
 		t.Fatalf("status %d: %v", r.code, r.body)
 	}
-	for _, key := range []string{"pages", "keywords", "knownTerms", "equivalents"} {
+	if kws := r.body["keywords"].([]any); len(kws) != 2 || kws[0].(map[string]any)["closestTerm"] != "metal conveyor belt(s)" ||
+		kws[0].(map[string]any)["inMap"] != true || r.body["summary"].(map[string]any)["competitorId"] != "twentebelt" {
+		t.Errorf("keywords = %v", r.body["keywords"])
+	}
+	for _, key := range []string{"pages", "knownTerms", "equivalents"} {
 		if list, _ := r.body[key].([]any); len(list) != 1 {
 			t.Errorf("%s = %v", key, r.body[key])
 		}

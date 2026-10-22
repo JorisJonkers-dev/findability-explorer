@@ -12,7 +12,6 @@ import (
 // UseCases is what the adapter needs from the application layer.
 type UseCases interface {
 	Search(q domain.Query) domain.Result
-	Companies() []domain.Company
 }
 
 // Handler implements the terminology operations. Business rules stay in the use cases.
@@ -49,23 +48,6 @@ func (h *Handler) SearchTerms(_ context.Context, params oas.SearchTermsParams) (
 			Families:  toCounts(result.Facets.Families),
 		},
 	}, nil
-}
-
-// ListCompetitors implements listCompetitors.
-func (h *Handler) ListCompetitors(context.Context) (oas.ListCompetitorsRes, error) {
-	companies := h.uc.Companies()
-	items := make([]oas.Competitor, 0, len(companies))
-	for _, c := range companies {
-		names := make([]oas.BeltName, 0, len(c.BeltNames))
-		for _, b := range c.BeltNames {
-			names = append(names, oas.BeltName{Name: b.Name, Family: oas.BeltFamily(b.Family)})
-		}
-		items = append(items, oas.Competitor{
-			Name: c.Name, Country: c.Country, Website: c.Website, Languages: nonNil(c.Languages),
-			GroupCompany: c.GroupCompany, BeltNames: names, HomepageTitle: c.HomepageTitle,
-		})
-	}
-	return &oas.CompetitorList{Items: items}, nil
 }
 
 // ToTerm maps a domain term to the contract's; the analysis context reuses it for known terms.

@@ -1,14 +1,14 @@
 -- name: CreateAnalysis :exec
-INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_at)
-VALUES ($1, $2, $3, 'queued', 'pending', $4, $5);
+INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_at, competitor_id)
+VALUES ($1, $2, $3, 'queued', 'pending', $4, $5, $6);
 
 -- name: GetAnalysis :one
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
 FROM analyses
 WHERE analyses.id = $1;
 
 -- name: ListAnalyses :many
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
 FROM analyses
 ORDER BY created_at DESC, id
 LIMIT $1;
@@ -51,8 +51,8 @@ SET pages_crawled = pages_crawled + 1
 WHERE analyses.id = $1;
 
 -- name: AddAnalysisKeyword :exec
-INSERT INTO analysis_keywords (analysis_id, position, phrase, language, score, pages)
-VALUES ($1, $2, $3, $4, $5, $6);
+INSERT INTO analysis_keywords (analysis_id, position, phrase, language, score, pages, tier, family, closest_term, in_map)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
 
 -- name: AddAnalysisKnownTerm :exec
 INSERT INTO analysis_known_terms (analysis_id, position, term, language, family, tier, occurrences, used_by_tribelt)
@@ -88,7 +88,8 @@ WHERE analysis_id = $1
 ORDER BY position;
 
 -- name: ListAnalysisKeywords :many
-SELECT phrase, language, score, pages
+SELECT phrase, language, score, pages, coalesce(tier, 'broad')::text AS tier, coalesce(family, '')::text AS family,
+    coalesce(closest_term, '')::text AS closest_term, coalesce(in_map, false)::boolean AS in_map
 FROM analysis_keywords
 WHERE analysis_id = $1
 ORDER BY position;
@@ -110,3 +111,23 @@ SELECT equivalent_position, term, language
 FROM analysis_equivalent_terms
 WHERE analysis_id = $1
 ORDER BY equivalent_position, position;
+
+-- name: AnalysisStatsByCompetitor :many
+SELECT competitor_id::text AS competitor_id, count(*)::bigint AS scans
+FROM analyses
+WHERE competitor_id IS NOT NULL
+GROUP BY competitor_id;
+
+-- name: LatestAnalysisPerCompetitor :many
+SELECT DISTINCT ON (competitor_id) competitor_id::text AS competitor_id, id, url, max_pages, status,
+    failure, pages_crawled, matching, created_by, created_at, finished_at
+FROM analyses
+WHERE competitor_id IS NOT NULL
+ORDER BY competitor_id, created_at DESC, id;
+
+-- name: ListAnalysesByCompetitor :many
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
+FROM analyses
+WHERE competitor_id = $1
+ORDER BY created_at DESC, id
+LIMIT $2;

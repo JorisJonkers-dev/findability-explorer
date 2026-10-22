@@ -13,12 +13,31 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// AddCompetitor implements addCompetitor operation.
+//
+// Adds a company by its name and website. A website whose host a known company already has is refused
+// with 409, naming that company.
+//
+// POST /api/v1/competitors
+func (UnimplementedHandler) AddCompetitor(ctx context.Context, req *NewCompetitor) (r AddCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAnalysis implements getAnalysis operation.
 //
 // Returns the analysis, its progress, and every result found so far.
 //
 // GET /api/v1/analyses/{analysisId}
 func (UnimplementedHandler) GetAnalysis(ctx context.Context, params GetAnalysisParams) (r GetAnalysisRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetCompetitor implements getCompetitor operation.
+//
+// Returns the company and its most recent scans, newest first.
+//
+// GET /api/v1/competitors/{competitorId}
+func (UnimplementedHandler) GetCompetitor(ctx context.Context, params GetCompetitorParams) (r GetCompetitorRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -33,7 +52,8 @@ func (UnimplementedHandler) ListAnalyses(ctx context.Context, params ListAnalyse
 
 // ListCompetitors implements listCompetitors operation.
 //
-// Returns every competitor and group company studied, with its names for each belt family.
+// Returns every company the research studied and every company added since, with its names for each
+// belt family and how often its website was scanned.
 //
 // GET /api/v1/competitors
 func (UnimplementedHandler) ListCompetitors(ctx context.Context) (r ListCompetitorsRes, _ error) {

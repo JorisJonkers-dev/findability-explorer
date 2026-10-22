@@ -12,14 +12,21 @@ import {
   phrases,
   readSummary,
   scannedAt,
+  PHRASE_KINDS,
   scoreLabel,
   siteHost,
-  siteName,
   spectrum,
   wordsLabel,
 } from './results'
 
-const keyword = (phrase: string, language: string, score: number): Keyword => ({ phrase, language, score, pages: 1 })
+const keyword = (phrase: string, language: string, score: number, inMap = false): Keyword => ({
+  phrase,
+  language,
+  score,
+  pages: 1,
+  tier: 'broad',
+  inMap,
+})
 const known = (term: string, tier: KnownTerm['tier'], occurrences: number, usedByTribelt = false): KnownTerm => ({
   term,
   language: 'en',
@@ -29,20 +36,10 @@ const known = (term: string, tier: KnownTerm['tier'], occurrences: number, usedB
   usedByTribelt,
 })
 
-describe('siteHost and siteName', () => {
+describe('siteHost', () => {
   it('shows the host without www., and anything else as it is', () => {
     expect(siteHost('https://www.twentebelt.com/conveyor-belts/')).toBe('twentebelt.com')
     expect(siteHost('not an address')).toBe('not an address')
-  })
-
-  it("names the site after the company whose website it is, or else its host", () => {
-    const sites = [
-      { name: 'Cambridge', website: 'https://www.cambridge-es.com (blocked by Cloudflare 403)' },
-      { name: 'Twentebelt', website: 'https://www.twentebelt.com' },
-    ]
-    expect(siteName('https://twentebelt.com/conveyor-belts/', sites)).toBe('Twentebelt')
-    expect(siteName('https://www.cambridge-es.com/', sites)).toBe('Cambridge')
-    expect(siteName('https://www.example.com/', sites)).toBe('example.com')
   })
 })
 
@@ -121,7 +118,7 @@ describe('the phrases', () => {
   })
 
   it('hides single words, sorts by score, and measures each bar against the top one', () => {
-    const shown = phrases(keywords, { language: '', singleWords: false })
+    const shown = phrases(keywords, { language: '', singleWords: false, kind: 'all' })
     expect(shown.map((p) => [p.phrase, p.share])).toEqual([
       ['metal conveyor belts', 1],
       ['conveyor belts', 540 / 548.2],
@@ -130,13 +127,22 @@ describe('the phrases', () => {
   })
 
   it('shows single words on request, and one language', () => {
-    expect(phrases(keywords, { language: 'en', singleWords: true }).map((p) => p.phrase)).toEqual([
+    expect(phrases(keywords, { language: 'en', singleWords: true, kind: 'all' }).map((p) => p.phrase)).toEqual([
       'belts',
       'metal conveyor belts',
       'conveyor belts',
     ])
-    expect(phrases(keywords, { language: 'nl', singleWords: true })).toEqual([])
-    expect(phrases([keyword('zero score', 'en', 0)], { language: '', singleWords: false })[0]?.share).toBe(0)
+    expect(phrases(keywords, { language: 'nl', singleWords: true, kind: 'all' })).toEqual([])
+    expect(phrases([keyword('zero score', 'en', 0)], { language: '', singleWords: false, kind: 'all' })[0]?.share).toBe(0)
+  })
+
+  it('shows only the new terms, or only the map\'s own, on request', () => {
+    const mixed = [keyword('spiral belts', 'en', 10), keyword('metal conveyor belts', 'en', 20, true)]
+    expect(phrases(mixed, { language: '', singleWords: false, kind: 'new' }).map((p) => p.phrase)).toEqual(['spiral belts'])
+    expect(phrases(mixed, { language: '', singleWords: false, kind: 'inMap' }).map((p) => p.phrase)).toEqual([
+      'metal conveyor belts',
+    ])
+    expect(PHRASE_KINDS.map((k) => k.label)).toEqual(['All', 'New terms only', 'In the map'])
   })
 
   it('shows a score in whole points', () => {

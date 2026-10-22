@@ -31,12 +31,14 @@ type PageSummary struct {
 	WordCount   int
 }
 
-// Keyword is a phrase a site emphasises, scored by where and how often it appears.
+// Keyword is a phrase about metal belts that a site emphasises, scored by where and how often it
+// appears, and classified by the terminology map term closest to it.
 type Keyword struct {
 	Phrase   string
 	Language string
 	Score    float64
 	Pages    int
+	Classification
 }
 
 // GlossaryTerm is a term from the terminology map, as the analysis context receives it.
@@ -174,13 +176,18 @@ func Segments(text string) []string {
 }
 
 // phrases returns every 1- to 3-word phrase of tokens that neither starts nor ends with a
-// stopword or a bare number, and is not a single word shorter than three letters.
+// stopword, filler word or bare number, has no stopword inside except "and" in some language,
+// and is not a single word shorter than three letters.
 func phrases(tokens []string) []string {
 	var out []string
 	for i := range tokens {
 		for n := 1; n <= maxNgram && i+n <= len(tokens); n++ {
 			first, last := tokens[i], tokens[i+n-1]
-			if isNoise(first) || isNoise(last) || (n == 1 && len([]rune(first)) < 3) {
+			typeNumber := n > 1 && isTypeWord(tokens[i+n-2]) && isNumber(last)
+			if isNoise(first) || (isNoise(last) && !typeNumber) || (n == 1 && len([]rune(first)) < 3) {
+				continue
+			}
+			if n == maxNgram && isStopword(tokens[i+1]) && !isConjunction(tokens[i+1]) {
 				continue
 			}
 			out = append(out, strings.Join(tokens[i:i+n], " "))
@@ -189,8 +196,31 @@ func phrases(tokens []string) []string {
 	return out
 }
 
+// isTypeWord reports whether tok introduces a maker's type number: "Typ 400", "Group 800".
+func isTypeWord(tok string) bool {
+	switch tok {
+	case "typ", "type", "group", "gruppe", "serie", "series":
+		return true
+	default:
+		return false
+	}
+}
+
+func isNumber(tok string) bool {
+	return tok != "" && strings.IndexFunc(tok, func(r rune) bool { return !unicode.IsDigit(r) }) < 0
+}
+
+func isConjunction(tok string) bool {
+	switch tok {
+	case "and", "und", "en", "et", "e", "y", "i", "och":
+		return true
+	default:
+		return false
+	}
+}
+
 func isNoise(tok string) bool {
-	if isStopword(tok) {
+	if _, filler := fillerWords[tok]; filler || isStopword(tok) {
 		return true
 	}
 	return strings.IndexFunc(tok, unicode.IsLetter) < 0 && !strings.Contains(tok, ".")
@@ -205,17 +235,25 @@ func isStopword(tok string) bool {
 	return false
 }
 
+type pageHit struct {
+	score    float64
+	bodyOnly bool // the phrase appears on the page only in body text
+}
+
 // pageScores sums, per phrase of one page, the weight of each field it appears in, counting a
 // phrase at most maxCountPerField times per field.
-func pageScores(p Page) map[string]float64 {
-	scores := map[string]float64{}
+func pageScores(p Page) map[string]pageHit {
+	hits := map[string]pageHit{}
 	add := func(text string, weight float64) {
 		counts := map[string]int{}
 		for _, segment := range Segments(text) {
 			for _, ph := range phrases(Tokens(segment)) {
 				if counts[ph] < maxCountPerField {
 					counts[ph]++
-					scores[ph] += weight
+					h, seen := hits[ph]
+					h.score += weight
+					h.bodyOnly = (!seen || h.bodyOnly) && weight == weightBody
+					hits[ph] = h
 				}
 			}
 		}
@@ -226,45 +264,125 @@ func pageScores(p Page) map[string]float64 {
 		add(h, weightHeading)
 	}
 	add(p.Text, weightBody)
-	return scores
+	return hits
 }
-
-type keywordKey struct{ phrase, language string }
 
 type keywordTally struct {
-	score float64
-	pages int
+	score     float64
+	pages     int
+	bodyOnly  int            // pages where the phrase is only in body text
+	languages map[string]int // pages per language the phrase is on
 }
 
-// Keywords returns the most prominent phrases across pages, highest score first. A phrase scores
-// its field weight for each time it appears in a field (up to maxCountPerField), longer phrases
-// count more, and a phrase found on more pages counts more.
-func Keywords(pages []Page) []Keyword {
-	tally := map[keywordKey]*keywordTally{}
-	for _, p := range pages {
-		lang := PageLanguage(p)
-		for ph, s := range pageScores(p) {
-			k := keywordKey{phrase: ph, language: lang}
-			t, ok := tally[k]
-			if !ok {
-				t = &keywordTally{}
-				tally[k] = t
-			}
-			t.score += s
-			t.pages++
+// language is the language of most of the phrase's pages, the first in order on a tie.
+func (t *keywordTally) language() string {
+	best, n := "", 0
+	for lang, c := range t.languages {
+		if c > n || (c == n && lang < best) {
+			best, n = lang, c
 		}
 	}
+	return best
+}
+
+// Boilerplate thresholds: a phrase in body text only, on at least this share of at least this many
+// pages, is the site's menu or footer, not what a page is about.
+const (
+	boilerplateShare    = 0.8
+	boilerplateMinPages = 4
+)
+
+// Keywords returns the phrases about metal belts that the pages emphasise, highest score first.
+// A phrase scores its field weight for each time it appears in a field (up to maxCountPerField),
+// longer phrases count more, and a phrase found on more pages counts more. Phrases without a word
+// of the lexicon, phrases that name only the site (brand), and menu and footer text are left out.
+func Keywords(pages []Page, lex Lexicon, brand []string) []Keyword {
+	tally := tallyPages(pages)
+	brandOnly := slices.DeleteFunc(slices.Clone(brand), func(w string) bool { return lex.Relevant([]string{w}) })
 	out := make([]Keyword, 0, len(tally))
-	for k, t := range tally {
-		words := float64(strings.Count(k.phrase, " ") + 1)
-		score := t.score * (1 + 0.5*(words-1)) * (1 + math.Log(float64(t.pages)))
-		out = append(out, Keyword{Phrase: k.phrase, Language: k.language, Score: math.Round(score*10) / 10, Pages: t.pages})
+	for phrase, t := range tally {
+		words := strings.Fields(fold.Fold(phrase))
+		if !keepPhrase(words, lex, brandOnly) || t.boilerplate(len(pages)) {
+			continue
+		}
+		lang := t.language()
+		n := float64(len(words))
+		score := t.score * (1 + 0.5*(n-1)) * (1 + math.Log(float64(t.pages)))
+		out = append(out, Keyword{
+			Phrase: phrase, Language: lang, Score: math.Round(score*10) / 10, Pages: t.pages,
+			Classification: lex.Classify(words, lang),
+		})
 	}
+	out = withoutFragments(out)
 	slices.SortFunc(out, func(a, b Keyword) int {
 		return cmp.Or(cmp.Compare(b.Score, a.Score), strings.Compare(a.Phrase, b.Phrase), strings.Compare(a.Language, b.Language))
 	})
 	return out[:min(len(out), MaxKeywords)]
 }
+
+// tallyPages adds up each phrase's score, pages and languages across the pages.
+func tallyPages(pages []Page) map[string]*keywordTally {
+	tally := map[string]*keywordTally{}
+	for _, p := range pages {
+		lang := PageLanguage(p)
+		for ph, h := range pageScores(p) {
+			t, ok := tally[ph]
+			if !ok {
+				t = &keywordTally{languages: map[string]int{}}
+				tally[ph] = t
+			}
+			t.score += h.score
+			t.pages++
+			t.languages[lang]++
+			if h.bodyOnly {
+				t.bodyOnly++
+			}
+		}
+	}
+	return tally
+}
+
+// keepPhrase says whether a phrase's folded words make a search phrase about belts: mostly belt
+// vocabulary, no brand word, more than a type number, and an "and" only between belt words.
+func keepPhrase(words []string, lex Lexicon, brandOnly []string) bool {
+	if !lex.Relevant(words) || slices.ContainsFunc(words, func(w string) bool { return slices.Contains(brandOnly, w) }) {
+		return false
+	}
+	if !slices.ContainsFunc(words, func(w string) bool { return !isTypeWord(w) && !isNumber(w) }) {
+		return false // "typ 400" alone: a number without the belt it numbers
+	}
+	if len(words) == maxNgram && isConjunction(words[1]) &&
+		(!lex.Relevant(words[:1]) || !lex.Relevant(words[2:])) {
+		return false // "links en rechts": an "and" between words that are not both about belts
+	}
+	return true
+}
+
+// boilerplate says whether a phrase is menu or footer text: only in body text, on most of a
+// site's pages, once the site has enough pages to tell.
+func (t *keywordTally) boilerplate(sitePages int) bool {
+	return sitePages >= boilerplateMinPages && t.bodyOnly == t.pages &&
+		float64(t.pages) >= boilerplateShare*float64(sitePages)
+}
+
+// withoutFragments drops a phrase that is mostly a part of a longer one: "metal conveyor" when
+// "metal conveyor belts" is on nearly as many pages with at least half its score. The longer phrase
+// is the search; the fragment only repeats it.
+func withoutFragments(kws []Keyword) []Keyword {
+	return slices.DeleteFunc(slices.Clone(kws), func(k Keyword) bool {
+		for _, longer := range kws {
+			if longer.Language == k.Language && len(longer.Phrase) > len(k.Phrase) &&
+				strings.Contains(" "+longer.Phrase+" ", " "+k.Phrase+" ") &&
+				float64(longer.Pages) >= fragmentShare*float64(k.Pages) && longer.Score >= 0.5*k.Score {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+// fragmentShare is how many of a fragment's pages the longer phrase must also be on.
+const fragmentShare = 0.8
 
 // FindKnownTerms counts how often each glossary term appears, as whole words after folding,
 // across the titles, descriptions, headings and text of pages. A term written as alternatives

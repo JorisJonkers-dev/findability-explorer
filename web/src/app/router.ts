@@ -31,6 +31,13 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         component: () => import('../features/competitors/components/CompetitorsPage.vue'),
         meta: { title: 'Competitors' },
       },
+      {
+        path: '/competitors/:id',
+        name: 'company',
+        component: () => import('../features/competitors/components/CompanyPage.vue'),
+        props: true,
+        meta: { title: 'Competitor' },
+      },
       // The first version's addresses, which links and bookmarks may still carry.
       { path: '/keywords', redirect: (to) => ({ path: '/terminology', query: to.query }) },
       { path: '/analyses', redirect: (to) => ({ path: '/scan', query: to.query }) },

@@ -18,7 +18,7 @@ import (
 
 // UseCases is what the adapter needs from the application layer.
 type UseCases interface {
-	Start(ctx context.Context, user, rawURL string, maxPages int) (domain.Analysis, error)
+	Start(ctx context.Context, user, rawURL string, maxPages int, companyName string) (domain.Analysis, error)
 	Get(ctx context.Context, id uuid.UUID) (domain.Analysis, error)
 	List(ctx context.Context, limit int) ([]domain.Analysis, error)
 }
@@ -35,7 +35,7 @@ func New(uc UseCases) *Handler {
 
 // StartAnalysis implements startAnalysis.
 func (h *Handler) StartAnalysis(ctx context.Context, req *oas.NewAnalysis) (oas.StartAnalysisRes, error) {
-	a, err := h.uc.Start(ctx, httpx.Subject(ctx), req.URL.String(), int(req.MaxPages.Or(0)))
+	a, err := h.uc.Start(ctx, httpx.Subject(ctx), req.URL.String(), int(req.MaxPages.Or(0)), req.CompanyName.Or(""))
 	switch {
 	case errors.Is(err, domain.ErrInvalidTarget):
 		return &oas.StartAnalysisUnprocessableEntity{
@@ -95,6 +95,9 @@ func capitalise(s string) string {
 	return string(s[0]-'a'+'A') + s[1:] + "."
 }
 
+// ToSummary maps an analysis to the contract's summary; the companies context reuses it.
+func ToSummary(a domain.Analysis) oas.AnalysisSummary { return toSummary(a) }
+
 func toSummary(a domain.Analysis) oas.AnalysisSummary {
 	s := oas.AnalysisSummary{
 		ID: a.ID, URL: a.URL, Status: oas.AnalysisStatus(a.Status),
@@ -103,6 +106,9 @@ func toSummary(a domain.Analysis) oas.AnalysisSummary {
 	}
 	if a.Failure != "" {
 		s.Failure = oas.NewOptString(a.Failure)
+	}
+	if a.CompetitorID != "" {
+		s.CompetitorId = oas.NewOptCompetitorId(oas.CompetitorId(a.CompetitorID))
 	}
 	if !a.FinishedAt.Equal(time.Time{}) {
 		s.FinishedAt = oas.NewOptDateTime(a.FinishedAt)
@@ -120,9 +126,17 @@ func toAnalysis(a domain.Analysis) oas.Analysis {
 	}
 	keywords := make([]oas.Keyword, 0, len(a.Keywords))
 	for _, k := range a.Keywords {
-		keywords = append(keywords, oas.Keyword{
+		kw := oas.Keyword{
 			Phrase: k.Phrase, Language: k.Language, Score: k.Score, Pages: int32(k.Pages), //nolint:gosec // at most 30
-		})
+			Tier: oas.IntentTier(k.Tier), InMap: k.InMap,
+		}
+		if k.Family != "" {
+			kw.Family = oas.NewOptBeltFamily(oas.BeltFamily(k.Family))
+		}
+		if k.Closest != "" {
+			kw.ClosestTerm = oas.NewOptString(k.Closest)
+		}
+		keywords = append(keywords, kw)
 	}
 	known := make([]oas.KnownTerm, 0, len(a.KnownTerms))
 	for _, k := range a.KnownTerms {

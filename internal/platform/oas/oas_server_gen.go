@@ -8,12 +8,25 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// AddCompetitor implements addCompetitor operation.
+	//
+	// Adds a company by its name and website. A website whose host a known company already has is refused
+	// with 409, naming that company.
+	//
+	// POST /api/v1/competitors
+	AddCompetitor(ctx context.Context, req *NewCompetitor) (AddCompetitorRes, error)
 	// GetAnalysis implements getAnalysis operation.
 	//
 	// Returns the analysis, its progress, and every result found so far.
 	//
 	// GET /api/v1/analyses/{analysisId}
 	GetAnalysis(ctx context.Context, params GetAnalysisParams) (GetAnalysisRes, error)
+	// GetCompetitor implements getCompetitor operation.
+	//
+	// Returns the company and its most recent scans, newest first.
+	//
+	// GET /api/v1/competitors/{competitorId}
+	GetCompetitor(ctx context.Context, params GetCompetitorParams) (GetCompetitorRes, error)
 	// ListAnalyses implements listAnalyses operation.
 	//
 	// Returns at most `limit` analyses, newest first, without their results.
@@ -22,7 +35,8 @@ type Handler interface {
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
 	// ListCompetitors implements listCompetitors operation.
 	//
-	// Returns every competitor and group company studied, with its names for each belt family.
+	// Returns every company the research studied and every company added since, with its names for each
+	// belt family and how often its website was scanned.
 	//
 	// GET /api/v1/competitors
 	ListCompetitors(ctx context.Context) (ListCompetitorsRes, error)

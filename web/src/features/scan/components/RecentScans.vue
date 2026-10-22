@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
+import { useCompanies } from '../../competitors/composables/useCompanies'
+import { scanCompany } from '../../competitors/domain/company'
 import { useRecentScans } from '../composables/useRecentScans'
 import { recentLabel } from '../domain/recent'
-import { siteHost } from '../domain/results'
 
 const route = useRoute()
 const { scans, isLoading, error } = useRecentScans()
+const { companies } = useCompanies()
+
+/** Who a scan is of: the company's name, or the host when it is no known company. */
+function who(scan: { url: string; competitorId?: string }): string {
+  return scanCompany(scan, companies.value).name
+}
 
 function isCurrent(id: string): boolean {
   return route.path === `/scan/${id}`
@@ -26,7 +33,7 @@ function isCurrent(id: string): boolean {
           class="flex justify-between gap-2 rounded-md px-3 py-1.5 text-sm no-underline"
           :class="isCurrent(scan.id) ? 'bg-raised text-ink' : 'text-ink-2 hover:text-ink'"
         >
-          <span class="min-w-0 truncate">{{ siteHost(scan.url) }}</span>
+          <span class="min-w-0 truncate">{{ who(scan) }}</span>
           <span class="flex-none text-muted">{{ recentLabel(scan) }}</span>
         </RouterLink>
       </li>
@@ -37,7 +44,7 @@ function isCurrent(id: string): boolean {
     <ul class="m-0 mt-2 flex list-none flex-wrap gap-x-4 gap-y-1 p-0">
       <li v-for="scan in scans" :key="scan.id">
         <RouterLink :to="`/scan/${scan.id}`" :aria-current="isCurrent(scan.id) ? 'page' : undefined" class="text-sm">
-          {{ siteHost(scan.url) }} <span class="text-muted">{{ recentLabel(scan) }}</span>
+          {{ who(scan) }} <span class="text-muted">{{ recentLabel(scan) }}</span>
         </RouterLink>
       </li>
     </ul>

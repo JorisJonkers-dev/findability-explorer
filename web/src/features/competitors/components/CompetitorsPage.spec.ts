@@ -44,7 +44,7 @@ describe('the competitors page', () => {
       'Other belts',
     ])
     const rows = table.findAll('tbody tr')
-    expect(rows.map((r) => r.get('th a').text())).toEqual(['Märtens', 'Twentebelt'])
+    expect(rows.map((r) => r.get('th a[href^="/"]').text())).toEqual(['Märtens', 'Twentebelt'])
     expect(rows[0]?.get('th').text()).toContain('Germany, 2 languages')
     const cells = rows[1]?.findAll('td') ?? []
     expect(cells[3]?.text()).toBe('TwenteFlex spiral belts and 1 more')
@@ -53,27 +53,41 @@ describe('the competitors page', () => {
     expect(rows[0]?.findAll('td')[4]?.text()).toBe('Drahtgeflechtband and 2 more')
   })
 
-  it('links each company to the terms it is credited with', async () => {
+  it("links each company to its page and to its website", async () => {
     const { wrapper, router } = await mountApp(api, '/competitors')
-    const link = wrapper.get('tbody th a')
-    expect(link.attributes('href')).toBe('/terminology?user=M%C3%A4rtens')
+    const row = wrapper.get('tbody tr')
+    const visit = row.get('a[target="_blank"]')
+    expect(visit.attributes('href')).toBe('https://www.twentebelt.com/')
+    expect(visit.attributes('rel')).toBe('noopener noreferrer')
+    expect(visit.text()).toBe("Visit Märtens's website (opens in a new tab)")
+    const link = row.get('th a[href^="/"]')
+    expect(link.attributes('href')).toBe('/competitors/martens-transportbander-gmbh-martens')
     await link.trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/terminology?user=M%C3%A4rtens')
+    expect(router.currentRoute.value.name).toBe('company')
+  })
+
+  it('marks an added company and says how often a company was scanned', async () => {
+    const more = [...companies, competitor('Example Belts', { source: 'added', scans: 3, websiteUrl: undefined })]
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/competitors': () => json({ items: more }) }), '/competitors')
+    const row = wrapper.findAll('[aria-label="Competitors"] tbody tr').at(-1)
+    expect(row?.get('th').text()).toContain('Added')
+    expect(row?.get('th').text()).toContain('Scanned 3×')
+    expect(row?.find('a[target="_blank"]').exists()).toBe(false)
   })
 
   it("lists Tribelt's own group apart, below the competitors", async () => {
     const { wrapper } = await mountApp(api, '/competitors')
     expect(wrapper.text()).toContain("Lesjöfors belong to Tribelt's own group and are listed apart, below the competitors.")
     const group = wrapper.get('section[aria-labelledby="group-title"]')
-    expect(group.findAll('tbody th a').map((a) => a.text())).toEqual(['Lesjöfors', 'Tribelt'])
+    expect(group.findAll('tbody th a[href^="/"]').map((a) => a.text())).toEqual(['Lesjöfors', 'Tribelt'])
   })
 
   it('finds a company by name or country', async () => {
     const { wrapper } = await mountApp(api, '/competitors')
     const input = wrapper.get('input[type="search"]')
     await input.setValue('netherlands')
-    expect(wrapper.findAll('[aria-label="Competitors"] tbody th a').map((a) => a.text())).toEqual(['Twentebelt'])
+    expect(wrapper.findAll('[aria-label="Competitors"] tbody th a[href^="/"]').map((a) => a.text())).toEqual(['Twentebelt'])
     expect(wrapper.text()).toContain('1 of 2 competitors')
     expect(wrapper.get('section[aria-labelledby="group-title"]').findAll('tbody tr')).toHaveLength(1)
     await input.setValue('nowhere')

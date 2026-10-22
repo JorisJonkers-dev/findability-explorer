@@ -57,3 +57,24 @@ func TestEmptyRobotsAllowsEverything(t *testing.T) {
 		t.Fatal("on a tie the allow rule wins")
 	}
 }
+
+func TestRobotsWildcards(t *testing.T) {
+	r := domain.ParseRobots("User-agent: *\nDisallow: /*cHash\nDisallow: /*.pdf$\nDisallow: /a*b*c$\nDisallow: /exact$\n", "x")
+	cases := map[string]bool{
+		"/":                    true,
+		"/de/produkte":         true,
+		"/page?cHash=12":       false,
+		"/files/brochure.pdf":  false,
+		"/files/brochure.pdfx": true,
+		"/a-b-c":               false,
+		"/a-b-cd":              true,
+		"/a-b":                 true,
+		"/exact":               false,
+		"/exactly":             true,
+	}
+	for path, want := range cases {
+		if got := r.Allowed(path); got != want {
+			t.Errorf("Allowed(%q) = %v, want %v", path, got, want)
+		}
+	}
+}

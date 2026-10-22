@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef } from 'vue'
 import type { Analysis } from '../../../infrastructure/api/types.gen'
-import { useCompetitors } from '../../competitors/composables/useCompetitors'
-import { creditedCompanies, shortName } from '../../competitors/domain/matrix'
-import { useTermMap } from '../../terminology/composables/useTermSearch'
-import { pagePath, pagesReadTitle, readSummary, scannedAt, siteHost, siteName, wordsLabel } from '../domain/results'
+import { RouterLink } from 'vue-router'
+import { useCompanies } from '../../competitors/composables/useCompanies'
+import { scanCompany } from '../../competitors/domain/company'
+import { pagePath, pagesReadTitle, readSummary, scannedAt, siteHost, wordsLabel } from '../domain/results'
 import { isInProgress } from '../domain/status'
 import EquivalentsTable from './EquivalentsTable.vue'
 import MissingTerms from './MissingTerms.vue'
@@ -13,18 +13,12 @@ import ScanProgress from './ScanProgress.vue'
 import TemperSpectrum from './TemperSpectrum.vue'
 
 const props = defineProps<{ scan: Analysis }>()
-const { competitors } = useCompetitors()
-const map = useTermMap()
+const { companies } = useCompanies()
 
 const summary = computed(() => props.scan.summary)
 const host = computed(() => siteHost(summary.value.url))
-const site = computed(() => {
-  const users = creditedCompanies(map.terms.value)
-  return siteName(
-    summary.value.url,
-    competitors.value.map((c) => ({ name: shortName(c.name, users), website: c.website })),
-  )
-})
+const who = computed(() => scanCompany(summary.value, companies.value))
+const site = computed(() => who.value.name)
 const inProgress = computed(() => isInProgress(summary.value.status))
 const when = computed(() =>
   inProgress.value
@@ -51,6 +45,14 @@ async function openPages(): Promise<void> {
           {{ host }}
         </h2>
         <p class="m-0 text-muted">{{ when }} {{ readSummary(summary, scan.pages) }}</p>
+        <p class="m-0 flex flex-wrap gap-x-5 gap-y-1 text-[15px]">
+          <RouterLink v-if="who.company" :to="`/competitors/${who.company.id}`" class="font-medium">
+            About {{ who.name }}
+          </RouterLink>
+          <a :href="summary.url" target="_blank" rel="noopener noreferrer" class="font-medium">
+            Visit website<span class="sr-only"> (opens in a new tab)</span>
+          </a>
+        </p>
       </div>
       <a v-if="scan.pages.length > 0" href="#pages" class="font-medium" @click.prevent="openPages">
         See {{ pagesTitle.charAt(0).toLowerCase() + pagesTitle.slice(1) }}

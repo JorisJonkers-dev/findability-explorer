@@ -28,7 +28,7 @@ var created = time.Date(2026, 10, 22, 9, 30, 0, 0, time.UTC)
 
 func queued(t *testing.T, repo *persistence.Repository, user string, at time.Time) domain.Analysis {
 	t.Helper()
-	a := domain.Analysis{ID: uuid.New(), URL: "https://www.example.test/", MaxPages: 5, Status: domain.StatusQueued, CreatedBy: user, CreatedAt: at}
+	a := domain.Analysis{ID: uuid.New(), URL: "https://www.example.test/", CompetitorID: "example", MaxPages: 5, Status: domain.StatusQueued, CreatedBy: user, CreatedAt: at}
 	if err := repo.Create(t.Context(), a); err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,10 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	kws := []domain.Keyword{{Phrase: "spiral belts", Language: "en", Score: 42.5, Pages: 2}}
+	kws := []domain.Keyword{
+		{Phrase: "spiral belts", Language: "en", Score: 42.5, Pages: 2, Classification: domain.Classification{Tier: "product", Family: "tri_flex_turn_curve", Closest: "spiral belt", InMap: true}},
+		{Phrase: "belt options", Language: "en", Score: 3, Pages: 1, Classification: domain.Classification{Tier: "broad"}},
+	}
 	known := []domain.KnownTerm{{GlossaryTerm: domain.GlossaryTerm{Text: "spiral belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product", UsedByTribelt: true}, Occurrences: 3}}
 	if err := repo.SaveFindings(ctx, a.ID, kws, known); err != nil {
 		t.Fatal(err)
@@ -75,14 +78,14 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Status != domain.StatusDone || got.PagesCrawled != 2 || got.Matching != domain.MatchingDone ||
+	if got.Status != domain.StatusDone || got.PagesCrawled != 2 || got.Matching != domain.MatchingDone || got.CompetitorID != "example" ||
 		!got.FinishedAt.Equal(created.Add(time.Minute)) || !got.CreatedAt.Equal(created) || got.CreatedBy != "joris" {
 		t.Fatalf("analysis = %+v", got)
 	}
 	if len(got.Pages) != 2 || len([]rune(got.Pages[0].Title)) != 500 || got.Pages[1].Title != "Förderbänder" {
 		t.Fatalf("pages = %+v", got.Pages)
 	}
-	if len(got.Keywords) != 1 || got.Keywords[0] != kws[0] || len(got.KnownTerms) != 1 || got.KnownTerms[0] != known[0] {
+	if len(got.Keywords) != 2 || got.Keywords[0] != kws[0] || got.Keywords[1] != kws[1] || len(got.KnownTerms) != 1 || got.KnownTerms[0] != known[0] {
 		t.Fatalf("findings = %+v %+v", got.Keywords, got.KnownTerms)
 	}
 	if len(got.Equivalents) != 2 || len(got.Equivalents[0].SearchTerms) != 2 || got.Equivalents[0].SearchTerms[1].Term != "Spiralband" ||
@@ -172,5 +175,34 @@ func TestDatabaseRefusesWhatTheDomainWouldNot(t *testing.T) {
 	got, err := repo.Get(t.Context(), a.ID)
 	if err != nil || got.Matching != domain.MatchingPending || len(got.KnownTerms) != 0 {
 		t.Fatalf("after refused writes: %+v, %v", got, err)
+	}
+}
+
+func TestAnalysesPerCompetitor(t *testing.T) {
+	t.Parallel()
+	repo := repository(t)
+	ctx := t.Context()
+	first := queued(t, repo, "u", created)
+	second := queued(t, repo, "u", created.Add(time.Minute))
+	other := domain.Analysis{ID: uuid.New(), URL: "https://other.test/", CompetitorID: "other", MaxPages: 1, Status: domain.StatusQueued, CreatedBy: "u", CreatedAt: created}
+	legacy := domain.Analysis{ID: uuid.New(), URL: "https://legacy.test/", MaxPages: 1, Status: domain.StatusQueued, CreatedBy: "u", CreatedAt: created}
+	for _, a := range []domain.Analysis{other, legacy} {
+		if err := repo.Create(ctx, a); err != nil {
+			t.Fatal(err)
+		}
+	}
+	list, err := repo.ListByCompetitor(ctx, "example", 10)
+	if err != nil || len(list) != 2 || list[0].ID != second.ID || list[1].ID != first.ID || list[0].CompetitorID != "example" {
+		t.Fatalf("ListByCompetitor = %+v, %v", list, err)
+	}
+	stats, err := repo.CompetitorStats(ctx)
+	if err != nil || len(stats) != 2 || stats["example"].Count != 2 || stats["example"].Last.ID != second.ID || stats["other"].Count != 1 {
+		t.Fatalf("CompetitorStats = %+v, %v", stats, err)
+	}
+	if _, err := repo.ListByCompetitor(ctx, "example", -1); err == nil {
+		t.Fatal("ListByCompetitor(-1) succeeded")
+	}
+	if got, err := repo.Get(ctx, legacy.ID); err != nil || got.CompetitorID != "" {
+		t.Fatalf("a scan without company = %+v, %v", got, err)
 	}
 }

@@ -6,6 +6,7 @@ import {
   familyCell,
   filterRows,
   languageCount,
+  languageNames,
   matrixRows,
   moreLabel,
   productNames,
@@ -16,6 +17,9 @@ import {
 } from './matrix'
 
 const company = (name: string, overrides: Partial<Competitor> = {}): Competitor => ({
+  id: name.toLowerCase(),
+  source: 'research',
+  scans: 0,
   name,
   country: 'NL',
   website: 'https://example.com',
@@ -78,6 +82,7 @@ describe('where a company is', () => {
 
   it('counts the languages, not the notes about them', () => {
     expect(languageCount(['en', 'en-GB', 'pt', 'it (catalogue)', 'unverified', 'others unverified'])).toBe(4)
+    expect(languageNames(['en', 'de', 'unverified'])).toBe('English and German')
   })
 
   it('puts the two together', () => {

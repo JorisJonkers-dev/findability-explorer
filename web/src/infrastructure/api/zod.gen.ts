@@ -89,23 +89,21 @@ export const zBeltName = z.object({
 });
 
 /**
- * A company in the terminology map.
+ * A company's id, made from its name.
  */
-export const zCompetitor = z.object({
-    name: z.string().max(200),
-    country: z.string().max(200),
-    website: z.string().max(500),
-    languages: z.array(z.string().max(16)).max(20),
-    groupCompany: z.boolean(),
-    beltNames: z.array(zBeltName).max(50),
-    homepageTitle: z.string().max(300)
-});
+export const zCompetitorId = z.string().min(1).max(80).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
 
 /**
- * Every company in the terminology map.
+ * Where a company comes from - the desk research, or added by a user or a scan.
  */
-export const zCompetitorList = z.object({
-    items: z.array(zCompetitor).max(200)
+export const zCompetitorSource = z.enum(['research', 'added']);
+
+/**
+ * A company to add.
+ */
+export const zNewCompetitor = z.object({
+    name: z.string().min(1).max(200),
+    url: z.url().min(8).max(500)
 });
 
 /**
@@ -113,7 +111,8 @@ export const zCompetitorList = z.object({
  */
 export const zNewAnalysis = z.object({
     url: z.url().min(8).max(500),
-    maxPages: z.int().gte(1).lte(30).optional().default(15)
+    maxPages: z.int().gte(1).lte(30).optional().default(15),
+    companyName: z.string().min(1).max(200).optional()
 });
 
 /**
@@ -141,6 +140,7 @@ export const zMatchingStatus = z.enum([
  * An analysis without its results.
  */
 export const zAnalysisSummary = z.object({
+    competitorId: zCompetitorId.optional(),
     id: z.uuid().max(36),
     url: z.string().max(500),
     status: zAnalysisStatus,
@@ -149,6 +149,41 @@ export const zAnalysisSummary = z.object({
     pagesCrawled: z.int().gte(0).lte(30),
     createdAt: z.iso.datetime({ offset: true }).max(64),
     finishedAt: z.iso.datetime({ offset: true }).max(64).optional()
+});
+
+/**
+ * A known company.
+ */
+export const zCompetitor = z.object({
+    id: zCompetitorId,
+    source: zCompetitorSource,
+    websiteUrl: z.url().max(500).optional(),
+    host: z.string().max(253).optional(),
+    scans: z.int().gte(0).lte(100000),
+    lastScan: zAnalysisSummary.optional(),
+    addedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    name: z.string().max(200),
+    country: z.string().max(200),
+    website: z.string().max(500),
+    languages: z.array(z.string().max(16)).max(20),
+    groupCompany: z.boolean(),
+    beltNames: z.array(zBeltName).max(50),
+    homepageTitle: z.string().max(300)
+});
+
+/**
+ * A company with its most recent scans.
+ */
+export const zCompetitorDetail = z.object({
+    competitor: zCompetitor,
+    scans: z.array(zAnalysisSummary).max(20)
+});
+
+/**
+ * Every known company.
+ */
+export const zCompetitorList = z.object({
+    items: z.array(zCompetitor).max(200)
 });
 
 /**
@@ -170,9 +205,13 @@ export const zCrawledPage = z.object({
 });
 
 /**
- * A phrase the site emphasises, scored by where and how often it appears.
+ * A phrase about metal belts that the site emphasises, scored by where and how often it appears. Phrases without a word of the belt vocabulary, phrases that only name the site itself, and menu or footer text are left out.
  */
 export const zKeyword = z.object({
+    tier: zIntentTier,
+    family: zBeltFamily.optional(),
+    closestTerm: z.string().max(200).optional(),
+    inMap: z.boolean(),
     phrase: z.string().max(200),
     language: z.string().max(16),
     score: z.number().gte(0).lte(1000000),
@@ -246,9 +285,28 @@ export const zSearchTermsQuery = z.object({
 export const zSearchTermsResponse = zTermSearch;
 
 /**
- * The companies, competitors first, by name.
+ * The companies: researched competitors by name, then added ones by name, then Tribelt's own group.
  */
 export const zListCompetitorsResponse = zCompetitorList;
+
+/**
+ * The company to add.
+ */
+export const zAddCompetitorBody = zNewCompetitor;
+
+/**
+ * The added company.
+ */
+export const zAddCompetitorResponse = zCompetitor;
+
+export const zGetCompetitorPath = z.object({
+    competitorId: zCompetitorId
+});
+
+/**
+ * The company.
+ */
+export const zGetCompetitorResponse = zCompetitorDetail;
 
 export const zListAnalysesQuery = z.object({
     limit: z.int().gte(1).lte(50).optional().default(20)

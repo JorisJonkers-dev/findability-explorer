@@ -22,6 +22,10 @@ security:
 tags:
   - name: terminology
     description: The terminology map, built from competitors' and Tribelt's own websites.
+  - name: competitors
+    description: >-
+      The companies Tribelt competes with: the ones the desk research studied, and every one a user
+      added or scanned since.
   - name: analyses
     description: On-demand keyword analyses of one website.
 paths:
@@ -91,18 +95,79 @@ paths:
   /api/v1/competitors:
     get:
       operationId: listCompetitors
-      summary: List the companies in the terminology map
+      summary: List every known company
       description: >-
-        Returns every competitor and group company studied, with its names for each belt family.
-      tags: [terminology]
+        Returns every company the research studied and every company added since, with its names
+        for each belt family and how often its website was scanned.
+      tags: [competitors]
       responses:
         "200":
-          description: The companies, competitors first, by name.
+          description: >-
+            The companies: researched competitors by name, then added ones by name, then Tribelt's
+            own group.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompetitorList"
         "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: addCompetitor
+      summary: Add a company
+      description: >-
+        Adds a company by its name and website. A website whose host a known company already has
+        is refused with 409, naming that company.
+      tags: [competitors]
+      requestBody:
+        required: true
+        description: The company to add.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewCompetitor"
+            example:
+              name: Example Belts
+              url: https://www.example-belts.com
+      responses:
+        "201":
+          description: The added company.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Competitor"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/competitors/{competitorId}:
+    get:
+      operationId: getCompetitor
+      summary: Get one company with its scans
+      description: Returns the company and its most recent scans, newest first.
+      tags: [competitors]
+      parameters:
+        - name: competitorId
+          in: path
+          required: true
+          description: The company's id.
+          schema:
+            $ref: "#/components/schemas/CompetitorId"
+      responses:
+        "200":
+          description: The company.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorDetail"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -332,12 +397,53 @@ components:
           example: TwenteFlex spiral belts
         family:
           $ref: "#/components/schemas/BeltFamily"
+    CompetitorId:
+      description: A company's id, made from its name.
+      type: string
+      minLength: 1
+      maxLength: 80
+      pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      example: twentebelt
+    CompetitorSource:
+      description: Where a company comes from - the desk research, or added by a user or a scan.
+      type: string
+      enum: [research, added]
     Competitor:
-      description: A company in the terminology map.
+      description: A known company.
       type: object
       additionalProperties: false
-      required: [name, country, website, languages, groupCompany, beltNames, homepageTitle]
+      required: [id, source, name, country, website, languages, groupCompany, beltNames, homepageTitle, scans]
       properties:
+        id:
+          $ref: "#/components/schemas/CompetitorId"
+        source:
+          $ref: "#/components/schemas/CompetitorSource"
+        websiteUrl:
+          type: string
+          format: uri
+          maxLength: 500
+          description: The website to visit and to scan; absent when the research found none.
+          example: https://www.twentebelt.com
+        host:
+          type: string
+          maxLength: 253
+          description: The website's host without "www.", by which scans are matched to the company.
+          example: twentebelt.com
+        scans:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many scans of the company's website were started.
+          example: 2
+        lastScan:
+          $ref: "#/components/schemas/AnalysisSummary"
+        addedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the company was added; only for added companies.
+          example: "2026-10-22T09:30:00Z"
         name:
           type: string
           maxLength: 200
@@ -351,7 +457,7 @@ components:
         website:
           type: string
           maxLength: 500
-          description: The company's website.
+          description: The company's website as the research noted it, or the added address.
           example: https://www.twentebelt.com
         languages:
           type: array
@@ -375,8 +481,41 @@ components:
           maxLength: 300
           description: The title of its home page, or "unverified" when it could not be read.
           example: Twentebelt | Metal conveyor belts
+    NewCompetitor:
+      description: A company to add.
+      type: object
+      additionalProperties: false
+      required: [name, url]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The company's name.
+          example: Example Belts
+        url:
+          type: string
+          format: uri
+          minLength: 8
+          maxLength: 500
+          description: The company's website. Only http and https on a public host.
+          example: https://www.example-belts.com
+    CompetitorDetail:
+      description: A company with its most recent scans.
+      type: object
+      additionalProperties: false
+      required: [competitor, scans]
+      properties:
+        competitor:
+          $ref: "#/components/schemas/Competitor"
+        scans:
+          type: array
+          maxItems: 20
+          description: The company's scans, newest first.
+          items:
+            $ref: "#/components/schemas/AnalysisSummary"
     CompetitorList:
-      description: Every company in the terminology map.
+      description: Every known company.
       type: object
       additionalProperties: false
       required: [items]
@@ -408,6 +547,14 @@ components:
           default: 15
           description: The most pages to fetch.
           example: 15
+        companyName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: >-
+            The name to add the company under when no known company has this website's host.
+            Without it, an unknown company is added under its host.
+          example: Example Belts
     AnalysisStatus:
       description: Where an analysis is in its life.
       type: string
@@ -425,6 +572,8 @@ components:
       additionalProperties: false
       required: [id, url, status, maxPages, pagesCrawled, createdAt]
       properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
         id:
           type: string
           format: uuid
@@ -515,11 +664,28 @@ components:
           description: The number of words of visible text.
           example: 412
     Keyword:
-      description: A phrase the site emphasises, scored by where and how often it appears.
+      description: >-
+        A phrase about metal belts that the site emphasises, scored by where and how often it
+        appears. Phrases without a word of the belt vocabulary, phrases that only name the site
+        itself, and menu or footer text are left out.
       type: object
       additionalProperties: false
-      required: [phrase, language, score, pages]
+      required: [phrase, language, score, pages, tier, inMap]
       properties:
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        closestTerm:
+          type: string
+          maxLength: 200
+          description: The terminology map term that shares the most specific words with the phrase.
+          example: balanced weave belt
+        inMap:
+          type: boolean
+          description: >-
+            True when the phrase is one of the map's own terms. A phrase that is not is a search
+            term the map, and Tribelt, may be missing.
         phrase:
           type: string
           maxLength: 200

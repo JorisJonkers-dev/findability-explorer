@@ -154,8 +154,12 @@ func toAnalysis(a domain.Analysis) oas.Analysis {
 		}
 		eqs = append(eqs, oas.Equivalent{Product: e.Product, Family: oas.BeltFamily(e.Family), Reason: e.Reason, SearchTerms: terms})
 	}
-	return oas.Analysis{
+	out := oas.Analysis{
 		Summary: toSummary(a), Pages: pages, Keywords: keywords, KnownTerms: known,
 		Matching: oas.MatchingStatus(a.Matching), Equivalents: eqs,
 	}
+	if a.MatchingModel != "" {
+		out.MatchingModel = oas.NewOptString(a.MatchingModel)
+	}
+	return out
 }

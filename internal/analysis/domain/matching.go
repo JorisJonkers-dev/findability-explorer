@@ -76,6 +76,12 @@ type Matcher interface {
 	Match(ctx context.Context, siteText string, truncated bool, families []TribeltFamily) ([]Equivalent, Usage, error)
 }
 
+// Matchers is the port to the language-model settings: the matcher to use now, and a label naming
+// its provider and model. A nil Matcher means matching is off.
+type Matchers interface {
+	Current(ctx context.Context) (Matcher, string, error)
+}
+
 // Crawler is the port the crawler adapter implements. It fetches at most maxPages pages on the
 // target's host, following robots.txt, and calls onPage after each page in crawl order.
 type Crawler interface {

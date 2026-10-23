@@ -36,6 +36,26 @@ type Invoker interface {
 	//
 	// POST /api/v1/competitors
 	AddCompetitor(ctx context.Context, request *NewCompetitor) (AddCompetitorRes, error)
+	// AddLlmCredential invokes addLlmCredential operation.
+	//
+	// Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
+	// refuses is not stored and answers 422 with the provider's reason. The key is never returned.
+	//
+	// POST /api/v1/admin/llm/credentials
+	AddLlmCredential(ctx context.Context, request *NewLlmCredential) (AddLlmCredentialRes, error)
+	// ClearActiveLlm invokes clearActiveLlm operation.
+	//
+	// Turns product matching off until a credential and model are chosen again.
+	//
+	// DELETE /api/v1/admin/llm/active
+	ClearActiveLlm(ctx context.Context) (ClearActiveLlmRes, error)
+	// DeleteLlmCredential invokes deleteLlmCredential operation.
+	//
+	// Deletes a stored credential. When it was the active one, matching falls back to the Vault credential
+	// with the default model, or is off without one. The Vault credential cannot be deleted here (422).
+	//
+	// DELETE /api/v1/admin/llm/credentials/{credentialId}
+	DeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (DeleteLlmCredentialRes, error)
 	// GetAnalysis invokes getAnalysis operation.
 	//
 	// Returns the analysis, its progress, and every result found so far.
@@ -48,6 +68,20 @@ type Invoker interface {
 	//
 	// GET /api/v1/competitors/{competitorId}
 	GetCompetitor(ctx context.Context, params GetCompetitorParams) (GetCompetitorRes, error)
+	// GetLlmSettings invokes getLlmSettings operation.
+	//
+	// Returns every credential (never a secret), the model product matching uses now, the token budget,
+	// and the latest 50 changes and tests, newest first.
+	//
+	// GET /api/v1/admin/llm
+	GetLlmSettings(ctx context.Context) (GetLlmSettingsRes, error)
+	// GetMe invokes getMe operation.
+	//
+	// Returns who is signed in and whether they may open the admin settings. A request without a live
+	// session gets 401; the web app then sends the browser to /auth/login.
+	//
+	// GET /api/v1/me
+	GetMe(ctx context.Context) (GetMeRes, error)
 	// ListAnalyses invokes listAnalyses operation.
 	//
 	// Returns at most `limit` analyses, newest first, without their results.
@@ -61,6 +95,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/competitors
 	ListCompetitors(ctx context.Context) (ListCompetitorsRes, error)
+	// ListLlmModels invokes listLlmModels operation.
+	//
+	// Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
+	// stored key is unreadable.
+	//
+	// GET /api/v1/admin/llm/credentials/{credentialId}/models
+	ListLlmModels(ctx context.Context, params ListLlmModelsParams) (ListLlmModelsRes, error)
 	// SearchTerms invokes searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of
@@ -69,6 +110,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/terms
 	SearchTerms(ctx context.Context, params SearchTermsParams) (SearchTermsRes, error)
+	// SetActiveLlm invokes setActiveLlm operation.
+	//
+	// Makes product matching use this credential and model from the next analysis on. The credential must
+	// exist (404) and be readable (422).
+	//
+	// PUT /api/v1/admin/llm/active
+	SetActiveLlm(ctx context.Context, request *ActiveLlm) (SetActiveLlmRes, error)
 	// StartAnalysis invokes startAnalysis operation.
 	//
 	// Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host, following
@@ -76,6 +124,14 @@ type Invoker interface {
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, request *NewAnalysis) (StartAnalysisRes, error)
+	// TestLlmCredential invokes testLlmCredential operation.
+	//
+	// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
+	// credential and in the events. A refused key is a 200 with ok false; an unreadable stored key answers
+	// 422.
+	//
+	// POST /api/v1/admin/llm/credentials/{credentialId}/test
+	TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (TestLlmCredentialRes, error)
 }
 
 // Client implements OAS client.
@@ -184,14 +240,14 @@ func (c *Client) sendAddCompetitor(ctx context.Context, request *NewCompetitor) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:ForwardAuth"
-			switch err := c.securityForwardAuth(ctx, AddCompetitorOperation, r); {
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, AddCompetitorOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"ForwardAuth\"")
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
 			}
 		}
 
@@ -229,6 +285,371 @@ func (c *Client) sendAddCompetitor(ctx context.Context, request *NewCompetitor) 
 
 	stage = "DecodeResponse"
 	result, err := decodeAddCompetitorResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// AddLlmCredential invokes addLlmCredential operation.
+//
+// Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
+// refuses is not stored and answers 422 with the provider's reason. The key is never returned.
+//
+// POST /api/v1/admin/llm/credentials
+func (c *Client) AddLlmCredential(ctx context.Context, request *NewLlmCredential) (AddLlmCredentialRes, error) {
+	res, err := c.sendAddLlmCredential(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendAddLlmCredential(ctx context.Context, request *NewLlmCredential) (res AddLlmCredentialRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("addLlmCredential"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/llm/credentials"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, AddLlmCredentialOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/llm/credentials"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeAddLlmCredentialRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, AddLlmCredentialOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeAddLlmCredentialResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ClearActiveLlm invokes clearActiveLlm operation.
+//
+// Turns product matching off until a credential and model are chosen again.
+//
+// DELETE /api/v1/admin/llm/active
+func (c *Client) ClearActiveLlm(ctx context.Context) (ClearActiveLlmRes, error) {
+	res, err := c.sendClearActiveLlm(ctx)
+	return res, err
+}
+
+func (c *Client) sendClearActiveLlm(ctx context.Context) (res ClearActiveLlmRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("clearActiveLlm"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/admin/llm/active"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ClearActiveLlmOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/llm/active"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ClearActiveLlmOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeClearActiveLlmResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteLlmCredential invokes deleteLlmCredential operation.
+//
+// Deletes a stored credential. When it was the active one, matching falls back to the Vault credential
+// with the default model, or is off without one. The Vault credential cannot be deleted here (422).
+//
+// DELETE /api/v1/admin/llm/credentials/{credentialId}
+func (c *Client) DeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (DeleteLlmCredentialRes, error) {
+	res, err := c.sendDeleteLlmCredential(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (res DeleteLlmCredentialRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("deleteLlmCredential"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/admin/llm/credentials/{credentialId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteLlmCredentialOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/admin/llm/credentials/"
+	{
+		// Encode "credentialId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "credentialId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CredentialId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, DeleteLlmCredentialOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteLlmCredentialResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -315,14 +736,14 @@ func (c *Client) sendGetAnalysis(ctx context.Context, params GetAnalysisParams) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:ForwardAuth"
-			switch err := c.securityForwardAuth(ctx, GetAnalysisOperation, r); {
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetAnalysisOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"ForwardAuth\"")
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
 			}
 		}
 
@@ -449,14 +870,14 @@ func (c *Client) sendGetCompetitor(ctx context.Context, params GetCompetitorPara
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:ForwardAuth"
-			switch err := c.securityForwardAuth(ctx, GetCompetitorOperation, r); {
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetCompetitorOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"ForwardAuth\"")
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
 			}
 		}
 
@@ -494,6 +915,234 @@ func (c *Client) sendGetCompetitor(ctx context.Context, params GetCompetitorPara
 
 	stage = "DecodeResponse"
 	result, err := decodeGetCompetitorResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetLlmSettings invokes getLlmSettings operation.
+//
+// Returns every credential (never a secret), the model product matching uses now, the token budget,
+// and the latest 50 changes and tests, newest first.
+//
+// GET /api/v1/admin/llm
+func (c *Client) GetLlmSettings(ctx context.Context) (GetLlmSettingsRes, error) {
+	res, err := c.sendGetLlmSettings(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetLlmSettings(ctx context.Context) (res GetLlmSettingsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getLlmSettings"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/llm"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetLlmSettingsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/llm"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetLlmSettingsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetLlmSettingsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetMe invokes getMe operation.
+//
+// Returns who is signed in and whether they may open the admin settings. A request without a live
+// session gets 401; the web app then sends the browser to /auth/login.
+//
+// GET /api/v1/me
+func (c *Client) GetMe(ctx context.Context) (GetMeRes, error) {
+	res, err := c.sendGetMe(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetMe(ctx context.Context) (res GetMeRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getMe"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/me"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetMeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/me"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetMeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetMeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -583,14 +1232,14 @@ func (c *Client) sendListAnalyses(ctx context.Context, params ListAnalysesParams
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:ForwardAuth"
-			switch err := c.securityForwardAuth(ctx, ListAnalysesOperation, r); {
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListAnalysesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"ForwardAuth\"")
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
 			}
 		}
 
@@ -697,14 +1346,14 @@ func (c *Client) sendListCompetitors(ctx context.Context) (res ListCompetitorsRe
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:ForwardAuth"
-			switch err := c.securityForwardAuth(ctx, ListCompetitorsOperation, r); {
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListCompetitorsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"ForwardAuth\"")
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
 			}
 		}
 
@@ -742,6 +1391,142 @@ func (c *Client) sendListCompetitors(ctx context.Context) (res ListCompetitorsRe
 
 	stage = "DecodeResponse"
 	result, err := decodeListCompetitorsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListLlmModels invokes listLlmModels operation.
+//
+// Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
+// stored key is unreadable.
+//
+// GET /api/v1/admin/llm/credentials/{credentialId}/models
+func (c *Client) ListLlmModels(ctx context.Context, params ListLlmModelsParams) (ListLlmModelsRes, error) {
+	res, err := c.sendListLlmModels(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListLlmModels(ctx context.Context, params ListLlmModelsParams) (res ListLlmModelsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listLlmModels"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/llm/credentials/{credentialId}/models"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListLlmModelsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/llm/credentials/"
+	{
+		// Encode "credentialId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "credentialId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CredentialId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/models"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListLlmModelsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListLlmModelsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -918,14 +1703,14 @@ func (c *Client) sendSearchTerms(ctx context.Context, params SearchTermsParams) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:ForwardAuth"
-			switch err := c.securityForwardAuth(ctx, SearchTermsOperation, r); {
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, SearchTermsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"ForwardAuth\"")
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
 			}
 		}
 
@@ -963,6 +1748,123 @@ func (c *Client) sendSearchTerms(ctx context.Context, params SearchTermsParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeSearchTermsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SetActiveLlm invokes setActiveLlm operation.
+//
+// Makes product matching use this credential and model from the next analysis on. The credential must
+// exist (404) and be readable (422).
+//
+// PUT /api/v1/admin/llm/active
+func (c *Client) SetActiveLlm(ctx context.Context, request *ActiveLlm) (SetActiveLlmRes, error) {
+	res, err := c.sendSetActiveLlm(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendSetActiveLlm(ctx context.Context, request *ActiveLlm) (res SetActiveLlmRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("setActiveLlm"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/admin/llm/active"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetActiveLlmOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/llm/active"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetActiveLlmRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, SetActiveLlmOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetActiveLlmResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1035,14 +1937,14 @@ func (c *Client) sendStartAnalysis(ctx context.Context, request *NewAnalysis) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:ForwardAuth"
-			switch err := c.securityForwardAuth(ctx, StartAnalysisOperation, r); {
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, StartAnalysisOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"ForwardAuth\"")
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
 			}
 		}
 
@@ -1080,6 +1982,143 @@ func (c *Client) sendStartAnalysis(ctx context.Context, request *NewAnalysis) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeStartAnalysisResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// TestLlmCredential invokes testLlmCredential operation.
+//
+// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
+// credential and in the events. A refused key is a 200 with ok false; an unreadable stored key answers
+// 422.
+//
+// POST /api/v1/admin/llm/credentials/{credentialId}/test
+func (c *Client) TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (TestLlmCredentialRes, error) {
+	res, err := c.sendTestLlmCredential(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendTestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (res TestLlmCredentialRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("testLlmCredential"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/llm/credentials/{credentialId}/test"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, TestLlmCredentialOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/llm/credentials/"
+	{
+		// Encode "credentialId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "credentialId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CredentialId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/test"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, TestLlmCredentialOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeTestLlmCredentialResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

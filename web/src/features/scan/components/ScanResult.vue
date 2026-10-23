@@ -1,91 +1,104 @@
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef } from 'vue'
+import { computed, ref } from 'vue'
 import type { Analysis } from '../../../infrastructure/api/types.gen'
-import { RouterLink } from 'vue-router'
-import { useCompanies } from '../../competitors/composables/useCompanies'
-import { scanCompany } from '../../competitors/domain/company'
-import { pagePath, pagesReadTitle, readSummary, scannedAt, siteHost, wordsLabel } from '../domain/results'
-import { isInProgress } from '../domain/status'
-import EquivalentsTable from './EquivalentsTable.vue'
-import MissingTerms from './MissingTerms.vue'
-import PhraseList from './PhraseList.vue'
-import ScanProgress from './ScanProgress.vue'
-import TemperSpectrum from './TemperSpectrum.vue'
+import { percent } from '../../../shared/percent'
+import { tierFill } from '../../../shared/tiers'
+import { tierLabel } from '../../../shared/vocabulary'
+import PillButton from '../../../shared/ui/PillButton.vue'
+import {
+  equivalentRows,
+  matchedBy,
+  missingTerms,
+  newTermCount,
+  PHRASE_KINDS,
+  type PhraseKind,
+  phrases,
+  resultLine,
+  scannedAt,
+  siteHost,
+} from '../domain/results'
+import { matchingText } from '../domain/status'
 
 const props = defineProps<{ scan: Analysis }>()
-const { companies } = useCompanies()
 
+/** How many of the terms Tribelt is missing are shown as chips. */
+const MISSING_SHOWN = 8
+
+const kind = ref<PhraseKind>('all')
 const summary = computed(() => props.scan.summary)
-const host = computed(() => siteHost(summary.value.url))
-const who = computed(() => scanCompany(summary.value, companies.value))
-const site = computed(() => who.value.name)
-const inProgress = computed(() => isInProgress(summary.value.status))
-const when = computed(() =>
-  inProgress.value
-    ? `Started ${scannedAt(summary.value.createdAt)}.`
-    : `Scanned ${scannedAt(summary.value.finishedAt ?? summary.value.createdAt)}.`,
-)
-const pagesTitle = computed(() => pagesReadTitle(props.scan.pages.length))
-const pages = useTemplateRef<HTMLDetailsElement>('pages')
-
-async function openPages(): Promise<void> {
-  if (!pages.value) return
-  pages.value.open = true
-  await nextTick()
-  pages.value.scrollIntoView({ block: 'start' })
-  pages.value.querySelector('summary')?.focus()
-}
+const missing = computed(() => missingTerms(props.scan.knownTerms).slice(0, MISSING_SHOWN))
+const ranked = computed(() => phrases(props.scan.keywords, { language: '', singleWords: true, kind: kind.value }))
+const equivalents = computed(() => equivalentRows(props.scan.equivalents))
+const matching = computed(() => matchingText(props.scan.matching))
+const model = computed(() => matchedBy(props.scan.matchingModel))
 </script>
 
 <template>
-  <section aria-labelledby="result-title" class="flex flex-col gap-7">
-    <div class="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
-      <div class="flex min-w-0 flex-col gap-1.5">
-        <h2 id="result-title" class="m-0 font-display text-[32px] leading-[1.05] font-semibold break-words md:text-[40px]">
-          {{ host }}
-        </h2>
-        <p class="m-0 text-muted">{{ when }} {{ readSummary(summary, scan.pages) }}</p>
-        <p class="m-0 flex flex-wrap gap-x-5 gap-y-1 text-[15px]">
-          <RouterLink v-if="who.company" :to="`/competitors/${who.company.id}`" class="font-medium">
-            About {{ who.name }}
-          </RouterLink>
-          <a :href="summary.url" target="_blank" rel="noopener noreferrer" class="font-medium">
-            Visit website<span class="sr-only"> (opens in a new tab)</span>
-          </a>
-        </p>
-      </div>
-      <a v-if="scan.pages.length > 0" href="#pages" class="font-medium" @click.prevent="openPages">
-        See {{ pagesTitle.charAt(0).toLowerCase() + pagesTitle.slice(1) }}
-      </a>
+  <div class="flex flex-col gap-4 stage:min-h-0 stage:flex-1 stage:gap-5">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 stage:gap-5">
+      <h3 class="m-0 font-display text-2xl leading-none font-semibold stage:text-[52px]">{{ siteHost(summary.url) }}</h3>
+      <span class="text-sm text-muted stage:text-[24px]">{{ resultLine(scan.pages.length, newTermCount(scan.keywords)) }}</span>
     </div>
+    <p class="m-0 -mt-2 text-sm text-muted stage:-mt-3 stage:text-[24px]">Scanned {{ scannedAt(summary.finishedAt ?? summary.createdAt) }}</p>
 
-    <ScanProgress v-if="inProgress" :summary="summary" />
-
-    <div v-if="summary.status === 'failed'" class="flex max-w-[980px] flex-col gap-2 rounded-xl border border-danger/50 bg-surface p-6">
-      <h3 class="m-0 font-display text-2xl font-semibold">The scan failed</h3>
-      <p class="m-0 text-ink-2">{{ summary.failure ?? 'The site could not be read.' }}</p>
-      <p class="m-0 text-ink-2">Check the address and scan again.</p>
-    </div>
-
-    <template v-if="summary.status === 'done'">
-      <TemperSpectrum :known-terms="scan.knownTerms" />
-      <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,440px),1fr))] items-start gap-7">
-        <MissingTerms :known-terms="scan.knownTerms" :site="site" />
-        <PhraseList :keywords="scan.keywords" />
-      </div>
-      <EquivalentsTable :equivalents="scan.equivalents" :matching="scan.matching" :site="site" />
-    </template>
-
-    <details v-if="scan.pages.length > 0" id="pages" ref="pages" class="scroll-mt-6 border-t border-line pt-5">
-      <summary class="font-display text-2xl font-semibold">{{ pagesTitle }}</summary>
-      <ul
-        class="m-0 mt-4 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-x-7 gap-y-2.5 p-0 text-[15px]"
+    <div class="flex flex-wrap items-center gap-2 stage:gap-2.5">
+      <span class="text-sm text-muted stage:text-[24px]">{{ missing.length > 0 ? 'Tribelt is missing:' : 'Tribelt uses every map term this site uses.' }}</span>
+      <span
+        v-for="t in missing"
+        :key="`${t.term}-${t.language}`"
+        class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm stage:gap-2.5 stage:px-[18px] stage:py-1.5 stage:text-[24px]"
       >
-        <li v-for="page in scan.pages" :key="page.url" class="flex justify-between gap-3">
-          <span class="min-w-0 break-all text-ink-2">{{ pagePath(page.url) }}</span>
-          <span class="flex-none text-muted">{{ wordsLabel(page.wordCount) }}</span>
+        <span aria-hidden="true" class="size-3 flex-none rounded-full stage:size-4" :class="tierFill(t.tier)"></span>
+        {{ t.term }}<span class="sr-only">, {{ tierLabel(t.tier) }}</span>
+      </span>
+    </div>
+
+    <p v-if="matching !== null" class="m-0 text-sm text-ink-2 stage:text-[24px]">{{ matching }}</p>
+    <details v-else-if="equivalents.length > 0" class="rounded-2xl bg-white px-4 py-3 text-sm stage:rounded-[24px] stage:px-7 stage:py-4 stage:text-[24px]">
+      <summary class="font-medium">
+        {{ equivalents.length }} {{ equivalents.length === 1 ? 'product' : 'products' }} matched to Tribelt's belts
+      </summary>
+      <ul class="m-0 mt-2 flex list-none flex-col gap-2 p-0 stage:mt-3 stage:gap-3">
+        <li v-for="row in equivalents" :key="row.theirs">
+          <strong class="font-semibold">{{ row.theirs }}</strong> is Tribelt's {{ row.ours }}.
+          <span v-if="row.words !== ''" class="text-muted">Its words: {{ row.words }}.</span>
         </li>
       </ul>
+      <p v-if="model !== null" class="m-0 mt-2 text-muted stage:mt-3">{{ model }}</p>
     </details>
-  </section>
+
+    <div role="group" aria-label="Which phrases" class="flex flex-wrap gap-2 stage:gap-2.5">
+      <PillButton v-for="k in PHRASE_KINDS" :key="k.value" size="sm" :pressed="kind === k.value" @click="kind = k.value">
+        {{ k.label }}
+      </PillButton>
+    </div>
+
+    <ol
+      v-if="ranked.length > 0"
+      aria-label="Ranked phrases"
+      tabindex="0"
+      class="m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1"
+    >
+      <li
+        v-for="(p, index) in ranked"
+        :key="`${p.phrase}-${p.language}`"
+        class="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-grey py-2.5 stage:grid-cols-[56px_minmax(0,1fr)_auto] stage:gap-4 stage:py-3"
+      >
+        <span class="text-sm text-muted stage:text-[24px]">{{ index + 1 }}</span>
+        <span class="flex min-w-0 flex-col gap-1.5 stage:gap-2">
+          <span class="truncate font-medium stage:text-[28px]">{{ p.phrase }}<span class="sr-only">, {{ tierLabel(p.tier) }}</span></span>
+          <span aria-hidden="true" class="h-1.5 bg-grey stage:h-2.5">
+            <span class="block h-full" :class="tierFill(p.tier)" :style="{ width: percent(p.share) }"></span>
+          </span>
+        </span>
+        <span
+          class="rounded-full px-2.5 py-0.5 text-xs font-medium text-black stage:px-4 stage:py-1 stage:text-[22px]"
+          :class="p.inMap ? 'bg-grey' : 'bg-orange'"
+        >
+          {{ p.inMap ? 'In the map' : 'New term' }}
+        </span>
+      </li>
+    </ol>
+    <p v-else class="m-0 text-sm text-muted stage:text-[26px]">No phrases of this kind.</p>
+  </div>
 </template>

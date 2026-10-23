@@ -284,23 +284,24 @@ func (q *Queries) FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) 
 }
 
 const getAnalysis = `-- name: GetAnalysis :one
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
 FROM analyses
 WHERE analyses.id = $1
 `
 
 type GetAnalysisRow struct {
-	ID           uuid.UUID
-	Url          string
-	MaxPages     int64
-	Status       string
-	Failure      pgtype.Text
-	PagesCrawled int64
-	Matching     string
-	CreatedBy    string
-	CreatedAt    time.Time
-	FinishedAt   pgtype.Timestamptz
-	CompetitorID pgtype.Text
+	ID            uuid.UUID
+	Url           string
+	MaxPages      int64
+	Status        string
+	Failure       pgtype.Text
+	PagesCrawled  int64
+	Matching      string
+	CreatedBy     string
+	CreatedAt     time.Time
+	FinishedAt    pgtype.Timestamptz
+	CompetitorID  pgtype.Text
+	MatchingModel pgtype.Text
 }
 
 func (q *Queries) GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow, error) {
@@ -318,30 +319,32 @@ func (q *Queries) GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow
 		&i.CreatedAt,
 		&i.FinishedAt,
 		&i.CompetitorID,
+		&i.MatchingModel,
 	)
 	return i, err
 }
 
 const latestAnalysisPerCompetitor = `-- name: LatestAnalysisPerCompetitor :many
 SELECT DISTINCT ON (competitor_id) competitor_id::text AS competitor_id, id, url, max_pages, status,
-    failure, pages_crawled, matching, created_by, created_at, finished_at
+    failure, pages_crawled, matching, created_by, created_at, finished_at, matching_model
 FROM analyses
 WHERE competitor_id IS NOT NULL
 ORDER BY competitor_id, created_at DESC, id
 `
 
 type LatestAnalysisPerCompetitorRow struct {
-	CompetitorID string
-	ID           uuid.UUID
-	Url          string
-	MaxPages     int64
-	Status       string
-	Failure      pgtype.Text
-	PagesCrawled int64
-	Matching     string
-	CreatedBy    string
-	CreatedAt    time.Time
-	FinishedAt   pgtype.Timestamptz
+	CompetitorID  string
+	ID            uuid.UUID
+	Url           string
+	MaxPages      int64
+	Status        string
+	Failure       pgtype.Text
+	PagesCrawled  int64
+	Matching      string
+	CreatedBy     string
+	CreatedAt     time.Time
+	FinishedAt    pgtype.Timestamptz
+	MatchingModel pgtype.Text
 }
 
 func (q *Queries) LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnalysisPerCompetitorRow, error) {
@@ -365,6 +368,7 @@ func (q *Queries) LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnal
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.FinishedAt,
+			&i.MatchingModel,
 		); err != nil {
 			return nil, err
 		}
@@ -377,24 +381,25 @@ func (q *Queries) LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnal
 }
 
 const listAnalyses = `-- name: ListAnalyses :many
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
 FROM analyses
 ORDER BY created_at DESC, id
 LIMIT $1
 `
 
 type ListAnalysesRow struct {
-	ID           uuid.UUID
-	Url          string
-	MaxPages     int64
-	Status       string
-	Failure      pgtype.Text
-	PagesCrawled int64
-	Matching     string
-	CreatedBy    string
-	CreatedAt    time.Time
-	FinishedAt   pgtype.Timestamptz
-	CompetitorID pgtype.Text
+	ID            uuid.UUID
+	Url           string
+	MaxPages      int64
+	Status        string
+	Failure       pgtype.Text
+	PagesCrawled  int64
+	Matching      string
+	CreatedBy     string
+	CreatedAt     time.Time
+	FinishedAt    pgtype.Timestamptz
+	CompetitorID  pgtype.Text
+	MatchingModel pgtype.Text
 }
 
 func (q *Queries) ListAnalyses(ctx context.Context, limit int32) ([]ListAnalysesRow, error) {
@@ -418,6 +423,7 @@ func (q *Queries) ListAnalyses(ctx context.Context, limit int32) ([]ListAnalyses
 			&i.CreatedAt,
 			&i.FinishedAt,
 			&i.CompetitorID,
+			&i.MatchingModel,
 		); err != nil {
 			return nil, err
 		}
@@ -430,7 +436,7 @@ func (q *Queries) ListAnalyses(ctx context.Context, limit int32) ([]ListAnalyses
 }
 
 const listAnalysesByCompetitor = `-- name: ListAnalysesByCompetitor :many
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
 FROM analyses
 WHERE competitor_id = $1
 ORDER BY created_at DESC, id
@@ -443,17 +449,18 @@ type ListAnalysesByCompetitorParams struct {
 }
 
 type ListAnalysesByCompetitorRow struct {
-	ID           uuid.UUID
-	Url          string
-	MaxPages     int64
-	Status       string
-	Failure      pgtype.Text
-	PagesCrawled int64
-	Matching     string
-	CreatedBy    string
-	CreatedAt    time.Time
-	FinishedAt   pgtype.Timestamptz
-	CompetitorID pgtype.Text
+	ID            uuid.UUID
+	Url           string
+	MaxPages      int64
+	Status        string
+	Failure       pgtype.Text
+	PagesCrawled  int64
+	Matching      string
+	CreatedBy     string
+	CreatedAt     time.Time
+	FinishedAt    pgtype.Timestamptz
+	CompetitorID  pgtype.Text
+	MatchingModel pgtype.Text
 }
 
 func (q *Queries) ListAnalysesByCompetitor(ctx context.Context, arg ListAnalysesByCompetitorParams) ([]ListAnalysesByCompetitorRow, error) {
@@ -477,6 +484,7 @@ func (q *Queries) ListAnalysesByCompetitor(ctx context.Context, arg ListAnalyses
 			&i.CreatedAt,
 			&i.FinishedAt,
 			&i.CompetitorID,
+			&i.MatchingModel,
 		); err != nil {
 			return nil, err
 		}
@@ -732,7 +740,7 @@ func (q *Queries) QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error) {
 
 const setAnalysisMatching = `-- name: SetAnalysisMatching :exec
 UPDATE analyses
-SET matching = $2, llm_input_tokens = $3, llm_output_tokens = $4
+SET matching = $2, llm_input_tokens = $3, llm_output_tokens = $4, matching_model = $5
 WHERE analyses.id = $1
 `
 
@@ -741,6 +749,7 @@ type SetAnalysisMatchingParams struct {
 	Matching        string
 	LlmInputTokens  int64
 	LlmOutputTokens int64
+	MatchingModel   pgtype.Text
 }
 
 func (q *Queries) SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error {
@@ -749,6 +758,7 @@ func (q *Queries) SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchi
 		arg.Matching,
 		arg.LlmInputTokens,
 		arg.LlmOutputTokens,
+		arg.MatchingModel,
 	)
 	return err
 }

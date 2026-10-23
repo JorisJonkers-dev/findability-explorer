@@ -24,10 +24,13 @@ applications:
     exposure:
       - name: public
         host: digital-strategy.jorisjonkers.dev # the full FQDN, authored: the report links to it
-        # The API requires the identity the platform's forward-auth puts on every request
-        # (X-User-Id, openapi/v1/openapi.yaml), so the whole host sits behind it. Viewer links for
-        # readers without an account are the app's own business, and not built yet.
-        audience: authenticated
+        # The app signs people in itself, against auth-api (docs/adr/0001): every page and API
+        # call without a session is refused or sent to /auth/login, so the edge adds no
+        # forward-auth, which would intercept the app's own /auth/callback. Once deploy-kit
+        # implements spec chapter 17's client block, this becomes `audience: authenticated` with
+        # `client: {signIn: native, redirectPaths: [/auth/callback], protectedPath: /api/v1/me,
+        # credential: secret}`, and the OIDC_* values come from ${client:…}.
+        audience: anonymous
         contentPolicy: strict
         routes:
           - { path: /, match: prefix, process: findability-explorer, surface: http }
@@ -49,21 +52,42 @@ applications:
             surface: postgres
             credentials: { delivery: env, rotation: { tolerates: restart } }
 
-        # The analysis worker fetches the public websites users submit, and asks Claude at
-        # api.anthropic.com to match their products. The crawler itself refuses every private,
-        # loopback and link-local address it resolves (internal/analysis/adapters/crawler).
+        # The analysis worker fetches the public websites users submit, and asks the language
+        # model an admin chose (api.anthropic.com, openrouter.ai or api.mistral.ai) to match their
+        # products; signing in talks to auth.jorisjonkers.dev. The crawler itself refuses every
+        # private, loopback and link-local address it resolves (internal/analysis/adapters/crawler).
         egress:
           to: internet
           reason: >-
-            the analysis worker crawls the public websites users submit, and calls
-            api.anthropic.com for product matching
+            the analysis worker crawls the public websites users submit and calls
+            api.anthropic.com, openrouter.ai or api.mistral.ai for product matching; sign-in
+            talks to auth.jorisjonkers.dev
 
-        # The Anthropic API key, read once at startup. Without it product matching is off and
-        # every other feature works. A person writes it: vault kv put
-        # secret/findability-explorer-system/anthropic api-key=…
+        # The Anthropic API key, read once at startup: the read-only credential vault-anthropic.
+        # Without it product matching is off until an admin adds a key in the app. A person
+        # writes it: vault kv put secret/findability-explorer-system/anthropic api-key=…
         secrets:
           - path: secret/data/findability-explorer-system/anthropic
             keys: [api-key]
+            access: read
+            delivery: env
+            rotation: { tolerates: restart }
+          # The app's client secret at auth-api, which registers the client
+          # (redirect https://digital-strategy.jorisjonkers.dev/auth/callback). A person writes
+          # it: vault kv put secret/findability-explorer-system/oidc client-secret=…
+          - path: secret/data/findability-explorer-system/oidc
+            keys: [client-secret]
+            access: read
+            delivery: env
+            rotation: { tolerates: restart }
+          # The key that seals the session cookie, the stored refresh tokens and the API keys
+          # admins add (docs/adr/0002). The Vault policy job generates it once (32 random bytes,
+          # hex) and never overwrites it, so no person writes it. Replacing it by hand signs
+          # everyone out and makes every added API key unreadable until it is entered again.
+          - path: secret/data/findability-explorer-system/session
+            keys:
+              - name: key
+                generate: {}
             access: read
             delivery: env
             rotation: { tolerates: restart }

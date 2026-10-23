@@ -2,6 +2,7 @@ import type {
   Analysis,
   AnalysisSummary,
   Competitor,
+  Me,
   Term,
   TermSearch,
 } from '../infrastructure/api/types.gen'
@@ -113,4 +114,9 @@ export function analysis(overrides: Partial<Analysis> = {}, summaryOverrides: Pa
     ],
     ...overrides,
   }
+}
+
+/** The account signed in: not an administrator unless the test says so. */
+export function me(overrides: Partial<Me> = {}): Me {
+  return { subject: 'joris', name: 'Joris Jonkers', isAdmin: false, ...overrides }
 }

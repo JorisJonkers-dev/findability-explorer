@@ -26,6 +26,8 @@ export default defineConfig({
       DATABASE_URL: process.env.DATABASE_URL ?? 'postgres://app:app@localhost:55432/app?sslmode=disable',
       // No forward-auth in front of a local run; this identity stands in for it.
       DEV_USER: 'e2e',
+      // The dev user is an administrator, so the settings page can be reached too.
+      DEV_ROLES: 'ROLE_ADMIN',
     },
   },
 })

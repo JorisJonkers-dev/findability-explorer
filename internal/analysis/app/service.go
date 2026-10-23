@@ -50,19 +50,19 @@ type Service struct {
 	repo      domain.Repository
 	directory domain.Directory
 	crawler   domain.Crawler
-	matcher   domain.Matcher // nil when no language model is configured
+	matchers  domain.Matchers
 	glossary  Glossary
 	now       func() time.Time
 	limits    Limits
 	queue     chan uuid.UUID
 }
 
-// New returns a Service. matcher may be nil, which disables product matching.
-func New(repo domain.Repository, directory domain.Directory, crawler domain.Crawler, matcher domain.Matcher,
+// New returns a Service. matchers names the matcher each analysis uses when it runs.
+func New(repo domain.Repository, directory domain.Directory, crawler domain.Crawler, matchers domain.Matchers,
 	glossary Glossary, now func() time.Time, limits Limits,
 ) *Service {
 	return &Service{
-		repo: repo, directory: directory, crawler: crawler, matcher: matcher, glossary: glossary, now: now, limits: limits,
+		repo: repo, directory: directory, crawler: crawler, matchers: matchers, glossary: glossary, now: now, limits: limits,
 		queue: make(chan uuid.UUID, max(limits.QueueSize, 1)),
 	}
 }
@@ -203,8 +203,8 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.SaveFindings(ctx, id, keywords, domain.FindKnownTerms(pages, glossary)); err != nil {
 		return fmt.Errorf("save findings: %w", err)
 	}
-	matching, eqs, usage := s.match(ctx, pages)
-	if err := s.repo.SaveMatching(ctx, id, matching, eqs, usage); err != nil {
+	matching, model, eqs, usage := s.match(ctx, pages)
+	if err := s.repo.SaveMatching(ctx, id, matching, model, eqs, usage); err != nil {
 		return fmt.Errorf("save matching: %w", err)
 	}
 	if err := s.repo.Finish(ctx, id, s.now()); err != nil {
@@ -213,25 +213,30 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// match asks the language model for the site's equivalents of Tribelt's families, within the
-// monthly budget. It never fails the analysis: the crawl results stand on their own.
-func (s *Service) match(ctx context.Context, pages []domain.Page) (domain.Matching, []domain.Equivalent, domain.Usage) {
-	if s.matcher == nil {
-		return domain.MatchingDisabled, nil, domain.Usage{}
+// match asks the language model the settings name now for the site's equivalents of Tribelt's
+// families, within the monthly budget, and returns the outcome with the provider and model it
+// asked. It never fails the analysis: the crawl results stand on their own.
+func (s *Service) match(ctx context.Context, pages []domain.Page) (domain.Matching, string, []domain.Equivalent, domain.Usage) {
+	matcher, model, err := s.matchers.Current(ctx)
+	switch {
+	case err != nil:
+		return domain.MatchingFailed, "", nil, domain.Usage{}
+	case matcher == nil:
+		return domain.MatchingDisabled, "", nil, domain.Usage{}
 	}
 	now := s.now().UTC()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	spent, err := s.repo.TokensSince(ctx, monthStart)
 	if err != nil || spent >= s.limits.MonthlyTokens {
-		return domain.MatchingSkipped, nil, domain.Usage{}
+		return domain.MatchingSkipped, "", nil, domain.Usage{}
 	}
 	text, truncated := domain.SiteText(pages, s.limits.SiteTextChars)
 	if strings.TrimSpace(text) == "" {
-		return domain.MatchingSkipped, nil, domain.Usage{}
+		return domain.MatchingSkipped, "", nil, domain.Usage{}
 	}
-	found, usage, err := s.matcher.Match(ctx, text, truncated, domain.TribeltFamilies())
+	found, usage, err := matcher.Match(ctx, text, truncated, domain.TribeltFamilies())
 	if err != nil {
-		return domain.MatchingFailed, nil, usage
+		return domain.MatchingFailed, model, nil, usage
 	}
 	eqs := make([]domain.Equivalent, 0, len(found))
 	for _, e := range found {
@@ -239,7 +244,7 @@ func (s *Service) match(ctx context.Context, pages []domain.Page) (domain.Matchi
 			eqs = append(eqs, checked)
 		}
 	}
-	return domain.MatchingDone, eqs, usage
+	return domain.MatchingDone, model, eqs, usage
 }
 
 func (s *Service) fail(ctx context.Context, id uuid.UUID, reason string) error {

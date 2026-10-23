@@ -40,19 +40,42 @@ func TestSecurityHeaders(t *testing.T) {
 	}
 }
 
-func TestDevIdentityFillsOnlyAMissingIdentity(t *testing.T) {
-	var seen string
-	h := httpx.DevIdentity("dev", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		seen = r.Header.Get(httpx.IdentityHeader)
-	}))
-	for given, want := range map[string]string{"": "dev", "someone": "someone"} {
-		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
-		if given != "" {
-			req.Header.Set(httpx.IdentityHeader, given)
+func TestSameOriginRefusesCrossSiteUnsafeRequests(t *testing.T) {
+	h := httpx.SameOrigin(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	cases := []struct {
+		name, method string
+		headers      map[string]string
+		want         int
+	}{
+		{"same-origin fetch", http.MethodPost, map[string]string{"Sec-Fetch-Site": "same-origin"}, http.StatusNoContent},
+		{"cross-site form", http.MethodPost, map[string]string{"Sec-Fetch-Site": "cross-site"}, http.StatusForbidden},
+		{"cross-site delete", http.MethodDelete, map[string]string{"Sec-Fetch-Site": "same-site"}, http.StatusForbidden},
+		{"matching Origin", http.MethodPut, map[string]string{"Origin": "https://app.test"}, http.StatusNoContent},
+		{"foreign Origin", http.MethodPut, map[string]string{"Origin": "https://evil.test"}, http.StatusForbidden},
+		{"no browser headers", http.MethodPost, nil, http.StatusNoContent},
+		{"cross-site read", http.MethodGet, map[string]string{"Sec-Fetch-Site": "cross-site"}, http.StatusNoContent},
+	}
+	for _, c := range cases {
+		req := httptest.NewRequestWithContext(t.Context(), c.method, "https://app.test/api/v1/x", nil)
+		for k, v := range c.headers {
+			req.Header.Set(k, v)
 		}
-		h.ServeHTTP(httptest.NewRecorder(), req)
-		if seen != want {
-			t.Fatalf("identity %q became %q, want %q", given, seen, want)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != c.want {
+			t.Errorf("%s: status %d, want %d", c.name, rec.Code, c.want)
 		}
+		if c.want == http.StatusForbidden && rec.Header().Get("Content-Type") != "application/problem+json" {
+			t.Errorf("%s: not a problem: %q", c.name, rec.Header().Get("Content-Type"))
+		}
+	}
+}
+
+func TestSubject(t *testing.T) {
+	if got := httpx.Subject(httpx.WithSubject(t.Context(), "joris")); got != "joris" {
+		t.Fatalf("Subject = %q", got)
+	}
+	if got := httpx.Subject(t.Context()); got != "" {
+		t.Fatalf("Subject without one = %q", got)
 	}
 }

@@ -4,7 +4,9 @@ import { onTestFinished, vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 import App from '../app/App.vue'
 import { createAppRouter } from '../app/router'
+import { loginUrl } from '../features/shell/domain/auth'
 import { configureApi } from '../infrastructure/http'
+import { me } from './fixtures'
 
 export type Handler = (request: Request) => Response | Promise<Response>
 
@@ -21,11 +23,15 @@ export function problem(status: number, title: string, detail?: string): Respons
   })
 }
 
-/** Answers each request by its method and path ("GET /api/v1/terms"); anything else is a 404. */
+/**
+ * Answers each request by its method and path ("GET /api/v1/terms"); anything else is a 404.
+ * Someone is signed in unless the table says otherwise: GET /api/v1/me answers me().
+ */
 export function routes(table: Record<string, Handler>): Handler {
+  const all: Record<string, Handler> = { 'GET /api/v1/me': () => json(me()), ...table }
   return (request) => {
     const { pathname } = new URL(request.url)
-    const handler = table[`${request.method} ${pathname}`]
+    const handler = all[`${request.method} ${pathname}`]
     return handler ? handler(request) : problem(404, 'Not Found')
   }
 }
@@ -46,8 +52,18 @@ export async function mountApp(handle: Handler, path = '/') {
     sent.push(`${request.method} ${url.pathname}${url.search}`)
     return Promise.resolve(handle(request))
   })
-  configureApi({ baseUrl: 'http://app.test', fetch })
+  // jsdom has no scrolling; the router's scrollBehavior would log that on every page change.
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
   const router = createAppRouter(createMemoryHistory())
+  // A 401 sends the browser to sign in; here the "browser" is a spy, given the app's own address.
+  const assign = vi.fn<(url: string) => void>()
+  configureApi({
+    baseUrl: 'http://app.test',
+    fetch,
+    onUnauthorized: () => {
+      assign(loginUrl(router.currentRoute.value.fullPath))
+    },
+  })
   await router.push(path)
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const wrapper = mount(App, {
@@ -63,5 +79,5 @@ export async function mountApp(handle: Handler, path = '/') {
   await settle()
   /** The requests sent so far, as "METHOD /path?query". */
   const requests = () => [...sent]
-  return { wrapper, fetch, router, queryClient, requests }
+  return { wrapper, fetch, router, queryClient, requests, assign }
 }

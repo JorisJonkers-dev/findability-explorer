@@ -67,7 +67,7 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 		{Product: "TwenteFlex", Family: "tri_flex_turn_curve", Reason: "spiral tower", SearchTerms: []domain.SearchTerm{{Term: "spiral belt", Language: "en"}, {Term: "Spiralband", Language: "de"}}},
 		{Product: "Eyelink belts", Family: "eyelink", Reason: "eyelinks"},
 	}
-	if err := repo.SaveMatching(ctx, a.ID, domain.MatchingDone, eqs, domain.Usage{InputTokens: 900, OutputTokens: 100}); err != nil {
+	if err := repo.SaveMatching(ctx, a.ID, domain.MatchingDone, "openrouter: anthropic/claude-haiku-5-5", eqs, domain.Usage{InputTokens: 900, OutputTokens: 100}); err != nil {
 		t.Fatal(err)
 	}
 	if err := repo.Finish(ctx, a.ID, created.Add(time.Minute)); err != nil {
@@ -79,7 +79,8 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.Status != domain.StatusDone || got.PagesCrawled != 2 || got.Matching != domain.MatchingDone || got.CompetitorID != "example" ||
-		!got.FinishedAt.Equal(created.Add(time.Minute)) || !got.CreatedAt.Equal(created) || got.CreatedBy != "joris" {
+		!got.FinishedAt.Equal(created.Add(time.Minute)) || !got.CreatedAt.Equal(created) || got.CreatedBy != "joris" ||
+		got.MatchingModel != "openrouter: anthropic/claude-haiku-5-5" {
 		t.Fatalf("analysis = %+v", got)
 	}
 	if len(got.Pages) != 2 || len([]rune(got.Pages[0].Title)) != 500 || got.Pages[1].Title != "Förderbänder" {
@@ -155,14 +156,14 @@ func TestDatabaseRefusesWhatTheDomainWouldNot(t *testing.T) {
 	if err := repo.SaveFindings(t.Context(), a.ID, nil, bad); err == nil {
 		t.Fatal("a known term in an unknown language was stored")
 	}
-	if err := repo.SaveMatching(t.Context(), a.ID, domain.MatchingDone, []domain.Equivalent{{Product: "x", Family: "plastic"}}, domain.Usage{}); err == nil {
+	if err := repo.SaveMatching(t.Context(), a.ID, domain.MatchingDone, "", []domain.Equivalent{{Product: "x", Family: "plastic"}}, domain.Usage{}); err == nil {
 		t.Fatal("an equivalent of an unknown family was stored")
 	}
-	if err := repo.SaveMatching(t.Context(), a.ID, domain.MatchingDone,
+	if err := repo.SaveMatching(t.Context(), a.ID, domain.MatchingDone, "",
 		[]domain.Equivalent{{Product: "x", Family: "other", SearchTerms: []domain.SearchTerm{{Term: "", Language: "en"}}}}, domain.Usage{}); err == nil {
 		t.Fatal("an empty search term was stored")
 	}
-	if err := repo.SaveMatching(t.Context(), a.ID, "unknown", nil, domain.Usage{}); err == nil {
+	if err := repo.SaveMatching(t.Context(), a.ID, "unknown", "", nil, domain.Usage{}); err == nil {
 		t.Fatal("an unknown matching status was stored")
 	}
 	if err := repo.SaveFindings(t.Context(), a.ID, []domain.Keyword{{Phrase: "", Language: "en", Pages: 1}}, nil); err == nil {

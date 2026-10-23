@@ -1,9 +1,8 @@
 import { zProblem } from '../../../infrastructure/api/zod.gen'
 import { describeError } from '../../../shared/describeError'
 
-/** The page budgets the form offers; the contract allows any whole number from 1 to 30. */
-export const PAGE_OPTIONS = [5, 10, 15, 30] as const
-export const DEFAULT_PAGES = 15
+/** How many pages a scan reads: the contract's most. */
+export const SCAN_PAGES = 30
 export const MAX_URL_LENGTH = 500
 
 export type ScanUrlCheck =

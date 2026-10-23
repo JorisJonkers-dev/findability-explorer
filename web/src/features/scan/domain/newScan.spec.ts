@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkScanUrl, describeScanUrlCheck, MAX_URL_LENGTH, PAGE_OPTIONS, placeStartError } from './newScan'
+import { checkScanUrl, describeScanUrlCheck, MAX_URL_LENGTH, placeStartError, SCAN_PAGES } from './newScan'
 
 describe('checkScanUrl', () => {
   it('accepts an http or https address with a host name', () => {
@@ -36,7 +36,7 @@ describe('describeScanUrlCheck', () => {
 
 describe('the page budgets', () => {
   it('offers four, all within the contract', () => {
-    expect(PAGE_OPTIONS).toEqual([5, 10, 15, 30])
+    expect(SCAN_PAGES).toBe(30)
   })
 })
 

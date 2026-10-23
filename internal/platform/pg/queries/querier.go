@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -17,15 +18,25 @@ type Querier interface {
 	AddAnalysisKeyword(ctx context.Context, arg AddAnalysisKeywordParams) error
 	AddAnalysisKnownTerm(ctx context.Context, arg AddAnalysisKnownTermParams) error
 	AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams) error
+	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
+	AddLlmEvent(ctx context.Context, arg AddLlmEventParams) error
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
 	CountAnalysesCreatedSince(ctx context.Context, arg CountAnalysesCreatedSinceParams) (int64, error)
 	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) error
+	CreateSession(ctx context.Context, arg CreateSessionParams) error
+	DeleteExpiredSessions(ctx context.Context, now time.Time) error
+	DeleteLlmCredential(ctx context.Context, id uuid.UUID) (int64, error)
+	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
 	FailAnalysis(ctx context.Context, arg FailAnalysisParams) error
 	FailRunningAnalyses(ctx context.Context, arg FailRunningAnalysesParams) error
 	FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) error
 	GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow, error)
+	GetLlmActive(ctx context.Context) (GetLlmActiveRow, error)
+	GetLlmCredential(ctx context.Context, id uuid.UUID) (LlmCredential, error)
+	GetSession(ctx context.Context, arg GetSessionParams) (GetSessionRow, error)
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
 	LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnalysisPerCompetitorRow, error)
+	LatestLlmTests(ctx context.Context) ([]LatestLlmTestsRow, error)
 	ListAnalyses(ctx context.Context, limit int32) ([]ListAnalysesRow, error)
 	ListAnalysesByCompetitor(ctx context.Context, arg ListAnalysesByCompetitorParams) ([]ListAnalysesByCompetitorRow, error)
 	ListAnalysisEquivalentTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentTermsRow, error)
@@ -34,10 +45,19 @@ type Querier interface {
 	ListAnalysisKnownTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKnownTermsRow, error)
 	ListAnalysisPages(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPagesRow, error)
 	ListCompanies(ctx context.Context) ([]Company, error)
+	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
+	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
+	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
 	MarkAnalysisRunning(ctx context.Context, id uuid.UUID) error
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
+	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
+	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
+	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
 	TokensSince(ctx context.Context, createdAt time.Time) (int64, error)
+	TouchSession(ctx context.Context, arg TouchSessionParams) error
+	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error
+	UpsertAccount(ctx context.Context, arg UpsertAccountParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)

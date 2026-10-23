@@ -8,8 +8,11 @@ ignore node_modules
 tool github.com/ogen-go/ogen/cmd/ogen
 
 require (
+	github.com/anthropics/anthropic-sdk-go v1.84.0
+	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/go-faster/errors v0.8.0
 	github.com/go-faster/jx v1.2.0
+	github.com/go-jose/go-jose/v4 v4.1.5
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/ogen-go/ogen v1.24.0
@@ -19,13 +22,15 @@ require (
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
+	golang.org/x/net v0.61.0
+	golang.org/x/oauth2 v0.37.0
+	golang.org/x/text v0.43.0
 )
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/anthropics/anthropic-sdk-go v1.84.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -94,10 +99,8 @@ require (
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/tools v0.51.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

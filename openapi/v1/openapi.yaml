@@ -18,8 +18,14 @@ servers:
     description: Production. The SPA and the API share one origin.
     x-internal: false
 security:
-  - forwardAuth: []
+  - sessionCookie: []
 tags:
+  - name: account
+    description: The signed-in account.
+  - name: admin
+    description: >-
+      Settings only an administrator (auth-api's ROLE_ADMIN) may read or change: the language-model
+      credentials and the model product matching uses.
   - name: terminology
     description: The terminology map, built from competitors' and Tribelt's own websites.
   - name: competitors
@@ -260,15 +266,244 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
-components:
-  securitySchemes:
-    forwardAuth:
-      type: apiKey
-      in: header
-      name: X-User-Id
+  /api/v1/me:
+    get:
+      operationId: getMe
+      summary: Get the signed-in account
       description: >-
-        Set by the platform's forward-auth at the edge, never by a client. The server refuses a
-        request without it; on a local run DEV_USER fills it in.
+        Returns who is signed in and whether they may open the admin settings. A request without a
+        live session gets 401; the web app then sends the browser to /auth/login.
+      tags: [account]
+      responses:
+        "200":
+          description: The signed-in account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm:
+    get:
+      operationId: getLlmSettings
+      summary: Get the language-model settings
+      description: >-
+        Returns every credential (never a secret), the model product matching uses now, the
+        token budget, and the latest 50 changes and tests, newest first.
+      tags: [admin]
+      responses:
+        "200":
+          description: The settings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmSettings"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/credentials:
+    post:
+      operationId: addLlmCredential
+      summary: Add a language-model API key
+      description: >-
+        Checks the key with the provider (by listing its models) and stores it sealed. A key the
+        provider refuses is not stored and answers 422 with the provider's reason. The key is
+        never returned.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The key to add.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewLlmCredential"
+            example:
+              provider: openrouter
+              label: Course budget key
+              apiKey: sk-or-v1-0000
+      responses:
+        "201":
+          description: The stored credential.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmCredential"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/credentials/{credentialId}:
+    delete:
+      operationId: deleteLlmCredential
+      summary: Delete a stored API key
+      description: >-
+        Deletes a stored credential. When it was the active one, matching falls back to the Vault
+        credential with the default model, or is off without one. The Vault credential cannot be
+        deleted here (422).
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/credentials/{credentialId}/test:
+    post:
+      operationId: testLlmCredential
+      summary: Test an API key
+      description: >-
+        Asks the provider whether it accepts the key (by listing its models) and records the
+        outcome on the credential and in the events. A refused key is a 200 with ok false; an
+        unreadable stored key answers 422.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+      responses:
+        "200":
+          description: The outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmTest"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/credentials/{credentialId}/models:
+    get:
+      operationId: listLlmModels
+      summary: List the models an API key can use
+      description: >-
+        Asks the provider for its models with this key. 502 when the provider fails or refuses;
+        422 when the stored key is unreadable.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+      responses:
+        "200":
+          description: The models, by id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmModelList"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "502":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/active:
+    put:
+      operationId: setActiveLlm
+      summary: Choose the credential and model for product matching
+      description: >-
+        Makes product matching use this credential and model from the next analysis on. The
+        credential must exist (404) and be readable (422).
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The credential and model to use.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActiveLlm"
+            example:
+              credentialId: vault-anthropic
+              model: claude-haiku-5-5
+      responses:
+        "200":
+          description: The settings after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmSettings"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: clearActiveLlm
+      summary: Turn product matching off
+      description: Turns product matching off until a credential and model are chosen again.
+      tags: [admin]
+      responses:
+        "200":
+          description: The settings after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmSettings"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+components:
+  parameters:
+    CredentialId:
+      name: credentialId
+      in: path
+      required: true
+      description: The credential's id.
+      schema:
+        $ref: "#/components/schemas/LlmCredentialId"
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: fe_session
+      description: >-
+        The sealed id of a server-side session, set by /auth/callback after signing in with
+        auth-api (HttpOnly, SameSite=Lax). Without a live session the API answers 401; admin
+        operations answer 403 unless auth-api currently grants ROLE_ADMIN. On a local run DEV_USER
+        (and DEV_ROLES) stand in for a session.
   responses:
     Problem:
       description: An RFC 9457 problem.
@@ -807,12 +1042,288 @@ components:
             $ref: "#/components/schemas/KnownTerm"
         matching:
           $ref: "#/components/schemas/MatchingStatus"
+        matchingModel:
+          type: string
+          maxLength: 300
+          description: >-
+            The provider and model that matched the products, when a model was asked.
+          example: "openrouter: anthropic/claude-haiku-5-5"
         equivalents:
           type: array
           maxItems: 50
           description: The site's products matched to Tribelt's belt families.
           items:
             $ref: "#/components/schemas/Equivalent"
+    Me:
+      description: The signed-in account.
+      type: object
+      additionalProperties: false
+      required: [subject, name, isAdmin]
+      properties:
+        subject:
+          type: string
+          maxLength: 200
+          description: The account's subject at auth-api.
+          example: 3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f
+        name:
+          type: string
+          maxLength: 200
+          description: The name to greet the account with.
+          example: joris
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: The account's email address, when auth-api shares it.
+          example: joris@example.com
+        isAdmin:
+          type: boolean
+          description: True when auth-api grants ROLE_ADMIN, which the admin settings need.
+    LlmProvider:
+      description: A language-model provider.
+      type: string
+      enum: [anthropic, openrouter, mistral]
+    LlmCredentialId:
+      description: >-
+        A credential's id: a UUID for a stored key, or `vault-anthropic` for the key Vault
+        delivers in ANTHROPIC_API_KEY.
+      type: string
+      minLength: 15
+      maxLength: 36
+      pattern: "^(vault-anthropic|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+      example: vault-anthropic
+    LlmCredentialSource:
+      description: Where a credential comes from - added here and stored sealed, or delivered by Vault.
+      type: string
+      enum: [stored, vault]
+    LlmTest:
+      description: The outcome of asking the provider whether it accepts a key.
+      type: object
+      additionalProperties: false
+      required: [ok, at, message]
+      properties:
+        ok:
+          type: boolean
+          description: True when the provider accepted the key.
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the key was tested.
+          example: "2026-10-23T09:30:00Z"
+        message:
+          type: string
+          maxLength: 500
+          description: What the provider said, or how many models the key may use.
+          example: The key may use 312 models.
+    LlmCredential:
+      description: A language-model API key, shown without its secret.
+      type: object
+      additionalProperties: false
+      required: [id, provider, label, source, fingerprint, readable]
+      properties:
+        id:
+          $ref: "#/components/schemas/LlmCredentialId"
+        provider:
+          $ref: "#/components/schemas/LlmProvider"
+        label:
+          type: string
+          maxLength: 100
+          description: A name to tell keys apart.
+          example: Course budget key
+        source:
+          $ref: "#/components/schemas/LlmCredentialSource"
+        fingerprint:
+          type: string
+          minLength: 12
+          maxLength: 12
+          pattern: "^[0-9a-f]{12}$"
+          description: >-
+            The first 12 hex characters of the key's SHA-256: enough to tell keys apart, never
+            enough to recover one.
+          example: 3a7bd3e2360a
+        readable:
+          type: boolean
+          description: >-
+            False when the key was sealed under another SESSION_KEY and has to be entered again.
+        createdBy:
+          type: string
+          maxLength: 200
+          description: Who added the key; absent for the Vault key.
+          example: joris
+        createdAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the key was added; absent for the Vault key.
+          example: "2026-10-23T09:30:00Z"
+        lastTest:
+          $ref: "#/components/schemas/LlmTest"
+    NewLlmCredential:
+      description: An API key to add.
+      type: object
+      additionalProperties: false
+      required: [provider, label, apiKey]
+      properties:
+        provider:
+          $ref: "#/components/schemas/LlmProvider"
+        label:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: A name to tell keys apart.
+          example: Course budget key
+        apiKey:
+          type: string
+          minLength: 8
+          maxLength: 500
+          description: The secret key. It is stored sealed and never returned.
+          example: sk-or-v1-0000
+    LlmModel:
+      description: A model a key may use.
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          maxLength: 200
+          description: The provider's id for the model, which setActiveLlm takes.
+          example: anthropic/claude-haiku-5-5
+        name:
+          type: string
+          maxLength: 300
+          description: The provider's display name for it, or the id.
+          example: "Anthropic: Claude Haiku 5.5"
+    LlmModelList:
+      description: The models a key may use, by id.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 2000
+          description: The models.
+          items:
+            $ref: "#/components/schemas/LlmModel"
+    ActiveLlm:
+      description: The credential and model product matching uses.
+      type: object
+      additionalProperties: false
+      required: [credentialId, model]
+      properties:
+        credentialId:
+          $ref: "#/components/schemas/LlmCredentialId"
+        model:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The provider's id for the model.
+          example: claude-haiku-5-5
+    LlmChoice:
+      description: >-
+        How the active model was decided - `default` (nobody chose; the Vault key with
+        claude-haiku-5-5 when Vault delivers one), `chosen` (an admin chose), or `off` (an admin
+        turned matching off).
+      type: string
+      enum: [default, chosen, off]
+    LlmEventAction:
+      description: What an event records.
+      type: string
+      enum: [credential_added, credential_deleted, credential_tested, active_set, active_cleared]
+    LlmEvent:
+      description: One change to or test of the language-model settings.
+      type: object
+      additionalProperties: false
+      required: [at, actor, action, message]
+      properties:
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it happened.
+          example: "2026-10-23T09:30:00Z"
+        actor:
+          type: string
+          maxLength: 200
+          description: Who did it.
+          example: joris
+        action:
+          $ref: "#/components/schemas/LlmEventAction"
+        credentialId:
+          $ref: "#/components/schemas/LlmCredentialId"
+        provider:
+          $ref: "#/components/schemas/LlmProvider"
+        model:
+          type: string
+          maxLength: 200
+          description: The model, for active_set.
+          example: claude-haiku-5-5
+        ok:
+          type: boolean
+          description: For credential_tested and credential_added, whether the provider accepted the key.
+        message:
+          type: string
+          maxLength: 500
+          description: A sentence describing the event.
+          example: Added openrouter key "Course budget key" (3a7bd3e2360a).
+    LlmBudget:
+      description: What analyses may spend on the language model.
+      type: object
+      additionalProperties: false
+      required: [monthlyTokens, usedThisMonth, analysesPerHour]
+      properties:
+        monthlyTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: The tokens all analyses of a calendar month (UTC) may use.
+          example: 2000000
+        usedThisMonth:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: The tokens analyses created this month used so far.
+          example: 48211
+        analysesPerHour:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many analyses one account may start per hour.
+          example: 10
+    LlmSettings:
+      description: The language-model settings.
+      type: object
+      additionalProperties: false
+      required: [credentials, choice, matchingEnabled, budget, events]
+      properties:
+        credentials:
+          type: array
+          maxItems: 100
+          description: Every credential, the Vault one first, then stored ones oldest first.
+          items:
+            $ref: "#/components/schemas/LlmCredential"
+        choice:
+          $ref: "#/components/schemas/LlmChoice"
+        active:
+          $ref: "#/components/schemas/ActiveLlm"
+        matchingEnabled:
+          type: boolean
+          description: >-
+            True when the next analysis will match products: a credential and model are active and
+            the credential is readable.
+        budget:
+          $ref: "#/components/schemas/LlmBudget"
+        events:
+          type: array
+          maxItems: 50
+          description: The latest changes and tests, newest first.
+          items:
+            $ref: "#/components/schemas/LlmEvent"
     Problem:
       description: An RFC 9457 problem detail.
       type: object

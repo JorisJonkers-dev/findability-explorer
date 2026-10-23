@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Account struct {
+	ID          int64
+	Issuer      string
+	Subject     string
+	Name        string
+	Email       string
+	Roles       []string
+	CreatedAt   time.Time
+	LastLoginAt time.Time
+}
+
 type Analysis struct {
 	ID              uuid.UUID
 	Url             string
@@ -25,6 +36,7 @@ type Analysis struct {
 	CreatedAt       time.Time
 	FinishedAt      pgtype.Timestamptz
 	CompetitorID    pgtype.Text
+	MatchingModel   pgtype.Text
 }
 
 type AnalysisEquivalent struct {
@@ -84,4 +96,48 @@ type Company struct {
 	Host       string
 	AddedBy    string
 	AddedAt    time.Time
+}
+
+type LlmActive struct {
+	Singleton    bool
+	Mode         string
+	CredentialID pgtype.Text
+	Model        pgtype.Text
+	UpdatedBy    string
+	UpdatedAt    time.Time
+}
+
+type LlmCredential struct {
+	ID          uuid.UUID
+	Provider    string
+	Label       string
+	Secret      []byte
+	KeyID       string
+	Fingerprint string
+	CreatedBy   string
+	CreatedAt   time.Time
+}
+
+type LlmEvent struct {
+	ID           int64
+	At           time.Time
+	Actor        string
+	Action       string
+	CredentialID pgtype.Text
+	Provider     pgtype.Text
+	Model        pgtype.Text
+	Ok           pgtype.Bool
+	Message      string
+}
+
+type Session struct {
+	ID             string
+	AccountID      int64
+	RefreshToken   []byte
+	KeyID          string
+	UserAgent      string
+	CreatedAt      time.Time
+	LastSeenAt     time.Time
+	RolesCheckedAt time.Time
+	ExpiresAt      time.Time
 }

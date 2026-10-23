@@ -3,12 +3,12 @@ INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_
 VALUES ($1, $2, $3, 'queued', 'pending', $4, $5, $6);
 
 -- name: GetAnalysis :one
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
 FROM analyses
 WHERE analyses.id = $1;
 
 -- name: ListAnalyses :many
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
 FROM analyses
 ORDER BY created_at DESC, id
 LIMIT $1;
@@ -60,7 +60,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 
 -- name: SetAnalysisMatching :exec
 UPDATE analyses
-SET matching = $2, llm_input_tokens = $3, llm_output_tokens = $4
+SET matching = $2, llm_input_tokens = $3, llm_output_tokens = $4, matching_model = $5
 WHERE analyses.id = $1;
 
 -- name: AddAnalysisEquivalent :exec
@@ -120,13 +120,13 @@ GROUP BY competitor_id;
 
 -- name: LatestAnalysisPerCompetitor :many
 SELECT DISTINCT ON (competitor_id) competitor_id::text AS competitor_id, id, url, max_pages, status,
-    failure, pages_crawled, matching, created_by, created_at, finished_at
+    failure, pages_crawled, matching, created_by, created_at, finished_at, matching_model
 FROM analyses
 WHERE competitor_id IS NOT NULL
 ORDER BY competitor_id, created_at DESC, id;
 
 -- name: ListAnalysesByCompetitor :many
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
 FROM analyses
 WHERE competitor_id = $1
 ORDER BY created_at DESC, id

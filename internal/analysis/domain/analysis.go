@@ -125,7 +125,9 @@ type Analysis struct {
 	Keywords     []Keyword
 	KnownTerms   []KnownTerm
 	Matching     Matching
-	Equivalents  []Equivalent
+	// MatchingModel names the provider and model that matched the products; empty when none was asked.
+	MatchingModel string
+	Equivalents   []Equivalent
 }
 
 // Usage is what one call to the language model consumed.
@@ -160,7 +162,7 @@ type Repository interface {
 	// AddPage stores the next crawled page and raises the crawled count.
 	AddPage(ctx context.Context, id uuid.UUID, page PageSummary) error
 	SaveFindings(ctx context.Context, id uuid.UUID, keywords []Keyword, known []KnownTerm) error
-	SaveMatching(ctx context.Context, id uuid.UUID, m Matching, eqs []Equivalent, usage Usage) error
+	SaveMatching(ctx context.Context, id uuid.UUID, m Matching, model string, eqs []Equivalent, usage Usage) error
 	Finish(ctx context.Context, id uuid.UUID, at time.Time) error
 	Fail(ctx context.Context, id uuid.UUID, reason string, at time.Time) error
 }

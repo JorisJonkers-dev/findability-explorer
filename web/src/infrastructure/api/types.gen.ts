@@ -401,9 +401,226 @@ export type Analysis = {
     knownTerms: Array<KnownTerm>;
     matching: MatchingStatus;
     /**
+     * The provider and model that matched the products, when a model was asked.
+     */
+    matchingModel?: string;
+    /**
      * The site's products matched to Tribelt's belt families.
      */
     equivalents: Array<Equivalent>;
+};
+
+/**
+ * The signed-in account.
+ */
+export type Me = {
+    /**
+     * The account's subject at auth-api.
+     */
+    subject: string;
+    /**
+     * The name to greet the account with.
+     */
+    name: string;
+    /**
+     * The account's email address, when auth-api shares it.
+     */
+    email?: string;
+    /**
+     * True when auth-api grants ROLE_ADMIN, which the admin settings need.
+     */
+    isAdmin: boolean;
+};
+
+/**
+ * A language-model provider.
+ */
+export type LlmProvider = 'anthropic' | 'openrouter' | 'mistral';
+
+/**
+ * A credential's id: a UUID for a stored key, or `vault-anthropic` for the key Vault delivers in ANTHROPIC_API_KEY.
+ */
+export type LlmCredentialId = string;
+
+/**
+ * Where a credential comes from - added here and stored sealed, or delivered by Vault.
+ */
+export type LlmCredentialSource = 'stored' | 'vault';
+
+/**
+ * The outcome of asking the provider whether it accepts a key.
+ */
+export type LlmTest = {
+    /**
+     * True when the provider accepted the key.
+     */
+    ok: boolean;
+    /**
+     * When the key was tested.
+     */
+    at: string;
+    /**
+     * What the provider said, or how many models the key may use.
+     */
+    message: string;
+};
+
+/**
+ * A language-model API key, shown without its secret.
+ */
+export type LlmCredential = {
+    id: LlmCredentialId;
+    provider: LlmProvider;
+    /**
+     * A name to tell keys apart.
+     */
+    label: string;
+    source: LlmCredentialSource;
+    /**
+     * The first 12 hex characters of the key's SHA-256: enough to tell keys apart, never enough to recover one.
+     */
+    fingerprint: string;
+    /**
+     * False when the key was sealed under another SESSION_KEY and has to be entered again.
+     */
+    readable: boolean;
+    /**
+     * Who added the key; absent for the Vault key.
+     */
+    createdBy?: string;
+    /**
+     * When the key was added; absent for the Vault key.
+     */
+    createdAt?: string;
+    lastTest?: LlmTest;
+};
+
+/**
+ * An API key to add.
+ */
+export type NewLlmCredential = {
+    provider: LlmProvider;
+    /**
+     * A name to tell keys apart.
+     */
+    label: string;
+    /**
+     * The secret key. It is stored sealed and never returned.
+     */
+    apiKey: string;
+};
+
+/**
+ * A model a key may use.
+ */
+export type LlmModel = {
+    /**
+     * The provider's id for the model, which setActiveLlm takes.
+     */
+    id: string;
+    /**
+     * The provider's display name for it, or the id.
+     */
+    name: string;
+};
+
+/**
+ * The models a key may use, by id.
+ */
+export type LlmModelList = {
+    /**
+     * The models.
+     */
+    items: Array<LlmModel>;
+};
+
+/**
+ * The credential and model product matching uses.
+ */
+export type ActiveLlm = {
+    credentialId: LlmCredentialId;
+    /**
+     * The provider's id for the model.
+     */
+    model: string;
+};
+
+/**
+ * How the active model was decided - `default` (nobody chose; the Vault key with claude-haiku-5-5 when Vault delivers one), `chosen` (an admin chose), or `off` (an admin turned matching off).
+ */
+export type LlmChoice = 'default' | 'chosen' | 'off';
+
+/**
+ * What an event records.
+ */
+export type LlmEventAction = 'credential_added' | 'credential_deleted' | 'credential_tested' | 'active_set' | 'active_cleared';
+
+/**
+ * One change to or test of the language-model settings.
+ */
+export type LlmEvent = {
+    /**
+     * When it happened.
+     */
+    at: string;
+    /**
+     * Who did it.
+     */
+    actor: string;
+    action: LlmEventAction;
+    credentialId?: LlmCredentialId;
+    provider?: LlmProvider;
+    /**
+     * The model, for active_set.
+     */
+    model?: string;
+    /**
+     * For credential_tested and credential_added, whether the provider accepted the key.
+     */
+    ok?: boolean;
+    /**
+     * A sentence describing the event.
+     */
+    message: string;
+};
+
+/**
+ * What analyses may spend on the language model.
+ */
+export type LlmBudget = {
+    /**
+     * The tokens all analyses of a calendar month (UTC) may use.
+     */
+    monthlyTokens: number;
+    /**
+     * The tokens analyses created this month used so far.
+     */
+    usedThisMonth: number;
+    /**
+     * How many analyses one account may start per hour.
+     */
+    analysesPerHour: number;
+};
+
+/**
+ * The language-model settings.
+ */
+export type LlmSettings = {
+    /**
+     * Every credential, the Vault one first, then stored ones oldest first.
+     */
+    credentials: Array<LlmCredential>;
+    choice: LlmChoice;
+    active?: ActiveLlm;
+    /**
+     * True when the next analysis will match products: a credential and model are active and the credential is readable.
+     */
+    matchingEnabled: boolean;
+    budget: LlmBudget;
+    /**
+     * The latest changes and tests, newest first.
+     */
+    events: Array<LlmEvent>;
 };
 
 /**
@@ -427,6 +644,11 @@ export type Problem = {
      */
     detail?: string;
 };
+
+/**
+ * The credential's id.
+ */
+export type CredentialId = LlmCredentialId;
 
 export type SearchTermsData = {
     body?: never;
@@ -700,3 +922,344 @@ export type GetAnalysisResponses = {
 };
 
 export type GetAnalysisResponse = GetAnalysisResponses[keyof GetAnalysisResponses];
+
+export type GetMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me';
+};
+
+export type GetMeErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetMeError = GetMeErrors[keyof GetMeErrors];
+
+export type GetMeResponses = {
+    /**
+     * The signed-in account.
+     */
+    200: Me;
+};
+
+export type GetMeResponse = GetMeResponses[keyof GetMeResponses];
+
+export type GetLlmSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/llm';
+};
+
+export type GetLlmSettingsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetLlmSettingsError = GetLlmSettingsErrors[keyof GetLlmSettingsErrors];
+
+export type GetLlmSettingsResponses = {
+    /**
+     * The settings.
+     */
+    200: LlmSettings;
+};
+
+export type GetLlmSettingsResponse = GetLlmSettingsResponses[keyof GetLlmSettingsResponses];
+
+export type AddLlmCredentialData = {
+    /**
+     * The key to add.
+     */
+    body: NewLlmCredential;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/llm/credentials';
+};
+
+export type AddLlmCredentialErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddLlmCredentialError = AddLlmCredentialErrors[keyof AddLlmCredentialErrors];
+
+export type AddLlmCredentialResponses = {
+    /**
+     * The stored credential.
+     */
+    201: LlmCredential;
+};
+
+export type AddLlmCredentialResponse = AddLlmCredentialResponses[keyof AddLlmCredentialResponses];
+
+export type DeleteLlmCredentialData = {
+    body?: never;
+    path: {
+        /**
+         * The credential's id.
+         */
+        credentialId: LlmCredentialId;
+    };
+    query?: never;
+    url: '/api/v1/admin/llm/credentials/{credentialId}';
+};
+
+export type DeleteLlmCredentialErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type DeleteLlmCredentialError = DeleteLlmCredentialErrors[keyof DeleteLlmCredentialErrors];
+
+export type DeleteLlmCredentialResponses = {
+    /**
+     * Deleted.
+     */
+    204: void;
+};
+
+export type DeleteLlmCredentialResponse = DeleteLlmCredentialResponses[keyof DeleteLlmCredentialResponses];
+
+export type TestLlmCredentialData = {
+    body?: never;
+    path: {
+        /**
+         * The credential's id.
+         */
+        credentialId: LlmCredentialId;
+    };
+    query?: never;
+    url: '/api/v1/admin/llm/credentials/{credentialId}/test';
+};
+
+export type TestLlmCredentialErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type TestLlmCredentialError = TestLlmCredentialErrors[keyof TestLlmCredentialErrors];
+
+export type TestLlmCredentialResponses = {
+    /**
+     * The outcome.
+     */
+    200: LlmTest;
+};
+
+export type TestLlmCredentialResponse = TestLlmCredentialResponses[keyof TestLlmCredentialResponses];
+
+export type ListLlmModelsData = {
+    body?: never;
+    path: {
+        /**
+         * The credential's id.
+         */
+        credentialId: LlmCredentialId;
+    };
+    query?: never;
+    url: '/api/v1/admin/llm/credentials/{credentialId}/models';
+};
+
+export type ListLlmModelsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    502: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListLlmModelsError = ListLlmModelsErrors[keyof ListLlmModelsErrors];
+
+export type ListLlmModelsResponses = {
+    /**
+     * The models, by id.
+     */
+    200: LlmModelList;
+};
+
+export type ListLlmModelsResponse = ListLlmModelsResponses[keyof ListLlmModelsResponses];
+
+export type ClearActiveLlmData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/llm/active';
+};
+
+export type ClearActiveLlmErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ClearActiveLlmError = ClearActiveLlmErrors[keyof ClearActiveLlmErrors];
+
+export type ClearActiveLlmResponses = {
+    /**
+     * The settings after the change.
+     */
+    200: LlmSettings;
+};
+
+export type ClearActiveLlmResponse = ClearActiveLlmResponses[keyof ClearActiveLlmResponses];
+
+export type SetActiveLlmData = {
+    /**
+     * The credential and model to use.
+     */
+    body: ActiveLlm;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/llm/active';
+};
+
+export type SetActiveLlmErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SetActiveLlmError = SetActiveLlmErrors[keyof SetActiveLlmErrors];
+
+export type SetActiveLlmResponses = {
+    /**
+     * The settings after the change.
+     */
+    200: LlmSettings;
+};
+
+export type SetActiveLlmResponse = SetActiveLlmResponses[keyof SetActiveLlmResponses];

@@ -1,23 +1,36 @@
-// Command findability-explorer serves the API and the embedded web app, migrates its database at
-// startup, runs queued website analyses in the background, and drains on SIGTERM.
+// Command findability-explorer serves the API, the sign-in routes and the embedded web app,
+// migrates its database at startup, runs queued website analyses in the background, and drains on
+// SIGTERM. The whole app is private: every page and API call needs an auth-api sign-in, and the
+// admin settings need auth-api's ROLE_ADMIN (docs/adr/0001).
 //
 // Environment:
 //   - DATABASE_URL, or PGHOST with the other libpq variables, which is how the platform hands over
 //     a rotating database login (required)
 //   - ADDR (default :8080)
-//   - ANTHROPIC_API_KEY: enables product matching with Claude; without it matching is disabled
+//   - OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_REDIRECT_URL: the client registration
+//     at auth-api (required unless DEV_USER is set); cookies are Secure unless the redirect URL is
+//     plain http
+//   - SESSION_KEY: at least 32 characters; seals the session cookie, the stored refresh tokens and
+//     the language-model API keys an admin adds (required unless DEV_USER is set)
+//   - ANTHROPIC_API_KEY: the Vault-delivered key, shown as the read-only credential
+//     vault-anthropic; until an admin chooses, product matching uses it with claude-haiku-5-5
 //   - LLM_MONTHLY_TOKENS: the language-model budget per calendar month (default 2000000)
 //   - ANALYSES_PER_HOUR: how many analyses one user may start per hour (default 10)
 //   - CRAWLER_CONTACT: a contact address for the crawler's User-Agent
-//   - DEV_USER, which stands in for the platform's forward-auth on a local run and must never be
-//     set in a deployment
+//   - DEV_USER, and DEV_ROLES (comma-separated, such as ROLE_ADMIN): stand in for a signed-in
+//     account on a local run, without auth-api; never set in a deployment
 package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"slices"
@@ -37,11 +50,20 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/research"
 	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
 	companiesdomain "github.com/JorisJonkers-dev/findability-explorer/internal/companies/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/oidc"
+	identitypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/persistence"
+	identityweb "github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/web"
+	identityapp "github.com/JorisJonkers-dev/findability-explorer/internal/identity/app"
+	identitydomain "github.com/JorisJonkers-dev/findability-explorer/internal/identity/domain"
+	llmpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/persistence"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/providers"
+	llmapp "github.com/JorisJonkers-dev/findability-explorer/internal/llm/app"
+	llmdomain "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpapi"
-	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/webui"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/server"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/seal"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/seed"
 	terminologyapp "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
 	terminologydomain "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
@@ -85,6 +107,10 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	}
 	defer store.Close()
 
+	secret, err := sessionKey(logger, getenv)
+	if err != nil {
+		return err
+	}
 	catalogue, err := seed.Load()
 	if err != nil {
 		return err
@@ -98,7 +124,15 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		scans{repo: analysisRepo},
 		now,
 	)
-	analysis, err := newAnalysis(ctx, logger, getenv, analysisRepo, companies, terminology, now)
+	limits, err := limitsOf(getenv)
+	if err != nil {
+		return err
+	}
+	llm, err := newLLM(logger, getenv, store, analysisRepo, secret, limits, now)
+	if err != nil {
+		return err
+	}
+	analysis, err := newAnalysis(ctx, getenv, analysisRepo, companies, terminology, llm, limits, now)
 	if err != nil {
 		return err
 	}
@@ -106,13 +140,18 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		logger.ErrorContext(ctx, "analysis could not be recorded", "analysis", id, "error", err)
 	})
 
-	api, err := httpapi.New(logger, httpapi.Contexts{Terminology: terminology, Analysis: analysis, Companies: companies})
+	gate, err := newGate(ctx, logger, getenv, store, secret, now)
 	if err != nil {
 		return err
 	}
-	if subject := getenv("DEV_USER"); subject != "" {
-		logger.Warn("DEV_USER is set: every request without an identity runs as it", "subject", subject)
-		api = httpx.DevIdentity(subject, api)
+	api, err := httpapi.New(logger, httpapi.Contexts{
+		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, Auth: gate.auth,
+	})
+	if err != nil {
+		return err
+	}
+	if gate.dev {
+		api = identityweb.WithDevCookie(api)
 	}
 
 	addr := getenv("ADDR")
@@ -126,38 +165,169 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	}
 	return server.New(logger, version, server.Routes{
 		API:   api,
-		Web:   webui.Handler(web.Dist()),
+		Auth:  gate.routes,
+		Web:   identityweb.Gate(gate.auth, logger, webui.Handler(web.Dist())),
 		Ready: store.Ping,
 	}).Serve(ctx, ln)
 }
 
-// newAnalysis builds the analysis use cases and queues every analysis a restart left waiting.
-func newAnalysis(ctx context.Context, logger *slog.Logger, getenv func(string) string,
-	repo *persistence.Repository, directory analysisdomain.Directory, terminology *terminologyapp.Service,
+// gate is how requests are authenticated: auth-api sessions, or the DEV_USER stand-in.
+type gate struct {
+	auth   identityweb.Authenticator
+	routes http.Handler
+	dev    bool
+}
+
+// oidcVars are the variables a deployment needs to sign people in with auth-api.
+var oidcVars = []string{"OIDC_ISSUER", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_REDIRECT_URL"} //nolint:gochecknoglobals // a constant list
+
+// newGate signs people in with auth-api, or with DEV_USER on a local run.
+func newGate(ctx context.Context, logger *slog.Logger, getenv func(string) string, store *pg.Store, secret string,
 	now func() time.Time,
-) (*analysisapp.Service, error) {
+) (gate, error) {
+	if subject := getenv("DEV_USER"); subject != "" {
+		roles := identitydomain.ParseRoles(getenv("DEV_ROLES"))
+		logger.Warn("DEV_USER is set: every request runs as it, without signing in", "subject", subject, "roles", roles)
+		dev := identityweb.Dev{Principal: identitydomain.Principal{Subject: subject, Name: subject, Roles: roles}}
+		return gate{auth: dev, routes: identityweb.DevRoutes(), dev: true}, nil
+	}
+	var missing []string
+	for _, key := range oidcVars {
+		if getenv(key) == "" {
+			missing = append(missing, key)
+		}
+	}
+	if len(missing) > 0 {
+		return gate{}, fmt.Errorf("signing in needs %s (or DEV_USER on a local run)", strings.Join(missing, ", "))
+	}
+	redirect, err := url.Parse(getenv("OIDC_REDIRECT_URL"))
+	if err != nil || (redirect.Scheme != "https" && redirect.Scheme != "http") || redirect.Host == "" {
+		return gate{}, errors.New("OIDC_REDIRECT_URL must be an absolute http or https address")
+	}
+	client, err := oidc.New(ctx, oidc.Config{
+		Issuer: getenv("OIDC_ISSUER"), ClientID: getenv("OIDC_CLIENT_ID"),
+		ClientSecret: getenv("OIDC_CLIENT_SECRET"), RedirectURL: redirect.String(),
+	})
+	if err != nil {
+		return gate{}, err
+	}
+	sealer, err := seal.NewSealer(secret, identitypersistence.HKDFInfo)
+	if err != nil {
+		return gate{}, err
+	}
+	codec, err := seal.NewCodec(secret, identityweb.CodecInfo)
+	if err != nil {
+		return gate{}, err
+	}
+	sessions := identityapp.New(identitypersistence.New(store, sealer), client, client.Issuer(), now,
+		func(msg string, err error) { logger.Warn(msg, "error", err) })
+	go prune(ctx, logger, sessions)
+	return gate{
+		auth:   identityweb.NewSessions(sessions, codec, now),
+		routes: identityweb.NewRoutes(client, sessions, codec, redirect.Scheme == "https", now, logger).Handler(),
+	}, nil
+}
+
+// prune deletes expired sessions every hour.
+func prune(ctx context.Context, logger *slog.Logger, sessions *identityapp.Service) {
+	tick := time.NewTicker(time.Hour)
+	defer tick.Stop()
+	for {
+		if err := sessions.Prune(ctx); err != nil && ctx.Err() == nil {
+			logger.Warn("prune expired sessions", "error", err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+	}
+}
+
+// sessionKey is SESSION_KEY. A local run with DEV_USER may go without; it then gets a key of its
+// own, and the API keys it stores cannot be read after a restart.
+func sessionKey(logger *slog.Logger, getenv func(string) string) (string, error) {
+	secret := getenv("SESSION_KEY")
+	switch {
+	case secret == "" && getenv("DEV_USER") != "":
+		b := make([]byte, 32)
+		_, _ = rand.Read(b)
+		logger.Warn("SESSION_KEY is not set: API keys added on this run cannot be read after a restart")
+		return hex.EncodeToString(b), nil
+	case len(secret) < seal.MinSecretLength:
+		return "", fmt.Errorf("SESSION_KEY is required and has at least %d characters", seal.MinSecretLength)
+	default:
+		return secret, nil
+	}
+}
+
+// limits are what analyses may cost.
+type limits struct {
+	perHour int
+	monthly int64
+}
+
+func limitsOf(getenv func(string) string) (limits, error) {
 	perHour, err := intEnv(getenv, "ANALYSES_PER_HOUR", 10)
 	if err != nil {
-		return nil, err
+		return limits{}, err
 	}
 	monthly, err := intEnv(getenv, "LLM_MONTHLY_TOKENS", 2_000_000)
 	if err != nil {
+		return limits{}, err
+	}
+	return limits{perHour: perHour, monthly: int64(monthly)}, nil
+}
+
+// newLLM builds the language-model settings: the Vault key, the keys admins add, and the active model.
+func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, analyses *persistence.Repository,
+	secret string, l limits, now func() time.Time,
+) (*llmapp.Service, error) {
+	sealer, err := seal.NewSealer(secret, llmpersistence.HKDFInfo)
+	if err != nil {
 		return nil, err
 	}
-	var match analysisdomain.Matcher
-	if key := getenv("ANTHROPIC_API_KEY"); key != "" {
-		match = matcher.New(key)
-	} else {
-		logger.Warn("ANTHROPIC_API_KEY is not set: product matching is disabled")
+	vault := getenv("ANTHROPIC_API_KEY")
+	if vault == "" {
+		logger.Info("ANTHROPIC_API_KEY is not set: product matching is off until an admin adds a key and chooses a model")
 	}
+	spent := func(ctx context.Context) (int64, error) { return analyses.TokensSince(ctx, monthStart(now())) }
+	return llmapp.New(llmpersistence.New(store, sealer), providers.New(), spent,
+		llmapp.Config{VaultKey: vault, MonthlyTokens: l.monthly, AnalysesPerHour: l.perHour},
+		now, uuid.NewString), nil
+}
+
+func monthStart(t time.Time) time.Time {
+	t = t.UTC()
+	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+}
+
+// matchers hands the analysis context the matcher the language-model settings name now.
+type matchers struct {
+	llm *llmapp.Service
+}
+
+func (m matchers) Current(ctx context.Context) (analysisdomain.Matcher, string, error) {
+	client, provider, model, err := m.llm.Current(ctx)
+	if err != nil || client == nil {
+		return nil, "", err
+	}
+	return matcher.New(client, model), llmdomain.Describe(provider, model), nil
+}
+
+// newAnalysis builds the analysis use cases and queues every analysis a restart left waiting.
+func newAnalysis(ctx context.Context, getenv func(string) string, repo *persistence.Repository,
+	directory analysisdomain.Directory, terminology *terminologyapp.Service, llm *llmapp.Service, l limits,
+	now func() time.Time,
+) (*analysisapp.Service, error) {
 	svc := analysisapp.New(
 		repo,
 		directory,
 		crawler.New(crawler.Options{Contact: getenv("CRAWLER_CONTACT")}),
-		match,
+		matchers{llm: llm},
 		func() []analysisdomain.GlossaryTerm { return glossary(terminology.Terms()) },
 		now,
-		analysisapp.Limits{PerUserPerHour: perHour, MonthlyTokens: int64(monthly), SiteTextChars: 60_000, QueueSize: 32},
+		analysisapp.Limits{PerUserPerHour: l.perHour, MonthlyTokens: l.monthly, SiteTextChars: 60_000, QueueSize: 32},
 	)
 	if err := svc.Recover(ctx); err != nil {
 		return nil, err

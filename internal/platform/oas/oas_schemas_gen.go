@@ -15,6 +15,34 @@ func (s *ProblemStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+// The credential and model product matching uses.
+// Ref: #/components/schemas/ActiveLlm
+type ActiveLlm struct {
+	CredentialId LlmCredentialId `json:"credentialId"`
+	// The provider's id for the model.
+	Model string `json:"model"`
+}
+
+// GetCredentialId returns the value of CredentialId.
+func (s *ActiveLlm) GetCredentialId() LlmCredentialId {
+	return s.CredentialId
+}
+
+// GetModel returns the value of Model.
+func (s *ActiveLlm) GetModel() string {
+	return s.Model
+}
+
+// SetCredentialId sets the value of CredentialId.
+func (s *ActiveLlm) SetCredentialId(val LlmCredentialId) {
+	s.CredentialId = val
+}
+
+// SetModel sets the value of Model.
+func (s *ActiveLlm) SetModel(val string) {
+	s.Model = val
+}
+
 type AddCompetitorBadRequest ProblemStatusCode
 
 func (*AddCompetitorBadRequest) addCompetitorRes() {}
@@ -27,6 +55,22 @@ type AddCompetitorUnprocessableEntity ProblemStatusCode
 
 func (*AddCompetitorUnprocessableEntity) addCompetitorRes() {}
 
+type AddLlmCredentialBadRequest ProblemStatusCode
+
+func (*AddLlmCredentialBadRequest) addLlmCredentialRes() {}
+
+type AddLlmCredentialForbidden ProblemStatusCode
+
+func (*AddLlmCredentialForbidden) addLlmCredentialRes() {}
+
+type AddLlmCredentialUnauthorized ProblemStatusCode
+
+func (*AddLlmCredentialUnauthorized) addLlmCredentialRes() {}
+
+type AddLlmCredentialUnprocessableEntity ProblemStatusCode
+
+func (*AddLlmCredentialUnprocessableEntity) addLlmCredentialRes() {}
+
 // An analysis with its progress and results.
 // Ref: #/components/schemas/Analysis
 type Analysis struct {
@@ -38,6 +82,8 @@ type Analysis struct {
 	// Terms from the terminology map found on the site, most frequent first.
 	KnownTerms []KnownTerm    `json:"knownTerms"`
 	Matching   MatchingStatus `json:"matching"`
+	// The provider and model that matched the products, when a model was asked.
+	MatchingModel OptString `json:"matchingModel"`
 	// The site's products matched to Tribelt's belt families.
 	Equivalents []Equivalent `json:"equivalents"`
 }
@@ -65,6 +111,11 @@ func (s *Analysis) GetKnownTerms() []KnownTerm {
 // GetMatching returns the value of Matching.
 func (s *Analysis) GetMatching() MatchingStatus {
 	return s.Matching
+}
+
+// GetMatchingModel returns the value of MatchingModel.
+func (s *Analysis) GetMatchingModel() OptString {
+	return s.MatchingModel
 }
 
 // GetEquivalents returns the value of Equivalents.
@@ -95,6 +146,11 @@ func (s *Analysis) SetKnownTerms(val []KnownTerm) {
 // SetMatching sets the value of Matching.
 func (s *Analysis) SetMatching(val MatchingStatus) {
 	s.Matching = val
+}
+
+// SetMatchingModel sets the value of MatchingModel.
+func (s *Analysis) SetMatchingModel(val OptString) {
+	s.MatchingModel = val
 }
 
 // SetEquivalents sets the value of Equivalents.
@@ -398,6 +454,14 @@ func (s *BeltName) SetName(val string) {
 func (s *BeltName) SetFamily(val BeltFamily) {
 	s.Family = val
 }
+
+type ClearActiveLlmForbidden ProblemStatusCode
+
+func (*ClearActiveLlmForbidden) clearActiveLlmRes() {}
+
+type ClearActiveLlmUnauthorized ProblemStatusCode
+
+func (*ClearActiveLlmUnauthorized) clearActiveLlmRes() {}
 
 // A known company.
 // Ref: #/components/schemas/Competitor
@@ -730,6 +794,31 @@ func (s *CrawledPage) SetWordCount(val int32) {
 	s.WordCount = val
 }
 
+type DeleteLlmCredentialBadRequest ProblemStatusCode
+
+func (*DeleteLlmCredentialBadRequest) deleteLlmCredentialRes() {}
+
+type DeleteLlmCredentialForbidden ProblemStatusCode
+
+func (*DeleteLlmCredentialForbidden) deleteLlmCredentialRes() {}
+
+// DeleteLlmCredentialNoContent is response for DeleteLlmCredential operation.
+type DeleteLlmCredentialNoContent struct{}
+
+func (*DeleteLlmCredentialNoContent) deleteLlmCredentialRes() {}
+
+type DeleteLlmCredentialNotFound ProblemStatusCode
+
+func (*DeleteLlmCredentialNotFound) deleteLlmCredentialRes() {}
+
+type DeleteLlmCredentialUnauthorized ProblemStatusCode
+
+func (*DeleteLlmCredentialUnauthorized) deleteLlmCredentialRes() {}
+
+type DeleteLlmCredentialUnprocessableEntity ProblemStatusCode
+
+func (*DeleteLlmCredentialUnprocessableEntity) deleteLlmCredentialRes() {}
+
 // A product on the site matched to a Tribelt belt family by the language model.
 // Ref: #/components/schemas/Equivalent
 type Equivalent struct {
@@ -852,31 +941,6 @@ func (s *Facets) SetFamilies(val []FacetCount) {
 	s.Families = val
 }
 
-type ForwardAuth struct {
-	APIKey string
-	Roles  []string
-}
-
-// GetAPIKey returns the value of APIKey.
-func (s *ForwardAuth) GetAPIKey() string {
-	return s.APIKey
-}
-
-// GetRoles returns the value of Roles.
-func (s *ForwardAuth) GetRoles() []string {
-	return s.Roles
-}
-
-// SetAPIKey sets the value of APIKey.
-func (s *ForwardAuth) SetAPIKey(val string) {
-	s.APIKey = val
-}
-
-// SetRoles sets the value of Roles.
-func (s *ForwardAuth) SetRoles(val []string) {
-	s.Roles = val
-}
-
 type GetAnalysisBadRequest ProblemStatusCode
 
 func (*GetAnalysisBadRequest) getAnalysisRes() {}
@@ -892,6 +956,14 @@ func (*GetCompetitorBadRequest) getCompetitorRes() {}
 type GetCompetitorNotFound ProblemStatusCode
 
 func (*GetCompetitorNotFound) getCompetitorRes() {}
+
+type GetLlmSettingsForbidden ProblemStatusCode
+
+func (*GetLlmSettingsForbidden) getLlmSettingsRes() {}
+
+type GetLlmSettingsUnauthorized ProblemStatusCode
+
+func (*GetLlmSettingsUnauthorized) getLlmSettingsRes() {}
 
 // The kind of search a term represents.
 // Ref: #/components/schemas/IntentTier
@@ -1233,6 +1305,661 @@ func (s *Language) UnmarshalText(data []byte) error {
 	}
 }
 
+type ListLlmModelsBadGateway ProblemStatusCode
+
+func (*ListLlmModelsBadGateway) listLlmModelsRes() {}
+
+type ListLlmModelsBadRequest ProblemStatusCode
+
+func (*ListLlmModelsBadRequest) listLlmModelsRes() {}
+
+type ListLlmModelsForbidden ProblemStatusCode
+
+func (*ListLlmModelsForbidden) listLlmModelsRes() {}
+
+type ListLlmModelsNotFound ProblemStatusCode
+
+func (*ListLlmModelsNotFound) listLlmModelsRes() {}
+
+type ListLlmModelsUnauthorized ProblemStatusCode
+
+func (*ListLlmModelsUnauthorized) listLlmModelsRes() {}
+
+type ListLlmModelsUnprocessableEntity ProblemStatusCode
+
+func (*ListLlmModelsUnprocessableEntity) listLlmModelsRes() {}
+
+// What analyses may spend on the language model.
+// Ref: #/components/schemas/LlmBudget
+type LlmBudget struct {
+	// The tokens all analyses of a calendar month (UTC) may use.
+	MonthlyTokens int64 `json:"monthlyTokens"`
+	// The tokens analyses created this month used so far.
+	UsedThisMonth int64 `json:"usedThisMonth"`
+	// How many analyses one account may start per hour.
+	AnalysesPerHour int32 `json:"analysesPerHour"`
+}
+
+// GetMonthlyTokens returns the value of MonthlyTokens.
+func (s *LlmBudget) GetMonthlyTokens() int64 {
+	return s.MonthlyTokens
+}
+
+// GetUsedThisMonth returns the value of UsedThisMonth.
+func (s *LlmBudget) GetUsedThisMonth() int64 {
+	return s.UsedThisMonth
+}
+
+// GetAnalysesPerHour returns the value of AnalysesPerHour.
+func (s *LlmBudget) GetAnalysesPerHour() int32 {
+	return s.AnalysesPerHour
+}
+
+// SetMonthlyTokens sets the value of MonthlyTokens.
+func (s *LlmBudget) SetMonthlyTokens(val int64) {
+	s.MonthlyTokens = val
+}
+
+// SetUsedThisMonth sets the value of UsedThisMonth.
+func (s *LlmBudget) SetUsedThisMonth(val int64) {
+	s.UsedThisMonth = val
+}
+
+// SetAnalysesPerHour sets the value of AnalysesPerHour.
+func (s *LlmBudget) SetAnalysesPerHour(val int32) {
+	s.AnalysesPerHour = val
+}
+
+// How the active model was decided - `default` (nobody chose; the Vault key with claude-haiku-5-5 when
+// Vault delivers one), `chosen` (an admin chose), or `off` (an admin turned matching off).
+// Ref: #/components/schemas/LlmChoice
+type LlmChoice string
+
+const (
+	LlmChoiceDefault LlmChoice = "default"
+	LlmChoiceChosen  LlmChoice = "chosen"
+	LlmChoiceFalse   LlmChoice = "false"
+)
+
+// AllValues returns all LlmChoice values.
+func (LlmChoice) AllValues() []LlmChoice {
+	return []LlmChoice{
+		LlmChoiceDefault,
+		LlmChoiceChosen,
+		LlmChoiceFalse,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LlmChoice) MarshalText() ([]byte, error) {
+	switch s {
+	case LlmChoiceDefault:
+		return []byte(s), nil
+	case LlmChoiceChosen:
+		return []byte(s), nil
+	case LlmChoiceFalse:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LlmChoice) UnmarshalText(data []byte) error {
+	switch LlmChoice(data) {
+	case LlmChoiceDefault:
+		*s = LlmChoiceDefault
+		return nil
+	case LlmChoiceChosen:
+		*s = LlmChoiceChosen
+		return nil
+	case LlmChoiceFalse:
+		*s = LlmChoiceFalse
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A language-model API key, shown without its secret.
+// Ref: #/components/schemas/LlmCredential
+type LlmCredential struct {
+	ID       LlmCredentialId `json:"id"`
+	Provider LlmProvider     `json:"provider"`
+	// A name to tell keys apart.
+	Label  string              `json:"label"`
+	Source LlmCredentialSource `json:"source"`
+	// The first 12 hex characters of the key's SHA-256: enough to tell keys apart, never enough to recover
+	// one.
+	Fingerprint string `json:"fingerprint"`
+	// False when the key was sealed under another SESSION_KEY and has to be entered again.
+	Readable bool `json:"readable"`
+	// Who added the key; absent for the Vault key.
+	CreatedBy OptString `json:"createdBy"`
+	// When the key was added; absent for the Vault key.
+	CreatedAt OptDateTime `json:"createdAt"`
+	LastTest  OptLlmTest  `json:"lastTest"`
+}
+
+// GetID returns the value of ID.
+func (s *LlmCredential) GetID() LlmCredentialId {
+	return s.ID
+}
+
+// GetProvider returns the value of Provider.
+func (s *LlmCredential) GetProvider() LlmProvider {
+	return s.Provider
+}
+
+// GetLabel returns the value of Label.
+func (s *LlmCredential) GetLabel() string {
+	return s.Label
+}
+
+// GetSource returns the value of Source.
+func (s *LlmCredential) GetSource() LlmCredentialSource {
+	return s.Source
+}
+
+// GetFingerprint returns the value of Fingerprint.
+func (s *LlmCredential) GetFingerprint() string {
+	return s.Fingerprint
+}
+
+// GetReadable returns the value of Readable.
+func (s *LlmCredential) GetReadable() bool {
+	return s.Readable
+}
+
+// GetCreatedBy returns the value of CreatedBy.
+func (s *LlmCredential) GetCreatedBy() OptString {
+	return s.CreatedBy
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *LlmCredential) GetCreatedAt() OptDateTime {
+	return s.CreatedAt
+}
+
+// GetLastTest returns the value of LastTest.
+func (s *LlmCredential) GetLastTest() OptLlmTest {
+	return s.LastTest
+}
+
+// SetID sets the value of ID.
+func (s *LlmCredential) SetID(val LlmCredentialId) {
+	s.ID = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *LlmCredential) SetProvider(val LlmProvider) {
+	s.Provider = val
+}
+
+// SetLabel sets the value of Label.
+func (s *LlmCredential) SetLabel(val string) {
+	s.Label = val
+}
+
+// SetSource sets the value of Source.
+func (s *LlmCredential) SetSource(val LlmCredentialSource) {
+	s.Source = val
+}
+
+// SetFingerprint sets the value of Fingerprint.
+func (s *LlmCredential) SetFingerprint(val string) {
+	s.Fingerprint = val
+}
+
+// SetReadable sets the value of Readable.
+func (s *LlmCredential) SetReadable(val bool) {
+	s.Readable = val
+}
+
+// SetCreatedBy sets the value of CreatedBy.
+func (s *LlmCredential) SetCreatedBy(val OptString) {
+	s.CreatedBy = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *LlmCredential) SetCreatedAt(val OptDateTime) {
+	s.CreatedAt = val
+}
+
+// SetLastTest sets the value of LastTest.
+func (s *LlmCredential) SetLastTest(val OptLlmTest) {
+	s.LastTest = val
+}
+
+func (*LlmCredential) addLlmCredentialRes() {}
+
+type LlmCredentialId string
+
+// Where a credential comes from - added here and stored sealed, or delivered by Vault.
+// Ref: #/components/schemas/LlmCredentialSource
+type LlmCredentialSource string
+
+const (
+	LlmCredentialSourceStored LlmCredentialSource = "stored"
+	LlmCredentialSourceVault  LlmCredentialSource = "vault"
+)
+
+// AllValues returns all LlmCredentialSource values.
+func (LlmCredentialSource) AllValues() []LlmCredentialSource {
+	return []LlmCredentialSource{
+		LlmCredentialSourceStored,
+		LlmCredentialSourceVault,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LlmCredentialSource) MarshalText() ([]byte, error) {
+	switch s {
+	case LlmCredentialSourceStored:
+		return []byte(s), nil
+	case LlmCredentialSourceVault:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LlmCredentialSource) UnmarshalText(data []byte) error {
+	switch LlmCredentialSource(data) {
+	case LlmCredentialSourceStored:
+		*s = LlmCredentialSourceStored
+		return nil
+	case LlmCredentialSourceVault:
+		*s = LlmCredentialSourceVault
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One change to or test of the language-model settings.
+// Ref: #/components/schemas/LlmEvent
+type LlmEvent struct {
+	// When it happened.
+	At time.Time `json:"at"`
+	// Who did it.
+	Actor        string             `json:"actor"`
+	Action       LlmEventAction     `json:"action"`
+	CredentialId OptLlmCredentialId `json:"credentialId"`
+	Provider     OptLlmProvider     `json:"provider"`
+	// The model, for active_set.
+	Model OptString `json:"model"`
+	// For credential_tested and credential_added, whether the provider accepted the key.
+	Ok OptBool `json:"ok"`
+	// A sentence describing the event.
+	Message string `json:"message"`
+}
+
+// GetAt returns the value of At.
+func (s *LlmEvent) GetAt() time.Time {
+	return s.At
+}
+
+// GetActor returns the value of Actor.
+func (s *LlmEvent) GetActor() string {
+	return s.Actor
+}
+
+// GetAction returns the value of Action.
+func (s *LlmEvent) GetAction() LlmEventAction {
+	return s.Action
+}
+
+// GetCredentialId returns the value of CredentialId.
+func (s *LlmEvent) GetCredentialId() OptLlmCredentialId {
+	return s.CredentialId
+}
+
+// GetProvider returns the value of Provider.
+func (s *LlmEvent) GetProvider() OptLlmProvider {
+	return s.Provider
+}
+
+// GetModel returns the value of Model.
+func (s *LlmEvent) GetModel() OptString {
+	return s.Model
+}
+
+// GetOk returns the value of Ok.
+func (s *LlmEvent) GetOk() OptBool {
+	return s.Ok
+}
+
+// GetMessage returns the value of Message.
+func (s *LlmEvent) GetMessage() string {
+	return s.Message
+}
+
+// SetAt sets the value of At.
+func (s *LlmEvent) SetAt(val time.Time) {
+	s.At = val
+}
+
+// SetActor sets the value of Actor.
+func (s *LlmEvent) SetActor(val string) {
+	s.Actor = val
+}
+
+// SetAction sets the value of Action.
+func (s *LlmEvent) SetAction(val LlmEventAction) {
+	s.Action = val
+}
+
+// SetCredentialId sets the value of CredentialId.
+func (s *LlmEvent) SetCredentialId(val OptLlmCredentialId) {
+	s.CredentialId = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *LlmEvent) SetProvider(val OptLlmProvider) {
+	s.Provider = val
+}
+
+// SetModel sets the value of Model.
+func (s *LlmEvent) SetModel(val OptString) {
+	s.Model = val
+}
+
+// SetOk sets the value of Ok.
+func (s *LlmEvent) SetOk(val OptBool) {
+	s.Ok = val
+}
+
+// SetMessage sets the value of Message.
+func (s *LlmEvent) SetMessage(val string) {
+	s.Message = val
+}
+
+// What an event records.
+// Ref: #/components/schemas/LlmEventAction
+type LlmEventAction string
+
+const (
+	LlmEventActionCredentialAdded   LlmEventAction = "credential_added"
+	LlmEventActionCredentialDeleted LlmEventAction = "credential_deleted"
+	LlmEventActionCredentialTested  LlmEventAction = "credential_tested"
+	LlmEventActionActiveSet         LlmEventAction = "active_set"
+	LlmEventActionActiveCleared     LlmEventAction = "active_cleared"
+)
+
+// AllValues returns all LlmEventAction values.
+func (LlmEventAction) AllValues() []LlmEventAction {
+	return []LlmEventAction{
+		LlmEventActionCredentialAdded,
+		LlmEventActionCredentialDeleted,
+		LlmEventActionCredentialTested,
+		LlmEventActionActiveSet,
+		LlmEventActionActiveCleared,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LlmEventAction) MarshalText() ([]byte, error) {
+	switch s {
+	case LlmEventActionCredentialAdded:
+		return []byte(s), nil
+	case LlmEventActionCredentialDeleted:
+		return []byte(s), nil
+	case LlmEventActionCredentialTested:
+		return []byte(s), nil
+	case LlmEventActionActiveSet:
+		return []byte(s), nil
+	case LlmEventActionActiveCleared:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LlmEventAction) UnmarshalText(data []byte) error {
+	switch LlmEventAction(data) {
+	case LlmEventActionCredentialAdded:
+		*s = LlmEventActionCredentialAdded
+		return nil
+	case LlmEventActionCredentialDeleted:
+		*s = LlmEventActionCredentialDeleted
+		return nil
+	case LlmEventActionCredentialTested:
+		*s = LlmEventActionCredentialTested
+		return nil
+	case LlmEventActionActiveSet:
+		*s = LlmEventActionActiveSet
+		return nil
+	case LlmEventActionActiveCleared:
+		*s = LlmEventActionActiveCleared
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A model a key may use.
+// Ref: #/components/schemas/LlmModel
+type LlmModel struct {
+	// The provider's id for the model, which setActiveLlm takes.
+	ID string `json:"id"`
+	// The provider's display name for it, or the id.
+	Name string `json:"name"`
+}
+
+// GetID returns the value of ID.
+func (s *LlmModel) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *LlmModel) GetName() string {
+	return s.Name
+}
+
+// SetID sets the value of ID.
+func (s *LlmModel) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *LlmModel) SetName(val string) {
+	s.Name = val
+}
+
+// The models a key may use, by id.
+// Ref: #/components/schemas/LlmModelList
+type LlmModelList struct {
+	// The models.
+	Items []LlmModel `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *LlmModelList) GetItems() []LlmModel {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *LlmModelList) SetItems(val []LlmModel) {
+	s.Items = val
+}
+
+func (*LlmModelList) listLlmModelsRes() {}
+
+// A language-model provider.
+// Ref: #/components/schemas/LlmProvider
+type LlmProvider string
+
+const (
+	LlmProviderAnthropic  LlmProvider = "anthropic"
+	LlmProviderOpenrouter LlmProvider = "openrouter"
+	LlmProviderMistral    LlmProvider = "mistral"
+)
+
+// AllValues returns all LlmProvider values.
+func (LlmProvider) AllValues() []LlmProvider {
+	return []LlmProvider{
+		LlmProviderAnthropic,
+		LlmProviderOpenrouter,
+		LlmProviderMistral,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LlmProvider) MarshalText() ([]byte, error) {
+	switch s {
+	case LlmProviderAnthropic:
+		return []byte(s), nil
+	case LlmProviderOpenrouter:
+		return []byte(s), nil
+	case LlmProviderMistral:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LlmProvider) UnmarshalText(data []byte) error {
+	switch LlmProvider(data) {
+	case LlmProviderAnthropic:
+		*s = LlmProviderAnthropic
+		return nil
+	case LlmProviderOpenrouter:
+		*s = LlmProviderOpenrouter
+		return nil
+	case LlmProviderMistral:
+		*s = LlmProviderMistral
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The language-model settings.
+// Ref: #/components/schemas/LlmSettings
+type LlmSettings struct {
+	// Every credential, the Vault one first, then stored ones oldest first.
+	Credentials []LlmCredential `json:"credentials"`
+	Choice      LlmChoice       `json:"choice"`
+	Active      OptActiveLlm    `json:"active"`
+	// True when the next analysis will match products: a credential and model are active and the
+	// credential is readable.
+	MatchingEnabled bool      `json:"matchingEnabled"`
+	Budget          LlmBudget `json:"budget"`
+	// The latest changes and tests, newest first.
+	Events []LlmEvent `json:"events"`
+}
+
+// GetCredentials returns the value of Credentials.
+func (s *LlmSettings) GetCredentials() []LlmCredential {
+	return s.Credentials
+}
+
+// GetChoice returns the value of Choice.
+func (s *LlmSettings) GetChoice() LlmChoice {
+	return s.Choice
+}
+
+// GetActive returns the value of Active.
+func (s *LlmSettings) GetActive() OptActiveLlm {
+	return s.Active
+}
+
+// GetMatchingEnabled returns the value of MatchingEnabled.
+func (s *LlmSettings) GetMatchingEnabled() bool {
+	return s.MatchingEnabled
+}
+
+// GetBudget returns the value of Budget.
+func (s *LlmSettings) GetBudget() LlmBudget {
+	return s.Budget
+}
+
+// GetEvents returns the value of Events.
+func (s *LlmSettings) GetEvents() []LlmEvent {
+	return s.Events
+}
+
+// SetCredentials sets the value of Credentials.
+func (s *LlmSettings) SetCredentials(val []LlmCredential) {
+	s.Credentials = val
+}
+
+// SetChoice sets the value of Choice.
+func (s *LlmSettings) SetChoice(val LlmChoice) {
+	s.Choice = val
+}
+
+// SetActive sets the value of Active.
+func (s *LlmSettings) SetActive(val OptActiveLlm) {
+	s.Active = val
+}
+
+// SetMatchingEnabled sets the value of MatchingEnabled.
+func (s *LlmSettings) SetMatchingEnabled(val bool) {
+	s.MatchingEnabled = val
+}
+
+// SetBudget sets the value of Budget.
+func (s *LlmSettings) SetBudget(val LlmBudget) {
+	s.Budget = val
+}
+
+// SetEvents sets the value of Events.
+func (s *LlmSettings) SetEvents(val []LlmEvent) {
+	s.Events = val
+}
+
+func (*LlmSettings) clearActiveLlmRes() {}
+func (*LlmSettings) getLlmSettingsRes() {}
+func (*LlmSettings) setActiveLlmRes()   {}
+
+// The outcome of asking the provider whether it accepts a key.
+// Ref: #/components/schemas/LlmTest
+type LlmTest struct {
+	// True when the provider accepted the key.
+	Ok bool `json:"ok"`
+	// When the key was tested.
+	At time.Time `json:"at"`
+	// What the provider said, or how many models the key may use.
+	Message string `json:"message"`
+}
+
+// GetOk returns the value of Ok.
+func (s *LlmTest) GetOk() bool {
+	return s.Ok
+}
+
+// GetAt returns the value of At.
+func (s *LlmTest) GetAt() time.Time {
+	return s.At
+}
+
+// GetMessage returns the value of Message.
+func (s *LlmTest) GetMessage() string {
+	return s.Message
+}
+
+// SetOk sets the value of Ok.
+func (s *LlmTest) SetOk(val bool) {
+	s.Ok = val
+}
+
+// SetAt sets the value of At.
+func (s *LlmTest) SetAt(val time.Time) {
+	s.At = val
+}
+
+// SetMessage sets the value of Message.
+func (s *LlmTest) SetMessage(val string) {
+	s.Message = val
+}
+
+func (*LlmTest) testLlmCredentialRes() {}
+
 // What happened to the product matching by the language model: pending until the crawl ends, disabled
 // when no model is configured, skipped when the budget is spent or the site gave no text, then done or
 // failed.
@@ -1298,6 +2025,61 @@ func (s *MatchingStatus) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// The signed-in account.
+// Ref: #/components/schemas/Me
+type Me struct {
+	// The account's subject at auth-api.
+	Subject string `json:"subject"`
+	// The name to greet the account with.
+	Name string `json:"name"`
+	// The account's email address, when auth-api shares it.
+	Email OptString `json:"email"`
+	// True when auth-api grants ROLE_ADMIN, which the admin settings need.
+	IsAdmin bool `json:"isAdmin"`
+}
+
+// GetSubject returns the value of Subject.
+func (s *Me) GetSubject() string {
+	return s.Subject
+}
+
+// GetName returns the value of Name.
+func (s *Me) GetName() string {
+	return s.Name
+}
+
+// GetEmail returns the value of Email.
+func (s *Me) GetEmail() OptString {
+	return s.Email
+}
+
+// GetIsAdmin returns the value of IsAdmin.
+func (s *Me) GetIsAdmin() bool {
+	return s.IsAdmin
+}
+
+// SetSubject sets the value of Subject.
+func (s *Me) SetSubject(val string) {
+	s.Subject = val
+}
+
+// SetName sets the value of Name.
+func (s *Me) SetName(val string) {
+	s.Name = val
+}
+
+// SetEmail sets the value of Email.
+func (s *Me) SetEmail(val OptString) {
+	s.Email = val
+}
+
+// SetIsAdmin sets the value of IsAdmin.
+func (s *Me) SetIsAdmin(val bool) {
+	s.IsAdmin = val
+}
+
+func (*Me) getMeRes() {}
 
 // A website to analyse.
 // Ref: #/components/schemas/NewAnalysis
@@ -1368,6 +2150,92 @@ func (s *NewCompetitor) SetName(val string) {
 // SetURL sets the value of URL.
 func (s *NewCompetitor) SetURL(val url.URL) {
 	s.URL = val
+}
+
+// An API key to add.
+// Ref: #/components/schemas/NewLlmCredential
+type NewLlmCredential struct {
+	Provider LlmProvider `json:"provider"`
+	// A name to tell keys apart.
+	Label string `json:"label"`
+	// The secret key. It is stored sealed and never returned.
+	ApiKey string `json:"apiKey"`
+}
+
+// GetProvider returns the value of Provider.
+func (s *NewLlmCredential) GetProvider() LlmProvider {
+	return s.Provider
+}
+
+// GetLabel returns the value of Label.
+func (s *NewLlmCredential) GetLabel() string {
+	return s.Label
+}
+
+// GetApiKey returns the value of ApiKey.
+func (s *NewLlmCredential) GetApiKey() string {
+	return s.ApiKey
+}
+
+// SetProvider sets the value of Provider.
+func (s *NewLlmCredential) SetProvider(val LlmProvider) {
+	s.Provider = val
+}
+
+// SetLabel sets the value of Label.
+func (s *NewLlmCredential) SetLabel(val string) {
+	s.Label = val
+}
+
+// SetApiKey sets the value of ApiKey.
+func (s *NewLlmCredential) SetApiKey(val string) {
+	s.ApiKey = val
+}
+
+// NewOptActiveLlm returns new OptActiveLlm with value set to v.
+func NewOptActiveLlm(v ActiveLlm) OptActiveLlm {
+	return OptActiveLlm{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptActiveLlm is optional ActiveLlm.
+type OptActiveLlm struct {
+	Value ActiveLlm
+	Set   bool
+}
+
+// IsSet returns true if OptActiveLlm was set.
+func (o OptActiveLlm) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptActiveLlm) Reset() {
+	var v ActiveLlm
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptActiveLlm) SetTo(v ActiveLlm) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptActiveLlm) Get() (v ActiveLlm, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptActiveLlm) Or(d ActiveLlm) ActiveLlm {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewOptAnalysisSummary returns new OptAnalysisSummary with value set to v.
@@ -1456,6 +2324,52 @@ func (o OptBeltFamily) Get() (v BeltFamily, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBeltFamily) Or(d BeltFamily) BeltFamily {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptBool returns new OptBool with value set to v.
+func NewOptBool(v bool) OptBool {
+	return OptBool{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBool is optional bool.
+type OptBool struct {
+	Value bool
+	Set   bool
+}
+
+// IsSet returns true if OptBool was set.
+func (o OptBool) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBool) Reset() {
+	var v bool
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBool) SetTo(v bool) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBool) Get() (v bool, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBool) Or(d bool) bool {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1692,6 +2606,144 @@ func (o OptLanguage) Or(d Language) Language {
 	return d
 }
 
+// NewOptLlmCredentialId returns new OptLlmCredentialId with value set to v.
+func NewOptLlmCredentialId(v LlmCredentialId) OptLlmCredentialId {
+	return OptLlmCredentialId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLlmCredentialId is optional LlmCredentialId.
+type OptLlmCredentialId struct {
+	Value LlmCredentialId
+	Set   bool
+}
+
+// IsSet returns true if OptLlmCredentialId was set.
+func (o OptLlmCredentialId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLlmCredentialId) Reset() {
+	var v LlmCredentialId
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLlmCredentialId) SetTo(v LlmCredentialId) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLlmCredentialId) Get() (v LlmCredentialId, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLlmCredentialId) Or(d LlmCredentialId) LlmCredentialId {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLlmProvider returns new OptLlmProvider with value set to v.
+func NewOptLlmProvider(v LlmProvider) OptLlmProvider {
+	return OptLlmProvider{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLlmProvider is optional LlmProvider.
+type OptLlmProvider struct {
+	Value LlmProvider
+	Set   bool
+}
+
+// IsSet returns true if OptLlmProvider was set.
+func (o OptLlmProvider) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLlmProvider) Reset() {
+	var v LlmProvider
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLlmProvider) SetTo(v LlmProvider) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLlmProvider) Get() (v LlmProvider, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLlmProvider) Or(d LlmProvider) LlmProvider {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLlmTest returns new OptLlmTest with value set to v.
+func NewOptLlmTest(v LlmTest) OptLlmTest {
+	return OptLlmTest{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLlmTest is optional LlmTest.
+type OptLlmTest struct {
+	Value LlmTest
+	Set   bool
+}
+
+// IsSet returns true if OptLlmTest was set.
+func (o OptLlmTest) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLlmTest) Reset() {
+	var v LlmTest
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLlmTest) SetTo(v LlmTest) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLlmTest) Get() (v LlmTest, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLlmTest) Or(d LlmTest) LlmTest {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -1863,6 +2915,7 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 	s.Response = val
 }
 
+func (*ProblemStatusCode) getMeRes()           {}
 func (*ProblemStatusCode) listAnalysesRes()    {}
 func (*ProblemStatusCode) listCompetitorsRes() {}
 func (*ProblemStatusCode) searchTermsRes()     {}
@@ -1895,6 +2948,51 @@ func (s *SearchTerm) SetTerm(val string) {
 func (s *SearchTerm) SetLanguage(val string) {
 	s.Language = val
 }
+
+type SessionCookie struct {
+	APIKey string
+	Roles  []string
+}
+
+// GetAPIKey returns the value of APIKey.
+func (s *SessionCookie) GetAPIKey() string {
+	return s.APIKey
+}
+
+// GetRoles returns the value of Roles.
+func (s *SessionCookie) GetRoles() []string {
+	return s.Roles
+}
+
+// SetAPIKey sets the value of APIKey.
+func (s *SessionCookie) SetAPIKey(val string) {
+	s.APIKey = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *SessionCookie) SetRoles(val []string) {
+	s.Roles = val
+}
+
+type SetActiveLlmBadRequest ProblemStatusCode
+
+func (*SetActiveLlmBadRequest) setActiveLlmRes() {}
+
+type SetActiveLlmForbidden ProblemStatusCode
+
+func (*SetActiveLlmForbidden) setActiveLlmRes() {}
+
+type SetActiveLlmNotFound ProblemStatusCode
+
+func (*SetActiveLlmNotFound) setActiveLlmRes() {}
+
+type SetActiveLlmUnauthorized ProblemStatusCode
+
+func (*SetActiveLlmUnauthorized) setActiveLlmRes() {}
+
+type SetActiveLlmUnprocessableEntity ProblemStatusCode
+
+func (*SetActiveLlmUnprocessableEntity) setActiveLlmRes() {}
 
 type StartAnalysisBadRequest ProblemStatusCode
 
@@ -2023,3 +3121,23 @@ func (s *TermSearch) SetFacets(val Facets) {
 }
 
 func (*TermSearch) searchTermsRes() {}
+
+type TestLlmCredentialBadRequest ProblemStatusCode
+
+func (*TestLlmCredentialBadRequest) testLlmCredentialRes() {}
+
+type TestLlmCredentialForbidden ProblemStatusCode
+
+func (*TestLlmCredentialForbidden) testLlmCredentialRes() {}
+
+type TestLlmCredentialNotFound ProblemStatusCode
+
+func (*TestLlmCredentialNotFound) testLlmCredentialRes() {}
+
+type TestLlmCredentialUnauthorized ProblemStatusCode
+
+func (*TestLlmCredentialUnauthorized) testLlmCredentialRes() {}
+
+type TestLlmCredentialUnprocessableEntity ProblemStatusCode
+
+func (*TestLlmCredentialUnprocessableEntity) testLlmCredentialRes() {}

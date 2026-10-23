@@ -1,99 +1,54 @@
 import { expect, expectAccessible, test } from './fixtures'
 
-test('the overview renders and is accessible', async ({ page }) => {
+const SECTIONS = [
+  { path: '/buyers', title: 'Buyers', heading: 'Paid search buys traffic, not buyers.' },
+  { path: '/ai-search', title: 'AI search', heading: 'Google never came. AI crawlers read everything.' },
+  { path: '/competitors', title: 'Competitors', heading: /makers, the same belts, other names\.$/ },
+  { path: '/terms', title: 'Search terms', heading: /ways to search for a metal belt\.$/ },
+  { path: '/plan', title: 'The plan', heading: 'Measure first. Then build. Then expand.' },
+] as const
+
+test('the poster renders and is accessible', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1, name: 'One belt, five names. Buyers search with all of them.' })).toBeVisible()
-  const nav = page.getByRole('navigation', { name: 'Main' })
-  await expect(nav.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
-  await expect(page.getByText('146 terms in 10 languages', { exact: false })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /^One belt,\s*five names\.$/ })).toBeVisible()
   await expect(page).toHaveTitle('Overview · Findability Explorer')
+  const sections = page.getByRole('navigation', { name: 'Sections' })
+  await expect(sections.getByRole('link')).toHaveCount(5)
+  // The live figures: the research's 25 makers and the map's 146 terms.
+  await expect(sections.getByRole('link', { name: /^Competitors: 25 makers/ })).toBeVisible()
+  await expect(sections.getByRole('link', { name: /^Search terms: 146 search terms in 10 languages\. Tribelt's own website uses 30 of them\./ })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Account' }).first()).toContainText('Signed in as')
   await expectAccessible(page)
 })
 
-test('the scan form refuses an address it cannot scan', async ({ page }) => {
-  await page.goto('/scan')
-  await expect(page.getByRole('heading', { level: 1, name: 'Scan a competitor' })).toBeVisible()
-  await page.getByLabel('Website address').fill('https://intranet')
-  await page.getByRole('button', { name: 'Scan website' }).click()
-  await expect(page.getByRole('alert')).toHaveText('Enter an address with a full host name, like https://www.example.com.')
-  await expect(page.getByLabel('Website address')).toHaveAttribute('aria-invalid', 'true')
-  await expect(page).toHaveURL('/scan')
-  await expectAccessible(page)
-})
+for (const section of SECTIONS) {
+  test(`${section.title} can be opened directly and is accessible`, async ({ page }) => {
+    await page.goto(section.path)
+    await expect(page.getByRole('heading', { level: 1, name: section.heading })).toBeVisible()
+    await expect(page).toHaveTitle(`${section.title} · Findability Explorer`)
+    await expectAccessible(page)
+  })
+}
 
-test('searching the terminology for a product finds its company, and picking it filters by it', async ({ page }) => {
-  await page.goto('/terminology')
-  await page.getByLabel('Search terms and companies').fill('TwenteFlex')
-  // The search waits for typing to pause, then puts the query in the URL.
-  await expect(page).toHaveURL(/[?&]q=TwenteFlex(&|$)/)
-  const table = page.getByRole('region', { name: 'Matching terms' })
-  const row = table.getByRole('row').filter({ has: page.getByRole('button', { name: /^Twentebelt/ }) }).first()
-  await expect(row).toBeVisible()
-  await expectAccessible(page)
+test('a tile zooms into its section, and Overview zooms back out', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: /^Buyers:/ }).click()
+  await expect(page).toHaveURL('/buyers')
+  await expect(page.getByRole('heading', { level: 1, name: 'Paid search buys traffic, not buyers.' })).toBeVisible()
+  await page.getByRole('button', { name: 'Contact rate' }).click()
+  await page.getByRole('button', { name: 'Users', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Users', exact: true })).toHaveAttribute('aria-pressed', 'true')
 
-  await row.getByRole('button', { name: /^Twentebelt/ }).click()
-  await expect(page).toHaveURL(/[?&]user=Twentebelt(&|$)/)
-  await expect(page.getByText('Terms used by Twentebelt.')).toBeVisible()
-
-  // The view survives a reload.
-  await page.reload()
-  await expect(page.getByLabel('Search terms and companies')).toHaveValue('TwenteFlex')
-  await expect(table.getByRole('button', { name: /^Twentebelt/ }).first()).toHaveAttribute('aria-pressed', 'true')
-})
-
-test("the competitor matrix shows Twentebelt's name for Tri-Flex", async ({ page }) => {
-  await page.goto('/competitors')
-  const matrix = page.getByRole('region', { name: 'Competitors' })
-  const row = matrix.getByRole('row').filter({ has: page.getByRole('rowheader', { name: /^Twentebelt/ }) })
-  await expect(row).toContainText('TwenteFlex spiral belts')
-  await expect(page.getByRole('heading', { name: "Tribelt's own group" })).toBeVisible()
-  await expectAccessible(page)
-
-  await row.getByRole('link', { name: 'Twentebelt', exact: true }).click()
-  await expect(page).toHaveURL('/competitors/twentebelt')
-  await page.getByRole('link', { name: /in the terminology$/ }).click()
-  await expect(page).toHaveURL('/terminology?user=Twentebelt')
-})
-
-test('unknown routes go to the overview, and old addresses to their new pages', async ({ page }) => {
-  await page.goto('/no/such/page')
+  await page.getByRole('button', { name: 'Overview' }).click()
   await expect(page).toHaveURL('/')
-  await expect(page.getByRole('heading', { level: 1, name: /^One belt, five names/ })).toBeVisible()
-  await page.goto('/keywords?q=spiral')
-  await expect(page).toHaveURL('/terminology?q=spiral')
-  await page.goto('/analyses')
-  await expect(page).toHaveURL('/scan')
+  await expect(page.getByRole('heading', { level: 1, name: /^One belt/ })).toBeVisible()
+  // The browser's own back and forward agree with the zoom.
+  await page.goForward()
+  await expect(page).toHaveURL('/buyers')
 })
 
-test('the widest page never scrolls sideways; its table scrolls in its own box', async ({ page }) => {
+test('the company picker suggests a known company, and names an unknown one', async ({ page }) => {
   await page.goto('/competitors')
-  await expect(page.getByRole('region', { name: 'Competitors' }).getByRole('row').nth(1)).toBeVisible()
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
-  expect(overflow).toBe(0)
-})
-
-test("a company page shows the company and links to its website", async ({ page }) => {
-  await page.goto('/competitors')
-  const matrix = page.getByRole('region', { name: 'Competitors' })
-  const row = matrix.getByRole('row').filter({ has: page.getByRole('rowheader', { name: /^Twentebelt/ }) })
-  await expect(row.getByRole('link', { name: /^Visit Twentebelt's website/ })).toHaveAttribute('target', '_blank')
-  await row.getByRole('link', { name: 'Twentebelt', exact: true }).click()
-  await expect(page).toHaveURL(/\/competitors\/[a-z0-9-]+$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Twentebelt' })).toBeVisible()
-  const visit = page.getByRole('link', { name: /^Visit website/ })
-  await expect(visit).toHaveAttribute('href', /^https:\/\/(www\.)?twentebelt\.com/)
-  await expect(visit).toHaveAttribute('rel', 'noopener noreferrer')
-  await expect(page.getByRole('heading', { name: 'Terms it uses' })).toBeVisible()
-  await expectAccessible(page)
-
-  await page.getByRole('link', { name: 'Scan this website' }).click()
-  await expect(page).toHaveURL('/scan')
-  await expect(page.getByLabel('Website address')).toHaveValue(/twentebelt\.com/)
-  await expect(page.getByText('known competitor')).toBeVisible()
-})
-
-test('the scan form suggests a known company, and names an unknown one', async ({ page }) => {
-  await page.goto('/scan')
   const field = page.getByRole('combobox', { name: 'Website address' })
   await field.fill('twente')
   const options = page.getByRole('listbox', { name: 'Known companies' })
@@ -109,4 +64,67 @@ test('the scan form suggests a known company, and names an unknown one', async (
   await expect(page.getByLabel('New company')).toHaveValue('Example Belts')
   await expect(page.getByText('The scan adds it as a new competitor.')).toBeVisible()
   await expectAccessible(page)
+})
+
+test('picking a company shows it, and keeps it in the address', async ({ page }) => {
+  await page.goto('/competitors')
+  await page.getByRole('list', { name: 'Companies' }).getByRole('button', { name: /^Märtens/ }).click()
+  await expect(page).toHaveURL(/[?&]company=/)
+  await expect(page.getByRole('heading', { level: 2, name: 'Märtens' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { level: 2, name: 'Märtens' })).toBeVisible()
+})
+
+test('the scan form refuses an address it cannot scan', async ({ page }) => {
+  await page.goto('/competitors')
+  const field = page.getByRole('combobox', { name: 'Website address' })
+  await field.fill('https://intranet')
+  await page.getByRole('button', { name: 'Scan website' }).click()
+  await expect(page.getByRole('alert')).toHaveText('Enter an address with a full host name, like https://www.example.com.')
+  await expect(field).toHaveAttribute('aria-invalid', 'true')
+  await expect(page).toHaveURL('/competitors')
+})
+
+test('the terms view filters by language and survives a reload', async ({ page }) => {
+  await page.goto('/terms')
+  await page.getByRole('button', { name: /^German: \d+ terms/ }).click()
+  await expect(page).toHaveURL(/[?&]language=de(&|$)/)
+  await expect(page.getByRole('button', { name: /^Remove the filter German/ })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('button', { name: /^German: \d+ terms/ })).toHaveAttribute('aria-pressed', 'true')
+  await expectAccessible(page)
+})
+
+test('the settings page is reachable for an administrator, and accessible', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Account' }).getByRole('link', { name: 'Settings' }).click()
+  await expect(page).toHaveURL('/settings')
+  await expect(page.getByRole('heading', { level: 1, name: 'Language model' })).toBeVisible()
+  await expect(page).toHaveTitle('Settings · Findability Explorer')
+  await expect(page.getByLabel('API key', { exact: true })).toHaveAttribute('type', 'password')
+  await expectAccessible(page)
+})
+
+test('unknown routes go to the poster, and old addresses to their new views', async ({ page }) => {
+  await page.goto('/no/such/page')
+  await expect(page).toHaveURL('/')
+  await page.goto('/terminology?q=spiral')
+  await expect(page).toHaveURL('/terms?q=spiral')
+  await page.goto('/competitors/twentebelt')
+  await expect(page).toHaveURL('/competitors?company=twentebelt')
+  await page.goto('/analyses')
+  await expect(page).toHaveURL('/competitors')
+})
+
+test.describe('at phone width', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('no view scrolls sideways', async ({ page }) => {
+    for (const path of ['/', ...SECTIONS.map((s) => s.path), '/settings']) {
+      await page.goto(path)
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      expect(overflow, path).toBe(0)
+    }
+  })
 })

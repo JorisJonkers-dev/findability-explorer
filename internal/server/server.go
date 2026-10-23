@@ -1,5 +1,6 @@
-// Package server is the HTTP surface of the service: the probes, the API under /api, the web app
-// everywhere else, and a graceful drain when its context is cancelled.
+// Package server is the HTTP surface of the service: the probes, the API under /api, the sign-in
+// routes under /auth, the web app everywhere else, and a graceful drain when its context is
+// cancelled.
 package server
 
 import (
@@ -25,6 +26,8 @@ const (
 type Routes struct {
 	// API serves every path under /api/.
 	API http.Handler
+	// Auth serves every path under /auth/: signing in and out.
+	Auth http.Handler
 	// Web serves every other path: the single-page app.
 	Web http.Handler
 	// Ready reports whether the service's dependencies answer; /readyz fails while it errors.
@@ -44,8 +47,9 @@ func New(logger *slog.Logger, version string, routes Routes) *Server {
 	return &Server{logger: logger, version: version, routes: routes}
 }
 
-// Handler returns the routes, behind the browser hardening headers. Liveness never depends on
-// readiness, and readiness fails from the moment the drain starts.
+// Handler returns the routes, behind the browser hardening headers. Unsafe requests to the API
+// and the sign-in routes must come from this origin. Liveness never depends on readiness, and
+// readiness fails from the moment the drain starts.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -65,7 +69,8 @@ func (s *Server) Handler() http.Handler {
 		}
 		plain(w, http.StatusOK, "ready")
 	})
-	mux.Handle("/api/", s.routes.API)
+	mux.Handle("/api/", httpx.SameOrigin(s.routes.API))
+	mux.Handle("/auth/", httpx.SameOrigin(s.routes.Auth))
 	mux.Handle("/", s.routes.Web)
 	return httpx.SecurityHeaders(mux)
 }

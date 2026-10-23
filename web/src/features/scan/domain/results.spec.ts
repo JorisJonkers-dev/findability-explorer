@@ -17,6 +17,9 @@ import {
   siteHost,
   spectrum,
   wordsLabel,
+  matchedBy,
+  newTermCount,
+  resultLine,
 } from './results'
 
 const keyword = (phrase: string, language: string, score: number, inMap = false): Keyword => ({
@@ -142,7 +145,7 @@ describe('the phrases', () => {
     expect(phrases(mixed, { language: '', singleWords: false, kind: 'inMap' }).map((p) => p.phrase)).toEqual([
       'metal conveyor belts',
     ])
-    expect(PHRASE_KINDS.map((k) => k.label)).toEqual(['All', 'New terms only', 'In the map'])
+    expect(PHRASE_KINDS.map((k) => k.label)).toEqual(['All', 'New terms', 'In the map'])
   })
 
   it('shows a score in whole points', () => {
@@ -190,5 +193,19 @@ describe('the pages read', () => {
     expect(wordsLabel(1)).toBe('1 word')
     expect(pagesReadTitle(10)).toBe('The 10 pages read')
     expect(pagesReadTitle(1)).toBe('The page read')
+  })
+})
+
+describe('the result line', () => {
+  it('counts the pages read and the new terms', () => {
+    expect(newTermCount([{ inMap: true }, { inMap: false }, { inMap: false }])).toBe(2)
+    expect(resultLine(15, 4)).toBe('15 pages read · 4 new terms')
+    expect(resultLine(1, 1)).toBe('1 page read · 1 new term')
+  })
+
+  it('names the model that matched the products, when there was one', () => {
+    expect(matchedBy('openrouter/anthropic/claude-haiku')).toBe('Matched by openrouter/anthropic/claude-haiku')
+    expect(matchedBy(undefined)).toBeNull()
+    expect(matchedBy(' ')).toBeNull()
   })
 })

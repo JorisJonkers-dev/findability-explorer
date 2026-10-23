@@ -1,8 +1,9 @@
-# One pipeline ending in
-# "Pipeline Complete" (estate convention). ONE job: GitHub bills each job rounded up to a full
-# minute, so checks are steps, not jobs. `task check` and `task e2e` are everything CI runs, so
-# local and CI cannot drift. Steps after the first carry `if: ${{ !cancelled() }}`, so one failure
-# still surfaces the others.
+# One pipeline ending in "Pipeline Complete" (estate convention). GitHub bills each job rounded up
+# to a full minute, so checks are steps, not jobs, wherever they can share a machine: `task check`
+# and the image build in one job, the e2e suite in a second that runs in the Playwright image, so no
+# run waits on apt to install the browsers' system packages. `task check` and `task e2e` are
+# everything CI runs, so local and CI cannot drift. Steps after the first carry
+# `if: ${{ !cancelled() }}`, so one failure still surfaces the others.
 #
 # This repo is private and Actions minutes are scarce: CI runs only on pull requests that touch the
 # app's code, and by hand, never on the push to main that merges a checked pull request. Run
@@ -27,8 +28,8 @@ permissions:
   contents: read
 
 jobs:
-  pipeline-complete:
-    name: Pipeline Complete
+  check:
+    name: Check
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -43,10 +44,116 @@ jobs:
       - name: Check
         run: mise exec -- task check
 
-      - name: End-to-end with axe
-        if: ${{ !cancelled() }}
-        run: mise exec -- task e2e
-
       - name: Container image builds
         if: ${{ !cancelled() }}
         run: docker build --build-arg VERSION=ci -t findability-explorer:ci .
+
+  # The binary the e2e job runs, and the Playwright version the lockfile resolves, so the e2e job's
+  # image always carries the browsers that version expects, also after Renovate bumps it.
+  e2e-build:
+    name: End-to-end build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      playwright: ${{ steps.playwright.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the Playwright version
+        id: playwright
+        run: |
+          set -euo pipefail
+          version="$(grep -m1 -E "^  '@playwright/test@[0-9]" pnpm-lock.yaml | sed -E "s/^  '@playwright\/test@([0-9][^']*)':.*/\1/")"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "no @playwright/test version in pnpm-lock.yaml" >&2; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: jdx/mise-action@v5
+        with:
+          cache: true
+
+      - name: Build the binary
+        run: mise exec -- task build
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-binary
+          path: bin/findability-explorer
+          retention-days: 1
+
+  # Both devices in one job: the suite takes under a minute, and a job per device would only add
+  # billed minutes. Split it with a matrix over --project and --shard once it grows. The official
+  # Playwright image holds the browsers and their system packages; Postgres is a service container,
+  # reached by its name.
+  e2e:
+    name: End-to-end with axe
+    needs: e2e-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.e2e-build.outputs.playwright }}-noble
+      options: --ipc=host
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 2s
+          --health-retries 30
+    env:
+      # Firefox refuses a HOME the container's root user does not own; mise installs under it too.
+      HOME: /root
+      DATABASE_URL: postgres://app:app@postgres:5432/app?sslmode=disable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Only what the suite needs; the image brings the browsers.
+      - uses: jdx/mise-action@v5
+        with:
+          cache: true
+          install_args: node pnpm task
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: e2e-binary
+          path: bin
+
+      # An artifact does not keep the file mode.
+      - run: chmod +x bin/findability-explorer
+
+      - name: End-to-end with axe
+        run: task e2e:ci
+
+      - name: Turn the blob report into HTML
+        if: ${{ !cancelled() }}
+        run: pnpm --filter @findability-explorer/web exec playwright merge-reports --reporter html blob-report
+
+      - name: Keep the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: web/playwright-report
+          retention-days: 7
+
+  pipeline-complete:
+    name: Pipeline Complete
+    if: ${{ always() }}
+    needs: [check, e2e-build, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for result in $RESULTS; do
+            [ "$result" = success ] || { echo "a job ended ${result}"; exit 1; }
+          done

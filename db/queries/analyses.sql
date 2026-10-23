@@ -1,14 +1,22 @@
--- name: CreateAnalysis :exec
-INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_at, competitor_id)
-VALUES ($1, $2, $3, 'queued', 'pending', $4, $5, $6);
+-- name: CreateAnalysis :one
+-- A company's scan takes the next number among its scans; the unique index refuses a duplicate.
+INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_at, competitor_id, rescan, scan_number)
+VALUES (
+    sqlc.arg(id), sqlc.arg(url), sqlc.arg(max_pages), 'queued', 'pending', sqlc.arg(created_by), sqlc.arg(created_at),
+    sqlc.narg(competitor_id), sqlc.arg(rescan),
+    CASE WHEN sqlc.narg(competitor_id)::text IS NULL THEN NULL ELSE (
+        SELECT coalesce(max(prior.scan_number), 0) + 1 FROM analyses AS prior WHERE prior.competitor_id = sqlc.narg(competitor_id)::text
+    ) END
+)
+RETURNING coalesce(scan_number, 0)::bigint AS scan_number;
 
 -- name: GetAnalysis :one
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model, coalesce(scan_number, 0)::bigint AS scan_number
 FROM analyses
 WHERE analyses.id = $1;
 
 -- name: ListAnalyses :many
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model, coalesce(scan_number, 0)::bigint AS scan_number
 FROM analyses
 ORDER BY created_at DESC, id
 LIMIT $1;
@@ -16,7 +24,7 @@ LIMIT $1;
 -- name: CountAnalysesCreatedSince :one
 SELECT count(*)::bigint
 FROM analyses
-WHERE created_by = $1 AND created_at >= $2;
+WHERE created_by = $1 AND created_at >= $2 AND NOT rescan;
 
 -- name: TokensSince :one
 SELECT coalesce(sum(llm_input_tokens + llm_output_tokens), 0)::bigint
@@ -41,8 +49,8 @@ WHERE id = $1 AND status = 'queued';
 
 -- name: AddAnalysisPage :exec
 WITH page AS (
-    INSERT INTO analysis_pages (analysis_id, position, url, title, description, language, word_count)
-    SELECT a.id, a.pages_crawled, $2, $3, $4, $5, $6
+    INSERT INTO analysis_pages (analysis_id, position, url, title, description, language, word_count, family)
+    SELECT a.id, a.pages_crawled, $2, $3, $4, $5, $6, $7
     FROM analyses AS a
     WHERE a.id = $1
 )
@@ -82,7 +90,7 @@ SET status = 'failed', failure = $2, finished_at = $3
 WHERE id = $1 AND status IN ('queued', 'running');
 
 -- name: ListAnalysisPages :many
-SELECT url, title, description, language, word_count
+SELECT url, title, description, language, word_count, coalesce(family, '')::text AS family
 FROM analysis_pages
 WHERE analysis_id = $1
 ORDER BY position;
@@ -120,14 +128,42 @@ GROUP BY competitor_id;
 
 -- name: LatestAnalysisPerCompetitor :many
 SELECT DISTINCT ON (competitor_id) competitor_id::text AS competitor_id, id, url, max_pages, status,
-    failure, pages_crawled, matching, created_by, created_at, finished_at, matching_model
+    failure, pages_crawled, matching, created_by, created_at, finished_at, matching_model,
+    coalesce(scan_number, 0)::bigint AS scan_number
 FROM analyses
 WHERE competitor_id IS NOT NULL
 ORDER BY competitor_id, created_at DESC, id;
 
 -- name: ListAnalysesByCompetitor :many
-SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model
+SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model, coalesce(scan_number, 0)::bigint AS scan_number
 FROM analyses
 WHERE competitor_id = $1
 ORDER BY created_at DESC, id
 LIMIT $2;
+
+-- name: CountActiveAnalysesOfCompetitor :one
+SELECT count(*)::bigint
+FROM analyses
+WHERE competitor_id = $1 AND status IN ('queued', 'running');
+
+-- name: DeleteAnalysesOfCompetitor :exec
+DELETE FROM analyses
+WHERE competitor_id = $1;
+
+-- name: KeywordFirstScans :many
+-- The number of the first finished scan of a company that found each phrase.
+SELECT k.phrase, k.language, min(a.scan_number)::bigint AS first_scan
+FROM analysis_keywords AS k
+JOIN analyses AS a ON a.id = k.analysis_id
+WHERE a.competitor_id = $1 AND a.status = 'done' AND a.scan_number IS NOT NULL
+GROUP BY k.phrase, k.language;
+
+-- name: CandidateEvidence :many
+-- Every phrase a finished scan of a company found outside the terminology map.
+SELECT a.id AS analysis_id, a.competitor_id::text AS competitor_id, a.url, a.created_at, k.phrase, k.language, k.score,
+    k.pages, coalesce(k.tier, 'broad')::text AS tier, coalesce(k.family, '')::text AS family,
+    coalesce(k.closest_term, '')::text AS closest_term
+FROM analysis_keywords AS k
+JOIN analyses AS a ON a.id = k.analysis_id
+WHERE a.status = 'done' AND a.competitor_id IS NOT NULL AND NOT coalesce(k.in_map, false)
+ORDER BY a.created_at, a.id, k.position;

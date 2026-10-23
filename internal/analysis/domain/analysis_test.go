@@ -74,12 +74,12 @@ func TestPublicAddr(t *testing.T) {
 }
 
 func TestCheckMaxPages(t *testing.T) {
-	for in, want := range map[int]int{0: domain.DefaultMaxPages, 1: 1, 30: 30} {
+	for in, want := range map[int]int{0: domain.DefaultMaxPages, 1: 1, 30: 30, 100: 100} {
 		if got, err := domain.CheckMaxPages(in); err != nil || got != want {
 			t.Errorf("CheckMaxPages(%d) = %d, %v", in, got, err)
 		}
 	}
-	for _, in := range []int{-1, 31} {
+	for _, in := range []int{-1, 101} {
 		if _, err := domain.CheckMaxPages(in); !errors.Is(err, domain.ErrInvalidMaxPages) {
 			t.Errorf("CheckMaxPages(%d) error = %v", in, err)
 		}

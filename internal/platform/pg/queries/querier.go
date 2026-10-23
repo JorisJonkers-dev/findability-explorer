@@ -21,12 +21,19 @@ type Querier interface {
 	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
 	AddLlmEvent(ctx context.Context, arg AddLlmEventParams) error
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
+	// Every phrase a finished scan of a company found outside the terminology map.
+	CandidateEvidence(ctx context.Context) ([]CandidateEvidenceRow, error)
+	CountActiveAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) (int64, error)
 	CountAnalysesCreatedSince(ctx context.Context, arg CountAnalysesCreatedSinceParams) (int64, error)
-	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) error
+	// A company's scan takes the next number among its scans; the unique index refuses a duplicate.
+	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
+	DeleteAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) error
+	DeleteCompany(ctx context.Context, id string) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, now time.Time) error
 	DeleteLlmCredential(ctx context.Context, id uuid.UUID) (int64, error)
 	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
+	DeleteTermDecision(ctx context.Context, candidateID string) (int64, error)
 	FailAnalysis(ctx context.Context, arg FailAnalysisParams) error
 	FailRunningAnalyses(ctx context.Context, arg FailRunningAnalysesParams) error
 	FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) error
@@ -34,9 +41,14 @@ type Querier interface {
 	GetLlmActive(ctx context.Context) (GetLlmActiveRow, error)
 	GetLlmCredential(ctx context.Context, id uuid.UUID) (LlmCredential, error)
 	GetSession(ctx context.Context, arg GetSessionParams) (GetSessionRow, error)
+	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
+	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
+	// The number of the first finished scan of a company that found each phrase.
+	KeywordFirstScans(ctx context.Context, competitorID pgtype.Text) ([]KeywordFirstScansRow, error)
 	LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnalysisPerCompetitorRow, error)
 	LatestLlmTests(ctx context.Context) ([]LatestLlmTestsRow, error)
+	ListAcceptedTerms(ctx context.Context) ([]AcceptedTerm, error)
 	ListAnalyses(ctx context.Context, limit int32) ([]ListAnalysesRow, error)
 	ListAnalysesByCompetitor(ctx context.Context, arg ListAnalysesByCompetitorParams) ([]ListAnalysesByCompetitorRow, error)
 	ListAnalysisEquivalentTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentTermsRow, error)
@@ -45,8 +57,10 @@ type Querier interface {
 	ListAnalysisKnownTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKnownTermsRow, error)
 	ListAnalysisPages(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPagesRow, error)
 	ListCompanies(ctx context.Context) ([]Company, error)
+	ListCompanyOverrides(ctx context.Context) ([]CompanyOverride, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
+	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
 	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
 	MarkAnalysisRunning(ctx context.Context, id uuid.UUID) error
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
@@ -57,7 +71,9 @@ type Querier interface {
 	TokensSince(ctx context.Context, createdAt time.Time) (int64, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error
+	UpdateCompany(ctx context.Context, arg UpdateCompanyParams) (int64, error)
 	UpsertAccount(ctx context.Context, arg UpsertAccountParams) (int64, error)
+	UpsertCompanyOverride(ctx context.Context, arg UpsertCompanyOverrideParams) error
 }
 
 var _ Querier = (*Queries)(nil)

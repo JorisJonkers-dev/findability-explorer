@@ -6,7 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,7 +30,16 @@ var (
 	ErrRateLimited = errors.New("too many analyses started in the past hour; try again later")
 	// ErrBusy is returned when the queue is full.
 	ErrBusy = errors.New("the analysis queue is full; try again in a few minutes")
+	// ErrScanActive is returned when a scan of the same company is queued or running.
+	ErrScanActive = errors.New("a scan of this company is still queued or running")
+	// ErrUnknownCompany is returned for a company id nobody knows.
+	ErrUnknownCompany = errors.New("no company has this id")
+	// ErrInvalidRescan is returned for a re-scan that names no companies, or both names and all.
+	ErrInvalidRescan = errors.New("a re-scan names companies or asks for all of them, not both")
 )
+
+// MaxHistory is how many of a company's scans the profile and the comparison look through.
+const MaxHistory = 100
 
 // Limits bound what analyses may cost.
 type Limits struct {
@@ -40,6 +51,8 @@ type Limits struct {
 	SiteTextChars int
 	// QueueSize is how many analyses may wait to run.
 	QueueSize int
+	// Workers is how many analyses run at once, each on its own site; at least one.
+	Workers int
 }
 
 // Glossary returns the terminology map's terms; the terminology context provides it.
@@ -91,11 +104,25 @@ func (s *Service) Start(ctx context.Context, user, rawURL string, maxPages int, 
 	if err != nil {
 		return domain.Analysis{}, fmt.Errorf("name the company: %w", err)
 	}
+	return s.queueScan(ctx, user, target, competitor, pages, false)
+}
+
+// queueScan stores a queued scan of competitor and puts it on the queue, unless a scan of the
+// company is queued or running already.
+func (s *Service) queueScan(ctx context.Context, user string, target domain.Target, competitor string, pages int, rescan bool) (domain.Analysis, error) {
+	active, err := s.repo.CountActive(ctx, competitor)
+	if err != nil {
+		return domain.Analysis{}, fmt.Errorf("count active scans: %w", err)
+	}
+	if active > 0 {
+		return domain.Analysis{}, ErrScanActive
+	}
+	now := s.now()
 	a := domain.Analysis{
 		ID: uuid.New(), URL: target.String(), CompetitorID: competitor, MaxPages: pages, Status: domain.StatusQueued,
-		CreatedBy: user, CreatedAt: now, Matching: domain.MatchingPending,
+		CreatedBy: user, CreatedAt: now, Matching: domain.MatchingPending, Rescan: rescan,
 	}
-	if err := s.repo.Create(ctx, a); err != nil {
+	if a.Number, err = s.repo.Create(ctx, a); err != nil {
 		return domain.Analysis{}, fmt.Errorf("create analysis: %w", err)
 	}
 	select {
@@ -107,6 +134,164 @@ func (s *Service) Start(ctx context.Context, user, rawURL string, maxPages int, 
 		}
 		return domain.Analysis{}, ErrBusy
 	}
+}
+
+// Skipped is a company a re-scan left out, and why.
+type Skipped struct {
+	CompetitorID string
+	Name         string
+	Reason       string
+}
+
+// Rescan queues one scan of each company named, or with all of every company that is not
+// archived, has a website and was scanned before. A company without a website, or with a scan
+// queued or running, is skipped; so is every company once the queue is full. The hourly limit on
+// single scans does not apply.
+func (s *Service) Rescan(ctx context.Context, user string, ids []string, all bool, maxPages int) ([]domain.Analysis, []Skipped, error) {
+	if all == (len(ids) > 0) {
+		return nil, nil, ErrInvalidRescan
+	}
+	pages, err := domain.CheckMaxPages(maxPages)
+	if err != nil {
+		return nil, nil, err
+	}
+	companies, err := s.directory.Companies(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list companies: %w", err)
+	}
+	if all {
+		if companies, err = s.scanned(ctx, companies); err != nil {
+			return nil, nil, err
+		}
+	} else {
+		companies = pickCompanies(companies, ids)
+	}
+	var queued []domain.Analysis
+	var skipped []Skipped
+	for _, c := range companies {
+		reason, err := s.rescanOne(ctx, user, c, pages, &queued)
+		if err != nil {
+			return nil, nil, err
+		}
+		if reason != "" {
+			skipped = append(skipped, Skipped{CompetitorID: c.ID, Name: c.Name, Reason: reason})
+		}
+	}
+	return queued, skipped, nil
+}
+
+// rescanOne queues a scan of c and appends it to queued, or returns why it was skipped.
+func (s *Service) rescanOne(ctx context.Context, user string, c domain.Company, pages int, queued *[]domain.Analysis) (string, error) {
+	if c.Website == nil {
+		if c.Name == "" {
+			return "No company has this id.", nil
+		}
+		return "It has no website to scan.", nil
+	}
+	target, err := domain.NewTarget(c.Website.String())
+	if err != nil {
+		return "Its website cannot be scanned.", nil //nolint:nilerr // the reason is the outcome
+	}
+	a, err := s.queueScan(ctx, user, target, c.ID, pages, true)
+	switch {
+	case errors.Is(err, ErrScanActive):
+		return "A scan of it is still queued or running.", nil
+	case errors.Is(err, ErrBusy):
+		return "The queue is full; try it again in a few minutes.", nil
+	case err != nil:
+		return "", err
+	}
+	*queued = append(*queued, a)
+	return "", nil
+}
+
+// scanned keeps the companies that are not archived, have a website and were scanned before.
+func (s *Service) scanned(ctx context.Context, companies []domain.Company) ([]domain.Company, error) {
+	stats, err := s.repo.CompetitorStats(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("scan statistics: %w", err)
+	}
+	var out []domain.Company
+	for _, c := range companies {
+		if !c.Archived && c.Website != nil && stats[c.ID].Count > 0 {
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
+// pickCompanies returns the companies named by ids, in that order; an unknown id becomes a
+// company with only its id.
+func pickCompanies(companies []domain.Company, ids []string) []domain.Company {
+	out := make([]domain.Company, 0, len(ids))
+	for _, id := range ids {
+		c := domain.Company{ID: id}
+		for _, known := range companies {
+			if known.ID == id {
+				c = known
+			}
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+// Profile returns a company's search terms from its latest finished scan, or ErrUnknownCompany.
+func (s *Service) Profile(ctx context.Context, competitorID string) (domain.Profile, error) {
+	finished, err := s.finished(ctx, competitorID)
+	if err != nil {
+		return domain.Profile{}, err
+	}
+	if len(finished) == 0 {
+		return domain.Profile{Languages: []string{}, Groups: []domain.GroupTerms{}}, nil
+	}
+	latest, err := s.repo.Get(ctx, finished[0].ID)
+	if err != nil {
+		return domain.Profile{}, fmt.Errorf("load scan: %w", err)
+	}
+	first, err := s.repo.FirstScans(ctx, competitorID)
+	if err != nil {
+		return domain.Profile{}, fmt.Errorf("first scans: %w", err)
+	}
+	return domain.BuildProfile(latest, len(finished), first), nil
+}
+
+// Compare compares two finished scans of a company; a nil id means the default for that side
+// (see domain.Pick). It returns the older scan, the newer and the changes.
+func (s *Service) Compare(ctx context.Context, competitorID string, from, to uuid.UUID) (domain.Analysis, domain.Analysis, []domain.ComparisonGroup, error) {
+	finished, err := s.finished(ctx, competitorID)
+	if err != nil {
+		return domain.Analysis{}, domain.Analysis{}, nil, err
+	}
+	older, newer, err := domain.Pick(finished, from, to)
+	if err != nil {
+		return domain.Analysis{}, domain.Analysis{}, nil, err
+	}
+	a, err := s.repo.Get(ctx, older.ID)
+	if err != nil {
+		return domain.Analysis{}, domain.Analysis{}, nil, fmt.Errorf("load scan: %w", err)
+	}
+	b, err := s.repo.Get(ctx, newer.ID)
+	if err != nil {
+		return domain.Analysis{}, domain.Analysis{}, nil, fmt.Errorf("load scan: %w", err)
+	}
+	return older, newer, domain.Compare(a, b), nil
+}
+
+// finished returns a known company's finished scans without results, newest first.
+func (s *Service) finished(ctx context.Context, competitorID string) ([]domain.Analysis, error) {
+	companies, err := s.directory.Companies(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list companies: %w", err)
+	}
+	if !slices.ContainsFunc(companies, func(c domain.Company) bool { return c.ID == competitorID }) {
+		return nil, ErrUnknownCompany
+	}
+	scans, err := s.repo.ListByCompetitor(ctx, competitorID, MaxHistory)
+	if err != nil {
+		return nil, fmt.Errorf("scans of %s: %w", competitorID, err)
+	}
+	return domain.Finished(scans), nil
 }
 
 // Get returns one analysis with its results, or domain.ErrNotFound.
@@ -145,19 +330,27 @@ func (s *Service) Recover(ctx context.Context) error {
 	return nil
 }
 
-// Work runs queued analyses one at a time until ctx ends. onError hears about every analysis
-// that could not be recorded, which only the logs can report.
+// Work runs queued analyses, Limits.Workers at a time, until ctx ends, and returns when every
+// worker stopped. A company never has two scans running, so each site is crawled by one worker
+// at a time. onError hears about every analysis that could not be recorded, which only the logs
+// can report.
 func (s *Service) Work(ctx context.Context, onError func(uuid.UUID, error)) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case id := <-s.queue:
-			if err := s.Run(ctx, id); err != nil {
-				onError(id, err)
+	var wg sync.WaitGroup
+	for range max(s.limits.Workers, 1) {
+		wg.Go(func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case id := <-s.queue:
+					if err := s.Run(ctx, id); err != nil {
+						onError(id, err)
+					}
+				}
 			}
-		}
+		})
 	}
+	wg.Wait()
 }
 
 // Run crawls the analysis's site, extracts its keywords and known terms, matches its products,
@@ -178,10 +371,12 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return s.fail(ctx, id, err.Error())
 	}
+	glossary := s.glossary()
+	lexicon := domain.NewLexicon(glossary)
 	var pages []domain.Page
 	var recordErr error
-	crawlErr := s.crawler.Crawl(ctx, target, a.MaxPages, func(p domain.Page) error {
-		if err := s.repo.AddPage(ctx, id, domain.Summarise(p)); err != nil {
+	crawlErr := s.crawler.Crawl(ctx, target, a.MaxPages, domain.NewLinkScorer(lexicon), func(p domain.Page) error {
+		if err := s.repo.AddPage(ctx, id, domain.Summarise(p, lexicon)); err != nil {
 			recordErr = fmt.Errorf("add page: %w", err)
 			return recordErr
 		}
@@ -198,8 +393,7 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 		}
 		return s.fail(ctx, id, reason)
 	}
-	glossary := s.glossary()
-	keywords := domain.Keywords(pages, domain.NewLexicon(glossary), domain.BrandWords(target.URL().Hostname()))
+	keywords := domain.Keywords(pages, lexicon, domain.BrandWords(target.URL().Hostname()))
 	if err := s.repo.SaveFindings(ctx, id, keywords, domain.FindKnownTerms(pages, glossary)); err != nil {
 		return fmt.Errorf("save findings: %w", err)
 	}

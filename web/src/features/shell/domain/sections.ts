@@ -19,7 +19,7 @@ export const SECTIONS: readonly Section[] = [
 
 /** The section a path shows, or undefined: a scan is shown in the competitors section. */
 export function sectionOfPath(path: string): Section | undefined {
-  const scan = path.startsWith('/scan/') ? '/competitors' : path
+  const scan = path.startsWith('/scan/') || path.startsWith('/competitors/') ? '/competitors' : path
   return SECTIONS.find((s) => s.path === scan)
 }
 

@@ -6,7 +6,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
+	"github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/companies/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
@@ -17,6 +19,8 @@ type UseCases interface {
 	List(ctx context.Context) ([]domain.Listed, error)
 	Get(ctx context.Context, id string) (domain.Listed, []domain.Scan, error)
 	Add(ctx context.Context, user, name, rawURL string) (domain.Company, error)
+	Update(ctx context.Context, user, id string, ch domain.Change) (domain.Listed, error)
+	Delete(ctx context.Context, user, id string) error
 }
 
 // Handler implements the competitor operations. Business rules stay in the use cases.
@@ -87,6 +91,62 @@ func (h *Handler) AddCompetitor(ctx context.Context, req *oas.NewCompetitor) (oa
 	return &out, nil
 }
 
+// UpdateCompetitor implements updateCompetitor.
+func (h *Handler) UpdateCompetitor(ctx context.Context, req *oas.CompetitorUpdate, params oas.UpdateCompetitorParams) (oas.UpdateCompetitorRes, error) {
+	var ch domain.Change
+	if v, ok := req.Name.Get(); ok {
+		ch.Name = &v
+	}
+	if v, ok := req.URL.Get(); ok {
+		raw := v.String()
+		ch.URL = &raw
+	}
+	if v, ok := req.Archived.Get(); ok {
+		ch.Archived = &v
+	}
+	l, err := h.uc.Update(ctx, httpx.Subject(ctx), string(params.CompetitorId), ch)
+	var known domain.AlreadyKnownError
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.UpdateCompetitorNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No company has this id.")}, nil
+	case errors.As(err, &known):
+		return &oas.UpdateCompetitorConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, known.Error()+".")}, nil
+	case errors.Is(err, domain.ErrInvalidName), errors.Is(err, domain.ErrInvalidWebsite), errors.Is(err, domain.ErrNotArchivable):
+		return &oas.UpdateCompetitorUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, sentence(err)),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := toCompetitor(l)
+	return &out, nil
+}
+
+// DeleteCompetitor implements deleteCompetitor.
+func (h *Handler) DeleteCompetitor(ctx context.Context, params oas.DeleteCompetitorParams) (oas.DeleteCompetitorRes, error) {
+	err := h.uc.Delete(ctx, httpx.Subject(ctx), string(params.CompetitorId))
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.DeleteCompetitorNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No company has this id.")}, nil
+	case errors.Is(err, app.ErrScanActive):
+		return &oas.DeleteCompetitorConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, sentence(err))}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.DeleteCompetitorNoContent{}, nil
+}
+
+// sentence is the first rule err breaks, as a sentence: the domain's errors are lower case.
+func sentence(err error) string {
+	for _, known := range []error{domain.ErrInvalidName, domain.ErrInvalidWebsite, domain.ErrNotArchivable, app.ErrScanActive} {
+		if errors.Is(err, known) {
+			msg := known.Error()
+			return strings.ToUpper(msg[:1]) + msg[1:] + "."
+		}
+	}
+	return err.Error()
+}
+
 func toCompetitor(l domain.Listed) oas.Competitor {
 	names := make([]oas.BeltName, 0, len(l.BeltNames))
 	for _, b := range l.BeltNames {
@@ -99,8 +159,8 @@ func toCompetitor(l domain.Listed) oas.Competitor {
 	c := oas.Competitor{
 		ID: oas.CompetitorId(l.ID), Source: oas.CompetitorSource(l.Source), Name: l.Name, Country: l.Country,
 		Website: l.Website, Languages: languages, GroupCompany: l.GroupCompany, BeltNames: names,
-		HomepageTitle: l.HomepageTitle,
-		Scans:         int32(l.Stats.Count), //nolint:gosec // scans of one company
+		HomepageTitle: l.HomepageTitle, Archived: l.Archived,
+		Scans: int32(l.Stats.Count), //nolint:gosec // scans of one company
 	}
 	if l.URL != nil {
 		c.WebsiteUrl = oas.NewOptURI(*l.URL)
@@ -121,8 +181,14 @@ func toSummary(competitorID string, s domain.Scan) oas.AnalysisSummary {
 	out := oas.AnalysisSummary{
 		CompetitorId: oas.NewOptCompetitorId(oas.CompetitorId(competitorID)),
 		ID:           s.ID, URL: s.URL, Status: oas.AnalysisStatus(s.Status),
-		MaxPages: int32(s.MaxPages), PagesCrawled: int32(s.PagesCrawled), //nolint:gosec // at most 30
+		MaxPages: int32(s.MaxPages), PagesCrawled: int32(s.PagesCrawled), //nolint:gosec // at most 100
 		CreatedAt: s.CreatedAt,
+	}
+	if s.Number > 0 {
+		out.Number = oas.NewOptInt32(int32(s.Number)) //nolint:gosec // scans of one company
+	}
+	if s.MatchingModel != "" {
+		out.MatchingModel = oas.NewOptString(s.MatchingModel)
 	}
 	if s.Failure != "" {
 		out.Failure = oas.NewOptString(s.Failure)

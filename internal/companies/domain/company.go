@@ -42,6 +42,8 @@ var (
 	ErrInvalidWebsite = errors.New("a company's website is an http or https address on a public host")
 	// ErrNotFound is returned for a company id nobody knows.
 	ErrNotFound = errors.New("no such company")
+	// ErrNotArchivable is returned when archiving an added company, which is removed instead.
+	ErrNotArchivable = errors.New("only a researched company is archived; an added one is removed")
 )
 
 // AlreadyKnownError is returned when a website's host belongs to a known company.
@@ -77,6 +79,100 @@ type Company struct {
 	HomepageTitle string
 	AddedBy       string
 	AddedAt       time.Time // zero for a researched company
+	// Archived is true for a researched company an administrator archived.
+	Archived   bool
+	ArchivedBy string
+	ArchivedAt time.Time
+}
+
+// Override is an administrator's change to a researched company, which the binary embeds and
+// never changes: another name or website, or archived. Empty fields keep the research's value.
+type Override struct {
+	ID         string
+	Name       string
+	Website    *url.URL
+	Host       string
+	ArchivedBy string
+	ArchivedAt time.Time // zero unless archived
+	UpdatedBy  string
+	UpdatedAt  time.Time
+}
+
+// NewOverride is the override that turns the research's original into changed.
+func NewOverride(original, changed Company, by string, at time.Time) Override {
+	o := Override{ID: original.ID, UpdatedBy: by, UpdatedAt: at}
+	if changed.Name != original.Name {
+		o.Name = changed.Name
+	}
+	if changed.URL != nil && (original.URL == nil || changed.URL.String() != original.URL.String()) {
+		o.Website, o.Host = changed.URL, changed.Host
+	}
+	if changed.Archived {
+		o.ArchivedBy, o.ArchivedAt = changed.ArchivedBy, changed.ArchivedAt
+	}
+	return o
+}
+
+// ApplyOverrides returns the researched companies with the overrides applied.
+func ApplyOverrides(research []Company, overrides []Override) []Company {
+	out := make([]Company, 0, len(research))
+	for _, c := range research {
+		for _, o := range overrides {
+			if o.ID != c.ID {
+				continue
+			}
+			if o.Name != "" {
+				c.Name = o.Name
+			}
+			if o.Website != nil {
+				c.URL, c.Website, c.Host = o.Website, o.Website.String(), o.Host
+			}
+			c.Archived, c.ArchivedBy, c.ArchivedAt = !o.ArchivedAt.IsZero(), o.ArchivedBy, o.ArchivedAt
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+// Change is what an administrator changes about a company; a nil field stays as it is.
+type Change struct {
+	Name     *string
+	URL      *string
+	Archived *bool
+}
+
+// Apply returns c with ch applied by user at at, checked: the name's length, the website's
+// address and that no other company in d has its host, and that only a researched company is
+// archived.
+func (d Directory) Apply(c Company, ch Change, user string, at time.Time) (Company, error) {
+	if ch.Name != nil {
+		name, err := CheckName(*ch.Name)
+		if err != nil {
+			return Company{}, err
+		}
+		c.Name = name
+	}
+	if ch.URL != nil {
+		website, err := NewWebsite(*ch.URL)
+		if err != nil {
+			return Company{}, err
+		}
+		host := site.Host(website)
+		if known, ok := d.ByHost(host); ok && known.ID != c.ID {
+			return Company{}, AlreadyKnownError{ID: known.ID, Name: known.Name}
+		}
+		c.URL, c.Website, c.Host = website, website.String(), host
+	}
+	if ch.Archived != nil {
+		if c.Source != SourceResearch {
+			return Company{}, ErrNotArchivable
+		}
+		c.Archived, c.ArchivedBy, c.ArchivedAt = *ch.Archived, "", time.Time{}
+		if c.Archived {
+			c.ArchivedBy, c.ArchivedAt = user, at
+		}
+	}
+	return c, nil
 }
 
 // Scan is what the companies context knows of one analysis of a company's website.
@@ -89,6 +185,9 @@ type Scan struct {
 	PagesCrawled int
 	CreatedAt    time.Time
 	FinishedAt   time.Time
+	// Number is the scan's number among the company's scans, from 1.
+	Number        int
+	MatchingModel string
 }
 
 // Stats is how often a company's website was scanned, and its newest scan.

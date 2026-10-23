@@ -8,7 +8,22 @@ package queries
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const deleteCompany = `-- name: DeleteCompany :execrows
+DELETE FROM companies
+WHERE id = $1
+`
+
+func (q *Queries) DeleteCompany(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteCompany, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
 
 const insertCompany = `-- name: InsertCompany :exec
 INSERT INTO companies (id, name, website_url, host, added_by, added_at)
@@ -67,4 +82,99 @@ func (q *Queries) ListCompanies(ctx context.Context) ([]Company, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const listCompanyOverrides = `-- name: ListCompanyOverrides :many
+SELECT id, name, website_url, host, archived_by, archived_at, updated_by, updated_at
+FROM company_overrides
+ORDER BY id
+`
+
+func (q *Queries) ListCompanyOverrides(ctx context.Context) ([]CompanyOverride, error) {
+	rows, err := q.db.Query(ctx, listCompanyOverrides)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CompanyOverride{}
+	for rows.Next() {
+		var i CompanyOverride
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.WebsiteUrl,
+			&i.Host,
+			&i.ArchivedBy,
+			&i.ArchivedAt,
+			&i.UpdatedBy,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateCompany = `-- name: UpdateCompany :execrows
+UPDATE companies
+SET name = $2, website_url = $3, host = $4
+WHERE id = $1
+`
+
+type UpdateCompanyParams struct {
+	ID         string
+	Name       string
+	WebsiteUrl string
+	Host       string
+}
+
+func (q *Queries) UpdateCompany(ctx context.Context, arg UpdateCompanyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateCompany,
+		arg.ID,
+		arg.Name,
+		arg.WebsiteUrl,
+		arg.Host,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const upsertCompanyOverride = `-- name: UpsertCompanyOverride :exec
+INSERT INTO company_overrides (id, name, website_url, host, archived_by, archived_at, updated_by, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (id) DO UPDATE
+SET name = excluded.name, website_url = excluded.website_url, host = excluded.host,
+    archived_by = excluded.archived_by, archived_at = excluded.archived_at,
+    updated_by = excluded.updated_by, updated_at = excluded.updated_at
+`
+
+type UpsertCompanyOverrideParams struct {
+	ID         string
+	Name       pgtype.Text
+	WebsiteUrl pgtype.Text
+	Host       pgtype.Text
+	ArchivedBy pgtype.Text
+	ArchivedAt pgtype.Timestamptz
+	UpdatedBy  string
+	UpdatedAt  time.Time
+}
+
+func (q *Queries) UpsertCompanyOverride(ctx context.Context, arg UpsertCompanyOverrideParams) error {
+	_, err := q.db.Exec(ctx, upsertCompanyOverride,
+		arg.ID,
+		arg.Name,
+		arg.WebsiteUrl,
+		arg.Host,
+		arg.ArchivedBy,
+		arg.ArchivedAt,
+		arg.UpdatedBy,
+		arg.UpdatedAt,
+	)
+	return err
 }

@@ -82,7 +82,7 @@ func actor(ctx context.Context) string {
 func New(logger *slog.Logger, c Contexts) (http.Handler, error) {
 	return oas.NewServer(
 		&api{
-			terminologyHandler: terminologyweb.New(c.Terminology),
+			terminologyHandler: terminologyweb.New(c.Terminology, actor),
 			analysisHandler:    analysisweb.New(c.Analysis),
 			companiesHandler:   companiesweb.New(c.Companies),
 			identityHandler:    identityweb.New(),

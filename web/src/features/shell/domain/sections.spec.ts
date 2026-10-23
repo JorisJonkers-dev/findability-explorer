@@ -9,6 +9,7 @@ describe('the sections', () => {
   it('finds the section a path shows, a scan in the competitors section', () => {
     expect(sectionOfPath('/terms')?.id).toBe('terms')
     expect(sectionOfPath('/scan/5b0c')?.id).toBe('competitors')
+    expect(sectionOfPath('/competitors/twentebelt/history')?.id).toBe('competitors')
     expect(sectionOfPath('/')).toBeUndefined()
     expect(sectionOfPath('/settings')).toBeUndefined()
     expect(section('plan').path).toBe('/plan')

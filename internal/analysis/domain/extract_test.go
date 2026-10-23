@@ -44,8 +44,8 @@ func TestPageLanguagePrefersTheDeclaredOne(t *testing.T) {
 }
 
 func TestSummarise(t *testing.T) {
-	s := domain.Summarise(domain.Page{URL: "https://x.test/", Title: "T", Description: "D", Language: "nl", Text: "een twee drie"})
-	if s.URL != "https://x.test/" || s.Title != "T" || s.Description != "D" || s.Language != "nl" || s.WordCount != 3 {
+	s := domain.Summarise(domain.Page{URL: "https://x.test/", Title: "T", Description: "D", Language: "nl", Text: "een twee drie"}, testLexicon())
+	if s.URL != "https://x.test/" || s.Title != "T" || s.Description != "D" || s.Language != "nl" || s.WordCount != 3 || s.Family != "" {
 		t.Fatalf("Summarise = %+v", s)
 	}
 }

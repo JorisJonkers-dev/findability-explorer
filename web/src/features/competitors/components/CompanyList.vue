@@ -6,7 +6,10 @@ import SectionHeading from '../../../shared/ui/SectionHeading.vue'
 import type { Company } from '../domain/company'
 import { countLabel, countryCode, familyDots, filterCompanies, type Region, REGIONS, rowLabel } from '../domain/list'
 
-const props = defineProps<{ companies: readonly Company[]; selectedId: string | undefined; loading: boolean }>()
+const props = withDefaults(
+  defineProps<{ companies: readonly Company[]; selectedId: string | undefined; loading: boolean; archived?: readonly Company[] }>(),
+  { archived: () => [] },
+)
 const emit = defineEmits<{ pick: [id: string] }>()
 
 const query = ref('')
@@ -73,6 +76,19 @@ const SHORT: Record<(typeof PRODUCT_FAMILIES)[number], string> = {
       </ul>
     </div>
 
+    <div v-if="archived.length > 0" class="flex flex-wrap items-center gap-2 text-sm stage:gap-3 stage:text-[24px]">
+      <span class="text-muted">Archived:</span>
+      <button
+        v-for="company in archived"
+        :key="company.id"
+        type="button"
+        :aria-pressed="company.id === selectedId"
+        class="min-h-11 rounded-full border-2 border-grey bg-white px-3 text-sm text-black hover:border-black stage:min-h-[64px] stage:border-[3px] stage:px-6 stage:text-[24px]"
+        @click="emit('pick', company.id)"
+      >
+        {{ company.shortName }}
+      </button>
+    </div>
     <p class="m-0 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted stage:gap-8 stage:text-[24px]">
       <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-3.5 rounded-full bg-orange stage:size-6"></span>Offers this family</span>
       <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-3.5 rounded-full bg-grey stage:size-6"></span>Does not</span>

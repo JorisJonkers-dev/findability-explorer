@@ -9,6 +9,8 @@ export function useMe() {
   const query = useQuery({ ...getMeOptions(), staleTime: Number.POSITIVE_INFINITY })
   return {
     me: computed<Me | undefined>(() => query.data.value),
+    /** Whether the account may change companies, start scans and review terms; false until known. */
+    isAdmin: computed(() => query.data.value?.isAdmin === true),
     isLoading: query.isPending,
     error: computed(() => (query.error.value ? describeError(query.error.value) : null)),
   }

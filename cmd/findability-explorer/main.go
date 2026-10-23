@@ -15,7 +15,8 @@
 //   - ANTHROPIC_API_KEY: the Vault-delivered key, shown as the read-only credential
 //     vault-anthropic; until an admin chooses, product matching uses it with claude-haiku-5-5
 //   - LLM_MONTHLY_TOKENS: the language-model budget per calendar month (default 2000000)
-//   - ANALYSES_PER_HOUR: how many analyses one user may start per hour (default 10)
+//   - ANALYSES_PER_HOUR: how many single scans one user may start per hour (default 10); an
+//     administrator's re-scans do not count
 //   - CRAWLER_CONTACT: a contact address for the crawler's User-Agent
 //   - DEV_USER, and DEV_ROLES (comma-separated, such as ROLE_ADMIN): stand in for a signed-in
 //     account on a local run, without auth-api; never set in a deployment
@@ -64,6 +65,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/webui"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/server"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/seal"
+	terminologypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/seed"
 	terminologyapp "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
 	terminologydomain "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
@@ -115,10 +117,17 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	if err != nil {
 		return err
 	}
-	terminology := terminologyapp.New(catalogue)
 	now := func() time.Time { return time.Now().UTC() }
 	analysisRepo := persistence.New(store)
-	companies := companiesapp.New(
+	var companies *companiesapp.Service
+	terminology := terminologyapp.New(catalogue, terminologypersistence.New(store),
+		func(ctx context.Context) ([]terminologydomain.Observation, error) {
+			return observations(ctx, analysisRepo, companies)
+		}, now)
+	if err := terminology.Load(ctx); err != nil {
+		return err
+	}
+	companies = companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		companiespersistence.New(store.Queries()),
 		scans{repo: analysisRepo},
@@ -132,7 +141,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	if err != nil {
 		return err
 	}
-	analysis, err := newAnalysis(ctx, getenv, analysisRepo, companies, terminology, llm, limits, now)
+	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, limits, now)
 	if err != nil {
 		return err
 	}
@@ -327,12 +336,72 @@ func newAnalysis(ctx context.Context, getenv func(string) string, repo *persiste
 		matchers{llm: llm},
 		func() []analysisdomain.GlossaryTerm { return glossary(terminology.Terms()) },
 		now,
-		analysisapp.Limits{PerUserPerHour: l.perHour, MonthlyTokens: l.monthly, SiteTextChars: 60_000, QueueSize: 32},
+		analysisapp.Limits{
+			PerUserPerHour: l.perHour, MonthlyTokens: l.monthly, SiteTextChars: 60_000, QueueSize: scanQueue, Workers: scanWorkers,
+		},
 	)
 	if err := svc.Recover(ctx); err != nil {
 		return nil, err
 	}
 	return svc, nil
+}
+
+// Scans run scanWorkers at a time, each on another company's site, and up to scanQueue wait; a
+// re-scan of every company fits in the queue.
+const (
+	scanWorkers = 3
+	scanQueue   = 256
+)
+
+// directory hands the companies to the analysis context by value.
+type directory struct {
+	companies *companiesapp.Service
+}
+
+func (d directory) Resolve(ctx context.Context, user string, website *url.URL, name string) (string, error) {
+	return d.companies.Resolve(ctx, user, website, name)
+}
+
+func (d directory) Companies(ctx context.Context) ([]analysisdomain.Company, error) {
+	listed, err := d.companies.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]analysisdomain.Company, 0, len(listed))
+	for _, l := range listed {
+		out = append(out, analysisdomain.Company{ID: l.ID, Name: l.Name, Website: l.URL, Archived: l.Archived})
+	}
+	return out, nil
+}
+
+// observations hands the review queue the phrases finished scans found outside the map, with the
+// names of the companies scanned, by value.
+func observations(ctx context.Context, repo *persistence.Repository, companies *companiesapp.Service) ([]terminologydomain.Observation, error) {
+	findings, err := repo.UnmappedFindings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	listed, err := companies.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[string]string, len(listed))
+	for _, l := range listed {
+		names[l.ID] = l.Name
+	}
+	out := make([]terminologydomain.Observation, 0, len(findings))
+	for _, f := range findings {
+		name := names[f.CompetitorID]
+		if name == "" {
+			name = f.CompetitorID
+		}
+		out = append(out, terminologydomain.Observation{
+			ScanID: f.AnalysisID.String(), CompanyID: f.CompetitorID, CompanyName: name, ScanURL: f.URL,
+			StartedAt: f.StartedAt, Phrase: f.Phrase, Language: f.Language, Score: f.Score, Pages: f.Pages,
+			Tier: f.Tier, Family: f.Family, Closest: f.Closest,
+		})
+	}
+	return out, nil
 }
 
 // scans hands the analyses of each company to the companies context by value.
@@ -365,10 +434,19 @@ func (s scans) ByCompany(ctx context.Context, id string, limit int) ([]companies
 	return out, nil
 }
 
+func (s scans) Active(ctx context.Context, id string) (int, error) {
+	return s.repo.CountActive(ctx, id)
+}
+
+func (s scans) DeleteByCompany(ctx context.Context, id string) error {
+	return s.repo.DeleteByCompetitor(ctx, id)
+}
+
 func scanOf(a analysisdomain.Analysis) companiesdomain.Scan {
 	return companiesdomain.Scan{
 		ID: a.ID, URL: a.URL, Status: string(a.Status), Failure: a.Failure, MaxPages: a.MaxPages,
-		PagesCrawled: a.PagesCrawled, CreatedAt: a.CreatedAt, FinishedAt: a.FinishedAt,
+		PagesCrawled: a.PagesCrawled, CreatedAt: a.CreatedAt, FinishedAt: a.FinishedAt, Number: a.Number,
+		MatchingModel: a.MatchingModel,
 	}
 }
 

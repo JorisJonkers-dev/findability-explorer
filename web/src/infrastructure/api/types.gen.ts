@@ -23,6 +23,7 @@ export type BeltFamily = 'eyelink' | 'open_spiral' | 'closed_spiral' | 'tri_flex
  * One name for a belt, material or specification, as a company uses it.
  */
 export type Term = {
+    origin: TermOrigin;
     /**
      * The term as written on the source page.
      */
@@ -112,6 +113,10 @@ export type CompetitorSource = 'research' | 'added';
  * A known company.
  */
 export type Competitor = {
+    /**
+     * True for a researched company an administrator archived: it is left out of the re-scans and the web app hides it.
+     */
+    archived: boolean;
     id: CompetitorId;
     source: CompetitorSource;
     /**
@@ -230,6 +235,14 @@ export type MatchingStatus = 'pending' | 'disabled' | 'skipped' | 'done' | 'fail
 export type AnalysisSummary = {
     competitorId?: CompetitorId;
     /**
+     * The scan's number among its company's scans, from 1 for the first; it never changes. Absent for an analysis without a company.
+     */
+    number?: number;
+    /**
+     * The provider and model that matched the products, when a model was asked.
+     */
+    matchingModel?: string;
+    /**
      * The analysis's id.
      */
     id: string;
@@ -271,7 +284,7 @@ export type AnalysisList = {
 };
 
 /**
- * One page the crawl fetched.
+ * One page the crawl fetched, with the belt family it is about when that is clear.
  */
 export type CrawledPage = {
     /**
@@ -294,6 +307,7 @@ export type CrawledPage = {
      * The number of words of visible text.
      */
     wordCount: number;
+    family?: BeltFamily;
 };
 
 /**
@@ -624,6 +638,341 @@ export type LlmSettings = {
 };
 
 /**
+ * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
+ */
+export type TermOrigin = 'research' | 'review';
+
+/**
+ * The fields of a company to change; at least one.
+ */
+export type CompetitorUpdate = {
+    /**
+     * The company's new name.
+     */
+    name?: string;
+    /**
+     * The company's new website. Only http and https on a public host.
+     */
+    url?: string;
+    /**
+     * True archives a researched company, false restores it.
+     */
+    archived?: boolean;
+};
+
+/**
+ * Which companies to scan again - the ones named, or with `all` every company that is not archived, has a website and was scanned before. One of the two.
+ */
+export type RescanRequest = {
+    /**
+     * The companies to scan again.
+     */
+    competitorIds?: Array<CompetitorId>;
+    /**
+     * True scans every company with data again.
+     */
+    all?: boolean;
+    /**
+     * The most pages each scan fetches.
+     */
+    maxPages?: number;
+};
+
+/**
+ * A company a re-scan left out, and why.
+ */
+export type RescanSkip = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    /**
+     * Why it was left out.
+     */
+    reason: string;
+};
+
+/**
+ * The scans a re-scan queued, and the companies it left out.
+ */
+export type RescanBatch = {
+    /**
+     * The queued scans, one per company.
+     */
+    queued: Array<AnalysisSummary>;
+    /**
+     * The companies left out.
+     */
+    skipped: Array<RescanSkip>;
+};
+
+/**
+ * How a company's search terms are grouped - one of Tribelt's belt families, other metal belts, broad terms that name no family, or material and specification terms.
+ */
+export type ProfileGroup = 'eyelink' | 'open_spiral' | 'closed_spiral' | 'tri_flex_turn_curve' | 'other' | 'broad' | 'spec';
+
+/**
+ * A search term of a company's latest finished scan.
+ */
+export type ProfileTerm = {
+    /**
+     * The phrase, in lower case.
+     */
+    phrase: string;
+    /**
+     * The language of the pages it appears on.
+     */
+    language: string;
+    /**
+     * Higher is more prominent.
+     */
+    score: number;
+    /**
+     * On how many pages it appears.
+     */
+    pages: number;
+    tier: IntentTier;
+    family?: BeltFamily;
+    /**
+     * The terminology map term closest to it.
+     */
+    closestTerm?: string;
+    /**
+     * True when it is one of the map's own terms.
+     */
+    inMap: boolean;
+    /**
+     * The number of the company's first finished scan that found it.
+     */
+    firstScan: number;
+};
+
+/**
+ * The search terms of one group, highest score first.
+ */
+export type ProfileGroupTerms = {
+    group: ProfileGroup;
+    /**
+     * The terms.
+     */
+    terms: Array<ProfileTerm>;
+};
+
+/**
+ * A company's search terms from its latest finished scan, by group, every group present in a fixed order (Tribelt's families, other, broad, spec).
+ */
+export type CompetitorProfile = {
+    competitorId: CompetitorId;
+    scan?: AnalysisSummary;
+    /**
+     * How many of the company's scans finished.
+     */
+    finishedScans: number;
+    /**
+     * The languages of the terms, most terms first.
+     */
+    languages: Array<string>;
+    /**
+     * The terms by group; empty without a finished scan.
+     */
+    groups: Array<ProfileGroupTerms>;
+};
+
+/**
+ * A search term one scan found and the other did not, or whose score or page count moved. The from fields are absent for an added term, the to fields for a removed one.
+ */
+export type TermChange = {
+    /**
+     * The phrase, in lower case.
+     */
+    phrase: string;
+    /**
+     * Its language.
+     */
+    language: string;
+    tier: IntentTier;
+    family?: BeltFamily;
+    /**
+     * True when it is one of the map's own terms.
+     */
+    inMap: boolean;
+    /**
+     * Its score in the older scan.
+     */
+    fromScore?: number;
+    /**
+     * Its score in the newer scan.
+     */
+    toScore?: number;
+    /**
+     * Its pages in the older scan.
+     */
+    fromPages?: number;
+    /**
+     * Its pages in the newer scan.
+     */
+    toPages?: number;
+};
+
+/**
+ * What changed in one group between two scans.
+ */
+export type ComparisonGroup = {
+    group: ProfileGroup;
+    /**
+     * Terms only the newer scan found, highest score first.
+     */
+    added: Array<TermChange>;
+    /**
+     * Terms only the older scan found, highest score first.
+     */
+    removed: Array<TermChange>;
+    /**
+     * Terms both found whose score or pages moved beyond the threshold, largest move first.
+     */
+    moved: Array<TermChange>;
+};
+
+/**
+ * Two finished scans of a company compared, per group. A term moved when its score changed by at least a quarter and 5 points, or its page count by at least 2.
+ */
+export type ScanComparison = {
+    from: AnalysisSummary;
+    to: AnalysisSummary;
+    /**
+     * Every group, in the profile's order.
+     */
+    groups: Array<ComparisonGroup>;
+};
+
+/**
+ * A candidate's id, made from its phrase.
+ */
+export type TermCandidateId = string;
+
+/**
+ * Where a candidate is in the review.
+ */
+export type TermCandidateStatus = 'pending' | 'accepted' | 'rejected';
+
+/**
+ * A company whose scan found a candidate.
+ */
+export type CandidateCompany = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+};
+
+/**
+ * An administrator's decision on a candidate.
+ */
+export type TermDecision = {
+    status: TermCandidateStatus;
+    /**
+     * Who decided.
+     */
+    by: string;
+    /**
+     * When.
+     */
+    at: string;
+    term?: Term;
+};
+
+/**
+ * A phrase finished scans found that the terminology map did not hold, with its evidence across companies and the classifier's suggestion.
+ */
+export type TermCandidate = {
+    id: TermCandidateId;
+    /**
+     * The phrase, in lower case.
+     */
+    phrase: string;
+    status: TermCandidateStatus;
+    /**
+     * The languages of the pages it was found on, most often first.
+     */
+    languages: Array<string>;
+    /**
+     * The companies whose scans found it, by name.
+     */
+    companies: Array<CandidateCompany>;
+    /**
+     * How many finished scans found it.
+     */
+    scans: number;
+    /**
+     * Its highest score in one scan.
+     */
+    bestScore: number;
+    /**
+     * The most pages of one scan it appeared on.
+     */
+    maxPages: number;
+    suggestedTier: IntentTier;
+    suggestedFamily?: BeltFamily;
+    /**
+     * The map term the classifier found closest.
+     */
+    closestTerm?: string;
+    /**
+     * When the newest scan that found it was started.
+     */
+    lastSeenAt: string;
+    decision?: TermDecision;
+};
+
+/**
+ * How many candidates have each status.
+ */
+export type TermCandidateCounts = {
+    /**
+     * Pending candidates.
+     */
+    pending: number;
+    /**
+     * Accepted candidates.
+     */
+    accepted: number;
+    /**
+     * Rejected candidates.
+     */
+    rejected: number;
+};
+
+/**
+ * The candidates with one status.
+ */
+export type TermCandidateList = {
+    /**
+     * The candidates, most companies and highest score first.
+     */
+    items: Array<TermCandidate>;
+    counts: TermCandidateCounts;
+};
+
+/**
+ * A candidate as it joins the terminology map.
+ */
+export type TermAcceptance = {
+    /**
+     * The term as the map shows it.
+     */
+    term: string;
+    language: Language;
+    family: BeltFamily;
+    tier: IntentTier;
+    /**
+     * The companies that use it.
+     */
+    usedBy: Array<string>;
+};
+
+/**
  * An RFC 9457 problem detail.
  */
 export type Problem = {
@@ -644,6 +993,16 @@ export type Problem = {
      */
     detail?: string;
 };
+
+/**
+ * The company's id.
+ */
+export type CompetitorIdPath = CompetitorId;
+
+/**
+ * The candidate's id.
+ */
+export type CandidateId = TermCandidateId;
 
 /**
  * The credential's id.
@@ -751,6 +1110,14 @@ export type AddCompetitorErrors = {
     /**
      * An RFC 9457 problem.
      */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
     409: Problem;
     /**
      * An RFC 9457 problem.
@@ -772,6 +1139,56 @@ export type AddCompetitorResponses = {
 };
 
 export type AddCompetitorResponse = AddCompetitorResponses[keyof AddCompetitorResponses];
+
+export type DeleteCompetitorData = {
+    body?: never;
+    path: {
+        /**
+         * The company's id.
+         */
+        competitorId: CompetitorId;
+    };
+    query?: never;
+    url: '/api/v1/competitors/{competitorId}';
+};
+
+export type DeleteCompetitorErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type DeleteCompetitorError = DeleteCompetitorErrors[keyof DeleteCompetitorErrors];
+
+export type DeleteCompetitorResponses = {
+    /**
+     * Deleted or archived.
+     */
+    204: void;
+};
+
+export type DeleteCompetitorResponse = DeleteCompetitorResponses[keyof DeleteCompetitorResponses];
 
 export type GetCompetitorData = {
     body?: never;
@@ -810,6 +1227,399 @@ export type GetCompetitorResponses = {
 };
 
 export type GetCompetitorResponse = GetCompetitorResponses[keyof GetCompetitorResponses];
+
+export type UpdateCompetitorData = {
+    /**
+     * The fields to change.
+     */
+    body: CompetitorUpdate;
+    path: {
+        /**
+         * The company's id.
+         */
+        competitorId: CompetitorId;
+    };
+    query?: never;
+    url: '/api/v1/competitors/{competitorId}';
+};
+
+export type UpdateCompetitorErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type UpdateCompetitorError = UpdateCompetitorErrors[keyof UpdateCompetitorErrors];
+
+export type UpdateCompetitorResponses = {
+    /**
+     * The company after the change.
+     */
+    200: Competitor;
+};
+
+export type UpdateCompetitorResponse = UpdateCompetitorResponses[keyof UpdateCompetitorResponses];
+
+export type GetCompetitorProfileData = {
+    body?: never;
+    path: {
+        /**
+         * The company's id.
+         */
+        competitorId: CompetitorId;
+    };
+    query?: never;
+    url: '/api/v1/competitors/{competitorId}/profile';
+};
+
+export type GetCompetitorProfileErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetCompetitorProfileError = GetCompetitorProfileErrors[keyof GetCompetitorProfileErrors];
+
+export type GetCompetitorProfileResponses = {
+    /**
+     * The profile.
+     */
+    200: CompetitorProfile;
+};
+
+export type GetCompetitorProfileResponse = GetCompetitorProfileResponses[keyof GetCompetitorProfileResponses];
+
+export type CompareScansData = {
+    body?: never;
+    path: {
+        /**
+         * The company's id.
+         */
+        competitorId: CompetitorId;
+    };
+    query?: {
+        /**
+         * The older scan's id; default the second newest finished scan.
+         */
+        from?: string;
+        /**
+         * The newer scan's id; default the newest finished scan.
+         */
+        to?: string;
+    };
+    url: '/api/v1/competitors/{competitorId}/scans/compare';
+};
+
+export type CompareScansErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type CompareScansError = CompareScansErrors[keyof CompareScansErrors];
+
+export type CompareScansResponses = {
+    /**
+     * The comparison.
+     */
+    200: ScanComparison;
+};
+
+export type CompareScansResponse = CompareScansResponses[keyof CompareScansResponses];
+
+export type StartRescansData = {
+    /**
+     * Which companies to scan again.
+     */
+    body: RescanRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/rescans';
+};
+
+export type StartRescansErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    429: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartRescansError = StartRescansErrors[keyof StartRescansErrors];
+
+export type StartRescansResponses = {
+    /**
+     * The queued scans and the skipped companies.
+     */
+    202: RescanBatch;
+};
+
+export type StartRescansResponse = StartRescansResponses[keyof StartRescansResponses];
+
+export type ListTermCandidatesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only candidates with this status.
+         */
+        status?: TermCandidateStatus;
+    };
+    url: '/api/v1/admin/term-candidates';
+};
+
+export type ListTermCandidatesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListTermCandidatesError = ListTermCandidatesErrors[keyof ListTermCandidatesErrors];
+
+export type ListTermCandidatesResponses = {
+    /**
+     * The candidates and how many have each status.
+     */
+    200: TermCandidateList;
+};
+
+export type ListTermCandidatesResponse = ListTermCandidatesResponses[keyof ListTermCandidatesResponses];
+
+export type AcceptTermCandidateData = {
+    /**
+     * The term as it joins the map.
+     */
+    body: TermAcceptance;
+    path: {
+        /**
+         * The candidate's id.
+         */
+        candidateId: TermCandidateId;
+    };
+    query?: never;
+    url: '/api/v1/admin/term-candidates/{candidateId}/accept';
+};
+
+export type AcceptTermCandidateErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AcceptTermCandidateError = AcceptTermCandidateErrors[keyof AcceptTermCandidateErrors];
+
+export type AcceptTermCandidateResponses = {
+    /**
+     * The candidate, accepted.
+     */
+    200: TermCandidate;
+};
+
+export type AcceptTermCandidateResponse = AcceptTermCandidateResponses[keyof AcceptTermCandidateResponses];
+
+export type RejectTermCandidateData = {
+    body?: never;
+    path: {
+        /**
+         * The candidate's id.
+         */
+        candidateId: TermCandidateId;
+    };
+    query?: never;
+    url: '/api/v1/admin/term-candidates/{candidateId}/reject';
+};
+
+export type RejectTermCandidateErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RejectTermCandidateError = RejectTermCandidateErrors[keyof RejectTermCandidateErrors];
+
+export type RejectTermCandidateResponses = {
+    /**
+     * The candidate, rejected.
+     */
+    200: TermCandidate;
+};
+
+export type RejectTermCandidateResponse = RejectTermCandidateResponses[keyof RejectTermCandidateResponses];
+
+export type UndoTermDecisionData = {
+    body?: never;
+    path: {
+        /**
+         * The candidate's id.
+         */
+        candidateId: TermCandidateId;
+    };
+    query?: never;
+    url: '/api/v1/admin/term-candidates/{candidateId}/decision';
+};
+
+export type UndoTermDecisionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type UndoTermDecisionError = UndoTermDecisionErrors[keyof UndoTermDecisionErrors];
+
+export type UndoTermDecisionResponses = {
+    /**
+     * The candidate, pending again.
+     */
+    200: TermCandidate;
+};
+
+export type UndoTermDecisionResponse = UndoTermDecisionResponses[keyof UndoTermDecisionResponses];
 
 export type ListAnalysesData = {
     body?: never;
@@ -860,6 +1670,18 @@ export type StartAnalysisErrors = {
      * An RFC 9457 problem.
      */
     400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
     /**
      * An RFC 9457 problem.
      */

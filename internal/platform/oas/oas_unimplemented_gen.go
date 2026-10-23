@@ -13,10 +13,21 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// AcceptTermCandidate implements acceptTermCandidate operation.
+//
+// Administrators only. Adds the term, as the admin wrote it, to the terminology map, where search, the
+// facets and the next scans find it. 409 when the candidate was decided already or the map has the
+// term in that language.
+//
+// POST /api/v1/admin/term-candidates/{candidateId}/accept
+func (UnimplementedHandler) AcceptTermCandidate(ctx context.Context, req *TermAcceptance, params AcceptTermCandidateParams) (r AcceptTermCandidateRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // AddCompetitor implements addCompetitor operation.
 //
-// Adds a company by its name and website. A website whose host a known company already has is refused
-// with 409, naming that company.
+// Administrators only. Adds a company by its name and website. A website whose host a known company
+// already has is refused with 409, naming that company.
 //
 // POST /api/v1/competitors
 func (UnimplementedHandler) AddCompetitor(ctx context.Context, req *NewCompetitor) (r AddCompetitorRes, _ error) {
@@ -42,6 +53,29 @@ func (UnimplementedHandler) ClearActiveLlm(ctx context.Context) (r ClearActiveLl
 	return r, ht.ErrNotImplemented
 }
 
+// CompareScans implements compareScans operation.
+//
+// Returns the search terms one finished scan of the company found and the other did not, and the ones
+// whose score or page count moved beyond a threshold, per belt family. Without `from` and `to` it
+// compares the latest two finished scans. 422 when the company has fewer than two finished scans or a
+// scan named is not a finished scan of it.
+//
+// GET /api/v1/competitors/{competitorId}/scans/compare
+func (UnimplementedHandler) CompareScans(ctx context.Context, params CompareScansParams) (r CompareScansRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteCompetitor implements deleteCompetitor operation.
+//
+// Administrators only. An added company is deleted with every scan of it. A researched company is the
+// desk research's record and is archived instead: it leaves the list and the re-scans, its scans stay,
+// and updateCompetitor restores it. Refused with 409 while a scan of the company is queued or running.
+//
+// DELETE /api/v1/competitors/{competitorId}
+func (UnimplementedHandler) DeleteCompetitor(ctx context.Context, params DeleteCompetitorParams) (r DeleteCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteLlmCredential implements deleteLlmCredential operation.
 //
 // Deletes a stored credential. When it was the active one, matching falls back to the Vault credential
@@ -63,10 +97,21 @@ func (UnimplementedHandler) GetAnalysis(ctx context.Context, params GetAnalysisP
 
 // GetCompetitor implements getCompetitor operation.
 //
-// Returns the company and its most recent scans, newest first.
+// Returns the company and its scans, newest first, each with its number.
 //
 // GET /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) GetCompetitor(ctx context.Context, params GetCompetitorParams) (r GetCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetCompetitorProfile implements getCompetitorProfile operation.
+//
+// Returns the search terms of the company's latest finished scan, grouped by Tribelt belt family, with
+// broad and specification terms apart, and for each term the scan it first appeared in. A company
+// without a finished scan has no scan and no groups.
+//
+// GET /api/v1/competitors/{competitorId}/profile
+func (UnimplementedHandler) GetCompetitorProfile(ctx context.Context, params GetCompetitorProfileParams) (r GetCompetitorProfileRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -119,6 +164,27 @@ func (UnimplementedHandler) ListLlmModels(ctx context.Context, params ListLlmMod
 	return r, ht.ErrNotImplemented
 }
 
+// ListTermCandidates implements listTermCandidates operation.
+//
+// Administrators only. Every phrase a finished scan found that the terminology map did not hold,
+// across companies, with its evidence and the classifier's suggestion; filtered by review status, most
+// companies and highest score first.
+//
+// GET /api/v1/admin/term-candidates
+func (UnimplementedHandler) ListTermCandidates(ctx context.Context, params ListTermCandidatesParams) (r ListTermCandidatesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RejectTermCandidate implements rejectTermCandidate operation.
+//
+// Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone.
+// 409 when it was decided already.
+//
+// POST /api/v1/admin/term-candidates/{candidateId}/reject
+func (UnimplementedHandler) RejectTermCandidate(ctx context.Context, params RejectTermCandidateParams) (r RejectTermCandidateRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SearchTerms implements searchTerms operation.
 //
 // Returns the terms that match the query and every filter, best match first, with the count of
@@ -142,11 +208,25 @@ func (UnimplementedHandler) SetActiveLlm(ctx context.Context, req *ActiveLlm) (r
 
 // StartAnalysis implements startAnalysis operation.
 //
-// Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host, following
-// robots.txt. The analysis runs in the background; poll it until its status is done or failed.
+// Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
+// site, product and application pages first, following robots.txt and the site's sitemaps and language
+// versions. The analysis runs in the background; poll it until its status is done or failed. 409 while
+// a scan of the same company is queued or running.
 //
 // POST /api/v1/analyses
 func (UnimplementedHandler) StartAnalysis(ctx context.Context, req *NewAnalysis) (r StartAnalysisRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StartRescans implements startRescans operation.
+//
+// Administrators only. Queues one scan for each named company with a website, or with `all`, for every
+// company that is not archived, has a website and was scanned before. A company whose scan is still
+// queued or running is skipped, and so is one without a website. The scans run a few at a time, each
+// site politely.
+//
+// POST /api/v1/admin/rescans
+func (UnimplementedHandler) StartRescans(ctx context.Context, req *RescanRequest) (r StartRescansRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -158,6 +238,27 @@ func (UnimplementedHandler) StartAnalysis(ctx context.Context, req *NewAnalysis)
 //
 // POST /api/v1/admin/llm/credentials/{credentialId}/test
 func (UnimplementedHandler) TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (r TestLlmCredentialRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UndoTermDecision implements undoTermDecision operation.
+//
+// Administrators only. Puts the candidate back in the queue; an accepted term leaves the terminology
+// map again. 409 when the candidate is pending.
+//
+// DELETE /api/v1/admin/term-candidates/{candidateId}/decision
+func (UnimplementedHandler) UndoTermDecision(ctx context.Context, params UndoTermDecisionParams) (r UndoTermDecisionRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateCompetitor implements updateCompetitor operation.
+//
+// Administrators only. Changes the name or website of a company, or archives or restores a researched
+// one. A researched company keeps the research's record; the change is stored beside it. A website
+// whose host another company has is refused with 409.
+//
+// PATCH /api/v1/competitors/{competitorId}
+func (UnimplementedHandler) UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (r UpdateCompetitorRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

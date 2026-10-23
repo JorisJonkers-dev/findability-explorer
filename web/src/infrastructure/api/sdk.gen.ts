@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses } from './types.gen';
-import { zAddCompetitorBody, zAddCompetitorResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorResponse, zGetLlmSettingsResponse, zGetMeResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zStartAnalysisBody, zStartAnalysisResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse } from './zod.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartRescansData, StartRescansErrors, StartRescansResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses } from './types.gen';
+import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmSettingsResponse, zGetMeResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartRescansBody, zStartRescansResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -66,7 +66,7 @@ export const listCompetitors = <ThrowOnError extends boolean = false>(options?: 
 /**
  * Add a company
  *
- * Adds a company by its name and website. A website whose host a known company already has is refused with 409, naming that company.
+ * Administrators only. Adds a company by its name and website. A website whose host a known company already has is refused with 409, naming that company.
  */
 export const addCompetitor = <ThrowOnError extends boolean = false>(options: Options<AddCompetitorData, ThrowOnError>): RequestResult<AddCompetitorResponses, AddCompetitorErrors, ThrowOnError> => (options.client ?? client).post<AddCompetitorResponses, AddCompetitorErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({
@@ -89,9 +89,30 @@ export const addCompetitor = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
+ * Remove a company
+ *
+ * Administrators only. An added company is deleted with every scan of it. A researched company is the desk research's record and is archived instead: it leaves the list and the re-scans, its scans stay, and updateCompetitor restores it. Refused with 409 while a scan of the company is queued or running.
+ */
+export const deleteCompetitor = <ThrowOnError extends boolean = false>(options: Options<DeleteCompetitorData, ThrowOnError>): RequestResult<DeleteCompetitorResponses, DeleteCompetitorErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCompetitorResponses, DeleteCompetitorErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zDeleteCompetitorPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zDeleteCompetitorResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/competitors/{competitorId}',
+    ...options
+});
+
+/**
  * Get one company with its scans
  *
- * Returns the company and its most recent scans, newest first.
+ * Returns the company and its scans, newest first, each with its number.
  */
 export const getCompetitor = <ThrowOnError extends boolean = false>(options: Options<GetCompetitorData, ThrowOnError>): RequestResult<GetCompetitorResponses, GetCompetitorErrors, ThrowOnError> => (options.client ?? client).get<GetCompetitorResponses, GetCompetitorErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({
@@ -106,6 +127,186 @@ export const getCompetitor = <ThrowOnError extends boolean = false>(options: Opt
             type: 'apiKey'
         }],
     url: '/api/v1/competitors/{competitorId}',
+    ...options
+});
+
+/**
+ * Change a company's name or website, or archive it
+ *
+ * Administrators only. Changes the name or website of a company, or archives or restores a researched one. A researched company keeps the research's record; the change is stored beside it. A website whose host another company has is refused with 409.
+ */
+export const updateCompetitor = <ThrowOnError extends boolean = false>(options: Options<UpdateCompetitorData, ThrowOnError>): RequestResult<UpdateCompetitorResponses, UpdateCompetitorErrors, ThrowOnError> => (options.client ?? client).patch<UpdateCompetitorResponses, UpdateCompetitorErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zUpdateCompetitorBody,
+        path: zUpdateCompetitorPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zUpdateCompetitorResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/competitors/{competitorId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get a company's search terms from its latest finished scan
+ *
+ * Returns the search terms of the company's latest finished scan, grouped by Tribelt belt family, with broad and specification terms apart, and for each term the scan it first appeared in. A company without a finished scan has no scan and no groups.
+ */
+export const getCompetitorProfile = <ThrowOnError extends boolean = false>(options: Options<GetCompetitorProfileData, ThrowOnError>): RequestResult<GetCompetitorProfileResponses, GetCompetitorProfileErrors, ThrowOnError> => (options.client ?? client).get<GetCompetitorProfileResponses, GetCompetitorProfileErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zGetCompetitorProfilePath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetCompetitorProfileResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/competitors/{competitorId}/profile',
+    ...options
+});
+
+/**
+ * Compare two scans of a company
+ *
+ * Returns the search terms one finished scan of the company found and the other did not, and the ones whose score or page count moved beyond a threshold, per belt family. Without `from` and `to` it compares the latest two finished scans. 422 when the company has fewer than two finished scans or a scan named is not a finished scan of it.
+ */
+export const compareScans = <ThrowOnError extends boolean = false>(options: Options<CompareScansData, ThrowOnError>): RequestResult<CompareScansResponses, CompareScansErrors, ThrowOnError> => (options.client ?? client).get<CompareScansResponses, CompareScansErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zCompareScansPath,
+        query: zCompareScansQuery.optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zCompareScansResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/competitors/{competitorId}/scans/compare',
+    ...options
+});
+
+/**
+ * Re-scan companies
+ *
+ * Administrators only. Queues one scan for each named company with a website, or with `all`, for every company that is not archived, has a website and was scanned before. A company whose scan is still queued or running is skipped, and so is one without a website. The scans run a few at a time, each site politely.
+ */
+export const startRescans = <ThrowOnError extends boolean = false>(options: Options<StartRescansData, ThrowOnError>): RequestResult<StartRescansResponses, StartRescansErrors, ThrowOnError> => (options.client ?? client).post<StartRescansResponses, StartRescansErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zStartRescansBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStartRescansResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/rescans',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List the search terms scans found outside the map
+ *
+ * Administrators only. Every phrase a finished scan found that the terminology map did not hold, across companies, with its evidence and the classifier's suggestion; filtered by review status, most companies and highest score first.
+ */
+export const listTermCandidates = <ThrowOnError extends boolean = false>(options?: Options<ListTermCandidatesData, ThrowOnError>): RequestResult<ListTermCandidatesResponses, ListTermCandidatesErrors, ThrowOnError> => (options?.client ?? client).get<ListTermCandidatesResponses, ListTermCandidatesErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: zListTermCandidatesQuery.optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListTermCandidatesResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/term-candidates',
+    ...options
+});
+
+/**
+ * Add a candidate to the terminology map
+ *
+ * Administrators only. Adds the term, as the admin wrote it, to the terminology map, where search, the facets and the next scans find it. 409 when the candidate was decided already or the map has the term in that language.
+ */
+export const acceptTermCandidate = <ThrowOnError extends boolean = false>(options: Options<AcceptTermCandidateData, ThrowOnError>): RequestResult<AcceptTermCandidateResponses, AcceptTermCandidateErrors, ThrowOnError> => (options.client ?? client).post<AcceptTermCandidateResponses, AcceptTermCandidateErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zAcceptTermCandidateBody,
+        path: zAcceptTermCandidatePath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zAcceptTermCandidateResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/term-candidates/{candidateId}/accept',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Reject a candidate
+ *
+ * Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone. 409 when it was decided already.
+ */
+export const rejectTermCandidate = <ThrowOnError extends boolean = false>(options: Options<RejectTermCandidateData, ThrowOnError>): RequestResult<RejectTermCandidateResponses, RejectTermCandidateErrors, ThrowOnError> => (options.client ?? client).post<RejectTermCandidateResponses, RejectTermCandidateErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zRejectTermCandidatePath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zRejectTermCandidateResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/term-candidates/{candidateId}/reject',
+    ...options
+});
+
+/**
+ * Undo the decision on a candidate
+ *
+ * Administrators only. Puts the candidate back in the queue; an accepted term leaves the terminology map again. 409 when the candidate is pending.
+ */
+export const undoTermDecision = <ThrowOnError extends boolean = false>(options: Options<UndoTermDecisionData, ThrowOnError>): RequestResult<UndoTermDecisionResponses, UndoTermDecisionErrors, ThrowOnError> => (options.client ?? client).delete<UndoTermDecisionResponses, UndoTermDecisionErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zUndoTermDecisionPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zUndoTermDecisionResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/term-candidates/{candidateId}/decision',
     ...options
 });
 
@@ -133,7 +334,7 @@ export const listAnalyses = <ThrowOnError extends boolean = false>(options?: Opt
 /**
  * Start an analysis of a website
  *
- * Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host, following robots.txt. The analysis runs in the background; poll it until its status is done or failed.
+ * Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same site, product and application pages first, following robots.txt and the site's sitemaps and language versions. The analysis runs in the background; poll it until its status is done or failed. 409 while a scan of the same company is queued or running.
  */
 export const startAnalysis = <ThrowOnError extends boolean = false>(options: Options<StartAnalysisData, ThrowOnError>): RequestResult<StartAnalysisResponses, StartAnalysisErrors, ThrowOnError> => (options.client ?? client).post<StartAnalysisResponses, StartAnalysisErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

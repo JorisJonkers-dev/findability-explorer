@@ -1,9 +1,11 @@
-// Package crawler implements the analysis Crawler port over HTTP: a polite, same-site,
-// breadth-first crawl that follows robots.txt and never connects to a non-public address.
+// Package crawler implements the analysis Crawler port over HTTP: a polite, same-site crawl that
+// follows robots.txt and the site's sitemaps, fetches the pages about belts first, and never
+// connects to a non-public address.
 // It ports the crawl of github.com/RNgo-Sch/digital-strategy-webscraper.
 package crawler
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -13,7 +15,6 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"path"
 	"strings"
 	"syscall"
 	"time"
@@ -26,7 +27,6 @@ const Agent = "FindabilityExplorer"
 
 const (
 	maxBody      = 2 << 20 // bytes read from one page
-	maxQueue     = 500
 	maxRedirects = 5
 )
 
@@ -121,72 +121,160 @@ func New(o Options) *Crawler {
 	return c
 }
 
-// Crawl fetches at most maxPages HTML pages on target's site, breadth first, and calls onPage
-// for each. A page that fails is skipped; Crawl returns an error only when the start page fails,
-// onPage fails, or ctx ends.
-func (c *Crawler) Crawl(ctx context.Context, target domain.Target, maxPages int, onPage func(domain.Page) error) error {
+// Crawl fetches at most maxPages HTML pages on target's site and calls onPage for each. It starts
+// with the start page, then seeds the frontier with the site's sitemaps (the ones robots.txt
+// lists, or /sitemap.xml) and fetches the pages scorer ranks highest first, so product,
+// specification and application pages come before news, contact and legal ones. Each language
+// version a page declares ranks just above that page. A page that fails is skipped; Crawl returns
+// an error only when the start page fails, onPage fails, or ctx ends.
+func (c *Crawler) Crawl(ctx context.Context, target domain.Target, maxPages int, scorer domain.LinkScorer, onPage func(domain.Page) error) error {
 	start := target.URL()
-	f := frontier{site: siteOf(start.Hostname()), queue: []*url.URL{start}, seen: map[string]bool{key(start): true}}
+	f := domain.NewFrontier(start.Hostname(), scorer)
+	f.Seen(start)
 	robots := c.robots(ctx, start)
 	if !robots.Allowed(start.EscapedPath()) {
 		return errors.New("robots.txt does not allow the start page")
 	}
-	fetched := 0
-	for next := f.pop(); next != nil && fetched < maxPages; next = f.pop() {
+	page, links, err := c.fetch(ctx, start)
+	if err != nil {
+		return err
+	}
+	f.Fetched(page.URL)
+	if err := onPage(page); err != nil {
+		return err
+	}
+	f.Push(links, scorer.Score(start, page.Title))
+	if maxPages > 1 {
+		if err := c.seedSitemaps(ctx, start, robots, f); err != nil {
+			return err
+		}
+	}
+	return c.crawlFrontier(ctx, f, robots, maxPages, onPage)
+}
+
+// crawlFrontier fetches the frontier's best pages, after the start page, until maxPages pages
+// were fetched or the frontier is empty.
+func (c *Crawler) crawlFrontier(ctx context.Context, f *domain.Frontier, robots domain.Robots, maxPages int, onPage func(domain.Page) error) error {
+	for fetched := 1; fetched < maxPages; {
+		next, score := f.Pop()
+		if next == nil {
+			break
+		}
 		if !robots.Allowed(next.EscapedPath()) {
 			continue
 		}
-		page, links, err := c.visit(ctx, next, next == start)
+		page, links, ok, err := c.visit(ctx, f, next)
 		if err != nil {
-			if next == start || ctx.Err() != nil {
-				return err
-			}
+			return err
+		}
+		if !ok {
 			continue
 		}
 		fetched++
 		if err := onPage(page); err != nil {
 			return err
 		}
-		f.push(links)
+		f.Push(links, score)
 	}
 	return nil
 }
 
-// visit fetches one page, pausing first unless it is the first request of the crawl.
-func (c *Crawler) visit(ctx context.Context, u *url.URL, first bool) (domain.Page, []*url.URL, error) {
-	if !first {
-		if err := sleep(ctx, c.delay); err != nil {
-			return domain.Page{}, nil, err
-		}
+// visit pauses, then fetches u. It reports false for a page that failed, or that a redirect led
+// to a page fetched already, and fails only when ctx ends.
+func (c *Crawler) visit(ctx context.Context, f *domain.Frontier, u *url.URL) (domain.Page, []domain.Link, bool, error) {
+	if err := sleep(ctx, c.delay); err != nil {
+		return domain.Page{}, nil, false, err
 	}
-	return c.fetch(ctx, u)
-}
-
-// frontier is the crawl's queue of same-site pages not yet visited.
-type frontier struct {
-	site  string
-	queue []*url.URL
-	seen  map[string]bool
-}
-
-func (f *frontier) pop() *url.URL {
-	if len(f.queue) == 0 {
-		return nil
+	page, links, err := c.fetch(ctx, u)
+	if err != nil {
+		return domain.Page{}, nil, false, ctx.Err()
 	}
-	next := f.queue[0]
-	f.queue = f.queue[1:]
-	return next
+	return page, links, f.Fetched(page.URL), nil
 }
 
-func (f *frontier) push(links []*url.URL) {
-	for _, l := range links {
-		l = clean(l)
-		if l == nil || siteOf(l.Hostname()) != f.site || f.seen[key(l)] || len(f.queue) >= maxQueue {
+// Sitemap limits: how many sitemap files one crawl reads, and how many bytes of each.
+const (
+	maxSitemaps    = 10
+	maxSitemapBody = 10 << 20
+)
+
+// seedSitemaps reads the sitemaps robots.txt lists, or /sitemap.xml when it lists none, following
+// sitemap indexes, and queues every page of the site they list. A sitemap that fails is skipped.
+func (c *Crawler) seedSitemaps(ctx context.Context, start *url.URL, robots domain.Robots, f *domain.Frontier) error {
+	queue := sitemapsOf(start, robots)
+	seen := map[string]bool{}
+	for read := 0; len(queue) > 0 && read < maxSitemaps; {
+		u := queue[0]
+		queue = queue[1:]
+		if seen[u.String()] || domain.SiteOf(u.Hostname()) != domain.SiteOf(start.Hostname()) {
 			continue
 		}
-		f.seen[key(l)] = true
-		f.queue = append(f.queue, l)
+		seen[u.String()] = true
+		read++
+		if err := sleep(ctx, c.delay); err != nil {
+			return err
+		}
+		queue = append(queue, c.readSitemap(ctx, u, f)...)
 	}
+	return nil
+}
+
+// sitemapsOf are the sitemaps robots.txt lists, or the site's /sitemap.xml.
+func sitemapsOf(start *url.URL, robots domain.Robots) []*url.URL {
+	var out []*url.URL
+	for _, raw := range robots.Sitemaps() {
+		if u, err := start.Parse(raw); err == nil {
+			out = append(out, u)
+		}
+	}
+	if len(out) == 0 {
+		out = append(out, &url.URL{Scheme: start.Scheme, Host: start.Host, Path: "/sitemap.xml"})
+	}
+	return out
+}
+
+// readSitemap queues the pages one sitemap lists and returns the sitemaps it lists.
+func (c *Crawler) readSitemap(ctx context.Context, u *url.URL, f *domain.Frontier) []*url.URL {
+	sm, err := c.sitemap(ctx, u)
+	if err != nil {
+		return nil
+	}
+	var links []domain.Link
+	for _, raw := range sm.Pages {
+		if p, err := u.Parse(raw); err == nil {
+			links = append(links, domain.Link{URL: p})
+		}
+	}
+	f.Push(links, 0)
+	var children []*url.URL
+	for _, raw := range sm.Sitemaps {
+		if child, err := u.Parse(raw); err == nil {
+			children = append(children, child)
+		}
+	}
+	return children
+}
+
+// sitemap fetches and parses one sitemap file, gzipped or not.
+func (c *Crawler) sitemap(ctx context.Context, u *url.URL) (domain.Sitemap, error) {
+	resp, err := c.get(ctx, u)
+	if err != nil {
+		return domain.Sitemap{}, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return domain.Sitemap{}, fmt.Errorf("%s answered %s", u.Redacted(), resp.Status)
+	}
+	body := io.Reader(io.LimitReader(resp.Body, maxSitemapBody))
+	if strings.HasSuffix(strings.ToLower(u.Path), ".gz") {
+		zr, err := gzip.NewReader(body)
+		if err != nil {
+			return domain.Sitemap{}, err
+		}
+		defer func() { _ = zr.Close() }()
+		body = io.LimitReader(zr, maxSitemapBody)
+	}
+	return domain.ParseSitemap(body)
 }
 
 func (c *Crawler) robots(ctx context.Context, start *url.URL) domain.Robots {
@@ -206,7 +294,7 @@ func (c *Crawler) robots(ctx context.Context, start *url.URL) domain.Robots {
 	return domain.ParseRobots(string(body), Agent)
 }
 
-func (c *Crawler) fetch(ctx context.Context, u *url.URL) (domain.Page, []*url.URL, error) {
+func (c *Crawler) fetch(ctx context.Context, u *url.URL) (domain.Page, []domain.Link, error) {
 	resp, err := c.get(ctx, u)
 	if err != nil {
 		return domain.Page{}, nil, err
@@ -246,36 +334,6 @@ func unwrapURLError(err error) error {
 	}
 	return err
 }
-
-// skippedExtensions are file types that are never HTML pages.
-func skippedExtension(p string) bool {
-	switch strings.ToLower(path.Ext(p)) {
-	case ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico", ".css", ".js", ".json",
-		".xml", ".zip", ".mp4", ".mp3", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".dwg", ".step", ".stp":
-		return true
-	default:
-		return false
-	}
-}
-
-// clean returns l without fragment and query, or nil when it is not an http(s) page link. Query
-// strings are dropped because they mostly spell filters and sessions that repeat the same page.
-func clean(l *url.URL) *url.URL {
-	if (l.Scheme != "http" && l.Scheme != "https") || l.User != nil || skippedExtension(l.Path) {
-		return nil
-	}
-	c := *l
-	c.Fragment, c.RawQuery, c.RawFragment = "", "", ""
-	if c.Path == "" {
-		c.Path = "/"
-	}
-	return &c
-}
-
-// siteOf is the host without a leading "www.", so www.example.com and example.com are one site.
-func siteOf(host string) string { return strings.TrimPrefix(strings.ToLower(host), "www.") }
-
-func key(u *url.URL) string { return siteOf(u.Hostname()) + strings.TrimSuffix(u.EscapedPath(), "/") }
 
 func sleep(ctx context.Context, d time.Duration) error {
 	t := time.NewTimer(d)

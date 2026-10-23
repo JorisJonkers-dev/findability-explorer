@@ -14,9 +14,18 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       // One view for the companies alone and for a scan beside them, so a started scan keeps the form.
       { path: '/competitors', name: 'competitors', component: competitors, meta: { title: 'Competitors' } },
       { path: '/scan/:id', name: 'scan', component: competitors, props: (to) => ({ scanId: String(to.params.id) }), meta: { title: 'Scan' } },
+      // A company's search terms and scan history, a section view of its own: the stage has no room beside the list.
+      {
+        path: '/competitors/:id/history',
+        name: 'company-history',
+        component: () => import('../features/competitors/components/CompanyHistoryView.vue'),
+        props: (to) => ({ companyId: String(to.params.id) }),
+        meta: { title: 'Search terms and history' },
+      },
       { path: '/terms', name: 'terms', component: () => import('../features/terminology/components/TermsView.vue'), meta: { title: 'Search terms' } },
       { path: '/plan', name: 'plan', component: () => import('../features/plan/components/PlanView.vue'), meta: { title: 'The plan' } },
       { path: '/settings', name: 'settings', component: () => import('../features/settings/components/SettingsPage.vue'), meta: { title: 'Settings' } },
+      { path: '/settings/terms', name: 'term-review', component: () => import('../features/review/components/TermReviewPage.vue'), meta: { title: 'Term review' } },
       // Earlier versions' addresses, which links and bookmarks may still carry.
       { path: '/terminology', redirect: (to) => ({ path: '/terms', query: to.query }) },
       { path: '/keywords', redirect: (to) => ({ path: '/terms', query: to.query }) },

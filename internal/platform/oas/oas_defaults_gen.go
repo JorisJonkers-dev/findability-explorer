@@ -5,7 +5,15 @@ package oas
 // setDefaults set default value of fields.
 func (s *NewAnalysis) setDefaults() {
 	{
-		val := int32(15)
+		val := int32(60)
+		s.MaxPages.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *RescanRequest) setDefaults() {
+	{
+		val := int32(60)
 		s.MaxPages.SetTo(val)
 	}
 }

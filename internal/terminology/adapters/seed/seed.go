@@ -103,7 +103,10 @@ func toTerm(r rawTerm) (domain.Term, error) {
 	if err != nil {
 		return domain.Term{}, err
 	}
-	return domain.Term{Text: r.Term, Language: lang, Family: family, Tier: tier, UsedBy: r.UsedBy, Source: r.Source}, nil
+	return domain.Term{
+		Text: r.Term, Language: lang, Family: family, Tier: tier, UsedBy: r.UsedBy, Source: r.Source,
+		Origin: domain.OriginResearch,
+	}, nil
 }
 
 func toCompany(r rawCompany) domain.Company {

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.0.0...v1.1.0) (2026-10-23)
+
+
+### Features
+
+* deep scans, scan history, admin-only writes and a review queue for the terminology map ([#6](https://github.com/JorisJonkers-dev/findability-explorer/issues/6)) ([8955659](https://github.com/JorisJonkers-dev/findability-explorer/commit/89556597d90b03ac2c41f3c9502207bd06755eb3))
+
 ## 1.0.0 (2026-10-23)
 
 

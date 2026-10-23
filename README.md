@@ -99,23 +99,18 @@ npx @jorisjonkers-dev/deploy-kit@0.30.0 validate deploy/findability-explorer.pro
 (The package is on GitHub Packages: point `@jorisjonkers-dev` at `https://npm.pkg.github.com` with a
 token that may read packages.)
 
-**State: deployable, not live.** Merging a release PR builds the multi-arch image to
-`ghcr.io/jorisjonkers-dev/findability-explorer` and publishes the signed Intent Fragment, with
-`compose: false`, so nothing runs. Going live is one change in each of two places:
+**State: live.** Merging a release PR builds the multi-arch image to
+`ghcr.io/jorisjonkers-dev/findability-explorer`, publishes the signed Intent Fragment and starts
+composition (`compose: true`); Flux applies it at `digital-strategy.jorisjonkers.dev`.
 
-1. auth-api: a client `findability-explorer` with the redirect
-   `https://digital-strategy.jorisjonkers.dev/auth/callback`. Vault:
-   `vault kv put secret/findability-explorer-system/oidc client-secret=…`, and optionally
-   `vault kv put secret/findability-explorer-system/anthropic api-key=…` (without it, matching is
-   off until an admin adds a key in the app). `SESSION_KEY` needs nothing: the Vault policy job
-   generates it once (a `generate` key in the project file). The client secret becomes derived
-   too once deploy-kit implements the `client` block (spec/v1, chapter 17).
-2. The `estate` repository: an entry in `participants.yml` and the project in
-   `platform.intent.yml`'s `handover`; then set `compose: true` in `.github/workflows/release.yml`
-   and cut a release. Composition writes `projects/findability-explorer/source.yaml` and Flux
-   applies it at `digital-strategy.jorisjonkers.dev`. The app signs people in itself, so the
-   exposure carries no forward-auth (`audience: anonymous`; ADR-0001 says what changes once
-   deploy-kit implements its `client` block).
+- **Sign-in:** auth-api registers the client `findability-explorer` (auth-api#111). People need the
+  `FINDABILITY_EXPLORER` service permission, granted in home-portal's admin page; admins always pass.
+- **Secrets:** `estate/bootstrap/secrets.sh --only findability-explorer` writes the client secret to
+  `secret/auth-api` and `secret/findability-explorer-system/oidc`, and optionally the Anthropic key
+  (without it, matching is off until an admin adds a key in the app). `SESSION_KEY` is a deploy-kit
+  generated key. The client secret becomes derived once deploy-kit implements the `client` block
+  (spec/v1, chapter 17); then the exposure becomes `authenticated` + `signIn: native` (ADR-0001).
+- **Estate:** listed in `participants.yml` and `platform.intent.yml`'s `handover` (estate#197).
 
 **Actions minutes are scarce in this private repo.** CI runs on pull requests that touch code and
 by hand, not on pushes to main; run `task check` and `task e2e` locally before you push.

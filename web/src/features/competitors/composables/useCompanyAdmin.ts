@@ -11,14 +11,25 @@ import {
 import type { Competitor, CompetitorUpdate, RescanBatch, RescanRequest } from '../../../infrastructure/api/types.gen'
 import { companyProblem } from '../domain/admin'
 
-/** After a change the company list, its detail and the recent scans are asked for again. */
-function useRefresh(): () => void {
+/** Whether a query asks about this company: its detail, profile or scans. */
+function isAbout(competitorId: string, queryKey: readonly unknown[]): boolean {
+  const key = queryKey[0] as { path?: { competitorId?: string } } | undefined
+  return key?.path?.competitorId === competitorId
+}
+
+/**
+ * After a change the company list, its detail and the recent scans are asked for again. A removed
+ * company is left out: its card is still on screen until the address changes, and asking for it
+ * again would only answer 404.
+ */
+function useRefresh(): (removed?: string) => void {
   const queryClient = useQueryClient()
-  return () => {
+  return (removed) => {
+    const kept = (query: { queryKey: readonly unknown[] }) => removed === undefined || !isAbout(removed, query.queryKey)
     void queryClient.invalidateQueries({ queryKey: listCompetitorsQueryKey() })
     void queryClient.invalidateQueries({ queryKey: listAnalysesQueryKey() })
-    void queryClient.invalidateQueries({ queryKey: [{ _id: 'getCompetitor' }] })
-    void queryClient.invalidateQueries({ queryKey: [{ _id: 'getCompetitorProfile' }] })
+    void queryClient.invalidateQueries({ queryKey: [{ _id: 'getCompetitor' }], predicate: kept })
+    void queryClient.invalidateQueries({ queryKey: [{ _id: 'getCompetitorProfile' }], predicate: kept })
   }
 }
 
@@ -82,7 +93,7 @@ export function useRemoveCompany() {
         { path: { competitorId } },
         {
           onSuccess: () => {
-            refresh()
+            refresh(competitorId)
             onRemoved()
           },
         },
@@ -100,7 +111,7 @@ export function useRescan() {
     batch: computed<RescanBatch | undefined>(() => rescan.data.value),
     error: computed(() => (rescan.error.value ? companyProblem(rescan.error.value) : null)),
     rescan: (body: RescanRequest) => {
-      rescan.mutate({ body }, { onSuccess: refresh })
+      rescan.mutate({ body }, { onSuccess: () => { refresh() } })
     },
   }
 }

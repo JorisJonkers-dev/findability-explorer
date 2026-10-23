@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen';
-import { addCompetitor, addLlmCredential, clearActiveLlm, deleteLlmCredential, getAnalysis, getCompetitor, getLlmSettings, getMe, listAnalyses, listCompetitors, listLlmModels, type Options, searchTerms, setActiveLlm, startAnalysis, testLlmCredential } from '../sdk.gen';
-import type { AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse } from '../types.gen';
+import { acceptTermCandidate, addCompetitor, addLlmCredential, clearActiveLlm, compareScans, deleteCompetitor, deleteLlmCredential, getAnalysis, getCompetitor, getCompetitorProfile, getLlmSettings, getMe, listAnalyses, listCompetitors, listLlmModels, listTermCandidates, type Options, rejectTermCandidate, searchTerms, setActiveLlm, startAnalysis, startRescans, testLlmCredential, undoTermDecision, updateCompetitor } from '../sdk.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartRescansData, StartRescansError, StartRescansResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -82,7 +82,7 @@ export const listCompetitorsOptions = (options?: Options<ListCompetitorsData>) =
 /**
  * Add a company
  *
- * Adds a company by its name and website. A website whose host a known company already has is refused with 409, naming that company.
+ * Administrators only. Adds a company by its name and website. A website whose host a known company already has is refused with 409, naming that company.
  */
 export const addCompetitorMutation = (options?: Partial<Options<AddCompetitorData>>): UseMutationOptions<AddCompetitorResponse, AddCompetitorError, Options<AddCompetitorData>> => {
     const mutationOptions: UseMutationOptions<AddCompetitorResponse, AddCompetitorError, Options<AddCompetitorData>> = {
@@ -98,12 +98,31 @@ export const addCompetitorMutation = (options?: Partial<Options<AddCompetitorDat
     return mutationOptions;
 };
 
+/**
+ * Remove a company
+ *
+ * Administrators only. An added company is deleted with every scan of it. A researched company is the desk research's record and is archived instead: it leaves the list and the re-scans, its scans stay, and updateCompetitor restores it. Refused with 409 while a scan of the company is queued or running.
+ */
+export const deleteCompetitorMutation = (options?: Partial<Options<DeleteCompetitorData>>): UseMutationOptions<DeleteCompetitorResponse, DeleteCompetitorError, Options<DeleteCompetitorData>> => {
+    const mutationOptions: UseMutationOptions<DeleteCompetitorResponse, DeleteCompetitorError, Options<DeleteCompetitorData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteCompetitor({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const getCompetitorQueryKey = (options: Options<GetCompetitorData>) => createQueryKey('getCompetitor', options);
 
 /**
  * Get one company with its scans
  *
- * Returns the company and its most recent scans, newest first.
+ * Returns the company and its scans, newest first, each with its number.
  */
 export const getCompetitorOptions = (options: Options<GetCompetitorData>) => queryOptions<GetCompetitorResponse, GetCompetitorError, GetCompetitorResponse, ReturnType<typeof getCompetitorQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -117,6 +136,161 @@ export const getCompetitorOptions = (options: Options<GetCompetitorData>) => que
     },
     queryKey: getCompetitorQueryKey(options)
 });
+
+/**
+ * Change a company's name or website, or archive it
+ *
+ * Administrators only. Changes the name or website of a company, or archives or restores a researched one. A researched company keeps the research's record; the change is stored beside it. A website whose host another company has is refused with 409.
+ */
+export const updateCompetitorMutation = (options?: Partial<Options<UpdateCompetitorData>>): UseMutationOptions<UpdateCompetitorResponse, UpdateCompetitorError, Options<UpdateCompetitorData>> => {
+    const mutationOptions: UseMutationOptions<UpdateCompetitorResponse, UpdateCompetitorError, Options<UpdateCompetitorData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateCompetitor({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getCompetitorProfileQueryKey = (options: Options<GetCompetitorProfileData>) => createQueryKey('getCompetitorProfile', options);
+
+/**
+ * Get a company's search terms from its latest finished scan
+ *
+ * Returns the search terms of the company's latest finished scan, grouped by Tribelt belt family, with broad and specification terms apart, and for each term the scan it first appeared in. A company without a finished scan has no scan and no groups.
+ */
+export const getCompetitorProfileOptions = (options: Options<GetCompetitorProfileData>) => queryOptions<GetCompetitorProfileResponse, GetCompetitorProfileError, GetCompetitorProfileResponse, ReturnType<typeof getCompetitorProfileQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getCompetitorProfile({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getCompetitorProfileQueryKey(options)
+});
+
+export const compareScansQueryKey = (options: Options<CompareScansData>) => createQueryKey('compareScans', options);
+
+/**
+ * Compare two scans of a company
+ *
+ * Returns the search terms one finished scan of the company found and the other did not, and the ones whose score or page count moved beyond a threshold, per belt family. Without `from` and `to` it compares the latest two finished scans. 422 when the company has fewer than two finished scans or a scan named is not a finished scan of it.
+ */
+export const compareScansOptions = (options: Options<CompareScansData>) => queryOptions<CompareScansResponse, CompareScansError, CompareScansResponse, ReturnType<typeof compareScansQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await compareScans({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: compareScansQueryKey(options)
+});
+
+/**
+ * Re-scan companies
+ *
+ * Administrators only. Queues one scan for each named company with a website, or with `all`, for every company that is not archived, has a website and was scanned before. A company whose scan is still queued or running is skipped, and so is one without a website. The scans run a few at a time, each site politely.
+ */
+export const startRescansMutation = (options?: Partial<Options<StartRescansData>>): UseMutationOptions<StartRescansResponse, StartRescansError, Options<StartRescansData>> => {
+    const mutationOptions: UseMutationOptions<StartRescansResponse, StartRescansError, Options<StartRescansData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startRescans({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listTermCandidatesQueryKey = (options?: Options<ListTermCandidatesData>) => createQueryKey('listTermCandidates', options);
+
+/**
+ * List the search terms scans found outside the map
+ *
+ * Administrators only. Every phrase a finished scan found that the terminology map did not hold, across companies, with its evidence and the classifier's suggestion; filtered by review status, most companies and highest score first.
+ */
+export const listTermCandidatesOptions = (options?: Options<ListTermCandidatesData>) => queryOptions<ListTermCandidatesResponse, ListTermCandidatesError, ListTermCandidatesResponse, ReturnType<typeof listTermCandidatesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listTermCandidates({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listTermCandidatesQueryKey(options)
+});
+
+/**
+ * Add a candidate to the terminology map
+ *
+ * Administrators only. Adds the term, as the admin wrote it, to the terminology map, where search, the facets and the next scans find it. 409 when the candidate was decided already or the map has the term in that language.
+ */
+export const acceptTermCandidateMutation = (options?: Partial<Options<AcceptTermCandidateData>>): UseMutationOptions<AcceptTermCandidateResponse, AcceptTermCandidateError, Options<AcceptTermCandidateData>> => {
+    const mutationOptions: UseMutationOptions<AcceptTermCandidateResponse, AcceptTermCandidateError, Options<AcceptTermCandidateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await acceptTermCandidate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Reject a candidate
+ *
+ * Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone. 409 when it was decided already.
+ */
+export const rejectTermCandidateMutation = (options?: Partial<Options<RejectTermCandidateData>>): UseMutationOptions<RejectTermCandidateResponse, RejectTermCandidateError, Options<RejectTermCandidateData>> => {
+    const mutationOptions: UseMutationOptions<RejectTermCandidateResponse, RejectTermCandidateError, Options<RejectTermCandidateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await rejectTermCandidate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Undo the decision on a candidate
+ *
+ * Administrators only. Puts the candidate back in the queue; an accepted term leaves the terminology map again. 409 when the candidate is pending.
+ */
+export const undoTermDecisionMutation = (options?: Partial<Options<UndoTermDecisionData>>): UseMutationOptions<UndoTermDecisionResponse, UndoTermDecisionError, Options<UndoTermDecisionData>> => {
+    const mutationOptions: UseMutationOptions<UndoTermDecisionResponse, UndoTermDecisionError, Options<UndoTermDecisionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await undoTermDecision({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const listAnalysesQueryKey = (options?: Options<ListAnalysesData>) => createQueryKey('listAnalyses', options);
 
@@ -141,7 +315,7 @@ export const listAnalysesOptions = (options?: Options<ListAnalysesData>) => quer
 /**
  * Start an analysis of a website
  *
- * Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host, following robots.txt. The analysis runs in the background; poll it until its status is done or failed.
+ * Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same site, product and application pages first, following robots.txt and the site's sitemaps and language versions. The analysis runs in the background; poll it until its status is done or failed. 409 while a scan of the same company is queued or running.
  */
 export const startAnalysisMutation = (options?: Partial<Options<StartAnalysisData>>): UseMutationOptions<StartAnalysisResponse, StartAnalysisError, Options<StartAnalysisData>> => {
     const mutationOptions: UseMutationOptions<StartAnalysisResponse, StartAnalysisError, Options<StartAnalysisData>> = {

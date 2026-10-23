@@ -3,7 +3,8 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useCompanies } from '../../competitors/composables/useCompanies'
 import { type Company, pickerState, scanCountLabel, suggestions } from '../../competitors/domain/company'
 import { useStartScan } from '../composables/useStartScan'
-import { checkScanUrl, describeScanUrlCheck, SCAN_PAGES } from '../domain/newScan'
+import { usePageBudget } from '../composables/usePageBudget'
+import { checkScanUrl, describeScanUrlCheck } from '../domain/newScan'
 
 const emit = defineEmits<{ started: [id: string] }>()
 
@@ -19,6 +20,7 @@ const newNameEdited = ref(false)
 const input = useTemplateRef<HTMLInputElement>('input')
 const { companies } = useCompanies()
 const { isStarting, error: startError, start, reset } = useStartScan()
+const { pages } = usePageBudget()
 
 const options = computed(() => (open.value ? suggestions(companies.value, url.value) : []))
 const expanded = computed(() => options.value.length > 0)
@@ -40,7 +42,7 @@ function submit(): void {
     return
   }
   const name = state.value.kind === 'new' ? newName.value : undefined
-  start(check.url, SCAN_PAGES, (id) => {
+  start(check.url, pages.value, (id) => {
     emit('started', id)
   }, name)
 }

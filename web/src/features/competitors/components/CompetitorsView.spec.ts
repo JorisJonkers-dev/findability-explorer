@@ -1,7 +1,7 @@
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Analysis, AnalysisStatus } from '../../../infrastructure/api/types.gen'
-import { ANALYSIS_ID, analysis, competitor, summary, term, termSearch } from '../../../testing/fixtures'
+import { ANALYSIS_ID, analysis, competitor, me, summary, term, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 
@@ -26,9 +26,10 @@ const martens = competitor('Märtens Transportbänder GmbH', {
 const ashworth = competitor('Ashworth', { id: 'ashworth', country: 'US', websiteUrl: undefined, host: undefined, website: '', beltNames: [] })
 const tribelt = competitor('Tribelt B.V.', { id: 'tribelt-b-v', groupCompany: true, websiteUrl: 'https://www.tribelt.nl/', host: 'tribelt.nl', website: 'https://www.tribelt.nl' })
 
-/** The server; the scan started answers with each status in line, the last one for good. */
+/** The server, signed in as an administrator; the scan started answers with each status in line, the last one for good. */
 function api(extra: Record<string, Handler> = {}, statuses: AnalysisStatus[] = ['queued', 'done']) {
   return routes({
+    'GET /api/v1/me': () => json(me({ isAdmin: true })),
     'GET /api/v1/competitors': () => json({ items: [twentebelt, martens, ashworth, tribelt] }),
     'GET /api/v1/terms': () =>
       json(
@@ -189,7 +190,7 @@ describe('the scan', () => {
     )
     await wrapper.findAll('button').find((b) => b.text() === 'Scan this website')?.trigger('click')
     await settle()
-    expect(sentBodies).toEqual([{ url: 'https://www.martens-belts.com/', maxPages: 30 }])
+    expect(sentBodies).toEqual([{ url: 'https://www.martens-belts.com/', maxPages: 60 }])
     expect(router.currentRoute.value.fullPath).toBe(`/scan/${NEW_ID}?company=martens`)
     expect((combobox(wrapper).element as HTMLInputElement).value).toBe('https://www.martens-belts.com/')
     const progress = wrapper.get('[role="progressbar"]')
@@ -350,6 +351,38 @@ describe('the scan form', () => {
     await type(wrapper, 'www.example-belts.de/')
     expect((name.element as HTMLInputElement).value).toBe('Example Belts GmbH')
     await submit(wrapper)
-    expect(sentBodies).toEqual([{ url: 'https://www.example-belts.de/', maxPages: 30, companyName: 'Example Belts GmbH' }])
+    expect(sentBodies).toEqual([{ url: 'https://www.example-belts.de/', maxPages: 60, companyName: 'Example Belts GmbH' }])
+  })
+})
+
+describe('for an account that is no administrator', () => {
+  it('shows the companies and the scans, but no way to scan or change them', async () => {
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/me': () => json(me()) }), '/competitors?company=martens')
+    expect(wrapper.get('section[aria-labelledby="company-name"] h2').text()).toBe('Märtens')
+    expect(wrapper.get('#scan-title').text()).toBe('Scans')
+    expect(wrapper.find('form[aria-label="Scan a website"]').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="Manage this company"]').exists()).toBe(false)
+    expect(wrapper.find('#admin-title').exists()).toBe(false)
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Scan this website')).toBe(false)
+    expect(wrapper.get('a[href="/competitors/martens/history"]').text()).toBe('Search terms and history')
+    expect(wrapper.get('section[aria-labelledby="recent-title"]').text()).toContain('Twentebelt')
+  })
+
+  it('hides an archived company, which an administrator sees apart', async () => {
+    const archived = competitor('Old Belts', { id: 'old-belts', archived: true, host: 'old-belts.com', websiteUrl: 'https://old-belts.com/' })
+    const list = { 'GET /api/v1/competitors': () => json({ items: [twentebelt, archived] }), 'GET /api/v1/competitors/old-belts': () => json({ competitor: archived, scans: [] }) }
+    const viewer = await mountApp(api({ ...list, 'GET /api/v1/me': () => json(me()) }), '/competitors?company=old-belts')
+    expect(viewer.wrapper.text()).not.toContain('Old Belts')
+    expect(viewer.wrapper.get('section[aria-labelledby="company-name"] h2').text()).toBe('Twentebelt')
+    viewer.wrapper.unmount()
+
+    const admin = await mountApp(api(list), '/competitors')
+    const button = admin.wrapper.findAll('button').find((b) => b.text() === 'Old Belts')
+    await button?.trigger('click')
+    await settle()
+    const card = admin.wrapper.get('section[aria-labelledby="company-name"]')
+    expect(card.get('h2').text()).toBe('Old Belts')
+    expect(card.text()).toContain('Archived: hidden from the list and the re-scans.')
+    expect(card.findAll('button').map((b) => b.text())).toContain('Restore')
   })
 })

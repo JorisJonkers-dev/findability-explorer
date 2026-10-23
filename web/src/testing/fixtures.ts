@@ -17,6 +17,7 @@ export function term(overrides: Partial<Term> = {}): Term {
     tier: 'product',
     usedBy: ['Twentebelt'],
     source: 'https://www.twentebelt.com/conveyor-belts/',
+    origin: 'research',
     ...overrides,
   }
 }
@@ -61,6 +62,7 @@ export function competitor(name: string, overrides: Partial<Competitor> = {}): C
     groupCompany: false,
     beltNames: [{ name: 'TwenteFlex spiral belts', family: 'tri_flex_turn_curve' }],
     homepageTitle: 'unverified',
+    archived: false,
     ...overrides,
   }
 }

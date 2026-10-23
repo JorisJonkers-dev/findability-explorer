@@ -8,11 +8,12 @@ import { tierLabel } from '../../../shared/vocabulary'
 import RoundedPhoto from '../../../shared/ui/RoundedPhoto.vue'
 import { recentLabel } from '../../scan/domain/recent'
 import { useCompany } from '../composables/useCompany'
+import CompanyAdmin from './CompanyAdmin.vue'
 import { type Company, companyTerms, scanCountLabel, scanOutcome } from '../domain/company'
 import { beltRows, companyKind, termsTitle, whereLine } from '../domain/list'
 
-const props = defineProps<{ company: Company; terms: readonly Term[] }>()
-const emit = defineEmits<{ scan: [url: string] }>()
+const props = defineProps<{ company: Company; terms: readonly Term[]; isAdmin: boolean }>()
+const emit = defineEmits<{ scan: [url: string]; removed: [] }>()
 
 /** How many of its terms are shown as chips, and how many of its scans are listed. */
 const TERMS_SHOWN = 12
@@ -49,15 +50,19 @@ const scans = computed(() => (detail.value ? detail.value.scans.slice(0, SCANS_S
           <span class="sr-only">(opens in a new tab)</span>
         </a>
         <button
+          v-if="isAdmin"
           type="button"
           class="min-h-11 rounded-full border-0 bg-orange px-5 font-semibold text-black hover:bg-black hover:text-white stage:min-h-[88px] stage:px-10 stage:text-[30px]"
           @click="emit('scan', company.websiteUrl)"
         >
-          Scan this website
+          {{ company.scans > 0 ? 'Re-scan' : 'Scan this website' }}
         </button>
       </template>
       <p v-else class="m-0 text-muted stage:text-[30px]">The research found no website for this company.</p>
+      <RouterLink :to="`/competitors/${company.id}/history`" class="font-medium stage:text-[30px]">Search terms and history</RouterLink>
     </div>
+    <p v-if="company.archived" class="m-0 font-medium text-orange-ink stage:text-[28px]">Archived: hidden from the list and the re-scans.</p>
+    <CompanyAdmin v-if="isAdmin" :company="company" @removed="emit('removed')" />
 
     <table class="w-full border-collapse stage:text-[30px]">
       <caption class="pb-2 text-left text-sm text-muted stage:pb-3 stage:text-[26px]">Its names for Tribelt's belt families</caption>

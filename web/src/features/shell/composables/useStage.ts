@@ -1,8 +1,8 @@
 import { computed, onScopeDispose, ref } from 'vue'
-import { fitStage, STAGE_QUERY, stageTransform } from '../domain/stage'
+import { fitStage, STAGE_QUERY, stageStyle } from '../domain/stage'
 
 /**
- * Whether the window is large enough for the stage, and the transform that fits the stage in it,
+ * Whether the window is large enough for the stage, and the size and transform that fill it with the stage,
  * kept up to date as the window is resized. Without matchMedia (a test's DOM) the views stack.
  */
 export function useStage() {
@@ -24,7 +24,7 @@ export function useStage() {
 
   return {
     active,
-    /** The stage's transform, or undefined while the views stack. */
-    transform: computed(() => (active.value ? stageTransform(fit.value) : undefined)),
+    /** The stage's size and transform, or undefined while the views stack. */
+    style: computed(() => (active.value ? stageStyle(fit.value) : undefined)),
   }
 }

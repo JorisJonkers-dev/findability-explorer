@@ -10,7 +10,7 @@ import ScanForm from './ScanForm.vue'
 import ScanProgress from './ScanProgress.vue'
 import ScanResult from './ScanResult.vue'
 
-const props = defineProps<{ scanId?: string }>()
+const props = withDefaults(defineProps<{ scanId?: string; isAdmin?: boolean }>(), { scanId: undefined, isAdmin: false })
 const route = useRoute()
 const router = useRouter()
 const form = useTemplateRef<InstanceType<typeof ScanForm>>('form')
@@ -36,12 +36,16 @@ defineExpose({
     class="flex flex-col gap-5 rounded-3xl bg-mist p-5 sm:p-8 stage:min-h-0 stage:gap-7 stage:rounded-[36px] stage:p-14"
   >
     <div class="flex flex-col gap-2 stage:gap-2.5">
-      <SectionHeading id="scan-title">Scan a competitor</SectionHeading>
+      <SectionHeading id="scan-title">{{ isAdmin ? 'Scan a competitor' : 'Scans' }}</SectionHeading>
       <p class="m-0 text-ink-2 stage:text-[28px]">
-        Type a company or a website. The scan reads its pages and ranks the search phrases it is built around.
+        {{
+          isAdmin
+            ? 'Type a company or a website. The scan reads its pages, product pages first, and ranks the search phrases it is built around.'
+            : 'Each scan read a company’s pages and ranked the search phrases it is built around. Administrators start them.'
+        }}
       </p>
     </div>
-    <ScanForm ref="form" @started="started" />
+    <ScanForm v-if="isAdmin" ref="form" @started="started" />
 
     <template v-if="id !== ''">
       <p v-if="error" role="alert" class="m-0 text-orange-ink stage:text-[28px]">{{ error }}</p>
@@ -61,5 +65,6 @@ defineExpose({
       </RouterLink>
     </template>
     <RecentScans v-else />
+    <slot />
   </section>
 </template>

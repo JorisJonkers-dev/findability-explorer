@@ -1,8 +1,16 @@
 import { zProblem } from '../../../infrastructure/api/zod.gen'
 import { describeError } from '../../../shared/describeError'
 
-/** How many pages a scan reads: the contract's most. */
-export const SCAN_PAGES = 30
+/** How many pages a scan reads unless an administrator sets another budget: the contract's default. */
+export const SCAN_PAGES = 60
+/** The most pages one scan may read: the contract's most. */
+export const MAX_SCAN_PAGES = 100
+
+/** A page budget as typed, made whole and kept within 1 and MAX_SCAN_PAGES; nonsense is the default. */
+export function clampPages(value: number): number {
+  if (!Number.isFinite(value)) return SCAN_PAGES
+  return Math.min(Math.max(Math.round(value), 1), MAX_SCAN_PAGES)
+}
 export const MAX_URL_LENGTH = 500
 
 export type ScanUrlCheck =

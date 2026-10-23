@@ -34,7 +34,7 @@ describe('useStage', () => {
   it('stacks the views where the window cannot answer media queries', () => {
     const { stage } = run()
     expect(stage.active.value).toBe(false)
-    expect(stage.transform.value).toBeUndefined()
+    expect(stage.style.value).toBeUndefined()
   })
 
   it('fits the stage to the window while it is large enough, following resizes and the breakpoint', () => {
@@ -46,16 +46,16 @@ describe('useStage', () => {
     const { stage, scope } = run()
     expect(matchMedia).toHaveBeenCalledWith(STAGE_QUERY)
     expect(stage.active.value).toBe(true)
-    expect(stage.transform.value).toBe('translate(0px, 60px) scale(0.5)')
+    expect(stage.style.value).toEqual({ width: '3840px', height: '2400px', transform: 'scale(0.5)' })
 
     vi.stubGlobal('innerWidth', 3840)
     vi.stubGlobal('innerHeight', 2160)
     window.dispatchEvent(new Event('resize'))
-    expect(stage.transform.value).toBe('translate(0px, 0px) scale(1)')
+    expect(stage.style.value).toEqual({ width: '3840px', height: '2160px', transform: 'scale(1)' })
 
     query.flip(false)
     expect(stage.active.value).toBe(false)
-    expect(stage.transform.value).toBeUndefined()
+    expect(stage.style.value).toBeUndefined()
 
     scope.stop()
     expect(query.listeners.size).toBe(0)

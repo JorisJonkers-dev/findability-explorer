@@ -43,18 +43,6 @@ export const zBeltFamily = z.enum([
 ]);
 
 /**
- * One name for a belt, material or specification, as a company uses it.
- */
-export const zTerm = z.object({
-    term: z.string().max(200),
-    language: zLanguage,
-    family: zBeltFamily,
-    tier: zIntentTier,
-    usedBy: z.array(z.string().max(200)).max(20),
-    source: z.string().max(500)
-});
-
-/**
  * How many matching terms have one value of a facet.
  */
 export const zFacetCount = z.object({
@@ -69,15 +57,6 @@ export const zFacets = z.object({
     languages: z.array(zFacetCount).max(20),
     tiers: z.array(zFacetCount).max(20),
     families: z.array(zFacetCount).max(20)
-});
-
-/**
- * A page of matching terms.
- */
-export const zTermSearch = z.object({
-    items: z.array(zTerm).max(200),
-    total: z.int().gte(0).lte(100000),
-    facets: zFacets
 });
 
 /**
@@ -111,7 +90,7 @@ export const zNewCompetitor = z.object({
  */
 export const zNewAnalysis = z.object({
     url: z.url().min(8).max(500),
-    maxPages: z.int().gte(1).lte(30).optional().default(15),
+    maxPages: z.int().gte(1).lte(100).optional().default(60),
     companyName: z.string().min(1).max(200).optional()
 });
 
@@ -141,12 +120,14 @@ export const zMatchingStatus = z.enum([
  */
 export const zAnalysisSummary = z.object({
     competitorId: zCompetitorId.optional(),
+    number: z.int().gte(1).lte(100000).optional(),
+    matchingModel: z.string().max(300).optional(),
     id: z.uuid().max(36),
     url: z.string().max(500),
     status: zAnalysisStatus,
     failure: z.string().max(500).optional(),
-    maxPages: z.int().gte(1).lte(30),
-    pagesCrawled: z.int().gte(0).lte(30),
+    maxPages: z.int().gte(1).lte(100),
+    pagesCrawled: z.int().gte(0).lte(100),
     createdAt: z.iso.datetime({ offset: true }).max(64),
     finishedAt: z.iso.datetime({ offset: true }).max(64).optional()
 });
@@ -155,6 +136,7 @@ export const zAnalysisSummary = z.object({
  * A known company.
  */
 export const zCompetitor = z.object({
+    archived: z.boolean(),
     id: zCompetitorId,
     source: zCompetitorSource,
     websiteUrl: z.url().max(500).optional(),
@@ -176,7 +158,7 @@ export const zCompetitor = z.object({
  */
 export const zCompetitorDetail = z.object({
     competitor: zCompetitor,
-    scans: z.array(zAnalysisSummary).max(20)
+    scans: z.array(zAnalysisSummary).max(100)
 });
 
 /**
@@ -194,14 +176,15 @@ export const zAnalysisList = z.object({
 });
 
 /**
- * One page the crawl fetched.
+ * One page the crawl fetched, with the belt family it is about when that is clear.
  */
 export const zCrawledPage = z.object({
     url: z.string().max(2000),
     title: z.string().max(500),
     description: z.string().max(1000),
     language: z.string().max(16),
-    wordCount: z.int().gte(0).lte(10000000)
+    wordCount: z.int().gte(0).lte(10000000),
+    family: zBeltFamily.optional()
 });
 
 /**
@@ -215,7 +198,7 @@ export const zKeyword = z.object({
     phrase: z.string().max(200),
     language: z.string().max(16),
     score: z.number().gte(0).lte(1000000),
-    pages: z.int().gte(1).lte(30)
+    pages: z.int().gte(1).lte(100)
 });
 
 /**
@@ -253,7 +236,7 @@ export const zEquivalent = z.object({
  */
 export const zAnalysis = z.object({
     summary: zAnalysisSummary,
-    pages: z.array(zCrawledPage).max(30),
+    pages: z.array(zCrawledPage).max(100),
     keywords: z.array(zKeyword).max(200),
     knownTerms: z.array(zKnownTerm).max(200),
     matching: zMatchingStatus,
@@ -402,6 +385,228 @@ export const zLlmSettings = z.object({
 });
 
 /**
+ * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
+ */
+export const zTermOrigin = z.enum(['research', 'review']);
+
+/**
+ * One name for a belt, material or specification, as a company uses it.
+ */
+export const zTerm = z.object({
+    origin: zTermOrigin,
+    term: z.string().max(200),
+    language: zLanguage,
+    family: zBeltFamily,
+    tier: zIntentTier,
+    usedBy: z.array(z.string().max(200)).max(20),
+    source: z.string().max(500)
+});
+
+/**
+ * A page of matching terms.
+ */
+export const zTermSearch = z.object({
+    items: z.array(zTerm).max(200),
+    total: z.int().gte(0).lte(100000),
+    facets: zFacets
+});
+
+/**
+ * The fields of a company to change; at least one.
+ */
+export const zCompetitorUpdate = z.object({
+    name: z.string().min(1).max(200).optional(),
+    url: z.url().min(8).max(500).optional(),
+    archived: z.boolean().optional()
+});
+
+/**
+ * Which companies to scan again - the ones named, or with `all` every company that is not archived, has a website and was scanned before. One of the two.
+ */
+export const zRescanRequest = z.object({
+    competitorIds: z.array(zCompetitorId).min(1).max(200).optional(),
+    all: z.boolean().optional(),
+    maxPages: z.int().gte(1).lte(100).optional().default(60)
+});
+
+/**
+ * A company a re-scan left out, and why.
+ */
+export const zRescanSkip = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    reason: z.string().max(300)
+});
+
+/**
+ * The scans a re-scan queued, and the companies it left out.
+ */
+export const zRescanBatch = z.object({
+    queued: z.array(zAnalysisSummary).max(200),
+    skipped: z.array(zRescanSkip).max(200)
+});
+
+/**
+ * How a company's search terms are grouped - one of Tribelt's belt families, other metal belts, broad terms that name no family, or material and specification terms.
+ */
+export const zProfileGroup = z.enum([
+    'eyelink',
+    'open_spiral',
+    'closed_spiral',
+    'tri_flex_turn_curve',
+    'other',
+    'broad',
+    'spec'
+]);
+
+/**
+ * A search term of a company's latest finished scan.
+ */
+export const zProfileTerm = z.object({
+    phrase: z.string().max(200),
+    language: z.string().max(16),
+    score: z.number().gte(0).lte(1000000),
+    pages: z.int().gte(1).lte(100),
+    tier: zIntentTier,
+    family: zBeltFamily.optional(),
+    closestTerm: z.string().max(200).optional(),
+    inMap: z.boolean(),
+    firstScan: z.int().gte(1).lte(100000)
+});
+
+/**
+ * The search terms of one group, highest score first.
+ */
+export const zProfileGroupTerms = z.object({
+    group: zProfileGroup,
+    terms: z.array(zProfileTerm).max(200)
+});
+
+/**
+ * A company's search terms from its latest finished scan, by group, every group present in a fixed order (Tribelt's families, other, broad, spec).
+ */
+export const zCompetitorProfile = z.object({
+    competitorId: zCompetitorId,
+    scan: zAnalysisSummary.optional(),
+    finishedScans: z.int().gte(0).lte(100000),
+    languages: z.array(z.string().max(16)).max(20),
+    groups: z.array(zProfileGroupTerms).max(7)
+});
+
+/**
+ * A search term one scan found and the other did not, or whose score or page count moved. The from fields are absent for an added term, the to fields for a removed one.
+ */
+export const zTermChange = z.object({
+    phrase: z.string().max(200),
+    language: z.string().max(16),
+    tier: zIntentTier,
+    family: zBeltFamily.optional(),
+    inMap: z.boolean(),
+    fromScore: z.number().gte(0).lte(1000000).optional(),
+    toScore: z.number().gte(0).lte(1000000).optional(),
+    fromPages: z.int().gte(1).lte(100).optional(),
+    toPages: z.int().gte(1).lte(100).optional()
+});
+
+/**
+ * What changed in one group between two scans.
+ */
+export const zComparisonGroup = z.object({
+    group: zProfileGroup,
+    added: z.array(zTermChange).max(200),
+    removed: z.array(zTermChange).max(200),
+    moved: z.array(zTermChange).max(200)
+});
+
+/**
+ * Two finished scans of a company compared, per group. A term moved when its score changed by at least a quarter and 5 points, or its page count by at least 2.
+ */
+export const zScanComparison = z.object({
+    from: zAnalysisSummary,
+    to: zAnalysisSummary,
+    groups: z.array(zComparisonGroup).max(7)
+});
+
+/**
+ * A candidate's id, made from its phrase.
+ */
+export const zTermCandidateId = z.string().length(16).regex(/^[0-9a-f]{16}$/);
+
+/**
+ * Where a candidate is in the review.
+ */
+export const zTermCandidateStatus = z.enum([
+    'pending',
+    'accepted',
+    'rejected'
+]);
+
+/**
+ * A company whose scan found a candidate.
+ */
+export const zCandidateCompany = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200)
+});
+
+/**
+ * An administrator's decision on a candidate.
+ */
+export const zTermDecision = z.object({
+    status: zTermCandidateStatus,
+    by: z.string().max(200),
+    at: z.iso.datetime({ offset: true }).max(64),
+    term: zTerm.optional()
+});
+
+/**
+ * A phrase finished scans found that the terminology map did not hold, with its evidence across companies and the classifier's suggestion.
+ */
+export const zTermCandidate = z.object({
+    id: zTermCandidateId,
+    phrase: z.string().max(200),
+    status: zTermCandidateStatus,
+    languages: z.array(z.string().max(16)).max(20),
+    companies: z.array(zCandidateCompany).max(200),
+    scans: z.int().gte(1).lte(100000),
+    bestScore: z.number().gte(0).lte(1000000),
+    maxPages: z.int().gte(1).lte(100),
+    suggestedTier: zIntentTier,
+    suggestedFamily: zBeltFamily.optional(),
+    closestTerm: z.string().max(200).optional(),
+    lastSeenAt: z.iso.datetime({ offset: true }).max(64),
+    decision: zTermDecision.optional()
+});
+
+/**
+ * How many candidates have each status.
+ */
+export const zTermCandidateCounts = z.object({
+    pending: z.int().gte(0).lte(1000000),
+    accepted: z.int().gte(0).lte(1000000),
+    rejected: z.int().gte(0).lte(1000000)
+});
+
+/**
+ * The candidates with one status.
+ */
+export const zTermCandidateList = z.object({
+    items: z.array(zTermCandidate).max(1000),
+    counts: zTermCandidateCounts
+});
+
+/**
+ * A candidate as it joins the terminology map.
+ */
+export const zTermAcceptance = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage,
+    family: zBeltFamily,
+    tier: zIntentTier,
+    usedBy: z.array(z.string().min(1).max(200)).max(20)
+});
+
+/**
  * An RFC 9457 problem detail.
  */
 export const zProblem = z.object({
@@ -410,6 +615,16 @@ export const zProblem = z.object({
     status: z.int().gte(100).lte(599),
     detail: z.string().max(1024).optional()
 });
+
+/**
+ * The company's id.
+ */
+export const zCompetitorIdPath = zCompetitorId;
+
+/**
+ * The candidate's id.
+ */
+export const zCandidateId = zTermCandidateId;
 
 /**
  * The credential's id.
@@ -445,6 +660,15 @@ export const zAddCompetitorBody = zNewCompetitor;
  */
 export const zAddCompetitorResponse = zCompetitor;
 
+export const zDeleteCompetitorPath = z.object({
+    competitorId: zCompetitorId
+});
+
+/**
+ * Deleted or archived.
+ */
+export const zDeleteCompetitorResponse = z.void();
+
 export const zGetCompetitorPath = z.object({
     competitorId: zCompetitorId
 });
@@ -453,6 +677,94 @@ export const zGetCompetitorPath = z.object({
  * The company.
  */
 export const zGetCompetitorResponse = zCompetitorDetail;
+
+/**
+ * The fields to change.
+ */
+export const zUpdateCompetitorBody = zCompetitorUpdate;
+
+export const zUpdateCompetitorPath = z.object({
+    competitorId: zCompetitorId
+});
+
+/**
+ * The company after the change.
+ */
+export const zUpdateCompetitorResponse = zCompetitor;
+
+export const zGetCompetitorProfilePath = z.object({
+    competitorId: zCompetitorId
+});
+
+/**
+ * The profile.
+ */
+export const zGetCompetitorProfileResponse = zCompetitorProfile;
+
+export const zCompareScansPath = z.object({
+    competitorId: zCompetitorId
+});
+
+export const zCompareScansQuery = z.object({
+    from: z.uuid().max(36).optional(),
+    to: z.uuid().max(36).optional()
+});
+
+/**
+ * The comparison.
+ */
+export const zCompareScansResponse = zScanComparison;
+
+/**
+ * Which companies to scan again.
+ */
+export const zStartRescansBody = zRescanRequest;
+
+/**
+ * The queued scans and the skipped companies.
+ */
+export const zStartRescansResponse = zRescanBatch;
+
+export const zListTermCandidatesQuery = z.object({
+    status: zTermCandidateStatus.optional()
+});
+
+/**
+ * The candidates and how many have each status.
+ */
+export const zListTermCandidatesResponse = zTermCandidateList;
+
+/**
+ * The term as it joins the map.
+ */
+export const zAcceptTermCandidateBody = zTermAcceptance;
+
+export const zAcceptTermCandidatePath = z.object({
+    candidateId: zTermCandidateId
+});
+
+/**
+ * The candidate, accepted.
+ */
+export const zAcceptTermCandidateResponse = zTermCandidate;
+
+export const zRejectTermCandidatePath = z.object({
+    candidateId: zTermCandidateId
+});
+
+/**
+ * The candidate, rejected.
+ */
+export const zRejectTermCandidateResponse = zTermCandidate;
+
+export const zUndoTermDecisionPath = z.object({
+    candidateId: zTermCandidateId
+});
+
+/**
+ * The candidate, pending again.
+ */
+export const zUndoTermDecisionResponse = zTermCandidate;
 
 export const zListAnalysesQuery = z.object({
     limit: z.int().gte(1).lte(50).optional().default(20)

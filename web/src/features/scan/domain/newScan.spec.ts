@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkScanUrl, describeScanUrlCheck, MAX_URL_LENGTH, placeStartError, SCAN_PAGES } from './newScan'
+import { checkScanUrl, clampPages, describeScanUrlCheck, MAX_SCAN_PAGES, MAX_URL_LENGTH, placeStartError, SCAN_PAGES } from './newScan'
 
 describe('checkScanUrl', () => {
   it('accepts an http or https address with a host name', () => {
@@ -35,8 +35,8 @@ describe('describeScanUrlCheck', () => {
 })
 
 describe('the page budgets', () => {
-  it('offers four, all within the contract', () => {
-    expect(SCAN_PAGES).toBe(30)
+  it('reads 60 pages unless an administrator sets another budget', () => {
+    expect(SCAN_PAGES).toBe(60)
   })
 })
 
@@ -53,5 +53,14 @@ describe('placeStartError', () => {
       field: 'form',
       message: 'Something went wrong. Try again.',
     })
+  })
+})
+
+describe('the page budget', () => {
+  it('keeps a typed budget whole and within the contract', () => {
+    expect(clampPages(42.4)).toBe(42)
+    expect(clampPages(0)).toBe(1)
+    expect(clampPages(500)).toBe(MAX_SCAN_PAGES)
+    expect(clampPages(Number.NaN)).toBe(SCAN_PAGES)
   })
 })

@@ -10,7 +10,8 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   // A flaky test is a bug to fix, not to retry.
   retries: 0,
-  reporter: process.env.CI ? [['github'], ['list']] : 'list',
+  // CI writes a blob report, which the job then turns into an HTML report.
+  reporter: process.env.CI ? [['blob'], ['github'], ['list']] : 'list',
   use: { baseURL: origin, trace: 'retain-on-failure' },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },

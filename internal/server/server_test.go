@@ -20,6 +20,7 @@ func named(name string) http.Handler {
 func newServer(ready error) *server.Server {
 	return server.New(slog.New(slog.DiscardHandler), "test", server.Routes{
 		API:   named("api"),
+		Auth:  named("auth"),
 		Web:   named("web"),
 		Ready: func(context.Context) error { return ready },
 	})
@@ -61,7 +62,9 @@ func TestProbesBeforeServing(t *testing.T) {
 
 func TestRoutesAPIAndWebBehindSecurityHeaders(t *testing.T) {
 	h := newServer(nil).Handler()
-	for path, want := range map[string]string{"/api/v1/notes": "api", "/": "web", "/notes/42": "web", "/apiary": "web"} {
+	for path, want := range map[string]string{
+		"/api/v1/notes": "api", "/auth/login": "auth", "/": "web", "/notes/42": "web", "/apiary": "web", "/authors": "web",
+	} {
 		rec := &recorder{header: http.Header{}}
 		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, path, nil)
 		if err != nil {
@@ -73,6 +76,22 @@ func TestRoutesAPIAndWebBehindSecurityHeaders(t *testing.T) {
 		}
 		if rec.header.Get("Content-Security-Policy") == "" {
 			t.Errorf("GET %s has no Content-Security-Policy", path)
+		}
+	}
+}
+
+func TestUnsafeCrossSiteRequestsAreRefused(t *testing.T) {
+	h := newServer(nil).Handler()
+	for path, want := range map[string]int{"/api/v1/analyses": http.StatusForbidden, "/auth/logout": http.StatusForbidden, "/scan": http.StatusOK} {
+		rec := &recorder{header: http.Header{}}
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Sec-Fetch-Site", "cross-site")
+		h.ServeHTTP(rec, req)
+		if code := max(rec.code, http.StatusOK); code != want {
+			t.Errorf("cross-site POST %s = %d, want %d", path, code, want)
 		}
 	}
 }

@@ -1,5 +1,5 @@
 // Package httpx holds the HTTP pieces every inbound adapter shares: RFC 9457 problems, browser
-// hardening headers, and the local stand-in for the platform's forward-auth.
+// hardening headers, the same-origin check on unsafe requests, and the caller's subject on ctx.
 package httpx
 
 import (
@@ -8,9 +8,6 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
 )
-
-// IdentityHeader carries the caller's subject. The platform's forward-auth sets it at the edge.
-const IdentityHeader = "X-User-Id"
 
 const contentSecurityPolicy = "default-src 'self'; img-src 'self' data:; style-src 'self'; " +
 	"connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
@@ -52,20 +49,21 @@ func SecurityHeaders(next http.Handler) http.Handler {
 	})
 }
 
-// DevIdentity fills in subject when a request carries no identity. Wire it only for local runs,
-// where no forward-auth sits in front of the service.
-func DevIdentity(subject string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get(IdentityHeader) == "" {
-			r.Header.Set(IdentityHeader, subject)
-		}
-		next.ServeHTTP(w, r)
-	})
+// SameOrigin refuses an unsafe request (anything but GET, HEAD and OPTIONS) that a browser says
+// comes from another origin, by Sec-Fetch-Site or else by Origin against Host, with a 403
+// problem. It is the defence against cross-site request forgery for the session cookie; requests
+// without either header do not come from a browser and pass.
+func SameOrigin(next http.Handler) http.Handler {
+	p := http.NewCrossOriginProtection()
+	p.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		WriteProblem(w, http.StatusForbidden, "Cross-origin requests are not allowed.")
+	}))
+	return p.Handler(next)
 }
 
 type subjectKey struct{}
 
-// WithSubject returns ctx carrying the caller's subject, as the forward-auth header named it.
+// WithSubject returns ctx carrying the caller's subject, as the session named it.
 func WithSubject(ctx context.Context, subject string) context.Context {
 	return context.WithValue(ctx, subjectKey{}, subject)
 }

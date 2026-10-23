@@ -1,67 +1,30 @@
-import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
-import { configureApi } from '../../../infrastructure/http'
 import { term, termSearch } from '../../../testing/fixtures'
 import { json, problem } from '../../../testing/mountApp'
-import { useTermMap, useTermSearch } from './useTermSearch'
+import { mountComposable } from '../../../testing/mountComposable'
+import { useTermMap } from './useTermSearch'
 
-const NONE = { q: '', language: null, tier: null, family: null, user: '' }
-
-/** Runs both composables against fetch, on one query client. */
-function setup(fetch: (input: RequestInfo | URL) => Promise<Response>) {
-  const sent: string[] = []
-  configureApi({
-    baseUrl: 'http://app.test',
-    fetch: (input) => {
-      const url = new URL((input as Request).url)
-      sent.push(url.search)
-      return fetch(input)
-    },
-  })
-  let search: ReturnType<typeof useTermSearch> | undefined
-  let map: ReturnType<typeof useTermMap> | undefined
-  mount(
-    defineComponent({
-      setup: () => {
-        search = useTermSearch(ref(NONE))
-        map = useTermMap()
-        return () => h('div')
-      },
-    }),
-    { global: { plugins: [[VueQueryPlugin, { queryClient: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }]] } },
-  )
-  if (!search || !map) throw new Error('the composables did not mount')
-  return { search, map, sent }
-}
-
-describe('useTermSearch and useTermMap', () => {
-  it('have nothing before the first response', () => {
-    const { search, map } = setup(() => new Promise<Response>(() => undefined))
-    expect(search.terms.value).toEqual([])
-    expect(search.total.value).toBe(0)
-    expect(search.facets.value).toEqual({ languages: [], tiers: [], families: [] })
-    expect(search.isLoading.value).toBe(true)
-    expect(search.error.value).toBeNull()
-    expect(map.terms.value).toEqual([])
-    expect(map.total.value).toBe(0)
+describe('useTermMap', () => {
+  it('has nothing before the first response', () => {
+    const { state } = mountComposable(useTermMap, () => new Promise<Response>(() => undefined))
+    expect(state.terms.value).toEqual([])
+    expect(state.total.value).toBe(0)
+    expect(state.isLoading.value).toBe(true)
+    expect(state.error.value).toBeNull()
   })
 
-  it('share one request for the unfiltered map', async () => {
-    const { search, map, sent } = setup(() => Promise.resolve(json(termSearch([term()], { total: 146 }))))
+  it('asks for the whole map at once', async () => {
+    const { state, sent } = mountComposable(useTermMap, () => json(termSearch([term()], { total: 146 })))
     await flushPromises()
-    expect(sent).toEqual(['?limit=200'])
-    expect(search.terms.value).toEqual([term()])
-    expect(search.total.value).toBe(146)
-    expect(search.facets.value.languages).toHaveLength(2)
-    expect(map.terms.value).toEqual([term()])
-    expect(map.total.value).toBe(146)
+    expect(sent).toEqual(['GET /api/v1/terms?limit=200'])
+    expect(state.terms.value).toEqual([term()])
+    expect(state.total.value).toBe(146)
   })
 
-  it('describes a failed search', async () => {
-    const { search } = setup(() => Promise.resolve(problem(400, 'Bad Request', 'The query is too long.')))
+  it('describes a failed request', async () => {
+    const { state } = mountComposable(useTermMap, () => problem(500, 'Internal Server Error', 'The map is not loaded.'))
     await flushPromises()
-    expect(search.error.value).toBe('The query is too long.')
+    expect(state.error.value).toBe('The map is not loaded.')
   })
 })

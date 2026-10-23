@@ -5,12 +5,32 @@ type AddCompetitorRes interface {
 	addCompetitorRes()
 }
 
+type AddLlmCredentialRes interface {
+	addLlmCredentialRes()
+}
+
+type ClearActiveLlmRes interface {
+	clearActiveLlmRes()
+}
+
+type DeleteLlmCredentialRes interface {
+	deleteLlmCredentialRes()
+}
+
 type GetAnalysisRes interface {
 	getAnalysisRes()
 }
 
 type GetCompetitorRes interface {
 	getCompetitorRes()
+}
+
+type GetLlmSettingsRes interface {
+	getLlmSettingsRes()
+}
+
+type GetMeRes interface {
+	getMeRes()
 }
 
 type ListAnalysesRes interface {
@@ -21,10 +41,22 @@ type ListCompetitorsRes interface {
 	listCompetitorsRes()
 }
 
+type ListLlmModelsRes interface {
+	listLlmModelsRes()
+}
+
 type SearchTermsRes interface {
 	searchTermsRes()
 }
 
+type SetActiveLlmRes interface {
+	setActiveLlmRes()
+}
+
 type StartAnalysisRes interface {
 	startAnalysisRes()
+}
+
+type TestLlmCredentialRes interface {
+	testLlmCredentialRes()
 }

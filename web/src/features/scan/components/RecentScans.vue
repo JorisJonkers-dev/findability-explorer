@@ -8,45 +8,24 @@ import { recentLabel } from '../domain/recent'
 const route = useRoute()
 const { scans, isLoading, error } = useRecentScans()
 const { companies } = useCompanies()
-
-/** Who a scan is of: the company's name, or the host when it is no known company. */
-function who(scan: { url: string; competitorId?: string }): string {
-  return scanCompany(scan, companies.value).name
-}
-
-function isCurrent(id: string): boolean {
-  return route.path === `/scan/${id}`
-}
 </script>
 
 <template>
-  <!-- Beside the content the list is always open; above it, on a phone, it folds away. -->
-  <section aria-labelledby="recent-title" class="hidden flex-col gap-1.5 md:flex">
-    <h2 id="recent-title" class="m-0 text-[13px] font-normal text-muted">Recent scans</h2>
-    <p v-if="error" class="m-0 px-3 text-sm text-muted">{{ error }}</p>
-    <p v-else-if="!isLoading && scans.length === 0" class="m-0 px-3 text-sm text-muted">No scans yet.</p>
-    <ul v-else class="m-0 flex list-none flex-col p-0">
+  <section aria-labelledby="recent-title" class="flex flex-col gap-3 stage:gap-4">
+    <h3 id="recent-title" class="m-0 text-sm font-normal text-muted stage:text-[26px]">Recent scans</h3>
+    <p v-if="error" role="alert" class="m-0 text-sm text-orange-ink stage:text-[26px]">{{ error }}</p>
+    <p v-else-if="isLoading" class="m-0 text-sm text-muted stage:text-[26px]">Loading…</p>
+    <p v-else-if="scans.length === 0" class="m-0 text-sm text-muted stage:text-[26px]">No scans yet.</p>
+    <ul v-else class="m-0 flex list-none flex-wrap gap-2 p-0 stage:gap-3">
       <li v-for="scan in scans" :key="scan.id">
         <RouterLink
-          :to="`/scan/${scan.id}`"
-          :aria-current="isCurrent(scan.id) ? 'page' : undefined"
-          class="flex justify-between gap-2 rounded-md px-3 py-1.5 text-sm no-underline"
-          :class="isCurrent(scan.id) ? 'bg-raised text-ink' : 'text-ink-2 hover:text-ink'"
+          :to="{ path: `/scan/${scan.id}`, query: route.query }"
+          class="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-black bg-white px-4 text-sm font-medium text-black no-underline hover:bg-black hover:text-white stage:min-h-[76px] stage:gap-3 stage:border-[3px] stage:px-[30px] stage:text-[28px]"
         >
-          <span class="min-w-0 truncate">{{ who(scan) }}</span>
-          <span class="flex-none text-muted">{{ recentLabel(scan) }}</span>
+          <span>{{ scanCompany(scan, companies).name }}</span><span class="sr-only">, </span>
+          <span class="font-normal opacity-80">{{ recentLabel(scan) }}</span>
         </RouterLink>
       </li>
     </ul>
   </section>
-  <details v-if="scans.length > 0" class="md:hidden">
-    <summary class="text-sm font-medium text-ink-2">Recent scans</summary>
-    <ul class="m-0 mt-2 flex list-none flex-wrap gap-x-4 gap-y-1 p-0">
-      <li v-for="scan in scans" :key="scan.id">
-        <RouterLink :to="`/scan/${scan.id}`" :aria-current="isCurrent(scan.id) ? 'page' : undefined" class="text-sm">
-          {{ who(scan) }} <span class="text-muted">{{ recentLabel(scan) }}</span>
-        </RouterLink>
-      </li>
-    </ul>
-  </details>
 </template>

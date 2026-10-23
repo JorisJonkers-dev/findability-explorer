@@ -107,7 +107,7 @@ export type PhraseKind = 'all' | 'new' | 'inMap'
 
 export const PHRASE_KINDS: readonly { value: PhraseKind; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'new', label: 'New terms only' },
+  { value: 'new', label: 'New terms' },
   { value: 'inMap', label: 'In the map' },
 ]
 
@@ -178,4 +178,20 @@ export function wordsLabel(count: number): string {
 /** How many pages were read: "The 10 pages read", "The page read". */
 export function pagesReadTitle(count: number): string {
   return count === 1 ? 'The page read' : `The ${String(count)} pages read`
+}
+
+/** The phrases the terminology map does not have yet. */
+export function newTermCount(keywords: readonly Pick<Keyword, 'inMap'>[]): number {
+  return keywords.filter((k) => !k.inMap).length
+}
+
+/** The line beside a finished scan's host: "15 pages read · 4 new terms". */
+export function resultLine(pagesRead: number, newTerms: number): string {
+  const pages = `${String(pagesRead)} ${pagesRead === 1 ? 'page' : 'pages'} read`
+  return `${pages} · ${String(newTerms)} new ${newTerms === 1 ? 'term' : 'terms'}`
+}
+
+/** Who matched the products: "Matched by openrouter/anthropic/claude-haiku". */
+export function matchedBy(model: string | undefined): string | null {
+  return model === undefined || model.trim() === '' ? null : `Matched by ${model}`
 }

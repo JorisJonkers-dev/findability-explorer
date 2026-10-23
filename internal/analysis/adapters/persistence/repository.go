@@ -215,11 +215,13 @@ func (r *Repository) SaveFindings(ctx context.Context, id uuid.UUID, kws []domai
 	})
 }
 
-// SaveMatching stores the matching outcome, its token usage and the equivalents in one transaction.
-func (r *Repository) SaveMatching(ctx context.Context, id uuid.UUID, m domain.Matching, eqs []domain.Equivalent, u domain.Usage) error {
+// SaveMatching stores the matching outcome, the model asked, its token usage and the equivalents
+// in one transaction.
+func (r *Repository) SaveMatching(ctx context.Context, id uuid.UUID, m domain.Matching, model string, eqs []domain.Equivalent, u domain.Usage) error {
 	return r.store.InTx(ctx, func(q *queries.Queries) error {
 		if err := q.SetAnalysisMatching(ctx, queries.SetAnalysisMatchingParams{
 			ID: id, Matching: string(m), LlmInputTokens: u.InputTokens, LlmOutputTokens: u.OutputTokens,
+			MatchingModel: optionalText(clip(model, 300)),
 		}); err != nil {
 			return fmt.Errorf("update matching: %w", err)
 		}
@@ -266,6 +268,7 @@ func toAnalysis(row queries.ListAnalysesRow) domain.Analysis {
 		ID: row.ID, URL: row.Url, MaxPages: int(row.MaxPages), Status: domain.Status(row.Status),
 		Failure: row.Failure.String, PagesCrawled: int(row.PagesCrawled), Matching: domain.Matching(row.Matching),
 		CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC(), CompetitorID: row.CompetitorID.String,
+		MatchingModel: row.MatchingModel.String,
 	}
 	if row.FinishedAt.Valid {
 		a.FinishedAt = row.FinishedAt.Time.UTC()

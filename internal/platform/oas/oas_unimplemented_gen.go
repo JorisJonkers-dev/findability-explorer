@@ -23,6 +23,35 @@ func (UnimplementedHandler) AddCompetitor(ctx context.Context, req *NewCompetito
 	return r, ht.ErrNotImplemented
 }
 
+// AddLlmCredential implements addLlmCredential operation.
+//
+// Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
+// refuses is not stored and answers 422 with the provider's reason. The key is never returned.
+//
+// POST /api/v1/admin/llm/credentials
+func (UnimplementedHandler) AddLlmCredential(ctx context.Context, req *NewLlmCredential) (r AddLlmCredentialRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ClearActiveLlm implements clearActiveLlm operation.
+//
+// Turns product matching off until a credential and model are chosen again.
+//
+// DELETE /api/v1/admin/llm/active
+func (UnimplementedHandler) ClearActiveLlm(ctx context.Context) (r ClearActiveLlmRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteLlmCredential implements deleteLlmCredential operation.
+//
+// Deletes a stored credential. When it was the active one, matching falls back to the Vault credential
+// with the default model, or is off without one. The Vault credential cannot be deleted here (422).
+//
+// DELETE /api/v1/admin/llm/credentials/{credentialId}
+func (UnimplementedHandler) DeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (r DeleteLlmCredentialRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAnalysis implements getAnalysis operation.
 //
 // Returns the analysis, its progress, and every result found so far.
@@ -38,6 +67,26 @@ func (UnimplementedHandler) GetAnalysis(ctx context.Context, params GetAnalysisP
 //
 // GET /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) GetCompetitor(ctx context.Context, params GetCompetitorParams) (r GetCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetLlmSettings implements getLlmSettings operation.
+//
+// Returns every credential (never a secret), the model product matching uses now, the token budget,
+// and the latest 50 changes and tests, newest first.
+//
+// GET /api/v1/admin/llm
+func (UnimplementedHandler) GetLlmSettings(ctx context.Context) (r GetLlmSettingsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetMe implements getMe operation.
+//
+// Returns who is signed in and whether they may open the admin settings. A request without a live
+// session gets 401; the web app then sends the browser to /auth/login.
+//
+// GET /api/v1/me
+func (UnimplementedHandler) GetMe(ctx context.Context) (r GetMeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -60,6 +109,16 @@ func (UnimplementedHandler) ListCompetitors(ctx context.Context) (r ListCompetit
 	return r, ht.ErrNotImplemented
 }
 
+// ListLlmModels implements listLlmModels operation.
+//
+// Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
+// stored key is unreadable.
+//
+// GET /api/v1/admin/llm/credentials/{credentialId}/models
+func (UnimplementedHandler) ListLlmModels(ctx context.Context, params ListLlmModelsParams) (r ListLlmModelsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SearchTerms implements searchTerms operation.
 //
 // Returns the terms that match the query and every filter, best match first, with the count of
@@ -71,6 +130,16 @@ func (UnimplementedHandler) SearchTerms(ctx context.Context, params SearchTermsP
 	return r, ht.ErrNotImplemented
 }
 
+// SetActiveLlm implements setActiveLlm operation.
+//
+// Makes product matching use this credential and model from the next analysis on. The credential must
+// exist (404) and be readable (422).
+//
+// PUT /api/v1/admin/llm/active
+func (UnimplementedHandler) SetActiveLlm(ctx context.Context, req *ActiveLlm) (r SetActiveLlmRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StartAnalysis implements startAnalysis operation.
 //
 // Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host, following
@@ -78,6 +147,17 @@ func (UnimplementedHandler) SearchTerms(ctx context.Context, params SearchTermsP
 //
 // POST /api/v1/analyses
 func (UnimplementedHandler) StartAnalysis(ctx context.Context, req *NewAnalysis) (r StartAnalysisRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestLlmCredential implements testLlmCredential operation.
+//
+// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
+// credential and in the events. A refused key is a 200 with ok false; an unreadable stored key answers
+// 422.
+//
+// POST /api/v1/admin/llm/credentials/{credentialId}/test
+func (UnimplementedHandler) TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (r TestLlmCredentialRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

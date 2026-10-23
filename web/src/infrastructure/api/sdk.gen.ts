@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses } from './types.gen';
-import { zAddCompetitorBody, zAddCompetitorResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zSearchTermsQuery, zSearchTermsResponse, zStartAnalysisBody, zStartAnalysisResponse } from './zod.gen';
+import type { AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses } from './types.gen';
+import { zAddCompetitorBody, zAddCompetitorResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorResponse, zGetLlmSettingsResponse, zGetMeResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zStartAnalysisBody, zStartAnalysisResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -33,7 +33,11 @@ export const searchTerms = <ThrowOnError extends boolean = false>(options?: Opti
         query: zSearchTermsQuery.optional()
     }).parseAsync(data),
     responseValidator: async (data) => await zSearchTermsResponse.parseAsync(data),
-    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
     url: '/api/v1/terms',
     ...options
 });
@@ -50,7 +54,11 @@ export const listCompetitors = <ThrowOnError extends boolean = false>(options?: 
         query: z.never().optional()
     }).parseAsync(data),
     responseValidator: async (data) => await zListCompetitorsResponse.parseAsync(data),
-    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
     url: '/api/v1/competitors',
     ...options
 });
@@ -67,7 +75,11 @@ export const addCompetitor = <ThrowOnError extends boolean = false>(options: Opt
         query: z.never().optional()
     }).parseAsync(data),
     responseValidator: async (data) => await zAddCompetitorResponse.parseAsync(data),
-    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
     url: '/api/v1/competitors',
     ...options,
     headers: {
@@ -88,7 +100,11 @@ export const getCompetitor = <ThrowOnError extends boolean = false>(options: Opt
         query: z.never().optional()
     }).parseAsync(data),
     responseValidator: async (data) => await zGetCompetitorResponse.parseAsync(data),
-    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
     url: '/api/v1/competitors/{competitorId}',
     ...options
 });
@@ -105,7 +121,11 @@ export const listAnalyses = <ThrowOnError extends boolean = false>(options?: Opt
         query: zListAnalysesQuery.optional()
     }).parseAsync(data),
     responseValidator: async (data) => await zListAnalysesResponse.parseAsync(data),
-    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
     url: '/api/v1/analyses',
     ...options
 });
@@ -122,7 +142,11 @@ export const startAnalysis = <ThrowOnError extends boolean = false>(options: Opt
         query: z.never().optional()
     }).parseAsync(data),
     responseValidator: async (data) => await zStartAnalysisResponse.parseAsync(data),
-    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
     url: '/api/v1/analyses',
     ...options,
     headers: {
@@ -143,7 +167,187 @@ export const getAnalysis = <ThrowOnError extends boolean = false>(options: Optio
         query: z.never().optional()
     }).parseAsync(data),
     responseValidator: async (data) => await zGetAnalysisResponse.parseAsync(data),
-    security: [{ name: 'X-User-Id', type: 'apiKey' }],
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
     url: '/api/v1/analyses/{analysisId}',
     ...options
+});
+
+/**
+ * Get the signed-in account
+ *
+ * Returns who is signed in and whether they may open the admin settings. A request without a live session gets 401; the web app then sends the browser to /auth/login.
+ */
+export const getMe = <ThrowOnError extends boolean = false>(options?: Options<GetMeData, ThrowOnError>): RequestResult<GetMeResponses, GetMeErrors, ThrowOnError> => (options?.client ?? client).get<GetMeResponses, GetMeErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetMeResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/me',
+    ...options
+});
+
+/**
+ * Get the language-model settings
+ *
+ * Returns every credential (never a secret), the model product matching uses now, the token budget, and the latest 50 changes and tests, newest first.
+ */
+export const getLlmSettings = <ThrowOnError extends boolean = false>(options?: Options<GetLlmSettingsData, ThrowOnError>): RequestResult<GetLlmSettingsResponses, GetLlmSettingsErrors, ThrowOnError> => (options?.client ?? client).get<GetLlmSettingsResponses, GetLlmSettingsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetLlmSettingsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/llm',
+    ...options
+});
+
+/**
+ * Add a language-model API key
+ *
+ * Checks the key with the provider (by listing its models) and stores it sealed. A key the provider refuses is not stored and answers 422 with the provider's reason. The key is never returned.
+ */
+export const addLlmCredential = <ThrowOnError extends boolean = false>(options: Options<AddLlmCredentialData, ThrowOnError>): RequestResult<AddLlmCredentialResponses, AddLlmCredentialErrors, ThrowOnError> => (options.client ?? client).post<AddLlmCredentialResponses, AddLlmCredentialErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zAddLlmCredentialBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zAddLlmCredentialResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/llm/credentials',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a stored API key
+ *
+ * Deletes a stored credential. When it was the active one, matching falls back to the Vault credential with the default model, or is off without one. The Vault credential cannot be deleted here (422).
+ */
+export const deleteLlmCredential = <ThrowOnError extends boolean = false>(options: Options<DeleteLlmCredentialData, ThrowOnError>): RequestResult<DeleteLlmCredentialResponses, DeleteLlmCredentialErrors, ThrowOnError> => (options.client ?? client).delete<DeleteLlmCredentialResponses, DeleteLlmCredentialErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zDeleteLlmCredentialPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zDeleteLlmCredentialResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/llm/credentials/{credentialId}',
+    ...options
+});
+
+/**
+ * Test an API key
+ *
+ * Asks the provider whether it accepts the key (by listing its models) and records the outcome on the credential and in the events. A refused key is a 200 with ok false; an unreadable stored key answers 422.
+ */
+export const testLlmCredential = <ThrowOnError extends boolean = false>(options: Options<TestLlmCredentialData, ThrowOnError>): RequestResult<TestLlmCredentialResponses, TestLlmCredentialErrors, ThrowOnError> => (options.client ?? client).post<TestLlmCredentialResponses, TestLlmCredentialErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zTestLlmCredentialPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zTestLlmCredentialResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/llm/credentials/{credentialId}/test',
+    ...options
+});
+
+/**
+ * List the models an API key can use
+ *
+ * Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the stored key is unreadable.
+ */
+export const listLlmModels = <ThrowOnError extends boolean = false>(options: Options<ListLlmModelsData, ThrowOnError>): RequestResult<ListLlmModelsResponses, ListLlmModelsErrors, ThrowOnError> => (options.client ?? client).get<ListLlmModelsResponses, ListLlmModelsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zListLlmModelsPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListLlmModelsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/llm/credentials/{credentialId}/models',
+    ...options
+});
+
+/**
+ * Turn product matching off
+ *
+ * Turns product matching off until a credential and model are chosen again.
+ */
+export const clearActiveLlm = <ThrowOnError extends boolean = false>(options?: Options<ClearActiveLlmData, ThrowOnError>): RequestResult<ClearActiveLlmResponses, ClearActiveLlmErrors, ThrowOnError> => (options?.client ?? client).delete<ClearActiveLlmResponses, ClearActiveLlmErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zClearActiveLlmResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/llm/active',
+    ...options
+});
+
+/**
+ * Choose the credential and model for product matching
+ *
+ * Makes product matching use this credential and model from the next analysis on. The credential must exist (404) and be readable (422).
+ */
+export const setActiveLlm = <ThrowOnError extends boolean = false>(options: Options<SetActiveLlmData, ThrowOnError>): RequestResult<SetActiveLlmResponses, SetActiveLlmErrors, ThrowOnError> => (options.client ?? client).put<SetActiveLlmResponses, SetActiveLlmErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zSetActiveLlmBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zSetActiveLlmResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/llm/active',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });

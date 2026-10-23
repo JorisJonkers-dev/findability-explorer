@@ -21,6 +21,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), keepDist],
   server: { proxy },
   build: {
+    // Nothing is inlined as a data: URI. The Content-Security-Policy allows data: images, but not
+    // data: fonts, and the smallest @fontsource subsets fall under Vite's default 4 kB limit.
+    assetsInlineLimit: 0,
     rolldownOptions: {
       output: {
         codeSplitting: {

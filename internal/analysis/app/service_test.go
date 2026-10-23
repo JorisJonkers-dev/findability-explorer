@@ -130,8 +130,8 @@ func (r *repo) SaveFindings(_ context.Context, id uuid.UUID, kws []domain.Keywor
 	return r.update("SaveFindings", id, func(a *domain.Analysis) { a.Keywords, a.KnownTerms = kws, known })
 }
 
-func (r *repo) SaveMatching(_ context.Context, id uuid.UUID, m domain.Matching, eqs []domain.Equivalent, _ domain.Usage) error {
-	return r.update("SaveMatching", id, func(a *domain.Analysis) { a.Matching, a.Equivalents = m, eqs })
+func (r *repo) SaveMatching(_ context.Context, id uuid.UUID, m domain.Matching, model string, eqs []domain.Equivalent, _ domain.Usage) error {
+	return r.update("SaveMatching", id, func(a *domain.Analysis) { a.Matching, a.MatchingModel, a.Equivalents = m, model, eqs })
 }
 
 func (r *repo) Finish(_ context.Context, id uuid.UUID, at time.Time) error {
@@ -170,6 +170,21 @@ func (m *matcher) Match(context.Context, string, bool, []domain.TribeltFamily) (
 	return m.eqs, domain.Usage{InputTokens: 100, OutputTokens: 10}, m.err
 }
 
+// source hands out one matcher, or none, or fails.
+type source struct {
+	matcher domain.Matcher
+	err     error
+}
+
+const model = "test: model-1"
+
+func (s source) Current(context.Context) (domain.Matcher, string, error) {
+	if s.matcher == nil {
+		return nil, "", s.err
+	}
+	return s.matcher, model, s.err
+}
+
 var now = time.Date(2026, 10, 22, 9, 30, 0, 0, time.UTC)
 
 func limits() app.Limits {
@@ -200,7 +215,7 @@ func (d *directory) Resolve(_ context.Context, _ string, website *url.URL, name 
 }
 
 func service(r *repo, c domain.Crawler, m domain.Matcher, l app.Limits) *app.Service {
-	return app.New(r, &directory{}, c, m, glossary, func() time.Time { return now }, l)
+	return app.New(r, &directory{}, c, source{matcher: m}, glossary, func() time.Time { return now }, l)
 }
 
 func TestStartQueuesAValidRequest(t *testing.T) {
@@ -300,18 +315,20 @@ func TestRunRecordsAllFindings(t *testing.T) {
 
 func TestRunMatching(t *testing.T) {
 	cases := map[string]struct {
-		matcher domain.Matcher
-		tokens  int64
-		failOn  string
-		pages   []domain.Page
-		want    domain.Matching
+		source source
+		tokens int64
+		failOn string
+		pages  []domain.Page
+		want   domain.Matching
+		model  string
 	}{
-		"no model":        {nil, 0, "", pages(), domain.MatchingDisabled},
-		"budget spent":    {&matcher{}, 1000, "", pages(), domain.MatchingSkipped},
-		"budget unknown":  {&matcher{}, 0, "TokensSince", pages(), domain.MatchingSkipped},
-		"model fails":     {&matcher{err: errBoom}, 0, "", pages(), domain.MatchingFailed},
-		"nothing to read": {&matcher{}, 0, "", []domain.Page{{}}, domain.MatchingSkipped},
-		"nothing found":   {&matcher{}, 0, "", pages(), domain.MatchingDone},
+		"no model":        {source{}, 0, "", pages(), domain.MatchingDisabled, ""},
+		"settings fail":   {source{err: errBoom}, 0, "", pages(), domain.MatchingFailed, ""},
+		"budget spent":    {source{matcher: &matcher{}}, 1000, "", pages(), domain.MatchingSkipped, ""},
+		"budget unknown":  {source{matcher: &matcher{}}, 0, "TokensSince", pages(), domain.MatchingSkipped, ""},
+		"model fails":     {source{matcher: &matcher{err: errBoom}}, 0, "", pages(), domain.MatchingFailed, model},
+		"nothing to read": {source{matcher: &matcher{}}, 0, "", []domain.Page{{}}, domain.MatchingSkipped, ""},
+		"nothing found":   {source{matcher: &matcher{}}, 0, "", pages(), domain.MatchingDone, model},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -324,7 +341,7 @@ func TestRunMatching(t *testing.T) {
 			if name == "nothing to read" {
 				l.SiteTextChars = 0
 			}
-			svc := service(r, crawler{pages: c.pages}, c.matcher, l)
+			svc := app.New(r, &directory{}, crawler{pages: c.pages}, c.source, glossary, func() time.Time { return now }, l)
 			a, err := svc.Start(t.Context(), "u", "https://x.test/", 5, "")
 			if err != nil {
 				t.Fatal(err)
@@ -332,8 +349,8 @@ func TestRunMatching(t *testing.T) {
 			if err := svc.Run(t.Context(), a.ID); err != nil {
 				t.Fatal(err)
 			}
-			if got := r.analyses[a.ID]; got.Matching != c.want || got.Status != domain.StatusDone {
-				t.Fatalf("matching = %s (%s), want %s", got.Matching, got.Status, c.want)
+			if got := r.analyses[a.ID]; got.Matching != c.want || got.Status != domain.StatusDone || got.MatchingModel != c.model {
+				t.Fatalf("matching = %s by %q (%s), want %s by %q", got.Matching, got.MatchingModel, got.Status, c.want, c.model)
 			}
 		})
 	}
@@ -486,7 +503,7 @@ func TestRecoverFailures(t *testing.T) {
 
 func TestStartNamesTheCompany(t *testing.T) {
 	d := &directory{}
-	svc := app.New(newRepo(), d, crawler{}, nil, glossary, func() time.Time { return now }, limits())
+	svc := app.New(newRepo(), d, crawler{}, source{}, glossary, func() time.Time { return now }, limits())
 	if _, err := svc.Start(t.Context(), "u", "https://belts.test/", 1, "Belts Ltd"); err != nil || d.lastName != "Belts Ltd" {
 		t.Fatalf("Start = %v, name %q", err, d.lastName)
 	}

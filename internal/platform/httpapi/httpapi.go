@@ -4,6 +4,7 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -11,6 +12,8 @@ import (
 
 	analysisweb "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/web"
 	companiesweb "github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/web"
+	identityweb "github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/web"
+	llmweb "github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/web"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
 	terminologyweb "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/web"
@@ -21,6 +24,8 @@ type (
 	terminologyHandler = terminologyweb.Handler
 	analysisHandler    = analysisweb.Handler
 	companiesHandler   = companiesweb.Handler
+	identityHandler    = identityweb.Handler
+	llmHandler         = llmweb.Handler
 )
 
 // api is the oas.Handler: one embedded web adapter per context, plus the shared error mapping.
@@ -28,34 +33,49 @@ type api struct {
 	*terminologyHandler
 	*analysisHandler
 	*companiesHandler
+	*identityHandler
+	*llmHandler
 	logger *slog.Logger
 }
 
 var _ oas.Handler = (*api)(nil)
 
-// NewError maps every error the contract does not name to a problem: a request without an
-// identity to a 401, anything else a handler returned to a 500. A 500's cause is logged, never sent.
+// NewError maps every error the contract does not name to a problem. The security handler's
+// errors become 401 without a live session, 403 for an account that is not an administrator, and
+// 503 when auth-api cannot confirm the roles; anything else a handler returned is a 500, whose
+// cause is logged, never sent.
 func (a *api) NewError(ctx context.Context, err error) *oas.ProblemStatusCode {
 	code := ogenerrors.ErrorCode(err)
-	if code >= http.StatusInternalServerError {
+	detail := ""
+	var sec *ogenerrors.SecurityError
+	if errors.As(err, &sec) && !errors.Is(err, ogenerrors.ErrSecurityRequirementIsNotSatisfied) {
+		code = identityweb.Status(sec.Err)
+		if code != http.StatusInternalServerError && code != http.StatusUnauthorized {
+			detail = identityweb.Detail(sec.Err)
+		}
+	}
+	if code >= http.StatusInternalServerError && code != http.StatusServiceUnavailable {
 		a.logger.ErrorContext(ctx, "request failed", "error", err)
 	}
-	return &oas.ProblemStatusCode{StatusCode: code, Response: httpx.Problem(code, "")}
+	return &oas.ProblemStatusCode{StatusCode: code, Response: httpx.Problem(code, detail)}
 }
 
-// identity accepts every request the edge put an identity on; ogen refuses one without before
-// calling it. The subject goes on ctx, where the analysis context counts a user's analyses.
-type identity struct{}
-
-func (identity) HandleForwardAuth(ctx context.Context, _ oas.OperationName, t oas.ForwardAuth) (context.Context, error) {
-	return httpx.WithSubject(ctx, t.APIKey), nil
-}
-
-// Contexts are the use cases of every context the API serves.
+// Contexts are the use cases of every context the API serves, and how it authenticates.
 type Contexts struct {
 	Terminology terminologyweb.UseCases
 	Analysis    analysisweb.UseCases
 	Companies   companiesweb.UseCases
+	LLM         llmweb.UseCases
+	// Auth resolves the session cookie to the principal a request runs as.
+	Auth identityweb.Authenticator
+}
+
+// actor names the caller in the language-model events: the account's name.
+func actor(ctx context.Context) string {
+	if p, ok := identityweb.PrincipalOf(ctx); ok && p.Name != "" {
+		return p.Name
+	}
+	return httpx.Subject(ctx)
 }
 
 // New returns the API's http.Handler, serving every path the contract declares under /api.
@@ -65,9 +85,11 @@ func New(logger *slog.Logger, c Contexts) (http.Handler, error) {
 			terminologyHandler: terminologyweb.New(c.Terminology),
 			analysisHandler:    analysisweb.New(c.Analysis),
 			companiesHandler:   companiesweb.New(c.Companies),
+			identityHandler:    identityweb.New(),
+			llmHandler:         llmweb.New(c.LLM, actor),
 			logger:             logger,
 		},
-		identity{},
+		identityweb.NewSecurity(c.Auth),
 		oas.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, _ *http.Request, err error) {
 			httpx.WriteProblem(w, ogenerrors.ErrorCode(err), "")
 		}),

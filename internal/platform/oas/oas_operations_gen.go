@@ -6,11 +6,19 @@ package oas
 type OperationName = string
 
 const (
-	AddCompetitorOperation   OperationName = "AddCompetitor"
-	GetAnalysisOperation     OperationName = "GetAnalysis"
-	GetCompetitorOperation   OperationName = "GetCompetitor"
-	ListAnalysesOperation    OperationName = "ListAnalyses"
-	ListCompetitorsOperation OperationName = "ListCompetitors"
-	SearchTermsOperation     OperationName = "SearchTerms"
-	StartAnalysisOperation   OperationName = "StartAnalysis"
+	AddCompetitorOperation       OperationName = "AddCompetitor"
+	AddLlmCredentialOperation    OperationName = "AddLlmCredential"
+	ClearActiveLlmOperation      OperationName = "ClearActiveLlm"
+	DeleteLlmCredentialOperation OperationName = "DeleteLlmCredential"
+	GetAnalysisOperation         OperationName = "GetAnalysis"
+	GetCompetitorOperation       OperationName = "GetCompetitor"
+	GetLlmSettingsOperation      OperationName = "GetLlmSettings"
+	GetMeOperation               OperationName = "GetMe"
+	ListAnalysesOperation        OperationName = "ListAnalyses"
+	ListCompetitorsOperation     OperationName = "ListCompetitors"
+	ListLlmModelsOperation       OperationName = "ListLlmModels"
+	SearchTermsOperation         OperationName = "SearchTerms"
+	SetActiveLlmOperation        OperationName = "SetActiveLlm"
+	StartAnalysisOperation       OperationName = "StartAnalysis"
+	TestLlmCredentialOperation   OperationName = "TestLlmCredential"
 )

@@ -19,6 +19,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/research"
 	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
 	companiesdomain "github.com/JorisJonkers-dev/findability-explorer/internal/companies/domain"
+	identityweb "github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/web"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpapi"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/seed"
@@ -104,6 +105,16 @@ func done() domain.Analysis {
 
 func serve(t *testing.T, a *analyses) *httptest.Server {
 	t.Helper()
+	return serveAll(t, a, &llmCases{})
+}
+
+func serveWith(t *testing.T, l *llmCases) *httptest.Server {
+	t.Helper()
+	return serveAll(t, &analyses{}, l)
+}
+
+func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
+	t.Helper()
 	catalogue, err := seed.Load()
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +125,7 @@ func serve(t *testing.T, a *analyses) *httptest.Server {
 		&companyRepo{}, companyScans{}, time.Now,
 	)
 	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{
-		Terminology: terminology, Analysis: a, Companies: companies,
+		Terminology: terminology, Analysis: a, Companies: companies, LLM: l, Auth: auth{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +140,18 @@ type response struct {
 	body map[string]any
 }
 
+// call sends a request as the account "tester" when identified, else without a session.
 func call(t *testing.T, srv *httptest.Server, method, path, body string, identified bool) response {
+	t.Helper()
+	cookie := ""
+	if identified {
+		cookie = "tester"
+	}
+	return callAs(t, srv, method, path, body, cookie)
+}
+
+// callAs sends a request with the session cookie set to cookie, unless it is empty.
+func callAs(t *testing.T, srv *httptest.Server, method, path, body, cookie string) response {
 	t.Helper()
 	req, err := http.NewRequestWithContext(t.Context(), method, srv.URL+path, strings.NewReader(body))
 	if err != nil {
@@ -138,8 +160,8 @@ func call(t *testing.T, srv *httptest.Server, method, path, body string, identif
 	if body != "" {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	if identified {
-		req.Header.Set(httpx.IdentityHeader, "tester")
+	if cookie != "" {
+		req.AddCookie(&http.Cookie{Name: identityweb.SessionCookie, Value: cookie}) //nolint:gosec // a request cookie
 	}
 	resp, err := srv.Client().Do(req)
 	if err != nil {
@@ -259,7 +281,9 @@ func TestCompetitorsFailures(t *testing.T) {
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		&companyRepo{}, companyScans{err: errors.New("database down")}, time.Now,
 	)
-	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{Terminology: terminology, Analysis: &analyses{}, Companies: companies})
+	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{
+		Terminology: terminology, Analysis: &analyses{}, Companies: companies, LLM: &llmCases{}, Auth: auth{},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

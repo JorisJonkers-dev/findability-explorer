@@ -15,6 +15,26 @@ type Handler interface {
 	//
 	// POST /api/v1/competitors
 	AddCompetitor(ctx context.Context, req *NewCompetitor) (AddCompetitorRes, error)
+	// AddLlmCredential implements addLlmCredential operation.
+	//
+	// Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
+	// refuses is not stored and answers 422 with the provider's reason. The key is never returned.
+	//
+	// POST /api/v1/admin/llm/credentials
+	AddLlmCredential(ctx context.Context, req *NewLlmCredential) (AddLlmCredentialRes, error)
+	// ClearActiveLlm implements clearActiveLlm operation.
+	//
+	// Turns product matching off until a credential and model are chosen again.
+	//
+	// DELETE /api/v1/admin/llm/active
+	ClearActiveLlm(ctx context.Context) (ClearActiveLlmRes, error)
+	// DeleteLlmCredential implements deleteLlmCredential operation.
+	//
+	// Deletes a stored credential. When it was the active one, matching falls back to the Vault credential
+	// with the default model, or is off without one. The Vault credential cannot be deleted here (422).
+	//
+	// DELETE /api/v1/admin/llm/credentials/{credentialId}
+	DeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (DeleteLlmCredentialRes, error)
 	// GetAnalysis implements getAnalysis operation.
 	//
 	// Returns the analysis, its progress, and every result found so far.
@@ -27,6 +47,20 @@ type Handler interface {
 	//
 	// GET /api/v1/competitors/{competitorId}
 	GetCompetitor(ctx context.Context, params GetCompetitorParams) (GetCompetitorRes, error)
+	// GetLlmSettings implements getLlmSettings operation.
+	//
+	// Returns every credential (never a secret), the model product matching uses now, the token budget,
+	// and the latest 50 changes and tests, newest first.
+	//
+	// GET /api/v1/admin/llm
+	GetLlmSettings(ctx context.Context) (GetLlmSettingsRes, error)
+	// GetMe implements getMe operation.
+	//
+	// Returns who is signed in and whether they may open the admin settings. A request without a live
+	// session gets 401; the web app then sends the browser to /auth/login.
+	//
+	// GET /api/v1/me
+	GetMe(ctx context.Context) (GetMeRes, error)
 	// ListAnalyses implements listAnalyses operation.
 	//
 	// Returns at most `limit` analyses, newest first, without their results.
@@ -40,6 +74,13 @@ type Handler interface {
 	//
 	// GET /api/v1/competitors
 	ListCompetitors(ctx context.Context) (ListCompetitorsRes, error)
+	// ListLlmModels implements listLlmModels operation.
+	//
+	// Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
+	// stored key is unreadable.
+	//
+	// GET /api/v1/admin/llm/credentials/{credentialId}/models
+	ListLlmModels(ctx context.Context, params ListLlmModelsParams) (ListLlmModelsRes, error)
 	// SearchTerms implements searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of
@@ -48,6 +89,13 @@ type Handler interface {
 	//
 	// GET /api/v1/terms
 	SearchTerms(ctx context.Context, params SearchTermsParams) (SearchTermsRes, error)
+	// SetActiveLlm implements setActiveLlm operation.
+	//
+	// Makes product matching use this credential and model from the next analysis on. The credential must
+	// exist (404) and be readable (422).
+	//
+	// PUT /api/v1/admin/llm/active
+	SetActiveLlm(ctx context.Context, req *ActiveLlm) (SetActiveLlmRes, error)
 	// StartAnalysis implements startAnalysis operation.
 	//
 	// Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host, following
@@ -55,6 +103,14 @@ type Handler interface {
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, req *NewAnalysis) (StartAnalysisRes, error)
+	// TestLlmCredential implements testLlmCredential operation.
+	//
+	// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
+	// credential and in the events. A refused key is a 200 with ok false; an unreadable stored key answers
+	// 422.
+	//
+	// POST /api/v1/admin/llm/credentials/{credentialId}/test
+	TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (TestLlmCredentialRes, error)
 	// NewError creates *ProblemStatusCode from error returned by handler.
 	//
 	// Used for common default response.

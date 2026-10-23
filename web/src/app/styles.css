@@ -1,79 +1,69 @@
 @import 'tailwindcss';
 
 /*
- * Tempered steel: a dark steel ground, with the heat-tint colours of annealed stainless steel
- * encoding the kind of search. Every colour is a token, so a class names its role, not its hex.
+ * White and Tribelt orange. Every colour is a token, so a class names its role, not its hex.
+ * Orange (#f57503) fails contrast as text on white: it fills bars, dots and large shapes only,
+ * and orange text is always orange-ink (#a84a00).
  */
 @theme {
-  --color-ground: #161d24;
-  --color-sidebar: #131920;
-  --color-surface: #1d262f;
-  --color-raised: #253039;
-  --color-panel: #1a222a;
-  --color-pressed: #2c3742;
-  --color-hatch: #182029;
-  --color-line: #2b3743;
-  --color-field: #3a4856;
+  --color-orange: #f57503;
+  --color-orange-ink: #a84a00;
+  --color-grey: #e5e9eb;
+  --color-mist: #f4f6f7;
+  --color-blue-grey: #8daabf;
+  --color-ink-2: #3d4245;
+  --color-muted: #5f666b;
+  --color-silver: #c9ced1;
 
-  --color-ink: #e6ebef;
-  --color-ink-2: #c5cfd7;
-  --color-muted: #9aa8b4;
+  /* The intent tiers: the hottest (specification) is orange, the broadest a pale silver. */
+  --color-tier-spec: #f57503;
+  --color-tier-product: #a84a00;
+  --color-tier-application: #8daabf;
+  --color-tier-problem: #3d4245;
+  --color-tier-broad: #c9ced1;
 
-  --color-straw: #e8c26a;
-  --color-straw-hover: #f3d894;
-  --color-straw-deep: #c9a24f;
-  --color-on-straw: #161d24;
-
-  --color-danger: #f2a39a;
-
-  /* The intent tiers, cool to hot as steel tempers: broad searches are pale, specifications straw. */
-  --color-tier-spec: #e8c26a;
-  --color-tier-product: #d4925a;
-  --color-tier-application: #a98bdb;
-  --color-tier-problem: #6fa3e8;
-  --color-tier-broad: #9fc2cf;
-
-  --font-sans: 'Barlow', system-ui, sans-serif;
-  --font-display: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+  --font-sans: 'Outfit', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Geist', 'Helvetica Neue', Arial, sans-serif;
 }
+
+/*
+ * The stage: on a screen at least 1024 by 576 pixels, the poster and every section view is a
+ * 3840 by 2160 slide scaled to fit the window. `stage:` classes carry the slide's own sizes, in
+ * the slide's pixels; the classes without it are the stacked page a phone scrolls through.
+ * StageFrame.vue asks the same media query, so the two always agree.
+ */
+@custom-variant stage (@media (min-width: 1024px) and (min-height: 576px));
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   html {
-    background-color: var(--color-ground);
+    background-color: #ffffff;
   }
 
   body {
     margin: 0;
-    background-color: var(--color-ground);
-    color: var(--color-ink);
+    background-color: #ffffff;
+    color: #000000;
     font-family: var(--font-sans);
     font-size: 16px;
-    line-height: 1.5;
+    line-height: 1.4;
     font-variant-numeric: tabular-nums;
   }
 
   a {
-    color: var(--color-straw);
+    color: var(--color-orange-ink);
   }
 
   a:hover {
-    color: var(--color-straw-hover);
+    color: #000000;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-straw);
-    outline-offset: 2px;
-  }
-
-  mark {
-    padding: 0 1px;
-    border-radius: 2px;
-    background-color: rgb(232 194 106 / 0.2);
-    color: var(--color-straw-hover);
+    outline: 3px solid var(--color-orange);
+    outline-offset: 3px;
   }
 
   input::placeholder {
@@ -87,37 +77,83 @@
   }
 }
 
-/* A competitor that makes no belt of a family: the cell is struck through with fine hatching. */
-@utility hatched {
-  background-image: repeating-linear-gradient(
-    135deg,
-    var(--color-hatch) 0 6px,
-    var(--color-ground) 6px 12px
-  );
+/* Inside the stage everything is drawn 3840 wide, so the focus ring grows with it. */
+@utility stage-focus {
+  @variant stage {
+    & :focus-visible {
+      outline-width: 5px;
+      outline-offset: 6px;
+    }
+  }
 }
 
 /*
- * The one moving thing: while a scan reads pages, its progress bar is a belt of links sliding
- * slowly past, like a mesh belt on its drive. Under reduced motion the belt stands still.
+ * The zoom: clicking a section's tile grows the poster toward it until it fades, and the back
+ * button shrinks it back from there. Under reduced motion both take a millisecond, so the
+ * animationend that drives the navigation still fires.
  */
+@utility zoom-in {
+  animation: fe-zoom-in 600ms cubic-bezier(0.6, 0, 0.3, 1) forwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 1ms;
+  }
+}
+
+@utility zoom-out {
+  animation: fe-zoom-out 600ms cubic-bezier(0.3, 0, 0.2, 1) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 1ms;
+  }
+}
+
+@utility detail-in {
+  animation: fe-detail-in 380ms ease-out both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 1ms;
+  }
+}
+
+@keyframes fe-zoom-in {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+@keyframes fe-zoom-out {
+  from {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fe-detail-in {
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* A scan in progress: its bar slides slowly, like a belt on its drive. Still under reduced motion. */
 @utility belt {
-  background-color: var(--color-straw);
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 9px,
-      var(--color-straw-deep) 9px 11px,
-      transparent 11px 12px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      transparent 0 3px,
-      rgb(22 29 36 / 0.18) 3px 4px,
-      transparent 4px 8px
-    );
-  background-size:
-    12px 100%,
-    100% 8px;
+  background-color: var(--color-orange);
+  background-image: repeating-linear-gradient(90deg, transparent 0 9px, rgb(0 0 0 / 0.12) 9px 11px, transparent 11px 12px);
+  background-size: 12px 100%;
   animation: belt-run 2.4s linear infinite;
 
   @media (prefers-reduced-motion: reduce) {
@@ -127,13 +163,9 @@
 
 @keyframes belt-run {
   from {
-    background-position:
-      0 0,
-      0 0;
+    background-position: 0 0;
   }
   to {
-    background-position:
-      12px 0,
-      0 0;
+    background-position: 12px 0;
   }
 }

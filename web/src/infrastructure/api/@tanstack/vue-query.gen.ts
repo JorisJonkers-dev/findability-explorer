@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen';
-import { addCompetitor, getAnalysis, getCompetitor, listAnalyses, listCompetitors, type Options, searchTerms, startAnalysis } from '../sdk.gen';
-import type { AddCompetitorData, AddCompetitorError, AddCompetitorResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse } from '../types.gen';
+import { addCompetitor, addLlmCredential, clearActiveLlm, deleteLlmCredential, getAnalysis, getCompetitor, getLlmSettings, getMe, listAnalyses, listCompetitors, listLlmModels, type Options, searchTerms, setActiveLlm, startAnalysis, testLlmCredential } from '../sdk.gen';
+import type { AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -176,3 +176,158 @@ export const getAnalysisOptions = (options: Options<GetAnalysisData>) => queryOp
     },
     queryKey: getAnalysisQueryKey(options)
 });
+
+export const getMeQueryKey = (options?: Options<GetMeData>) => createQueryKey('getMe', options);
+
+/**
+ * Get the signed-in account
+ *
+ * Returns who is signed in and whether they may open the admin settings. A request without a live session gets 401; the web app then sends the browser to /auth/login.
+ */
+export const getMeOptions = (options?: Options<GetMeData>) => queryOptions<GetMeResponse, GetMeError, GetMeResponse, ReturnType<typeof getMeQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getMe({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getMeQueryKey(options)
+});
+
+export const getLlmSettingsQueryKey = (options?: Options<GetLlmSettingsData>) => createQueryKey('getLlmSettings', options);
+
+/**
+ * Get the language-model settings
+ *
+ * Returns every credential (never a secret), the model product matching uses now, the token budget, and the latest 50 changes and tests, newest first.
+ */
+export const getLlmSettingsOptions = (options?: Options<GetLlmSettingsData>) => queryOptions<GetLlmSettingsResponse, GetLlmSettingsError, GetLlmSettingsResponse, ReturnType<typeof getLlmSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getLlmSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getLlmSettingsQueryKey(options)
+});
+
+/**
+ * Add a language-model API key
+ *
+ * Checks the key with the provider (by listing its models) and stores it sealed. A key the provider refuses is not stored and answers 422 with the provider's reason. The key is never returned.
+ */
+export const addLlmCredentialMutation = (options?: Partial<Options<AddLlmCredentialData>>): UseMutationOptions<AddLlmCredentialResponse, AddLlmCredentialError, Options<AddLlmCredentialData>> => {
+    const mutationOptions: UseMutationOptions<AddLlmCredentialResponse, AddLlmCredentialError, Options<AddLlmCredentialData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await addLlmCredential({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete a stored API key
+ *
+ * Deletes a stored credential. When it was the active one, matching falls back to the Vault credential with the default model, or is off without one. The Vault credential cannot be deleted here (422).
+ */
+export const deleteLlmCredentialMutation = (options?: Partial<Options<DeleteLlmCredentialData>>): UseMutationOptions<DeleteLlmCredentialResponse, DeleteLlmCredentialError, Options<DeleteLlmCredentialData>> => {
+    const mutationOptions: UseMutationOptions<DeleteLlmCredentialResponse, DeleteLlmCredentialError, Options<DeleteLlmCredentialData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteLlmCredential({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Test an API key
+ *
+ * Asks the provider whether it accepts the key (by listing its models) and records the outcome on the credential and in the events. A refused key is a 200 with ok false; an unreadable stored key answers 422.
+ */
+export const testLlmCredentialMutation = (options?: Partial<Options<TestLlmCredentialData>>): UseMutationOptions<TestLlmCredentialResponse, TestLlmCredentialError, Options<TestLlmCredentialData>> => {
+    const mutationOptions: UseMutationOptions<TestLlmCredentialResponse, TestLlmCredentialError, Options<TestLlmCredentialData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await testLlmCredential({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listLlmModelsQueryKey = (options: Options<ListLlmModelsData>) => createQueryKey('listLlmModels', options);
+
+/**
+ * List the models an API key can use
+ *
+ * Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the stored key is unreadable.
+ */
+export const listLlmModelsOptions = (options: Options<ListLlmModelsData>) => queryOptions<ListLlmModelsResponse, ListLlmModelsError, ListLlmModelsResponse, ReturnType<typeof listLlmModelsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listLlmModels({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listLlmModelsQueryKey(options)
+});
+
+/**
+ * Turn product matching off
+ *
+ * Turns product matching off until a credential and model are chosen again.
+ */
+export const clearActiveLlmMutation = (options?: Partial<Options<ClearActiveLlmData>>): UseMutationOptions<ClearActiveLlmResponse, ClearActiveLlmError, Options<ClearActiveLlmData>> => {
+    const mutationOptions: UseMutationOptions<ClearActiveLlmResponse, ClearActiveLlmError, Options<ClearActiveLlmData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await clearActiveLlm({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Choose the credential and model for product matching
+ *
+ * Makes product matching use this credential and model from the next analysis on. The credential must exist (404) and be readable (422).
+ */
+export const setActiveLlmMutation = (options?: Partial<Options<SetActiveLlmData>>): UseMutationOptions<SetActiveLlmResponse, SetActiveLlmError, Options<SetActiveLlmData>> => {
+    const mutationOptions: UseMutationOptions<SetActiveLlmResponse, SetActiveLlmError, Options<SetActiveLlmData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await setActiveLlm({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};

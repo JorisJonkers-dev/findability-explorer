@@ -1,27 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useCompanies } from '../../competitors/composables/useCompanies'
 import { type Company, pickerState, scanCountLabel, suggestions } from '../../competitors/domain/company'
 import { useStartScan } from '../composables/useStartScan'
-import { checkScanUrl, DEFAULT_PAGES, describeScanUrlCheck, PAGE_OPTIONS } from '../domain/newScan'
+import { checkScanUrl, describeScanUrlCheck, SCAN_PAGES } from '../domain/newScan'
 
-const props = defineProps<{
-  /** An address to scan as soon as the form is shown: the overview's quick scan hands it over. */
-  autostart?: string | null
-  /** The scan on screen, whose address and budget the form shows until something is typed. */
-  current?: { url: string; maxPages: number } | null
-  /** A company to fill in, by id: a company page links to the form with it. */
-  preselect?: string | null
-}>()
 const emit = defineEmits<{ started: [id: string] }>()
 
 const LISTBOX = 'scan-url-options'
 const optionId = (index: number) => `scan-url-option-${String(index)}`
 
 const url = ref('')
-const maxPages = ref<number>(DEFAULT_PAGES)
-const touched = ref(false)
 const checkError = ref<string | null>(null)
 const open = ref(false)
 const active = ref(-1)
@@ -43,7 +32,6 @@ watch(state, (next) => {
 })
 
 function submit(): void {
-  touched.value = true
   open.value = false
   const check = checkScanUrl(url.value)
   checkError.value = describeScanUrlCheck(check)
@@ -52,13 +40,12 @@ function submit(): void {
     return
   }
   const name = state.value.kind === 'new' ? newName.value : undefined
-  start(check.url, maxPages.value, (id) => {
+  start(check.url, SCAN_PAGES, (id) => {
     emit('started', id)
   }, name)
 }
 
 function edited(): void {
-  touched.value = true
   checkError.value = null
   reset()
 }
@@ -83,13 +70,13 @@ function onKeydown(event: KeyboardEvent): void {
     case 'ArrowDown':
       if (count === 0) return
       event.preventDefault()
-      if (!open.value) open.value = true
+      open.value = true
       active.value = (active.value + 1) % count
       break
     case 'ArrowUp':
       if (count === 0) return
       event.preventDefault()
-      if (!open.value) open.value = true
+      open.value = true
       active.value = active.value <= 0 ? count - 1 : active.value - 1
       break
     case 'Enter': {
@@ -110,145 +97,96 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
-watch(
-  () => props.current,
-  (current) => {
-    if (current && !touched.value) {
-      url.value = current.url
-      maxPages.value = (PAGE_OPTIONS as readonly number[]).includes(current.maxPages) ? current.maxPages : DEFAULT_PAGES
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  [() => props.preselect, companies],
-  ([id]) => {
-    const company = companies.value.find((c) => c.id === id)
-    if (company?.websiteUrl && !touched.value) {
-      url.value = company.websiteUrl
-      touched.value = true
-    }
-  },
-  { immediate: true },
-)
-
-onMounted(() => {
-  if (props.autostart) {
-    url.value = props.autostart
+defineExpose({
+  /** Fills in an address and starts its scan: a company's "Scan this website". */
+  scan(address: string): void {
+    url.value = address
+    newNameEdited.value = false
+    edited()
     submit()
-  }
+  },
 })
 </script>
 
 <template>
-  <form novalidate aria-label="Scan a website" class="mt-2 flex flex-col gap-3" @submit.prevent="submit">
-    <div class="flex flex-wrap items-end gap-3">
-      <div class="relative min-w-0 flex-[1_1_420px]">
-        <label class="flex flex-col gap-2 text-sm font-medium text-ink-2">
-          Website address
-          <input
-            ref="input"
-            v-model="url"
-            type="url"
-            role="combobox"
-            inputmode="url"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="A company or https://www.competitor.com"
-            aria-autocomplete="list"
-            :aria-expanded="expanded"
-            :aria-controls="LISTBOX"
-            :aria-activedescendant="expanded && active >= 0 ? optionId(active) : undefined"
-            :aria-invalid="urlError !== null"
-            :aria-describedby="urlError !== null ? 'scan-url-error' : 'scan-url-company'"
-            class="h-14 w-full rounded-lg border bg-surface px-[18px] text-lg font-medium text-ink"
-            :class="urlError !== null ? 'border-danger' : 'border-field'"
-            @input="typed"
-            @keydown="onKeydown"
-            @blur="open = false"
-          />
-        </label>
-        <ul
-          v-show="expanded"
-          :id="LISTBOX"
-          role="listbox"
-          aria-label="Known companies"
-          class="absolute top-full right-0 left-0 z-20 m-0 mt-1 max-h-80 list-none overflow-y-auto rounded-lg border border-field bg-raised p-1 shadow-lg shadow-black/40"
-        >
-          <li
-            v-for="(company, index) in options"
-            :id="optionId(index)"
-            :key="company.id"
-            role="option"
-            tabindex="-1"
-            :aria-selected="index === active"
-            class="flex items-center justify-between gap-3 rounded-md px-3 py-2.5"
-            :class="index === active ? 'bg-pressed outline-2 outline-straw' : ''"
-            @mousedown.prevent="choose(company)"
-          >
-            <span class="flex min-w-0 flex-col">
-              <span class="truncate font-semibold text-ink">{{ company.shortName }}</span>
-              <span class="truncate text-sm text-muted">{{ company.host }}</span>
-            </span>
-            <span
-              class="flex-none rounded-full border px-2.5 py-0.5 text-[13px]"
-              :class="company.scans > 0 ? 'border-straw/60 text-straw' : 'border-field text-muted'"
-            >
-              {{ scanCountLabel(company.scans) }}
-            </span>
-          </li>
-        </ul>
-      </div>
-      <label class="flex flex-[0_0_150px] flex-col gap-2 text-sm font-medium text-ink-2">
-        Pages to read
-        <select
-          v-model.number="maxPages"
-          class="h-14 w-full rounded-lg border border-field bg-surface px-3.5 text-lg font-medium text-ink"
-          @change="edited"
-        >
-          <option v-for="pages in PAGE_OPTIONS" :key="pages" :value="pages">{{ pages }} pages</option>
-        </select>
-      </label>
-      <button
-        type="submit"
-        :disabled="isStarting"
-        class="h-14 rounded-lg bg-straw px-7 text-lg font-semibold text-on-straw hover:bg-straw-hover disabled:opacity-70"
+  <form novalidate aria-label="Scan a website" class="flex flex-col gap-3 stage:gap-4" @submit.prevent="submit">
+    <div class="relative">
+      <label for="scan-url" class="mb-1.5 block text-sm text-ink-2 stage:mb-2 stage:text-[26px]">Website address</label>
+      <input
+        id="scan-url"
+        ref="input"
+        v-model="url"
+        type="text"
+        role="combobox"
+        inputmode="url"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Twentebelt, or www.competitor.com"
+        aria-autocomplete="list"
+        :aria-expanded="expanded"
+        :aria-controls="LISTBOX"
+        :aria-activedescendant="expanded && active >= 0 ? optionId(active) : undefined"
+        :aria-invalid="urlError !== null"
+        :aria-describedby="urlError !== null ? 'scan-url-error' : 'scan-url-company'"
+        class="h-12 w-full rounded-full border-2 bg-white px-5 text-base text-black stage:h-24 stage:border-[3px] stage:px-8 stage:text-[32px]"
+        :class="urlError !== null ? 'border-orange-ink' : 'border-grey'"
+        @input="typed"
+        @keydown="onKeydown"
+        @blur="open = false"
+      />
+      <ul
+        v-show="expanded"
+        :id="LISTBOX"
+        role="listbox"
+        aria-label="Known companies"
+        class="absolute top-full right-0 left-0 z-10 m-0 mt-2 list-none rounded-2xl bg-white p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.18)] stage:rounded-[28px] stage:p-2 stage:shadow-[0_20px_48px_rgba(0,0,0,0.18)]"
       >
-        {{ isStarting ? 'Starting…' : 'Scan website' }}
-      </button>
+        <li
+          v-for="(company, index) in options"
+          :id="optionId(index)"
+          :key="company.id"
+          role="option"
+          tabindex="-1"
+          :aria-selected="index === active"
+          class="flex cursor-pointer items-baseline justify-between gap-4 rounded-xl px-3 py-2.5 stage:gap-5 stage:rounded-[20px] stage:px-6 stage:py-[18px] stage:text-[30px]"
+          :class="index === active ? 'bg-mist' : 'hover:bg-mist'"
+          @mousedown.prevent="choose(company)"
+        >
+          <span class="font-semibold">{{ company.shortName }}</span>
+          <span class="truncate text-muted">{{ company.host }}</span>
+        </li>
+      </ul>
     </div>
 
-    <p v-if="urlError !== null" id="scan-url-error" role="alert" class="m-0 text-[15px] text-danger">{{ urlError }}</p>
+    <p v-if="urlError !== null" id="scan-url-error" role="alert" class="m-0 text-sm text-orange-ink stage:text-[28px]">{{ urlError }}</p>
     <div id="scan-url-company" aria-live="polite">
-      <p v-if="state.kind === 'known'" class="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] text-ink-2">
-        <svg aria-hidden="true" viewBox="0 0 16 16" class="size-4 flex-none text-straw" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 8.5 6.5 12 13 4.5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span>
-          <RouterLink :to="`/competitors/${state.company.id}`" class="font-semibold">{{ state.company.shortName }}</RouterLink>, known
-          {{ state.company.groupCompany ? "company in Tribelt's own group" : 'competitor' }}.
-        </span>
-        <span class="text-muted">{{ scanCountLabel(state.company.scans) }}</span>
+      <p v-if="state.kind === 'known'" class="m-0 text-sm text-ink-2 stage:text-[28px]">
+        <strong class="font-semibold text-black">{{ state.company.shortName }}</strong>,
+        {{ state.company.groupCompany ? "in Tribelt's own group" : 'a known competitor' }}.
+        {{ scanCountLabel(state.company.scans) }}.
       </p>
-      <div
-        v-else-if="state.kind === 'new'"
-        class="flex max-w-[560px] flex-col gap-2 rounded-lg border border-line bg-surface p-4"
-      >
-        <label class="flex flex-col gap-2 text-sm font-medium text-ink-2">
+      <div v-else-if="state.kind === 'new'" class="flex flex-col gap-1.5 stage:gap-2">
+        <label class="flex items-center gap-3 text-sm text-ink-2 stage:gap-5 stage:text-[26px]">
           New company
           <input
             v-model="newName"
             type="text"
             maxlength="200"
             autocomplete="organization"
-            class="h-11 w-full rounded-md border border-field bg-ground px-3 text-base font-medium text-ink"
+            class="h-10 min-w-0 flex-1 rounded-full border-2 border-grey bg-white px-4 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-6 stage:text-[28px]"
             @input="newNameEdited = true"
           />
         </label>
-        <p class="m-0 text-sm text-muted">Not in the list yet. The scan adds it as a new competitor.</p>
+        <p class="m-0 text-sm text-muted stage:text-[24px]">Not in the list yet. The scan adds it as a new competitor.</p>
       </div>
     </div>
-    <p v-if="formError !== null" role="alert" class="m-0 text-[15px] text-danger">{{ formError }}</p>
+    <p v-if="formError !== null" role="alert" class="m-0 text-sm text-orange-ink stage:text-[28px]">{{ formError }}</p>
+    <button
+      type="submit"
+      :disabled="isStarting"
+      class="min-h-12 rounded-full border-0 bg-black text-base font-semibold text-white hover:bg-ink-2 disabled:opacity-70 stage:min-h-24 stage:text-[32px]"
+    >
+      {{ isStarting ? 'Starting…' : 'Scan website' }}
+    </button>
   </form>
 </template>

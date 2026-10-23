@@ -257,7 +257,148 @@ export const zAnalysis = z.object({
     keywords: z.array(zKeyword).max(200),
     knownTerms: z.array(zKnownTerm).max(200),
     matching: zMatchingStatus,
+    matchingModel: z.string().max(300).optional(),
     equivalents: z.array(zEquivalent).max(50)
+});
+
+/**
+ * The signed-in account.
+ */
+export const zMe = z.object({
+    subject: z.string().max(200),
+    name: z.string().max(200),
+    email: z.email().max(320).optional(),
+    isAdmin: z.boolean()
+});
+
+/**
+ * A language-model provider.
+ */
+export const zLlmProvider = z.enum([
+    'anthropic',
+    'openrouter',
+    'mistral'
+]);
+
+/**
+ * A credential's id: a UUID for a stored key, or `vault-anthropic` for the key Vault delivers in ANTHROPIC_API_KEY.
+ */
+export const zLlmCredentialId = z.string().min(15).max(36).regex(/^(vault-anthropic|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/);
+
+/**
+ * Where a credential comes from - added here and stored sealed, or delivered by Vault.
+ */
+export const zLlmCredentialSource = z.enum(['stored', 'vault']);
+
+/**
+ * The outcome of asking the provider whether it accepts a key.
+ */
+export const zLlmTest = z.object({
+    ok: z.boolean(),
+    at: z.iso.datetime({ offset: true }).max(64),
+    message: z.string().max(500)
+});
+
+/**
+ * A language-model API key, shown without its secret.
+ */
+export const zLlmCredential = z.object({
+    id: zLlmCredentialId,
+    provider: zLlmProvider,
+    label: z.string().max(100),
+    source: zLlmCredentialSource,
+    fingerprint: z.string().length(12).regex(/^[0-9a-f]{12}$/),
+    readable: z.boolean(),
+    createdBy: z.string().max(200).optional(),
+    createdAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    lastTest: zLlmTest.optional()
+});
+
+/**
+ * An API key to add.
+ */
+export const zNewLlmCredential = z.object({
+    provider: zLlmProvider,
+    label: z.string().min(1).max(100),
+    apiKey: z.string().min(8).max(500)
+});
+
+/**
+ * A model a key may use.
+ */
+export const zLlmModel = z.object({
+    id: z.string().max(200),
+    name: z.string().max(300)
+});
+
+/**
+ * The models a key may use, by id.
+ */
+export const zLlmModelList = z.object({
+    items: z.array(zLlmModel).max(2000)
+});
+
+/**
+ * The credential and model product matching uses.
+ */
+export const zActiveLlm = z.object({
+    credentialId: zLlmCredentialId,
+    model: z.string().min(1).max(200)
+});
+
+/**
+ * How the active model was decided - `default` (nobody chose; the Vault key with claude-haiku-5-5 when Vault delivers one), `chosen` (an admin chose), or `off` (an admin turned matching off).
+ */
+export const zLlmChoice = z.enum([
+    'default',
+    'chosen',
+    'off'
+]);
+
+/**
+ * What an event records.
+ */
+export const zLlmEventAction = z.enum([
+    'credential_added',
+    'credential_deleted',
+    'credential_tested',
+    'active_set',
+    'active_cleared'
+]);
+
+/**
+ * One change to or test of the language-model settings.
+ */
+export const zLlmEvent = z.object({
+    at: z.iso.datetime({ offset: true }).max(64),
+    actor: z.string().max(200),
+    action: zLlmEventAction,
+    credentialId: zLlmCredentialId.optional(),
+    provider: zLlmProvider.optional(),
+    model: z.string().max(200).optional(),
+    ok: z.boolean().optional(),
+    message: z.string().max(500)
+});
+
+/**
+ * What analyses may spend on the language model.
+ */
+export const zLlmBudget = z.object({
+    monthlyTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    usedThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    analysesPerHour: z.int().gte(0).lte(100000)
+});
+
+/**
+ * The language-model settings.
+ */
+export const zLlmSettings = z.object({
+    credentials: z.array(zLlmCredential).max(100),
+    choice: zLlmChoice,
+    active: zActiveLlm.optional(),
+    matchingEnabled: z.boolean(),
+    budget: zLlmBudget,
+    events: z.array(zLlmEvent).max(50)
 });
 
 /**
@@ -269,6 +410,11 @@ export const zProblem = z.object({
     status: z.int().gte(100).lte(599),
     detail: z.string().max(1024).optional()
 });
+
+/**
+ * The credential's id.
+ */
+export const zCredentialId = zLlmCredentialId;
 
 export const zSearchTermsQuery = z.object({
     q: z.string().max(100).optional(),
@@ -335,3 +481,65 @@ export const zGetAnalysisPath = z.object({
  * The analysis.
  */
 export const zGetAnalysisResponse = zAnalysis;
+
+/**
+ * The signed-in account.
+ */
+export const zGetMeResponse = zMe;
+
+/**
+ * The settings.
+ */
+export const zGetLlmSettingsResponse = zLlmSettings;
+
+/**
+ * The key to add.
+ */
+export const zAddLlmCredentialBody = zNewLlmCredential;
+
+/**
+ * The stored credential.
+ */
+export const zAddLlmCredentialResponse = zLlmCredential;
+
+export const zDeleteLlmCredentialPath = z.object({
+    credentialId: zLlmCredentialId
+});
+
+/**
+ * Deleted.
+ */
+export const zDeleteLlmCredentialResponse = z.void();
+
+export const zTestLlmCredentialPath = z.object({
+    credentialId: zLlmCredentialId
+});
+
+/**
+ * The outcome.
+ */
+export const zTestLlmCredentialResponse = zLlmTest;
+
+export const zListLlmModelsPath = z.object({
+    credentialId: zLlmCredentialId
+});
+
+/**
+ * The models, by id.
+ */
+export const zListLlmModelsResponse = zLlmModelList;
+
+/**
+ * The settings after the change.
+ */
+export const zClearActiveLlmResponse = zLlmSettings;
+
+/**
+ * The credential and model to use.
+ */
+export const zSetActiveLlmBody = zActiveLlm;
+
+/**
+ * The settings after the change.
+ */
+export const zSetActiveLlmResponse = zLlmSettings;

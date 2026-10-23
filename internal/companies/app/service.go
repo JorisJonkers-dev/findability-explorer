@@ -14,7 +14,10 @@ import (
 )
 
 // MaxScans is how many of a company's scans Get returns.
-const MaxScans = 20
+const MaxScans = 100
+
+// ErrScanActive is returned when removing a company while a scan of it is queued or running.
+var ErrScanActive = errors.New("a scan of this company is still queued or running; remove it once the scan ends")
 
 // Research returns the companies the desk research studied; the terminology seed provides them.
 type Research func() []domain.Company
@@ -24,6 +27,14 @@ type Repository interface {
 	List(ctx context.Context) ([]domain.Company, error)
 	// Add stores c, or fails when its id or host is taken meanwhile.
 	Add(ctx context.Context, c domain.Company) error
+	// Update stores an added company's new name and website.
+	Update(ctx context.Context, c domain.Company) error
+	// Delete deletes an added company.
+	Delete(ctx context.Context, id string) error
+	// Overrides returns every change to a researched company.
+	Overrides(ctx context.Context) ([]domain.Override, error)
+	// SaveOverride stores o in place of the researched company's earlier one.
+	SaveOverride(ctx context.Context, o domain.Override) error
 }
 
 // Scans is what the companies context reads of the analyses: how often each company was scanned,
@@ -31,6 +42,10 @@ type Repository interface {
 type Scans interface {
 	Stats(ctx context.Context) (map[string]domain.Stats, error)
 	ByCompany(ctx context.Context, id string, limit int) ([]domain.Scan, error)
+	// Active counts the company's queued and running scans.
+	Active(ctx context.Context, id string) (int, error)
+	// DeleteByCompany deletes every scan of the company.
+	DeleteByCompany(ctx context.Context, id string) error
 }
 
 // Service runs the companies use cases.
@@ -51,7 +66,82 @@ func (s *Service) directory(ctx context.Context) (domain.Directory, error) {
 	if err != nil {
 		return domain.Directory{}, fmt.Errorf("list added companies: %w", err)
 	}
-	return domain.NewDirectory(s.research(), added), nil
+	overrides, err := s.repo.Overrides(ctx)
+	if err != nil {
+		return domain.Directory{}, fmt.Errorf("list company changes: %w", err)
+	}
+	return domain.NewDirectory(domain.ApplyOverrides(s.research(), overrides), added), nil
+}
+
+// Update changes a company's name or website, or archives or restores a researched one. A
+// researched company's change is stored beside the research's record.
+func (s *Service) Update(ctx context.Context, user, id string, ch domain.Change) (domain.Listed, error) {
+	d, err := s.directory(ctx)
+	if err != nil {
+		return domain.Listed{}, err
+	}
+	c, ok := d.ByID(id)
+	if !ok {
+		return domain.Listed{}, domain.ErrNotFound
+	}
+	changed, err := d.Apply(c, ch, user, s.now())
+	if err != nil {
+		return domain.Listed{}, err
+	}
+	if err := s.store(ctx, changed, user); err != nil {
+		return domain.Listed{}, err
+	}
+	stats, err := s.scans.Stats(ctx)
+	if err != nil {
+		return domain.Listed{}, fmt.Errorf("scan statistics: %w", err)
+	}
+	return domain.Listed{Company: changed, Stats: stats[id]}, nil
+}
+
+// store saves a changed company: an added one in its row, a researched one as an override.
+func (s *Service) store(ctx context.Context, c domain.Company, user string) error {
+	if c.Source == domain.SourceAdded {
+		if err := s.repo.Update(ctx, c); err != nil {
+			return fmt.Errorf("update company: %w", err)
+		}
+		return nil
+	}
+	original, _ := domain.NewDirectory(s.research(), nil).ByID(c.ID)
+	if err := s.repo.SaveOverride(ctx, domain.NewOverride(original, c, user, s.now())); err != nil {
+		return fmt.Errorf("save company change: %w", err)
+	}
+	return nil
+}
+
+// Delete removes a company: an added one with every scan of it, a researched one by archiving
+// it. It refuses while a scan of the company is queued or running.
+func (s *Service) Delete(ctx context.Context, user, id string) error {
+	d, err := s.directory(ctx)
+	if err != nil {
+		return err
+	}
+	c, ok := d.ByID(id)
+	if !ok {
+		return domain.ErrNotFound
+	}
+	active, err := s.scans.Active(ctx, id)
+	if err != nil {
+		return fmt.Errorf("count active scans: %w", err)
+	}
+	if active > 0 {
+		return ErrScanActive
+	}
+	if c.Source == domain.SourceResearch {
+		c.Archived, c.ArchivedBy, c.ArchivedAt = true, user, s.now()
+		return s.store(ctx, c, user)
+	}
+	if err := s.scans.DeleteByCompany(ctx, id); err != nil {
+		return fmt.Errorf("delete scans: %w", err)
+	}
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("delete company: %w", err)
+	}
+	return nil
 }
 
 // List returns every known company with its scan statistics.

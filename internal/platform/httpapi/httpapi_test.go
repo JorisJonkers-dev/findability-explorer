@@ -24,6 +24,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/seed"
 	terminologyapp "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
+	terminologydomain "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
 // analyses is a stand-in for the analysis use cases, so these tests exercise the contract.
@@ -33,10 +34,17 @@ type analyses struct {
 	user        string
 	companyName string
 	stored      domain.Analysis
+	rescanErr   error
+	profileErr  error
+	compareErr  error
+	profile     domain.Profile
 }
 
 // companyRepo is an in-memory store of added companies.
-type companyRepo struct{ added []companiesdomain.Company }
+type companyRepo struct {
+	added     []companiesdomain.Company
+	overrides []companiesdomain.Override
+}
 
 func (r *companyRepo) List(context.Context) ([]companiesdomain.Company, error) { return r.added, nil }
 
@@ -119,7 +127,9 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	terminology := terminologyapp.New(catalogue)
+	terminology := terminologyapp.New(catalogue, &reviewStore{}, func(context.Context) ([]terminologydomain.Observation, error) {
+		return observations(), nil
+	}, time.Now)
 	companies := companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		&companyRepo{}, companyScans{}, time.Now,
@@ -251,7 +261,10 @@ func TestGetAndAddCompetitor(t *testing.T) {
 	if r := call(t, srv, http.MethodGet, "/api/v1/competitors/Not_An_Id", "", true); r.code != http.StatusBadRequest {
 		t.Errorf("bad id status %d", r.code)
 	}
-	added := call(t, srv, http.MethodPost, "/api/v1/competitors", `{"name":"Example Belts","url":"https://www.example-belts.com"}`, true)
+	if r := call(t, srv, http.MethodPost, "/api/v1/competitors", `{"name":"Example Belts","url":"https://www.example-belts.com"}`, true); r.code != http.StatusForbidden {
+		t.Fatalf("a non-admin adding a company: status %d", r.code)
+	}
+	added := callAs(t, srv, http.MethodPost, "/api/v1/competitors", `{"name":"Example Belts","url":"https://www.example-belts.com"}`, "admin")
 	if added.code != http.StatusCreated || added.body["id"] != "example-belts" || added.body["source"] != "added" || added.body["addedAt"] == nil {
 		t.Fatalf("add = %d %v", added.code, added.body)
 	}
@@ -260,7 +273,7 @@ func TestGetAndAddCompetitor(t *testing.T) {
 		`{"name":"Local","url":"https://localhost/"}`:    http.StatusUnprocessableEntity,
 		`{"name":"   ","url":"https://fine.example/"}`:   http.StatusUnprocessableEntity,
 	} {
-		r := call(t, srv, http.MethodPost, "/api/v1/competitors", body, true)
+		r := callAs(t, srv, http.MethodPost, "/api/v1/competitors", body, "admin")
 		if r.code != want || r.body["detail"] == nil {
 			t.Errorf("add %s: status %d, want %d (%v)", body, r.code, want, r.body)
 		}
@@ -276,7 +289,9 @@ func TestCompetitorsFailures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	terminology := terminologyapp.New(catalogue)
+	terminology := terminologyapp.New(catalogue, &reviewStore{}, func(context.Context) ([]terminologydomain.Observation, error) {
+		return nil, errors.New("database down")
+	}, time.Now)
 	companies := companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		&companyRepo{}, companyScans{err: errors.New("database down")}, time.Now,
@@ -289,8 +304,8 @@ func TestCompetitorsFailures(t *testing.T) {
 	}
 	srv := httptest.NewServer(h)
 	defer srv.Close()
-	for _, path := range []string{"/api/v1/competitors", "/api/v1/competitors/twentebelt"} {
-		if r := call(t, srv, http.MethodGet, path, "", true); r.code != http.StatusInternalServerError {
+	for _, path := range []string{"/api/v1/competitors", "/api/v1/competitors/twentebelt", "/api/v1/admin/term-candidates"} {
+		if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusInternalServerError {
 			t.Errorf("%s with failing scans: status %d", path, r.code)
 		}
 	}
@@ -299,8 +314,11 @@ func TestCompetitorsFailures(t *testing.T) {
 func TestStartAnalysis(t *testing.T) {
 	a := &analyses{}
 	srv := serve(t, a)
-	r := call(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://www.twentebelt.com","maxPages":3,"companyName":"Twente"}`, true)
-	if r.code != http.StatusAccepted || a.user != "tester" || a.companyName != "Twente" {
+	if r := call(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://www.twentebelt.com"}`, true); r.code != http.StatusForbidden {
+		t.Fatalf("a non-admin starting a scan: status %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://www.twentebelt.com","maxPages":3,"companyName":"Twente"}`, "admin")
+	if r.code != http.StatusAccepted || a.user != "admin-1" || a.companyName != "Twente" {
 		t.Fatalf("status %d, user %q: %v", r.code, a.user, r.body)
 	}
 	summary := r.body["summary"].(map[string]any)
@@ -312,11 +330,12 @@ func TestStartAnalysis(t *testing.T) {
 		domain.ErrInvalidMaxPages:   http.StatusUnprocessableEntity,
 		analysisapp.ErrRateLimited:  http.StatusTooManyRequests,
 		analysisapp.ErrBusy:         http.StatusTooManyRequests,
+		analysisapp.ErrScanActive:   http.StatusConflict,
 		errors.New("database down"): http.StatusInternalServerError,
 	}
 	for err, want := range cases {
 		a.startErr = err
-		r := call(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://www.twentebelt.com"}`, true)
+		r := callAs(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://www.twentebelt.com"}`, "admin")
 		if r.code != want {
 			t.Errorf("%v: status %d, want %d", err, r.code, want)
 		}
@@ -324,8 +343,8 @@ func TestStartAnalysis(t *testing.T) {
 			t.Errorf("%v: no detail in %v", err, r.body)
 		}
 	}
-	if r := call(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://x.test","maxPages":99}`, true); r.code != http.StatusBadRequest {
-		t.Errorf("maxPages 99: status %d", r.code)
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":"https://x.test","maxPages":101}`, "admin"); r.code != http.StatusBadRequest {
+		t.Errorf("maxPages 101: status %d", r.code)
 	}
 }
 
@@ -377,7 +396,7 @@ func TestUnknownPathsAndMethods(t *testing.T) {
 	if r := call(t, srv, http.MethodDelete, "/api/v1/terms", "", true); r.code != http.StatusMethodNotAllowed {
 		t.Errorf("wrong method status %d", r.code)
 	}
-	if r := call(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":`, true); r.code != http.StatusBadRequest {
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/analyses", `{"url":`, "admin"); r.code != http.StatusBadRequest {
 		t.Errorf("broken body status %d", r.code)
 	}
 }

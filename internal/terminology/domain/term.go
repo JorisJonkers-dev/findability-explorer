@@ -101,7 +101,17 @@ type Term struct {
 	Tier     Tier
 	UsedBy   []string
 	Source   string
+	Origin   Origin
 }
+
+// Origin is where a term comes from: the desk research, or a scan's phrase an administrator
+// accepted from the review queue.
+type Origin string
+
+const (
+	OriginResearch Origin = "research"
+	OriginReview   Origin = "review"
+)
 
 // BeltName is a company's own name for a belt, and the Tribelt family it corresponds to.
 type BeltName struct {

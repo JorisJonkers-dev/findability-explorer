@@ -127,6 +127,17 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.TestLlmCredentialOperation:   domain.NeedAdminChange,
 	oas.SetActiveLlmOperation:        domain.NeedAdminChange,
 	oas.ClearActiveLlmOperation:      domain.NeedAdminChange,
+	// Scans and companies: everyone signed in reads them, only administrators change them.
+	oas.StartAnalysisOperation:    domain.NeedAdminChange,
+	oas.StartRescansOperation:     domain.NeedAdminChange,
+	oas.AddCompetitorOperation:    domain.NeedAdminChange,
+	oas.UpdateCompetitorOperation: domain.NeedAdminChange,
+	oas.DeleteCompetitorOperation: domain.NeedAdminChange,
+	// The review queue of the terminology map.
+	oas.ListTermCandidatesOperation:  domain.NeedAdminView,
+	oas.AcceptTermCandidateOperation: domain.NeedAdminChange,
+	oas.RejectTermCandidateOperation: domain.NeedAdminChange,
+	oas.UndoTermDecisionOperation:    domain.NeedAdminChange,
 }
 
 // HandleSessionCookie resolves the session and puts the principal, and its subject, on ctx. The

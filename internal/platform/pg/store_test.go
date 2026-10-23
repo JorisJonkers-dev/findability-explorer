@@ -43,9 +43,10 @@ func TestInTxCommitsOrRollsBack(t *testing.T) {
 	}
 	defer store.Close()
 	create := func(q *queries.Queries) error {
-		return q.CreateAnalysis(t.Context(), queries.CreateAnalysisParams{
+		_, err := q.CreateAnalysis(t.Context(), queries.CreateAnalysisParams{
 			ID: uuid.New(), Url: "https://example.com/", MaxPages: 1, CreatedBy: "tester", CreatedAt: time.Now(),
 		})
+		return err
 	}
 	boom := errors.New("boom")
 	if err := store.InTx(t.Context(), func(q *queries.Queries) error {

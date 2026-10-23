@@ -26,7 +26,7 @@ func skipped(a atom.Atom) bool {
 
 // parse reads an HTML page: its title, description, language, headings and visible text, and the
 // links it holds (anchors, and the alternate-language links a multilingual site declares).
-func parse(r io.Reader, base *url.URL) (domain.Page, []*url.URL, error) {
+func parse(r io.Reader, base *url.URL) (domain.Page, []domain.Link, error) {
 	doc, err := html.Parse(r)
 	if err != nil {
 		return domain.Page{}, nil, err
@@ -44,7 +44,7 @@ type pageReader struct {
 	page  domain.Page
 	line  []string // the text of the current block, in pieces
 	lines []string
-	links []*url.URL
+	links []domain.Link
 }
 
 // flush ends the current block of text.
@@ -106,20 +106,21 @@ func (pr *pageReader) element(n *html.Node) {
 			pr.page.Headings = append(pr.page.Headings, h)
 		}
 	case atom.A:
-		pr.link(attr(n, "href"))
+		pr.link(attr(n, "href"), collapse(textOf(n)+" "+attr(n, "title")), false)
 	case atom.Link:
 		if strings.EqualFold(attr(n, "rel"), "alternate") && attr(n, "hreflang") != "" {
-			pr.link(attr(n, "href"))
+			pr.link(attr(n, "href"), "", true)
 		}
 	}
 }
 
-func (pr *pageReader) link(href string) {
+// link records a link with its anchor text, or a language version of the page.
+func (pr *pageReader) link(href, text string, alternate bool) {
 	if href = strings.TrimSpace(href); href == "" {
 		return
 	}
 	if u, err := pr.base.Parse(href); err == nil {
-		pr.links = append(pr.links, u)
+		pr.links = append(pr.links, domain.Link{URL: u, Text: text, Alternate: alternate})
 	}
 }
 

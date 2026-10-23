@@ -29,9 +29,11 @@ var created = time.Date(2026, 10, 22, 9, 30, 0, 0, time.UTC)
 func queued(t *testing.T, repo *persistence.Repository, user string, at time.Time) domain.Analysis {
 	t.Helper()
 	a := domain.Analysis{ID: uuid.New(), URL: "https://www.example.test/", CompetitorID: "example", MaxPages: 5, Status: domain.StatusQueued, CreatedBy: user, CreatedAt: at}
-	if err := repo.Create(t.Context(), a); err != nil {
+	n, err := repo.Create(t.Context(), a)
+	if err != nil {
 		t.Fatal(err)
 	}
+	a.Number = n
 	return a
 }
 
@@ -169,7 +171,7 @@ func TestDatabaseRefusesWhatTheDomainWouldNot(t *testing.T) {
 	if err := repo.SaveFindings(t.Context(), a.ID, []domain.Keyword{{Phrase: "", Language: "en", Pages: 1}}, nil); err == nil {
 		t.Fatal("an empty keyword was stored")
 	}
-	if err := repo.Create(t.Context(), domain.Analysis{ID: uuid.New(), URL: "x", MaxPages: 5, CreatedBy: "u", CreatedAt: created}); err == nil {
+	if _, err := repo.Create(t.Context(), domain.Analysis{ID: uuid.New(), URL: "x", MaxPages: 5, CreatedBy: "u", CreatedAt: created}); err == nil {
 		t.Fatal("a too-short url was stored")
 	}
 	// The analysis is untouched by the refused writes.
@@ -188,9 +190,12 @@ func TestAnalysesPerCompetitor(t *testing.T) {
 	other := domain.Analysis{ID: uuid.New(), URL: "https://other.test/", CompetitorID: "other", MaxPages: 1, Status: domain.StatusQueued, CreatedBy: "u", CreatedAt: created}
 	legacy := domain.Analysis{ID: uuid.New(), URL: "https://legacy.test/", MaxPages: 1, Status: domain.StatusQueued, CreatedBy: "u", CreatedAt: created}
 	for _, a := range []domain.Analysis{other, legacy} {
-		if err := repo.Create(ctx, a); err != nil {
+		if _, err := repo.Create(ctx, a); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if first.Number != 1 || second.Number != 2 {
+		t.Fatalf("numbers %d, %d", first.Number, second.Number)
 	}
 	list, err := repo.ListByCompetitor(ctx, "example", 10)
 	if err != nil || len(list) != 2 || list[0].ID != second.ID || list[1].ID != first.ID || list[0].CompetitorID != "example" {
@@ -203,7 +208,92 @@ func TestAnalysesPerCompetitor(t *testing.T) {
 	if _, err := repo.ListByCompetitor(ctx, "example", -1); err == nil {
 		t.Fatal("ListByCompetitor(-1) succeeded")
 	}
-	if got, err := repo.Get(ctx, legacy.ID); err != nil || got.CompetitorID != "" {
+	if got, err := repo.Get(ctx, second.ID); err != nil || got.Number != 2 {
+		t.Fatalf("second scan = %+v, %v", got, err)
+	}
+	if got, err := repo.Get(ctx, legacy.ID); err != nil || got.CompetitorID != "" || got.Number != 0 {
 		t.Fatalf("a scan without company = %+v, %v", got, err)
+	}
+}
+
+func finished(t *testing.T, repo *persistence.Repository, competitor string, at time.Time, kws ...domain.Keyword) domain.Analysis {
+	t.Helper()
+	ctx := t.Context()
+	a := domain.Analysis{
+		ID: uuid.New(), URL: "https://" + competitor + ".test/", CompetitorID: competitor, MaxPages: 100,
+		Status: domain.StatusQueued, CreatedBy: "u", CreatedAt: at, Rescan: true,
+	}
+	n, err := repo.Create(ctx, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.Number = n
+	if err := repo.MarkRunning(ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	for i := range 100 {
+		if err := repo.AddPage(ctx, a.ID, domain.PageSummary{URL: "https://x.test/" + strings.Repeat("p", i), Family: "eyelink"}); err != nil {
+			t.Fatalf("page %d: %v", i, err)
+		}
+	}
+	if err := repo.SaveFindings(ctx, a.ID, kws, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.Finish(ctx, a.ID, at.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	return a
+}
+
+func TestDeepScansHistoryAndFindings(t *testing.T) {
+	t.Parallel()
+	repo := repository(t)
+	ctx := t.Context()
+	eyelink := domain.Keyword{Phrase: "eyelink belts", Language: "en", Score: 40, Pages: 100, Classification: domain.Classification{Tier: "product", Family: "eyelink", InMap: true}}
+	freezer := domain.Keyword{Phrase: "spiral freezer", Language: "en", Score: 12, Pages: 3, Classification: domain.Classification{Tier: "application", Family: "tri_flex_turn_curve", Closest: "spiral belt"}}
+	first := finished(t, repo, "deep", created, eyelink)
+	second := finished(t, repo, "deep", created.Add(time.Hour), eyelink, freezer)
+	if first.Number != 1 || second.Number != 2 {
+		t.Fatalf("numbers %d, %d", first.Number, second.Number)
+	}
+	got, err := repo.Get(ctx, second.ID)
+	if err != nil || got.PagesCrawled != 100 || len(got.Pages) != 100 || got.Pages[0].Family != "eyelink" || got.MaxPages != 100 {
+		t.Fatalf("a deep scan = %d pages, %v", len(got.Pages), err)
+	}
+	firstScans, err := repo.FirstScans(ctx, "deep")
+	if err != nil || firstScans[domain.PhraseKey{Phrase: "eyelink belts", Language: "en"}] != 1 ||
+		firstScans[domain.PhraseKey{Phrase: "spiral freezer", Language: "en"}] != 2 {
+		t.Fatalf("FirstScans = %+v, %v", firstScans, err)
+	}
+	findings, err := repo.UnmappedFindings(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mine []domain.Finding
+	for _, f := range findings {
+		if f.CompetitorID == "deep" {
+			mine = append(mine, f)
+		}
+	}
+	if len(mine) != 1 || mine[0].Phrase != "spiral freezer" || mine[0].Closest != "spiral belt" || mine[0].AnalysisID != second.ID ||
+		!mine[0].StartedAt.Equal(second.CreatedAt) || mine[0].URL != "https://deep.test/" {
+		t.Fatalf("findings %+v", mine)
+	}
+	// Re-scans do not count against the hourly limit on single scans.
+	if n, err := repo.CountCreatedSince(ctx, "u", created.Add(-time.Hour)); err != nil || n != 0 {
+		t.Fatalf("CountCreatedSince = %d, %v", n, err)
+	}
+	if n, err := repo.CountActive(ctx, "deep"); err != nil || n != 0 {
+		t.Fatalf("CountActive = %d, %v", n, err)
+	}
+	queued(t, repo, "u", created)
+	if n, err := repo.CountActive(ctx, "example"); err != nil || n != 1 {
+		t.Fatalf("CountActive(example) = %d, %v", n, err)
+	}
+	if err := repo.DeleteByCompetitor(ctx, "deep"); err != nil {
+		t.Fatal(err)
+	}
+	if list, err := repo.ListByCompetitor(ctx, "deep", 10); err != nil || len(list) != 0 {
+		t.Fatalf("after delete = %+v, %v", list, err)
 	}
 }

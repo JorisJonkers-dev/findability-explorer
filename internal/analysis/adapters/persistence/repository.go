@@ -35,15 +35,66 @@ func New(store Store) *Repository {
 	return &Repository{store: store}
 }
 
-// Create stores a queued analysis.
-func (r *Repository) Create(ctx context.Context, a domain.Analysis) error {
-	if err := r.store.Queries().CreateAnalysis(ctx, queries.CreateAnalysisParams{
+// Create stores a queued analysis and returns its number among its company's scans.
+func (r *Repository) Create(ctx context.Context, a domain.Analysis) (int, error) {
+	n, err := r.store.Queries().CreateAnalysis(ctx, queries.CreateAnalysisParams{
 		ID: a.ID, Url: a.URL, MaxPages: int64(a.MaxPages), CreatedBy: a.CreatedBy, CreatedAt: a.CreatedAt,
-		CompetitorID: optionalText(a.CompetitorID),
-	}); err != nil {
-		return fmt.Errorf("insert analysis: %w", err)
+		CompetitorID: optionalText(a.CompetitorID), Rescan: a.Rescan,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("insert analysis: %w", err)
+	}
+	return int(n), nil
+}
+
+// CountActive counts a company's queued and running analyses.
+func (r *Repository) CountActive(ctx context.Context, competitorID string) (int, error) {
+	n, err := r.store.Queries().CountActiveAnalysesOfCompetitor(ctx, optionalText(competitorID))
+	if err != nil {
+		return 0, fmt.Errorf("count active analyses: %w", err)
+	}
+	return int(n), nil
+}
+
+// DeleteByCompetitor deletes every analysis of a company, with its results.
+func (r *Repository) DeleteByCompetitor(ctx context.Context, competitorID string) error {
+	if err := r.store.Queries().DeleteAnalysesOfCompetitor(ctx, optionalText(competitorID)); err != nil {
+		return fmt.Errorf("delete analyses of %s: %w", competitorID, err)
 	}
 	return nil
+}
+
+// FirstScans returns, per phrase, the number of the company's first finished scan that found it.
+func (r *Repository) FirstScans(ctx context.Context, competitorID string) (map[domain.PhraseKey]int, error) {
+	rows, err := r.store.Queries().KeywordFirstScans(ctx, optionalText(competitorID))
+	if err != nil {
+		return nil, fmt.Errorf("first scans of %s: %w", competitorID, err)
+	}
+	out := make(map[domain.PhraseKey]int, len(rows))
+	for _, row := range rows {
+		out[domain.PhraseKey{Phrase: row.Phrase, Language: row.Language}] = int(row.FirstScan)
+	}
+	return out, nil
+}
+
+// UnmappedFindings returns every keyword a finished scan of a company found outside the
+// terminology map, oldest scan first.
+func (r *Repository) UnmappedFindings(ctx context.Context) ([]domain.Finding, error) {
+	rows, err := r.store.Queries().CandidateEvidence(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select unmapped findings: %w", err)
+	}
+	out := make([]domain.Finding, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Finding{
+			AnalysisID: row.AnalysisID, CompetitorID: row.CompetitorID, URL: row.Url, StartedAt: row.CreatedAt.UTC(),
+			Keyword: domain.Keyword{
+				Phrase: row.Phrase, Language: row.Language, Score: row.Score, Pages: int(row.Pages),
+				Classification: domain.Classification{Tier: row.Tier, Family: row.Family, Closest: row.ClosestTerm},
+			},
+		})
+	}
+	return out, nil
 }
 
 // Get returns the analysis with every result.
@@ -126,7 +177,8 @@ func (r *Repository) CompetitorStats(ctx context.Context) (map[string]domain.Com
 		s.Last = toAnalysis(queries.ListAnalysesRow{
 			ID: l.ID, Url: l.Url, MaxPages: l.MaxPages, Status: l.Status, Failure: l.Failure,
 			PagesCrawled: l.PagesCrawled, Matching: l.Matching, CreatedBy: l.CreatedBy, CreatedAt: l.CreatedAt,
-			FinishedAt: l.FinishedAt, CompetitorID: optionalText(l.CompetitorID),
+			FinishedAt: l.FinishedAt, CompetitorID: optionalText(l.CompetitorID), MatchingModel: l.MatchingModel,
+			ScanNumber: l.ScanNumber,
 		})
 		out[l.CompetitorID] = s
 	}
@@ -184,7 +236,7 @@ func (r *Repository) MarkRunning(ctx context.Context, id uuid.UUID) error {
 func (r *Repository) AddPage(ctx context.Context, id uuid.UUID, p domain.PageSummary) error {
 	if err := r.store.Queries().AddAnalysisPage(ctx, queries.AddAnalysisPageParams{
 		ID: id, Url: clip(p.URL, 2000), Title: clip(p.Title, 500), Description: clip(p.Description, 1000),
-		Language: clip(p.Language, 16), WordCount: int64(p.WordCount),
+		Language: clip(p.Language, 16), WordCount: int64(p.WordCount), Family: optionalText(p.Family),
 	}); err != nil {
 		return fmt.Errorf("insert page: %w", err)
 	}
@@ -268,7 +320,7 @@ func toAnalysis(row queries.ListAnalysesRow) domain.Analysis {
 		ID: row.ID, URL: row.Url, MaxPages: int(row.MaxPages), Status: domain.Status(row.Status),
 		Failure: row.Failure.String, PagesCrawled: int(row.PagesCrawled), Matching: domain.Matching(row.Matching),
 		CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC(), CompetitorID: row.CompetitorID.String,
-		MatchingModel: row.MatchingModel.String,
+		MatchingModel: row.MatchingModel.String, Number: int(row.ScanNumber),
 	}
 	if row.FinishedAt.Valid {
 		a.FinishedAt = row.FinishedAt.Time.UTC()
@@ -283,7 +335,10 @@ func pages(ctx context.Context, q *queries.Queries, id uuid.UUID) ([]domain.Page
 	}
 	out := make([]domain.PageSummary, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, domain.PageSummary{URL: r.Url, Title: r.Title, Description: r.Description, Language: r.Language, WordCount: int(r.WordCount)})
+		out = append(out, domain.PageSummary{
+			URL: r.Url, Title: r.Title, Description: r.Description, Language: r.Language, WordCount: int(r.WordCount),
+			Family: r.Family,
+		})
 	}
 	return out, nil
 }

@@ -29,6 +29,8 @@ type PageSummary struct {
 	Description string
 	Language    string
 	WordCount   int
+	// Family is the Tribelt family the page is about, or empty when that is not clear.
+	Family string
 }
 
 // Keyword is a phrase about metal belts that a site emphasises, scored by where and how often it
@@ -78,11 +80,12 @@ const (
 	weightBody        = 1
 )
 
-// Summarise returns what an analysis keeps of p, with its language settled.
-func Summarise(p Page) PageSummary {
+// Summarise returns what an analysis keeps of p, with its language settled and the family lex
+// finds it is about.
+func Summarise(p Page, lex Lexicon) PageSummary {
 	return PageSummary{
 		URL: p.URL, Title: p.Title, Description: p.Description,
-		Language: PageLanguage(p), WordCount: len(Tokens(p.Text)),
+		Language: PageLanguage(p), WordCount: len(Tokens(p.Text)), Family: lex.PageFamily(p),
 	}
 }
 

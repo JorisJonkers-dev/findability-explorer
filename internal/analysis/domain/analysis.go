@@ -18,9 +18,9 @@ import (
 
 const (
 	// DefaultMaxPages is how many pages a crawl fetches when the caller names no limit.
-	DefaultMaxPages = 15
+	DefaultMaxPages = 60
 	// MaxPages is the most pages one crawl fetches. db/migrations holds the same rule as a CHECK.
-	MaxPages     = 30
+	MaxPages     = 100
 	maxURLLength = 500
 )
 
@@ -114,6 +114,11 @@ type Analysis struct {
 	// CompetitorID is the company the scanned website belongs to; empty for scans made before
 	// companies were tracked.
 	CompetitorID string
+	// Number is the scan's number among its company's scans, from 1; 0 without a company.
+	Number int
+	// Rescan is true for a scan an administrator's re-scan of many companies queued; the hourly
+	// limit on single scans leaves it out.
+	Rescan       bool
 	MaxPages     int
 	Status       Status
 	Failure      string
@@ -141,7 +146,8 @@ func (u Usage) Total() int64 { return u.InputTokens + u.OutputTokens }
 
 // Repository is the port the persistence adapter implements.
 type Repository interface {
-	Create(ctx context.Context, a Analysis) error
+	// Create stores a queued analysis and returns its number among its company's scans.
+	Create(ctx context.Context, a Analysis) (int, error)
 	// Get returns the analysis with every result, or ErrNotFound.
 	Get(ctx context.Context, id uuid.UUID) (Analysis, error)
 	// List returns at most limit analyses without results, newest first.
@@ -150,7 +156,11 @@ type Repository interface {
 	ListByCompetitor(ctx context.Context, competitorID string, limit int) ([]Analysis, error)
 	// CompetitorStats counts each company's analyses and returns its newest one.
 	CompetitorStats(ctx context.Context) (map[string]CompetitorStats, error)
-	// CountCreatedSince counts the analyses user started at or after since.
+	// CountActive counts a company's queued and running analyses.
+	CountActive(ctx context.Context, competitorID string) (int, error)
+	// FirstScans returns, per phrase, the number of the company's first finished scan that found it.
+	FirstScans(ctx context.Context, competitorID string) (map[PhraseKey]int, error)
+	// CountCreatedSince counts the single analyses user started at or after since.
 	CountCreatedSince(ctx context.Context, user string, since time.Time) (int, error)
 	// TokensSince sums the language-model tokens of analyses created at or after since.
 	TokensSince(ctx context.Context, since time.Time) (int64, error)
@@ -174,10 +184,30 @@ type CompetitorStats struct {
 }
 
 // Directory is the port to the companies context: it names the company a website belongs to,
-// adding one under name when nobody knows the website's host yet.
+// adding one under name when nobody knows the website's host yet, and lists every company.
 type Directory interface {
 	Resolve(ctx context.Context, user string, website *url.URL, name string) (string, error)
+	Companies(ctx context.Context) ([]Company, error)
+}
+
+// Company is what the analysis context knows of a company: whether and where it can be scanned.
+type Company struct {
+	ID   string
+	Name string
+	// Website is nil when the company has none.
+	Website  *url.URL
+	Archived bool
 }
 
 // ErrNotFound is returned for an analysis id that does not exist.
 var ErrNotFound = fmt.Errorf("no such analysis")
+
+// Finding is a keyword one finished scan of a company found, with where and when; the review
+// queue reads the ones the terminology map did not hold.
+type Finding struct {
+	AnalysisID   uuid.UUID
+	CompetitorID string
+	URL          string
+	StartedAt    time.Time
+	Keyword
+}

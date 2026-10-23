@@ -11,6 +11,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AcceptedTerm struct {
+	CandidateID string
+	Term        string
+	Language    string
+	Family      string
+	Tier        string
+	UsedBy      []string
+	Source      string
+}
+
 type Account struct {
 	ID          int64
 	Issuer      string
@@ -37,6 +47,8 @@ type Analysis struct {
 	FinishedAt      pgtype.Timestamptz
 	CompetitorID    pgtype.Text
 	MatchingModel   pgtype.Text
+	ScanNumber      pgtype.Int8
+	Rescan          bool
 }
 
 type AnalysisEquivalent struct {
@@ -87,6 +99,7 @@ type AnalysisPage struct {
 	Description string
 	Language    string
 	WordCount   int64
+	Family      pgtype.Text
 }
 
 type Company struct {
@@ -96,6 +109,17 @@ type Company struct {
 	Host       string
 	AddedBy    string
 	AddedAt    time.Time
+}
+
+type CompanyOverride struct {
+	ID         string
+	Name       pgtype.Text
+	WebsiteUrl pgtype.Text
+	Host       pgtype.Text
+	ArchivedBy pgtype.Text
+	ArchivedAt pgtype.Timestamptz
+	UpdatedBy  string
+	UpdatedAt  time.Time
 }
 
 type LlmActive struct {
@@ -140,4 +164,12 @@ type Session struct {
 	LastSeenAt     time.Time
 	RolesCheckedAt time.Time
 	ExpiresAt      time.Time
+}
+
+type TermDecision struct {
+	CandidateID string
+	Phrase      string
+	Status      string
+	DecidedBy   string
+	DecidedAt   time.Time
 }

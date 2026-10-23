@@ -141,3 +141,62 @@ func TestSorted(t *testing.T) {
 		t.Fatalf("stats not attached: %+v", got[2].Stats)
 	}
 }
+
+func TestOverrides(t *testing.T) {
+	u, _ := url.Parse("https://www.x.example/")
+	other, _ := url.Parse("https://www.y.example/")
+	original := domain.Company{ID: "x", Name: "X", URL: u, Website: "https://www.x.example/", Host: "x.example", Source: domain.SourceResearch}
+	if o := domain.NewOverride(original, original, "a", time.Time{}); o.Name != "" || o.Website != nil || !o.ArchivedAt.IsZero() {
+		t.Fatalf("an unchanged company overrides %+v", o)
+	}
+	at := time.Date(2026, 10, 23, 0, 0, 0, 0, time.UTC)
+	changed := original
+	changed.Name, changed.URL, changed.Host = "X Belts", other, "y.example"
+	changed.Archived, changed.ArchivedBy, changed.ArchivedAt = true, "a", at
+	o := domain.NewOverride(original, changed, "a", at)
+	if o.Name != "X Belts" || o.Host != "y.example" || o.ArchivedBy != "a" {
+		t.Fatalf("override %+v", o)
+	}
+	applied := domain.ApplyOverrides([]domain.Company{original, {ID: "z", Name: "Z"}}, []domain.Override{o})
+	if got := applied[0]; got.Name != "X Belts" || got.Website != "https://www.y.example/" || !got.Archived || applied[1].Name != "Z" {
+		t.Fatalf("applied %+v", applied)
+	}
+	noURL := domain.Company{ID: "n", Source: domain.SourceResearch}
+	withURL := noURL
+	withURL.URL, withURL.Host = u, "x.example"
+	if o := domain.NewOverride(noURL, withURL, "a", at); o.Website == nil {
+		t.Fatal("a first website is not overridden")
+	}
+}
+
+func TestApply(t *testing.T) {
+	u, _ := url.Parse("https://x.example/")
+	d := domain.NewDirectory([]domain.Company{{ID: "x", Name: "X", URL: u, Host: "x.example", Source: domain.SourceResearch}},
+		[]domain.Company{{ID: "y", Name: "Y", Host: "y.example", Source: domain.SourceAdded}})
+	x, _ := d.ByID("x")
+	name, site, archived, restored := " New ", "https://www.x.example/de", true, false
+	at := time.Date(2026, 10, 23, 0, 0, 0, 0, time.UTC)
+	got, err := d.Apply(x, domain.Change{Name: &name, URL: &site, Archived: &archived}, "a", at)
+	if err != nil || got.Name != "New" || got.Host != "x.example" || !got.Archived || got.ArchivedBy != "a" || !got.ArchivedAt.Equal(at) {
+		t.Fatalf("Apply = %+v, %v", got, err)
+	}
+	if got, err = d.Apply(got, domain.Change{Archived: &restored}, "a", at); err != nil || got.Archived || got.ArchivedBy != "" {
+		t.Fatalf("restore = %+v, %v", got, err)
+	}
+	taken := "https://y.example/"
+	var known domain.AlreadyKnownError
+	if _, err := d.Apply(x, domain.Change{URL: &taken}, "a", at); !errors.As(err, &known) || known.ID != "y" {
+		t.Fatalf("taken host = %v", err)
+	}
+	y, _ := d.ByID("y")
+	if _, err := d.Apply(y, domain.Change{Archived: &archived}, "a", at); !errors.Is(err, domain.ErrNotArchivable) {
+		t.Fatalf("archiving an added company = %v", err)
+	}
+	bad, empty := "ftp://x", " "
+	if _, err := d.Apply(x, domain.Change{URL: &bad}, "a", at); !errors.Is(err, domain.ErrInvalidWebsite) {
+		t.Fatalf("bad website = %v", err)
+	}
+	if _, err := d.Apply(x, domain.Change{Name: &empty}, "a", at); !errors.Is(err, domain.ErrInvalidName) {
+		t.Fatalf("bad name = %v", err)
+	}
+}

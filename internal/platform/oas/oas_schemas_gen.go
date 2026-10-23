@@ -15,6 +15,30 @@ func (s *ProblemStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+type AcceptTermCandidateBadRequest ProblemStatusCode
+
+func (*AcceptTermCandidateBadRequest) acceptTermCandidateRes() {}
+
+type AcceptTermCandidateConflict ProblemStatusCode
+
+func (*AcceptTermCandidateConflict) acceptTermCandidateRes() {}
+
+type AcceptTermCandidateForbidden ProblemStatusCode
+
+func (*AcceptTermCandidateForbidden) acceptTermCandidateRes() {}
+
+type AcceptTermCandidateNotFound ProblemStatusCode
+
+func (*AcceptTermCandidateNotFound) acceptTermCandidateRes() {}
+
+type AcceptTermCandidateUnauthorized ProblemStatusCode
+
+func (*AcceptTermCandidateUnauthorized) acceptTermCandidateRes() {}
+
+type AcceptTermCandidateUnprocessableEntity ProblemStatusCode
+
+func (*AcceptTermCandidateUnprocessableEntity) acceptTermCandidateRes() {}
+
 // The credential and model product matching uses.
 // Ref: #/components/schemas/ActiveLlm
 type ActiveLlm struct {
@@ -50,6 +74,14 @@ func (*AddCompetitorBadRequest) addCompetitorRes() {}
 type AddCompetitorConflict ProblemStatusCode
 
 func (*AddCompetitorConflict) addCompetitorRes() {}
+
+type AddCompetitorForbidden ProblemStatusCode
+
+func (*AddCompetitorForbidden) addCompetitorRes() {}
+
+type AddCompetitorUnauthorized ProblemStatusCode
+
+func (*AddCompetitorUnauthorized) addCompetitorRes() {}
 
 type AddCompetitorUnprocessableEntity ProblemStatusCode
 
@@ -241,6 +273,11 @@ func (s *AnalysisStatus) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/AnalysisSummary
 type AnalysisSummary struct {
 	CompetitorId OptCompetitorId `json:"competitorId"`
+	// The scan's number among its company's scans, from 1 for the first; it never changes. Absent for an
+	// analysis without a company.
+	Number OptInt32 `json:"number"`
+	// The provider and model that matched the products, when a model was asked.
+	MatchingModel OptString `json:"matchingModel"`
 	// The analysis's id.
 	ID uuid.UUID `json:"id"`
 	// The page the crawl started from.
@@ -261,6 +298,16 @@ type AnalysisSummary struct {
 // GetCompetitorId returns the value of CompetitorId.
 func (s *AnalysisSummary) GetCompetitorId() OptCompetitorId {
 	return s.CompetitorId
+}
+
+// GetNumber returns the value of Number.
+func (s *AnalysisSummary) GetNumber() OptInt32 {
+	return s.Number
+}
+
+// GetMatchingModel returns the value of MatchingModel.
+func (s *AnalysisSummary) GetMatchingModel() OptString {
+	return s.MatchingModel
 }
 
 // GetID returns the value of ID.
@@ -306,6 +353,16 @@ func (s *AnalysisSummary) GetFinishedAt() OptDateTime {
 // SetCompetitorId sets the value of CompetitorId.
 func (s *AnalysisSummary) SetCompetitorId(val OptCompetitorId) {
 	s.CompetitorId = val
+}
+
+// SetNumber sets the value of Number.
+func (s *AnalysisSummary) SetNumber(val OptInt32) {
+	s.Number = val
+}
+
+// SetMatchingModel sets the value of MatchingModel.
+func (s *AnalysisSummary) SetMatchingModel(val OptString) {
+	s.MatchingModel = val
 }
 
 // SetID sets the value of ID.
@@ -455,6 +512,34 @@ func (s *BeltName) SetFamily(val BeltFamily) {
 	s.Family = val
 }
 
+// A company whose scan found a candidate.
+// Ref: #/components/schemas/CandidateCompany
+type CandidateCompany struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string `json:"name"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CandidateCompany) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *CandidateCompany) GetName() string {
+	return s.Name
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CandidateCompany) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *CandidateCompany) SetName(val string) {
+	s.Name = val
+}
+
 type ClearActiveLlmForbidden ProblemStatusCode
 
 func (*ClearActiveLlmForbidden) clearActiveLlmRes() {}
@@ -463,11 +548,78 @@ type ClearActiveLlmUnauthorized ProblemStatusCode
 
 func (*ClearActiveLlmUnauthorized) clearActiveLlmRes() {}
 
+type CompareScansBadRequest ProblemStatusCode
+
+func (*CompareScansBadRequest) compareScansRes() {}
+
+type CompareScansNotFound ProblemStatusCode
+
+func (*CompareScansNotFound) compareScansRes() {}
+
+type CompareScansUnprocessableEntity ProblemStatusCode
+
+func (*CompareScansUnprocessableEntity) compareScansRes() {}
+
+// What changed in one group between two scans.
+// Ref: #/components/schemas/ComparisonGroup
+type ComparisonGroup struct {
+	Group ProfileGroup `json:"group"`
+	// Terms only the newer scan found, highest score first.
+	Added []TermChange `json:"added"`
+	// Terms only the older scan found, highest score first.
+	Removed []TermChange `json:"removed"`
+	// Terms both found whose score or pages moved beyond the threshold, largest move first.
+	Moved []TermChange `json:"moved"`
+}
+
+// GetGroup returns the value of Group.
+func (s *ComparisonGroup) GetGroup() ProfileGroup {
+	return s.Group
+}
+
+// GetAdded returns the value of Added.
+func (s *ComparisonGroup) GetAdded() []TermChange {
+	return s.Added
+}
+
+// GetRemoved returns the value of Removed.
+func (s *ComparisonGroup) GetRemoved() []TermChange {
+	return s.Removed
+}
+
+// GetMoved returns the value of Moved.
+func (s *ComparisonGroup) GetMoved() []TermChange {
+	return s.Moved
+}
+
+// SetGroup sets the value of Group.
+func (s *ComparisonGroup) SetGroup(val ProfileGroup) {
+	s.Group = val
+}
+
+// SetAdded sets the value of Added.
+func (s *ComparisonGroup) SetAdded(val []TermChange) {
+	s.Added = val
+}
+
+// SetRemoved sets the value of Removed.
+func (s *ComparisonGroup) SetRemoved(val []TermChange) {
+	s.Removed = val
+}
+
+// SetMoved sets the value of Moved.
+func (s *ComparisonGroup) SetMoved(val []TermChange) {
+	s.Moved = val
+}
+
 // A known company.
 // Ref: #/components/schemas/Competitor
 type Competitor struct {
-	ID     CompetitorId     `json:"id"`
-	Source CompetitorSource `json:"source"`
+	// True for a researched company an administrator archived: it is left out of the re-scans and the web
+	// app hides it.
+	Archived bool             `json:"archived"`
+	ID       CompetitorId     `json:"id"`
+	Source   CompetitorSource `json:"source"`
 	// The website to visit and to scan; absent when the research found none.
 	WebsiteUrl OptURI `json:"websiteUrl"`
 	// The website's host without "www.", by which scans are matched to the company.
@@ -491,6 +643,11 @@ type Competitor struct {
 	BeltNames []BeltName `json:"beltNames"`
 	// The title of its home page, or "unverified" when it could not be read.
 	HomepageTitle string `json:"homepageTitle"`
+}
+
+// GetArchived returns the value of Archived.
+func (s *Competitor) GetArchived() bool {
+	return s.Archived
 }
 
 // GetID returns the value of ID.
@@ -563,6 +720,11 @@ func (s *Competitor) GetHomepageTitle() string {
 	return s.HomepageTitle
 }
 
+// SetArchived sets the value of Archived.
+func (s *Competitor) SetArchived(val bool) {
+	s.Archived = val
+}
+
 // SetID sets the value of ID.
 func (s *Competitor) SetID(val CompetitorId) {
 	s.ID = val
@@ -633,7 +795,8 @@ func (s *Competitor) SetHomepageTitle(val string) {
 	s.HomepageTitle = val
 }
 
-func (*Competitor) addCompetitorRes() {}
+func (*Competitor) addCompetitorRes()    {}
+func (*Competitor) updateCompetitorRes() {}
 
 // A company with its most recent scans.
 // Ref: #/components/schemas/CompetitorDetail
@@ -686,6 +849,72 @@ func (s *CompetitorList) SetItems(val []Competitor) {
 
 func (*CompetitorList) listCompetitorsRes() {}
 
+// A company's search terms from its latest finished scan, by group, every group present in a fixed
+// order (Tribelt's families, other, broad, spec).
+// Ref: #/components/schemas/CompetitorProfile
+type CompetitorProfile struct {
+	CompetitorId CompetitorId       `json:"competitorId"`
+	Scan         OptAnalysisSummary `json:"scan"`
+	// How many of the company's scans finished.
+	FinishedScans int32 `json:"finishedScans"`
+	// The languages of the terms, most terms first.
+	Languages []string `json:"languages"`
+	// The terms by group; empty without a finished scan.
+	Groups []ProfileGroupTerms `json:"groups"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CompetitorProfile) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetScan returns the value of Scan.
+func (s *CompetitorProfile) GetScan() OptAnalysisSummary {
+	return s.Scan
+}
+
+// GetFinishedScans returns the value of FinishedScans.
+func (s *CompetitorProfile) GetFinishedScans() int32 {
+	return s.FinishedScans
+}
+
+// GetLanguages returns the value of Languages.
+func (s *CompetitorProfile) GetLanguages() []string {
+	return s.Languages
+}
+
+// GetGroups returns the value of Groups.
+func (s *CompetitorProfile) GetGroups() []ProfileGroupTerms {
+	return s.Groups
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CompetitorProfile) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetScan sets the value of Scan.
+func (s *CompetitorProfile) SetScan(val OptAnalysisSummary) {
+	s.Scan = val
+}
+
+// SetFinishedScans sets the value of FinishedScans.
+func (s *CompetitorProfile) SetFinishedScans(val int32) {
+	s.FinishedScans = val
+}
+
+// SetLanguages sets the value of Languages.
+func (s *CompetitorProfile) SetLanguages(val []string) {
+	s.Languages = val
+}
+
+// SetGroups sets the value of Groups.
+func (s *CompetitorProfile) SetGroups(val []ProfileGroupTerms) {
+	s.Groups = val
+}
+
+func (*CompetitorProfile) getCompetitorProfileRes() {}
+
 // Where a company comes from - the desk research, or added by a user or a scan.
 // Ref: #/components/schemas/CompetitorSource
 type CompetitorSource string
@@ -729,7 +958,48 @@ func (s *CompetitorSource) UnmarshalText(data []byte) error {
 	}
 }
 
-// One page the crawl fetched.
+// The fields of a company to change; at least one.
+// Ref: #/components/schemas/CompetitorUpdate
+type CompetitorUpdate struct {
+	// The company's new name.
+	Name OptString `json:"name"`
+	// The company's new website. Only http and https on a public host.
+	URL OptURI `json:"url"`
+	// True archives a researched company, false restores it.
+	Archived OptBool `json:"archived"`
+}
+
+// GetName returns the value of Name.
+func (s *CompetitorUpdate) GetName() OptString {
+	return s.Name
+}
+
+// GetURL returns the value of URL.
+func (s *CompetitorUpdate) GetURL() OptURI {
+	return s.URL
+}
+
+// GetArchived returns the value of Archived.
+func (s *CompetitorUpdate) GetArchived() OptBool {
+	return s.Archived
+}
+
+// SetName sets the value of Name.
+func (s *CompetitorUpdate) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetURL sets the value of URL.
+func (s *CompetitorUpdate) SetURL(val OptURI) {
+	s.URL = val
+}
+
+// SetArchived sets the value of Archived.
+func (s *CompetitorUpdate) SetArchived(val OptBool) {
+	s.Archived = val
+}
+
+// One page the crawl fetched, with the belt family it is about when that is clear.
 // Ref: #/components/schemas/CrawledPage
 type CrawledPage struct {
 	// The page's address.
@@ -741,7 +1011,8 @@ type CrawledPage struct {
 	// The page's language, from its markup or guessed from its words.
 	Language string `json:"language"`
 	// The number of words of visible text.
-	WordCount int32 `json:"wordCount"`
+	WordCount int32         `json:"wordCount"`
+	Family    OptBeltFamily `json:"family"`
 }
 
 // GetURL returns the value of URL.
@@ -769,6 +1040,11 @@ func (s *CrawledPage) GetWordCount() int32 {
 	return s.WordCount
 }
 
+// GetFamily returns the value of Family.
+func (s *CrawledPage) GetFamily() OptBeltFamily {
+	return s.Family
+}
+
 // SetURL sets the value of URL.
 func (s *CrawledPage) SetURL(val string) {
 	s.URL = val
@@ -793,6 +1069,36 @@ func (s *CrawledPage) SetLanguage(val string) {
 func (s *CrawledPage) SetWordCount(val int32) {
 	s.WordCount = val
 }
+
+// SetFamily sets the value of Family.
+func (s *CrawledPage) SetFamily(val OptBeltFamily) {
+	s.Family = val
+}
+
+type DeleteCompetitorBadRequest ProblemStatusCode
+
+func (*DeleteCompetitorBadRequest) deleteCompetitorRes() {}
+
+type DeleteCompetitorConflict ProblemStatusCode
+
+func (*DeleteCompetitorConflict) deleteCompetitorRes() {}
+
+type DeleteCompetitorForbidden ProblemStatusCode
+
+func (*DeleteCompetitorForbidden) deleteCompetitorRes() {}
+
+// DeleteCompetitorNoContent is response for DeleteCompetitor operation.
+type DeleteCompetitorNoContent struct{}
+
+func (*DeleteCompetitorNoContent) deleteCompetitorRes() {}
+
+type DeleteCompetitorNotFound ProblemStatusCode
+
+func (*DeleteCompetitorNotFound) deleteCompetitorRes() {}
+
+type DeleteCompetitorUnauthorized ProblemStatusCode
+
+func (*DeleteCompetitorUnauthorized) deleteCompetitorRes() {}
 
 type DeleteLlmCredentialBadRequest ProblemStatusCode
 
@@ -956,6 +1262,14 @@ func (*GetCompetitorBadRequest) getCompetitorRes() {}
 type GetCompetitorNotFound ProblemStatusCode
 
 func (*GetCompetitorNotFound) getCompetitorRes() {}
+
+type GetCompetitorProfileBadRequest ProblemStatusCode
+
+func (*GetCompetitorProfileBadRequest) getCompetitorProfileRes() {}
+
+type GetCompetitorProfileNotFound ProblemStatusCode
+
+func (*GetCompetitorProfileNotFound) getCompetitorProfileRes() {}
 
 type GetLlmSettingsForbidden ProblemStatusCode
 
@@ -1328,6 +1642,18 @@ func (*ListLlmModelsUnauthorized) listLlmModelsRes() {}
 type ListLlmModelsUnprocessableEntity ProblemStatusCode
 
 func (*ListLlmModelsUnprocessableEntity) listLlmModelsRes() {}
+
+type ListTermCandidatesBadRequest ProblemStatusCode
+
+func (*ListTermCandidatesBadRequest) listTermCandidatesRes() {}
+
+type ListTermCandidatesForbidden ProblemStatusCode
+
+func (*ListTermCandidatesForbidden) listTermCandidatesRes() {}
+
+type ListTermCandidatesUnauthorized ProblemStatusCode
+
+func (*ListTermCandidatesUnauthorized) listTermCandidatesRes() {}
 
 // What analyses may spend on the language model.
 // Ref: #/components/schemas/LlmBudget
@@ -2468,6 +2794,52 @@ func (o OptDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewOptFloat64 returns new OptFloat64 with value set to v.
+func NewOptFloat64(v float64) OptFloat64 {
+	return OptFloat64{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptFloat64 is optional float64.
+type OptFloat64 struct {
+	Value float64
+	Set   bool
+}
+
+// IsSet returns true if OptFloat64 was set.
+func (o OptFloat64) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptFloat64) Reset() {
+	var v float64
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptFloat64) SetTo(v float64) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptFloat64) Get() (v float64, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptFloat64) Or(d float64) float64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt32 returns new OptInt32 with value set to v.
 func NewOptInt32(v int32) OptInt32 {
 	return OptInt32{
@@ -2790,6 +3162,144 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
+// NewOptTerm returns new OptTerm with value set to v.
+func NewOptTerm(v Term) OptTerm {
+	return OptTerm{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTerm is optional Term.
+type OptTerm struct {
+	Value Term
+	Set   bool
+}
+
+// IsSet returns true if OptTerm was set.
+func (o OptTerm) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTerm) Reset() {
+	var v Term
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTerm) SetTo(v Term) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTerm) Get() (v Term, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTerm) Or(d Term) Term {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTermCandidateStatus returns new OptTermCandidateStatus with value set to v.
+func NewOptTermCandidateStatus(v TermCandidateStatus) OptTermCandidateStatus {
+	return OptTermCandidateStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermCandidateStatus is optional TermCandidateStatus.
+type OptTermCandidateStatus struct {
+	Value TermCandidateStatus
+	Set   bool
+}
+
+// IsSet returns true if OptTermCandidateStatus was set.
+func (o OptTermCandidateStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermCandidateStatus) Reset() {
+	var v TermCandidateStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermCandidateStatus) SetTo(v TermCandidateStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermCandidateStatus) Get() (v TermCandidateStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermCandidateStatus) Or(d TermCandidateStatus) TermCandidateStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTermDecision returns new OptTermDecision with value set to v.
+func NewOptTermDecision(v TermDecision) OptTermDecision {
+	return OptTermDecision{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermDecision is optional TermDecision.
+type OptTermDecision struct {
+	Value TermDecision
+	Set   bool
+}
+
+// IsSet returns true if OptTermDecision was set.
+func (o OptTermDecision) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermDecision) Reset() {
+	var v TermDecision
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermDecision) SetTo(v TermDecision) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermDecision) Get() (v TermDecision, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermDecision) Or(d TermDecision) TermDecision {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptURI returns new OptURI with value set to v.
 func NewOptURI(v url.URL) OptURI {
 	return OptURI{
@@ -2830,6 +3340,52 @@ func (o OptURI) Get() (v url.URL, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptURI) Or(d url.URL) url.URL {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptUUID returns new OptUUID with value set to v.
+func NewOptUUID(v uuid.UUID) OptUUID {
+	return OptUUID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUUID is optional uuid.UUID.
+type OptUUID struct {
+	Value uuid.UUID
+	Set   bool
+}
+
+// IsSet returns true if OptUUID was set.
+func (o OptUUID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUUID) Reset() {
+	var v uuid.UUID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUUID) SetTo(v uuid.UUID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUUID) Get() (v uuid.UUID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2920,6 +3476,399 @@ func (*ProblemStatusCode) listAnalysesRes()    {}
 func (*ProblemStatusCode) listCompetitorsRes() {}
 func (*ProblemStatusCode) searchTermsRes()     {}
 
+// How a company's search terms are grouped - one of Tribelt's belt families, other metal belts, broad
+// terms that name no family, or material and specification terms.
+// Ref: #/components/schemas/ProfileGroup
+type ProfileGroup string
+
+const (
+	ProfileGroupEyelink          ProfileGroup = "eyelink"
+	ProfileGroupOpenSpiral       ProfileGroup = "open_spiral"
+	ProfileGroupClosedSpiral     ProfileGroup = "closed_spiral"
+	ProfileGroupTriFlexTurnCurve ProfileGroup = "tri_flex_turn_curve"
+	ProfileGroupOther            ProfileGroup = "other"
+	ProfileGroupBroad            ProfileGroup = "broad"
+	ProfileGroupSpec             ProfileGroup = "spec"
+)
+
+// AllValues returns all ProfileGroup values.
+func (ProfileGroup) AllValues() []ProfileGroup {
+	return []ProfileGroup{
+		ProfileGroupEyelink,
+		ProfileGroupOpenSpiral,
+		ProfileGroupClosedSpiral,
+		ProfileGroupTriFlexTurnCurve,
+		ProfileGroupOther,
+		ProfileGroupBroad,
+		ProfileGroupSpec,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProfileGroup) MarshalText() ([]byte, error) {
+	switch s {
+	case ProfileGroupEyelink:
+		return []byte(s), nil
+	case ProfileGroupOpenSpiral:
+		return []byte(s), nil
+	case ProfileGroupClosedSpiral:
+		return []byte(s), nil
+	case ProfileGroupTriFlexTurnCurve:
+		return []byte(s), nil
+	case ProfileGroupOther:
+		return []byte(s), nil
+	case ProfileGroupBroad:
+		return []byte(s), nil
+	case ProfileGroupSpec:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProfileGroup) UnmarshalText(data []byte) error {
+	switch ProfileGroup(data) {
+	case ProfileGroupEyelink:
+		*s = ProfileGroupEyelink
+		return nil
+	case ProfileGroupOpenSpiral:
+		*s = ProfileGroupOpenSpiral
+		return nil
+	case ProfileGroupClosedSpiral:
+		*s = ProfileGroupClosedSpiral
+		return nil
+	case ProfileGroupTriFlexTurnCurve:
+		*s = ProfileGroupTriFlexTurnCurve
+		return nil
+	case ProfileGroupOther:
+		*s = ProfileGroupOther
+		return nil
+	case ProfileGroupBroad:
+		*s = ProfileGroupBroad
+		return nil
+	case ProfileGroupSpec:
+		*s = ProfileGroupSpec
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The search terms of one group, highest score first.
+// Ref: #/components/schemas/ProfileGroupTerms
+type ProfileGroupTerms struct {
+	Group ProfileGroup `json:"group"`
+	// The terms.
+	Terms []ProfileTerm `json:"terms"`
+}
+
+// GetGroup returns the value of Group.
+func (s *ProfileGroupTerms) GetGroup() ProfileGroup {
+	return s.Group
+}
+
+// GetTerms returns the value of Terms.
+func (s *ProfileGroupTerms) GetTerms() []ProfileTerm {
+	return s.Terms
+}
+
+// SetGroup sets the value of Group.
+func (s *ProfileGroupTerms) SetGroup(val ProfileGroup) {
+	s.Group = val
+}
+
+// SetTerms sets the value of Terms.
+func (s *ProfileGroupTerms) SetTerms(val []ProfileTerm) {
+	s.Terms = val
+}
+
+// A search term of a company's latest finished scan.
+// Ref: #/components/schemas/ProfileTerm
+type ProfileTerm struct {
+	// The phrase, in lower case.
+	Phrase string `json:"phrase"`
+	// The language of the pages it appears on.
+	Language string `json:"language"`
+	// Higher is more prominent.
+	Score float64 `json:"score"`
+	// On how many pages it appears.
+	Pages  int32         `json:"pages"`
+	Tier   IntentTier    `json:"tier"`
+	Family OptBeltFamily `json:"family"`
+	// The terminology map term closest to it.
+	ClosestTerm OptString `json:"closestTerm"`
+	// True when it is one of the map's own terms.
+	InMap bool `json:"inMap"`
+	// The number of the company's first finished scan that found it.
+	FirstScan int32 `json:"firstScan"`
+}
+
+// GetPhrase returns the value of Phrase.
+func (s *ProfileTerm) GetPhrase() string {
+	return s.Phrase
+}
+
+// GetLanguage returns the value of Language.
+func (s *ProfileTerm) GetLanguage() string {
+	return s.Language
+}
+
+// GetScore returns the value of Score.
+func (s *ProfileTerm) GetScore() float64 {
+	return s.Score
+}
+
+// GetPages returns the value of Pages.
+func (s *ProfileTerm) GetPages() int32 {
+	return s.Pages
+}
+
+// GetTier returns the value of Tier.
+func (s *ProfileTerm) GetTier() IntentTier {
+	return s.Tier
+}
+
+// GetFamily returns the value of Family.
+func (s *ProfileTerm) GetFamily() OptBeltFamily {
+	return s.Family
+}
+
+// GetClosestTerm returns the value of ClosestTerm.
+func (s *ProfileTerm) GetClosestTerm() OptString {
+	return s.ClosestTerm
+}
+
+// GetInMap returns the value of InMap.
+func (s *ProfileTerm) GetInMap() bool {
+	return s.InMap
+}
+
+// GetFirstScan returns the value of FirstScan.
+func (s *ProfileTerm) GetFirstScan() int32 {
+	return s.FirstScan
+}
+
+// SetPhrase sets the value of Phrase.
+func (s *ProfileTerm) SetPhrase(val string) {
+	s.Phrase = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *ProfileTerm) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetScore sets the value of Score.
+func (s *ProfileTerm) SetScore(val float64) {
+	s.Score = val
+}
+
+// SetPages sets the value of Pages.
+func (s *ProfileTerm) SetPages(val int32) {
+	s.Pages = val
+}
+
+// SetTier sets the value of Tier.
+func (s *ProfileTerm) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// SetFamily sets the value of Family.
+func (s *ProfileTerm) SetFamily(val OptBeltFamily) {
+	s.Family = val
+}
+
+// SetClosestTerm sets the value of ClosestTerm.
+func (s *ProfileTerm) SetClosestTerm(val OptString) {
+	s.ClosestTerm = val
+}
+
+// SetInMap sets the value of InMap.
+func (s *ProfileTerm) SetInMap(val bool) {
+	s.InMap = val
+}
+
+// SetFirstScan sets the value of FirstScan.
+func (s *ProfileTerm) SetFirstScan(val int32) {
+	s.FirstScan = val
+}
+
+type RejectTermCandidateBadRequest ProblemStatusCode
+
+func (*RejectTermCandidateBadRequest) rejectTermCandidateRes() {}
+
+type RejectTermCandidateConflict ProblemStatusCode
+
+func (*RejectTermCandidateConflict) rejectTermCandidateRes() {}
+
+type RejectTermCandidateForbidden ProblemStatusCode
+
+func (*RejectTermCandidateForbidden) rejectTermCandidateRes() {}
+
+type RejectTermCandidateNotFound ProblemStatusCode
+
+func (*RejectTermCandidateNotFound) rejectTermCandidateRes() {}
+
+type RejectTermCandidateUnauthorized ProblemStatusCode
+
+func (*RejectTermCandidateUnauthorized) rejectTermCandidateRes() {}
+
+// The scans a re-scan queued, and the companies it left out.
+// Ref: #/components/schemas/RescanBatch
+type RescanBatch struct {
+	// The queued scans, one per company.
+	Queued []AnalysisSummary `json:"queued"`
+	// The companies left out.
+	Skipped []RescanSkip `json:"skipped"`
+}
+
+// GetQueued returns the value of Queued.
+func (s *RescanBatch) GetQueued() []AnalysisSummary {
+	return s.Queued
+}
+
+// GetSkipped returns the value of Skipped.
+func (s *RescanBatch) GetSkipped() []RescanSkip {
+	return s.Skipped
+}
+
+// SetQueued sets the value of Queued.
+func (s *RescanBatch) SetQueued(val []AnalysisSummary) {
+	s.Queued = val
+}
+
+// SetSkipped sets the value of Skipped.
+func (s *RescanBatch) SetSkipped(val []RescanSkip) {
+	s.Skipped = val
+}
+
+func (*RescanBatch) startRescansRes() {}
+
+// Which companies to scan again - the ones named, or with `all` every company that is not archived,
+// has a website and was scanned before. One of the two.
+// Ref: #/components/schemas/RescanRequest
+type RescanRequest struct {
+	// The companies to scan again.
+	CompetitorIds []CompetitorId `json:"competitorIds"`
+	// True scans every company with data again.
+	All OptBool `json:"all"`
+	// The most pages each scan fetches.
+	MaxPages OptInt32 `json:"maxPages"`
+}
+
+// GetCompetitorIds returns the value of CompetitorIds.
+func (s *RescanRequest) GetCompetitorIds() []CompetitorId {
+	return s.CompetitorIds
+}
+
+// GetAll returns the value of All.
+func (s *RescanRequest) GetAll() OptBool {
+	return s.All
+}
+
+// GetMaxPages returns the value of MaxPages.
+func (s *RescanRequest) GetMaxPages() OptInt32 {
+	return s.MaxPages
+}
+
+// SetCompetitorIds sets the value of CompetitorIds.
+func (s *RescanRequest) SetCompetitorIds(val []CompetitorId) {
+	s.CompetitorIds = val
+}
+
+// SetAll sets the value of All.
+func (s *RescanRequest) SetAll(val OptBool) {
+	s.All = val
+}
+
+// SetMaxPages sets the value of MaxPages.
+func (s *RescanRequest) SetMaxPages(val OptInt32) {
+	s.MaxPages = val
+}
+
+// A company a re-scan left out, and why.
+// Ref: #/components/schemas/RescanSkip
+type RescanSkip struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string `json:"name"`
+	// Why it was left out.
+	Reason string `json:"reason"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *RescanSkip) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *RescanSkip) GetName() string {
+	return s.Name
+}
+
+// GetReason returns the value of Reason.
+func (s *RescanSkip) GetReason() string {
+	return s.Reason
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *RescanSkip) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *RescanSkip) SetName(val string) {
+	s.Name = val
+}
+
+// SetReason sets the value of Reason.
+func (s *RescanSkip) SetReason(val string) {
+	s.Reason = val
+}
+
+// Two finished scans of a company compared, per group. A term moved when its score changed by at least
+// a quarter and 5 points, or its page count by at least 2.
+// Ref: #/components/schemas/ScanComparison
+type ScanComparison struct {
+	From AnalysisSummary `json:"from"`
+	To   AnalysisSummary `json:"to"`
+	// Every group, in the profile's order.
+	Groups []ComparisonGroup `json:"groups"`
+}
+
+// GetFrom returns the value of From.
+func (s *ScanComparison) GetFrom() AnalysisSummary {
+	return s.From
+}
+
+// GetTo returns the value of To.
+func (s *ScanComparison) GetTo() AnalysisSummary {
+	return s.To
+}
+
+// GetGroups returns the value of Groups.
+func (s *ScanComparison) GetGroups() []ComparisonGroup {
+	return s.Groups
+}
+
+// SetFrom sets the value of From.
+func (s *ScanComparison) SetFrom(val AnalysisSummary) {
+	s.From = val
+}
+
+// SetTo sets the value of To.
+func (s *ScanComparison) SetTo(val AnalysisSummary) {
+	s.To = val
+}
+
+// SetGroups sets the value of Groups.
+func (s *ScanComparison) SetGroups(val []ComparisonGroup) {
+	s.Groups = val
+}
+
+func (*ScanComparison) compareScansRes() {}
+
 // A term people may search with, in one language.
 // Ref: #/components/schemas/SearchTerm
 type SearchTerm struct {
@@ -2998,17 +3947,50 @@ type StartAnalysisBadRequest ProblemStatusCode
 
 func (*StartAnalysisBadRequest) startAnalysisRes() {}
 
+type StartAnalysisConflict ProblemStatusCode
+
+func (*StartAnalysisConflict) startAnalysisRes() {}
+
+type StartAnalysisForbidden ProblemStatusCode
+
+func (*StartAnalysisForbidden) startAnalysisRes() {}
+
 type StartAnalysisTooManyRequests ProblemStatusCode
 
 func (*StartAnalysisTooManyRequests) startAnalysisRes() {}
+
+type StartAnalysisUnauthorized ProblemStatusCode
+
+func (*StartAnalysisUnauthorized) startAnalysisRes() {}
 
 type StartAnalysisUnprocessableEntity ProblemStatusCode
 
 func (*StartAnalysisUnprocessableEntity) startAnalysisRes() {}
 
+type StartRescansBadRequest ProblemStatusCode
+
+func (*StartRescansBadRequest) startRescansRes() {}
+
+type StartRescansForbidden ProblemStatusCode
+
+func (*StartRescansForbidden) startRescansRes() {}
+
+type StartRescansTooManyRequests ProblemStatusCode
+
+func (*StartRescansTooManyRequests) startRescansRes() {}
+
+type StartRescansUnauthorized ProblemStatusCode
+
+func (*StartRescansUnauthorized) startRescansRes() {}
+
+type StartRescansUnprocessableEntity ProblemStatusCode
+
+func (*StartRescansUnprocessableEntity) startRescansRes() {}
+
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term
 type Term struct {
+	Origin TermOrigin `json:"origin"`
 	// The term as written on the source page.
 	Term     string     `json:"term"`
 	Language Language   `json:"language"`
@@ -3018,6 +4000,11 @@ type Term struct {
 	UsedBy []string `json:"usedBy"`
 	// The page the term was taken from.
 	Source string `json:"source"`
+}
+
+// GetOrigin returns the value of Origin.
+func (s *Term) GetOrigin() TermOrigin {
+	return s.Origin
 }
 
 // GetTerm returns the value of Term.
@@ -3050,6 +4037,11 @@ func (s *Term) GetSource() string {
 	return s.Source
 }
 
+// SetOrigin sets the value of Origin.
+func (s *Term) SetOrigin(val TermOrigin) {
+	s.Origin = val
+}
+
 // SetTerm sets the value of Term.
 func (s *Term) SetTerm(val string) {
 	s.Term = val
@@ -3078,6 +4070,559 @@ func (s *Term) SetUsedBy(val []string) {
 // SetSource sets the value of Source.
 func (s *Term) SetSource(val string) {
 	s.Source = val
+}
+
+// A candidate as it joins the terminology map.
+// Ref: #/components/schemas/TermAcceptance
+type TermAcceptance struct {
+	// The term as the map shows it.
+	Term     string     `json:"term"`
+	Language Language   `json:"language"`
+	Family   BeltFamily `json:"family"`
+	Tier     IntentTier `json:"tier"`
+	// The companies that use it.
+	UsedBy []string `json:"usedBy"`
+}
+
+// GetTerm returns the value of Term.
+func (s *TermAcceptance) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *TermAcceptance) GetLanguage() Language {
+	return s.Language
+}
+
+// GetFamily returns the value of Family.
+func (s *TermAcceptance) GetFamily() BeltFamily {
+	return s.Family
+}
+
+// GetTier returns the value of Tier.
+func (s *TermAcceptance) GetTier() IntentTier {
+	return s.Tier
+}
+
+// GetUsedBy returns the value of UsedBy.
+func (s *TermAcceptance) GetUsedBy() []string {
+	return s.UsedBy
+}
+
+// SetTerm sets the value of Term.
+func (s *TermAcceptance) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *TermAcceptance) SetLanguage(val Language) {
+	s.Language = val
+}
+
+// SetFamily sets the value of Family.
+func (s *TermAcceptance) SetFamily(val BeltFamily) {
+	s.Family = val
+}
+
+// SetTier sets the value of Tier.
+func (s *TermAcceptance) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// SetUsedBy sets the value of UsedBy.
+func (s *TermAcceptance) SetUsedBy(val []string) {
+	s.UsedBy = val
+}
+
+// A phrase finished scans found that the terminology map did not hold, with its evidence across
+// companies and the classifier's suggestion.
+// Ref: #/components/schemas/TermCandidate
+type TermCandidate struct {
+	ID TermCandidateId `json:"id"`
+	// The phrase, in lower case.
+	Phrase string              `json:"phrase"`
+	Status TermCandidateStatus `json:"status"`
+	// The languages of the pages it was found on, most often first.
+	Languages []string `json:"languages"`
+	// The companies whose scans found it, by name.
+	Companies []CandidateCompany `json:"companies"`
+	// How many finished scans found it.
+	Scans int32 `json:"scans"`
+	// Its highest score in one scan.
+	BestScore float64 `json:"bestScore"`
+	// The most pages of one scan it appeared on.
+	MaxPages        int32         `json:"maxPages"`
+	SuggestedTier   IntentTier    `json:"suggestedTier"`
+	SuggestedFamily OptBeltFamily `json:"suggestedFamily"`
+	// The map term the classifier found closest.
+	ClosestTerm OptString `json:"closestTerm"`
+	// When the newest scan that found it was started.
+	LastSeenAt time.Time       `json:"lastSeenAt"`
+	Decision   OptTermDecision `json:"decision"`
+}
+
+// GetID returns the value of ID.
+func (s *TermCandidate) GetID() TermCandidateId {
+	return s.ID
+}
+
+// GetPhrase returns the value of Phrase.
+func (s *TermCandidate) GetPhrase() string {
+	return s.Phrase
+}
+
+// GetStatus returns the value of Status.
+func (s *TermCandidate) GetStatus() TermCandidateStatus {
+	return s.Status
+}
+
+// GetLanguages returns the value of Languages.
+func (s *TermCandidate) GetLanguages() []string {
+	return s.Languages
+}
+
+// GetCompanies returns the value of Companies.
+func (s *TermCandidate) GetCompanies() []CandidateCompany {
+	return s.Companies
+}
+
+// GetScans returns the value of Scans.
+func (s *TermCandidate) GetScans() int32 {
+	return s.Scans
+}
+
+// GetBestScore returns the value of BestScore.
+func (s *TermCandidate) GetBestScore() float64 {
+	return s.BestScore
+}
+
+// GetMaxPages returns the value of MaxPages.
+func (s *TermCandidate) GetMaxPages() int32 {
+	return s.MaxPages
+}
+
+// GetSuggestedTier returns the value of SuggestedTier.
+func (s *TermCandidate) GetSuggestedTier() IntentTier {
+	return s.SuggestedTier
+}
+
+// GetSuggestedFamily returns the value of SuggestedFamily.
+func (s *TermCandidate) GetSuggestedFamily() OptBeltFamily {
+	return s.SuggestedFamily
+}
+
+// GetClosestTerm returns the value of ClosestTerm.
+func (s *TermCandidate) GetClosestTerm() OptString {
+	return s.ClosestTerm
+}
+
+// GetLastSeenAt returns the value of LastSeenAt.
+func (s *TermCandidate) GetLastSeenAt() time.Time {
+	return s.LastSeenAt
+}
+
+// GetDecision returns the value of Decision.
+func (s *TermCandidate) GetDecision() OptTermDecision {
+	return s.Decision
+}
+
+// SetID sets the value of ID.
+func (s *TermCandidate) SetID(val TermCandidateId) {
+	s.ID = val
+}
+
+// SetPhrase sets the value of Phrase.
+func (s *TermCandidate) SetPhrase(val string) {
+	s.Phrase = val
+}
+
+// SetStatus sets the value of Status.
+func (s *TermCandidate) SetStatus(val TermCandidateStatus) {
+	s.Status = val
+}
+
+// SetLanguages sets the value of Languages.
+func (s *TermCandidate) SetLanguages(val []string) {
+	s.Languages = val
+}
+
+// SetCompanies sets the value of Companies.
+func (s *TermCandidate) SetCompanies(val []CandidateCompany) {
+	s.Companies = val
+}
+
+// SetScans sets the value of Scans.
+func (s *TermCandidate) SetScans(val int32) {
+	s.Scans = val
+}
+
+// SetBestScore sets the value of BestScore.
+func (s *TermCandidate) SetBestScore(val float64) {
+	s.BestScore = val
+}
+
+// SetMaxPages sets the value of MaxPages.
+func (s *TermCandidate) SetMaxPages(val int32) {
+	s.MaxPages = val
+}
+
+// SetSuggestedTier sets the value of SuggestedTier.
+func (s *TermCandidate) SetSuggestedTier(val IntentTier) {
+	s.SuggestedTier = val
+}
+
+// SetSuggestedFamily sets the value of SuggestedFamily.
+func (s *TermCandidate) SetSuggestedFamily(val OptBeltFamily) {
+	s.SuggestedFamily = val
+}
+
+// SetClosestTerm sets the value of ClosestTerm.
+func (s *TermCandidate) SetClosestTerm(val OptString) {
+	s.ClosestTerm = val
+}
+
+// SetLastSeenAt sets the value of LastSeenAt.
+func (s *TermCandidate) SetLastSeenAt(val time.Time) {
+	s.LastSeenAt = val
+}
+
+// SetDecision sets the value of Decision.
+func (s *TermCandidate) SetDecision(val OptTermDecision) {
+	s.Decision = val
+}
+
+func (*TermCandidate) acceptTermCandidateRes() {}
+func (*TermCandidate) rejectTermCandidateRes() {}
+func (*TermCandidate) undoTermDecisionRes()    {}
+
+// How many candidates have each status.
+// Ref: #/components/schemas/TermCandidateCounts
+type TermCandidateCounts struct {
+	// Pending candidates.
+	Pending int32 `json:"pending"`
+	// Accepted candidates.
+	Accepted int32 `json:"accepted"`
+	// Rejected candidates.
+	Rejected int32 `json:"rejected"`
+}
+
+// GetPending returns the value of Pending.
+func (s *TermCandidateCounts) GetPending() int32 {
+	return s.Pending
+}
+
+// GetAccepted returns the value of Accepted.
+func (s *TermCandidateCounts) GetAccepted() int32 {
+	return s.Accepted
+}
+
+// GetRejected returns the value of Rejected.
+func (s *TermCandidateCounts) GetRejected() int32 {
+	return s.Rejected
+}
+
+// SetPending sets the value of Pending.
+func (s *TermCandidateCounts) SetPending(val int32) {
+	s.Pending = val
+}
+
+// SetAccepted sets the value of Accepted.
+func (s *TermCandidateCounts) SetAccepted(val int32) {
+	s.Accepted = val
+}
+
+// SetRejected sets the value of Rejected.
+func (s *TermCandidateCounts) SetRejected(val int32) {
+	s.Rejected = val
+}
+
+type TermCandidateId string
+
+// The candidates with one status.
+// Ref: #/components/schemas/TermCandidateList
+type TermCandidateList struct {
+	// The candidates, most companies and highest score first.
+	Items  []TermCandidate     `json:"items"`
+	Counts TermCandidateCounts `json:"counts"`
+}
+
+// GetItems returns the value of Items.
+func (s *TermCandidateList) GetItems() []TermCandidate {
+	return s.Items
+}
+
+// GetCounts returns the value of Counts.
+func (s *TermCandidateList) GetCounts() TermCandidateCounts {
+	return s.Counts
+}
+
+// SetItems sets the value of Items.
+func (s *TermCandidateList) SetItems(val []TermCandidate) {
+	s.Items = val
+}
+
+// SetCounts sets the value of Counts.
+func (s *TermCandidateList) SetCounts(val TermCandidateCounts) {
+	s.Counts = val
+}
+
+func (*TermCandidateList) listTermCandidatesRes() {}
+
+// Where a candidate is in the review.
+// Ref: #/components/schemas/TermCandidateStatus
+type TermCandidateStatus string
+
+const (
+	TermCandidateStatusPending  TermCandidateStatus = "pending"
+	TermCandidateStatusAccepted TermCandidateStatus = "accepted"
+	TermCandidateStatusRejected TermCandidateStatus = "rejected"
+)
+
+// AllValues returns all TermCandidateStatus values.
+func (TermCandidateStatus) AllValues() []TermCandidateStatus {
+	return []TermCandidateStatus{
+		TermCandidateStatusPending,
+		TermCandidateStatusAccepted,
+		TermCandidateStatusRejected,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TermCandidateStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case TermCandidateStatusPending:
+		return []byte(s), nil
+	case TermCandidateStatusAccepted:
+		return []byte(s), nil
+	case TermCandidateStatusRejected:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TermCandidateStatus) UnmarshalText(data []byte) error {
+	switch TermCandidateStatus(data) {
+	case TermCandidateStatusPending:
+		*s = TermCandidateStatusPending
+		return nil
+	case TermCandidateStatusAccepted:
+		*s = TermCandidateStatusAccepted
+		return nil
+	case TermCandidateStatusRejected:
+		*s = TermCandidateStatusRejected
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A search term one scan found and the other did not, or whose score or page count moved. The from
+// fields are absent for an added term, the to fields for a removed one.
+// Ref: #/components/schemas/TermChange
+type TermChange struct {
+	// The phrase, in lower case.
+	Phrase string `json:"phrase"`
+	// Its language.
+	Language string        `json:"language"`
+	Tier     IntentTier    `json:"tier"`
+	Family   OptBeltFamily `json:"family"`
+	// True when it is one of the map's own terms.
+	InMap bool `json:"inMap"`
+	// Its score in the older scan.
+	FromScore OptFloat64 `json:"fromScore"`
+	// Its score in the newer scan.
+	ToScore OptFloat64 `json:"toScore"`
+	// Its pages in the older scan.
+	FromPages OptInt32 `json:"fromPages"`
+	// Its pages in the newer scan.
+	ToPages OptInt32 `json:"toPages"`
+}
+
+// GetPhrase returns the value of Phrase.
+func (s *TermChange) GetPhrase() string {
+	return s.Phrase
+}
+
+// GetLanguage returns the value of Language.
+func (s *TermChange) GetLanguage() string {
+	return s.Language
+}
+
+// GetTier returns the value of Tier.
+func (s *TermChange) GetTier() IntentTier {
+	return s.Tier
+}
+
+// GetFamily returns the value of Family.
+func (s *TermChange) GetFamily() OptBeltFamily {
+	return s.Family
+}
+
+// GetInMap returns the value of InMap.
+func (s *TermChange) GetInMap() bool {
+	return s.InMap
+}
+
+// GetFromScore returns the value of FromScore.
+func (s *TermChange) GetFromScore() OptFloat64 {
+	return s.FromScore
+}
+
+// GetToScore returns the value of ToScore.
+func (s *TermChange) GetToScore() OptFloat64 {
+	return s.ToScore
+}
+
+// GetFromPages returns the value of FromPages.
+func (s *TermChange) GetFromPages() OptInt32 {
+	return s.FromPages
+}
+
+// GetToPages returns the value of ToPages.
+func (s *TermChange) GetToPages() OptInt32 {
+	return s.ToPages
+}
+
+// SetPhrase sets the value of Phrase.
+func (s *TermChange) SetPhrase(val string) {
+	s.Phrase = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *TermChange) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetTier sets the value of Tier.
+func (s *TermChange) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// SetFamily sets the value of Family.
+func (s *TermChange) SetFamily(val OptBeltFamily) {
+	s.Family = val
+}
+
+// SetInMap sets the value of InMap.
+func (s *TermChange) SetInMap(val bool) {
+	s.InMap = val
+}
+
+// SetFromScore sets the value of FromScore.
+func (s *TermChange) SetFromScore(val OptFloat64) {
+	s.FromScore = val
+}
+
+// SetToScore sets the value of ToScore.
+func (s *TermChange) SetToScore(val OptFloat64) {
+	s.ToScore = val
+}
+
+// SetFromPages sets the value of FromPages.
+func (s *TermChange) SetFromPages(val OptInt32) {
+	s.FromPages = val
+}
+
+// SetToPages sets the value of ToPages.
+func (s *TermChange) SetToPages(val OptInt32) {
+	s.ToPages = val
+}
+
+// An administrator's decision on a candidate.
+// Ref: #/components/schemas/TermDecision
+type TermDecision struct {
+	Status TermCandidateStatus `json:"status"`
+	// Who decided.
+	By string `json:"by"`
+	// When.
+	At   time.Time `json:"at"`
+	Term OptTerm   `json:"term"`
+}
+
+// GetStatus returns the value of Status.
+func (s *TermDecision) GetStatus() TermCandidateStatus {
+	return s.Status
+}
+
+// GetBy returns the value of By.
+func (s *TermDecision) GetBy() string {
+	return s.By
+}
+
+// GetAt returns the value of At.
+func (s *TermDecision) GetAt() time.Time {
+	return s.At
+}
+
+// GetTerm returns the value of Term.
+func (s *TermDecision) GetTerm() OptTerm {
+	return s.Term
+}
+
+// SetStatus sets the value of Status.
+func (s *TermDecision) SetStatus(val TermCandidateStatus) {
+	s.Status = val
+}
+
+// SetBy sets the value of By.
+func (s *TermDecision) SetBy(val string) {
+	s.By = val
+}
+
+// SetAt sets the value of At.
+func (s *TermDecision) SetAt(val time.Time) {
+	s.At = val
+}
+
+// SetTerm sets the value of Term.
+func (s *TermDecision) SetTerm(val OptTerm) {
+	s.Term = val
+}
+
+// Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator
+// accepted from the review queue.
+// Ref: #/components/schemas/TermOrigin
+type TermOrigin string
+
+const (
+	TermOriginResearch TermOrigin = "research"
+	TermOriginReview   TermOrigin = "review"
+)
+
+// AllValues returns all TermOrigin values.
+func (TermOrigin) AllValues() []TermOrigin {
+	return []TermOrigin{
+		TermOriginResearch,
+		TermOriginReview,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TermOrigin) MarshalText() ([]byte, error) {
+	switch s {
+	case TermOriginResearch:
+		return []byte(s), nil
+	case TermOriginReview:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TermOrigin) UnmarshalText(data []byte) error {
+	switch TermOrigin(data) {
+	case TermOriginResearch:
+		*s = TermOriginResearch
+		return nil
+	case TermOriginReview:
+		*s = TermOriginReview
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // A page of matching terms.
@@ -3141,3 +4686,47 @@ func (*TestLlmCredentialUnauthorized) testLlmCredentialRes() {}
 type TestLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*TestLlmCredentialUnprocessableEntity) testLlmCredentialRes() {}
+
+type UndoTermDecisionBadRequest ProblemStatusCode
+
+func (*UndoTermDecisionBadRequest) undoTermDecisionRes() {}
+
+type UndoTermDecisionConflict ProblemStatusCode
+
+func (*UndoTermDecisionConflict) undoTermDecisionRes() {}
+
+type UndoTermDecisionForbidden ProblemStatusCode
+
+func (*UndoTermDecisionForbidden) undoTermDecisionRes() {}
+
+type UndoTermDecisionNotFound ProblemStatusCode
+
+func (*UndoTermDecisionNotFound) undoTermDecisionRes() {}
+
+type UndoTermDecisionUnauthorized ProblemStatusCode
+
+func (*UndoTermDecisionUnauthorized) undoTermDecisionRes() {}
+
+type UpdateCompetitorBadRequest ProblemStatusCode
+
+func (*UpdateCompetitorBadRequest) updateCompetitorRes() {}
+
+type UpdateCompetitorConflict ProblemStatusCode
+
+func (*UpdateCompetitorConflict) updateCompetitorRes() {}
+
+type UpdateCompetitorForbidden ProblemStatusCode
+
+func (*UpdateCompetitorForbidden) updateCompetitorRes() {}
+
+type UpdateCompetitorNotFound ProblemStatusCode
+
+func (*UpdateCompetitorNotFound) updateCompetitorRes() {}
+
+type UpdateCompetitorUnauthorized ProblemStatusCode
+
+func (*UpdateCompetitorUnauthorized) updateCompetitorRes() {}
+
+type UpdateCompetitorUnprocessableEntity ProblemStatusCode
+
+func (*UpdateCompetitorUnprocessableEntity) updateCompetitorRes() {}

@@ -11,17 +11,26 @@ import (
 )
 
 var (
-	rn5AllowedHeaders = map[string]string{
+	rn9AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
+	}
+	rn7AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
+	}
+	rn28AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn15AllowedHeaders = map[string]string{
+	rn22AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn1AllowedHeaders = map[string]string{
+	rn5AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
+	}
+	rn11AllowedHeaders = map[string]string{
+		"PATCH": "Content-Type",
 	}
 )
 
@@ -88,121 +97,98 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				switch elem[0] {
-				case 'd': // Prefix: "dmin/llm"
+				case 'd': // Prefix: "dmin/"
 
-					if l := len("dmin/llm"); len(elem) >= l && elem[0:l] == "dmin/llm" {
+					if l := len("dmin/"); len(elem) >= l && elem[0:l] == "dmin/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
 					if len(elem) == 0 {
-						switch r.Method {
-						case "GET":
-							s.handleGetLlmSettingsRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: nil,
-								acceptPost:     "",
-								acceptPatch:    "",
-							})
-						}
-
-						return
+						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/"
+					case 'l': // Prefix: "llm"
 
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						if l := len("llm"); len(elem) >= l && elem[0:l] == "llm" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							break
+							switch r.Method {
+							case "GET":
+								s.handleGetLlmSettingsRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "GET",
+									allowedHeaders: nil,
+									acceptPost:     "",
+									acceptPatch:    "",
+								})
+							}
+
+							return
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "active"
+						case '/': // Prefix: "/"
 
-							if l := len("active"); len(elem) >= l && elem[0:l] == "active" {
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "DELETE":
-									s.handleClearActiveLlmRequest([0]string{}, elemIsEscaped, w, r)
-								case "PUT":
-									s.handleSetActiveLlmRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "DELETE,PUT",
-										allowedHeaders: rn5AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						case 'c': // Prefix: "credentials"
-
-							if l := len("credentials"); len(elem) >= l && elem[0:l] == "credentials" {
-								elem = elem[l:]
-							} else {
 								break
-							}
-
-							if len(elem) == 0 {
-								switch r.Method {
-								case "POST":
-									s.handleAddLlmCredentialRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn3AllowedHeaders,
-										acceptPost:     "application/json",
-										acceptPatch:    "",
-									})
-								}
-
-								return
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case 'a': // Prefix: "active"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("active"); len(elem) >= l && elem[0:l] == "active" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
-								// Param: "credentialId"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "DELETE":
+										s.handleClearActiveLlmRequest([0]string{}, elemIsEscaped, w, r)
+									case "PUT":
+										s.handleSetActiveLlmRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "DELETE,PUT",
+											allowedHeaders: rn9AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
 								}
-								args[0] = elem[:idx]
-								elem = elem[idx:]
+
+							case 'c': // Prefix: "credentials"
+
+								if l := len("credentials"); len(elem) >= l && elem[0:l] == "credentials" {
+									elem = elem[l:]
+								} else {
+									break
+								}
 
 								if len(elem) == 0 {
 									switch r.Method {
-									case "DELETE":
-										s.handleDeleteLlmCredentialRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
+									case "POST":
+										s.handleAddLlmCredentialRequest([0]string{}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "DELETE",
-											allowedHeaders: nil,
-											acceptPost:     "",
+											allowedMethods: "POST",
+											allowedHeaders: rn7AllowedHeaders,
+											acceptPost:     "application/json",
 											acceptPatch:    "",
 										})
 									}
@@ -218,64 +204,270 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										break
 									}
 
+									// Param: "credentialId"
+									// Match until "/"
+									idx := strings.IndexByte(elem, '/')
+									if idx < 0 {
+										idx = len(elem)
+									}
+									args[0] = elem[:idx]
+									elem = elem[idx:]
+
 									if len(elem) == 0 {
-										break
+										switch r.Method {
+										case "DELETE":
+											s.handleDeleteLlmCredentialRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "DELETE",
+												allowedHeaders: nil,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
 									}
 									switch elem[0] {
-									case 'm': // Prefix: "models"
+									case '/': // Prefix: "/"
 
-										if l := len("models"); len(elem) >= l && elem[0:l] == "models" {
+										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 											elem = elem[l:]
 										} else {
 											break
 										}
 
 										if len(elem) == 0 {
-											// Leaf node.
-											switch r.Method {
-											case "GET":
-												s.handleListLlmModelsRequest([1]string{
-													args[0],
-												}, elemIsEscaped, w, r)
-											default:
-												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "GET",
-													allowedHeaders: nil,
-													acceptPost:     "",
-													acceptPatch:    "",
-												})
-											}
-
-											return
-										}
-
-									case 't': // Prefix: "test"
-
-										if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
-											elem = elem[l:]
-										} else {
 											break
 										}
+										switch elem[0] {
+										case 'm': // Prefix: "models"
 
-										if len(elem) == 0 {
-											// Leaf node.
-											switch r.Method {
-											case "POST":
-												s.handleTestLlmCredentialRequest([1]string{
-													args[0],
-												}, elemIsEscaped, w, r)
-											default:
-												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "POST",
-													allowedHeaders: nil,
-													acceptPost:     "",
-													acceptPatch:    "",
-												})
+											if l := len("models"); len(elem) >= l && elem[0:l] == "models" {
+												elem = elem[l:]
+											} else {
+												break
 											}
 
-											return
+											if len(elem) == 0 {
+												// Leaf node.
+												switch r.Method {
+												case "GET":
+													s.handleListLlmModelsRequest([1]string{
+														args[0],
+													}, elemIsEscaped, w, r)
+												default:
+													s.notAllowed(w, r, notAllowedParams{
+														allowedMethods: "GET",
+														allowedHeaders: nil,
+														acceptPost:     "",
+														acceptPatch:    "",
+													})
+												}
+
+												return
+											}
+
+										case 't': // Prefix: "test"
+
+											if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												// Leaf node.
+												switch r.Method {
+												case "POST":
+													s.handleTestLlmCredentialRequest([1]string{
+														args[0],
+													}, elemIsEscaped, w, r)
+												default:
+													s.notAllowed(w, r, notAllowedParams{
+														allowedMethods: "POST",
+														allowedHeaders: nil,
+														acceptPost:     "",
+														acceptPatch:    "",
+													})
+												}
+
+												return
+											}
+
 										}
 
+									}
+
+								}
+
+							}
+
+						}
+
+					case 'r': // Prefix: "rescans"
+
+						if l := len("rescans"); len(elem) >= l && elem[0:l] == "rescans" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "POST":
+								s.handleStartRescansRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "POST",
+									allowedHeaders: rn28AllowedHeaders,
+									acceptPost:     "application/json",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+
+					case 't': // Prefix: "term-candidates"
+
+						if l := len("term-candidates"); len(elem) >= l && elem[0:l] == "term-candidates" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							switch r.Method {
+							case "GET":
+								s.handleListTermCandidatesRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "GET",
+									allowedHeaders: nil,
+									acceptPost:     "",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/"
+
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							// Param: "candidateId"
+							// Match until "/"
+							idx := strings.IndexByte(elem, '/')
+							if idx < 0 {
+								idx = len(elem)
+							}
+							args[0] = elem[:idx]
+							elem = elem[idx:]
+
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									break
+								}
+								switch elem[0] {
+								case 'a': // Prefix: "accept"
+
+									if l := len("accept"); len(elem) >= l && elem[0:l] == "accept" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "POST":
+											s.handleAcceptTermCandidateRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "POST",
+												allowedHeaders: rn3AllowedHeaders,
+												acceptPost:     "application/json",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								case 'd': // Prefix: "decision"
+
+									if l := len("decision"); len(elem) >= l && elem[0:l] == "decision" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "DELETE":
+											s.handleUndoTermDecisionRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "DELETE",
+												allowedHeaders: nil,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								case 'r': // Prefix: "reject"
+
+									if l := len("reject"); len(elem) >= l && elem[0:l] == "reject" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "POST":
+											s.handleRejectTermCandidateRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "POST",
+												allowedHeaders: nil,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
 									}
 
 								}
@@ -303,7 +495,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn15AllowedHeaders,
+								allowedHeaders: rn22AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -369,7 +561,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET,POST",
-							allowedHeaders: rn1AllowedHeaders,
+							allowedHeaders: rn5AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -387,31 +579,108 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					// Param: "competitorId"
-					// Leaf parameter, slashes are prohibited
+					// Match until "/"
 					idx := strings.IndexByte(elem, '/')
-					if idx >= 0 {
-						break
+					if idx < 0 {
+						idx = len(elem)
 					}
-					args[0] = elem
-					elem = ""
+					args[0] = elem[:idx]
+					elem = elem[idx:]
 
 					if len(elem) == 0 {
-						// Leaf node.
 						switch r.Method {
+						case "DELETE":
+							s.handleDeleteCompetitorRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
 						case "GET":
 							s.handleGetCompetitorRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
+						case "PATCH":
+							s.handleUpdateCompetitorRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: nil,
+								allowedMethods: "DELETE,GET,PATCH",
+								allowedHeaders: rn11AllowedHeaders,
 								acceptPost:     "",
-								acceptPatch:    "",
+								acceptPatch:    "application/json",
 							})
 						}
 
 						return
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'p': // Prefix: "profile"
+
+							if l := len("profile"); len(elem) >= l && elem[0:l] == "profile" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleGetCompetitorProfileRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						case 's': // Prefix: "scans/compare"
+
+							if l := len("scans/compare"); len(elem) >= l && elem[0:l] == "scans/compare" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleCompareScansRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						}
+
 					}
 
 				}
@@ -578,127 +847,106 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					break
 				}
 				switch elem[0] {
-				case 'd': // Prefix: "dmin/llm"
+				case 'd': // Prefix: "dmin/"
 
-					if l := len("dmin/llm"); len(elem) >= l && elem[0:l] == "dmin/llm" {
+					if l := len("dmin/"); len(elem) >= l && elem[0:l] == "dmin/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
 					if len(elem) == 0 {
-						switch method {
-						case "GET":
-							r.name = GetLlmSettingsOperation
-							r.summary = "Get the language-model settings"
-							r.operationID = "getLlmSettings"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/admin/llm"
-							r.args = args
-							r.count = 0
-							return r, true
-						default:
-							return
-						}
+						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/"
+					case 'l': // Prefix: "llm"
 
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						if l := len("llm"); len(elem) >= l && elem[0:l] == "llm" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							break
+							switch method {
+							case "GET":
+								r.name = GetLlmSettingsOperation
+								r.summary = "Get the language-model settings"
+								r.operationID = "getLlmSettings"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/admin/llm"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "active"
+						case '/': // Prefix: "/"
 
-							if l := len("active"); len(elem) >= l && elem[0:l] == "active" {
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "DELETE":
-									r.name = ClearActiveLlmOperation
-									r.summary = "Turn product matching off"
-									r.operationID = "clearActiveLlm"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/admin/llm/active"
-									r.args = args
-									r.count = 0
-									return r, true
-								case "PUT":
-									r.name = SetActiveLlmOperation
-									r.summary = "Choose the credential and model for product matching"
-									r.operationID = "setActiveLlm"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/admin/llm/active"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
-							}
-
-						case 'c': // Prefix: "credentials"
-
-							if l := len("credentials"); len(elem) >= l && elem[0:l] == "credentials" {
-								elem = elem[l:]
-							} else {
 								break
-							}
-
-							if len(elem) == 0 {
-								switch method {
-								case "POST":
-									r.name = AddLlmCredentialOperation
-									r.summary = "Add a language-model API key"
-									r.operationID = "addLlmCredential"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/admin/llm/credentials"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case 'a': // Prefix: "active"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("active"); len(elem) >= l && elem[0:l] == "active" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
-								// Param: "credentialId"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "DELETE":
+										r.name = ClearActiveLlmOperation
+										r.summary = "Turn product matching off"
+										r.operationID = "clearActiveLlm"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/admin/llm/active"
+										r.args = args
+										r.count = 0
+										return r, true
+									case "PUT":
+										r.name = SetActiveLlmOperation
+										r.summary = "Choose the credential and model for product matching"
+										r.operationID = "setActiveLlm"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/admin/llm/active"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
 								}
-								args[0] = elem[:idx]
-								elem = elem[idx:]
+
+							case 'c': // Prefix: "credentials"
+
+								if l := len("credentials"); len(elem) >= l && elem[0:l] == "credentials" {
+									elem = elem[l:]
+								} else {
+									break
+								}
 
 								if len(elem) == 0 {
 									switch method {
-									case "DELETE":
-										r.name = DeleteLlmCredentialOperation
-										r.summary = "Delete a stored API key"
-										r.operationID = "deleteLlmCredential"
+									case "POST":
+										r.name = AddLlmCredentialOperation
+										r.summary = "Add a language-model API key"
+										r.operationID = "addLlmCredential"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/admin/llm/credentials/{credentialId}"
+										r.pathPattern = "/api/v1/admin/llm/credentials"
 										r.args = args
-										r.count = 1
+										r.count = 0
 										return r, true
 									default:
 										return
@@ -713,60 +961,258 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										break
 									}
 
+									// Param: "credentialId"
+									// Match until "/"
+									idx := strings.IndexByte(elem, '/')
+									if idx < 0 {
+										idx = len(elem)
+									}
+									args[0] = elem[:idx]
+									elem = elem[idx:]
+
 									if len(elem) == 0 {
-										break
+										switch method {
+										case "DELETE":
+											r.name = DeleteLlmCredentialOperation
+											r.summary = "Delete a stored API key"
+											r.operationID = "deleteLlmCredential"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/admin/llm/credentials/{credentialId}"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
 									}
 									switch elem[0] {
-									case 'm': // Prefix: "models"
+									case '/': // Prefix: "/"
 
-										if l := len("models"); len(elem) >= l && elem[0:l] == "models" {
+										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 											elem = elem[l:]
 										} else {
 											break
 										}
 
 										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "GET":
-												r.name = ListLlmModelsOperation
-												r.summary = "List the models an API key can use"
-												r.operationID = "listLlmModels"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/admin/llm/credentials/{credentialId}/models"
-												r.args = args
-												r.count = 1
-												return r, true
-											default:
-												return
-											}
-										}
-
-									case 't': // Prefix: "test"
-
-										if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
-											elem = elem[l:]
-										} else {
 											break
 										}
+										switch elem[0] {
+										case 'm': // Prefix: "models"
 
-										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "POST":
-												r.name = TestLlmCredentialOperation
-												r.summary = "Test an API key"
-												r.operationID = "testLlmCredential"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/admin/llm/credentials/{credentialId}/test"
-												r.args = args
-												r.count = 1
-												return r, true
-											default:
-												return
+											if l := len("models"); len(elem) >= l && elem[0:l] == "models" {
+												elem = elem[l:]
+											} else {
+												break
 											}
+
+											if len(elem) == 0 {
+												// Leaf node.
+												switch method {
+												case "GET":
+													r.name = ListLlmModelsOperation
+													r.summary = "List the models an API key can use"
+													r.operationID = "listLlmModels"
+													r.operationGroup = ""
+													r.pathPattern = "/api/v1/admin/llm/credentials/{credentialId}/models"
+													r.args = args
+													r.count = 1
+													return r, true
+												default:
+													return
+												}
+											}
+
+										case 't': // Prefix: "test"
+
+											if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												// Leaf node.
+												switch method {
+												case "POST":
+													r.name = TestLlmCredentialOperation
+													r.summary = "Test an API key"
+													r.operationID = "testLlmCredential"
+													r.operationGroup = ""
+													r.pathPattern = "/api/v1/admin/llm/credentials/{credentialId}/test"
+													r.args = args
+													r.count = 1
+													return r, true
+												default:
+													return
+												}
+											}
+
 										}
 
+									}
+
+								}
+
+							}
+
+						}
+
+					case 'r': // Prefix: "rescans"
+
+						if l := len("rescans"); len(elem) >= l && elem[0:l] == "rescans" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "POST":
+								r.name = StartRescansOperation
+								r.summary = "Re-scan companies"
+								r.operationID = "startRescans"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/admin/rescans"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
+						}
+
+					case 't': // Prefix: "term-candidates"
+
+						if l := len("term-candidates"); len(elem) >= l && elem[0:l] == "term-candidates" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							switch method {
+							case "GET":
+								r.name = ListTermCandidatesOperation
+								r.summary = "List the search terms scans found outside the map"
+								r.operationID = "listTermCandidates"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/admin/term-candidates"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/"
+
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							// Param: "candidateId"
+							// Match until "/"
+							idx := strings.IndexByte(elem, '/')
+							if idx < 0 {
+								idx = len(elem)
+							}
+							args[0] = elem[:idx]
+							elem = elem[idx:]
+
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									break
+								}
+								switch elem[0] {
+								case 'a': // Prefix: "accept"
+
+									if l := len("accept"); len(elem) >= l && elem[0:l] == "accept" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "POST":
+											r.name = AcceptTermCandidateOperation
+											r.summary = "Add a candidate to the terminology map"
+											r.operationID = "acceptTermCandidate"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/admin/term-candidates/{candidateId}/accept"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+
+								case 'd': // Prefix: "decision"
+
+									if l := len("decision"); len(elem) >= l && elem[0:l] == "decision" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "DELETE":
+											r.name = UndoTermDecisionOperation
+											r.summary = "Undo the decision on a candidate"
+											r.operationID = "undoTermDecision"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/admin/term-candidates/{candidateId}/decision"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+
+								case 'r': // Prefix: "reject"
+
+									if l := len("reject"); len(elem) >= l && elem[0:l] == "reject" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "POST":
+											r.name = RejectTermCandidateOperation
+											r.summary = "Reject a candidate"
+											r.operationID = "rejectTermCandidate"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/admin/term-candidates/{candidateId}/reject"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
 									}
 
 								}
@@ -890,17 +1336,25 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 
 					// Param: "competitorId"
-					// Leaf parameter, slashes are prohibited
+					// Match until "/"
 					idx := strings.IndexByte(elem, '/')
-					if idx >= 0 {
-						break
+					if idx < 0 {
+						idx = len(elem)
 					}
-					args[0] = elem
-					elem = ""
+					args[0] = elem[:idx]
+					elem = elem[idx:]
 
 					if len(elem) == 0 {
-						// Leaf node.
 						switch method {
+						case "DELETE":
+							r.name = DeleteCompetitorOperation
+							r.summary = "Remove a company"
+							r.operationID = "deleteCompetitor"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/competitors/{competitorId}"
+							r.args = args
+							r.count = 1
+							return r, true
 						case "GET":
 							r.name = GetCompetitorOperation
 							r.summary = "Get one company with its scans"
@@ -910,9 +1364,84 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							r.args = args
 							r.count = 1
 							return r, true
+						case "PATCH":
+							r.name = UpdateCompetitorOperation
+							r.summary = "Change a company's name or website, or archive it"
+							r.operationID = "updateCompetitor"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/competitors/{competitorId}"
+							r.args = args
+							r.count = 1
+							return r, true
 						default:
 							return
 						}
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'p': // Prefix: "profile"
+
+							if l := len("profile"); len(elem) >= l && elem[0:l] == "profile" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = GetCompetitorProfileOperation
+									r.summary = "Get a company's search terms from its latest finished scan"
+									r.operationID = "getCompetitorProfile"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/competitors/{competitorId}/profile"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
+						case 's': // Prefix: "scans/compare"
+
+							if l := len("scans/compare"); len(elem) >= l && elem[0:l] == "scans/compare" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = CompareScansOperation
+									r.summary = "Compare two scans of a company"
+									r.operationID = "compareScans"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/competitors/{competitorId}/scans/compare"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
+						}
+
 					}
 
 				}

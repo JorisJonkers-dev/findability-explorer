@@ -23,6 +23,39 @@ type repo struct {
 	listErrAfter int
 	lists        int
 	sneak        *domain.Company
+	overrides    []domain.Override
+	overridesErr error
+	changeErr    error
+	deleted      []string
+}
+
+func (r *repo) Update(_ context.Context, c domain.Company) error {
+	if r.changeErr != nil {
+		return r.changeErr
+	}
+	for i := range r.added {
+		if r.added[i].ID == c.ID {
+			r.added[i] = c
+		}
+	}
+	return nil
+}
+
+func (r *repo) Delete(_ context.Context, id string) error {
+	r.deleted = append(r.deleted, id)
+	return r.changeErr
+}
+
+func (r *repo) Overrides(context.Context) ([]domain.Override, error) {
+	return r.overrides, r.overridesErr
+}
+
+func (r *repo) SaveOverride(_ context.Context, o domain.Override) error {
+	if r.changeErr != nil {
+		return r.changeErr
+	}
+	r.overrides = []domain.Override{o}
+	return nil
 }
 
 func (r *repo) List(context.Context) ([]domain.Company, error) {
@@ -45,9 +78,21 @@ func (r *repo) Add(_ context.Context, c domain.Company) error {
 }
 
 type scans struct {
-	statsErr, byErr error
-	stats           map[string]domain.Stats
-	list            []domain.Scan
+	statsErr, byErr      error
+	stats                map[string]domain.Stats
+	list                 []domain.Scan
+	active               int
+	activeErr, deleteErr error
+	deleted              *[]string
+}
+
+func (s scans) Active(context.Context, string) (int, error) { return s.active, s.activeErr }
+
+func (s scans) DeleteByCompany(_ context.Context, id string) error {
+	if s.deleted != nil {
+		*s.deleted = append(*s.deleted, id)
+	}
+	return s.deleteErr
 }
 
 func (s scans) Stats(context.Context) (map[string]domain.Stats, error) { return s.stats, s.statsErr }
@@ -161,5 +206,105 @@ func TestResolve(t *testing.T) {
 	racing := &repo{sneak: &domain.Company{ID: "race", Name: "Race", Host: "race.example", Source: domain.SourceAdded}}
 	if id, err := service(racing, scans{}).Resolve(t.Context(), "u", site("https://race.example/"), "Race Belts"); err != nil || id != "race" {
 		t.Fatalf("Resolve during a race = %q, %v", id, err)
+	}
+}
+
+func ptr[T any](v T) *T { return &v }
+
+func added() *repo {
+	u, _ := url.Parse("https://example.com/")
+	return &repo{added: []domain.Company{{ID: "example", Name: "Example", Host: "example.com", URL: u, Source: domain.SourceAdded}}}
+}
+
+func TestUpdateAnAddedCompany(t *testing.T) {
+	r := added()
+	l, err := service(r, scans{}).Update(t.Context(), "admin", "example", domain.Change{Name: ptr(" Example Belts "), URL: ptr("https://www.example-belts.com")})
+	if err != nil || l.Name != "Example Belts" || l.Host != "example-belts.com" || r.added[0].Host != "example-belts.com" {
+		t.Fatalf("Update = %+v, %v", l, err)
+	}
+	if _, err := service(added(), scans{}).Update(t.Context(), "admin", "example", domain.Change{Archived: ptr(true)}); !errors.Is(err, domain.ErrNotArchivable) {
+		t.Fatalf("archiving an added company = %v", err)
+	}
+}
+
+func TestUpdateAResearchedCompanyStoresAnOverride(t *testing.T) {
+	r := &repo{}
+	svc := service(r, scans{})
+	l, err := svc.Update(t.Context(), "admin", "twentebelt", domain.Change{URL: ptr("https://www.twentebelt.nl"), Archived: ptr(true)})
+	if err != nil || !l.Archived || l.ArchivedBy != "admin" || l.Host != "twentebelt.nl" {
+		t.Fatalf("Update = %+v, %v", l, err)
+	}
+	if len(r.overrides) != 1 || r.overrides[0].Host != "twentebelt.nl" || r.overrides[0].ArchivedAt.IsZero() {
+		t.Fatalf("overrides %+v", r.overrides)
+	}
+	got, _, err := svc.Get(t.Context(), "twentebelt")
+	if err != nil || !got.Archived || got.Host != "twentebelt.nl" {
+		t.Fatalf("Get after the change = %+v, %v", got, err)
+	}
+	// Restoring keeps the new website.
+	l, err = svc.Update(t.Context(), "admin", "twentebelt", domain.Change{Archived: ptr(false)})
+	if err != nil || l.Archived || l.Host != "twentebelt.nl" {
+		t.Fatalf("restore = %+v, %v", l, err)
+	}
+}
+
+func TestUpdateRefuses(t *testing.T) {
+	cases := map[string]struct {
+		repo  *repo
+		scans scans
+		id    string
+		ch    domain.Change
+		want  error
+	}{
+		"an unknown company": {added(), scans{}, "nobody", domain.Change{}, domain.ErrNotFound},
+		"a bad name":         {added(), scans{}, "example", domain.Change{Name: ptr(" ")}, domain.ErrInvalidName},
+		"a bad website":      {added(), scans{}, "example", domain.Change{URL: ptr("https://localhost/")}, domain.ErrInvalidWebsite},
+		"a failing list":     {&repo{listErrAfter: 1}, scans{}, "example", domain.Change{}, errBoom},
+		"failing overrides":  {&repo{overridesErr: errBoom}, scans{}, "example", domain.Change{}, errBoom},
+		"a failing update":   {&repo{added: added().added, changeErr: errBoom}, scans{}, "example", domain.Change{}, errBoom},
+		"a failing override": {&repo{changeErr: errBoom}, scans{}, "twentebelt", domain.Change{}, errBoom},
+		"failing statistics": {added(), scans{statsErr: errBoom}, "example", domain.Change{}, errBoom},
+	}
+	for name, c := range cases {
+		if _, err := service(c.repo, c.scans).Update(t.Context(), "u", c.id, c.ch); !errors.Is(err, c.want) {
+			t.Errorf("%s: Update = %v, want %v", name, err, c.want)
+		}
+	}
+	var known domain.AlreadyKnownError
+	if _, err := service(added(), scans{}).Update(t.Context(), "u", "example", domain.Change{URL: ptr("https://twentebelt.com")}); !errors.As(err, &known) {
+		t.Errorf("a taken host = %v", err)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	r := added()
+	var deletedScans []string
+	if err := service(r, scans{deleted: &deletedScans}).Delete(t.Context(), "admin", "example"); err != nil ||
+		len(r.deleted) != 1 || len(deletedScans) != 1 {
+		t.Fatalf("Delete(added) = %v, %v, %v", err, r.deleted, deletedScans)
+	}
+	research := &repo{}
+	if err := service(research, scans{}).Delete(t.Context(), "admin", "twentebelt"); err != nil || len(research.overrides) != 1 ||
+		research.overrides[0].ArchivedBy != "admin" {
+		t.Fatalf("Delete(researched) = %v, %+v", err, research.overrides)
+	}
+	cases := map[string]struct {
+		repo  *repo
+		scans scans
+		id    string
+		want  error
+	}{
+		"an unknown company":    {added(), scans{}, "nobody", domain.ErrNotFound},
+		"a failing list":        {&repo{listErrAfter: 1}, scans{}, "example", errBoom},
+		"a scan running":        {added(), scans{active: 1}, "example", app.ErrScanActive},
+		"a failing count":       {added(), scans{activeErr: errBoom}, "example", errBoom},
+		"failing scan deletion": {added(), scans{deleteErr: errBoom}, "example", errBoom},
+		"failing deletion":      {&repo{added: added().added, changeErr: errBoom}, scans{}, "example", errBoom},
+		"a failing archive":     {&repo{changeErr: errBoom}, scans{}, "twentebelt", errBoom},
+	}
+	for name, c := range cases {
+		if err := service(c.repo, c.scans).Delete(t.Context(), "u", c.id); !errors.Is(err, c.want) {
+			t.Errorf("%s: Delete = %v, want %v", name, err, c.want)
+		}
 	}
 }

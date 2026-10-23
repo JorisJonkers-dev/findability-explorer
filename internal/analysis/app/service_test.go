@@ -26,6 +26,7 @@ type repo struct {
 	tokens    int64
 	failOn    map[string]bool
 	failedRun string
+	first     map[domain.PhraseKey]int
 }
 
 func newRepo(failOn ...string) *repo {
@@ -43,15 +44,37 @@ func (r *repo) err(op string) error {
 	return nil
 }
 
-func (r *repo) Create(_ context.Context, a domain.Analysis) error {
+func (r *repo) Create(_ context.Context, a domain.Analysis) (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if err := r.err("Create"); err != nil {
-		return err
+		return 0, err
 	}
+	for _, other := range r.analyses {
+		if other.CompetitorID == a.CompetitorID {
+			a.Number = max(a.Number, other.Number)
+		}
+	}
+	a.Number++
 	r.analyses[a.ID] = &a
 	r.order = append(r.order, a.ID)
-	return nil
+	return a.Number, nil
+}
+
+func (r *repo) CountActive(_ context.Context, competitorID string) (int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	n := 0
+	for _, a := range r.analyses {
+		if a.CompetitorID == competitorID && (a.Status == domain.StatusQueued || a.Status == domain.StatusRunning) {
+			n++
+		}
+	}
+	return n, r.err("CountActive")
+}
+
+func (r *repo) FirstScans(context.Context, string) (map[domain.PhraseKey]int, error) {
+	return r.first, r.err("FirstScans")
 }
 
 func (r *repo) Get(_ context.Context, id uuid.UUID) (domain.Analysis, error) {
@@ -74,12 +97,30 @@ func (r *repo) List(_ context.Context, limit int) ([]domain.Analysis, error) {
 	return make([]domain.Analysis, limit), nil
 }
 
-func (r *repo) ListByCompetitor(context.Context, string, int) ([]domain.Analysis, error) {
-	return []domain.Analysis{}, nil
+func (r *repo) ListByCompetitor(_ context.Context, competitorID string, limit int) ([]domain.Analysis, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := []domain.Analysis{}
+	for i := len(r.order) - 1; i >= 0 && len(out) < limit; i-- {
+		if a := r.analyses[r.order[i]]; a.CompetitorID == competitorID {
+			summary := *a
+			summary.Keywords = nil
+			out = append(out, summary)
+		}
+	}
+	return out, r.err("ListByCompetitor")
 }
 
 func (r *repo) CompetitorStats(context.Context) (map[string]domain.CompetitorStats, error) {
-	return map[string]domain.CompetitorStats{}, nil
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := map[string]domain.CompetitorStats{}
+	for _, a := range r.analyses {
+		s := out[a.CompetitorID]
+		s.Count++
+		out[a.CompetitorID] = s
+	}
+	return out, r.err("CompetitorStats")
 }
 
 func (r *repo) CountCreatedSince(context.Context, string, time.Time) (int, error) {
@@ -150,7 +191,7 @@ type crawler struct {
 	err   error
 }
 
-func (c crawler) Crawl(_ context.Context, _ domain.Target, maxPages int, onPage func(domain.Page) error) error {
+func (c crawler) Crawl(_ context.Context, _ domain.Target, maxPages int, _ domain.LinkScorer, onPage func(domain.Page) error) error {
 	for _, p := range c.pages[:min(maxPages, len(c.pages))] {
 		if err := onPage(p); err != nil {
 			return err
@@ -201,8 +242,14 @@ func pages() []domain.Page {
 
 // directory names every website's company after its host's first label, or fails with err.
 type directory struct {
-	err      error
-	lastName string
+	err          error
+	lastName     string
+	companies    []domain.Company
+	companiesErr error
+}
+
+func (d *directory) Companies(context.Context) ([]domain.Company, error) {
+	return d.companies, d.companiesErr
 }
 
 func (d *directory) Resolve(_ context.Context, _ string, website *url.URL, name string) (string, error) {
@@ -241,11 +288,13 @@ func TestStartRefuses(t *testing.T) {
 		maxPages int
 		want     error
 	}{
-		"a private host":   {newRepo(), "https://10.0.0.1/", 5, domain.ErrInvalidTarget},
-		"too many pages":   {newRepo(), "https://x.test/", 31, domain.ErrInvalidMaxPages},
-		"a count failure":  {newRepo("CountCreatedSince"), "https://x.test/", 5, errBoom},
-		"over the limit":   {&repo{analyses: map[uuid.UUID]*domain.Analysis{}, count: 3}, "https://x.test/", 5, app.ErrRateLimited},
-		"a create failure": {newRepo("Create"), "https://x.test/", 5, errBoom},
+		"a private host":          {newRepo(), "https://10.0.0.1/", 5, domain.ErrInvalidTarget},
+		"too many pages":          {newRepo(), "https://x.test/", 101, domain.ErrInvalidMaxPages},
+		"a scan running":          {running(), "https://x.test/", 5, app.ErrScanActive},
+		"an active count failure": {newRepo("CountActive"), "https://x.test/", 5, errBoom},
+		"a count failure":         {newRepo("CountCreatedSince"), "https://x.test/", 5, errBoom},
+		"over the limit":          {&repo{analyses: map[uuid.UUID]*domain.Analysis{}, count: 3}, "https://x.test/", 5, app.ErrRateLimited},
+		"a create failure":        {newRepo("Create"), "https://x.test/", 5, errBoom},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -256,13 +305,36 @@ func TestStartRefuses(t *testing.T) {
 	}
 }
 
+// running is a repo with a scan of x running.
+func running() *repo {
+	r := newRepo()
+	id := uuid.New()
+	r.analyses[id] = &domain.Analysis{ID: id, CompetitorID: "x", Status: domain.StatusRunning}
+	r.order = append(r.order, id)
+	return r
+}
+
+func TestStartNumbersEachCompanysScans(t *testing.T) {
+	r := newRepo()
+	svc := service(r, crawler{pages: pages()}, nil, limits())
+	for want := 1; want <= 2; want++ {
+		a, err := svc.Start(t.Context(), "u", "https://x.test/", 1, "")
+		if err != nil || a.Number != want {
+			t.Fatalf("scan %d = %+v, %v", want, a, err)
+		}
+		if err := svc.Run(t.Context(), a.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestStartFailsTheAnalysisWhenTheQueueIsFull(t *testing.T) {
 	r := newRepo()
 	svc := service(r, crawler{}, nil, app.Limits{PerUserPerHour: 10, QueueSize: 1})
 	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1, ""); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1, ""); !errors.Is(err, app.ErrBusy) {
+	if _, err := svc.Start(t.Context(), "u", "https://y.test/", 1, ""); !errors.Is(err, app.ErrBusy) {
 		t.Fatalf("second Start error = %v, want ErrBusy", err)
 	}
 	second := r.analyses[r.order[1]]
@@ -270,7 +342,7 @@ func TestStartFailsTheAnalysisWhenTheQueueIsFull(t *testing.T) {
 		t.Fatalf("the refused analysis is %+v", second)
 	}
 	r.failOn["Fail"] = true
-	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1, ""); !errors.Is(err, errBoom) {
+	if _, err := svc.Start(t.Context(), "u", "https://z.test/", 1, ""); !errors.Is(err, errBoom) {
 		t.Fatalf("Start with a failing Fail = %v", err)
 	}
 }

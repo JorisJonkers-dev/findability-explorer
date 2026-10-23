@@ -10,6 +10,20 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
+func encodeAcceptTermCandidateRequest(
+	req *TermAcceptance,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeAddCompetitorRequest(
 	req *NewCompetitor,
 	r *http.Request,
@@ -54,6 +68,34 @@ func encodeSetActiveLlmRequest(
 
 func encodeStartAnalysisRequest(
 	req *NewAnalysis,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeStartRescansRequest(
+	req *RescanRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateCompetitorRequest(
+	req *CompetitorUpdate,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

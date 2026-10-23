@@ -123,8 +123,8 @@ paths:
       operationId: addCompetitor
       summary: Add a company
       description: >-
-        Adds a company by its name and website. A website whose host a known company already has
-        is refused with 409, naming that company.
+        Administrators only. Adds a company by its name and website. A website whose host a known
+        company already has is refused with 409, naming that company.
       tags: [competitors]
       requestBody:
         required: true
@@ -145,6 +145,10 @@ paths:
                 $ref: "#/components/schemas/Competitor"
         "400":
           $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
         "409":
           $ref: "#/components/responses/Problem"
         "422":
@@ -155,15 +159,10 @@ paths:
     get:
       operationId: getCompetitor
       summary: Get one company with its scans
-      description: Returns the company and its most recent scans, newest first.
+      description: Returns the company and its scans, newest first, each with its number.
       tags: [competitors]
       parameters:
-        - name: competitorId
-          in: path
-          required: true
-          description: The company's id.
-          schema:
-            $ref: "#/components/schemas/CompetitorId"
+        - $ref: "#/components/parameters/CompetitorIdPath"
       responses:
         "200":
           description: The company.
@@ -174,6 +173,313 @@ paths:
         "400":
           $ref: "#/components/responses/Problem"
         "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateCompetitor
+      summary: Change a company's name or website, or archive it
+      description: >-
+        Administrators only. Changes the name or website of a company, or archives or restores a
+        researched one. A researched company keeps the research's record; the change is stored
+        beside it. A website whose host another company has is refused with 409.
+      tags: [competitors]
+      parameters:
+        - $ref: "#/components/parameters/CompetitorIdPath"
+      requestBody:
+        required: true
+        description: The fields to change.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompetitorUpdate"
+            example:
+              name: Example Belts
+              url: https://www.example-belts.com
+      responses:
+        "200":
+          description: The company after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Competitor"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteCompetitor
+      summary: Remove a company
+      description: >-
+        Administrators only. An added company is deleted with every scan of it. A researched
+        company is the desk research's record and is archived instead: it leaves the list and the
+        re-scans, its scans stay, and updateCompetitor restores it. Refused with 409 while a scan
+        of the company is queued or running.
+      tags: [competitors]
+      parameters:
+        - $ref: "#/components/parameters/CompetitorIdPath"
+      responses:
+        "204":
+          description: Deleted or archived.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/competitors/{competitorId}/profile:
+    get:
+      operationId: getCompetitorProfile
+      summary: Get a company's search terms from its latest finished scan
+      description: >-
+        Returns the search terms of the company's latest finished scan, grouped by Tribelt belt
+        family, with broad and specification terms apart, and for each term the scan it first
+        appeared in. A company without a finished scan has no scan and no groups.
+      tags: [competitors]
+      parameters:
+        - $ref: "#/components/parameters/CompetitorIdPath"
+      responses:
+        "200":
+          description: The profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorProfile"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/competitors/{competitorId}/scans/compare:
+    get:
+      operationId: compareScans
+      summary: Compare two scans of a company
+      description: >-
+        Returns the search terms one finished scan of the company found and the other did not,
+        and the ones whose score or page count moved beyond a threshold, per belt family. Without
+        `from` and `to` it compares the latest two finished scans. 422 when the company has fewer
+        than two finished scans or a scan named is not a finished scan of it.
+      tags: [competitors]
+      parameters:
+        - $ref: "#/components/parameters/CompetitorIdPath"
+        - name: from
+          in: query
+          required: false
+          description: The older scan's id; default the second newest finished scan.
+          schema:
+            type: string
+            format: uuid
+            maxLength: 36
+        - name: to
+          in: query
+          required: false
+          description: The newer scan's id; default the newest finished scan.
+          schema:
+            type: string
+            format: uuid
+            maxLength: 36
+      responses:
+        "200":
+          description: The comparison.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanComparison"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/rescans:
+    post:
+      operationId: startRescans
+      summary: Re-scan companies
+      description: >-
+        Administrators only. Queues one scan for each named company with a website, or with
+        `all`, for every company that is not archived, has a website and was scanned before. A
+        company whose scan is still queued or running is skipped, and so is one without a
+        website. The scans run a few at a time, each site politely.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: Which companies to scan again.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RescanRequest"
+            example:
+              all: true
+              maxPages: 60
+      responses:
+        "202":
+          description: The queued scans and the skipped companies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RescanBatch"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates:
+    get:
+      operationId: listTermCandidates
+      summary: List the search terms scans found outside the map
+      description: >-
+        Administrators only. Every phrase a finished scan found that the terminology map did not
+        hold, across companies, with its evidence and the classifier's suggestion; filtered by
+        review status, most companies and highest score first.
+      tags: [admin]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Only candidates with this status.
+          schema:
+            $ref: "#/components/schemas/TermCandidateStatus"
+      responses:
+        "200":
+          description: The candidates and how many have each status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermCandidateList"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/{candidateId}/accept:
+    post:
+      operationId: acceptTermCandidate
+      summary: Add a candidate to the terminology map
+      description: >-
+        Administrators only. Adds the term, as the admin wrote it, to the terminology map, where
+        search, the facets and the next scans find it. 409 when the candidate was decided already
+        or the map has the term in that language.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CandidateId"
+      requestBody:
+        required: true
+        description: The term as it joins the map.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermAcceptance"
+            example:
+              term: spiral freezer belt
+              language: en
+              family: tri_flex_turn_curve
+              tier: application
+              usedBy: [Twentebelt]
+      responses:
+        "200":
+          description: The candidate, accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermCandidate"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/{candidateId}/reject:
+    post:
+      operationId: rejectTermCandidate
+      summary: Reject a candidate
+      description: >-
+        Administrators only. Marks the candidate rejected; it stays rejected until the decision is
+        undone. 409 when it was decided already.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CandidateId"
+      responses:
+        "200":
+          description: The candidate, rejected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermCandidate"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/{candidateId}/decision:
+    delete:
+      operationId: undoTermDecision
+      summary: Undo the decision on a candidate
+      description: >-
+        Administrators only. Puts the candidate back in the queue; an accepted term leaves the
+        terminology map again. 409 when the candidate is pending.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CandidateId"
+      responses:
+        "200":
+          description: The candidate, pending again.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermCandidate"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -209,9 +515,10 @@ paths:
       operationId: startAnalysis
       summary: Start an analysis of a website
       description: >-
-        Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host,
-        following robots.txt. The analysis runs in the background; poll it until its status is
-        done or failed.
+        Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on
+        the same site, product and application pages first, following robots.txt and the site's
+        sitemaps and language versions. The analysis runs in the background; poll it until its
+        status is done or failed. 409 while a scan of the same company is queued or running.
       tags: [analyses]
       requestBody:
         required: true
@@ -222,7 +529,7 @@ paths:
               $ref: "#/components/schemas/NewAnalysis"
             example:
               url: https://www.twentebelt.com
-              maxPages: 15
+              maxPages: 60
       responses:
         "202":
           description: The queued analysis.
@@ -231,6 +538,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Analysis"
         "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
           $ref: "#/components/responses/Problem"
         "422":
           $ref: "#/components/responses/Problem"
@@ -487,6 +800,20 @@ paths:
           $ref: "#/components/responses/Problem"
 components:
   parameters:
+    CompetitorIdPath:
+      name: competitorId
+      in: path
+      required: true
+      description: The company's id.
+      schema:
+        $ref: "#/components/schemas/CompetitorId"
+    CandidateId:
+      name: candidateId
+      in: path
+      required: true
+      description: The candidate's id.
+      schema:
+        $ref: "#/components/schemas/TermCandidateId"
     CredentialId:
       name: credentialId
       in: path
@@ -530,8 +857,10 @@ components:
       description: One name for a belt, material or specification, as a company uses it.
       type: object
       additionalProperties: false
-      required: [term, language, family, tier, usedBy, source]
+      required: [term, language, family, tier, usedBy, source, origin]
       properties:
+        origin:
+          $ref: "#/components/schemas/TermOrigin"
         term:
           type: string
           maxLength: 200
@@ -647,8 +976,13 @@ components:
       description: A known company.
       type: object
       additionalProperties: false
-      required: [id, source, name, country, website, languages, groupCompany, beltNames, homepageTitle, scans]
+      required: [id, source, name, country, website, languages, groupCompany, beltNames, homepageTitle, scans, archived]
       properties:
+        archived:
+          type: boolean
+          description: >-
+            True for a researched company an administrator archived: it is left out of the
+            re-scans and the web app hides it.
         id:
           $ref: "#/components/schemas/CompetitorId"
         source:
@@ -745,7 +1079,7 @@ components:
           $ref: "#/components/schemas/Competitor"
         scans:
           type: array
-          maxItems: 20
+          maxItems: 100
           description: The company's scans, newest first.
           items:
             $ref: "#/components/schemas/AnalysisSummary"
@@ -778,10 +1112,10 @@ components:
           type: integer
           format: int32
           minimum: 1
-          maximum: 30
-          default: 15
+          maximum: 100
+          default: 60
           description: The most pages to fetch.
-          example: 15
+          example: 60
         companyName:
           type: string
           minLength: 1
@@ -809,6 +1143,20 @@ components:
       properties:
         competitorId:
           $ref: "#/components/schemas/CompetitorId"
+        number:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: >-
+            The scan's number among its company's scans, from 1 for the first; it never changes.
+            Absent for an analysis without a company.
+          example: 3
+        matchingModel:
+          type: string
+          maxLength: 300
+          description: The provider and model that matched the products, when a model was asked.
+          example: "openrouter: anthropic/claude-haiku-5-5"
         id:
           type: string
           format: uuid
@@ -831,14 +1179,14 @@ components:
           type: integer
           format: int32
           minimum: 1
-          maximum: 30
+          maximum: 100
           description: The most pages the crawl fetches.
-          example: 15
+          example: 60
         pagesCrawled:
           type: integer
           format: int32
           minimum: 0
-          maximum: 30
+          maximum: 100
           description: How many pages were fetched so far.
           example: 7
         createdAt:
@@ -866,7 +1214,7 @@ components:
           items:
             $ref: "#/components/schemas/AnalysisSummary"
     CrawledPage:
-      description: One page the crawl fetched.
+      description: One page the crawl fetched, with the belt family it is about when that is clear.
       type: object
       additionalProperties: false
       required: [url, title, description, language, wordCount]
@@ -898,6 +1246,8 @@ components:
           maximum: 10000000
           description: The number of words of visible text.
           example: 412
+        family:
+          $ref: "#/components/schemas/BeltFamily"
     Keyword:
       description: >-
         A phrase about metal belts that the site emphasises, scored by where and how often it
@@ -942,7 +1292,7 @@ components:
           type: integer
           format: int32
           minimum: 1
-          maximum: 30
+          maximum: 100
           description: On how many pages the phrase appears.
           example: 6
     KnownTerm:
@@ -1024,7 +1374,7 @@ components:
           $ref: "#/components/schemas/AnalysisSummary"
         pages:
           type: array
-          maxItems: 30
+          maxItems: 100
           description: The pages fetched, in crawl order.
           items:
             $ref: "#/components/schemas/CrawledPage"
@@ -1324,6 +1674,477 @@ components:
           description: The latest changes and tests, newest first.
           items:
             $ref: "#/components/schemas/LlmEvent"
+    TermOrigin:
+      description: >-
+        Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an
+        administrator accepted from the review queue.
+      type: string
+      enum: [research, review]
+    CompetitorUpdate:
+      description: The fields of a company to change; at least one.
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The company's new name.
+          example: Example Belts
+        url:
+          type: string
+          format: uri
+          minLength: 8
+          maxLength: 500
+          description: The company's new website. Only http and https on a public host.
+          example: https://www.example-belts.com
+        archived:
+          type: boolean
+          description: True archives a researched company, false restores it.
+    RescanRequest:
+      description: >-
+        Which companies to scan again - the ones named, or with `all` every company that is not
+        archived, has a website and was scanned before. One of the two.
+      type: object
+      additionalProperties: false
+      properties:
+        competitorIds:
+          type: array
+          minItems: 1
+          maxItems: 200
+          uniqueItems: true
+          description: The companies to scan again.
+          items:
+            $ref: "#/components/schemas/CompetitorId"
+        all:
+          type: boolean
+          description: True scans every company with data again.
+        maxPages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          default: 60
+          description: The most pages each scan fetches.
+          example: 60
+    RescanSkip:
+      description: A company a re-scan left out, and why.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, reason]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+        reason:
+          type: string
+          maxLength: 300
+          description: Why it was left out.
+          example: A scan of it is still queued or running.
+    RescanBatch:
+      description: The scans a re-scan queued, and the companies it left out.
+      type: object
+      additionalProperties: false
+      required: [queued, skipped]
+      properties:
+        queued:
+          type: array
+          maxItems: 200
+          description: The queued scans, one per company.
+          items:
+            $ref: "#/components/schemas/AnalysisSummary"
+        skipped:
+          type: array
+          maxItems: 200
+          description: The companies left out.
+          items:
+            $ref: "#/components/schemas/RescanSkip"
+    ProfileGroup:
+      description: >-
+        How a company's search terms are grouped - one of Tribelt's belt families, other metal
+        belts, broad terms that name no family, or material and specification terms.
+      type: string
+      enum: [eyelink, open_spiral, closed_spiral, tri_flex_turn_curve, other, broad, spec]
+    ProfileTerm:
+      description: A search term of a company's latest finished scan.
+      type: object
+      additionalProperties: false
+      required: [phrase, language, score, pages, tier, inMap, firstScan]
+      properties:
+        phrase:
+          type: string
+          maxLength: 200
+          description: The phrase, in lower case.
+          example: balanced weave belts
+        language:
+          type: string
+          maxLength: 16
+          description: The language of the pages it appears on.
+          example: en
+        score:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000
+          description: Higher is more prominent.
+          example: 42.5
+        pages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          description: On how many pages it appears.
+          example: 6
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        closestTerm:
+          type: string
+          maxLength: 200
+          description: The terminology map term closest to it.
+          example: balanced weave belt
+        inMap:
+          type: boolean
+          description: True when it is one of the map's own terms.
+        firstScan:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The number of the company's first finished scan that found it.
+          example: 1
+    ProfileGroupTerms:
+      description: The search terms of one group, highest score first.
+      type: object
+      additionalProperties: false
+      required: [group, terms]
+      properties:
+        group:
+          $ref: "#/components/schemas/ProfileGroup"
+        terms:
+          type: array
+          maxItems: 200
+          description: The terms.
+          items:
+            $ref: "#/components/schemas/ProfileTerm"
+    CompetitorProfile:
+      description: >-
+        A company's search terms from its latest finished scan, by group, every group present
+        in a fixed order (Tribelt's families, other, broad, spec).
+      type: object
+      additionalProperties: false
+      required: [competitorId, groups, languages, finishedScans]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        scan:
+          $ref: "#/components/schemas/AnalysisSummary"
+        finishedScans:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many of the company's scans finished.
+          example: 2
+        languages:
+          type: array
+          maxItems: 20
+          description: The languages of the terms, most terms first.
+          items:
+            type: string
+            maxLength: 16
+            example: de
+        groups:
+          type: array
+          maxItems: 7
+          description: The terms by group; empty without a finished scan.
+          items:
+            $ref: "#/components/schemas/ProfileGroupTerms"
+    TermChange:
+      description: >-
+        A search term one scan found and the other did not, or whose score or page count moved.
+        The from fields are absent for an added term, the to fields for a removed one.
+      type: object
+      additionalProperties: false
+      required: [phrase, language, tier, inMap]
+      properties:
+        phrase:
+          type: string
+          maxLength: 200
+          description: The phrase, in lower case.
+          example: spiral freezer belt
+        language:
+          type: string
+          maxLength: 16
+          description: Its language.
+          example: en
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        inMap:
+          type: boolean
+          description: True when it is one of the map's own terms.
+        fromScore:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000
+          description: Its score in the older scan.
+          example: 12
+        toScore:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000
+          description: Its score in the newer scan.
+          example: 30.5
+        fromPages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          description: Its pages in the older scan.
+          example: 2
+        toPages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          description: Its pages in the newer scan.
+          example: 5
+    ComparisonGroup:
+      description: What changed in one group between two scans.
+      type: object
+      additionalProperties: false
+      required: [group, added, removed, moved]
+      properties:
+        group:
+          $ref: "#/components/schemas/ProfileGroup"
+        added:
+          type: array
+          maxItems: 200
+          description: Terms only the newer scan found, highest score first.
+          items:
+            $ref: "#/components/schemas/TermChange"
+        removed:
+          type: array
+          maxItems: 200
+          description: Terms only the older scan found, highest score first.
+          items:
+            $ref: "#/components/schemas/TermChange"
+        moved:
+          type: array
+          maxItems: 200
+          description: Terms both found whose score or pages moved beyond the threshold, largest move first.
+          items:
+            $ref: "#/components/schemas/TermChange"
+    ScanComparison:
+      description: >-
+        Two finished scans of a company compared, per group. A term moved when its score changed
+        by at least a quarter and 5 points, or its page count by at least 2.
+      type: object
+      additionalProperties: false
+      required: [from, to, groups]
+      properties:
+        from:
+          $ref: "#/components/schemas/AnalysisSummary"
+        to:
+          $ref: "#/components/schemas/AnalysisSummary"
+        groups:
+          type: array
+          maxItems: 7
+          description: Every group, in the profile's order.
+          items:
+            $ref: "#/components/schemas/ComparisonGroup"
+    TermCandidateId:
+      description: A candidate's id, made from its phrase.
+      type: string
+      minLength: 16
+      maxLength: 16
+      pattern: "^[0-9a-f]{16}$"
+      example: 3a7bd3e2360a9f01
+    TermCandidateStatus:
+      description: Where a candidate is in the review.
+      type: string
+      enum: [pending, accepted, rejected]
+    CandidateCompany:
+      description: A company whose scan found a candidate.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+    TermDecision:
+      description: An administrator's decision on a candidate.
+      type: object
+      additionalProperties: false
+      required: [status, by, at]
+      properties:
+        status:
+          $ref: "#/components/schemas/TermCandidateStatus"
+        by:
+          type: string
+          maxLength: 200
+          description: Who decided.
+          example: joris
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-10-23T09:30:00Z"
+        term:
+          $ref: "#/components/schemas/Term"
+    TermCandidate:
+      description: >-
+        A phrase finished scans found that the terminology map did not hold, with its evidence
+        across companies and the classifier's suggestion.
+      type: object
+      additionalProperties: false
+      required: [id, phrase, status, languages, companies, scans, bestScore, maxPages, suggestedTier, lastSeenAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/TermCandidateId"
+        phrase:
+          type: string
+          maxLength: 200
+          description: The phrase, in lower case.
+          example: spiral freezer belt
+        status:
+          $ref: "#/components/schemas/TermCandidateStatus"
+        languages:
+          type: array
+          maxItems: 20
+          description: The languages of the pages it was found on, most often first.
+          items:
+            type: string
+            maxLength: 16
+            example: en
+        companies:
+          type: array
+          maxItems: 200
+          description: The companies whose scans found it, by name.
+          items:
+            $ref: "#/components/schemas/CandidateCompany"
+        scans:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: How many finished scans found it.
+          example: 3
+        bestScore:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000
+          description: Its highest score in one scan.
+          example: 42.5
+        maxPages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          description: The most pages of one scan it appeared on.
+          example: 6
+        suggestedTier:
+          $ref: "#/components/schemas/IntentTier"
+        suggestedFamily:
+          $ref: "#/components/schemas/BeltFamily"
+        closestTerm:
+          type: string
+          maxLength: 200
+          description: The map term the classifier found closest.
+          example: spiral belt
+        lastSeenAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the newest scan that found it was started.
+          example: "2026-10-23T09:30:00Z"
+        decision:
+          $ref: "#/components/schemas/TermDecision"
+    TermCandidateCounts:
+      description: How many candidates have each status.
+      type: object
+      additionalProperties: false
+      required: [pending, accepted, rejected]
+      properties:
+        pending:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: Pending candidates.
+          example: 41
+        accepted:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: Accepted candidates.
+          example: 3
+        rejected:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: Rejected candidates.
+          example: 7
+    TermCandidateList:
+      description: The candidates with one status.
+      type: object
+      additionalProperties: false
+      required: [items, counts]
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          description: The candidates, most companies and highest score first.
+          items:
+            $ref: "#/components/schemas/TermCandidate"
+        counts:
+          $ref: "#/components/schemas/TermCandidateCounts"
+    TermAcceptance:
+      description: A candidate as it joins the terminology map.
+      type: object
+      additionalProperties: false
+      required: [term, language, family, tier, usedBy]
+      properties:
+        term:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The term as the map shows it.
+          example: spiral freezer belt
+        language:
+          $ref: "#/components/schemas/Language"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        usedBy:
+          type: array
+          maxItems: 20
+          description: The companies that use it.
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+            example: Twentebelt
     Problem:
       description: An RFC 9457 problem detail.
       type: object

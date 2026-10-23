@@ -83,7 +83,8 @@ type Matchers interface {
 }
 
 // Crawler is the port the crawler adapter implements. It fetches at most maxPages pages on the
-// target's host, following robots.txt, and calls onPage after each page in crawl order.
+// target's site, following robots.txt, the pages scorer ranks highest first, and calls onPage
+// after each page in crawl order.
 type Crawler interface {
-	Crawl(ctx context.Context, target Target, maxPages int, onPage func(Page) error) error
+	Crawl(ctx context.Context, target Target, maxPages int, scorer LinkScorer, onPage func(Page) error) error
 }

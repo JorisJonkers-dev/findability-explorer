@@ -7,8 +7,12 @@ import (
 // Robots is the part of a site's robots.txt that applies to one crawler. The zero value allows
 // every path, which is the rule for a site without a robots.txt.
 type Robots struct {
-	rules []robotsRule
+	rules    []robotsRule
+	sitemaps []string
 }
+
+// Sitemaps are the sitemap addresses robots.txt lists; they apply to every crawler.
+func (r Robots) Sitemaps() []string { return r.sitemaps }
 
 type robotsRule struct {
 	allow   bool
@@ -24,17 +28,18 @@ func ParseRobots(body, agent string) Robots {
 		p.line(line)
 	}
 	if rules, ok := p.groups[strings.ToLower(agent)]; ok {
-		return Robots{rules: rules}
+		return Robots{rules: rules, sitemaps: p.sitemaps}
 	}
-	return Robots{rules: p.groups["*"]}
+	return Robots{rules: p.groups["*"], sitemaps: p.sitemaps}
 }
 
 // robotsParser collects the rules of every group: consecutive user-agent lines open a group,
 // and the allow and disallow lines after them belong to every agent the group names.
 type robotsParser struct {
-	groups  map[string][]robotsRule
-	current []string
-	inRules bool
+	groups   map[string][]robotsRule
+	current  []string
+	inRules  bool
+	sitemaps []string
 }
 
 func (p *robotsParser) line(line string) {
@@ -47,6 +52,10 @@ func (p *robotsParser) line(line string) {
 	}
 	key, value = strings.ToLower(strings.TrimSpace(key)), strings.TrimSpace(value)
 	switch key {
+	case "sitemap":
+		if value != "" {
+			p.sitemaps = append(p.sitemaps, value)
+		}
 	case "user-agent":
 		if p.inRules {
 			p.current, p.inRules = nil, false

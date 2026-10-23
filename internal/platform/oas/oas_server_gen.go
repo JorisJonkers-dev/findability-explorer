@@ -8,10 +8,18 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// AcceptTermCandidate implements acceptTermCandidate operation.
+	//
+	// Administrators only. Adds the term, as the admin wrote it, to the terminology map, where search, the
+	// facets and the next scans find it. 409 when the candidate was decided already or the map has the
+	// term in that language.
+	//
+	// POST /api/v1/admin/term-candidates/{candidateId}/accept
+	AcceptTermCandidate(ctx context.Context, req *TermAcceptance, params AcceptTermCandidateParams) (AcceptTermCandidateRes, error)
 	// AddCompetitor implements addCompetitor operation.
 	//
-	// Adds a company by its name and website. A website whose host a known company already has is refused
-	// with 409, naming that company.
+	// Administrators only. Adds a company by its name and website. A website whose host a known company
+	// already has is refused with 409, naming that company.
 	//
 	// POST /api/v1/competitors
 	AddCompetitor(ctx context.Context, req *NewCompetitor) (AddCompetitorRes, error)
@@ -28,6 +36,23 @@ type Handler interface {
 	//
 	// DELETE /api/v1/admin/llm/active
 	ClearActiveLlm(ctx context.Context) (ClearActiveLlmRes, error)
+	// CompareScans implements compareScans operation.
+	//
+	// Returns the search terms one finished scan of the company found and the other did not, and the ones
+	// whose score or page count moved beyond a threshold, per belt family. Without `from` and `to` it
+	// compares the latest two finished scans. 422 when the company has fewer than two finished scans or a
+	// scan named is not a finished scan of it.
+	//
+	// GET /api/v1/competitors/{competitorId}/scans/compare
+	CompareScans(ctx context.Context, params CompareScansParams) (CompareScansRes, error)
+	// DeleteCompetitor implements deleteCompetitor operation.
+	//
+	// Administrators only. An added company is deleted with every scan of it. A researched company is the
+	// desk research's record and is archived instead: it leaves the list and the re-scans, its scans stay,
+	// and updateCompetitor restores it. Refused with 409 while a scan of the company is queued or running.
+	//
+	// DELETE /api/v1/competitors/{competitorId}
+	DeleteCompetitor(ctx context.Context, params DeleteCompetitorParams) (DeleteCompetitorRes, error)
 	// DeleteLlmCredential implements deleteLlmCredential operation.
 	//
 	// Deletes a stored credential. When it was the active one, matching falls back to the Vault credential
@@ -43,10 +68,18 @@ type Handler interface {
 	GetAnalysis(ctx context.Context, params GetAnalysisParams) (GetAnalysisRes, error)
 	// GetCompetitor implements getCompetitor operation.
 	//
-	// Returns the company and its most recent scans, newest first.
+	// Returns the company and its scans, newest first, each with its number.
 	//
 	// GET /api/v1/competitors/{competitorId}
 	GetCompetitor(ctx context.Context, params GetCompetitorParams) (GetCompetitorRes, error)
+	// GetCompetitorProfile implements getCompetitorProfile operation.
+	//
+	// Returns the search terms of the company's latest finished scan, grouped by Tribelt belt family, with
+	// broad and specification terms apart, and for each term the scan it first appeared in. A company
+	// without a finished scan has no scan and no groups.
+	//
+	// GET /api/v1/competitors/{competitorId}/profile
+	GetCompetitorProfile(ctx context.Context, params GetCompetitorProfileParams) (GetCompetitorProfileRes, error)
 	// GetLlmSettings implements getLlmSettings operation.
 	//
 	// Returns every credential (never a secret), the model product matching uses now, the token budget,
@@ -81,6 +114,21 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/llm/credentials/{credentialId}/models
 	ListLlmModels(ctx context.Context, params ListLlmModelsParams) (ListLlmModelsRes, error)
+	// ListTermCandidates implements listTermCandidates operation.
+	//
+	// Administrators only. Every phrase a finished scan found that the terminology map did not hold,
+	// across companies, with its evidence and the classifier's suggestion; filtered by review status, most
+	// companies and highest score first.
+	//
+	// GET /api/v1/admin/term-candidates
+	ListTermCandidates(ctx context.Context, params ListTermCandidatesParams) (ListTermCandidatesRes, error)
+	// RejectTermCandidate implements rejectTermCandidate operation.
+	//
+	// Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone.
+	// 409 when it was decided already.
+	//
+	// POST /api/v1/admin/term-candidates/{candidateId}/reject
+	RejectTermCandidate(ctx context.Context, params RejectTermCandidateParams) (RejectTermCandidateRes, error)
 	// SearchTerms implements searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of
@@ -98,11 +146,22 @@ type Handler interface {
 	SetActiveLlm(ctx context.Context, req *ActiveLlm) (SetActiveLlmRes, error)
 	// StartAnalysis implements startAnalysis operation.
 	//
-	// Queues a crawl of the site behind `url`: at most `maxPages` pages on the same host, following
-	// robots.txt. The analysis runs in the background; poll it until its status is done or failed.
+	// Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
+	// site, product and application pages first, following robots.txt and the site's sitemaps and language
+	// versions. The analysis runs in the background; poll it until its status is done or failed. 409 while
+	// a scan of the same company is queued or running.
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, req *NewAnalysis) (StartAnalysisRes, error)
+	// StartRescans implements startRescans operation.
+	//
+	// Administrators only. Queues one scan for each named company with a website, or with `all`, for every
+	// company that is not archived, has a website and was scanned before. A company whose scan is still
+	// queued or running is skipped, and so is one without a website. The scans run a few at a time, each
+	// site politely.
+	//
+	// POST /api/v1/admin/rescans
+	StartRescans(ctx context.Context, req *RescanRequest) (StartRescansRes, error)
 	// TestLlmCredential implements testLlmCredential operation.
 	//
 	// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
@@ -111,6 +170,21 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/llm/credentials/{credentialId}/test
 	TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (TestLlmCredentialRes, error)
+	// UndoTermDecision implements undoTermDecision operation.
+	//
+	// Administrators only. Puts the candidate back in the queue; an accepted term leaves the terminology
+	// map again. 409 when the candidate is pending.
+	//
+	// DELETE /api/v1/admin/term-candidates/{candidateId}/decision
+	UndoTermDecision(ctx context.Context, params UndoTermDecisionParams) (UndoTermDecisionRes, error)
+	// UpdateCompetitor implements updateCompetitor operation.
+	//
+	// Administrators only. Changes the name or website of a company, or archives or restores a researched
+	// one. A researched company keeps the research's record; the change is stored beside it. A website
+	// whose host another company has is refused with 409.
+	//
+	// PATCH /api/v1/competitors/{competitorId}
+	UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (UpdateCompetitorRes, error)
 	// NewError creates *ProblemStatusCode from error returned by handler.
 	//
 	// Used for common default response.

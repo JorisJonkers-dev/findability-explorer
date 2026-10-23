@@ -1,6 +1,7 @@
 package crawler_test
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -96,11 +97,19 @@ func options(srv *httptest.Server, o crawler.Options) crawler.Options {
 func crawl(t *testing.T, c *crawler.Crawler, tg domain.Target, maxPages int) ([]domain.Page, error) {
 	t.Helper()
 	var pages []domain.Page
-	err := c.Crawl(t.Context(), tg, maxPages, func(p domain.Page) error {
+	err := c.Crawl(t.Context(), tg, maxPages, scorer(), func(p domain.Page) error {
 		pages = append(pages, p)
 		return nil
 	})
 	return pages, err
+}
+
+// scorer ranks links by a small belt vocabulary.
+func scorer() domain.LinkScorer {
+	return domain.NewLinkScorer(domain.NewLexicon([]domain.GlossaryTerm{
+		{Text: "eyelink belt", Language: "en", Family: "eyelink", Tier: "product"},
+		{Text: "spiral belt", Language: "en", Family: "open_spiral", Tier: "product"},
+	}))
 }
 
 func TestCrawlReadsTheSiteBreadthFirst(t *testing.T) {
@@ -127,9 +136,9 @@ func TestCrawlReadsTheSiteBreadthFirst(t *testing.T) {
 	for _, p := range pages {
 		titles = append(titles, p.Title)
 	}
-	// Breadth first: the alternate-language link, then the anchors in order, skipping the
-	// disallowed, missing, non-HTML, off-site (www.example.test) and duplicate ones; the redirect
-	// lands on /about.
+	// Best first: the start page's language version, then the products section, then the rest in
+	// order, skipping the disallowed, missing, non-HTML, off-site (www.example.test) and duplicate
+	// ones; the redirect lands on /about.
 	if got := strings.Join(titles, "|"); got != "Metal belts | Example|Förderbänder|Products|About" {
 		t.Fatalf("crawled %q", got)
 	}
@@ -201,11 +210,11 @@ func TestCrawlStopsWhenOnPageFailsOrCtxEnds(t *testing.T) {
 	defer srv.Close()
 	c := crawler.New(options(srv, crawler.Options{Delay: 50 * time.Millisecond, AllowAddr: loopback, AllowHost: anyHost}))
 	boom := errors.New("boom")
-	if err := c.Crawl(t.Context(), localTarget(t, srv, "/"), 5, func(domain.Page) error { return boom }); !errors.Is(err, boom) {
+	if err := c.Crawl(t.Context(), localTarget(t, srv, "/"), 5, scorer(), func(domain.Page) error { return boom }); !errors.Is(err, boom) {
 		t.Errorf("onPage failure = %v", err)
 	}
 	ctx, cancel := context.WithCancel(t.Context())
-	err := c.Crawl(ctx, localTarget(t, srv, "/"), 5, func(domain.Page) error { cancel(); return nil })
+	err := c.Crawl(ctx, localTarget(t, srv, "/"), 5, scorer(), func(domain.Page) error { cancel(); return nil })
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("cancelled crawl = %v", err)
 	}
@@ -239,5 +248,100 @@ func TestCrawlWithoutRobotsOrWithABrokenOne(t *testing.T) {
 func TestDefaultsAreSet(t *testing.T) {
 	if crawler.New(crawler.Options{}) == nil {
 		t.Fatal("New returned nil")
+	}
+}
+
+// deepSite has news first in its menu, a products page about eyelink belts reached only through
+// its sitemap index, and a German version of that page.
+func deepSite(t *testing.T, robots string, gzipped bool) (*httptest.Server, *[]string) {
+	t.Helper()
+	var mu sync.Mutex
+	var hits []string
+	mux := http.NewServeMux()
+	html := func(body string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			mu.Lock()
+			hits = append(hits, r.URL.Path)
+			mu.Unlock()
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, body)
+		}
+	}
+	mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, _ *http.Request) { _, _ = fmt.Fprint(w, robots) })
+	mux.HandleFunc("/{$}", html(`<title>Home</title><a href="/news/">News</a> <a href="/contact">Contact</a>`))
+	mux.HandleFunc("/news/", html(`<title>News</title>`))
+	mux.HandleFunc("/contact", html(`<title>Contact</title>`))
+	mux.HandleFunc("/products/eyelink-belts", html(`<html lang="en"><title>Eyelink belts</title>
+<link rel="alternate" hreflang="de" href="/de/produkte/oesen"></html>`))
+	mux.HandleFunc("/de/produkte/oesen", html(`<html lang="de"><title>Ösenbänder</title></html>`))
+	index := `<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<sitemap><loc>/pages.xml</loc></sitemap><sitemap><loc>https://elsewhere.test/x.xml</loc></sitemap></sitemapindex>`
+	pages := `<urlset><url><loc>/products/eyelink-belts</loc></url><url><loc>/news/</loc></url></urlset>`
+	mux.HandleFunc("/index.xml", func(w http.ResponseWriter, _ *http.Request) { _, _ = fmt.Fprint(w, index) })
+	mux.HandleFunc("/sitemap.xml", func(w http.ResponseWriter, _ *http.Request) { _, _ = fmt.Fprint(w, index) })
+	mux.HandleFunc("/pages.xml", func(w http.ResponseWriter, _ *http.Request) { _, _ = fmt.Fprint(w, pages) })
+	mux.HandleFunc("/sitemap.xml.gz", func(w http.ResponseWriter, _ *http.Request) {
+		if !gzipped {
+			_, _ = fmt.Fprint(w, "not gzip")
+			return
+		}
+		zw := gzip.NewWriter(w)
+		_, _ = fmt.Fprint(zw, pages)
+		_ = zw.Close()
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv, &hits
+}
+
+func TestCrawlFollowsSitemapsAndFetchesBeltPagesFirst(t *testing.T) {
+	for name, robots := range map[string]string{
+		"robots lists an index":   "User-agent: *\nDisallow:\nSitemap: /index.xml\n",
+		"default sitemap.xml":     "User-agent: *\nDisallow:\n",
+		"robots lists a gzip one": "Sitemap: /sitemap.xml.gz\nSitemap: /missing.xml\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv, _ := deepSite(t, robots, true)
+			c := crawler.New(options(srv, crawler.Options{AllowAddr: loopback, AllowHost: anyHost}))
+			pages, err := crawl(t, c, localTarget(t, srv, "/"), 4)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var titles []string
+			for _, p := range pages {
+				titles = append(titles, p.Title)
+			}
+			// The eyelink page from the sitemap, then its German version, before news and contact.
+			if got := strings.Join(titles, "|"); got != "Home|Eyelink belts|Ösenbänder|News" {
+				t.Fatalf("crawled %q", got)
+			}
+		})
+	}
+}
+
+func TestCrawlSkipsABrokenGzipSitemap(t *testing.T) {
+	srv, _ := deepSite(t, "Sitemap: /sitemap.xml.gz\n", false)
+	c := crawler.New(options(srv, crawler.Options{AllowAddr: loopback, AllowHost: anyHost}))
+	pages, err := crawl(t, c, localTarget(t, srv, "/"), 10)
+	if err != nil || len(pages) != 3 {
+		t.Fatalf("crawled %d, %v; want home, news and contact", len(pages), err)
+	}
+}
+
+func TestCrawlOfOnePageReadsNoSitemap(t *testing.T) {
+	srv, hits := deepSite(t, "Sitemap: /index.xml\n", true)
+	c := crawler.New(options(srv, crawler.Options{AllowAddr: loopback, AllowHost: anyHost}))
+	if pages, err := crawl(t, c, localTarget(t, srv, "/"), 1); err != nil || len(pages) != 1 || len(*hits) != 1 {
+		t.Fatalf("crawled %d, %v, hits %v", len(pages), err, *hits)
+	}
+}
+
+func TestCrawlStopsWhenCtxEndsWhileReadingSitemaps(t *testing.T) {
+	srv, _ := deepSite(t, "Sitemap: /index.xml\n", true)
+	c := crawler.New(options(srv, crawler.Options{Delay: time.Hour, AllowAddr: loopback, AllowHost: anyHost}))
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	if err := c.Crawl(ctx, localTarget(t, srv, "/"), 5, scorer(), func(domain.Page) error { return nil }); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("crawl = %v", err)
 	}
 }

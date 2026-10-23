@@ -15,6 +15,354 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
+// AcceptTermCandidateParams is parameters of acceptTermCandidate operation.
+type AcceptTermCandidateParams struct {
+	// The candidate's id.
+	CandidateId TermCandidateId
+}
+
+func unpackAcceptTermCandidateParams(packed middleware.Parameters) (params AcceptTermCandidateParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "candidateId",
+			In:   "path",
+		}
+		params.CandidateId = packed[key].(TermCandidateId)
+	}
+	return params
+}
+
+func decodeAcceptTermCandidateParams(args [1]string, argsEscaped bool, r *http.Request) (params AcceptTermCandidateParams, _ error) {
+	// Decode path: candidateId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "candidateId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCandidateIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCandidateIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CandidateId = TermCandidateId(paramsDotCandidateIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CandidateId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "candidateId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CompareScansParams is parameters of compareScans operation.
+type CompareScansParams struct {
+	// The company's id.
+	CompetitorId CompetitorId
+	// The older scan's id; default the second newest finished scan.
+	From OptUUID `json:",omitempty,omitzero"`
+	// The newer scan's id; default the newest finished scan.
+	To OptUUID `json:",omitempty,omitzero"`
+}
+
+func unpackCompareScansParams(packed middleware.Parameters) (params CompareScansParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorId",
+			In:   "path",
+		}
+		params.CompetitorId = packed[key].(CompetitorId)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "from",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.From = v.(OptUUID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "to",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.To = v.(OptUUID)
+		}
+	}
+	return params
+}
+
+func decodeCompareScansParams(args [1]string, argsEscaped bool, r *http.Request) (params CompareScansParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: competitorId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorId = CompetitorId(paramsDotCompetitorIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: from.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotFromVal uuid.UUID
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToUUID(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotFromVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.From.SetTo(paramsDotFromVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "from",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: to.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotToVal uuid.UUID
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToUUID(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotToVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.To.SetTo(paramsDotToVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "to",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteCompetitorParams is parameters of deleteCompetitor operation.
+type DeleteCompetitorParams struct {
+	// The company's id.
+	CompetitorId CompetitorId
+}
+
+func unpackDeleteCompetitorParams(packed middleware.Parameters) (params DeleteCompetitorParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorId",
+			In:   "path",
+		}
+		params.CompetitorId = packed[key].(CompetitorId)
+	}
+	return params
+}
+
+func decodeDeleteCompetitorParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteCompetitorParams, _ error) {
+	// Decode path: competitorId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorId = CompetitorId(paramsDotCompetitorIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteLlmCredentialParams is parameters of deleteLlmCredential operation.
 type DeleteLlmCredentialParams struct {
 	// The credential's id.
@@ -180,6 +528,87 @@ func unpackGetCompetitorParams(packed middleware.Parameters) (params GetCompetit
 }
 
 func decodeGetCompetitorParams(args [1]string, argsEscaped bool, r *http.Request) (params GetCompetitorParams, _ error) {
+	// Decode path: competitorId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorId = CompetitorId(paramsDotCompetitorIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetCompetitorProfileParams is parameters of getCompetitorProfile operation.
+type GetCompetitorProfileParams struct {
+	// The company's id.
+	CompetitorId CompetitorId
+}
+
+func unpackGetCompetitorProfileParams(packed middleware.Parameters) (params GetCompetitorProfileParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorId",
+			In:   "path",
+		}
+		params.CompetitorId = packed[key].(CompetitorId)
+	}
+	return params
+}
+
+func decodeGetCompetitorProfileParams(args [1]string, argsEscaped bool, r *http.Request) (params GetCompetitorProfileParams, _ error) {
 	// Decode path: competitorId.
 	if err := func() error {
 		param := args[0]
@@ -412,6 +841,167 @@ func decodeListLlmModelsParams(args [1]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "credentialId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListTermCandidatesParams is parameters of listTermCandidates operation.
+type ListTermCandidatesParams struct {
+	// Only candidates with this status.
+	Status OptTermCandidateStatus `json:",omitempty,omitzero"`
+}
+
+func unpackListTermCandidatesParams(packed middleware.Parameters) (params ListTermCandidatesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.(OptTermCandidateStatus)
+		}
+	}
+	return params
+}
+
+func decodeListTermCandidatesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListTermCandidatesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotStatusVal TermCandidateStatus
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotStatusVal = TermCandidateStatus(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Status.SetTo(paramsDotStatusVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Status.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// RejectTermCandidateParams is parameters of rejectTermCandidate operation.
+type RejectTermCandidateParams struct {
+	// The candidate's id.
+	CandidateId TermCandidateId
+}
+
+func unpackRejectTermCandidateParams(packed middleware.Parameters) (params RejectTermCandidateParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "candidateId",
+			In:   "path",
+		}
+		params.CandidateId = packed[key].(TermCandidateId)
+	}
+	return params
+}
+
+func decodeRejectTermCandidateParams(args [1]string, argsEscaped bool, r *http.Request) (params RejectTermCandidateParams, _ error) {
+	// Decode path: candidateId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "candidateId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCandidateIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCandidateIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CandidateId = TermCandidateId(paramsDotCandidateIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CandidateId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "candidateId",
 			In:   "path",
 			Err:  err,
 		}
@@ -947,6 +1537,168 @@ func decodeTestLlmCredentialParams(args [1]string, argsEscaped bool, r *http.Req
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "credentialId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UndoTermDecisionParams is parameters of undoTermDecision operation.
+type UndoTermDecisionParams struct {
+	// The candidate's id.
+	CandidateId TermCandidateId
+}
+
+func unpackUndoTermDecisionParams(packed middleware.Parameters) (params UndoTermDecisionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "candidateId",
+			In:   "path",
+		}
+		params.CandidateId = packed[key].(TermCandidateId)
+	}
+	return params
+}
+
+func decodeUndoTermDecisionParams(args [1]string, argsEscaped bool, r *http.Request) (params UndoTermDecisionParams, _ error) {
+	// Decode path: candidateId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "candidateId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCandidateIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCandidateIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CandidateId = TermCandidateId(paramsDotCandidateIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CandidateId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "candidateId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateCompetitorParams is parameters of updateCompetitor operation.
+type UpdateCompetitorParams struct {
+	// The company's id.
+	CompetitorId CompetitorId
+}
+
+func unpackUpdateCompetitorParams(packed middleware.Parameters) (params UpdateCompetitorParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorId",
+			In:   "path",
+		}
+		params.CompetitorId = packed[key].(CompetitorId)
+	}
+	return params
+}
+
+func decodeUpdateCompetitorParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateCompetitorParams, _ error) {
+	// Decode path: competitorId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorId = CompetitorId(paramsDotCompetitorIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorId",
 			In:   "path",
 			Err:  err,
 		}

@@ -1,217 +1,179 @@
 # Findability Explorer
 
-The course-material repository links this repository as a submodule at `findability-explorer/`.
+A research tool that shows how a product is named and found online: on competitors' websites, in
+the search terms buyers use, and in the answers of AI assistants. It was built for Tribelt B.V., a
+Dutch maker of metal conveyor belts, and studies that market in Dutch, German and English.
 
-The interactive companion to the Digital Strategy group report on Tribelt B.V. (University of
-Twente, 2026-1A), served privately at `digital-strategy.jorisjonkers.dev`. It shows how metal
-conveyor belts are named across companies and languages, and analyses any website's keywords.
+It is one Go binary with an embedded Vue app and a Postgres database. Every visitor signs in, and
+administrators start the scans and change the data.
 
-- **Languages**: everything keeps to Dutch, German and English, the languages Tribelt's buyers
-  search in (`internal/shared/lang`). The map shows only those terms; a scan skips a site's other
-  language versions and addresses under another language's path (`/fr/`, `/es-es/`), keeps only
-  phrases in those languages (or in one it cannot tell), and asks the language model for those
-  terms only; the review queue takes only those phrases; older scans read back the same way; and
-  a company's website languages and belt names put those first.
-- **Search terms** (`/terms`): search the terminology map (90 terms in Dutch, German and English,
-  of the 146 in 10 languages the research collected) from the
-  group's desk research of 22 October 2026, plus every term an administrator accepted from the
-  review queue, with filters by language, intent tier, belt family and company. Every filter lives
-  in the URL, so a view can be shared. A term's makers are the companies the research or the
-  review named, plus every company whose newest finished scan found the term on its site (`foundBy`,
-  marked "(scan)"), so the counts, the per-company heat map and the ranking follow the scans.
-- **Competitors** (`/competitors`): the 44 competitors and 3 group companies, seeded from the desk
-  research (25 on 22 October 2026, 19 more on 26 October), and every company an administrator added or a scan of a new website brought in. Each
-  has its own name for each Tribelt belt family: the research's, plus the products its newest scan
-  with product matching matched (`fromScan`).
-- **Scans** (`/scan/:id`): crawl up to 100 pages of a company's website (default 60) and report its
-  most prominent search terms, the terms from the map it uses, and, when a language model is
-  active, its products matched to Tribelt's families. The crawl starts from the home page, reads
-  the site's sitemaps (the ones `robots.txt` lists, or `/sitemap.xml`, sitemap indexes and gzip
-  included) and the language versions each page declares (`hreflang`), and fetches the pages whose
-  address and link text use the belt vocabulary first: product, specification and application
-  pages before news, contact, legal and careers. It stays polite (robots.txt with RFC 9309
-  wildcards, 500 ms between requests, public addresses only) and records which belt family each
-  page is about when that is clear. This ports and extends
-  [RNgo-Sch/digital-strategy-webscraper](https://github.com/RNgo-Sch/digital-strategy-webscraper).
-- **Search terms and history** (`/competitors/:id/history`): a company's search terms from its
-  latest finished scan, by Tribelt belt family (eyelink, open spiral, closed spiral, Tri-Flex,
-  other) with broad and specification terms apart, per language, with the scan each term first
-  appeared in; the numbered scan history; and a comparison of any two finished scans (terms added,
-  removed, and moved by at least a quarter of their score and 5 points, or 2 pages).
-- **AI readiness** (`/ai-search/readiness`): every scan first reads the files that tell search
-  engines and AI assistants about the site, before the page crawl, so a site that blocks the crawl
-  still shows them: `robots.txt` (each of Googlebot, Google-Extended, Bingbot, OAI-SearchBot,
-  ChatGPT-User, GPTBot, Claude-SearchBot, ClaudeBot, PerplexityBot and CCBot allowed, partly
-  blocked or blocked, and whether it is named or follows `*`), the sitemaps (declared, files,
-  addresses, Dutch, German and English covered), `llms.txt`, `llms-full.txt`, Markdown versions,
-  the home page's JSON-LD types and `hreflang` language versions, and its CMS, SEO plugin and bot
-  protection. Each value is held against the report's recommendations. The table puts Tribelt on
-  top as the baseline and the group's mirror of tribelt.nl (`tribelt.jorisjonkers.dev`, a
-  researched company scanned by the same sweeps, kept out of the competitor list) below it as the
-  target, then Tribelt's group, then the competitors; every column sorts, and it filters by a gap.
-  A company's card sums it up, its history page shows administrators the raw `robots.txt`,
-  `llms.txt` and `llms-full.txt` (each kept up to 100 KB) with the lines about AI crawlers marked,
-  and the scan comparison lists what changed.
-- **Prompt test** (`/ai-search/prompt-test`): a fixed, versioned set of 90 buyer questions (5 belt
-  families × a supplier, an application and a problem question × Twente, the Netherlands, Germany,
-  Dutch, German and English) asked through OpenRouter of the cheapest text model of each large
-  provider (free ones included, paced, with the cheapest paid model taking over), from the model's
-  own knowledge and with web search; one fixed extractor model reads every answer against the
-  fact sheet ([ADR-0004](docs/adr/0004-the-prompt-test-asks-the-cheapest-model-of-each-provider-twice.md)).
-  It shows AI share of voice and citation share per model, scope, belt family and mode, the
-  trends across runs with the October pilot as the first point, the competitors the answers name,
-  the claims about Tribelt they get wrong, and every answer beside its reading. A company's card
-  says how often the latest run named it. Runs start monthly or weekly on a schedule or on demand,
-  one at a time across app instances, resume after a restart, and stop at their own monthly
-  budget in dollars ($10 by default).
-- **Prompt test settings and competitor candidates** (`/settings/prompt-test`,
-  `/settings/candidates`, administrators): the OpenRouter key runs use, the providers, the budget
-  and the month's spend, the schedule, the fact sheet, the prompt set, Run now and each run's
-  tokens and cost; and the companies the answers name that are not on the list, added (as a
-  company that can be scanned) or dismissed (for good, in later runs too), with undo.
-- **Term review** (`/settings/terms`, administrators): every phrase a finished scan found outside
-  the map, across companies, with its evidence and the classifier's suggested family and tier. An
-  administrator accepts one (with the text, language, family, tier and companies the map should
-  show), rejects it, or undoes either ([ADR-0003](docs/adr/0003-scans-are-versions-and-the-map-grows-through-review.md)).
+## What it does
 
-The whole app is private. Everyone signs in with their auth-api account
-(`auth.jorisjonkers.dev`); any account may read the map, the companies, every scan and its history.
-Only auth-api's `ROLE_ADMIN` may start a scan or a re-scan, add, edit, archive or remove a company,
-review terms, and open the admin settings
-([ADR-0001](docs/adr/0001-in-app-sign-in-with-auth-api.md)).
+| Page | What you see there |
+|---|---|
+| **Search terms** (`/terms`) | The terminology map: the ways to search for a metal conveyor belt, which competitors use each term, and the term Tribelt uses for the same thing. Filters by language, kind of search, belt family and company live in the URL, so a view can be shared |
+| **Competitors** (`/competitors`) | The competitors and group companies, their names for each belt family, and their scan history. Administrators add, edit, archive and re-scan them |
+| **Scans** (`/scan/:id`) | A crawl of up to 100 pages of a company's site. It shows the most prominent search terms, the terms from the map the site uses and, when a language model is set up, the company's products matched to Tribelt's belt families |
+| **Company history** (`/competitors/:id/history`) | A company's terms from its latest scan, its numbered scans, and what changed between any two of them |
+| **AI readiness** (`/ai-search/readiness`) | What each site tells search engines and AI assistants: `robots.txt` rules per AI crawler, sitemaps, `llms.txt`, structured data, language versions and tech stack, each held against the report's advice |
+| **Prompt test** (`/ai-search/prompt-test`) | A fixed set of buyer questions asked of the cheapest model of each large provider through OpenRouter, with and without web search. It shows how often each company is named (AI share of voice), how often its site is cited, and what the answers get wrong about Tribelt |
+| **Settings** (`/settings/…`, administrators) | Language-model keys and their spend, the token and dollar budgets, the Prompt test's schedule and fact sheet, the review of new terms and of companies the answers name |
 
-- **Companies** (administrators): an added company can be renamed, moved to another website (a host
-  another company has is refused) or deleted with every scan of it. A researched company is the
-  desk research's record: an administrator's change to it is stored beside it, and removing it
-  archives it (it leaves the list and the re-scans; its scans stay; restoring it brings it back).
-  Nothing is removed while a scan of it is queued or running.
-- **Re-scans** (`POST /api/v1/admin/rescans`, administrators, on demand only): one scan per named
-  company; with `all` of every company that is not archived, has a website and has data (the desk
-  research studied it, or it was scanned before); or with `unscanned` of every company that is not
-  archived and has a website no scan reached yet. A company without a website is never taken. One
-  whose site turned its last scan away (`blocked`: bot protection that lets people in but not the
-  crawler, which says what it is and does not pose as a browser) is taken by `all` too: its pages
-  stay closed, but each scan records its AI readiness. A company with a scan
-  still queued or running is skipped. Three scans run at a time, each on another company's site; the rest wait their turn.
-  Administrators may start as many scans and re-scans as they like: there is no hourly limit and
-  no cap on the queue.
+The crawler identifies itself (`FindabilityExplorer/1.0`, with a contact address), respects
+`robots.txt`, waits 500 ms between requests and only reads public addresses. A site that turns it
+away is marked as blocked; the crawler never poses as a browser.
 
-- **Admin settings** (`/api/v1/admin/llm`): API keys for Anthropic, OpenRouter and Mistral, more
-  than one each, sealed in Postgres and never shown again; which key and model product matching
-  uses; the monthly token budget; and a log of every change and test
-  ([ADR-0002](docs/adr/0002-sealed-llm-credentials-in-postgres.md)). Each key shows, on request,
-  what its provider reports it used: OpenRouter's own spend for the key (today, this week, this
-  month, all time), its limit and the day's free-model requests; for an Anthropic key, this
-  month's tokens per model and the organisation's cost, read with an optional Anthropic Admin key
-  (`sk-ant-admin…`), stored sealed like the others, which only reads reports and is never chosen
-  for matching.
+## Run it on your machine
 
-It is built from the estate's [template-go-vue](https://github.com/JorisJonkers-dev/template-go-vue):
-a contract-first Go API (`openapi/v1/openapi.yaml`, ogen, sqlc, goose) and a Vue SPA embedded in
-one binary. The architecture rules are in [`docs/blueprints/`](docs/blueprints/README.md).
-
-| Path | What it is |
-|------|------------|
-| `internal/terminology/` | The terminology map: search with folding of case, accents and ß; the embedded seed data; the review queue and the terms accepted from it |
-| `internal/analysis/` | Website analyses: target, robots and sitemap rules, the link-scoring frontier, keyword and known-term extraction, the crawler, the matcher, company profiles and scan comparisons, re-scans, Postgres persistence |
-| `internal/companies/` | The researched companies, the ones administrators added, and administrators' changes to both |
-| `internal/identity/` | Signing in with auth-api: local accounts, server-side sessions, roles re-read from auth-api, the gate in front of the web app |
-| `internal/prompttest/` | The Prompt test: the prompt set, the model choice, runs (schedule, run lock, resume, budget), the OpenRouter adapter, extraction and measures, competitor candidates |
-| `internal/llm/` | The language-model settings: sealed API keys, the active credential and model, the event log, and the Anthropic, OpenRouter and Mistral clients |
-| `internal/shared/fold/` | The one text normalisation both contexts and the web client use |
-| `internal/shared/seal/` | AES-256-GCM sealing under keys derived from `SESSION_KEY`, for stored secrets and cookies |
-| `web/src/features/` | The poster and its section views, the company history, the scan panel, the term review and the settings |
-
-## Run it
+You need [mise](https://mise.jdx.dev) and Docker. mise installs the exact Go, Node, pnpm, Task and
+linter versions from `mise.toml`.
 
 ```bash
-mise install    # the pinned toolchain
-task check      # lint, generated-code drift, Go and web tests with coverage, build, secret scan
-task e2e        # Playwright with axe against the built binary and the compose Postgres
-task dev        # Postgres, the API on :8080, Vite on :5173
+git clone https://github.com/JorisJonkers-dev/findability-explorer.git
+cd findability-explorer
+mise install
+task dev
 ```
 
-Environment:
+Open <http://localhost:5173>. `task dev` starts Postgres in Docker (on port 55432), the API on
+`:8080` and Vite with hot reload on `:5173`. You are signed in as `dev`, an administrator, with no
+sign-in server needed. The database schema is migrated when the API starts.
+
+Some features need a language model:
+
+- **Product matching** in scans: add an Anthropic, OpenRouter or Mistral key under Settings, or
+  start with `ANTHROPIC_API_KEY` set.
+- **The Prompt test:** add an OpenRouter key under Settings › Prompt test.
+
+Without `SESSION_KEY` a local run seals the keys you add with a random key, so they are unreadable
+after a restart. Set `SESSION_KEY` to any string of 32 characters or more to keep them.
+
+Everything else, the map, the companies and scans, works without any key.
+
+## Everyday commands
+
+`task` lists every target. These are the ones you use:
+
+| Command | What it does |
+|---|---|
+| `task dev` | Run the app locally as described above |
+| `task gen` | Regenerate the server, the SQL queries and the web client after changing the API contract or a query |
+| `task test` | Go tests (with Postgres in Docker through testcontainers) and web unit tests, each with its coverage gate |
+| `task check` | Everything CI checks on a pull request: linters, generated-code drift, tests, build and a secret scan |
+| `task e2e` | Build the binary and run the Playwright suite against it, with axe accessibility checks, at desktop and phone width |
+| `task fix` | Apply the formatters and the linters' autofixes |
+
+Run `task check` and `task e2e` before you open a pull request; CI runs the same two.
+
+## How it is built
+
+```
+openapi/v1/openapi.yaml ──ogen──▶ internal/platform/oas/        (the Go server interface)
+                         ──hey-api──▶ web/src/infrastructure/api/ (the typed web client)
+db/queries/*.sql ──sqlc──▶ internal/platform/pg/queries/
+```
+
+**The API contract comes first.** Every endpoint is described in `openapi/v1/openapi.yaml`, and the
+Go server interface and the web client are generated from it. The three generated directories
+above are never edited by hand: change the contract or the query, then run `task gen`.
+
+**The Go code is split into contexts**, each with the same three layers:
+
+- `domain/`: the rules, in plain Go with no I/O.
+- `app/`: the use cases, which reach the outside world only through interfaces they declare.
+- `adapters/`: Postgres, HTTP handlers, the crawler and the language-model clients.
+
+A linter (depguard) keeps `domain` and `app` free of adapter imports, and both are held to 100% test
+coverage.
+
+| Context | What it owns |
+|---|---|
+| `internal/terminology/` | The terminology map, its seed data, and the review of new terms |
+| `internal/companies/` | The researched companies, the ones administrators add, and their edits |
+| `internal/analysis/` | Scans: robots and sitemap rules, the crawl, term extraction, product matching, AI readiness, company profiles, comparisons, re-scans |
+| `internal/prompttest/` | The Prompt test: the prompt set, model choice, runs, schedule, budget, reading the answers, competitor candidates |
+| `internal/llm/` | Language-model keys (sealed in Postgres), the chosen model, budgets, usage reports, and the Anthropic, OpenRouter and Mistral clients |
+| `internal/identity/` | Signing in, sessions and roles |
+| `internal/shared/` | Small shared pieces: text folding, the three focus languages, sealing secrets, site addresses |
+| `internal/server/`, `cmd/findability-explorer/` | Wiring: configuration, the HTTP server, and the start-up of every context |
+
+**The web app** in `web/src/` follows the same idea:
+
+- `features/`: one folder per page or area, each with its own components, composables and pure
+  `domain/` helpers.
+- `shared/`: small helpers and UI pieces used across pages.
+- `infrastructure/api/`: the generated client.
+
+On a large screen the app lays out as a fixed 3840×2160 stage, scaled to the window, so it can be
+presented. On a phone it stacks into one column.
+
+The architecture rules behind all this are in [`docs/blueprints/`](docs/blueprints/README.md).
+The decisions that shaped the app are in [`docs/adr/`](docs/adr/).
+
+## Making a change
+
+**A new or changed endpoint:**
+
+1. Describe it in `openapi/v1/openapi.yaml`.
+2. Run `task gen`. The build now fails until the generated handler interface is implemented.
+3. Add the rule to the context's `domain/`, the use case to `app/`, and the handler under
+   `adapters/web/`.
+4. Call it from the web app through the generated client.
+
+**A database change:** add the next numbered file to `db/migrations/` (goose, applied at start-up).
+Put new queries in `db/queries/`, then run `task gen`. squawk lints every migration for locking
+hazards. To add a check constraint to a filled table, add it `NOT VALID` in one migration and
+validate it in the next, as 00005 and 00006 do.
+
+**The research data:** the terms and companies the app starts with are in
+`internal/terminology/adapters/seed/data/` (`terms.json`, `competitors.json`). The binary refuses
+to start on a value the domain does not know, so a typo shows up straight away. Terms accepted in
+the app's term review live in Postgres and are added on top of the seed.
+
+**Tests:**
+
+- **What to test:** test behaviour through the highest seam you can: a use case with fakes for its
+  ports, an adapter against a real Postgres or a local HTTP server, a page through
+  `web/src/testing/mountApp`.
+- **No calls to paid services:** nothing in the test suite calls a language-model provider or a
+  real website.
+- **New pages:** add an end-to-end spec under `web/tests/e2e/`. The spec checks the page with axe
+  and at phone width.
+
+**Commits** follow [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`,
+`docs:` …). Pull requests are squash-merged, and [release-please](https://github.com/googleapis/release-please)
+turns the commits into the changelog and the next version. Don't edit `CHANGELOG.md` by hand.
+
+## Configuration
 
 | Variable | What it is |
 |---|---|
-| `DATABASE_URL` | Postgres (required); or `PGHOST` with the other libpq variables |
+| `DATABASE_URL` | Postgres connection URL (required), or `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PGSSLMODE` |
 | `ADDR` | Where to listen (default `:8080`) |
-| `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URL` | The client registration at auth-api (required unless `DEV_USER` is set). Cookies are `Secure` unless the redirect URL is plain http |
-| `SESSION_KEY` | At least 32 characters; seals the session cookie, the refresh tokens and the API keys admins add (required unless `DEV_USER` is set) |
-| `ANTHROPIC_API_KEY` | The Vault key, shown as the read-only credential `vault-anthropic`; until an admin chooses, matching uses it with `claude-haiku-5-5` |
-| `LLM_MONTHLY_TOKENS` | The language-model budget per calendar month, every provider together (default 10,000,000) |
-| `CRAWLER_CONTACT` | Put in the crawler's User-Agent |
-| `DEV_USER`, `DEV_ROLES` | Local runs only: every request runs as `DEV_USER` with the comma-separated `DEV_ROLES` (`ROLE_ADMIN` opens the admin settings), without auth-api. Never set them in a deployment |
+| `DEV_USER`, `DEV_ROLES` | **Local only.** Every request runs as this user with these comma-separated roles (`ROLE_ADMIN` for an administrator), with no sign-in. Never set them in a deployment |
+| `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URL` | The OpenID Connect client the app signs people in with (required unless `DEV_USER` is set) |
+| `SESSION_KEY` | 32 characters or more; seals the session cookie, refresh tokens and stored API keys (required unless `DEV_USER` is set) |
+| `ANTHROPIC_API_KEY` | Optional. Shown as a read-only key in Settings; product matching uses it with `claude-haiku-5-5` until an administrator chooses otherwise |
+| `LLM_MONTHLY_TOKENS` | Product matching's token budget per calendar month, all providers together (default 10,000,000) |
+| `CRAWLER_CONTACT` | The contact address in the crawler's User-Agent |
 
-### Signing in
+Signing in is written for [auth-api](https://github.com/JorisJonkers-dev/auth-api), the estate's
+OpenID Connect server: any account may read, and `ROLE_ADMIN` may change things
+([ADR-0001](docs/adr/0001-in-app-sign-in-with-auth-api.md)).
 
-`GET /auth/login?return=/path` sends the browser to auth-api and back to `/path`;
-`GET /auth/callback` finishes the sign-in and sets the `fe_session` cookie (HttpOnly,
-SameSite=Lax). `POST /auth/logout` ends the session here, revokes its refresh token, and lands on
-`/auth/signed-out`; the auth-api session stays. Without a session a page redirects to sign in and
-everything else, the API included, answers 401; an admin operation answers 403 to an account
-without `ROLE_ADMIN`. Roles are re-read from auth-api when they are older than 15 seconds and right
-before every admin change. Unsafe requests to `/api/` and `/auth/` must come from the app's own
-origin.
+## Building and deploying
 
-### Product matching
+`docker build .` produces one small image (distroless, non-root) that serves the API and the web
+app on port 8080. It needs a Postgres database and the configuration above.
 
-The admin settings list the Vault key and every key an admin added, each with its fingerprint and
-latest test. Adding a key checks it with the provider first. The admin picks a credential and one of
-its models (`GET …/credentials/{id}/models`), or turns matching off; each analysis uses the choice
-made when it runs and records it as `matchingModel`, such as `openrouter: anthropic/claude-haiku-5-5`.
+The hosted instance at `digital-strategy.jorisjonkers.dev` is deployed by the estate's
+[deploy-kit](https://github.com/JorisJonkers-dev/deploy-kit). A merged release PR builds the image,
+and Flux rolls it out as a canary. The deployment's description and its configuration are in
+`deploy/`.
 
-To update the research part of the terminology map, replace both files in
-`internal/terminology/adapters/seed/data/` with the research JSON from the course-material
-repository; the binary refuses to start on a value the domain does not know. Terms accepted in the
-term review live in Postgres (`accepted_terms`) and join the seed's at startup and after every
-decision; a term's `origin` says which it is.
+## Licence and contributing
 
-### Migrations 00005 and 00006
-
-00005 widens the page limits to 100 (the checks are swapped `NOT VALID`; 00006 validates them in a
-transaction of its own), adds a page's `family`, numbers every scan per company (`scan_number`,
-backfilled in the order the scans were started, unique per company), marks re-scans (`rescan`),
-and adds `company_overrides`, `term_decisions` and `accepted_terms`. Nothing is dropped; existing
-scans keep their results, read as scan 1, 2, … of their company, and their phrases outside the map
-fill the review queue at once.
-
-### Migrations 00007 to 00010
-
-00007 adds a scan's AI readiness (`analysis_readiness`, its crawler rules and its raw files); scans
-made before have none and show "Not checked". 00008 adds the Prompt test (settings, runs and their
-models, answers, extractions, named companies, candidate decisions); a partial unique index keeps
-one run running. 00009 lets a stored key be an Anthropic Admin key (`anthropic_admin`), with the
-provider checks swapped `NOT VALID`; 00010 validates them in a transaction of its own. Nothing is
-dropped.
-
-## Deploying
-
-The app deploys through the estate's [deploy-kit](https://github.com/JorisJonkers-dev/deploy-kit):
-`deploy/findability-explorer.project.yml` is its Project Intent and
-`deploy/env/findability-explorer/base.env` its Process configuration. Validate both with the
-version the estate pins (`estate/toolkit.yml`):
-
-```bash
-npx @jorisjonkers-dev/deploy-kit@0.30.0 validate deploy/findability-explorer.project.yml deploy/env
-```
-
-(The package is on GitHub Packages: point `@jorisjonkers-dev` at `https://npm.pkg.github.com` with a
-token that may read packages.)
-
-**State: live.** Merging a release PR builds the multi-arch image to
-`ghcr.io/jorisjonkers-dev/findability-explorer`, publishes the signed Intent Fragment and starts
-composition (`compose: true`); Flux applies it at `digital-strategy.jorisjonkers.dev`.
-
-- **Sign-in:** auth-api registers the client `findability-explorer` (auth-api#111). People need the
-  `FINDABILITY_EXPLORER` service permission, granted in home-portal's admin page; admins always pass.
-- **Secrets:** `estate/bootstrap/secrets.sh --only findability-explorer` writes the client secret to
-  `secret/auth-api` and `secret/findability-explorer-system/oidc`, and optionally the Anthropic key
-  (without it, matching is off until an admin adds a key in the app). `SESSION_KEY` is a deploy-kit
-  generated key. The client secret becomes derived once deploy-kit implements the `client` block
-  (spec/v1, chapter 17); then the exposure becomes `authenticated` + `signIn: native` (ADR-0001).
-- **Estate:** listed in `participants.yml` and `platform.intent.yml`'s `handover` (estate#197).
-
-**Actions minutes are scarce in this private repo.** CI runs on pull requests that touch code and
-by hand, not on pushes to main; run `task check` and `task e2e` locally before you push.
+The source is published for viewing under the
+[Joris Jonkers Proprietary Source-Available License](LICENSE). It does not grant the right to use,
+copy or deploy it. Contributions are welcome by invitation; see [CONTRIBUTING.md](CONTRIBUTING.md),
+and report security issues as described in [SECURITY.md](SECURITY.md).

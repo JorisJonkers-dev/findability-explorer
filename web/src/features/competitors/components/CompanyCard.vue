@@ -31,7 +31,12 @@ const running = computed(() => (newest.value && isInProgress(newest.value.status
 </script>
 
 <template>
-  <section aria-labelledby="company-name" class="flex flex-col gap-5 stage:min-h-0 stage:gap-9">
+  <!-- On the stage the whole card scrolls, so everything on it can be brought into view. -->
+  <section
+    v-scroll-hint
+    aria-labelledby="company-name"
+    class="scroll-hint flex flex-col gap-5 stage:min-h-0 stage:gap-9 stage:overflow-y-auto stage:pr-6"
+  >
     <p class="sr-only" aria-live="polite">Showing {{ company.shortName }}.</p>
     <div class="flex flex-col gap-1.5 stage:gap-2.5">
       <span class="text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[26px]">{{ companyKind(company) }}</span>
@@ -96,13 +101,13 @@ const running = computed(() => (newest.value && isInProgress(newest.value.status
       </tbody>
     </table>
 
-    <div class="flex flex-col gap-3 stage:min-h-0 stage:shrink stage:gap-4">
+    <div class="flex flex-col gap-3 stage:gap-4">
       <span class="text-sm text-muted stage:text-[26px]">{{ termsTitle(used.length) }}</span>
       <ul
         v-if="used.length > 0"
         v-scroll-hint
         aria-label="Its terms in the terminology map"
-        class="scroll-hint m-0 flex max-h-64 list-none flex-wrap content-start gap-2 overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:gap-3"
+        class="scroll-hint m-0 flex max-h-64 list-none flex-wrap content-start gap-2 overflow-y-auto p-0 stage:max-h-none stage:gap-3 stage:overflow-visible"
       >
         <li
           v-for="t in used"

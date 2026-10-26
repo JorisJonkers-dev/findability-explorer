@@ -20,6 +20,8 @@ import {
   scanPages,
   scanState,
   sinceLabel,
+  profileSortValue,
+  type ProfileColumn,
 } from './history'
 
 const t = (phrase: string, language: string, overrides: Partial<ProfileTerm> = {}): ProfileTerm => ({
@@ -104,5 +106,19 @@ describe('a comparison', () => {
     ]
     expect(changeCounts(groups)).toEqual({ added: 2, removed: 1, moved: 1 })
     expect(changedGroups(groups).map((g) => g.group)).toEqual(['eyelink', 'spec'])
+  })
+})
+
+describe("sorting a company's terms", () => {
+  it('sorts by each column', () => {
+    const t = { phrase: 'eyelink belts', score: 12.5, pages: 3, tier: 'product' as const, inMap: true, firstScan: 2 }
+    expect(['phrase', 'score', 'pages', 'tier', 'map', 'found'].map((c) => profileSortValue(t, c as ProfileColumn))).toEqual([
+      'eyelink belts',
+      12.5,
+      3,
+      'Product',
+      true,
+      2,
+    ])
   })
 })

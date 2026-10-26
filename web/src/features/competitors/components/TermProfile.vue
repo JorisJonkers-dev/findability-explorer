@@ -6,7 +6,20 @@ import { tierFill } from '../../../shared/tiers'
 import { tierLabel } from '../../../shared/vocabulary'
 import PillButton from '../../../shared/ui/PillButton.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
-import { byLanguage, firstGroupWithTerms, groupLabel, groupTabLabel, mapLabel, scanDate, scanName, sinceLabel } from '../domain/history'
+import { directionOf, nextSort, type Sort, type SortDirection, sortRows } from '../../../shared/sort'
+import SortButton from '../../../shared/ui/SortButton.vue'
+import {
+  byLanguage,
+  firstGroupWithTerms,
+  groupLabel,
+  groupTabLabel,
+  mapLabel,
+  type ProfileColumn,
+  profileSortValue,
+  scanDate,
+  scanName,
+  sinceLabel,
+} from '../domain/history'
 
 const props = defineProps<{ profile: CompetitorProfile }>()
 
@@ -20,6 +33,24 @@ watch(
 const group = computed(() => props.profile.groups.find((g) => g.group === picked.value))
 const languages = computed(() => byLanguage(group.value?.terms ?? []))
 const latest = computed(() => props.profile.scan?.number)
+
+// The tables sort by a column while one is picked; each language's table keeps its own rows.
+const sort = ref<Sort<ProfileColumn>>(null)
+function sortBy(column: ProfileColumn, first: SortDirection): void {
+  sort.value = nextSort(sort.value, column, first)
+}
+function ariaSort(column: ProfileColumn): 'ascending' | 'descending' | 'none' {
+  const d = directionOf(sort.value, column)
+  return d === null ? 'none' : d === 'asc' ? 'ascending' : 'descending'
+}
+const PROFILE_COLUMNS: readonly { key: ProfileColumn; label: string; first: SortDirection; numeric: boolean }[] = [
+  { key: 'phrase', label: 'Term', first: 'asc', numeric: false },
+  { key: 'score', label: 'Score', first: 'desc', numeric: true },
+  { key: 'pages', label: 'Pages', first: 'desc', numeric: true },
+  { key: 'tier', label: 'Tier', first: 'asc', numeric: false },
+  { key: 'map', label: 'Terminology map', first: 'desc', numeric: false },
+  { key: 'found', label: 'Found', first: 'desc', numeric: false },
+]
 </script>
 
 <template>
@@ -44,18 +75,27 @@ const latest = computed(() => props.profile.scan?.number)
         </p>
         <table v-for="lang in languages" :key="lang.language" class="w-full border-collapse text-sm stage:text-[26px]">
           <caption class="pb-1.5 text-left font-semibold stage:pb-3 stage:text-[30px]">{{ lang.label }} ({{ lang.terms.length }})</caption>
-          <thead class="sr-only">
-            <tr>
-              <th scope="col">Term</th>
-              <th scope="col">Score</th>
-              <th scope="col">Pages</th>
-              <th scope="col">Tier</th>
-              <th scope="col">Terminology map</th>
-              <th scope="col">Found</th>
+          <thead>
+            <tr class="text-left text-xs text-muted stage:text-[22px]">
+              <th
+                v-for="column in PROFILE_COLUMNS"
+                :key="column.key"
+                scope="col"
+                :aria-sort="ariaSort(column.key)"
+                class="pb-1 pr-3 font-medium stage:pb-2 stage:pr-6"
+                :class="column.numeric ? 'text-right' : ''"
+              >
+                <SortButton
+                  :label="column.label"
+                  :direction="directionOf(sort, column.key)"
+                  :align="column.numeric ? 'end' : 'start'"
+                  @sort="sortBy(column.key, column.first)"
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="t in lang.terms" :key="t.phrase" class="border-t border-grey align-baseline">
+            <tr v-for="t in sortRows(lang.terms, sort, profileSortValue)" :key="t.phrase" class="border-t border-grey align-baseline">
               <th scope="row" class="py-1.5 pr-3 text-left font-medium stage:py-3 stage:pr-6">{{ t.phrase }}</th>
               <td class="py-1.5 pr-3 text-right tabular-nums stage:py-3 stage:pr-6">{{ t.score }}</td>
               <td class="py-1.5 pr-3 text-right tabular-nums text-ink-2 stage:py-3 stage:pr-6">{{ t.pages }}&nbsp;p.</td>

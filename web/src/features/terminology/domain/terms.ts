@@ -1,4 +1,5 @@
 import type { BeltFamily, IntentTier, Term } from '../../../infrastructure/api/types.gen'
+import type { SortValue } from '../../../shared/sort'
 import { familyLabel, languageLabel, tierLabel } from '../../../shared/vocabulary'
 import { chartLanguage, companyName, type TermGroup, type TermView } from './filters'
 import { fold } from './fold'
@@ -214,4 +215,22 @@ export function chips(view: TermView): Chip[] {
 /** How many terms are shown of the map: "35 of 146 terms". */
 export function summary(shown: number, total: number): string {
   return `${String(shown)} of ${String(total)} ${total === 1 ? 'term' : 'terms'}`
+}
+
+/** A column of the per-company table to sort by: the company, a kind of search, or the total. */
+export type HeatColumn = 'company' | (typeof CHART_TIERS)[number] | 'total'
+
+/** What a row of the per-company table sorts by in a column. */
+export function heatSortValue(row: HeatRow, column: HeatColumn): SortValue {
+  if (column === 'company') return row.company
+  if (column === 'total') return row.total
+  return row.cells.find((c) => c.tier === column)?.count ?? 0
+}
+
+/** A column of the ranking to sort by. */
+export type RankColumn = 'rank' | 'term' | 'kind' | 'makers' | 'tribelt'
+
+/** What a ranked term sorts by in a column; Tribelt's own terms first when descending. */
+export function rankSortValue(row: RankedTerm, column: RankColumn): SortValue {
+  return row[column]
 }

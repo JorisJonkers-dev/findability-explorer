@@ -3,6 +3,7 @@ import { familyLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
 import { fold } from '../../terminology/domain/fold'
 import { type Company, listScanLabel } from './company'
 import { countryName, familyCell, languageCount } from './matrix'
+import type { SortValue } from '../../../shared/sort'
 
 /** Which companies the list shows: all, those in one country, elsewhere, or Tribelt's own group. */
 export type Region = 'all' | 'NL' | 'DE' | 'other' | 'group'
@@ -95,4 +96,17 @@ export function selectedCompany<T extends { id: string }>(companies: readonly T[
 /** The competitors the desk research studied: neither added since nor in Tribelt's own group. */
 export function researchedCompetitors<T extends Pick<Competitor, 'source' | 'groupCompany'>>(companies: readonly T[]): T[] {
   return companies.filter((c) => c.source === 'research' && !c.groupCompany)
+}
+
+/** A column of the company list to sort by: the name, a belt family, or the country. */
+export type CompanyColumn = 'name' | (typeof PRODUCT_FAMILIES)[number] | 'country'
+
+/**
+ * What a company sorts by in a column: its short name, whether it offers the family (offering
+ * companies first when descending), or its country's name.
+ */
+export function companySortValue(company: Company, column: CompanyColumn): SortValue {
+  if (column === 'name') return company.shortName
+  if (column === 'country') return countryName(company.country)
+  return company.beltNames.some((b) => b.family === column)
 }

@@ -6,7 +6,19 @@ import PillButton from '../../../shared/ui/PillButton.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
 import type { Company } from '../domain/company'
 import { isScanning, listScanLabel } from '../domain/company'
-import { countLabel, countryCode, familyDots, filterCompanies, type Region, REGIONS, rowLabel } from '../domain/list'
+import { directionOf, nextSort, type Sort, type SortDirection, sortRows } from '../../../shared/sort'
+import SortButton from '../../../shared/ui/SortButton.vue'
+import {
+  type CompanyColumn,
+  companySortValue,
+  countLabel,
+  countryCode,
+  familyDots,
+  filterCompanies,
+  type Region,
+  REGIONS,
+  rowLabel,
+} from '../domain/list'
 
 const props = withDefaults(
   defineProps<{ companies: readonly Company[]; selectedId: string | undefined; loading: boolean; archived?: readonly Company[] }>(),
@@ -16,7 +28,13 @@ const emit = defineEmits<{ pick: [id: string] }>()
 
 const query = ref('')
 const region = ref<Region>('all')
-const shown = computed(() => filterCompanies(props.companies, query.value, region.value))
+// Sorted by a column while one is picked; a family sorts its makers first.
+const sort = ref<Sort<CompanyColumn>>(null)
+const shown = computed(() => sortRows(filterCompanies(props.companies, query.value, region.value), sort.value, companySortValue))
+
+function sortBy(column: CompanyColumn, first: SortDirection): void {
+  sort.value = nextSort(sort.value, column, first)
+}
 
 /** The column heads, short on a phone. */
 const SHORT: Record<(typeof PRODUCT_FAMILIES)[number], string> = {
@@ -48,14 +66,22 @@ const SHORT: Record<(typeof PRODUCT_FAMILIES)[number], string> = {
 
     <div class="flex flex-col stage:min-h-0 stage:flex-1">
       <div
-        aria-hidden="true"
+        role="group"
+        aria-label="Sort the companies"
         class="grid grid-cols-[minmax(0,1fr)_repeat(5,2.25rem)_2rem] items-end gap-1 border-b-2 border-black px-2 pb-2 text-center text-xs font-semibold stage:grid-cols-[minmax(0,1fr)_repeat(5,150px)_110px] stage:gap-3 stage:border-b-[3px] stage:px-5 stage:pb-4 stage:text-[24px]"
       >
-        <span class="text-left font-medium text-muted">Company</span>
-        <span v-for="family in PRODUCT_FAMILIES" :key="family">
+        <SortButton label="Company" :direction="directionOf(sort, 'name')" class="font-medium text-muted" @sort="sortBy('name', 'asc')" />
+        <SortButton
+          v-for="family in PRODUCT_FAMILIES"
+          :key="family"
+          :label="familyLabel(family)"
+          :direction="directionOf(sort, family)"
+          align="center"
+          @sort="sortBy(family, 'desc')"
+        >
           <span class="stage:hidden">{{ SHORT[family] }}</span><span class="hidden stage:inline">{{ family === 'other' ? 'Other' : familyLabel(family) }}</span>
-        </span>
-        <span>Country</span>
+        </SortButton>
+        <SortButton label="Country" :direction="directionOf(sort, 'country')" align="center" @sort="sortBy('country', 'asc')" />
       </div>
       <p v-if="loading" class="m-0 py-4 text-muted">Loading the companies…</p>
       <ul v-else v-scroll-hint aria-label="Companies" class="scroll-hint m-0 max-h-[26rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1">

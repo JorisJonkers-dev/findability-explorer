@@ -42,17 +42,26 @@ describe('a re-scan', () => {
   it('follows the queued scans until every one has finished', () => {
     const scan = (id: string, status: 'queued' | 'running' | 'done' | 'failed') => ({ id, status })
     const queued = ['a', 'b', 'c', 'd']
-    expect(rescanProgress(queued, [scan('a', 'done'), scan('b', 'running'), scan('c', 'queued'), scan('d', 'queued'), scan('x', 'running')])).toEqual({
+    const midway = rescanProgress(queued, [scan('a', 'done'), scan('b', 'running'), scan('c', 'queued'), scan('d', 'queued'), scan('x', 'running')])
+    expect(midway).toEqual({
       finished: false,
       text: 'Re-scanning 4 companies: 1 done, 1 running, 2 waiting.',
+      total: 4,
+      settled: 1,
+      fraction: 0.25,
+      running: [scan('b', 'running')], // x runs too, but is not one of the re-scan's
+      waiting: 2,
     })
-    expect(rescanProgress(queued, [scan('a', 'done'), scan('b', 'failed'), scan('c', 'done'), scan('d', 'done')])).toEqual({
+    expect(rescanProgress(queued, [scan('a', 'done'), scan('b', 'failed'), scan('c', 'done'), scan('d', 'done')])).toMatchObject({
       finished: true,
       text: 'Re-scan finished: 3 done, 1 failed.',
+      settled: 4,
+      fraction: 1,
+      running: [],
     })
     // A scan the list no longer holds cannot be followed, so it does not keep the line waiting.
     expect(rescanProgress(['a', 'gone'], [scan('a', 'done')]).finished).toBe(true)
-    expect(rescanProgress([], []).finished).toBe(true)
+    expect(rescanProgress([], [])).toMatchObject({ finished: true, fraction: 1 })
     expect(rescanProgress(['a', 'b'], [scan('a', 'failed'), scan('b', 'running')]).text).toBe('Re-scanning 2 companies: 0 done, 1 failed, 1 running, 0 waiting.')
     expect(rescanProgress(['a'], [scan('a', 'queued')]).text).toBe('Re-scanning 1 company: 0 done, 0 running, 1 waiting.')
   })

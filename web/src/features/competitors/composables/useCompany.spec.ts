@@ -1,10 +1,15 @@
 import { flushPromises } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { competitor, summary } from '../../../testing/fixtures'
 import { json, problem } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
+import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 import { useCompany } from './useCompany'
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('useCompany', () => {
   it('fetches one company and its scans', async () => {
@@ -29,5 +34,25 @@ describe('useCompany', () => {
     await flushPromises()
     expect(failing.state.notFound.value).toBe(false)
     expect(failing.state.error.value).toBe('Internal Server Error')
+  })
+
+  it('asks again while its newest scan reads pages, and stops once it is done', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    const pages = [3, 15]
+    let call = 0
+    const { state, sent } = mountComposable(
+      () => useCompany(ref('twentebelt')),
+      () => {
+        const n = pages[Math.min(call++, 1)] ?? 15
+        return json({ competitor: competitor('Twentebelt'), scans: [summary({ status: n < 15 ? 'running' : 'done', pagesCrawled: n })] })
+      },
+    )
+    await flushPromises()
+    expect(state.detail.value?.scans[0]?.pagesCrawled).toBe(3)
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    await flushPromises()
+    expect(state.detail.value?.scans[0]?.status).toBe('done')
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+    expect(sent).toHaveLength(2)
   })
 })

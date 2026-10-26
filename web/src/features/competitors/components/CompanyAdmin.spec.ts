@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RescanBatch } from '../../../infrastructure/api/types.gen'
-import { competitor, me, summary } from '../../../testing/fixtures'
+import { ANALYSIS_ID, competitor, me, summary } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 
@@ -184,19 +184,34 @@ describe('the administrator tools', () => {
     const { wrapper } = await mountApp(
       api(sent, {
         'GET /api/v1/analyses': () =>
-          json({ items: [summary({ status: finished ? 'done' : 'running' }), summary({ id: '6c1d2b0f-3e4a-4f6b-9c7d-8e9f0a1b2c3d', status: finished ? 'failed' : 'queued' })] }),
+          json({
+            items: [
+              summary({ status: finished ? 'done' : 'running', pagesCrawled: finished ? 15 : 3, maxPages: 15 }),
+              summary({ id: '6c1d2b0f-3e4a-4f6b-9c7d-8e9f0a1b2c3d', competitorId: 'example-belts', status: finished ? 'failed' : 'queued', pagesCrawled: 0 }),
+            ],
+          }),
       }),
       '/competitors',
     )
     await button(wrapper, 'Re-scan all 2 companies with data').trigger('click')
     await button(wrapper, 'Re-scan 2 companies').trigger('click')
     await settle()
-    expect(wrapper.text()).toContain('Re-scanning 2 companies: 0 done, 1 running, 1 waiting.')
+    const panel = wrapper.get('[data-testid="rescan-progress"]')
+    expect(panel.text()).toContain('Re-scanning 2 companies: 0 done, 1 running, 1 waiting.')
+    expect(panel.get('[aria-label="Re-scan progress"]').attributes('aria-valuenow')).toBe('0')
+    // The scan running now, by company, with its own bar; the one waiting is counted.
+    const now = panel.get('ul[aria-label="Scanning now"]')
+    expect(now.findAll('li').map((li) => li.text())).toEqual(['TwentebeltReading page 4 of 15'])
+    expect(now.get('a').attributes('href')).toBe(`/scan/${ANALYSIS_ID}`)
+    expect(now.get('[aria-label="Scan of Twentebelt"]').attributes('aria-valuenow')).toBe('20')
+    expect(panel.text()).toContain('1 company waits its turn.')
     expect(button(wrapper, 'Re-scan all 2 companies with data').attributes('disabled')).toBeDefined()
     finished = true
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
     await flushPromises()
     expect(wrapper.text()).toContain('Re-scan finished: 1 done, 1 failed.')
+    expect(wrapper.get('[aria-label="Re-scan progress"]').attributes('aria-valuenow')).toBe('100')
+    expect(wrapper.find('ul[aria-label="Scanning now"]').exists()).toBe(false)
   })
 
   it('adds a company by name and website, checks both first, and shows it', async () => {

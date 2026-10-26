@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+import ProgressBar from '../../../shared/ui/ProgressBar.vue'
 import { usePageBudget } from '../../scan/composables/usePageBudget'
 import { MAX_SCAN_PAGES } from '../../scan/domain/newScan'
+import { siteHost } from '../../scan/domain/results'
+import { progress as scanProgress } from '../../scan/domain/status'
 import { useAddCompany, useRescan } from '../composables/useCompanyAdmin'
-import type { Competitor } from '../../../infrastructure/api/types.gen'
+import type { AnalysisSummary } from '../../../infrastructure/api/types.gen'
+import type { Company } from '../domain/company'
 import { checkCompanyForm, rescanCandidates, rescanSummary } from '../domain/admin'
 
-const props = defineProps<{ companies: readonly Competitor[] }>()
+const props = defineProps<{ companies: readonly Company[] }>()
 const emit = defineEmits<{ added: [id: string] }>()
 
 const { pages } = usePageBudget()
@@ -21,6 +26,12 @@ const formError = ref<{ field: 'name' | 'url'; message: string } | null>(null)
 const added = ref<string | null>(null)
 const adding = ref(false)
 const summary = computed(() => (batch.value ? rescanSummary(batch.value) : null))
+const route = useRoute()
+
+/** The company a running scan reads, by its short name, or its website's host. */
+function companyOf(scan: AnalysisSummary): string {
+  return props.companies.find((c) => c.id === scan.competitorId)?.shortName ?? siteHost(scan.url)
+}
 
 const BUTTON = 'min-h-11 rounded-full border-2 px-5 font-medium stage:min-h-[76px] stage:border-[3px] stage:px-8 stage:text-[26px]'
 const FIELD = 'h-11 min-w-0 rounded-xl border-2 bg-white px-3 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-5 stage:text-[28px]'
@@ -90,8 +101,23 @@ function submit(): void {
         <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="confirming = false">Cancel</button>
       </div>
     </div>
-    <div v-if="summary || progress" class="flex flex-col gap-1 stage:gap-2" aria-live="polite">
-      <p v-if="progress" class="m-0 text-base font-semibold stage:text-[30px]">{{ progress.text }}</p>
+    <div v-if="summary || progress" class="flex flex-col gap-3 rounded-2xl bg-white p-4 stage:gap-5 stage:p-8" data-testid="rescan-progress">
+      <template v-if="progress">
+        <p class="m-0 text-base font-semibold stage:text-[30px]" aria-live="polite">{{ progress.text }}</p>
+        <ProgressBar thick :fraction="progress.fraction" label="Re-scan progress" :text="`${progress.settled} of ${progress.total} finished`" />
+        <ul v-if="progress.running.length > 0" aria-label="Scanning now" class="m-0 flex list-none flex-col gap-3 p-0 stage:gap-5">
+          <li v-for="scan in progress.running" :key="scan.id" class="flex flex-col gap-1.5 stage:gap-2.5">
+            <div class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm stage:text-[26px]">
+              <RouterLink :to="{ path: `/scan/${scan.id}`, query: route.query }" class="font-medium">{{ companyOf(scan) }}</RouterLink>
+              <span class="text-ink-2">{{ scanProgress(scan).label }}</span>
+            </div>
+            <ProgressBar :fraction="scanProgress(scan).fraction" :label="`Scan of ${companyOf(scan)}`" :text="scanProgress(scan).label" />
+          </li>
+        </ul>
+        <p v-if="progress.waiting > 0" class="m-0 text-sm text-ink-2 stage:text-[26px]">
+          {{ progress.waiting === 1 ? '1 company waits its turn.' : `${progress.waiting} companies wait their turn.` }}
+        </p>
+      </template>
       <p v-if="summary" class="m-0 text-sm text-ink-2 stage:text-[26px]">{{ summary }}</p>
     </div>
     <p v-if="rescanError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[26px]">{{ rescanError }}</p>

@@ -4,10 +4,18 @@ import { getCompetitorOptions } from '../../../infrastructure/api/@tanstack/vue-
 import type { CompetitorDetail } from '../../../infrastructure/api/types.gen'
 import { zProblem } from '../../../infrastructure/api/zod.gen'
 import { describeError } from '../../../shared/describeError'
+import { isInProgress, POLL_INTERVAL_MS } from '../../scan/domain/status'
 
 /** Server state for one company and its most recent scans. */
 export function useCompany(id: Ref<string>) {
-  const query = useQuery(computed(() => getCompetitorOptions({ path: { competitorId: id.value } })))
+  // Asked for again while its newest scan is waiting or reading pages.
+  const query = useQuery(
+    computed(() => ({
+      ...getCompetitorOptions({ path: { competitorId: id.value } }),
+      refetchInterval: (q: { state: { data: CompetitorDetail | undefined } }) =>
+        q.state.data?.scans[0] && isInProgress(q.state.data.scans[0].status) ? POLL_INTERVAL_MS : false,
+    })),
+  )
   return {
     detail: computed<CompetitorDetail | undefined>(() => query.data.value),
     isLoading: query.isPending,

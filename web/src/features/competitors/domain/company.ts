@@ -4,7 +4,7 @@ import { companyName } from '../../terminology/domain/filters'
 import { fold } from '../../terminology/domain/fold'
 import { checkScanUrl } from '../../scan/domain/newScan'
 import { recentLabel } from '../../scan/domain/recent'
-import { isInProgress } from '../../scan/domain/status'
+import { isInProgress, progress } from '../../scan/domain/status'
 import { shortName } from './matrix'
 
 /** A known company, with the short name the terminology map credits its terms to. */
@@ -84,9 +84,19 @@ export function pickerState(text: string, companies: readonly Company[]): Picker
 }
 
 /** How often a company was scanned: "Scanned 3×", or "Not scanned yet". */
-export function scanCountLabel(scans: number): string {
+export function scanCountLabel(scans: number, scanning = false): string {
+  if (scanning) {
+    if (scans <= 1) return 'First scan running'
+    return `${scanCountLabel(scans - 1)}, one more running`
+  }
   if (scans === 0) return 'Never scanned'
   return scans === 1 ? 'Scanned once' : `Scanned ${String(scans)} times`
+}
+
+/** A link to one of a company's scans: "3 Oct: 15 pages read", or "Reading page 13 of 60". */
+export function scanLinkLabel(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages' | 'createdAt'>, now: Date = new Date()): string {
+  if (isInProgress(scan.status)) return progress(scan).label
+  return `${recentLabel(scan, now)}: ${scanOutcome(scan)}`
 }
 
 const LONG_DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -105,18 +115,35 @@ function dayLabel(date: Date, now: Date): string {
 }
 
 /** When the last scan started, to the minute, and how it went; null without a scan. */
-export function lastScanLabel(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'createdAt'> | undefined, now: Date = new Date()): string | null {
+export function lastScanLabel(
+  scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages' | 'createdAt'> | undefined,
+  now: Date = new Date(),
+): string | null {
   if (!scan) return null
   const at = new Date(scan.createdAt)
-  const outcome = isInProgress(scan.status) ? 'scanning now' : scanOutcome(scan).toLowerCase()
-  return `Last scan: ${dayLabel(at, now)} at ${CLOCK.format(at)}, ${outcome}`
+  return `Last scan: ${dayLabel(at, now)} at ${CLOCK.format(at)}, ${scanState(scan)}`
 }
 
-/** A company's scans in a few words for its row in the list: "2 scans · today". */
+/** How a scan went, or where it is: "60 pages read", "failed", "reading page 4 of 15". */
+function scanState(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages'>): string {
+  return isInProgress(scan.status) ? lowerFirst(progress(scan).label) : scanOutcome(scan).toLowerCase()
+}
+
+function lowerFirst(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1)
+}
+
+/** Whether a scan of the company is waiting or reading pages now. */
+export function isScanning(company: Pick<Competitor, 'lastScan'>): boolean {
+  return company.lastScan !== undefined && isInProgress(company.lastScan.status)
+}
+
+/** A company's scans in a few words for its row in the list: "2 scans · today", "2 scans · reading page 4 of 15". */
 export function listScanLabel(company: Pick<Competitor, 'scans' | 'lastScan'>, now: Date = new Date()): string {
   if (company.scans === 0) return 'No scans'
   const count = company.scans === 1 ? '1 scan' : `${String(company.scans)} scans`
-  return company.lastScan ? `${count} · ${recentLabel(company.lastScan, now)}` : count
+  if (!company.lastScan) return count
+  return `${count} · ${isInProgress(company.lastScan.status) ? scanState(company.lastScan) : recentLabel(company.lastScan, now)}`
 }
 
 const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })

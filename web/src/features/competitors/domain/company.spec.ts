@@ -11,9 +11,11 @@ import {
   pickerState,
   readableName,
   scanCompany,
+  isScanning,
   lastScanLabel,
   listScanLabel,
   scanCountLabel,
+  scanLinkLabel,
   scanOutcome,
   sourceLabel,
   suggestions,
@@ -102,6 +104,16 @@ describe('labels', () => {
     expect(scanCountLabel(0)).toBe('Never scanned')
     expect(scanCountLabel(1)).toBe('Scanned once')
     expect(scanCountLabel(3)).toBe('Scanned 3 times')
+    // The count holds a scan still running; it is not done yet.
+    expect(scanCountLabel(1, true)).toBe('First scan running')
+    expect(scanCountLabel(2, true)).toBe('Scanned once, one more running')
+    expect(scanCountLabel(4, true)).toBe('Scanned 3 times, one more running')
+  })
+
+  it('labels a link to a scan by its date and outcome, or where it is', () => {
+    const now = new Date(2026, 9, 26, 9, 0)
+    expect(scanLinkLabel(summary({ createdAt: new Date(2026, 9, 3).toISOString(), pagesCrawled: 15 }), now)).toBe('3 Oct: 15 pages read')
+    expect(scanLinkLabel(summary({ status: 'running', pagesCrawled: 12, maxPages: 60 }), now)).toBe('Reading page 13 of 60')
   })
 
   it('says when the last scan was, to the minute, and how it went', () => {
@@ -112,7 +124,10 @@ describe('labels', () => {
     expect(lastScanLabel(summary({ createdAt: at(26, 7, 24), pagesCrawled: 60 }), now)).toBe('Last scan: today at 07:24, 60 pages read')
     expect(lastScanLabel(summary({ createdAt: at(25, 18, 5), status: 'failed' }), now)).toBe('Last scan: yesterday at 18:05, failed')
     expect(lastScanLabel(summary({ createdAt: at(3, 7, 0), pagesCrawled: 1 }), now)).toBe('Last scan: 3 October 2026 at 07:00, 1 page read')
-    expect(lastScanLabel(summary({ createdAt: at(26, 8, 59), status: 'running' }), now)).toBe('Last scan: today at 08:59, scanning now')
+    expect(lastScanLabel(summary({ createdAt: at(26, 8, 59), status: 'running', pagesCrawled: 11, maxPages: 60 }), now)).toBe(
+      'Last scan: today at 08:59, reading page 12 of 60',
+    )
+    expect(lastScanLabel(summary({ createdAt: at(26, 8, 59), status: 'queued', pagesCrawled: 0 }), now)).toBe('Last scan: today at 08:59, waiting to start')
   })
 
   it('sums the scans up for the company list', () => {
@@ -120,7 +135,15 @@ describe('labels', () => {
     expect(listScanLabel({ scans: 0 }, now)).toBe('No scans')
     expect(listScanLabel({ scans: 2, lastScan: summary({ createdAt: new Date(2026, 9, 26, 7, 24).toISOString() }) }, now)).toBe('2 scans · today')
     expect(listScanLabel({ scans: 1, lastScan: summary({ createdAt: new Date(2026, 9, 3).toISOString() }) }, now)).toBe('1 scan · 3 Oct')
-    expect(listScanLabel({ scans: 4, lastScan: summary({ status: 'queued' }) }, now)).toBe('4 scans · scanning')
+    expect(listScanLabel({ scans: 4, lastScan: summary({ status: 'queued' }) }, now)).toBe('4 scans · waiting to start')
+    expect(listScanLabel({ scans: 2, lastScan: summary({ status: 'running', pagesCrawled: 3, maxPages: 15 }) }, now)).toBe('2 scans · reading page 4 of 15')
+  })
+
+  it('tells a company being scanned now', () => {
+    expect(isScanning({})).toBe(false)
+    expect(isScanning({ lastScan: summary({ status: 'done' }) })).toBe(false)
+    expect(isScanning({ lastScan: summary({ status: 'queued' }) })).toBe(true)
+    expect(isScanning({ lastScan: summary({ status: 'running' }) })).toBe(true)
   })
 
   it('says where a company comes from', () => {

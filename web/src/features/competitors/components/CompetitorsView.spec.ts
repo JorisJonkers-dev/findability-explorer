@@ -134,6 +134,24 @@ describe('the company card', () => {
     expect(visit.attributes('rel')).toBe('noopener noreferrer')
   })
 
+  it('shows a company being scanned, live, in its row and on its card', async () => {
+    const scanning = { ...twentebelt, scans: 3, lastScan: summary({ status: 'running' as const, pagesCrawled: 4, maxPages: 15 }) }
+    const { wrapper } = await mountApp(
+      api({
+        'GET /api/v1/competitors': () => json({ items: [scanning, martens, ashworth, tribelt] }),
+        'GET /api/v1/competitors/twentebelt': () => json({ competitor: scanning, scans: [scanning.lastScan] }),
+      }),
+      '/competitors',
+    )
+    expect(rows(wrapper)[0]?.attributes('aria-label')).toBe('Twentebelt, Netherlands: Tri-Flex; 3 scans · reading page 5 of 15')
+    expect(rows(wrapper)[0]?.text()).toContain('3 scans · reading page 5 of 15')
+    const stats = wrapper.get('[data-testid="scan-stats"]')
+    expect(stats.text()).toMatch(/Last scan: .* at \d\d:\d\d, reading page 5 of 15/)
+    const bar = stats.get('[role="progressbar"]')
+    expect(bar.attributes('aria-label')).toBe('Scan of Twentebelt')
+    expect(bar.attributes('aria-valuenow')).toBe('27')
+  })
+
   it('shows the company picked, and keeps it in the address', async () => {
     const { wrapper, router } = await mountApp(api(), '/competitors')
     await rows(wrapper)[1]?.trigger('click')

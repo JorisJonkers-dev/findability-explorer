@@ -16,6 +16,8 @@ const (
 	OpenRouterURL = "https://openrouter.ai/api/v1"
 	// MistralURL is Mistral's API.
 	MistralURL = "https://api.mistral.ai/v1"
+	// AnthropicURL is Anthropic's API, which the Admin key's reports are read from.
+	AnthropicURL = "https://api.anthropic.com"
 	// Referer and Title identify the app to OpenRouter.
 	Referer = "https://digital-strategy.jorisjonkers.dev"
 	Title   = "Findability Explorer"
@@ -31,13 +33,19 @@ type Connector struct {
 	AnthropicOptions []option.RequestOption
 	OpenRouterURL    string
 	MistralURL       string
+	AnthropicURL     string
 }
 
-var _ domain.Connector = (*Connector)(nil)
+var (
+	_ domain.Connector = (*Connector)(nil)
+	_ domain.Reporter  = (*Connector)(nil)
+)
 
 // New returns a Connector for the providers' real APIs.
 func New() *Connector {
-	return &Connector{HTTP: &http.Client{Timeout: requestTimeout}, OpenRouterURL: OpenRouterURL, MistralURL: MistralURL}
+	return &Connector{
+		HTTP: &http.Client{Timeout: requestTimeout}, OpenRouterURL: OpenRouterURL, MistralURL: MistralURL, AnthropicURL: AnthropicURL,
+	}
 }
 
 // Connect returns the Client for p with key.
@@ -50,6 +58,8 @@ func (c *Connector) Connect(p domain.Provider, key string) domain.Client {
 		}
 	case domain.Mistral:
 		return &chat{name: "Mistral", base: c.MistralURL, key: key, http: c.HTTP}
+	case domain.AnthropicAdmin:
+		return &admin{base: c.AnthropicURL, key: key, http: c.HTTP}
 	case domain.Anthropic:
 	}
 	return newAnthropic(key, c.AnthropicOptions...)

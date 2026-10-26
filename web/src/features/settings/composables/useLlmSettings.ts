@@ -4,13 +4,14 @@ import {
   addLlmCredentialMutation,
   clearActiveLlmMutation,
   deleteLlmCredentialMutation,
+  getLlmKeyUsageOptions,
   getLlmSettingsOptions,
   getLlmSettingsQueryKey,
   listLlmModelsOptions,
   setActiveLlmMutation,
   testLlmCredentialMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
-import type { ActiveLlm, LlmModel, LlmSettings, NewLlmCredential } from '../../../infrastructure/api/types.gen'
+import type { ActiveLlm, LlmKeyUsage, LlmModel, LlmSettings, NewLlmCredential } from '../../../infrastructure/api/types.gen'
 import { testOutcome } from '../domain/credentials'
 import { isForbidden, type SettingsAction, settingsProblem } from '../domain/problems'
 
@@ -47,6 +48,25 @@ export function useLlmModels(credentialId: Ref<string>) {
     models: computed<LlmModel[]>(() => (query.data.value ? query.data.value.items : [])),
     isLoading: computed(() => query.isFetching.value && query.data.value === undefined),
     error: computed(() => (query.error.value ? settingsProblem(query.error.value, 'models') : null)),
+  }
+}
+
+/**
+ * What the provider reports a key used, asked only once shown is true: each look asks the
+ * provider, so the figures are current but never fetched for nothing.
+ */
+export function useKeyUsage(credentialId: Ref<string>, shown: Ref<boolean>) {
+  const query = useQuery(
+    computed(() => ({
+      ...getLlmKeyUsageOptions({ path: { credentialId: credentialId.value } }),
+      enabled: shown.value,
+      staleTime: 60_000,
+    })),
+  )
+  return {
+    usage: computed<LlmKeyUsage | undefined>(() => query.data.value),
+    isLoading: computed(() => query.isFetching.value && query.data.value === undefined),
+    error: computed(() => (query.error.value ? settingsProblem(query.error.value, 'usage') : null)),
   }
 }
 

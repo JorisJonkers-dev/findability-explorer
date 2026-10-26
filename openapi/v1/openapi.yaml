@@ -1086,6 +1086,40 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/credentials/{credentialId}/usage:
+    get:
+      operationId: getLlmKeyUsage
+      summary: Get what the provider reports a key used
+      description: >-
+        Administrators only. OpenRouter's own figures for an OpenRouter key (spend all time, today,
+        this week and this month, its limit, the day's free-model requests); Anthropic's usage
+        report of this month for an Anthropic key, per model, and the organisation's cost, read
+        with a stored Anthropic Admin key (without one, nothing). Mistral reports nothing. 502 when
+        the provider fails.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+      responses:
+        "200":
+          description: The usage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmKeyUsage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "502":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/llm/active:
     put:
       operationId: setActiveLlm
@@ -1822,9 +1856,11 @@ components:
           type: boolean
           description: True when auth-api grants ROLE_ADMIN, which the admin settings need.
     LlmProvider:
-      description: A language-model provider.
+      description: >-
+        A language-model provider. `anthropic_admin` is an Anthropic Admin key, which only reads
+        the organisation's usage and cost reports and never answers.
       type: string
-      enum: [anthropic, openrouter, mistral]
+      enum: [anthropic, openrouter, mistral, anthropic_admin]
     LlmCredentialId:
       description: >-
         A credential's id: a UUID for a stored key, or `vault-anthropic` for the key Vault
@@ -1937,6 +1973,152 @@ components:
           maxLength: 300
           description: The provider's display name for it, or the id.
           example: "Anthropic: Claude Haiku 5.5"
+    LlmUsageSource:
+      description: >-
+        Where a key's usage figures come from - OpenRouter's own figures, Anthropic's reports read
+        with an Admin key, or none (the provider reports nothing for the key).
+      type: string
+      enum: [openrouter, anthropic, none]
+    LlmFreeRequests:
+      description: OpenRouter's count of the day's requests to free models.
+      type: object
+      additionalProperties: false
+      required: [used, limit, remaining]
+      properties:
+        used:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000000
+          description: Requests today.
+          example: 12
+        limit:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000000
+          description: Requests allowed a day.
+          example: 1000
+        remaining:
+          type: integer
+          format: int32
+          minimum: -10000000
+          maximum: 10000000
+          description: Requests left today.
+          example: 988
+    LlmModelTokens:
+      description: The tokens a key used with one model this month, as Anthropic reports them.
+      type: object
+      additionalProperties: false
+      required: [model, inputTokens, outputTokens, cacheReadTokens]
+      properties:
+        model:
+          type: string
+          maxLength: 200
+          description: The model.
+          example: claude-haiku-5-5
+        inputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: Input tokens, cache writes included.
+          example: 120000
+        outputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: Output tokens.
+          example: 30000
+        cacheReadTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: Input tokens read from the cache.
+          example: 0
+    LlmKeyUsage:
+      description: What a provider reports a key used.
+      type: object
+      additionalProperties: false
+      required: [source, message, models]
+      properties:
+        source:
+          $ref: "#/components/schemas/LlmUsageSource"
+        message:
+          type: string
+          maxLength: 500
+          description: What the figures are, or why there are none.
+          example: OpenRouter's own figures for this key, in dollars.
+        totalUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - the key's spend, all time.
+          example: 25.5
+        dailyUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - today's (UTC).
+          example: 1.2
+        weeklyUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - this week's (UTC, from Monday).
+          example: 5.6
+        monthlyUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - this month's (UTC).
+          example: 24.5
+        limitUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - the key's own limit; absent when it has none.
+          example: 100
+        limitRemainingUsd:
+          type: number
+          format: double
+          minimum: -1000000000
+          maximum: 1000000000
+          description: OpenRouter - what is left of the limit.
+          example: 75.5
+        limitReset:
+          type: string
+          maxLength: 20
+          description: OpenRouter - when the limit resets (daily, weekly, monthly); absent when never.
+          example: monthly
+        freeRequests:
+          $ref: "#/components/schemas/LlmFreeRequests"
+        models:
+          type: array
+          maxItems: 200
+          description: Anthropic - this month's tokens per model.
+          items:
+            $ref: "#/components/schemas/LlmModelTokens"
+        organisationCostUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: Anthropic - the whole organisation's cost this month; Anthropic does not report it per key.
+          example: 2
+        since:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: Anthropic - the start of the month the figures cover.
+          example: "2026-10-01T00:00:00Z"
     LlmModelList:
       description: The models a key may use, by id.
       type: object

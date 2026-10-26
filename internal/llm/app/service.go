@@ -80,15 +80,19 @@ type Settings struct {
 type Service struct {
 	repo      Repository
 	connector domain.Connector
+	reporter  domain.Reporter
 	spent     Spent
 	cfg       Config
 	now       func() time.Time
 	newID     func() string
 }
 
-// New returns a Service; newID makes the id of an added credential.
-func New(repo Repository, connector domain.Connector, spent Spent, cfg Config, now func() time.Time, newID func() string) *Service {
-	return &Service{repo: repo, connector: connector, spent: spent, cfg: cfg, now: now, newID: newID}
+// New returns a Service; reporter reads what the providers report a key used, and newID makes
+// the id of an added credential.
+func New(repo Repository, connector domain.Connector, reporter domain.Reporter, spent Spent, cfg Config, now func() time.Time,
+	newID func() string,
+) *Service {
+	return &Service{repo: repo, connector: connector, reporter: reporter, spent: spent, cfg: cfg, now: now, newID: newID}
 }
 
 // Settings returns the credentials, the active model, the budget and the latest events.
@@ -158,7 +162,7 @@ func (s *Service) Add(ctx context.Context, actor, provider, label, key string) (
 		return domain.Credential{}, fmt.Errorf("%w: %w", domain.ErrKeyRefused, err)
 	}
 	now := s.now()
-	test := domain.Test{OK: true, At: now, Message: accepted(len(models))}
+	test := domain.Test{OK: true, At: now, Message: acceptedFor(nc.Provider, len(models))}
 	c := domain.Credential{
 		ID: s.newID(), Provider: nc.Provider, Label: nc.Label, Source: domain.SourceStored,
 		Fingerprint: domain.Fingerprint(nc.Key), Readable: true, CreatedBy: actor, CreatedAt: now, LastTest: &test,
@@ -211,7 +215,7 @@ func (s *Service) Test(ctx context.Context, actor, id string) (domain.Test, erro
 	if err != nil {
 		test.Message = domain.Clip(capitalise(err.Error()))
 	} else {
-		test.Message = accepted(len(models))
+		test.Message = acceptedFor(provider, len(models))
 	}
 	ok := test.OK
 	if err := s.record(ctx, domain.Event{
@@ -248,6 +252,9 @@ func (s *Service) SetActive(ctx context.Context, actor, credentialID, model stri
 	provider, _, err := s.secret(ctx, credentialID)
 	if err != nil {
 		return Settings{}, err
+	}
+	if provider == domain.AnthropicAdmin {
+		return Settings{}, domain.ErrReportsOnly
 	}
 	now := s.now()
 	active := domain.Active{CredentialID: credentialID, Model: model}
@@ -331,6 +338,74 @@ func (s *Service) record(ctx context.Context, e domain.Event) error {
 
 func accepted(models int) string {
 	return fmt.Sprintf("The provider accepted the key; it may use %d models.", models)
+}
+
+// acceptedFor is the test message for a key of provider: an Admin key reads reports, no models.
+func acceptedFor(p domain.Provider, models int) string {
+	if p == domain.AnthropicAdmin {
+		return "Anthropic accepted the Admin key; it reads the organisation's usage and cost reports."
+	}
+	return accepted(models)
+}
+
+// Usage returns what the provider reports the credential used: OpenRouter's own figures for an
+// OpenRouter key; Anthropic's usage and cost reports for an Anthropic key, read with the first
+// readable Admin key stored (without one, nothing). A provider that fails returns an error
+// wrapping domain.ErrProvider.
+func (s *Service) Usage(ctx context.Context, id string) (domain.Usage, error) {
+	provider, key, err := s.secret(ctx, id)
+	if err != nil {
+		return domain.Usage{}, err
+	}
+	var u domain.Usage
+	switch provider {
+	case domain.OpenRouter:
+		u, err = s.reporter.OpenRouter(ctx, key)
+	case domain.Anthropic, domain.AnthropicAdmin:
+		u, err = s.anthropicUsage(ctx, provider, key)
+	case domain.Mistral:
+		return domain.Usage{Source: domain.UsageNone, Message: "Mistral does not report a key's usage through its API."}, nil
+	}
+	if err != nil {
+		return domain.Usage{}, fmt.Errorf("%w: %w", domain.ErrProvider, err)
+	}
+	return u, nil
+}
+
+func (s *Service) anthropicUsage(ctx context.Context, provider domain.Provider, key string) (domain.Usage, error) {
+	adminKey, err := s.adminKey(ctx)
+	if err != nil {
+		return domain.Usage{}, err
+	}
+	if adminKey == "" {
+		return domain.Usage{
+			Source: domain.UsageNone,
+			Message: "Anthropic reports usage only to an Admin key. Add an Anthropic Admin key (sk-ant-admin…) to see " +
+				"Anthropic's own figures for this key.",
+		}, nil
+	}
+	if provider == domain.AnthropicAdmin {
+		key = "" // the whole organisation
+	}
+	now := s.now().UTC()
+	return s.reporter.Anthropic(ctx, adminKey, key, time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC))
+}
+
+// adminKey is the first readable Anthropic Admin key stored, or "".
+func (s *Service) adminKey(ctx context.Context) (string, error) {
+	stored, err := s.repo.List(ctx)
+	if err != nil {
+		return "", fmt.Errorf("list credentials: %w", err)
+	}
+	for _, c := range stored {
+		if c.Provider != domain.AnthropicAdmin || !c.Readable {
+			continue
+		}
+		if _, key, err := s.repo.Secret(ctx, c.ID); err == nil {
+			return key, nil
+		}
+	}
+	return "", nil
 }
 
 // capitalise makes a sentence of an error message.

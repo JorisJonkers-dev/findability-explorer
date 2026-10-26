@@ -102,6 +102,15 @@ type Handler interface {
 	//
 	// GET /api/v1/competitors/{competitorId}/profile
 	GetCompetitorProfile(ctx context.Context, params GetCompetitorProfileParams) (GetCompetitorProfileRes, error)
+	// GetLlmKeyUsage implements getLlmKeyUsage operation.
+	//
+	// Administrators only. OpenRouter's own figures for an OpenRouter key (spend all time, today, this
+	// week and this month, its limit, the day's free-model requests); Anthropic's usage report of this
+	// month for an Anthropic key, per model, and the organisation's cost, read with a stored Anthropic
+	// Admin key (without one, nothing). Mistral reports nothing. 502 when the provider fails.
+	//
+	// GET /api/v1/admin/llm/credentials/{credentialId}/usage
+	GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (GetLlmKeyUsageRes, error)
 	// GetLlmSettings implements getLlmSettings operation.
 	//
 	// Returns every credential (never a secret), the model product matching uses now, the token budget,

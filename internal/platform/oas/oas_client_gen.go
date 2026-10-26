@@ -123,6 +123,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/competitors/{competitorId}/profile
 	GetCompetitorProfile(ctx context.Context, params GetCompetitorProfileParams) (GetCompetitorProfileRes, error)
+	// GetLlmKeyUsage invokes getLlmKeyUsage operation.
+	//
+	// Administrators only. OpenRouter's own figures for an OpenRouter key (spend all time, today, this
+	// week and this month, its limit, the day's free-model requests); Anthropic's usage report of this
+	// month for an Anthropic key, per model, and the organisation's cost, read with a stored Anthropic
+	// Admin key (without one, nothing). Mistral reports nothing. 502 when the provider fails.
+	//
+	// GET /api/v1/admin/llm/credentials/{credentialId}/usage
+	GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (GetLlmKeyUsageRes, error)
 	// GetLlmSettings invokes getLlmSettings operation.
 	//
 	// Returns every credential (never a secret), the model product matching uses now, the token budget,
@@ -2055,6 +2064,144 @@ func (c *Client) sendGetCompetitorProfile(ctx context.Context, params GetCompeti
 
 	stage = "DecodeResponse"
 	result, err := decodeGetCompetitorProfileResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetLlmKeyUsage invokes getLlmKeyUsage operation.
+//
+// Administrators only. OpenRouter's own figures for an OpenRouter key (spend all time, today, this
+// week and this month, its limit, the day's free-model requests); Anthropic's usage report of this
+// month for an Anthropic key, per model, and the organisation's cost, read with a stored Anthropic
+// Admin key (without one, nothing). Mistral reports nothing. 502 when the provider fails.
+//
+// GET /api/v1/admin/llm/credentials/{credentialId}/usage
+func (c *Client) GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (GetLlmKeyUsageRes, error) {
+	res, err := c.sendGetLlmKeyUsage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (res GetLlmKeyUsageRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getLlmKeyUsage"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/llm/credentials/{credentialId}/usage"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetLlmKeyUsageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/llm/credentials/"
+	{
+		// Encode "credentialId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "credentialId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CredentialId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/usage"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetLlmKeyUsageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetLlmKeyUsageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

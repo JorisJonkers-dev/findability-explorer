@@ -318,7 +318,8 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 		}
 		return llmapp.Spending{ThisMonth: month, AveragePerScan: average, ScansMatched: scans}, nil
 	}
-	return llmapp.New(llmpersistence.New(store, sealer), providers.New(), spent,
+	connector := providers.New()
+	return llmapp.New(llmpersistence.New(store, sealer), connector, connector, spent,
 		llmapp.Config{VaultKey: vault, MonthlyTokens: l.monthly},
 		now, uuid.NewString), nil
 }

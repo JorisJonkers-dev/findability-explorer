@@ -59,7 +59,7 @@ describe('the settings page', () => {
     expect(vault.text()).toContain('Fingerprint 3a7bd3e2360a')
     expect(vault.text()).toContain('Accepted on 23 Oct 2026, 09:30 UTC: The key may use 9 models.')
     expect(vault.text()).toContain('Vault delivers this key; change or remove it in Vault.')
-    expect(vault.findAll('button').map((b) => b.text())).toEqual(['Test'])
+    expect(vault.findAll('button').map((b) => b.text())).toEqual(['Test', 'Usage and cost'])
 
     const stored = keyItem(wrapper, 'OpenRouter · Course budget key')
     expect(stored.text()).toContain('This key can no longer be read')
@@ -121,7 +121,7 @@ describe('adding a key', () => {
     const { wrapper } = await mountApp(handle, '/settings')
     const key = form(wrapper).get('input[type="password"]')
     expect(key.attributes('autocomplete')).toBe('off')
-    expect(form(wrapper).findAll('option').map((o) => o.text())).toEqual(['OpenRouter', 'Mistral', 'Anthropic (Claude)'])
+    expect(form(wrapper).findAll('option').map((o) => o.text())).toEqual(['OpenRouter', 'Mistral', 'Anthropic (Claude)', 'Anthropic Admin key'])
     await form(wrapper).get('select').setValue('mistral')
     await form(wrapper).get('input[type="text"]').setValue(' Mistral key ')
     await key.setValue('fake-test-key')
@@ -280,5 +280,30 @@ describe('choosing the model', () => {
     await chooser(wrapper).get('form').trigger('submit')
     await settle()
     expect(chooser(wrapper).get('[role="alert"]').text()).toBe('This key can no longer be read. Choose another key.')
+  })
+})
+
+describe('a key’s usage and cost', () => {
+  it('asks the provider when someone looks, and shows what it reports', async () => {
+    const { wrapper, requests } = await mountApp(
+      server(llmSettings(), {
+        [`GET /api/v1/admin/llm/credentials/${STORED_ID}/usage`]: () =>
+          json({ source: 'openrouter', message: "OpenRouter's own figures for this key, in dollars.", models: [], totalUsd: 3, dailyUsd: 0.5, weeklyUsd: 1, monthlyUsd: 2 }),
+        'GET /api/v1/admin/llm/credentials/vault-anthropic/usage': () => problem(502, 'Bad Gateway', 'Anthropic answered 500.'),
+      }).handle,
+      '/settings',
+    )
+    expect(requests().some((r) => r.endsWith('/usage'))).toBe(false)
+    const stored = keyItem(wrapper, 'OpenRouter · Course budget key')
+    await button(stored, 'Usage and cost').trigger('click')
+    await settle()
+    expect(stored.get('[data-testid="key-usage"]').text()).toContain('$0.50 today · $1.00 this week · $2.00 this month · $3.00 in all')
+    expect(stored.get('[data-testid="key-usage"]').text()).toContain('No spending limit on this key.')
+    await button(stored, 'Hide usage').trigger('click')
+    expect(stored.find('[data-testid="key-usage"]').exists()).toBe(false)
+    const vault = keyItem(wrapper, 'Anthropic (Claude) · Vault key')
+    await button(vault, 'Usage and cost').trigger('click')
+    await settle()
+    expect(vault.get('[role="alert"]').text()).toBe('The provider did not answer: Anthropic answered 500. Try again in a minute.')
   })
 })

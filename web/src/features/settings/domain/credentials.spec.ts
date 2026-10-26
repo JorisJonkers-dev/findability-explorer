@@ -30,6 +30,7 @@ describe('a credential', () => {
   it('offers only readable keys for a model', () => {
     const unreadable = storedCredential({ readable: false })
     expect(choosableCredentials([vaultCredential(), unreadable]).map((c) => c.id)).toEqual(['vault-anthropic'])
+    expect(choosableCredentials([storedCredential({ provider: 'anthropic_admin' })])).toEqual([])
   })
 })
 

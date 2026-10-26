@@ -2,7 +2,7 @@ import { zProblem } from '../../../infrastructure/api/zod.gen'
 import { describeError } from '../../../shared/describeError'
 
 /** What was being done when a request failed, which decides how its problem reads. */
-export type SettingsAction = 'load' | 'add' | 'test' | 'remove' | 'models' | 'save' | 'turnOff'
+export type SettingsAction = 'load' | 'add' | 'test' | 'remove' | 'models' | 'save' | 'turnOff' | 'usage'
 
 export const FORBIDDEN_MESSAGE = 'Only administrators can change these settings.'
 
@@ -14,6 +14,7 @@ const UNPROCESSABLE: Record<SettingsAction, string> = {
   models: 'This key can no longer be read. Remove it and add it again.',
   save: 'This key can no longer be read. Choose another key.',
   turnOff: 'Product matching could not be turned off.',
+  usage: 'This key can no longer be read. Remove it and add it again.',
 }
 
 function status(error: unknown): number | null {

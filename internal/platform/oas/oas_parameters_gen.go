@@ -834,6 +834,87 @@ func decodeGetCompetitorProfileParams(args [1]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
+// GetLlmKeyUsageParams is parameters of getLlmKeyUsage operation.
+type GetLlmKeyUsageParams struct {
+	// The credential's id.
+	CredentialId LlmCredentialId
+}
+
+func unpackGetLlmKeyUsageParams(packed middleware.Parameters) (params GetLlmKeyUsageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "credentialId",
+			In:   "path",
+		}
+		params.CredentialId = packed[key].(LlmCredentialId)
+	}
+	return params
+}
+
+func decodeGetLlmKeyUsageParams(args [1]string, argsEscaped bool, r *http.Request) (params GetLlmKeyUsageParams, _ error) {
+	// Decode path: credentialId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "credentialId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCredentialIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCredentialIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CredentialId = LlmCredentialId(paramsDotCredentialIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CredentialId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "credentialId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetReadinessFilesParams is parameters of getReadinessFiles operation.
 type GetReadinessFilesParams struct {
 	// The analysis's id.

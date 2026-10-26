@@ -19,6 +19,7 @@ const (
 	GetAnalysisOperation                OperationName = "GetAnalysis"
 	GetCompetitorOperation              OperationName = "GetCompetitor"
 	GetCompetitorProfileOperation       OperationName = "GetCompetitorProfile"
+	GetLlmKeyUsageOperation             OperationName = "GetLlmKeyUsage"
 	GetLlmSettingsOperation             OperationName = "GetLlmSettings"
 	GetMeOperation                      OperationName = "GetMe"
 	GetPromptTestResultsOperation       OperationName = "GetPromptTestResults"

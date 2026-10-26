@@ -467,9 +467,9 @@ export type Me = {
 };
 
 /**
- * A language-model provider.
+ * A language-model provider. `anthropic_admin` is an Anthropic Admin key, which only reads the organisation's usage and cost reports and never answers.
  */
-export type LlmProvider = 'anthropic' | 'openrouter' | 'mistral';
+export type LlmProvider = 'anthropic' | 'openrouter' | 'mistral' | 'anthropic_admin';
 
 /**
  * A credential's id: a UUID for a stored key, or `vault-anthropic` for the key Vault delivers in ANTHROPIC_API_KEY.
@@ -556,6 +556,103 @@ export type LlmModel = {
      * The provider's display name for it, or the id.
      */
     name: string;
+};
+
+/**
+ * Where a key's usage figures come from - OpenRouter's own figures, Anthropic's reports read with an Admin key, or none (the provider reports nothing for the key).
+ */
+export type LlmUsageSource = 'openrouter' | 'anthropic' | 'none';
+
+/**
+ * OpenRouter's count of the day's requests to free models.
+ */
+export type LlmFreeRequests = {
+    /**
+     * Requests today.
+     */
+    used: number;
+    /**
+     * Requests allowed a day.
+     */
+    limit: number;
+    /**
+     * Requests left today.
+     */
+    remaining: number;
+};
+
+/**
+ * The tokens a key used with one model this month, as Anthropic reports them.
+ */
+export type LlmModelTokens = {
+    /**
+     * The model.
+     */
+    model: string;
+    /**
+     * Input tokens, cache writes included.
+     */
+    inputTokens: number;
+    /**
+     * Output tokens.
+     */
+    outputTokens: number;
+    /**
+     * Input tokens read from the cache.
+     */
+    cacheReadTokens: number;
+};
+
+/**
+ * What a provider reports a key used.
+ */
+export type LlmKeyUsage = {
+    source: LlmUsageSource;
+    /**
+     * What the figures are, or why there are none.
+     */
+    message: string;
+    /**
+     * OpenRouter - the key's spend, all time.
+     */
+    totalUsd?: number;
+    /**
+     * OpenRouter - today's (UTC).
+     */
+    dailyUsd?: number;
+    /**
+     * OpenRouter - this week's (UTC, from Monday).
+     */
+    weeklyUsd?: number;
+    /**
+     * OpenRouter - this month's (UTC).
+     */
+    monthlyUsd?: number;
+    /**
+     * OpenRouter - the key's own limit; absent when it has none.
+     */
+    limitUsd?: number;
+    /**
+     * OpenRouter - what is left of the limit.
+     */
+    limitRemainingUsd?: number;
+    /**
+     * OpenRouter - when the limit resets (daily, weekly, monthly); absent when never.
+     */
+    limitReset?: string;
+    freeRequests?: LlmFreeRequests;
+    /**
+     * Anthropic - this month's tokens per model.
+     */
+    models: Array<LlmModelTokens>;
+    /**
+     * Anthropic - the whole organisation's cost this month; Anthropic does not report it per key.
+     */
+    organisationCostUsd?: number;
+    /**
+     * Anthropic - the start of the month the figures cover.
+     */
+    since?: string;
 };
 
 /**
@@ -3318,6 +3415,60 @@ export type ListLlmModelsResponses = {
 };
 
 export type ListLlmModelsResponse = ListLlmModelsResponses[keyof ListLlmModelsResponses];
+
+export type GetLlmKeyUsageData = {
+    body?: never;
+    path: {
+        /**
+         * The credential's id.
+         */
+        credentialId: LlmCredentialId;
+    };
+    query?: never;
+    url: '/api/v1/admin/llm/credentials/{credentialId}/usage';
+};
+
+export type GetLlmKeyUsageErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    502: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetLlmKeyUsageError = GetLlmKeyUsageErrors[keyof GetLlmKeyUsageErrors];
+
+export type GetLlmKeyUsageResponses = {
+    /**
+     * The usage.
+     */
+    200: LlmKeyUsage;
+};
+
+export type GetLlmKeyUsageResponse = GetLlmKeyUsageResponses[keyof GetLlmKeyUsageResponses];
 
 export type ClearActiveLlmData = {
     body?: never;

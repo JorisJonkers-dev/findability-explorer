@@ -122,6 +122,7 @@ var _ oas.SecurityHandler = (*Security)(nil)
 var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant table
 	oas.GetLlmSettingsOperation:      domain.NeedAdminView,
 	oas.ListLlmModelsOperation:       domain.NeedAdminView,
+	oas.GetLlmKeyUsageOperation:      domain.NeedAdminView,
 	oas.AddLlmCredentialOperation:    domain.NeedAdminChange,
 	oas.DeleteLlmCredentialOperation: domain.NeedAdminChange,
 	oas.TestLlmCredentialOperation:   domain.NeedAdminChange,

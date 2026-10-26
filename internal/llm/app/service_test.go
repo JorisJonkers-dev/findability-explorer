@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -154,22 +155,41 @@ func (client) Complete(context.Context, domain.Prompt) (domain.Completion, error
 }
 
 type fixture struct {
-	svc  *app.Service
-	repo *repo
-	conn *connector
+	svc      *app.Service
+	repo     *repo
+	conn     *connector
+	reporter *reporter
+}
+
+// reporter reports what it is asked, or fails with err.
+type reporter struct {
+	err   error
+	asked []string
+}
+
+func (r *reporter) OpenRouter(_ context.Context, key string) (domain.Usage, error) {
+	r.asked = append(r.asked, "openrouter:"+key)
+	total := 1.25
+	return domain.Usage{Source: domain.UsageOpenRouter, Total: &total}, r.err
+}
+
+func (r *reporter) Anthropic(_ context.Context, adminKey, key string, since time.Time) (domain.Usage, error) {
+	r.asked = append(r.asked, "anthropic:"+adminKey+":"+key+":"+since.Format("2006-01-02"))
+	return domain.Usage{Source: domain.UsageAnthropic, Since: since}, r.err
 }
 
 func setup(vault string, spentErr error) fixture {
 	r := newRepo()
 	conn := &connector{}
+	rep := &reporter{}
 	n := 0
-	svc := app.New(r, conn, func(context.Context) (app.Spending, error) {
+	svc := app.New(r, conn, rep, func(context.Context) (app.Spending, error) {
 		return app.Spending{ThisMonth: 1234, AveragePerScan: 617, ScansMatched: 2}, spentErr
 	},
 		app.Config{VaultKey: vault, MonthlyTokens: 2_000_000},
 		func() time.Time { return now },
 		func() string { n++; return fmt.Sprintf("00000000-0000-4000-8000-%012d", n) })
-	return fixture{svc: svc, repo: r, conn: conn}
+	return fixture{svc: svc, repo: r, conn: conn, reporter: rep}
 }
 
 func TestSettingsByDefault(t *testing.T) {
@@ -389,5 +409,66 @@ func TestOpenRouterKeyHandsOutOnlyAStoredOpenRouterKey(t *testing.T) {
 	}
 	if _, err := f.svc.OpenRouterKey(t.Context(), "00000000-0000-4000-8000-000000000099"); !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("no key = %v", err)
+	}
+}
+
+func TestUsageAsksTheProviderWhatTheKeyUsed(t *testing.T) {
+	f := setup("sk-ant-vault", nil)
+	or, _ := f.svc.Add(t.Context(), "joris", "openrouter", "Runs", "or-key-123")
+	u, err := f.svc.Usage(t.Context(), or.ID)
+	if err != nil || u.Source != domain.UsageOpenRouter || *u.Total != 1.25 {
+		t.Fatalf("openrouter usage = %+v, %v", u, err)
+	}
+	// Without an Admin key Anthropic reports nothing.
+	u, err = f.svc.Usage(t.Context(), domain.VaultID)
+	if err != nil || u.Source != domain.UsageNone || !strings.Contains(u.Message, "Admin key") {
+		t.Fatalf("anthropic usage without an Admin key = %+v, %v", u, err)
+	}
+	admin, err := f.svc.Add(t.Context(), "joris", "anthropic_admin", "Reports", "sk-ant-admin-1")
+	if err != nil || !strings.Contains(admin.LastTest.Message, "usage and cost reports") {
+		t.Fatalf("admin key = %+v, %v", admin, err)
+	}
+	if _, err := f.svc.Usage(t.Context(), domain.VaultID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.Usage(t.Context(), admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"openrouter:or-key-123", "anthropic:sk-ant-admin-1:sk-ant-vault:2026-10-01", "anthropic:sk-ant-admin-1::2026-10-01"}
+	if !slices.Equal(f.reporter.asked, want) {
+		t.Errorf("asked %v", f.reporter.asked)
+	}
+	mistral, _ := f.svc.Add(t.Context(), "joris", "mistral", "M", "mistral-key-1")
+	if u, err := f.svc.Usage(t.Context(), mistral.ID); err != nil || u.Source != domain.UsageNone {
+		t.Errorf("mistral usage = %+v, %v", u, err)
+	}
+	if _, err := f.svc.SetActive(t.Context(), "joris", admin.ID, "claude-haiku-5-5"); !errors.Is(err, domain.ErrReportsOnly) || !app.IsInputError(err) {
+		t.Errorf("an Admin key chosen for matching = %v", err)
+	}
+	test, err := f.svc.Test(t.Context(), "joris", admin.ID)
+	if err != nil || !strings.Contains(test.Message, "usage and cost reports") {
+		t.Errorf("admin test = %+v, %v", test, err)
+	}
+}
+
+func TestUsageFailures(t *testing.T) {
+	f := setup("sk-ant-vault", nil)
+	if _, err := f.svc.Usage(t.Context(), "00000000-0000-4000-8000-000000000099"); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("no key = %v", err)
+	}
+	or, _ := f.svc.Add(t.Context(), "joris", "openrouter", "Runs", "or-key-123")
+	f.reporter.err = errBoom
+	if _, err := f.svc.Usage(t.Context(), or.ID); !errors.Is(err, domain.ErrProvider) {
+		t.Errorf("a failing report = %v", err)
+	}
+	admin, _ := f.svc.Add(t.Context(), "joris", "anthropic_admin", "Reports", "sk-ant-admin-1")
+	f.repo.unreadable[admin.ID] = true
+	f.reporter.err = nil
+	if u, err := f.svc.Usage(t.Context(), domain.VaultID); err != nil || u.Source != domain.UsageNone {
+		t.Errorf("an unreadable Admin key is no Admin key: %+v, %v", u, err)
+	}
+	f.repo.failOn["List"] = true
+	if _, err := f.svc.Usage(t.Context(), domain.VaultID); !errors.Is(err, errBoom) {
+		t.Errorf("listing failing = %v", err)
 	}
 }

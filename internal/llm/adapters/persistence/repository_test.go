@@ -217,3 +217,18 @@ func TestDatabaseFailures(t *testing.T) {
 		t.Error("LastTests")
 	}
 }
+
+func TestAnAdminKeyIsStoredLikeTheOthers(t *testing.T) {
+	t.Parallel()
+	_, _, r := openURL(t)
+	ctx := t.Context()
+	if err := r.Add(ctx, credential(id1, domain.AnthropicAdmin, at), "sk-ant-admin01-key"); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.AddEvent(ctx, domain.Event{At: at, Actor: "joris", Action: domain.ActionCredentialAdded, CredentialID: id1, Provider: domain.AnthropicAdmin, Message: "Added."}); err != nil {
+		t.Fatal(err)
+	}
+	if p, key, err := r.Secret(ctx, id1); err != nil || p != domain.AnthropicAdmin || key != "sk-ant-admin01-key" {
+		t.Fatalf("secret = %s %q, %v", p, key, err)
+	}
+}

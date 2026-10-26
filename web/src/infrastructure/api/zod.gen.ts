@@ -193,12 +193,13 @@ export const zMe = z.object({
 });
 
 /**
- * A language-model provider.
+ * A language-model provider. `anthropic_admin` is an Anthropic Admin key, which only reads the organisation's usage and cost reports and never answers.
  */
 export const zLlmProvider = z.enum([
     'anthropic',
     'openrouter',
-    'mistral'
+    'mistral',
+    'anthropic_admin'
 ]);
 
 /**
@@ -250,6 +251,53 @@ export const zNewLlmCredential = z.object({
 export const zLlmModel = z.object({
     id: z.string().max(200),
     name: z.string().max(300)
+});
+
+/**
+ * Where a key's usage figures come from - OpenRouter's own figures, Anthropic's reports read with an Admin key, or none (the provider reports nothing for the key).
+ */
+export const zLlmUsageSource = z.enum([
+    'openrouter',
+    'anthropic',
+    'none'
+]);
+
+/**
+ * OpenRouter's count of the day's requests to free models.
+ */
+export const zLlmFreeRequests = z.object({
+    used: z.int().gte(0).lte(10000000),
+    limit: z.int().gte(0).lte(10000000),
+    remaining: z.int().gte(-10000000).lte(10000000)
+});
+
+/**
+ * The tokens a key used with one model this month, as Anthropic reports them.
+ */
+export const zLlmModelTokens = z.object({
+    model: z.string().max(200),
+    inputTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    outputTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    cacheReadTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
+});
+
+/**
+ * What a provider reports a key used.
+ */
+export const zLlmKeyUsage = z.object({
+    source: zLlmUsageSource,
+    message: z.string().max(500),
+    totalUsd: z.number().gte(0).lte(1000000000).optional(),
+    dailyUsd: z.number().gte(0).lte(1000000000).optional(),
+    weeklyUsd: z.number().gte(0).lte(1000000000).optional(),
+    monthlyUsd: z.number().gte(0).lte(1000000000).optional(),
+    limitUsd: z.number().gte(0).lte(1000000000).optional(),
+    limitRemainingUsd: z.number().gte(-1000000000).lte(1000000000).optional(),
+    limitReset: z.string().max(20).optional(),
+    freeRequests: zLlmFreeRequests.optional(),
+    models: z.array(zLlmModelTokens).max(200),
+    organisationCostUsd: z.number().gte(0).lte(1000000000).optional(),
+    since: z.iso.datetime({ offset: true }).max(64).optional()
 });
 
 /**
@@ -1439,6 +1487,15 @@ export const zListLlmModelsPath = z.object({
  * The models, by id.
  */
 export const zListLlmModelsResponse = zLlmModelList;
+
+export const zGetLlmKeyUsagePath = z.object({
+    credentialId: zLlmCredentialId
+});
+
+/**
+ * The usage.
+ */
+export const zGetLlmKeyUsageResponse = zLlmKeyUsage;
 
 /**
  * The settings after the change.

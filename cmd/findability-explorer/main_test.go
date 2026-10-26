@@ -155,12 +155,12 @@ func (s *settings) LastTests(context.Context) (map[string]llmdomain.Test, error)
 func TestMatchersFollowTheSettings(t *testing.T) {
 	repo := &settings{}
 	svc := func(vault string) matchers {
-		return matchers{llm: llmapp.New(repo, nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
+		return matchers{llm: llmapp.New(repo, nil, nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
 	}
 	if m, label, err := svc("").Current(t.Context()); m != nil || label != "" || err != nil {
 		t.Fatalf("without a key: %v %q %v", m, label, err)
 	}
-	m, label, err := matchers{llm: llmapp.New(repo, providers.New(), nil, llmapp.Config{VaultKey: "sk-ant"}, time.Now, uuid.NewString)}.Current(t.Context())
+	m, label, err := matchers{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: "sk-ant"}, time.Now, uuid.NewString)}.Current(t.Context())
 	if m == nil || label != "anthropic: claude-haiku-5-5" || err != nil {
 		t.Fatalf("by default: %v %q %v", m, label, err)
 	}

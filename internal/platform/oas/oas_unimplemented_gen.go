@@ -146,6 +146,18 @@ func (UnimplementedHandler) GetCompetitorProfile(ctx context.Context, params Get
 	return r, ht.ErrNotImplemented
 }
 
+// GetLlmKeyUsage implements getLlmKeyUsage operation.
+//
+// Administrators only. OpenRouter's own figures for an OpenRouter key (spend all time, today, this
+// week and this month, its limit, the day's free-model requests); Anthropic's usage report of this
+// month for an Anthropic key, per model, and the organisation's cost, read with a stored Anthropic
+// Admin key (without one, nothing). Mistral reports nothing. 502 when the provider fails.
+//
+// GET /api/v1/admin/llm/credentials/{credentialId}/usage
+func (UnimplementedHandler) GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (r GetLlmKeyUsageRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetLlmSettings implements getLlmSettings operation.
 //
 // Returns every credential (never a secret), the model product matching uses now, the token budget,

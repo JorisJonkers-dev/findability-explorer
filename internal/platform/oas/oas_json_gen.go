@@ -5765,6 +5765,445 @@ func (s *LlmEventAction) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *LlmFreeRequests) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LlmFreeRequests) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("used")
+		e.Int32(s.Used)
+	}
+	{
+		e.FieldStart("limit")
+		e.Int32(s.Limit)
+	}
+	{
+		e.FieldStart("remaining")
+		e.Int32(s.Remaining)
+	}
+}
+
+var jsonFieldsNameOfLlmFreeRequests = [3]string{
+	0: "used",
+	1: "limit",
+	2: "remaining",
+}
+
+// Decode decodes LlmFreeRequests from json.
+func (s *LlmFreeRequests) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LlmFreeRequests to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "used":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int32()
+				s.Used = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"used\"")
+			}
+		case "limit":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int32()
+				s.Limit = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"limit\"")
+			}
+		case "remaining":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int32()
+				s.Remaining = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"remaining\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LlmFreeRequests")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLlmFreeRequests) {
+					name = jsonFieldsNameOfLlmFreeRequests[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LlmFreeRequests) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LlmFreeRequests) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LlmKeyUsage) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LlmKeyUsage) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("source")
+		s.Source.Encode(e)
+	}
+	{
+		e.FieldStart("message")
+		e.Str(s.Message)
+	}
+	{
+		if s.TotalUsd.Set {
+			e.FieldStart("totalUsd")
+			s.TotalUsd.Encode(e)
+		}
+	}
+	{
+		if s.DailyUsd.Set {
+			e.FieldStart("dailyUsd")
+			s.DailyUsd.Encode(e)
+		}
+	}
+	{
+		if s.WeeklyUsd.Set {
+			e.FieldStart("weeklyUsd")
+			s.WeeklyUsd.Encode(e)
+		}
+	}
+	{
+		if s.MonthlyUsd.Set {
+			e.FieldStart("monthlyUsd")
+			s.MonthlyUsd.Encode(e)
+		}
+	}
+	{
+		if s.LimitUsd.Set {
+			e.FieldStart("limitUsd")
+			s.LimitUsd.Encode(e)
+		}
+	}
+	{
+		if s.LimitRemainingUsd.Set {
+			e.FieldStart("limitRemainingUsd")
+			s.LimitRemainingUsd.Encode(e)
+		}
+	}
+	{
+		if s.LimitReset.Set {
+			e.FieldStart("limitReset")
+			s.LimitReset.Encode(e)
+		}
+	}
+	{
+		if s.FreeRequests.Set {
+			e.FieldStart("freeRequests")
+			s.FreeRequests.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("models")
+		e.ArrStart()
+		for _, elem := range s.Models {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		if s.OrganisationCostUsd.Set {
+			e.FieldStart("organisationCostUsd")
+			s.OrganisationCostUsd.Encode(e)
+		}
+	}
+	{
+		if s.Since.Set {
+			e.FieldStart("since")
+			s.Since.Encode(e, json.EncodeDateTime)
+		}
+	}
+}
+
+var jsonFieldsNameOfLlmKeyUsage = [13]string{
+	0:  "source",
+	1:  "message",
+	2:  "totalUsd",
+	3:  "dailyUsd",
+	4:  "weeklyUsd",
+	5:  "monthlyUsd",
+	6:  "limitUsd",
+	7:  "limitRemainingUsd",
+	8:  "limitReset",
+	9:  "freeRequests",
+	10: "models",
+	11: "organisationCostUsd",
+	12: "since",
+}
+
+// Decode decodes LlmKeyUsage from json.
+func (s *LlmKeyUsage) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LlmKeyUsage to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "source":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Source.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"source\"")
+			}
+		case "message":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Message = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"message\"")
+			}
+		case "totalUsd":
+			if err := func() error {
+				s.TotalUsd.Reset()
+				if err := s.TotalUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"totalUsd\"")
+			}
+		case "dailyUsd":
+			if err := func() error {
+				s.DailyUsd.Reset()
+				if err := s.DailyUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"dailyUsd\"")
+			}
+		case "weeklyUsd":
+			if err := func() error {
+				s.WeeklyUsd.Reset()
+				if err := s.WeeklyUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"weeklyUsd\"")
+			}
+		case "monthlyUsd":
+			if err := func() error {
+				s.MonthlyUsd.Reset()
+				if err := s.MonthlyUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"monthlyUsd\"")
+			}
+		case "limitUsd":
+			if err := func() error {
+				s.LimitUsd.Reset()
+				if err := s.LimitUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"limitUsd\"")
+			}
+		case "limitRemainingUsd":
+			if err := func() error {
+				s.LimitRemainingUsd.Reset()
+				if err := s.LimitRemainingUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"limitRemainingUsd\"")
+			}
+		case "limitReset":
+			if err := func() error {
+				s.LimitReset.Reset()
+				if err := s.LimitReset.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"limitReset\"")
+			}
+		case "freeRequests":
+			if err := func() error {
+				s.FreeRequests.Reset()
+				if err := s.FreeRequests.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"freeRequests\"")
+			}
+		case "models":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				s.Models = make([]LlmModelTokens, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem LlmModelTokens
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Models = append(s.Models, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"models\"")
+			}
+		case "organisationCostUsd":
+			if err := func() error {
+				s.OrganisationCostUsd.Reset()
+				if err := s.OrganisationCostUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"organisationCostUsd\"")
+			}
+		case "since":
+			if err := func() error {
+				s.Since.Reset()
+				if err := s.Since.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"since\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LlmKeyUsage")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b00000011,
+		0b00000100,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLlmKeyUsage) {
+					name = jsonFieldsNameOfLlmKeyUsage[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LlmKeyUsage) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LlmKeyUsage) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *LlmModel) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -5983,6 +6422,153 @@ func (s *LlmModelList) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode implements json.Marshaler.
+func (s *LlmModelTokens) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LlmModelTokens) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("model")
+		e.Str(s.Model)
+	}
+	{
+		e.FieldStart("inputTokens")
+		e.Int64(s.InputTokens)
+	}
+	{
+		e.FieldStart("outputTokens")
+		e.Int64(s.OutputTokens)
+	}
+	{
+		e.FieldStart("cacheReadTokens")
+		e.Int64(s.CacheReadTokens)
+	}
+}
+
+var jsonFieldsNameOfLlmModelTokens = [4]string{
+	0: "model",
+	1: "inputTokens",
+	2: "outputTokens",
+	3: "cacheReadTokens",
+}
+
+// Decode decodes LlmModelTokens from json.
+func (s *LlmModelTokens) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LlmModelTokens to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "model":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Model = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"model\"")
+			}
+		case "inputTokens":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.InputTokens = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"inputTokens\"")
+			}
+		case "outputTokens":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int64()
+				s.OutputTokens = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"outputTokens\"")
+			}
+		case "cacheReadTokens":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Int64()
+				s.CacheReadTokens = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cacheReadTokens\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LlmModelTokens")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLlmModelTokens) {
+					name = jsonFieldsNameOfLlmModelTokens[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LlmModelTokens) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LlmModelTokens) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes LlmProvider as json.
 func (s LlmProvider) Encode(e *jx.Encoder) {
 	e.Str(string(s))
@@ -6005,6 +6591,8 @@ func (s *LlmProvider) Decode(d *jx.Decoder) error {
 		*s = LlmProviderOpenrouter
 	case LlmProviderMistral:
 		*s = LlmProviderMistral
+	case LlmProviderAnthropicAdmin:
+		*s = LlmProviderAnthropicAdmin
 	default:
 		*s = LlmProvider(v)
 	}
@@ -6348,6 +6936,48 @@ func (s *LlmTest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *LlmTest) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LlmUsageSource as json.
+func (s LlmUsageSource) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes LlmUsageSource from json.
+func (s *LlmUsageSource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LlmUsageSource to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch LlmUsageSource(v) {
+	case LlmUsageSourceOpenrouter:
+		*s = LlmUsageSourceOpenrouter
+	case LlmUsageSourceAnthropic:
+		*s = LlmUsageSourceAnthropic
+	case LlmUsageSourceNone:
+		*s = LlmUsageSourceNone
+	default:
+		*s = LlmUsageSource(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s LlmUsageSource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LlmUsageSource) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -7513,6 +8143,39 @@ func (s OptLlmCredentialId) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptLlmCredentialId) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LlmFreeRequests as json.
+func (o OptLlmFreeRequests) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LlmFreeRequests from json.
+func (o *OptLlmFreeRequests) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptLlmFreeRequests to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptLlmFreeRequests) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptLlmFreeRequests) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

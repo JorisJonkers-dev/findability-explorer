@@ -22,6 +22,9 @@ const (
 	Anthropic  Provider = "anthropic"
 	OpenRouter Provider = "openrouter"
 	Mistral    Provider = "mistral"
+	// AnthropicAdmin is an Anthropic Admin key (sk-ant-admin…): it only reads the organisation's
+	// usage and cost reports, and never asks a model.
+	AnthropicAdmin Provider = "anthropic_admin"
 )
 
 const (
@@ -43,8 +46,11 @@ const (
 var (
 	// ErrInvalid is returned for a credential or model that breaks a rule below.
 	ErrInvalid = errors.New("invalid")
-	// ErrInvalidProvider is returned for a provider other than anthropic, openrouter or mistral.
-	ErrInvalidProvider = fmt.Errorf("%w: the provider is anthropic, openrouter or mistral", ErrInvalid)
+	// ErrInvalidProvider is returned for a provider other than anthropic, openrouter, mistral or
+	// anthropic_admin.
+	ErrInvalidProvider = fmt.Errorf("%w: the provider is anthropic, openrouter, mistral or anthropic_admin", ErrInvalid)
+	// ErrReportsOnly is returned when an Admin key is chosen to answer: it only reads reports.
+	ErrReportsOnly = fmt.Errorf("%w: an Anthropic Admin key reads usage reports and cannot match products", ErrInvalid)
 	// ErrInvalidLabel is returned for a label that is blank or too long.
 	ErrInvalidLabel = fmt.Errorf("%w: a label has 1 to %d characters", ErrInvalid, maxLabel)
 	// ErrInvalidKey is returned for a key of the wrong length or with spaces or control characters.
@@ -66,7 +72,7 @@ var (
 // ParseProvider returns the provider named s.
 func ParseProvider(s string) (Provider, error) {
 	switch p := Provider(s); p {
-	case Anthropic, OpenRouter, Mistral:
+	case Anthropic, OpenRouter, Mistral, AnthropicAdmin:
 		return p, nil
 	default:
 		return "", ErrInvalidProvider

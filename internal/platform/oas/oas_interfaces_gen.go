@@ -53,6 +53,10 @@ type GetCompetitorRes interface {
 	getCompetitorRes()
 }
 
+type GetLlmKeyUsageRes interface {
+	getLlmKeyUsageRes()
+}
+
 type GetLlmSettingsRes interface {
 	getLlmSettingsRes()
 }

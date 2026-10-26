@@ -2068,6 +2068,30 @@ type GetCompetitorProfileNotFound ProblemStatusCode
 
 func (*GetCompetitorProfileNotFound) getCompetitorProfileRes() {}
 
+type GetLlmKeyUsageBadGateway ProblemStatusCode
+
+func (*GetLlmKeyUsageBadGateway) getLlmKeyUsageRes() {}
+
+type GetLlmKeyUsageBadRequest ProblemStatusCode
+
+func (*GetLlmKeyUsageBadRequest) getLlmKeyUsageRes() {}
+
+type GetLlmKeyUsageForbidden ProblemStatusCode
+
+func (*GetLlmKeyUsageForbidden) getLlmKeyUsageRes() {}
+
+type GetLlmKeyUsageNotFound ProblemStatusCode
+
+func (*GetLlmKeyUsageNotFound) getLlmKeyUsageRes() {}
+
+type GetLlmKeyUsageUnauthorized ProblemStatusCode
+
+func (*GetLlmKeyUsageUnauthorized) getLlmKeyUsageRes() {}
+
+type GetLlmKeyUsageUnprocessableEntity ProblemStatusCode
+
+func (*GetLlmKeyUsageUnprocessableEntity) getLlmKeyUsageRes() {}
+
 type GetLlmSettingsForbidden ProblemStatusCode
 
 func (*GetLlmSettingsForbidden) getLlmSettingsRes() {}
@@ -2924,6 +2948,208 @@ func (s *LlmEventAction) UnmarshalText(data []byte) error {
 	}
 }
 
+// OpenRouter's count of the day's requests to free models.
+// Ref: #/components/schemas/LlmFreeRequests
+type LlmFreeRequests struct {
+	// Requests today.
+	Used int32 `json:"used"`
+	// Requests allowed a day.
+	Limit int32 `json:"limit"`
+	// Requests left today.
+	Remaining int32 `json:"remaining"`
+}
+
+// GetUsed returns the value of Used.
+func (s *LlmFreeRequests) GetUsed() int32 {
+	return s.Used
+}
+
+// GetLimit returns the value of Limit.
+func (s *LlmFreeRequests) GetLimit() int32 {
+	return s.Limit
+}
+
+// GetRemaining returns the value of Remaining.
+func (s *LlmFreeRequests) GetRemaining() int32 {
+	return s.Remaining
+}
+
+// SetUsed sets the value of Used.
+func (s *LlmFreeRequests) SetUsed(val int32) {
+	s.Used = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LlmFreeRequests) SetLimit(val int32) {
+	s.Limit = val
+}
+
+// SetRemaining sets the value of Remaining.
+func (s *LlmFreeRequests) SetRemaining(val int32) {
+	s.Remaining = val
+}
+
+// What a provider reports a key used.
+// Ref: #/components/schemas/LlmKeyUsage
+type LlmKeyUsage struct {
+	Source LlmUsageSource `json:"source"`
+	// What the figures are, or why there are none.
+	Message string `json:"message"`
+	// OpenRouter - the key's spend, all time.
+	TotalUsd OptFloat64 `json:"totalUsd"`
+	// OpenRouter - today's (UTC).
+	DailyUsd OptFloat64 `json:"dailyUsd"`
+	// OpenRouter - this week's (UTC, from Monday).
+	WeeklyUsd OptFloat64 `json:"weeklyUsd"`
+	// OpenRouter - this month's (UTC).
+	MonthlyUsd OptFloat64 `json:"monthlyUsd"`
+	// OpenRouter - the key's own limit; absent when it has none.
+	LimitUsd OptFloat64 `json:"limitUsd"`
+	// OpenRouter - what is left of the limit.
+	LimitRemainingUsd OptFloat64 `json:"limitRemainingUsd"`
+	// OpenRouter - when the limit resets (daily, weekly, monthly); absent when never.
+	LimitReset   OptString          `json:"limitReset"`
+	FreeRequests OptLlmFreeRequests `json:"freeRequests"`
+	// Anthropic - this month's tokens per model.
+	Models []LlmModelTokens `json:"models"`
+	// Anthropic - the whole organisation's cost this month; Anthropic does not report it per key.
+	OrganisationCostUsd OptFloat64 `json:"organisationCostUsd"`
+	// Anthropic - the start of the month the figures cover.
+	Since OptDateTime `json:"since"`
+}
+
+// GetSource returns the value of Source.
+func (s *LlmKeyUsage) GetSource() LlmUsageSource {
+	return s.Source
+}
+
+// GetMessage returns the value of Message.
+func (s *LlmKeyUsage) GetMessage() string {
+	return s.Message
+}
+
+// GetTotalUsd returns the value of TotalUsd.
+func (s *LlmKeyUsage) GetTotalUsd() OptFloat64 {
+	return s.TotalUsd
+}
+
+// GetDailyUsd returns the value of DailyUsd.
+func (s *LlmKeyUsage) GetDailyUsd() OptFloat64 {
+	return s.DailyUsd
+}
+
+// GetWeeklyUsd returns the value of WeeklyUsd.
+func (s *LlmKeyUsage) GetWeeklyUsd() OptFloat64 {
+	return s.WeeklyUsd
+}
+
+// GetMonthlyUsd returns the value of MonthlyUsd.
+func (s *LlmKeyUsage) GetMonthlyUsd() OptFloat64 {
+	return s.MonthlyUsd
+}
+
+// GetLimitUsd returns the value of LimitUsd.
+func (s *LlmKeyUsage) GetLimitUsd() OptFloat64 {
+	return s.LimitUsd
+}
+
+// GetLimitRemainingUsd returns the value of LimitRemainingUsd.
+func (s *LlmKeyUsage) GetLimitRemainingUsd() OptFloat64 {
+	return s.LimitRemainingUsd
+}
+
+// GetLimitReset returns the value of LimitReset.
+func (s *LlmKeyUsage) GetLimitReset() OptString {
+	return s.LimitReset
+}
+
+// GetFreeRequests returns the value of FreeRequests.
+func (s *LlmKeyUsage) GetFreeRequests() OptLlmFreeRequests {
+	return s.FreeRequests
+}
+
+// GetModels returns the value of Models.
+func (s *LlmKeyUsage) GetModels() []LlmModelTokens {
+	return s.Models
+}
+
+// GetOrganisationCostUsd returns the value of OrganisationCostUsd.
+func (s *LlmKeyUsage) GetOrganisationCostUsd() OptFloat64 {
+	return s.OrganisationCostUsd
+}
+
+// GetSince returns the value of Since.
+func (s *LlmKeyUsage) GetSince() OptDateTime {
+	return s.Since
+}
+
+// SetSource sets the value of Source.
+func (s *LlmKeyUsage) SetSource(val LlmUsageSource) {
+	s.Source = val
+}
+
+// SetMessage sets the value of Message.
+func (s *LlmKeyUsage) SetMessage(val string) {
+	s.Message = val
+}
+
+// SetTotalUsd sets the value of TotalUsd.
+func (s *LlmKeyUsage) SetTotalUsd(val OptFloat64) {
+	s.TotalUsd = val
+}
+
+// SetDailyUsd sets the value of DailyUsd.
+func (s *LlmKeyUsage) SetDailyUsd(val OptFloat64) {
+	s.DailyUsd = val
+}
+
+// SetWeeklyUsd sets the value of WeeklyUsd.
+func (s *LlmKeyUsage) SetWeeklyUsd(val OptFloat64) {
+	s.WeeklyUsd = val
+}
+
+// SetMonthlyUsd sets the value of MonthlyUsd.
+func (s *LlmKeyUsage) SetMonthlyUsd(val OptFloat64) {
+	s.MonthlyUsd = val
+}
+
+// SetLimitUsd sets the value of LimitUsd.
+func (s *LlmKeyUsage) SetLimitUsd(val OptFloat64) {
+	s.LimitUsd = val
+}
+
+// SetLimitRemainingUsd sets the value of LimitRemainingUsd.
+func (s *LlmKeyUsage) SetLimitRemainingUsd(val OptFloat64) {
+	s.LimitRemainingUsd = val
+}
+
+// SetLimitReset sets the value of LimitReset.
+func (s *LlmKeyUsage) SetLimitReset(val OptString) {
+	s.LimitReset = val
+}
+
+// SetFreeRequests sets the value of FreeRequests.
+func (s *LlmKeyUsage) SetFreeRequests(val OptLlmFreeRequests) {
+	s.FreeRequests = val
+}
+
+// SetModels sets the value of Models.
+func (s *LlmKeyUsage) SetModels(val []LlmModelTokens) {
+	s.Models = val
+}
+
+// SetOrganisationCostUsd sets the value of OrganisationCostUsd.
+func (s *LlmKeyUsage) SetOrganisationCostUsd(val OptFloat64) {
+	s.OrganisationCostUsd = val
+}
+
+// SetSince sets the value of Since.
+func (s *LlmKeyUsage) SetSince(val OptDateTime) {
+	s.Since = val
+}
+
+func (*LlmKeyUsage) getLlmKeyUsageRes() {}
+
 // A model a key may use.
 // Ref: #/components/schemas/LlmModel
 type LlmModel struct {
@@ -2972,14 +3198,69 @@ func (s *LlmModelList) SetItems(val []LlmModel) {
 
 func (*LlmModelList) listLlmModelsRes() {}
 
-// A language-model provider.
+// The tokens a key used with one model this month, as Anthropic reports them.
+// Ref: #/components/schemas/LlmModelTokens
+type LlmModelTokens struct {
+	// The model.
+	Model string `json:"model"`
+	// Input tokens, cache writes included.
+	InputTokens int64 `json:"inputTokens"`
+	// Output tokens.
+	OutputTokens int64 `json:"outputTokens"`
+	// Input tokens read from the cache.
+	CacheReadTokens int64 `json:"cacheReadTokens"`
+}
+
+// GetModel returns the value of Model.
+func (s *LlmModelTokens) GetModel() string {
+	return s.Model
+}
+
+// GetInputTokens returns the value of InputTokens.
+func (s *LlmModelTokens) GetInputTokens() int64 {
+	return s.InputTokens
+}
+
+// GetOutputTokens returns the value of OutputTokens.
+func (s *LlmModelTokens) GetOutputTokens() int64 {
+	return s.OutputTokens
+}
+
+// GetCacheReadTokens returns the value of CacheReadTokens.
+func (s *LlmModelTokens) GetCacheReadTokens() int64 {
+	return s.CacheReadTokens
+}
+
+// SetModel sets the value of Model.
+func (s *LlmModelTokens) SetModel(val string) {
+	s.Model = val
+}
+
+// SetInputTokens sets the value of InputTokens.
+func (s *LlmModelTokens) SetInputTokens(val int64) {
+	s.InputTokens = val
+}
+
+// SetOutputTokens sets the value of OutputTokens.
+func (s *LlmModelTokens) SetOutputTokens(val int64) {
+	s.OutputTokens = val
+}
+
+// SetCacheReadTokens sets the value of CacheReadTokens.
+func (s *LlmModelTokens) SetCacheReadTokens(val int64) {
+	s.CacheReadTokens = val
+}
+
+// A language-model provider. `anthropic_admin` is an Anthropic Admin key, which only reads the
+// organisation's usage and cost reports and never answers.
 // Ref: #/components/schemas/LlmProvider
 type LlmProvider string
 
 const (
-	LlmProviderAnthropic  LlmProvider = "anthropic"
-	LlmProviderOpenrouter LlmProvider = "openrouter"
-	LlmProviderMistral    LlmProvider = "mistral"
+	LlmProviderAnthropic      LlmProvider = "anthropic"
+	LlmProviderOpenrouter     LlmProvider = "openrouter"
+	LlmProviderMistral        LlmProvider = "mistral"
+	LlmProviderAnthropicAdmin LlmProvider = "anthropic_admin"
 )
 
 // AllValues returns all LlmProvider values.
@@ -2988,6 +3269,7 @@ func (LlmProvider) AllValues() []LlmProvider {
 		LlmProviderAnthropic,
 		LlmProviderOpenrouter,
 		LlmProviderMistral,
+		LlmProviderAnthropicAdmin,
 	}
 }
 
@@ -2999,6 +3281,8 @@ func (s LlmProvider) MarshalText() ([]byte, error) {
 	case LlmProviderOpenrouter:
 		return []byte(s), nil
 	case LlmProviderMistral:
+		return []byte(s), nil
+	case LlmProviderAnthropicAdmin:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -3016,6 +3300,9 @@ func (s *LlmProvider) UnmarshalText(data []byte) error {
 		return nil
 	case LlmProviderMistral:
 		*s = LlmProviderMistral
+		return nil
+	case LlmProviderAnthropicAdmin:
+		*s = LlmProviderAnthropicAdmin
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3143,6 +3430,57 @@ func (s *LlmTest) SetMessage(val string) {
 }
 
 func (*LlmTest) testLlmCredentialRes() {}
+
+// Where a key's usage figures come from - OpenRouter's own figures, Anthropic's reports read with an
+// Admin key, or none (the provider reports nothing for the key).
+// Ref: #/components/schemas/LlmUsageSource
+type LlmUsageSource string
+
+const (
+	LlmUsageSourceOpenrouter LlmUsageSource = "openrouter"
+	LlmUsageSourceAnthropic  LlmUsageSource = "anthropic"
+	LlmUsageSourceNone       LlmUsageSource = "none"
+)
+
+// AllValues returns all LlmUsageSource values.
+func (LlmUsageSource) AllValues() []LlmUsageSource {
+	return []LlmUsageSource{
+		LlmUsageSourceOpenrouter,
+		LlmUsageSourceAnthropic,
+		LlmUsageSourceNone,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LlmUsageSource) MarshalText() ([]byte, error) {
+	switch s {
+	case LlmUsageSourceOpenrouter:
+		return []byte(s), nil
+	case LlmUsageSourceAnthropic:
+		return []byte(s), nil
+	case LlmUsageSourceNone:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LlmUsageSource) UnmarshalText(data []byte) error {
+	switch LlmUsageSource(data) {
+	case LlmUsageSourceOpenrouter:
+		*s = LlmUsageSourceOpenrouter
+		return nil
+	case LlmUsageSourceAnthropic:
+		*s = LlmUsageSourceAnthropic
+		return nil
+	case LlmUsageSourceNone:
+		*s = LlmUsageSourceNone
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // What a site's llms.txt holds.
 // Ref: #/components/schemas/LlmsFacts
@@ -4101,6 +4439,52 @@ func (o OptLlmCredentialId) Get() (v LlmCredentialId, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptLlmCredentialId) Or(d LlmCredentialId) LlmCredentialId {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLlmFreeRequests returns new OptLlmFreeRequests with value set to v.
+func NewOptLlmFreeRequests(v LlmFreeRequests) OptLlmFreeRequests {
+	return OptLlmFreeRequests{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLlmFreeRequests is optional LlmFreeRequests.
+type OptLlmFreeRequests struct {
+	Value LlmFreeRequests
+	Set   bool
+}
+
+// IsSet returns true if OptLlmFreeRequests was set.
+func (o OptLlmFreeRequests) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLlmFreeRequests) Reset() {
+	var v LlmFreeRequests
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLlmFreeRequests) SetTo(v LlmFreeRequests) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLlmFreeRequests) Get() (v LlmFreeRequests, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLlmFreeRequests) Or(d LlmFreeRequests) LlmFreeRequests {
 	if v, ok := o.Get(); ok {
 		return v
 	}

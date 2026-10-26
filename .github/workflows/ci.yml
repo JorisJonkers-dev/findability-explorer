@@ -11,13 +11,9 @@
 name: CI
 
 on:
+  # Every pull request, a release PR and a docs-only one too: the Main ruleset requires the
+  # Pipeline Complete check on each, as on the estate's other repositories.
   pull_request:
-    # A release PR changes only the changelog and the manifest: it needs no new run.
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - "LICENSE"
-      - ".release-please-manifest.json"
   workflow_dispatch:
 
 concurrency:

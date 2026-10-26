@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import StageColumn from '../../../shared/ui/StageColumn.vue'
+import { useColumnLayout } from '../../../shared/useColumnLayout'
 import SectionView from '../../shell/components/SectionView.vue'
 import ScanPanel from '../../scan/components/ScanPanel.vue'
 import { useTermMap } from '../../terminology/composables/useTermSearch'
@@ -23,6 +25,13 @@ const companies = computed(() => split.value.active)
 const archived = computed(() => (isAdmin.value ? split.value.archived : []))
 const map = useTermMap()
 const panel = useTemplateRef<InstanceType<typeof ScanPanel>>('panel')
+
+// Each column can be widened or minimised on the stage; the browser remembers the layout.
+const COLUMNS = ['Who makes which belt', 'Company', 'Scan a competitor'] as const
+const columns = useColumnLayout('competitors', [1.3, 0.95, 1])
+function columnProps(i: number) {
+  return { title: COLUMNS[i] ?? '', state: columns.states.value[i] ?? 'normal', canMinimise: columns.canMinimise(i) }
+}
 
 const selected = computed(() =>
   selectedCompany([...companies.value, ...archived.value], typeof route.query.company === 'string' ? route.query.company : undefined),
@@ -51,16 +60,20 @@ function scan(url: string): void {
 
 <template>
   <SectionView section="competitors" :title="title" :source="['Desk research, 22 and 26 October 2026', 'Scans: live, from this app']">
-    <div
-      class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.3fr)_minmax(0,0.95fr)_minmax(0,1fr)] stage:gap-24"
-    >
-      <CompanyList :companies="companies" :archived="archived" :selected-id="selected?.id" :loading="isLoading" @pick="pick" />
-      <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
-      <CompanyCard v-else-if="selected" :company="selected" :terms="map.terms.value" :is-admin="isAdmin" @scan="scan" @removed="removed" />
-      <p v-else class="m-0 text-muted">Loading the companies…</p>
-      <ScanPanel ref="panel" :scan-id="scanId" :is-admin="isAdmin">
-        <AdminTools v-if="isAdmin" :companies="companies" @added="pick" />
-      </ScanPanel>
+    <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :style="{ gridTemplateColumns: columns.template.value }">
+      <StageColumn v-bind="columnProps(0)" @widen="columns.widen(0)" @minimise="columns.minimise(0)" @restore="columns.restore(0)">
+        <CompanyList :companies="companies" :archived="archived" :selected-id="selected?.id" :loading="isLoading" @pick="pick" />
+      </StageColumn>
+      <StageColumn v-bind="columnProps(1)" @widen="columns.widen(1)" @minimise="columns.minimise(1)" @restore="columns.restore(1)">
+        <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
+        <CompanyCard v-else-if="selected" :company="selected" :terms="map.terms.value" :is-admin="isAdmin" @scan="scan" @removed="removed" />
+        <p v-else class="m-0 text-muted">Loading the companies…</p>
+      </StageColumn>
+      <StageColumn v-bind="columnProps(2)" @widen="columns.widen(2)" @minimise="columns.minimise(2)" @restore="columns.restore(2)">
+        <ScanPanel ref="panel" :scan-id="scanId" :is-admin="isAdmin">
+          <AdminTools v-if="isAdmin" :companies="companies" @added="pick" />
+        </ScanPanel>
+      </StageColumn>
     </div>
   </SectionView>
 </template>

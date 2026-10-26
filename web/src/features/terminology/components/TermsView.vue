@@ -12,6 +12,8 @@ import type { TermGroup } from '../domain/filters'
 import { highlight } from '../domain/fold'
 import { directionOf, nextSort, type Sort, type SortDirection, sortRows } from '../../../shared/sort'
 import SortButton from '../../../shared/ui/SortButton.vue'
+import StageColumn from '../../../shared/ui/StageColumn.vue'
+import { useColumnLayout } from '../../../shared/useColumnLayout'
 import {
   cellBackground,
   chips,
@@ -31,6 +33,12 @@ import {
 const { terms, total, error } = useTermMap()
 const { view, draft, toggle, clear, toggleGap } = useTermView()
 
+// Each column can be widened or minimised on the stage; the browser remembers the layout.
+const COLUMNS = ["Where Tribelt's words fall short", 'Terms per company', 'Ranked terms'] as const
+const columns = useColumnLayout('terms', [0.85, 1.1, 1.25])
+function columnProps(i: number) {
+  return { title: COLUMNS[i] ?? '', state: columns.states.value[i] ?? 'normal', canMinimise: columns.canMinimise(i) }
+}
 const languages = computed(() => languageRows(terms.value))
 const tiers = computed(() => tierRows(terms.value))
 const heat = computed(() => heatmap(terms.value))
@@ -85,189 +93,195 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
 
 <template>
   <SectionView section="terms" :title="title" :source="['Terminology map, desk research of 22 October 2026', 'Makers: also found by live scans']">
-    <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,0.85fr)_minmax(0,1.1fr)_minmax(0,1.25fr)] stage:gap-24">
+    <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :style="{ gridTemplateColumns: columns.template.value }">
       <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5 stage:col-span-3">{{ error }}</p>
 
-      <section aria-labelledby="terms-charts-title" class="flex flex-col gap-6 stage:min-h-0 stage:gap-8">
-        <SectionHeading id="terms-charts-title">Where Tribelt's words fall short</SectionHeading>
-        <span class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted stage:gap-8 stage:text-2xl">
-          <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-orange stage:size-6"></span>Tribelt's site uses it</span>
-          <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-silver stage:size-6"></span>Only others use it</span>
-        </span>
-
-        <div v-for="chart in [{ key: 'language', title: 'By language', rows: languages }, { key: 'tier', title: 'By kind of search', rows: tiers }] as const" :key="chart.key" role="group" :aria-label="chart.title" class="flex flex-col gap-1 stage:gap-2.5">
-          <span class="font-semibold stage:text-[28px]">{{ chart.title }}</span>
-          <button
-            v-for="row in chart.rows"
-            :key="row.value"
-            type="button"
-            :aria-pressed="view[chart.key] === row.value"
-            :aria-label="row.description"
-            :class="[chartRowClass, view[chart.key] === row.value ? 'bg-mist' : '']"
-            @click="toggle(chart.key, row.value)"
-          >
-            <span :class="view[chart.key] === row.value ? 'font-semibold' : ''">{{ row.label }}</span>
-            <span aria-hidden="true" class="flex h-4 stage:h-7">
-              <span class="h-full bg-orange" :style="{ width: percent(row.tribeltShare) }"></span>
-              <span class="h-full bg-silver" :style="{ width: percent(row.otherShare) }"></span>
-            </span>
-            <span class="text-right font-semibold">{{ row.count }}</span>
-          </button>
-        </div>
-
-        <p class="m-0 rounded-2xl bg-mist p-5 stage:mt-auto stage:rounded-[28px] stage:px-10 stage:py-9 stage:text-[30px]">
-          A specifier who knows only the installed belt searches with its maker's name.
-          <strong class="font-semibold">Recommendation 3:</strong> every Tribelt belt page names its competitor equivalents, in
-          Dutch, German and English.
-        </p>
-      </section>
-
-      <section aria-labelledby="terms-heat-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
-        <div class="flex flex-col gap-2">
-          <SectionHeading id="terms-heat-title">Marketing and technical terms, per company</SectionHeading>
-          <span class="text-sm text-ink-2 stage:text-[26px]">
-            Marketing terms name a belt or its use. Technical terms are what engineers type: specifications and problems.
-            Select a company to list its terms.
+      <StageColumn v-bind="columnProps(0)" @widen="columns.widen(0)" @minimise="columns.minimise(0)" @restore="columns.restore(0)">
+        <section aria-labelledby="terms-charts-title" class="flex flex-col gap-6 stage:min-h-0 stage:gap-8">
+          <SectionHeading id="terms-charts-title">Where Tribelt's words fall short</SectionHeading>
+          <span class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted stage:gap-8 stage:text-2xl">
+            <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-orange stage:size-6"></span>Tribelt's site uses it</span>
+            <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-silver stage:size-6"></span>Only others use it</span>
           </span>
-        </div>
-        <div class="flex flex-col stage:min-h-0 stage:flex-1">
-          <div aria-hidden="true" :class="heatGrid" class="px-1 pb-1 text-center text-xs text-muted stage:px-3 stage:pb-2 stage:text-[22px]">
-            <span></span>
-            <span class="col-span-3 border-b-2 border-silver pb-1 stage:pb-1.5">Marketing</span>
-            <span></span>
-            <span class="col-span-2 border-b-2 border-orange pb-1 stage:pb-1.5">Technical</span>
-            <span></span>
-          </div>
-          <div
-            role="group"
-            aria-label="Sort the companies"
-            :class="heatGrid"
-            class="items-end border-b-[3px] border-black px-1 pb-2 text-center text-[10px] font-semibold stage:px-3 stage:pb-3.5 stage:text-[22px]"
-          >
-            <SortButton label="Company" :direction="directionOf(heatSort, 'company')" class="text-xs font-medium text-muted stage:text-[22px]" @sort="sortHeat('company', 'asc')" />
-            <template v-for="(column, index) in HEAT_COLUMNS" :key="column.key">
-              <span v-if="index === 3"></span>
-              <SortButton :label="column.label" :direction="directionOf(heatSort, column.key)" align="center" @sort="sortHeat(column.key, 'desc')">{{ column.short }}</SortButton>
-            </template>
-            <SortButton label="Total" :direction="directionOf(heatSort, 'total')" align="center" @sort="sortHeat('total', 'desc')" />
-          </div>
-          <ul v-scroll-hint aria-label="Terms per company and kind" class="scroll-hint m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1">
-            <li v-for="row in sortedHeat" :key="row.company" class="border-b border-grey">
-              <button
-                type="button"
-                :aria-pressed="view.user === row.company"
-                :aria-label="row.description"
-                :class="[heatGrid, view.user === row.company ? 'bg-mist' : 'hover:bg-mist']"
-                class="min-h-10 w-full items-center px-1 py-1 text-left stage:min-h-[58px] stage:px-3"
-                @click="toggle('user', row.company)"
-              >
-                <span
-                  class="truncate text-sm stage:text-[28px]"
-                  :class="view.user === row.company || row.company === 'Tribelt' ? 'font-semibold' : ''"
-                >{{ row.company }}</span>
-                <template v-for="(cell, index) in row.cells" :key="cell.tier">
-                  <span v-if="index === 3"></span>
-                  <span
-                    class="flex h-8 items-center justify-center text-xs font-semibold stage:h-[46px] stage:text-2xl"
-                    :class="cell.count === 0 ? 'bg-mist' : ''"
-                    :style="{ backgroundColor: cellBackground(cell) }"
-                  >{{ cell.count > 0 ? cell.count : '' }}</span>
-                </template>
-                <span class="text-center text-sm font-semibold stage:text-[26px]">{{ row.total }}</span>
-              </button>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <section aria-labelledby="terms-ranked-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
-        <SectionHeading id="terms-ranked-title">Ranked by how many makers use them</SectionHeading>
-        <div class="flex flex-wrap items-center gap-2 stage:gap-3">
-          <div role="group" aria-label="Terms" class="flex flex-wrap gap-2 stage:gap-2.5">
-            <PillButton v-for="group in GROUPS" :key="group.label" size="sm" :pressed="view.group === group.value" @click="pickGroup(group.value)">
-              {{ group.label }}
-            </PillButton>
-          </div>
-          <PillButton size="sm" :pressed="view.gap" @click="toggleGap">Only terms Tribelt lacks</PillButton>
-          <label for="terms-q" class="sr-only">Search terms</label>
-          <input
-            id="terms-q"
-            v-model="draft"
-            type="search"
-            placeholder="Search terms"
-            spellcheck="false"
-            autocomplete="off"
-            class="h-11 min-w-0 flex-[1_1_12rem] rounded-full border-2 border-grey bg-white px-4 text-sm stage:h-[76px] stage:min-w-[300px] stage:flex-1 stage:border-[3px] stage:px-7 stage:text-[26px]"
-          />
-        </div>
-        <div class="flex min-h-9 flex-wrap items-center gap-2 stage:min-h-14 stage:gap-3">
-          <span aria-live="polite" class="text-sm text-ink-2 stage:text-[26px]">{{ status }}</span>
-          <button
-            v-for="chip in activeChips"
-            :key="chip.key"
-            type="button"
-            :aria-label="`Remove the filter ${chip.label}`"
-            class="inline-flex min-h-9 items-center gap-2 rounded-full bg-black px-3 text-sm text-white hover:bg-ink-2 stage:min-h-14 stage:gap-3 stage:px-[22px] stage:text-2xl"
-            @click="clear(chip.key)"
-          >
-            {{ chip.label }}
-            <svg aria-hidden="true" viewBox="0 0 16 16" class="size-3.5 stage:size-5" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" />
-            </svg>
-          </button>
-        </div>
-        <div class="flex flex-col stage:min-h-0 stage:flex-1">
-          <div
-            role="group"
-            aria-label="Sort the terms"
-            :class="rankGrid"
-            class="flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-black pb-2 text-xs font-semibold stage:grid stage:border-b-[3px] stage:pb-3 stage:text-[22px]"
-          >
-            <SortButton label="Rank" :direction="directionOf(rankSort, 'rank')" @sort="sortRank('rank', 'asc')">#</SortButton>
-            <SortButton label="Term" :direction="directionOf(rankSort, 'term')" @sort="sortRank('term', 'asc')" />
-            <SortButton label="Kind" :direction="directionOf(rankSort, 'kind')" @sort="sortRank('kind', 'asc')" />
-            <SortButton label="Makers" :direction="directionOf(rankSort, 'makers')" @sort="sortRank('makers', 'desc')" />
-            <SortButton label="Tribelt" :direction="directionOf(rankSort, 'tribelt')" @sort="sortRank('tribelt', 'desc')" />
-          </div>
-          <ol
-            v-scroll-hint
-            aria-label="Ranked terms"
-            tabindex="0"
-            class="scroll-hint m-0 max-h-[36rem] list-none overflow-y-auto border-t-2 border-black p-0 stage:max-h-none stage:min-h-0 stage:flex-1 stage:border-t-0"
-          >
-            <li
-              v-for="row in sortedRanked"
-              :key="`${row.term}-${row.meta}`"
-              :class="rankGrid"
-              class="grid grid-cols-[1.75rem_minmax(0,1fr)_4.5rem] items-center gap-x-2 gap-y-0.5 border-b border-grey py-2 text-sm stage:min-h-[72px] stage:py-1.5 stage:text-[26px]"
+          <div v-for="chart in [{ key: 'language', title: 'By language', rows: languages }, { key: 'tier', title: 'By kind of search', rows: tiers }] as const" :key="chart.key" role="group" :aria-label="chart.title" class="flex flex-col gap-1 stage:gap-2.5">
+            <span class="font-semibold stage:text-[28px]">{{ chart.title }}</span>
+            <button
+              v-for="row in chart.rows"
+              :key="row.value"
+              type="button"
+              :aria-pressed="view[chart.key] === row.value"
+              :aria-label="row.description"
+              :class="[chartRowClass, view[chart.key] === row.value ? 'bg-mist' : '']"
+              @click="toggle(chart.key, row.value)"
             >
-              <span class="col-start-1 row-span-2 row-start-1 self-start text-muted stage:col-start-auto stage:row-span-1 stage:row-start-auto stage:self-center">{{ row.rank }}</span>
-              <span class="col-start-2 row-start-1 flex min-w-0 flex-col stage:col-start-auto stage:row-start-auto">
-                <span class="truncate font-medium stage:text-[28px]">
-                  <template v-for="(part, index) in highlight(row.term, view.q)" :key="index">
-                    <mark v-if="part.match" class="bg-orange/30 text-black">{{ part.text }}</mark>
-                    <template v-else>{{ part.text }}</template>
+              <span :class="view[chart.key] === row.value ? 'font-semibold' : ''">{{ row.label }}</span>
+              <span aria-hidden="true" class="flex h-4 stage:h-7">
+                <span class="h-full bg-orange" :style="{ width: percent(row.tribeltShare) }"></span>
+                <span class="h-full bg-silver" :style="{ width: percent(row.otherShare) }"></span>
+              </span>
+              <span class="text-right font-semibold">{{ row.count }}</span>
+            </button>
+          </div>
+
+          <p class="m-0 rounded-2xl bg-mist p-5 stage:mt-auto stage:rounded-[28px] stage:px-10 stage:py-9 stage:text-[30px]">
+            A specifier who knows only the installed belt searches with its maker's name.
+            <strong class="font-semibold">Recommendation 3:</strong> every Tribelt belt page names its competitor equivalents, in
+            Dutch, German and English.
+          </p>
+        </section>
+      </StageColumn>
+
+      <StageColumn v-bind="columnProps(1)" @widen="columns.widen(1)" @minimise="columns.minimise(1)" @restore="columns.restore(1)">
+        <section aria-labelledby="terms-heat-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
+          <div class="flex flex-col gap-2">
+            <SectionHeading id="terms-heat-title">Marketing and technical terms, per company</SectionHeading>
+            <span class="text-sm text-ink-2 stage:text-[26px]">
+              Marketing terms name a belt or its use. Technical terms are what engineers type: specifications and problems.
+              Select a company to list its terms.
+            </span>
+          </div>
+          <div class="flex flex-col stage:min-h-0 stage:flex-1">
+            <div aria-hidden="true" :class="heatGrid" class="px-1 pb-1 text-center text-xs text-muted stage:px-3 stage:pb-2 stage:text-[22px]">
+              <span></span>
+              <span class="col-span-3 border-b-2 border-silver pb-1 stage:pb-1.5">Marketing</span>
+              <span></span>
+              <span class="col-span-2 border-b-2 border-orange pb-1 stage:pb-1.5">Technical</span>
+              <span></span>
+            </div>
+            <div
+              role="group"
+              aria-label="Sort the companies"
+              :class="heatGrid"
+              class="items-end border-b-[3px] border-black px-1 pb-2 text-center text-[10px] font-semibold stage:px-3 stage:pb-3.5 stage:text-[22px]"
+            >
+              <SortButton label="Company" :direction="directionOf(heatSort, 'company')" class="text-xs font-medium text-muted stage:text-[22px]" @sort="sortHeat('company', 'asc')" />
+              <template v-for="(column, index) in HEAT_COLUMNS" :key="column.key">
+                <span v-if="index === 3"></span>
+                <SortButton :label="column.label" :direction="directionOf(heatSort, column.key)" align="center" @sort="sortHeat(column.key, 'desc')">{{ column.short }}</SortButton>
+              </template>
+              <SortButton label="Total" :direction="directionOf(heatSort, 'total')" align="center" @sort="sortHeat('total', 'desc')" />
+            </div>
+            <ul v-scroll-hint aria-label="Terms per company and kind" class="scroll-hint m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1">
+              <li v-for="row in sortedHeat" :key="row.company" class="border-b border-grey">
+                <button
+                  type="button"
+                  :aria-pressed="view.user === row.company"
+                  :aria-label="row.description"
+                  :class="[heatGrid, view.user === row.company ? 'bg-mist' : 'hover:bg-mist']"
+                  class="min-h-10 w-full items-center px-1 py-1 text-left stage:min-h-[58px] stage:px-3"
+                  @click="toggle('user', row.company)"
+                >
+                  <span
+                    class="truncate text-sm stage:text-[28px]"
+                    :class="view.user === row.company || row.company === 'Tribelt' ? 'font-semibold' : ''"
+                  >{{ row.company }}</span>
+                  <template v-for="(cell, index) in row.cells" :key="cell.tier">
+                    <span v-if="index === 3"></span>
+                    <span
+                      class="flex h-8 items-center justify-center text-xs font-semibold stage:h-[46px] stage:text-2xl"
+                      :class="cell.count === 0 ? 'bg-mist' : ''"
+                      :style="{ backgroundColor: cellBackground(cell) }"
+                    >{{ cell.count > 0 ? cell.count : '' }}</span>
                   </template>
+                  <span class="text-center text-sm font-semibold stage:text-[26px]">{{ row.total }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </StageColumn>
+
+      <StageColumn v-bind="columnProps(2)" @widen="columns.widen(2)" @minimise="columns.minimise(2)" @restore="columns.restore(2)">
+        <section aria-labelledby="terms-ranked-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
+          <SectionHeading id="terms-ranked-title">Ranked by how many makers use them</SectionHeading>
+          <div class="flex flex-wrap items-center gap-2 stage:gap-3">
+            <div role="group" aria-label="Terms" class="flex flex-wrap gap-2 stage:gap-2.5">
+              <PillButton v-for="group in GROUPS" :key="group.label" size="sm" :pressed="view.group === group.value" @click="pickGroup(group.value)">
+                {{ group.label }}
+              </PillButton>
+            </div>
+            <PillButton size="sm" :pressed="view.gap" @click="toggleGap">Only terms Tribelt lacks</PillButton>
+            <label for="terms-q" class="sr-only">Search terms</label>
+            <input
+              id="terms-q"
+              v-model="draft"
+              type="search"
+              placeholder="Search terms"
+              spellcheck="false"
+              autocomplete="off"
+              class="h-11 min-w-0 flex-[1_1_12rem] rounded-full border-2 border-grey bg-white px-4 text-sm stage:h-[76px] stage:min-w-[300px] stage:flex-1 stage:border-[3px] stage:px-7 stage:text-[26px]"
+            />
+          </div>
+          <div class="flex min-h-9 flex-wrap items-center gap-2 stage:min-h-14 stage:gap-3">
+            <span aria-live="polite" class="text-sm text-ink-2 stage:text-[26px]">{{ status }}</span>
+            <button
+              v-for="chip in activeChips"
+              :key="chip.key"
+              type="button"
+              :aria-label="`Remove the filter ${chip.label}`"
+              class="inline-flex min-h-9 items-center gap-2 rounded-full bg-black px-3 text-sm text-white hover:bg-ink-2 stage:min-h-14 stage:gap-3 stage:px-[22px] stage:text-2xl"
+              @click="clear(chip.key)"
+            >
+              {{ chip.label }}
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="size-3.5 stage:size-5" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+          <div class="flex flex-col stage:min-h-0 stage:flex-1">
+            <div
+              role="group"
+              aria-label="Sort the terms"
+              :class="rankGrid"
+              class="flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-black pb-2 text-xs font-semibold stage:grid stage:border-b-[3px] stage:pb-3 stage:text-[22px]"
+            >
+              <SortButton label="Rank" :direction="directionOf(rankSort, 'rank')" @sort="sortRank('rank', 'asc')">#</SortButton>
+              <SortButton label="Term" :direction="directionOf(rankSort, 'term')" @sort="sortRank('term', 'asc')" />
+              <SortButton label="Kind" :direction="directionOf(rankSort, 'kind')" @sort="sortRank('kind', 'asc')" />
+              <SortButton label="Makers" :direction="directionOf(rankSort, 'makers')" @sort="sortRank('makers', 'desc')" />
+              <SortButton label="Tribelt" :direction="directionOf(rankSort, 'tribelt')" @sort="sortRank('tribelt', 'desc')" />
+            </div>
+            <ol
+              v-scroll-hint
+              aria-label="Ranked terms"
+              tabindex="0"
+              class="scroll-hint m-0 max-h-[36rem] list-none overflow-y-auto border-t-2 border-black p-0 stage:max-h-none stage:min-h-0 stage:flex-1 stage:border-t-0"
+            >
+              <li
+                v-for="row in sortedRanked"
+                :key="`${row.term}-${row.meta}`"
+                :class="rankGrid"
+                class="grid grid-cols-[1.75rem_minmax(0,1fr)_4.5rem] items-center gap-x-2 gap-y-0.5 border-b border-grey py-2 text-sm stage:min-h-[72px] stage:py-1.5 stage:text-[26px]"
+              >
+                <span class="col-start-1 row-span-2 row-start-1 self-start text-muted stage:col-start-auto stage:row-span-1 stage:row-start-auto stage:self-center">{{ row.rank }}</span>
+                <span class="col-start-2 row-start-1 flex min-w-0 flex-col stage:col-start-auto stage:row-start-auto">
+                  <span class="truncate font-medium stage:text-[28px]">
+                    <template v-for="(part, index) in highlight(row.term, view.q)" :key="index">
+                      <mark v-if="part.match" class="bg-orange/30 text-black">{{ part.text }}</mark>
+                      <template v-else>{{ part.text }}</template>
+                    </template>
+                  </span>
+                  <span class="truncate text-xs text-muted stage:text-[22px]">{{ row.meta }}</span>
                 </span>
-                <span class="truncate text-xs text-muted stage:text-[22px]">{{ row.meta }}</span>
-              </span>
-              <span class="col-start-2 row-start-2 inline-flex items-center gap-2 text-xs stage:col-start-auto stage:row-start-auto stage:gap-2.5 stage:text-[26px]">
-                <span aria-hidden="true" class="size-2.5 flex-none rounded-full stage:size-[18px]" :class="tierFill(row.tier)"></span>{{ row.kind }}
-              </span>
-              <span class="col-start-3 row-start-1 flex items-center gap-2 stage:col-start-auto stage:row-start-auto stage:gap-2.5">
-                <span class="w-5 text-right font-semibold stage:w-8">{{ row.makers }}<span class="sr-only"> makers</span></span>
-                <span aria-hidden="true" class="h-2 flex-1 bg-mist stage:h-3">
-                  <span class="block h-full bg-black" :style="{ width: percent(row.share) }"></span>
+                <span class="col-start-2 row-start-2 inline-flex items-center gap-2 text-xs stage:col-start-auto stage:row-start-auto stage:gap-2.5 stage:text-[26px]">
+                  <span aria-hidden="true" class="size-2.5 flex-none rounded-full stage:size-[18px]" :class="tierFill(row.tier)"></span>{{ row.kind }}
                 </span>
-              </span>
-              <span
-                class="col-start-3 row-start-2 text-xs font-medium stage:col-start-auto stage:row-start-auto stage:text-[26px]"
-                :class="row.tribelt ? 'text-ink-2' : 'text-orange-ink'"
-              >{{ row.tribelt ? 'Uses it' : 'Lacks it' }}</span>
-            </li>
-          </ol>
-        </div>
-      </section>
+                <span class="col-start-3 row-start-1 flex items-center gap-2 stage:col-start-auto stage:row-start-auto stage:gap-2.5">
+                  <span class="w-5 text-right font-semibold stage:w-8">{{ row.makers }}<span class="sr-only"> makers</span></span>
+                  <span aria-hidden="true" class="h-2 flex-1 bg-mist stage:h-3">
+                    <span class="block h-full bg-black" :style="{ width: percent(row.share) }"></span>
+                  </span>
+                </span>
+                <span
+                  class="col-start-3 row-start-2 text-xs font-medium stage:col-start-auto stage:row-start-auto stage:text-[26px]"
+                  :class="row.tribelt ? 'text-ink-2' : 'text-orange-ink'"
+                >{{ row.tribelt ? 'Uses it' : 'Lacks it' }}</span>
+              </li>
+            </ol>
+          </div>
+        </section>
+      </StageColumn>
     </div>
   </SectionView>
 </template>

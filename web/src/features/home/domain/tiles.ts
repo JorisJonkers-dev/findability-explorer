@@ -15,18 +15,18 @@ export type TileBar = {
   zero: boolean
 }
 
-/** The competitors the desk research studied, which the poster counts: not the group, not added since. */
-function researched<T extends Pick<Competitor, 'source' | 'groupCompany'>>(competitors: readonly T[]): T[] {
-  return competitors.filter((c) => c.source === 'research' && !c.groupCompany)
+/** The competitors the desk research studied, which the poster counts: not the group or the mirror, not added since. */
+function researched<T extends Pick<Competitor, 'source' | 'groupCompany' | 'role'>>(competitors: readonly T[]): T[] {
+  return competitors.filter((c) => c.source === 'research' && !c.groupCompany && c.role === 'competitor')
 }
 
 /** How many makers the research found. */
-export function makerCount(competitors: readonly Pick<Competitor, 'source' | 'groupCompany'>[]): number {
+export function makerCount(competitors: readonly Pick<Competitor, 'source' | 'groupCompany' | 'role'>[]): number {
   return researched(competitors).length
 }
 
 /** For each of Tribelt's families, how many of the researched makers offer it, of all of them. */
-export function familyBars(competitors: readonly Pick<Competitor, 'source' | 'groupCompany' | 'beltNames'>[]): TileBar[] {
+export function familyBars(competitors: readonly Pick<Competitor, 'source' | 'groupCompany' | 'role' | 'beltNames'>[]): TileBar[] {
   const makers = researched(competitors)
   return PRODUCT_FAMILIES.map((family) => {
     const count = makers.filter((c) => c.beltNames.some((b) => b.family === family)).length

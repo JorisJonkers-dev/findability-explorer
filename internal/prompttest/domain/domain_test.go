@@ -1,0 +1,322 @@
+package domain_test
+
+import (
+	"errors"
+	"slices"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+)
+
+func TestThePromptSetAsksNinetyQuestionsInGeneralTerms(t *testing.T) {
+	set := domain.CurrentPromptSet()
+	if set.Version != domain.PromptSetVersion || len(set.Prompts) != 90 {
+		t.Fatalf("set v%d has %d prompts", set.Version, len(set.Prompts))
+	}
+	ids := map[string]bool{}
+	languages := map[string]int{}
+	for _, p := range set.Prompts {
+		if ids[p.ID] {
+			t.Errorf("duplicate id %s", p.ID)
+		}
+		ids[p.ID] = true
+		languages[p.Language]++
+		if p.Language != domain.LanguageOf(p.Scope) || strings.TrimSpace(p.Text) == "" {
+			t.Errorf("prompt %s = %+v", p.ID, p)
+		}
+		if lower := strings.ToLower(p.Text); strings.Contains(lower, "tribelt") || strings.Contains(lower, "tri-flex") {
+			t.Errorf("prompt %s names Tribelt or its products: %s", p.ID, p.Text)
+		}
+	}
+	if languages["nl"] != 45 || languages["de"] != 30 || languages["en"] != 15 {
+		t.Errorf("languages = %v", languages)
+	}
+	byID := func(id string) string {
+		i := slices.IndexFunc(set.Prompts, func(p domain.Prompt) bool { return p.ID == id })
+		return set.Prompts[i].Text
+	}
+	if got := byID("eyelink-supplier-twente"); got != "Welke bedrijven leveren draadogenbanden (metalen transportbanden van gelaste draadogen) in Twente? Noem fabrikanten en leveranciers." {
+		t.Errorf("twente supplier = %q", got)
+	}
+	if got := byID("tri_flex_turn_curve-problem-germany"); got != "Unser Band im Spiralfroster verklemmt sich in den Kurven. Woran liegt das, welches Band wäre besser, und wer liefert es in Deutschland?" {
+		t.Errorf("germany problem = %q", got)
+	}
+	if got := byID("open_spiral-application-english"); got != "Which conveyor belt suits drying and cooling products on an open belt, and who supplies it?" {
+		t.Errorf("english application = %q", got)
+	}
+	if got := byID("other-application-german"); got != "Welches Förderband eignet sich für schwere, heiße Teile in einem Härteofen, und wer liefert es?" {
+		t.Errorf("german application = %q", got)
+	}
+	if got := byID("closed_spiral-supplier-netherlands"); !strings.HasSuffix(got, "in Nederland? Noem fabrikanten en leveranciers.") {
+		t.Errorf("netherlands supplier = %q", got)
+	}
+}
+
+func model(id string, prompt, completion float64, out ...string) domain.CatalogueModel {
+	if len(out) == 0 {
+		out = []string{"text"}
+	}
+	return domain.CatalogueModel{ID: id, PromptPrice: prompt, CompletionPrice: completion, InputModalities: []string{"text", "image"}, OutputModalities: out}
+}
+
+func TestChooseModelsTakesTheCheapestTextModelOfEachProvider(t *testing.T) {
+	catalogue := []domain.CatalogueModel{
+		model("openai/gpt-oss-20b", 0.00000003, 0.00000014),
+		model("openai/gpt-oss-20b:batch", 0.00000001, 0.00000001),
+		model("openai/gpt-image", 0, 0, "image"),
+		model("openai/embedding", 0, 0, "embeddings"),
+		model("google/gemma:free", 0, 0),
+		model("google/lyria", 0, 0, "audio", "text"),
+		model("google/gemini-flash-lite", 0.0000001, 0.0000004),
+		model("meta-llama/llama-guard-4", 0, 0),
+		model("meta-llama/llama-3.1-8b", 0.00000002, 0.00000005),
+		model("openrouter/auto", -1, -1),
+		model("mistralai/nemo:free", 0, 0),
+		model("mistralai/aaa:free", 0, 0),
+	}
+	got := domain.ChooseModels(catalogue, []string{"openai", "google", "meta-llama", "mistralai", "x-ai"})
+	want := []domain.ModelChoice{
+		{Provider: "openai", Model: "openai/gpt-oss-20b"},
+		{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini-flash-lite"},
+		{Provider: "meta-llama", Model: "meta-llama/llama-3.1-8b"},
+		{Provider: "mistralai", Model: "mistralai/aaa:free", Free: true},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("choices = %+v\nwant %+v", got, want)
+	}
+	if catalogue[0].Provider() != "openai" || !catalogue[4].Free() {
+		t.Error("provider or free")
+	}
+}
+
+func TestTasksAskEveryPromptOfEveryModelInBothModes(t *testing.T) {
+	models := []domain.ModelChoice{{Provider: "openai"}, {Provider: "google"}}
+	tasks := domain.Tasks(domain.CurrentPromptSet(), models)
+	if len(tasks) != 360 {
+		t.Fatalf("%d tasks", len(tasks))
+	}
+	keys := map[domain.TaskKey]bool{}
+	for _, task := range tasks {
+		keys[task.Key()] = true
+	}
+	if len(keys) != 360 || tasks[1].Key() != (domain.TaskKey{PromptID: "eyelink-supplier-twente", Provider: "google", Mode: domain.ModeKnowledge}) {
+		t.Errorf("tasks[1] = %+v", tasks[1].Key())
+	}
+	a := domain.Answer{Prompt: tasks[3].Prompt, Provider: tasks[3].Provider, Mode: tasks[3].Mode}
+	if a.Key() != tasks[3].Key() || tasks[3].Mode != domain.ModeWeb {
+		t.Errorf("answer key = %+v", a.Key())
+	}
+	if domain.MicrosOf(1.2345675) != 1234568 || domain.Micros(2_500_000).Dollars() != 2.5 {
+		t.Error("micros")
+	}
+}
+
+func directory() []domain.DirectoryCompany {
+	return []domain.DirectoryCompany{
+		{ID: "tribelt", Name: "Tribelt B.V.", Host: "tribelt.nl", Role: domain.RoleTribelt},
+		{ID: "esfo", Name: "ESFO Transportbanden B.V. (ESFO Metal Belts, Narviflex Group)", Host: "esfo-metalbelts.com", Role: domain.RoleCompetitor},
+		{ID: "martens", Name: "Märtens Transportbänder GmbH", Host: "martens-belts.com", Role: domain.RoleCompetitor},
+		{ID: "wire-belt", Name: "Wire Belt Company Ltd", Host: "wirebelt.co.uk", Role: domain.RoleCompetitor},
+		{ID: "abc", Name: "ABC Belts", Role: domain.RoleCompetitor},
+		{ID: "de-spiraal", Name: "De Spiraal B.V.", Role: domain.RoleGroup},
+	}
+}
+
+func TestMatchFindsACompanyByNameAliasOrWebsite(t *testing.T) {
+	cases := map[string]domain.Named{
+		"esfo":       {Name: "ESFO"},
+		"martens":    {Name: "Martens Transportbander"},
+		"wire-belt":  {Name: "Wire Belt"},
+		"tribelt":    {Name: "Some Dutch maker", URL: "https://shop.tribelt.nl/en"},
+		"de-spiraal": {Name: "De Spiraal"},
+	}
+	for want, n := range cases {
+		if got := domain.Match(n, directory()); got != want {
+			t.Errorf("Match(%+v) = %q, want %q", n, got, want)
+		}
+	}
+	if got := domain.Match(domain.Named{Name: "Narviflex"}, directory()); got != "esfo" {
+		t.Errorf("an alias's first word = %q", got)
+	}
+	for _, n := range []domain.Named{{Name: "Ashworth"}, {Name: "AB"}, {Name: "B.V."}, {Name: "Ashworth", URL: "http://[::1"}} {
+		if got := domain.Match(n, directory()); got != "" {
+			t.Errorf("Match(%+v) = %q, want none", n, got)
+		}
+	}
+	if domain.NameKey("Märtens Transportbänder GmbH (Germany)") != "martens transportbander" {
+		t.Errorf("key = %q", domain.NameKey("Märtens Transportbänder GmbH (Germany)"))
+	}
+}
+
+func TestReadMatchesNamesAndFindsTribeltByNameOrAddress(t *testing.T) {
+	x := domain.Extracted{
+		Companies:   []domain.Named{{Name: "Twentebelt"}, {Name: "ESFO"}},
+		Addresses:   []string{"https://twentebelt.com", " "},
+		Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Belgium."},
+	}
+	got := domain.Read(x, []string{"https://www.tribelt.nl/producten", "https://twentebelt.com"}, directory())
+	if len(got.Companies) != 2 || got.Companies[0].CompetitorID != "" || got.Companies[1] != (domain.Company{Name: "ESFO", CompetitorID: "esfo", Position: 2}) {
+		t.Errorf("companies = %+v", got.Companies)
+	}
+	if !got.CitesTribelt || got.NamesTribelt || got.Correctness != domain.CorrectnessNone || got.WrongClaims != nil {
+		t.Errorf("an answer citing but not naming Tribelt has no correctness: %+v", got)
+	}
+	if !slices.Equal(got.Addresses, []string{"https://twentebelt.com", "https://www.tribelt.nl/producten"}) {
+		t.Errorf("addresses = %v", got.Addresses)
+	}
+	named := domain.Read(domain.Extracted{Companies: []domain.Named{{Name: "Tribelt"}}, Correctness: domain.CorrectnessPartly, WrongClaims: []string{"x"}}, nil, directory())
+	if !named.NamesTribelt || named.CitesTribelt || named.Correctness != domain.CorrectnessPartly {
+		t.Errorf("an answer naming Tribelt = %+v", named)
+	}
+}
+
+func answer(provider string, scope domain.Scope, mode domain.Mode, x *domain.Extraction) domain.Answer {
+	return domain.Answer{
+		ID: uuid.New(), Prompt: domain.Prompt{ID: "eyelink-supplier-" + string(scope), Family: domain.FamilyEyelink, Scope: scope},
+		Provider: provider, Model: provider + "/m", Mode: mode, Extraction: x,
+		Reply: domain.Reply{InputTokens: 10, OutputTokens: 5, Cost: 100},
+	}
+}
+
+func TestCellsMentionsAndWrongClaims(t *testing.T) {
+	tribelt := &domain.Extraction{NamesTribelt: true, CitesTribelt: true, Companies: []domain.Company{{CompetitorID: "tribelt", Position: 1}, {CompetitorID: "esfo", Position: 2}, {CompetitorID: "esfo", Position: 3}}, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Belgium."}, Cost: 10, InputTokens: 3, OutputTokens: 2}
+	others := &domain.Extraction{Companies: []domain.Company{{CompetitorID: "esfo", Position: 1}, {Name: "Unknown", Position: 2}}}
+	failedRead := answer("google", domain.ScopeTwente, domain.ModeKnowledge, &domain.Extraction{Failed: true})
+	noAnswer := answer("google", domain.ScopeTwente, domain.ModeKnowledge, nil)
+	noAnswer.Failure = "rate limited"
+	late := answer("openai", domain.ScopeGermany, domain.ModeWeb, tribelt)
+	late.At = time.Date(2026, 11, 2, 0, 0, 0, 0, time.UTC)
+	answers := []domain.Answer{
+		answer("openai", domain.ScopeTwente, domain.ModeWeb, tribelt),
+		answer("openai", domain.ScopeTwente, domain.ModeKnowledge, others),
+		answer("google", domain.ScopeTwente, domain.ModeKnowledge, others),
+		late, failedRead, noAnswer,
+	}
+	cells := domain.Cells(answers)
+	want := []domain.Cell{
+		{Provider: "google", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeKnowledge, Answers: 1},
+		{Provider: "openai", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeKnowledge, Answers: 1},
+		{Provider: "openai", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeWeb, Answers: 1, Named: 1, Cited: 1},
+		{Provider: "openai", Scope: domain.ScopeGermany, Family: domain.FamilyEyelink, Mode: domain.ModeWeb, Answers: 1, Named: 1, Cited: 1},
+	}
+	if !slices.Equal(cells, want) {
+		t.Errorf("cells = %+v", cells)
+	}
+	mentions := domain.Mentions(answers)
+	if len(mentions) != 2 || mentions[0].CompetitorID != "esfo" || mentions[0].Answers != 4 || mentions[0].First != 2 || mentions[0].AveragePosition() != 1.5 {
+		t.Errorf("mentions = %+v", mentions)
+	}
+	if mentions[1].CompetitorID != "tribelt" || (domain.Mention{}).AveragePosition() != 0 {
+		t.Errorf("mentions[1] = %+v", mentions[1])
+	}
+	claims := domain.WrongClaims(answers)
+	if len(claims) != 2 || !claims[0].At.Equal(late.At) || claims[0].Claim != "Tribelt is in Belgium." || claims[0].Correctness != domain.CorrectnessWrong {
+		t.Errorf("claims = %+v", claims)
+	}
+	p := domain.Progressed(append(answers, answer("x-ai", domain.ScopeDutch, domain.ModeWeb, nil)), []domain.ModelChoice{{Provider: "openai"}, {Provider: "google"}, {Provider: "deepseek"}})
+	if p.Answered != 6 || p.Failed != 1 || p.Cost != 7*100+20 || p.InputTokens != 7*10+6 || len(p.ByProvider) != 4 {
+		t.Errorf("progress = %+v", p)
+	}
+	if g := p.ByProvider[1]; g.Provider != "google" || g.Answered != 2 || g.Failed != 1 || !slices.Equal(g.Models, []string{"google/m"}) {
+		t.Errorf("google = %+v", g)
+	}
+	if p.ByProvider[2].Answered != 0 || p.ByProvider[3].Provider != "x-ai" {
+		t.Errorf("by provider = %+v", p.ByProvider)
+	}
+}
+
+func TestCandidatesGatherUnmatchedNamesAcrossRuns(t *testing.T) {
+	day := time.Date(2026, 10, 26, 0, 0, 0, 0, time.UTC)
+	sightings := []domain.Sighting{
+		{Name: "Ashworth Bros", URL: "https://ashworth.com", Provider: "openai", Model: "openai/gpt-oss-20b", At: day},
+		{Name: "Ashworth Bros.", Provider: "google", Model: "google/gemma:free", At: day.Add(time.Hour)},
+		{Name: "Ashworth Bros", Provider: "openai", At: day},
+		{Name: "ESFO", Provider: "openai", At: day},          // on the list
+		{Name: "Distributor X", Provider: "openai", At: day}, // dismissed
+		{Name: "Newly Added", Provider: "openai", At: day},   // added, and on the list now
+		{Name: "GmbH", Provider: "openai", At: day},          // no name at all
+	}
+	dir := append(directory(), domain.DirectoryCompany{ID: "newly-added", Name: "Newly Added", Role: domain.RoleCompetitor})
+	decisions := []domain.CandidateDecision{
+		{ID: domain.CandidateID(domain.NameKey("Distributor X")), Status: domain.CandidateDismissed, By: "joris"},
+		{ID: domain.CandidateID(domain.NameKey("Newly Added")), Status: domain.CandidateAdded, CompetitorID: "newly-added"},
+	}
+	got := domain.Candidates(sightings, decisions, dir)
+	if len(got) != 3 {
+		t.Fatalf("candidates = %+v", got)
+	}
+	ash := got[0]
+	if ash.Name != "Ashworth Bros" || ash.Answers != 3 || !slices.Equal(ash.Providers, []string{"google", "openai"}) ||
+		!slices.Equal(ash.Models, []string{"google/gemma:free", "openai/gpt-oss-20b"}) ||
+		!slices.Equal(ash.Addresses, []string{"https://ashworth.com"}) || !ash.LastSeen.Equal(day.Add(time.Hour)) || ash.Status() != domain.CandidatePending {
+		t.Errorf("ashworth = %+v", ash)
+	}
+	if got[1].Name != "Distributor X" || got[1].Status() != domain.CandidateDismissed || got[2].Status() != domain.CandidateAdded {
+		t.Errorf("decided = %+v, %+v", got[1], got[2])
+	}
+	if len(domain.CandidateID("x")) != 16 {
+		t.Error("id length")
+	}
+}
+
+func TestSettingsRulesAndTheSchedule(t *testing.T) {
+	now := time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC) // a Monday
+	s := domain.DefaultSettings(now)
+	if s.MonthlyBudget != 10_000_000 || s.Cadence != domain.CadenceMonthly || !s.NextDue.Equal(time.Date(2026, 11, 1, 6, 0, 0, 0, time.UTC)) ||
+		len(s.Providers) != 7 || s.FactSheet.Version != 1 || !strings.Contains(s.FactSheet.Text, "Haaksbergen") || s.CredentialID != "" {
+		t.Errorf("defaults = %+v", s)
+	}
+	if got := domain.NextDue(now, domain.CadenceWeekly); !got.Equal(time.Date(2026, 11, 2, 6, 0, 0, 0, time.UTC)) {
+		t.Errorf("weekly after Monday noon = %v", got)
+	}
+	if got := domain.NextDue(time.Date(2026, 10, 26, 5, 0, 0, 0, time.UTC), domain.CadenceWeekly); !got.Equal(time.Date(2026, 10, 26, 6, 0, 0, 0, time.UTC)) {
+		t.Errorf("weekly before Monday six = %v", got)
+	}
+	if got := domain.NextDue(time.Date(2026, 12, 31, 23, 0, 0, 0, time.UTC), domain.CadenceMonthly); !got.Equal(time.Date(2027, 1, 1, 6, 0, 0, 0, time.UTC)) {
+		t.Errorf("monthly at year end = %v", got)
+	}
+	if !domain.MonthStart(now).Equal(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)) {
+		t.Error("month start")
+	}
+	if got, err := domain.CheckProviders([]string{" OpenAI", "openai", "meta-llama"}); err != nil || !slices.Equal(got, []string{"openai", "meta-llama"}) {
+		t.Errorf("providers = %v, %v", got, err)
+	}
+	for _, bad := range [][]string{nil, {"open ai"}, {strings.Repeat("a", 41)}, make([]string, 0)} {
+		if _, err := domain.CheckProviders(bad); !errors.Is(err, domain.ErrInvalid) {
+			t.Errorf("providers %v accepted", bad)
+		}
+	}
+	many := make([]string, 21)
+	for i := range many {
+		many[i] = "p" + string(rune('a'+i))
+	}
+	if _, err := domain.CheckProviders(many); !errors.Is(err, domain.ErrInvalid) {
+		t.Error("21 providers accepted")
+	}
+	if b, err := domain.CheckBudget(domain.MicrosOf(25)); err != nil || b != 25_000_000 {
+		t.Errorf("budget = %v, %v", b, err)
+	}
+	for _, bad := range []domain.Micros{0, -1, domain.MaxBudget + 1} {
+		if _, err := domain.CheckBudget(bad); !errors.Is(err, domain.ErrInvalid) {
+			t.Errorf("budget %d accepted", bad)
+		}
+	}
+	if c, err := domain.CheckCadence("weekly"); err != nil || c != domain.CadenceWeekly {
+		t.Errorf("cadence = %v, %v", c, err)
+	}
+	if _, err := domain.CheckCadence("daily"); !errors.Is(err, domain.ErrInvalid) {
+		t.Error("daily accepted")
+	}
+	if text, err := domain.CheckFactSheet("  Tribelt makes metal belts in Twente.  "); err != nil || text != "Tribelt makes metal belts in Twente." {
+		t.Errorf("fact sheet = %q, %v", text, err)
+	}
+	for _, bad := range []string{"short", strings.Repeat("x", domain.MaxFactSheet+1)} {
+		if _, err := domain.CheckFactSheet(bad); !errors.Is(err, domain.ErrInvalid) {
+			t.Errorf("fact sheet of %d accepted", len(bad))
+		}
+	}
+}

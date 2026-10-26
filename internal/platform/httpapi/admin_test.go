@@ -34,8 +34,9 @@ func (auth) Authenticate(_ context.Context, cookie string, need identity.Need) (
 
 // llmCases is a stand-in for the language-model use cases; err fails every call.
 type llmCases struct {
-	err   error
-	actor string
+	usageErr error
+	err      error
+	actor    string
 }
 
 var at = time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)

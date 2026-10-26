@@ -13,33 +13,54 @@ import (
 )
 
 type Querier interface {
+	AddAnalysisBotRule(ctx context.Context, arg AddAnalysisBotRuleParams) error
 	AddAnalysisEquivalent(ctx context.Context, arg AddAnalysisEquivalentParams) error
 	AddAnalysisEquivalentTerm(ctx context.Context, arg AddAnalysisEquivalentTermParams) error
 	AddAnalysisKeyword(ctx context.Context, arg AddAnalysisKeywordParams) error
 	AddAnalysisKnownTerm(ctx context.Context, arg AddAnalysisKnownTermParams) error
 	AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams) error
+	AddAnalysisReadiness(ctx context.Context, arg AddAnalysisReadinessParams) error
+	AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error
 	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
 	AddLlmEvent(ctx context.Context, arg AddLlmEventParams) error
+	AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams) error
+	AddPromptAnswerCompany(ctx context.Context, arg AddPromptAnswerCompanyParams) error
+	AddPromptCandidateDecision(ctx context.Context, arg AddPromptCandidateDecisionParams) error
+	AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) error
+	AddPromptRunModel(ctx context.Context, arg AddPromptRunModelParams) error
+	// Takes over the running run whose holder was last heard of before stale_before.
+	AdoptStalePromptRun(ctx context.Context, arg AdoptStalePromptRunParams) ([]uuid.UUID, error)
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
 	// Every phrase a finished scan of a company found outside the terminology map.
 	CandidateEvidence(ctx context.Context) ([]CandidateEvidenceRow, error)
 	CountActiveAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) (int64, error)
 	// A company's scan takes the next number among its scans; the unique index refuses a duplicate.
 	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) (int64, error)
+	// A running run, unless one is running already: the partial unique index refuses it.
+	CreatePromptRun(ctx context.Context, arg CreatePromptRunParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	DeleteAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) error
 	DeleteCompany(ctx context.Context, id string) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, now time.Time) error
 	DeleteLlmCredential(ctx context.Context, id uuid.UUID) (int64, error)
+	DeletePromptCandidateDecision(ctx context.Context, id string) (int64, error)
 	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
 	DeleteTermDecision(ctx context.Context, candidateID string) (int64, error)
 	FailAnalysis(ctx context.Context, arg FailAnalysisParams) error
 	FailRunningAnalyses(ctx context.Context, arg FailRunningAnalysesParams) error
 	FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) error
+	FinishPromptRun(ctx context.Context, arg FinishPromptRunParams) error
 	GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow, error)
+	// An analysis's readiness, or no row when it has none.
+	GetAnalysisReadiness(ctx context.Context, analysisID uuid.UUID) ([]AnalysisReadiness, error)
+	GetAnalysisReadinessFiles(ctx context.Context, analysisID uuid.UUID) (GetAnalysisReadinessFilesRow, error)
 	GetLlmActive(ctx context.Context) (GetLlmActiveRow, error)
 	GetLlmCredential(ctx context.Context, id uuid.UUID) (LlmCredential, error)
+	GetPromptRun(ctx context.Context, id uuid.UUID) (GetPromptRunRow, error)
+	// The settings, or no row before an administrator saved any.
+	GetPromptSettings(ctx context.Context) ([]GetPromptSettingsRow, error)
 	GetSession(ctx context.Context, arg GetSessionParams) (GetSessionRow, error)
+	HeartbeatPromptRun(ctx context.Context, arg HeartbeatPromptRunParams) (int64, error)
 	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
@@ -52,9 +73,13 @@ type Querier interface {
 	// The products the language model matched to Tribelt's families on each company's newest finished
 	// scan whose matching ran.
 	LatestMatchedProducts(ctx context.Context) ([]LatestMatchedProductsRow, error)
+	// Each company's newest scan that recorded its AI readiness, with that readiness.
+	LatestReadinessPerCompetitor(ctx context.Context) ([]LatestReadinessPerCompetitorRow, error)
 	ListAcceptedTerms(ctx context.Context) ([]AcceptedTerm, error)
 	ListAnalyses(ctx context.Context, limit int32) ([]ListAnalysesRow, error)
 	ListAnalysesByCompetitor(ctx context.Context, arg ListAnalysesByCompetitorParams) ([]ListAnalysesByCompetitorRow, error)
+	// The crawler rules of the analyses named, in each one's order.
+	ListAnalysisBotRules(ctx context.Context, ids []uuid.UUID) ([]ListAnalysisBotRulesRow, error)
 	ListAnalysisEquivalentTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentTermsRow, error)
 	ListAnalysisEquivalents(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentsRow, error)
 	ListAnalysisKeywords(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKeywordsRow, error)
@@ -64,11 +89,25 @@ type Querier interface {
 	ListCompanyOverrides(ctx context.Context) ([]CompanyOverride, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
+	ListPromptAnswerCompanies(ctx context.Context, runID uuid.UUID) ([]ListPromptAnswerCompaniesRow, error)
+	// A run's answers with how they were read; the answer's text only when with_text is true.
+	ListPromptAnswers(ctx context.Context, arg ListPromptAnswersParams) ([]ListPromptAnswersRow, error)
+	ListPromptCandidateDecisions(ctx context.Context) ([]ListPromptCandidateDecisionsRow, error)
+	ListPromptRunModels(ctx context.Context, ids []uuid.UUID) ([]ListPromptRunModelsRow, error)
+	ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRunsRow, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
+	// The schedule's next due time, locked until the transaction ends; no row before any was saved.
+	LockPromptSchedule(ctx context.Context) ([]time.Time, error)
 	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
 	MarkAnalysisRunning(ctx context.Context, id uuid.UUID) error
+	MovePromptSchedule(ctx context.Context, nextDue time.Time) error
+	// Every name an answer gave that was not matched to a company.
+	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)
+	// What answers and extractions cost since a moment, in millionths of a dollar.
+	PromptSpentSince(ctx context.Context, since time.Time) (int64, error)
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
 	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
+	SavePromptSettings(ctx context.Context, arg SavePromptSettingsParams) error
 	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error

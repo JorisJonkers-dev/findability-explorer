@@ -32,9 +32,9 @@ export function testOutcome(test: LlmTest): TestOutcome {
   return { ok: test.ok, text: `${test.ok ? 'Accepted' : 'Refused'} on ${atLabel(test.at)}: ${test.message}` }
 }
 
-/** The keys a model can be chosen for: those the server can still read. */
+/** The keys a model can be chosen for: those the server can still read, an Admin key never. */
 export function choosableCredentials(credentials: readonly LlmCredential[]): LlmCredential[] {
-  return credentials.filter((c) => c.readable)
+  return credentials.filter((c) => c.readable && c.provider !== 'anthropic_admin')
 }
 
 export type ActiveState =

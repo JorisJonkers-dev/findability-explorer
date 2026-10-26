@@ -19,8 +19,9 @@ const route = useRoute()
 const router = useRouter()
 const { companies: all, isLoading, error } = useCompanies()
 const { isAdmin } = useMe()
-// Archived researched companies are hidden; administrators see them apart, to restore one.
-const split = computed(() => splitArchived(all.value))
+// Archived researched companies are hidden; administrators see them apart, to restore one. The
+// mirror of tribelt.nl is no company to compare names with: it shows in the AI readiness table.
+const split = computed(() => splitArchived(all.value.filter((c) => c.role !== 'mirror')))
 const companies = computed(() => split.value.active)
 const archived = computed(() => (isAdmin.value ? split.value.archived : []))
 const map = useTermMap()

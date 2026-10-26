@@ -120,6 +120,9 @@ func (r *Repository) Get(ctx context.Context, id uuid.UUID) (domain.Analysis, er
 	if a.Equivalents, err = equivalents(ctx, q, id); err != nil {
 		return domain.Analysis{}, err
 	}
+	if a.Readiness, err = readiness(ctx, q, id); err != nil {
+		return domain.Analysis{}, err
+	}
 	return a, nil
 }
 
@@ -323,6 +326,88 @@ func (r *Repository) SaveMatching(ctx context.Context, id uuid.UUID, m domain.Ma
 	})
 }
 
+// SaveReadiness stores the AI readiness, its crawler rules and its raw files in one transaction.
+func (r *Repository) SaveReadiness(ctx context.Context, id uuid.UUID, rd domain.Readiness, raw domain.RawFiles) error {
+	return r.store.InTx(ctx, func(q *queries.Queries) error {
+		if err := q.AddAnalysisReadiness(ctx, queries.AddAnalysisReadinessParams{
+			AnalysisID: id, Robots: string(rd.Robots), SitemapDeclared: rd.Sitemap.Declared,
+			SitemapFiles: int64(rd.Sitemap.Files), SitemapAddresses: int64(rd.Sitemap.Addresses),
+			SitemapLanguages: clipAll(rd.Sitemap.Languages, 3, 16), LlmsPresent: rd.LLMs.Present,
+			LlmsBytes: int64(rd.LLMs.Bytes), LlmsLinks: int64(rd.LLMs.Links), LlmsFullPresent: rd.LLMsFull,
+			Markdown: rd.Markdown, HomeRead: rd.Home, StructuredData: clipAll(rd.StructuredData, 50, 100),
+			Languages: clipAll(rd.Languages, 50, 16), Cms: clip(rd.Stack.CMS, 60), SeoPlugin: clip(rd.Stack.SEOPlugin, 60),
+			BotProtection: clip(rd.Stack.BotProtection, 60),
+		}); err != nil {
+			return fmt.Errorf("insert readiness: %w", err)
+		}
+		for i, b := range rd.Bots[:min(len(rd.Bots), 20)] {
+			if err := q.AddAnalysisBotRule(ctx, queries.AddAnalysisBotRuleParams{
+				AnalysisID: id, Position: int64(i), Bot: b.Bot, Access: string(b.Access), Named: b.Named,
+			}); err != nil {
+				return fmt.Errorf("insert crawler rule: %w", err)
+			}
+		}
+		if err := q.AddAnalysisReadinessFiles(ctx, queries.AddAnalysisReadinessFilesParams{
+			AnalysisID: id, RobotsTxt: raw.Robots, RobotsTruncated: raw.RobotsTruncated, LlmsTxt: raw.LLMs,
+			LlmsTruncated: raw.LLMsTruncated, LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTruncated,
+		}); err != nil {
+			return fmt.Errorf("insert readiness files: %w", err)
+		}
+		return nil
+	})
+}
+
+// ReadinessFiles returns the raw files of an analysis's readiness, or domain.ErrNoReadiness.
+func (r *Repository) ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.RawFiles, error) {
+	row, err := r.store.Queries().GetAnalysisReadinessFiles(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.RawFiles{}, domain.ErrNoReadiness
+	}
+	if err != nil {
+		return domain.RawFiles{}, fmt.Errorf("select readiness files: %w", err)
+	}
+	return domain.RawFiles{
+		Robots: row.RobotsTxt, RobotsTruncated: row.RobotsTruncated, LLMs: row.LlmsTxt, LLMsTruncated: row.LlmsTruncated,
+		LLMsFull: row.LlmsFullTxt, LLMsFullTruncated: row.LlmsFullTruncated,
+	}, nil
+}
+
+// LatestReadiness returns, per company, its newest analysis that recorded its readiness.
+func (r *Repository) LatestReadiness(ctx context.Context) (map[string]domain.Analysis, error) {
+	q := r.store.Queries()
+	rows, err := q.LatestReadinessPerCompetitor(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("latest readiness per company: %w", err)
+	}
+	ids := make([]uuid.UUID, 0, len(rows))
+	for _, row := range rows {
+		ids = append(ids, row.ID)
+	}
+	bots, err := botRules(ctx, q, ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]domain.Analysis, len(rows))
+	for _, row := range rows {
+		a := toAnalysis(queries.ListAnalysesRow{
+			ID: row.ID, Url: row.Url, MaxPages: row.MaxPages, Status: row.Status, Failure: row.Failure,
+			PagesCrawled: row.PagesCrawled, Matching: row.Matching, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt,
+			FinishedAt: row.FinishedAt, CompetitorID: optionalText(row.CompetitorID), MatchingModel: row.MatchingModel,
+			ScanNumber: row.ScanNumber,
+		})
+		rd := toReadiness(queries.AnalysisReadiness{
+			Robots: row.Robots, SitemapDeclared: row.SitemapDeclared, SitemapFiles: row.SitemapFiles,
+			SitemapAddresses: row.SitemapAddresses, SitemapLanguages: row.SitemapLanguages, LlmsPresent: row.LlmsPresent,
+			LlmsBytes: row.LlmsBytes, LlmsLinks: row.LlmsLinks, LlmsFullPresent: row.LlmsFullPresent, Markdown: row.Markdown,
+			HomeRead: row.HomeRead, StructuredData: row.StructuredData, Languages: row.Languages, Cms: row.Cms,
+			SeoPlugin: row.SeoPlugin, BotProtection: row.BotProtection,
+		}, bots[row.ID])
+		a.Readiness = &rd
+		out[row.CompetitorID] = a
+	}
+	return out, nil
+}
+
 // Finish marks a running analysis done.
 func (r *Repository) Finish(ctx context.Context, id uuid.UUID, at time.Time) error {
 	if err := r.store.Queries().FinishAnalysis(ctx, queries.FinishAnalysisParams{ID: id, FinishedAt: timestamp(at)}); err != nil {
@@ -417,6 +502,56 @@ func equivalents(ctx context.Context, q *queries.Queries, id uuid.UUID) ([]domai
 		out = append(out, domain.Equivalent{Product: r.Product, Family: r.Family, Reason: r.Reason, SearchTerms: byPosition[r.Position]})
 	}
 	return out, nil
+}
+
+// readiness reads an analysis's readiness, or nil when it has none.
+func readiness(ctx context.Context, q *queries.Queries, id uuid.UUID) (*domain.Readiness, error) {
+	rows, err := q.GetAnalysisReadiness(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("select readiness: %w", err)
+	}
+	if len(rows) == 0 {
+		return nil, nil //nolint:nilnil // no readiness is a valid answer
+	}
+	bots, err := botRules(ctx, q, []uuid.UUID{id})
+	if err != nil {
+		return nil, err
+	}
+	rd := toReadiness(rows[0], bots[id])
+	return &rd, nil
+}
+
+func botRules(ctx context.Context, q *queries.Queries, ids []uuid.UUID) (map[uuid.UUID][]domain.BotRule, error) {
+	rows, err := q.ListAnalysisBotRules(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("select crawler rules: %w", err)
+	}
+	out := map[uuid.UUID][]domain.BotRule{}
+	for _, r := range rows {
+		out[r.AnalysisID] = append(out[r.AnalysisID], domain.BotRule{Bot: r.Bot, Access: domain.Access(r.Access), Named: r.Named})
+	}
+	return out, nil
+}
+
+func toReadiness(r queries.AnalysisReadiness, bots []domain.BotRule) domain.Readiness {
+	return domain.Readiness{
+		Robots: domain.RobotsStatus(r.Robots), Bots: bots,
+		Sitemap: domain.SitemapSummary{
+			Declared: r.SitemapDeclared, Files: int(r.SitemapFiles), Addresses: int(r.SitemapAddresses), Languages: r.SitemapLanguages,
+		},
+		LLMs:     domain.LLMsFacts{Present: r.LlmsPresent, Bytes: int(r.LlmsBytes), Links: int(r.LlmsLinks)},
+		LLMsFull: r.LlmsFullPresent, Markdown: r.Markdown, Home: r.HomeRead, StructuredData: r.StructuredData,
+		Languages: r.Languages, Stack: domain.Stack{CMS: r.Cms, SEOPlugin: r.SeoPlugin, BotProtection: r.BotProtection},
+	}
+}
+
+// clipAll keeps at most n items, each at most chars characters.
+func clipAll(items []string, n, chars int) []string {
+	out := make([]string, 0, min(len(items), n))
+	for _, s := range items[:min(len(items), n)] {
+		out = append(out, clip(s, chars))
+	}
+	return out
 }
 
 func text(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }

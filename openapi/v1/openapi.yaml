@@ -34,6 +34,10 @@ tags:
       added or scanned since.
   - name: analyses
     description: On-demand keyword analyses of one website.
+  - name: prompt-test
+    description: >-
+      The Prompt test: whether AI assistants name Tribelt when a buyer asks, measured by Prompt
+      runs of a fixed, versioned prompt set on the cheapest model of each large provider.
 paths:
   /api/v1/terms:
     get:
@@ -310,6 +314,27 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/ai-readiness:
+    get:
+      operationId: getAiReadiness
+      summary: Get every company's AI readiness
+      description: >-
+        Returns every company that is not archived with the AI readiness its newest scan recorded:
+        Tribelt on top as the baseline, the mirror of tribelt.nl below it as the target, then
+        Tribelt's group companies, then the competitors, each band by name. A company no scan
+        checked yet has no readiness.
+      tags: [competitors]
+      responses:
+        "200":
+          description: The table.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiReadinessTable"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/rescans:
     post:
       operationId: startRescans
@@ -317,10 +342,10 @@ paths:
       description: >-
         Administrators only. Queues one scan for each named company with a website, or with
         `all`, for every company that is not archived, has a website and has data: the desk
-        research studied it, or it was scanned before; a company whose site turned its last scan
-        away (`blocked`) is left out. A
-        company whose scan is still queued or running is skipped, and so is one without a
-        website. The scans run a few at a time, each site politely.
+        research studied it, or it was scanned before. A company whose site turned its last scan
+        away (`blocked`) is scanned too: its pages stay closed, but the scan records its AI
+        readiness. A company whose scan is still queued or running is skipped, and so is one
+        without a website. The scans run a few at a time, each site politely.
       tags: [admin]
       requestBody:
         required: true
@@ -580,6 +605,323 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/analyses/{analysisId}/readiness-files:
+    get:
+      operationId: getReadinessFiles
+      summary: Get the raw files a scan read its AI readiness from
+      description: >-
+        Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to
+        the scan, each capped at 100 KB, to check the classification against. 404 when the scan
+        recorded no AI readiness.
+      tags: [admin]
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          description: The analysis's id.
+          schema:
+            type: string
+            format: uuid
+            maxLength: 36
+      responses:
+        "200":
+          description: The files.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessFiles"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/prompt-test:
+    get:
+      operationId: getPromptTestResults
+      summary: Get the Prompt test's results
+      description: >-
+        Returns the latest Prompt runs, newest first, each with its progress and its answers
+        counted per provider, scope, belt family and mode (AI share of voice is named / answers,
+        citation share cited / answers); how often the answers of the newest run with any name
+        each company on the list; and the claims about Tribelt the answers got wrong, newest first.
+      tags: [prompt-test]
+      responses:
+        "200":
+          description: The results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptTestResults"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/prompt-runs/{runId}/answers:
+    get:
+      operationId: listPromptAnswers
+      summary: List a Prompt run's answers
+      description: >-
+        Returns a run's answers in full, each with how the extractor read it, optionally only one
+        provider's, scope's, belt family's or mode's.
+      tags: [prompt-test]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - name: provider
+          in: query
+          required: false
+          description: Only this provider's answers.
+          schema:
+            type: string
+            maxLength: 40
+            pattern: "^[a-z0-9][a-z0-9-]*$"
+        - name: scope
+          in: query
+          required: false
+          description: Only this scope's answers.
+          schema:
+            $ref: "#/components/schemas/PromptScope"
+        - name: family
+          in: query
+          required: false
+          description: Only this belt family's answers.
+          schema:
+            $ref: "#/components/schemas/PromptFamily"
+        - name: mode
+          in: query
+          required: false
+          description: Only answers of this mode.
+          schema:
+            $ref: "#/components/schemas/PromptMode"
+      responses:
+        "200":
+          description: The answers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptAnswerList"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-runs:
+    post:
+      operationId: startPromptRun
+      summary: Start a Prompt run now
+      description: >-
+        Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the
+        cheapest model of each large provider, from its own knowledge and with web search, each
+        answer read by the extractor. It runs in the background within the month's budget. 409
+        while a run is running; 422 without an OpenRouter key or a model to ask.
+      tags: [admin]
+      responses:
+        "202":
+          description: The run, started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptRun"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-test:
+    get:
+      operationId: getPromptTestSettings
+      summary: Get the Prompt test's settings
+      description: >-
+        Administrators only. Returns the OpenRouter key Prompt runs use, the providers, the
+        monthly budget and this month's spend, the schedule, the fact sheet and the prompt set.
+      tags: [admin]
+      responses:
+        "200":
+          description: The settings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptTestSettings"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updatePromptTestSettings
+      summary: Change the Prompt test's settings
+      description: >-
+        Administrators only. Changes the key, the providers, the monthly budget, the schedule or
+        the fact sheet. A new schedule counts from now; a new fact sheet is a new version. 422 for
+        a key that is no readable OpenRouter key or a value that breaks a rule.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The settings to change.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptTestSettingsChange"
+            example:
+              monthlyBudgetUsd: 10
+              cadence: monthly
+      responses:
+        "200":
+          description: The settings after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptTestSettings"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates:
+    get:
+      operationId: listCompetitorCandidates
+      summary: List the competitor candidates
+      description: >-
+        Administrators only. Every company the Prompt runs' answers name that is not on the
+        company list, with how often and by which providers' models, and the addresses given;
+        filtered by status, most answers first.
+      tags: [admin]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Only candidates with this status.
+          schema:
+            $ref: "#/components/schemas/CompetitorCandidateStatus"
+      responses:
+        "200":
+          description: The candidates and how many have each status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorCandidateList"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates/{competitorCandidateId}/add:
+    post:
+      operationId: addCompetitorCandidate
+      summary: Add a candidate to the competitor list
+      description: >-
+        Administrators only. Adds the candidate as a company with the name and website given,
+        which can then be scanned. 409 when it was decided already or another company has the
+        website.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CompetitorCandidateIdPath"
+      requestBody:
+        required: true
+        description: The company to add.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewCompetitor"
+            example:
+              name: Ashworth
+              url: https://www.ashworth.com
+      responses:
+        "200":
+          description: The candidate, added.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorCandidate"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss:
+    post:
+      operationId: dismissCompetitorCandidate
+      summary: Dismiss a candidate
+      description: >-
+        Administrators only. Dismisses the candidate; it stays dismissed in later runs until the
+        decision is undone. 409 when it was decided already.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CompetitorCandidateIdPath"
+      responses:
+        "200":
+          description: The candidate, dismissed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorCandidate"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates/{competitorCandidateId}/decision:
+    delete:
+      operationId: undoCompetitorCandidate
+      summary: Undo the decision on a candidate
+      description: >-
+        Administrators only. Puts the candidate back among the pending ones; an added candidate's
+        company is removed again, with its scans. 404 when it has no decision.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CompetitorCandidateIdPath"
+      responses:
+        "204":
+          description: Undone.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/me:
     get:
       operationId: getMe
@@ -744,6 +1086,40 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/credentials/{credentialId}/usage:
+    get:
+      operationId: getLlmKeyUsage
+      summary: Get what the provider reports a key used
+      description: >-
+        Administrators only. OpenRouter's own figures for an OpenRouter key (spend all time, today,
+        this week and this month, its limit, the day's free-model requests); Anthropic's usage
+        report of this month for an Anthropic key, per model, and the organisation's cost, read
+        with a stored Anthropic Admin key (without one, nothing). Mistral reports nothing. 502 when
+        the provider fails.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+      responses:
+        "200":
+          description: The usage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmKeyUsage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "502":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/llm/active:
     put:
       operationId: setActiveLlm
@@ -815,6 +1191,22 @@ components:
       description: The candidate's id.
       schema:
         $ref: "#/components/schemas/TermCandidateId"
+    RunId:
+      name: runId
+      in: path
+      required: true
+      description: The Prompt run's id.
+      schema:
+        type: string
+        format: uuid
+        maxLength: 36
+    CompetitorCandidateIdPath:
+      name: competitorCandidateId
+      in: path
+      required: true
+      description: The competitor candidate's id.
+      schema:
+        $ref: "#/components/schemas/CompetitorCandidateId"
     CredentialId:
       name: credentialId
       in: path
@@ -989,8 +1381,10 @@ components:
       description: A known company.
       type: object
       additionalProperties: false
-      required: [id, source, name, country, website, languages, groupCompany, beltNames, homepageTitle, scans, archived]
+      required: [id, source, role, name, country, website, languages, groupCompany, beltNames, homepageTitle, scans, archived]
       properties:
+        role:
+          $ref: "#/components/schemas/CompanyRole"
         archived:
           type: boolean
           description: >-
@@ -1065,6 +1459,13 @@ components:
           maxLength: 300
           description: The title of its home page, or "unverified" when it could not be read.
           example: Twentebelt | Metal conveyor belts
+    CompanyRole:
+      description: >-
+        What a company is to Tribelt - Tribelt itself (the baseline), the group's mirror of
+        tribelt.nl (the report's recommendations in practice), a company in Tribelt's group (a
+        benchmark), or a competitor. Only competitors count as competitors.
+      type: string
+      enum: [tribelt, mirror, group, competitor]
     NewCompetitor:
       description: A company to add.
       type: object
@@ -1194,8 +1595,10 @@ components:
           type: boolean
           description: >-
             True when the analysis failed because its site turned automated readers away (bot
-            protection) although people can open it; only then is it present. Re-scanning all
-            companies leaves such a company out.
+            protection) although people can open it; only then is it present. The scan still
+            records the site's AI readiness.
+        aiReadiness:
+          $ref: "#/components/schemas/AiReadinessBrief"
         maxPages:
           type: integer
           format: int32
@@ -1425,6 +1828,8 @@ components:
           description: The site's products matched to Tribelt's belt families.
           items:
             $ref: "#/components/schemas/Equivalent"
+        aiReadiness:
+          $ref: "#/components/schemas/AiReadiness"
     Me:
       description: The signed-in account.
       type: object
@@ -1451,9 +1856,11 @@ components:
           type: boolean
           description: True when auth-api grants ROLE_ADMIN, which the admin settings need.
     LlmProvider:
-      description: A language-model provider.
+      description: >-
+        A language-model provider. `anthropic_admin` is an Anthropic Admin key, which only reads
+        the organisation's usage and cost reports and never answers.
       type: string
-      enum: [anthropic, openrouter, mistral]
+      enum: [anthropic, openrouter, mistral, anthropic_admin]
     LlmCredentialId:
       description: >-
         A credential's id: a UUID for a stored key, or `vault-anthropic` for the key Vault
@@ -1566,6 +1973,152 @@ components:
           maxLength: 300
           description: The provider's display name for it, or the id.
           example: "Anthropic: Claude Haiku 5.5"
+    LlmUsageSource:
+      description: >-
+        Where a key's usage figures come from - OpenRouter's own figures, Anthropic's reports read
+        with an Admin key, or none (the provider reports nothing for the key).
+      type: string
+      enum: [openrouter, anthropic, none]
+    LlmFreeRequests:
+      description: OpenRouter's count of the day's requests to free models.
+      type: object
+      additionalProperties: false
+      required: [used, limit, remaining]
+      properties:
+        used:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000000
+          description: Requests today.
+          example: 12
+        limit:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000000
+          description: Requests allowed a day.
+          example: 1000
+        remaining:
+          type: integer
+          format: int32
+          minimum: -10000000
+          maximum: 10000000
+          description: Requests left today.
+          example: 988
+    LlmModelTokens:
+      description: The tokens a key used with one model this month, as Anthropic reports them.
+      type: object
+      additionalProperties: false
+      required: [model, inputTokens, outputTokens, cacheReadTokens]
+      properties:
+        model:
+          type: string
+          maxLength: 200
+          description: The model.
+          example: claude-haiku-5-5
+        inputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: Input tokens, cache writes included.
+          example: 120000
+        outputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: Output tokens.
+          example: 30000
+        cacheReadTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: Input tokens read from the cache.
+          example: 0
+    LlmKeyUsage:
+      description: What a provider reports a key used.
+      type: object
+      additionalProperties: false
+      required: [source, message, models]
+      properties:
+        source:
+          $ref: "#/components/schemas/LlmUsageSource"
+        message:
+          type: string
+          maxLength: 500
+          description: What the figures are, or why there are none.
+          example: OpenRouter's own figures for this key, in dollars.
+        totalUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - the key's spend, all time.
+          example: 25.5
+        dailyUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - today's (UTC).
+          example: 1.2
+        weeklyUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - this week's (UTC, from Monday).
+          example: 5.6
+        monthlyUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - this month's (UTC).
+          example: 24.5
+        limitUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: OpenRouter - the key's own limit; absent when it has none.
+          example: 100
+        limitRemainingUsd:
+          type: number
+          format: double
+          minimum: -1000000000
+          maximum: 1000000000
+          description: OpenRouter - what is left of the limit.
+          example: 75.5
+        limitReset:
+          type: string
+          maxLength: 20
+          description: OpenRouter - when the limit resets (daily, weekly, monthly); absent when never.
+          example: monthly
+        freeRequests:
+          $ref: "#/components/schemas/LlmFreeRequests"
+        models:
+          type: array
+          maxItems: 200
+          description: Anthropic - this month's tokens per model.
+          items:
+            $ref: "#/components/schemas/LlmModelTokens"
+        organisationCostUsd:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000000000
+          description: Anthropic - the whole organisation's cost this month; Anthropic does not report it per key.
+          example: 2
+        since:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: Anthropic - the start of the month the figures cover.
+          example: "2026-10-01T00:00:00Z"
     LlmModelList:
       description: The models a key may use, by id.
       type: object
@@ -1651,7 +2204,7 @@ components:
           minimum: 0
           maximum: 1000000000000
           description: The tokens all analyses of a calendar month (UTC) may use.
-          example: 2000000
+          example: 10000000
         usedThisMonth:
           type: integer
           format: int64
@@ -1997,6 +2550,14 @@ components:
           description: Every group, in the profile's order.
           items:
             $ref: "#/components/schemas/ComparisonGroup"
+        readiness:
+          type: array
+          maxItems: 50
+          description: >-
+            What changed in AI readiness, in the readiness's order; absent when either scan recorded
+            no AI readiness, empty when nothing changed.
+          items:
+            $ref: "#/components/schemas/ReadinessChange"
     TermCandidateId:
       description: A candidate's id, made from its phrase.
       type: string
@@ -2179,6 +2740,1089 @@ components:
             minLength: 1
             maxLength: 200
             example: Twentebelt
+    CrawlerAccess:
+      description: >-
+        How far robots.txt lets a crawler in - allowed (no page kept from it), partly (some pages
+        kept from it, or only some open to it), or blocked (the whole site).
+      type: string
+      enum: [allowed, partly, blocked]
+    BotRule:
+      description: One search or AI crawler's access, by its robots.txt token.
+      type: object
+      additionalProperties: false
+      required: [bot, access, named, followsAdvice]
+      properties:
+        bot:
+          type: string
+          maxLength: 40
+          description: The crawler's robots.txt token.
+          example: GPTBot
+        access:
+          $ref: "#/components/schemas/CrawlerAccess"
+        named:
+          type: boolean
+          description: >-
+            True when robots.txt names the crawler in a group of its own; otherwise it follows the
+            * group, and robots.txt does not mention it.
+        followsAdvice:
+          type: boolean
+          description: True unless the crawler is blocked; the report recommends letting every one in.
+    RobotsStatus:
+      description: >-
+        What became of robots.txt - found, missing (so every crawler may read every page), or
+        unreachable (the site would not serve it, so the crawler policy is unknown).
+      type: string
+      enum: [found, missing, unreachable]
+    ReadinessCheck:
+      description: One of the report's recommendations besides each crawler's access.
+      type: string
+      enum: [sitemapDeclared, sitemapLanguages, llmsTxt, markdown, organization, product, languages]
+    ReadinessAdvice:
+      description: Whether a site follows one recommendation.
+      type: object
+      additionalProperties: false
+      required: [check, ok]
+      properties:
+        check:
+          $ref: "#/components/schemas/ReadinessCheck"
+        ok:
+          type: boolean
+          description: True when the site follows it.
+    SitemapSummary:
+      description: What a site's sitemaps list, without the addresses.
+      type: object
+      additionalProperties: false
+      required: [declared, files, addresses, languages]
+      properties:
+        declared:
+          type: boolean
+          description: True when robots.txt lists a sitemap.
+        files:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many sitemap files were read (at most 10).
+          example: 3
+        addresses:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many different addresses they list.
+          example: 124
+        languages:
+          type: array
+          maxItems: 3
+          description: The ones of Dutch, German and English the addresses cover, by path or hreflang.
+          items:
+            type: string
+            maxLength: 16
+            example: de
+    LlmsFacts:
+      description: What a site's llms.txt holds.
+      type: object
+      additionalProperties: false
+      required: [present, bytes, links]
+      properties:
+        present:
+          type: boolean
+          description: True when the site serves llms.txt.
+        bytes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000000
+          description: Its size in bytes, as far as it was read.
+          example: 5120
+        links:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000000
+          description: How many links it lists.
+          example: 124
+    SiteStack:
+      description: The tools behind a site, as far as its headers and home page tell; each absent when unknown.
+      type: object
+      additionalProperties: false
+      properties:
+        cms:
+          type: string
+          maxLength: 60
+          description: The content management system.
+          example: WordPress
+        seoPlugin:
+          type: string
+          maxLength: 60
+          description: The SEO plugin.
+          example: Yoast SEO
+        botProtection:
+          type: string
+          maxLength: 60
+          description: The bot protection in front of it.
+          example: Cloudflare
+    AiReadiness:
+      description: >-
+        What a site tells search engines and AI assistants about itself, read by a scan before its
+        page crawl, held against the report's recommendations.
+      type: object
+      additionalProperties: false
+      required: [robots, bots, sitemap, llmsTxt, llmsFullTxt, markdown, homeRead, structuredData, languages, stack, advice, gaps]
+      properties:
+        robots:
+          $ref: "#/components/schemas/RobotsStatus"
+        bots:
+          type: array
+          maxItems: 20
+          description: Each search and AI crawler's access; empty when robots.txt was unreachable.
+          items:
+            $ref: "#/components/schemas/BotRule"
+        sitemap:
+          $ref: "#/components/schemas/SitemapSummary"
+        llmsTxt:
+          $ref: "#/components/schemas/LlmsFacts"
+        llmsFullTxt:
+          type: boolean
+          description: True when the site serves llms-full.txt.
+        markdown:
+          type: boolean
+          description: True when llms.txt links to .md pages or the home page has a .md twin.
+        homeRead:
+          type: boolean
+          description: True when the home page could be read; the structured data and languages need it.
+        structuredData:
+          type: array
+          maxItems: 50
+          description: The JSON-LD types on the home page, alphabetically.
+          items:
+            type: string
+            maxLength: 100
+            example: Organization
+        languages:
+          type: array
+          maxItems: 50
+          description: The language versions the home page declares (hreflang), Dutch, German and English first.
+          items:
+            type: string
+            maxLength: 16
+            example: de
+        stack:
+          $ref: "#/components/schemas/SiteStack"
+        advice:
+          type: array
+          maxItems: 20
+          description: Each recommendation besides the crawlers', and whether the site follows it.
+          items:
+            $ref: "#/components/schemas/ReadinessAdvice"
+        gaps:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many recommendations the site does not follow, each blocked crawler included.
+          example: 3
+    AiReadinessBrief:
+      description: A scan's AI readiness in brief.
+      type: object
+      additionalProperties: false
+      required: [gaps, blockedBots]
+      properties:
+        gaps:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many recommendations the site does not follow.
+          example: 3
+        blockedBots:
+          type: array
+          maxItems: 20
+          description: The crawlers robots.txt blocks.
+          items:
+            type: string
+            maxLength: 40
+            example: GPTBot
+    AiReadinessRow:
+      description: One company in the AI readiness table.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        scan:
+          $ref: "#/components/schemas/AnalysisSummary"
+        readiness:
+          $ref: "#/components/schemas/AiReadiness"
+    AiReadinessTable:
+      description: Every company's AI readiness, Tribelt and the mirror first.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 300
+          description: The rows.
+          items:
+            $ref: "#/components/schemas/AiReadinessRow"
+    ReadinessChange:
+      description: >-
+        One field of AI readiness that differs between two scans: a crawler (bot:GPTBot), robots,
+        sitemapDeclared, sitemapLanguages, llmsTxt, llmsFullTxt, markdown, organization, product,
+        languages, cms, seoPlugin or botProtection, with both values as they read.
+      type: object
+      additionalProperties: false
+      required: [field, from, to]
+      properties:
+        field:
+          type: string
+          maxLength: 60
+          description: The field.
+          example: bot:GPTBot
+        from:
+          type: string
+          maxLength: 300
+          description: Its value in the older scan.
+          example: allowed
+        to:
+          type: string
+          maxLength: 300
+          description: Its value in the newer scan.
+          example: blocked
+    ReadinessFiles:
+      description: The raw files a scan read its AI readiness from; empty when the site served none.
+      type: object
+      additionalProperties: false
+      required: [robotsTxt, robotsTruncated, llmsTxt, llmsTruncated, llmsFullTxt, llmsFullTruncated]
+      properties:
+        robotsTxt:
+          type: string
+          maxLength: 100000
+          description: robots.txt.
+          example: "User-agent: GPTBot\nDisallow: /"
+        robotsTruncated:
+          type: boolean
+          description: True when robots.txt was longer than 100 KB and is cut there.
+        llmsTxt:
+          type: string
+          maxLength: 100000
+          description: llms.txt.
+          example: "# Tribelt"
+        llmsTruncated:
+          type: boolean
+          description: True when llms.txt was cut at 100 KB.
+        llmsFullTxt:
+          type: string
+          maxLength: 100000
+          description: llms-full.txt.
+          example: "# Tribelt, every page"
+        llmsFullTruncated:
+          type: boolean
+          description: True when llms-full.txt was cut at 100 KB.
+    PromptFamily:
+      description: One of Tribelt's five belt families a prompt asks about.
+      type: string
+      enum: [eyelink, open_spiral, closed_spiral, tri_flex_turn_curve, other]
+    PromptKind:
+      description: The kind of question - for a supplier, for a belt for an application, or about a problem.
+      type: string
+      enum: [supplier, application, problem]
+    PromptScope:
+      description: >-
+        Where and in which language a prompt asks - Twente, the Netherlands or Germany in that
+        region's language, or Dutch, German or English with no region.
+      type: string
+      enum: [twente, netherlands, germany, dutch, german, english]
+    PromptMode:
+      description: How a prompt is asked - from the model's own knowledge, or with live web search.
+      type: string
+      enum: [knowledge, web]
+    PromptRunStatus:
+      description: >-
+        Where a Prompt run is - running, done, stopped (the month's budget was reached; its
+        answers are kept) or failed.
+      type: string
+      enum: [running, done, stopped, failed]
+    PromptTrigger:
+      description: What started a run - an administrator, or the schedule.
+      type: string
+      enum: [manual, schedule]
+    Usd:
+      description: An amount in US dollars.
+      type: number
+      format: double
+      minimum: 0
+      maximum: 1000000
+      example: 2.75
+    PromptModelChoice:
+      description: The model a run asks for one provider, and the paid fallback of a free one.
+      type: object
+      additionalProperties: false
+      required: [provider, model, free]
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+          description: The provider's OpenRouter id.
+          example: google
+        model:
+          type: string
+          maxLength: 200
+          description: The provider's cheapest text model.
+          example: google/gemma-4-26b-a4b-it:free
+        free:
+          type: boolean
+          description: True when the model costs nothing.
+        fallback:
+          type: string
+          maxLength: 200
+          description: The cheapest paid model, which answers what the free one cannot finish.
+          example: google/gemini-2.5-flash-lite
+    PromptProviderProgress:
+      description: One provider's part of a run.
+      type: object
+      additionalProperties: false
+      required: [provider, answered, failed, costUsd, models]
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+          description: The provider.
+          example: openai
+        answered:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Its answers so far.
+          example: 120
+        failed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The prompts it gave no answer to.
+          example: 2
+        costUsd:
+          $ref: "#/components/schemas/Usd"
+        models:
+          type: array
+          maxItems: 2
+          description: The models that answered; two when the free one handed over to the paid one.
+          items:
+            type: string
+            maxLength: 200
+            example: openai/gpt-oss-20b
+    PromptCell:
+      description: >-
+        The answers of one provider, scope, belt family and mode that were read, and how many name
+        and cite Tribelt.
+      type: object
+      additionalProperties: false
+      required: [provider, scope, family, mode, answers, named, cited]
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+          description: The provider.
+          example: openai
+        scope:
+          $ref: "#/components/schemas/PromptScope"
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+        mode:
+          $ref: "#/components/schemas/PromptMode"
+        answers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The answers read.
+          example: 3
+        named:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Those that name Tribelt.
+          example: 1
+        cited:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Those that cite a Tribelt address.
+          example: 0
+    PromptRun:
+      description: One Prompt run, with how far it got and what it cost.
+      type: object
+      additionalProperties: false
+      required: [id, promptSetVersion, factSheetVersion, trigger, startedBy, startedAt, status, models, tasks, answered, failed, inputTokens, outputTokens, costUsd, byProvider, cells]
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: The run's id.
+          example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
+        promptSetVersion:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version of the prompt set it asked.
+          example: 1
+        factSheetVersion:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version of the fact sheet its answers were judged against.
+          example: 1
+        trigger:
+          $ref: "#/components/schemas/PromptTrigger"
+        startedBy:
+          type: string
+          maxLength: 200
+          description: Who started it, or "schedule".
+          example: joris
+        startedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it started.
+          example: "2026-11-01T06:00:00Z"
+        finishedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it ended; absent while it runs.
+          example: "2026-11-01T06:20:00Z"
+        status:
+          $ref: "#/components/schemas/PromptRunStatus"
+        failure:
+          type: string
+          maxLength: 300
+          description: Why it stopped or failed.
+          example: The month's budget for Prompt runs was reached; the answers so far are kept.
+        models:
+          type: array
+          maxItems: 20
+          description: The model asked for each provider.
+          items:
+            $ref: "#/components/schemas/PromptModelChoice"
+        tasks:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many answers it asks for.
+          example: 1260
+        answered:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Its answers so far.
+          example: 640
+        failed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The prompts a model gave no answer to.
+          example: 3
+        inputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: The tokens its prompts and readings sent, extraction included.
+          example: 412000
+        outputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: The tokens its answers and readings returned.
+          example: 1200000
+        costUsd:
+          $ref: "#/components/schemas/Usd"
+        byProvider:
+          type: array
+          maxItems: 20
+          description: Each provider's part.
+          items:
+            $ref: "#/components/schemas/PromptProviderProgress"
+        cells:
+          type: array
+          maxItems: 10000
+          description: Its answers counted per provider, scope, belt family and mode.
+          items:
+            $ref: "#/components/schemas/PromptCell"
+    PromptMention:
+      description: How often the answers of the newest run with any name one company on the list.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role, answers, first, averagePosition]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        answers:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The answers that name it.
+          example: 412
+        first:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The answers that name it first.
+          example: 120
+        averagePosition:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000
+          description: Its average place in the answers that name it, from 1.
+          example: 1.8
+    PromptWrongClaim:
+      description: A claim about Tribelt an answer made that the fact sheet contradicts.
+      type: object
+      additionalProperties: false
+      required: [answerId, runId, at, provider, model, promptId, mode, claim]
+      properties:
+        answerId:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: The answer's id.
+          example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
+        runId:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: The run's id.
+          example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the answer was given.
+          example: "2026-11-01T06:10:00Z"
+        provider:
+          type: string
+          maxLength: 40
+          description: The provider.
+          example: openai
+        model:
+          type: string
+          maxLength: 200
+          description: The model.
+          example: openai/gpt-oss-20b
+        promptId:
+          type: string
+          maxLength: 80
+          description: The prompt's id.
+          example: eyelink-supplier-twente
+        mode:
+          $ref: "#/components/schemas/PromptMode"
+        correctness:
+          $ref: "#/components/schemas/PromptCorrectness"
+        claim:
+          type: string
+          maxLength: 500
+          description: The claim, quoted.
+          example: Tribelt is in Hengelo.
+    PromptCorrectness:
+      description: How what an answer says about Tribelt holds against the fact sheet.
+      type: string
+      enum: [correct, partly, wrong]
+    PromptTestResults:
+      description: The Prompt test's results.
+      type: object
+      additionalProperties: false
+      required: [promptSetVersion, runs, mentions, wrongClaims]
+      properties:
+        promptSetVersion:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version of the prompt set runs ask now.
+          example: 1
+        runs:
+          type: array
+          maxItems: 24
+          description: The latest runs, newest first.
+          items:
+            $ref: "#/components/schemas/PromptRun"
+        mentions:
+          type: array
+          maxItems: 1000
+          description: The companies the answers of the newest run with any name, most answers first.
+          items:
+            $ref: "#/components/schemas/PromptMention"
+        wrongClaims:
+          type: array
+          maxItems: 200
+          description: The claims about Tribelt the answers got wrong, newest first.
+          items:
+            $ref: "#/components/schemas/PromptWrongClaim"
+    PromptNamedCompany:
+      description: A company an answer names, matched to the company list when it is on it.
+      type: object
+      additionalProperties: false
+      required: [name, position]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: The name, as the answer writes it.
+          example: Twentebelt
+        url:
+          type: string
+          maxLength: 500
+          description: The address the answer gives for it.
+          example: https://www.twentebelt.com
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        position:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 30
+          description: Its place in the answer.
+          example: 1
+    PromptExtraction:
+      description: How the extractor read an answer; failed when it could not, after a retry.
+      type: object
+      additionalProperties: false
+      required: [failed, companies, addresses, namesTribelt, citesTribelt, wrongClaims, costUsd]
+      properties:
+        failed:
+          type: boolean
+          description: True when the extractor could not read it.
+        companies:
+          type: array
+          maxItems: 30
+          description: The companies named, in order.
+          items:
+            $ref: "#/components/schemas/PromptNamedCompany"
+        addresses:
+          type: array
+          maxItems: 200
+          description: The addresses cited.
+          items:
+            type: string
+            maxLength: 500
+            example: https://www.tribelt.nl/
+        namesTribelt:
+          type: boolean
+          description: True when it names Tribelt.
+        citesTribelt:
+          type: boolean
+          description: True when it cites a Tribelt address.
+        correctness:
+          $ref: "#/components/schemas/PromptCorrectness"
+        wrongClaims:
+          type: array
+          maxItems: 10
+          description: Each claim about Tribelt the fact sheet contradicts, quoted.
+          items:
+            type: string
+            maxLength: 500
+            example: Tribelt is in Hengelo.
+        costUsd:
+          $ref: "#/components/schemas/Usd"
+    PromptAnswer:
+      description: One model's answer to one prompt, with how it was read.
+      type: object
+      additionalProperties: false
+      required: [id, promptId, family, kind, scope, language, prompt, promptSetVersion, provider, model, mode, text, citations, at, costUsd]
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: The answer's id.
+          example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
+        promptId:
+          type: string
+          maxLength: 80
+          description: The prompt's id.
+          example: eyelink-supplier-twente
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+        kind:
+          $ref: "#/components/schemas/PromptKind"
+        scope:
+          $ref: "#/components/schemas/PromptScope"
+        language:
+          type: string
+          maxLength: 2
+          description: The prompt's language.
+          example: nl
+        prompt:
+          type: string
+          maxLength: 1000
+          description: The prompt, as asked.
+          example: Welke bedrijven leveren draadogenbanden in Twente?
+        promptSetVersion:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version of the prompt set it answered.
+          example: 1
+        provider:
+          type: string
+          maxLength: 40
+          description: The provider.
+          example: openai
+        model:
+          type: string
+          maxLength: 200
+          description: The exact model that answered.
+          example: openai/gpt-oss-20b
+        mode:
+          $ref: "#/components/schemas/PromptMode"
+        text:
+          type: string
+          maxLength: 100000
+          description: The answer, as a buyer would see it.
+          example: Twentebelt in Enschede makes eyelink belts.
+        citations:
+          type: array
+          maxItems: 100
+          description: The sources web search cited.
+          items:
+            type: string
+            maxLength: 500
+            example: https://www.twentebelt.com/
+        failure:
+          type: string
+          maxLength: 300
+          description: Why the model gave no answer.
+          example: The model is rate limited.
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it answered.
+          example: "2026-11-01T06:10:00Z"
+        costUsd:
+          $ref: "#/components/schemas/Usd"
+        extraction:
+          $ref: "#/components/schemas/PromptExtraction"
+    PromptAnswerList:
+      description: A run's answers.
+      type: object
+      additionalProperties: false
+      required: [run, items]
+      properties:
+        run:
+          $ref: "#/components/schemas/PromptRun"
+        items:
+          type: array
+          maxItems: 5000
+          description: The answers, in the order they came.
+          items:
+            $ref: "#/components/schemas/PromptAnswer"
+    PromptCadence:
+      description: How often scheduled runs start - monthly, on the first at 06:00 UTC, or weekly, on Mondays.
+      type: string
+      enum: [monthly, weekly]
+    PromptFactSheet:
+      description: What is true about Tribelt, which answers about Tribelt are judged against.
+      type: object
+      additionalProperties: false
+      required: [text, version]
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          description: The fact sheet.
+          example: Tribelt B.V. makes metal conveyor belts in Haaksbergen.
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: Its version; each change is a new one.
+          example: 2
+        updatedBy:
+          type: string
+          maxLength: 200
+          description: Who last changed it.
+          example: joris
+        updatedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-10-26T09:00:00Z"
+    PromptQuestion:
+      description: One prompt of the prompt set.
+      type: object
+      additionalProperties: false
+      required: [id, family, kind, scope, language, text]
+      properties:
+        id:
+          type: string
+          maxLength: 80
+          description: Its id.
+          example: eyelink-supplier-twente
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+        kind:
+          $ref: "#/components/schemas/PromptKind"
+        scope:
+          $ref: "#/components/schemas/PromptScope"
+        language:
+          type: string
+          maxLength: 2
+          description: Its language.
+          example: nl
+        text:
+          type: string
+          maxLength: 1000
+          description: The question.
+          example: Welke bedrijven leveren draadogenbanden in Twente?
+    PromptSet:
+      description: The fixed, versioned prompt set runs ask.
+      type: object
+      additionalProperties: false
+      required: [version, prompts]
+      properties:
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: Its version.
+          example: 1
+        prompts:
+          type: array
+          maxItems: 1000
+          description: The prompts.
+          items:
+            $ref: "#/components/schemas/PromptQuestion"
+    PromptTestSettings:
+      description: The Prompt test's settings.
+      type: object
+      additionalProperties: false
+      required: [providers, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel]
+      properties:
+        credentialId:
+          $ref: "#/components/schemas/LlmCredentialId"
+        providers:
+          type: array
+          maxItems: 20
+          description: The providers whose cheapest model runs ask, by OpenRouter id.
+          items:
+            type: string
+            maxLength: 40
+            example: openai
+        monthlyBudgetUsd:
+          $ref: "#/components/schemas/Usd"
+        spentThisMonthUsd:
+          $ref: "#/components/schemas/Usd"
+        cadence:
+          $ref: "#/components/schemas/PromptCadence"
+        nextDueAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the next scheduled run starts.
+          example: "2026-11-01T06:00:00Z"
+        factSheet:
+          $ref: "#/components/schemas/PromptFactSheet"
+        promptSet:
+          $ref: "#/components/schemas/PromptSet"
+        extractorModel:
+          type: string
+          maxLength: 200
+          description: The one model that reads every answer, fixed in this release.
+          example: google/gemini-2.5-flash-lite
+    PromptTestSettingsChange:
+      description: The settings to change; at least one.
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        credentialId:
+          $ref: "#/components/schemas/LlmCredentialId"
+        providers:
+          type: array
+          minItems: 1
+          maxItems: 20
+          description: The providers whose cheapest model runs ask.
+          items:
+            type: string
+            maxLength: 40
+            example: openai
+        monthlyBudgetUsd:
+          type: number
+          format: double
+          minimum: 0.01
+          maximum: 1000
+          description: The month's budget in dollars.
+          example: 10
+        cadence:
+          $ref: "#/components/schemas/PromptCadence"
+        factSheet:
+          type: string
+          minLength: 20
+          maxLength: 4000
+          description: The fact sheet.
+          example: Tribelt B.V. makes metal conveyor belts in Haaksbergen.
+    CompetitorCandidateId:
+      description: A competitor candidate's id, made from its name.
+      type: string
+      minLength: 16
+      maxLength: 16
+      pattern: "^[0-9a-f]{16}$"
+      example: 3a7bd3e2360a9f01
+    CompetitorCandidateStatus:
+      description: Where a competitor candidate is in the review.
+      type: string
+      enum: [pending, added, dismissed]
+    CompetitorCandidateDecision:
+      description: An administrator's decision on a competitor candidate.
+      type: object
+      additionalProperties: false
+      required: [status, by, at]
+      properties:
+        status:
+          $ref: "#/components/schemas/CompetitorCandidateStatus"
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        by:
+          type: string
+          maxLength: 200
+          description: Who decided.
+          example: joris
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-11-01T09:00:00Z"
+    CompetitorCandidate:
+      description: A company the answers name that is not on the company list.
+      type: object
+      additionalProperties: false
+      required: [id, name, status, answers, providers, models, addresses, lastSeenAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/CompetitorCandidateId"
+        name:
+          type: string
+          maxLength: 200
+          description: How the answers spell it most often.
+          example: Ashworth
+        status:
+          $ref: "#/components/schemas/CompetitorCandidateStatus"
+        answers:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000000
+          description: How many answers name it.
+          example: 37
+        providers:
+          type: array
+          maxItems: 20
+          description: The providers whose models named it.
+          items:
+            type: string
+            maxLength: 40
+            example: openai
+        models:
+          type: array
+          maxItems: 50
+          description: The exact models that named it.
+          items:
+            type: string
+            maxLength: 200
+            example: openai/gpt-oss-20b
+        addresses:
+          type: array
+          maxItems: 50
+          description: The addresses the answers gave for it.
+          items:
+            type: string
+            maxLength: 500
+            example: https://www.ashworth.com
+        lastSeenAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When an answer last named it.
+          example: "2026-11-01T06:10:00Z"
+        decision:
+          $ref: "#/components/schemas/CompetitorCandidateDecision"
+    CompetitorCandidateCounts:
+      description: How many candidates have each status.
+      type: object
+      additionalProperties: false
+      required: [pending, added, dismissed]
+      properties:
+        pending:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: Pending candidates.
+          example: 12
+        added:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: Added ones.
+          example: 2
+        dismissed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: Dismissed ones.
+          example: 5
+    CompetitorCandidateList:
+      description: The competitor candidates with one status.
+      type: object
+      additionalProperties: false
+      required: [items, counts]
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          description: The candidates, most answers first.
+          items:
+            $ref: "#/components/schemas/CompetitorCandidate"
+        counts:
+          $ref: "#/components/schemas/CompetitorCandidateCounts"
     Problem:
       description: An RFC 9457 problem detail.
       type: object

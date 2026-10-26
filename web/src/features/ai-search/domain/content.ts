@@ -130,33 +130,6 @@ export const DEFAULT_CRAWLER: CrawlerId = 'googlebot'
 /** The poster's AI search tile: content pages each crawler fetched. */
 export const CRAWLER_PAGES: readonly { name: string; pages: number }[] = CRAWLERS.map((c) => ({ name: c.name, pages: c.pages }))
 
-/** The prompt-test pilot: did the assistant name Tribelt? */
-export const ASSISTANTS = ['Gemini', 'ChatGPT', 'ChatGPT thinking'] as const
-
-export type PromptCell = { named: boolean; note: string }
-
-export const PROMPTS: readonly { search: string; cells: readonly [PromptCell, PromptCell, PromptCell] }[] = [
-  {
-    search: 'Supplier search',
-    cells: [
-      { named: false, note: '' },
-      { named: false, note: '' },
-      { named: true, note: 'In both searches' },
-    ],
-  },
-  {
-    search: 'Technical and quotation',
-    cells: [
-      { named: false, note: '' },
-      { named: false, note: 'FAQ cited once' },
-      { named: false, note: '' },
-    ],
-  },
-]
-
-/** Who the assistants named instead of Tribelt. */
-export const NAMED_INSTEAD = ['Twentebelt', 'ESFO', 'Ashworth', 'Unibelt', 'Wire Belt', 'Märtens'] as const
-
 /** Whether buyers in the Netherlands and Germany can be reached on a surface: no, not yet, or yes. */
 export type AdState = 'no' | 'notYet' | 'yes'
 

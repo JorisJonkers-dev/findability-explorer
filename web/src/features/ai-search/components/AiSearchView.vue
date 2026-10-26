@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import triflex from '../../../assets/triflex.webp'
 import { percent } from '../../../shared/percent'
 import GoalCard from '../../../shared/ui/GoalCard.vue'
@@ -7,18 +8,16 @@ import RoundedPhoto from '../../../shared/ui/RoundedPhoto.vue'
 import RecommendationList from '../../../shared/ui/RecommendationList.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
 import SectionView from '../../shell/components/SectionView.vue'
+import PromptSummary from '../../prompt-test/components/PromptSummary.vue'
 import {
   AD_SURFACES,
   ADS_CHECKED,
   type AdState,
-  ASSISTANTS,
   CRAWLERS,
   type CrawlerId,
   DEFAULT_CRAWLER,
   GOAL,
   MIRROR_FACTS,
-  NAMED_INSTEAD,
-  PROMPTS,
   RECOMMENDATIONS,
   SOURCE,
   STATS,
@@ -109,36 +108,7 @@ const AD_DOT: Record<AdState, string> = { no: 'bg-orange-ink', notYet: 'bg-blue-
 
       <section aria-labelledby="pt-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-9">
         <SectionHeading id="pt-title">Did the assistant name Tribelt?</SectionHeading>
-        <p class="m-0 text-ink-2 stage:text-[30px]">Prompt-test pilot, October 2026. Five prompts: a baseline for the monthly test of 40.</p>
-        <div class="overflow-x-auto stage:overflow-visible">
-          <table class="w-full border-collapse text-sm stage:text-[30px]">
-            <caption class="sr-only">Whether Tribelt appeared, per search type and assistant</caption>
-            <thead>
-              <tr class="border-b-2 border-black stage:border-b-[3px]">
-                <th scope="col" class="py-2 text-left font-medium text-muted stage:py-4">Search</th>
-                <th v-for="assistant in ASSISTANTS" :key="assistant" scope="col" class="py-2 pl-3 text-left stage:py-4 stage:pl-5">{{ assistant }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="prompt in PROMPTS" :key="prompt.search" class="border-b border-grey align-top">
-                <th scope="row" class="py-3 text-left font-medium stage:py-6">{{ prompt.search }}</th>
-                <td v-for="(cell, index) in prompt.cells" :key="ASSISTANTS[index]" class="py-3 pl-3 stage:py-6 stage:pl-5">
-                  <span class="inline-flex items-center gap-2 font-semibold stage:gap-3.5">
-                    <span aria-hidden="true" class="size-3.5 flex-none rounded-full stage:size-7" :class="cell.named ? 'bg-orange' : 'bg-grey'"></span>
-                    {{ cell.named ? 'Yes' : 'No' }}
-                  </span>
-                  <span v-if="cell.note !== ''" class="block text-xs text-muted stage:text-[24px]">{{ cell.note }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 stage:gap-3.5">
-          <span class="text-sm text-muted stage:text-[28px]">Named instead:</span>
-          <ul aria-label="Named instead" class="m-0 flex list-none flex-wrap gap-2 p-0 stage:gap-3.5">
-            <li v-for="name in NAMED_INSTEAD" :key="name" class="rounded-full bg-mist px-3 py-1 text-sm font-medium stage:px-6 stage:py-2 stage:text-[28px]">{{ name }}</li>
-          </ul>
-        </div>
+        <PromptSummary />
         <SectionHeading class="mt-4 stage:mt-6">Where AI ads can run today</SectionHeading>
         <table class="w-full border-collapse text-sm stage:text-[28px]">
           <caption class="sr-only">AI ad surfaces for buyers in the Netherlands and Germany</caption>
@@ -167,6 +137,12 @@ const AD_DOT: Record<AdState, string> = { no: 'bg-orange-ink', notYet: 'bg-blue-
         <RoundedPhoto :src="triflex" alt="A Tri-Flex turn-curve belt by Tribelt" class="stage:h-[560px]" />
         <SectionHeading id="so2-title">So we recommend</SectionHeading>
         <RecommendationList :items="RECOMMENDATIONS" />
+        <RouterLink
+          to="/ai-search/readiness"
+          class="inline-flex min-h-11 items-center gap-2 self-start rounded-full border-2 border-black px-5 font-medium text-black no-underline hover:bg-black hover:text-white stage:min-h-[88px] stage:border-[3px] stage:px-10 stage:text-[30px]"
+        >
+          Who follows this: AI readiness of the competitors
+        </RouterLink>
         <GoalCard :goal="GOAL.goal" :text="GOAL.text" :rows="GOAL.rows" class="stage:mt-auto" />
       </aside>
     </div>

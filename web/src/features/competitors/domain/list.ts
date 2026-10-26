@@ -93,9 +93,9 @@ export function selectedCompany<T extends { id: string }>(companies: readonly T[
   return companies.find((c) => c.id === id) ?? companies.find((c) => c.id === DEFAULT_COMPANY) ?? companies[0]
 }
 
-/** The competitors the desk research studied: neither added since nor in Tribelt's own group. */
-export function researchedCompetitors<T extends Pick<Competitor, 'source' | 'groupCompany'>>(companies: readonly T[]): T[] {
-  return companies.filter((c) => c.source === 'research' && !c.groupCompany)
+/** The competitors the desk research studied: neither added since, nor Tribelt, its group or the mirror. */
+export function researchedCompetitors<T extends Pick<Competitor, 'source' | 'groupCompany' | 'role'>>(companies: readonly T[]): T[] {
+  return companies.filter((c) => c.source === 'research' && !c.groupCompany && c.role === 'competitor')
 }
 
 /** A column of the company list to sort by: the name, a belt family, or the country. */

@@ -87,4 +87,6 @@ type Matchers interface {
 // after each page in crawl order.
 type Crawler interface {
 	Crawl(ctx context.Context, target Target, maxPages int, scorer LinkScorer, onPage func(Page) error) error
+	// Readiness fetches the site's readiness files; it fails only when ctx ends.
+	Readiness(ctx context.Context, target Target) (ReadinessFiles, error)
 }

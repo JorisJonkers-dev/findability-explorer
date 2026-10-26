@@ -232,3 +232,28 @@ func TestAllBeltNames(t *testing.T) {
 		t.Fatalf("%d names, want at most 100", n)
 	}
 }
+
+func TestRolesSetTribeltAndTheMirrorApartFromTheCompetitors(t *testing.T) {
+	if got := domain.ID("Tribelt B.V."); got != domain.TribeltID {
+		t.Fatalf("the research's Tribelt B.V. has id %q, not TribeltID %q", got, domain.TribeltID)
+	}
+	mirror := domain.Mirror()
+	if mirror.Host != "tribelt.jorisjonkers.dev" || mirror.URL.String() != domain.MirrorURL || mirror.Source != domain.SourceResearch {
+		t.Fatalf("mirror = %+v", mirror)
+	}
+	cases := map[domain.Role]domain.Company{
+		domain.RoleTribelt:    {ID: domain.TribeltID, GroupCompany: true},
+		domain.RoleMirror:     mirror,
+		domain.RoleGroup:      {ID: "de-spiraal", GroupCompany: true},
+		domain.RoleCompetitor: {ID: "twentebelt"},
+	}
+	for want, c := range cases {
+		if got := c.Role(); got != want {
+			t.Errorf("%s is %s, want %s", c.ID, got, want)
+		}
+	}
+	listed := domain.NewDirectory([]domain.Company{mirror, {ID: "lesjofors", Name: "Lesjöfors", GroupCompany: true}, {ID: "a", Name: "A"}}, nil).Sorted(nil)
+	if listed[0].ID != "a" || listed[2].ID != domain.MirrorID {
+		t.Errorf("the mirror lists last: %v, %v, %v", listed[0].ID, listed[1].ID, listed[2].ID)
+	}
+}

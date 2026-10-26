@@ -122,6 +122,7 @@ var _ oas.SecurityHandler = (*Security)(nil)
 var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant table
 	oas.GetLlmSettingsOperation:      domain.NeedAdminView,
 	oas.ListLlmModelsOperation:       domain.NeedAdminView,
+	oas.GetLlmKeyUsageOperation:      domain.NeedAdminView,
 	oas.AddLlmCredentialOperation:    domain.NeedAdminChange,
 	oas.DeleteLlmCredentialOperation: domain.NeedAdminChange,
 	oas.TestLlmCredentialOperation:   domain.NeedAdminChange,
@@ -133,6 +134,16 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.AddCompetitorOperation:    domain.NeedAdminChange,
 	oas.UpdateCompetitorOperation: domain.NeedAdminChange,
 	oas.DeleteCompetitorOperation: domain.NeedAdminChange,
+	// The raw files a scan read its AI readiness from.
+	oas.GetReadinessFilesOperation: domain.NeedAdminView,
+	// The Prompt test: everyone signed in reads the results, only administrators run and set it.
+	oas.StartPromptRunOperation:             domain.NeedAdminChange,
+	oas.GetPromptTestSettingsOperation:      domain.NeedAdminView,
+	oas.UpdatePromptTestSettingsOperation:   domain.NeedAdminChange,
+	oas.ListCompetitorCandidatesOperation:   domain.NeedAdminView,
+	oas.AddCompetitorCandidateOperation:     domain.NeedAdminChange,
+	oas.DismissCompetitorCandidateOperation: domain.NeedAdminChange,
+	oas.UndoCompetitorCandidateOperation:    domain.NeedAdminChange,
 	// The review queue of the terminology map.
 	oas.ListTermCandidatesOperation:  domain.NeedAdminView,
 	oas.AcceptTermCandidateOperation: domain.NeedAdminChange,

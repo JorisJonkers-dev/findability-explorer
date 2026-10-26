@@ -3,8 +3,8 @@ import { PROVIDER_OPTIONS, providerLabel } from './providers'
 import { atLabel } from './time'
 
 describe('the providers', () => {
-  it('offers OpenRouter, Mistral and Anthropic, in that order', () => {
-    expect(PROVIDER_OPTIONS.map((p) => p.label)).toEqual(['OpenRouter', 'Mistral', 'Anthropic (Claude)'])
+  it('offers OpenRouter, Mistral, Anthropic and an Anthropic Admin key, in that order', () => {
+    expect(PROVIDER_OPTIONS.map((p) => p.label)).toEqual(['OpenRouter', 'Mistral', 'Anthropic (Claude)', 'Anthropic Admin key'])
     expect(providerLabel('anthropic')).toBe('Anthropic (Claude)')
   })
 

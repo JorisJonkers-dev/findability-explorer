@@ -8,9 +8,10 @@ describe('the competitors tile', () => {
     competitor('Märtens', { beltNames: [{ name: 'Drahtösengliederband', family: 'eyelink' }] }),
     competitor('Tribelt B.V.', { groupCompany: true }),
     competitor('Example Belts', { source: 'added' }),
+    competitor('Mirror of tribelt.nl', { role: 'mirror' }),
   ]
 
-  it('counts the makers the research found, not the group or companies added since', () => {
+  it('counts the makers the research found, not the group, the mirror or companies added since', () => {
     expect(makerCount(makers)).toBe(2)
   })
 

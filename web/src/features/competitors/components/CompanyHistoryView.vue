@@ -4,6 +4,8 @@ import { useColumnLayout } from '../../../shared/useColumnLayout'
 import { computed, toRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import SectionView from '../../shell/components/SectionView.vue'
+import ReadinessFiles from '../../readiness/components/ReadinessFiles.vue'
+import { useMe } from '../../shell/composables/useMe'
 import { useCompany } from '../composables/useCompany'
 import { useCompanyProfile } from '../composables/useCompanyHistory'
 import ScanCompare from './ScanCompare.vue'
@@ -17,6 +19,7 @@ const { detail, notFound, error } = useCompany(id)
 const { profile, error: profileError } = useCompanyProfile(id)
 const title = computed(() => (detail.value ? `${detail.value.competitor.name}: its search terms, scan by scan.` : 'Search terms, scan by scan.'))
 const scans = computed(() => detail.value?.scans ?? [])
+const { isAdmin } = useMe()
 
 // Each column can be widened or minimised on the stage; the browser remembers the layout.
 const COLUMNS = ['Search terms by belt family', 'Scan history', 'Compare two scans'] as const
@@ -47,7 +50,11 @@ function columnProps(i: number) {
           <ScanTimeline :scans="scans" :company-id="companyId" />
         </StageColumn>
         <StageColumn v-bind="columnProps(2)" @widen="columns.widen(2)" @minimise="columns.minimise(2)" @restore="columns.restore(2)">
-          <ScanCompare :company-id="companyId" :scans="scans" />
+          <!-- An administrator also sees the raw files the newest scan read, under the comparison. -->
+          <div class="flex flex-col gap-10 stage:grid stage:min-h-0 stage:gap-14" :class="isAdmin ? 'stage:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]' : 'stage:grid-rows-[minmax(0,1fr)]'">
+            <ScanCompare :company-id="companyId" :scans="scans" />
+            <ReadinessFiles v-if="isAdmin" :company-id="companyId" />
+          </div>
         </StageColumn>
       </template>
     </div>

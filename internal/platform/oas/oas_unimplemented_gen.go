@@ -34,6 +34,16 @@ func (UnimplementedHandler) AddCompetitor(ctx context.Context, req *NewCompetito
 	return r, ht.ErrNotImplemented
 }
 
+// AddCompetitorCandidate implements addCompetitorCandidate operation.
+//
+// Administrators only. Adds the candidate as a company with the name and website given, which can then
+// be scanned. 409 when it was decided already or another company has the website.
+//
+// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/add
+func (UnimplementedHandler) AddCompetitorCandidate(ctx context.Context, req *NewCompetitor, params AddCompetitorCandidateParams) (r AddCompetitorCandidateRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // AddLlmCredential implements addLlmCredential operation.
 //
 // Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
@@ -86,6 +96,27 @@ func (UnimplementedHandler) DeleteLlmCredential(ctx context.Context, params Dele
 	return r, ht.ErrNotImplemented
 }
 
+// DismissCompetitorCandidate implements dismissCompetitorCandidate operation.
+//
+// Administrators only. Dismisses the candidate; it stays dismissed in later runs until the decision is
+// undone. 409 when it was decided already.
+//
+// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss
+func (UnimplementedHandler) DismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (r DismissCompetitorCandidateRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetAiReadiness implements getAiReadiness operation.
+//
+// Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt
+// on top as the baseline, the mirror of tribelt.nl below it as the target, then Tribelt's group
+// companies, then the competitors, each band by name. A company no scan checked yet has no readiness.
+//
+// GET /api/v1/ai-readiness
+func (UnimplementedHandler) GetAiReadiness(ctx context.Context) (r GetAiReadinessRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAnalysis implements getAnalysis operation.
 //
 // Returns the analysis, its progress, and every result found so far.
@@ -115,6 +146,18 @@ func (UnimplementedHandler) GetCompetitorProfile(ctx context.Context, params Get
 	return r, ht.ErrNotImplemented
 }
 
+// GetLlmKeyUsage implements getLlmKeyUsage operation.
+//
+// Administrators only. OpenRouter's own figures for an OpenRouter key (spend all time, today, this
+// week and this month, its limit, the day's free-model requests); Anthropic's usage report of this
+// month for an Anthropic key, per model, and the organisation's cost, read with a stored Anthropic
+// Admin key (without one, nothing). Mistral reports nothing. 502 when the provider fails.
+//
+// GET /api/v1/admin/llm/credentials/{credentialId}/usage
+func (UnimplementedHandler) GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (r GetLlmKeyUsageRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetLlmSettings implements getLlmSettings operation.
 //
 // Returns every credential (never a secret), the model product matching uses now, the token budget,
@@ -135,12 +178,56 @@ func (UnimplementedHandler) GetMe(ctx context.Context) (r GetMeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// GetPromptTestResults implements getPromptTestResults operation.
+//
+// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
+// provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited /
+// answers); how often the answers of the newest run with any name each company on the list; and the
+// claims about Tribelt the answers got wrong, newest first.
+//
+// GET /api/v1/prompt-test
+func (UnimplementedHandler) GetPromptTestResults(ctx context.Context) (r GetPromptTestResultsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetPromptTestSettings implements getPromptTestSettings operation.
+//
+// Administrators only. Returns the OpenRouter key Prompt runs use, the providers, the monthly budget
+// and this month's spend, the schedule, the fact sheet and the prompt set.
+//
+// GET /api/v1/admin/prompt-test
+func (UnimplementedHandler) GetPromptTestSettings(ctx context.Context) (r GetPromptTestSettingsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetReadinessFiles implements getReadinessFiles operation.
+//
+// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
+// each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI
+// readiness.
+//
+// GET /api/v1/admin/analyses/{analysisId}/readiness-files
+func (UnimplementedHandler) GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (r GetReadinessFilesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListAnalyses implements listAnalyses operation.
 //
 // Returns at most `limit` analyses, newest first, without their results.
 //
 // GET /api/v1/analyses
 func (UnimplementedHandler) ListAnalyses(ctx context.Context, params ListAnalysesParams) (r ListAnalysesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListCompetitorCandidates implements listCompetitorCandidates operation.
+//
+// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
+// with how often and by which providers' models, and the addresses given; filtered by status, most
+// answers first.
+//
+// GET /api/v1/admin/competitor-candidates
+func (UnimplementedHandler) ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (r ListCompetitorCandidatesRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -161,6 +248,16 @@ func (UnimplementedHandler) ListCompetitors(ctx context.Context) (r ListCompetit
 //
 // GET /api/v1/admin/llm/credentials/{credentialId}/models
 func (UnimplementedHandler) ListLlmModels(ctx context.Context, params ListLlmModelsParams) (r ListLlmModelsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListPromptAnswers implements listPromptAnswers operation.
+//
+// Returns a run's answers in full, each with how the extractor read it, optionally only one
+// provider's, scope's, belt family's or mode's.
+//
+// GET /api/v1/prompt-runs/{runId}/answers
+func (UnimplementedHandler) ListPromptAnswers(ctx context.Context, params ListPromptAnswersParams) (r ListPromptAnswersRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -219,13 +316,25 @@ func (UnimplementedHandler) StartAnalysis(ctx context.Context, req *NewAnalysis)
 	return r, ht.ErrNotImplemented
 }
 
+// StartPromptRun implements startPromptRun operation.
+//
+// Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
+// model of each large provider, from its own knowledge and with web search, each answer read by the
+// extractor. It runs in the background within the month's budget. 409 while a run is running; 422
+// without an OpenRouter key or a model to ask.
+//
+// POST /api/v1/admin/prompt-runs
+func (UnimplementedHandler) StartPromptRun(ctx context.Context) (r StartPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StartRescans implements startRescans operation.
 //
 // Administrators only. Queues one scan for each named company with a website, or with `all`, for every
 // company that is not archived, has a website and has data: the desk research studied it, or it was
-// scanned before; a company whose site turned its last scan away (`blocked`) is left out. A company
-// whose scan is still queued or running is skipped, and so is one without a website. The scans run a
-// few at a time, each site politely.
+// scanned before. A company whose site turned its last scan away (`blocked`) is scanned too: its pages
+// stay closed, but the scan records its AI readiness. A company whose scan is still queued or running
+// is skipped, and so is one without a website. The scans run a few at a time, each site politely.
 //
 // POST /api/v1/admin/rescans
 func (UnimplementedHandler) StartRescans(ctx context.Context, req *RescanRequest) (r StartRescansRes, _ error) {
@@ -240,6 +349,16 @@ func (UnimplementedHandler) StartRescans(ctx context.Context, req *RescanRequest
 //
 // POST /api/v1/admin/llm/credentials/{credentialId}/test
 func (UnimplementedHandler) TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (r TestLlmCredentialRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UndoCompetitorCandidate implements undoCompetitorCandidate operation.
+//
+// Administrators only. Puts the candidate back among the pending ones; an added candidate's company is
+// removed again, with its scans. 404 when it has no decision.
+//
+// DELETE /api/v1/admin/competitor-candidates/{competitorCandidateId}/decision
+func (UnimplementedHandler) UndoCompetitorCandidate(ctx context.Context, params UndoCompetitorCandidateParams) (r UndoCompetitorCandidateRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -261,6 +380,17 @@ func (UnimplementedHandler) UndoTermDecision(ctx context.Context, params UndoTer
 //
 // PATCH /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (r UpdateCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdatePromptTestSettings implements updatePromptTestSettings operation.
+//
+// Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact
+// sheet. A new schedule counts from now; a new fact sheet is a new version. 422 for a key that is no
+// readable OpenRouter key or a value that breaks a rule.
+//
+// PATCH /api/v1/admin/prompt-test
+func (UnimplementedHandler) UpdatePromptTestSettings(ctx context.Context, req *PromptTestSettingsChange) (r UpdatePromptTestSettingsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

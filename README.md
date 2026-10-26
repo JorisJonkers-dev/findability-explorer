@@ -38,6 +38,37 @@ conveyor belts are named across companies and languages, and analyses any websit
   other) with broad and specification terms apart, per language, with the scan each term first
   appeared in; the numbered scan history; and a comparison of any two finished scans (terms added,
   removed, and moved by at least a quarter of their score and 5 points, or 2 pages).
+- **AI readiness** (`/ai-search/readiness`): every scan first reads the files that tell search
+  engines and AI assistants about the site, before the page crawl, so a site that blocks the crawl
+  still shows them: `robots.txt` (each of Googlebot, Google-Extended, Bingbot, OAI-SearchBot,
+  ChatGPT-User, GPTBot, Claude-SearchBot, ClaudeBot, PerplexityBot and CCBot allowed, partly
+  blocked or blocked, and whether it is named or follows `*`), the sitemaps (declared, files,
+  addresses, Dutch, German and English covered), `llms.txt`, `llms-full.txt`, Markdown versions,
+  the home page's JSON-LD types and `hreflang` language versions, and its CMS, SEO plugin and bot
+  protection. Each value is held against the report's recommendations. The table puts Tribelt on
+  top as the baseline and the group's mirror of tribelt.nl (`tribelt.jorisjonkers.dev`, a
+  researched company scanned by the same sweeps, kept out of the competitor list) below it as the
+  target, then Tribelt's group, then the competitors; every column sorts, and it filters by a gap.
+  A company's card sums it up, its history page shows administrators the raw `robots.txt`,
+  `llms.txt` and `llms-full.txt` (each kept up to 100 KB) with the lines about AI crawlers marked,
+  and the scan comparison lists what changed.
+- **Prompt test** (`/ai-search/prompt-test`): a fixed, versioned set of 90 buyer questions (5 belt
+  families × a supplier, an application and a problem question × Twente, the Netherlands, Germany,
+  Dutch, German and English) asked through OpenRouter of the cheapest text model of each large
+  provider (free ones included, paced, with the cheapest paid model taking over), from the model's
+  own knowledge and with web search; one fixed extractor model reads every answer against the
+  fact sheet ([ADR-0004](docs/adr/0004-the-prompt-test-asks-the-cheapest-model-of-each-provider-twice.md)).
+  It shows AI share of voice and citation share per model, scope, belt family and mode, the
+  trends across runs with the October pilot as the first point, the competitors the answers name,
+  the claims about Tribelt they get wrong, and every answer beside its reading. A company's card
+  says how often the latest run named it. Runs start monthly or weekly on a schedule or on demand,
+  one at a time across app instances, resume after a restart, and stop at their own monthly
+  budget in dollars ($10 by default).
+- **Prompt test settings and competitor candidates** (`/settings/prompt-test`,
+  `/settings/candidates`, administrators): the OpenRouter key runs use, the providers, the budget
+  and the month's spend, the schedule, the fact sheet, the prompt set, Run now and each run's
+  tokens and cost; and the companies the answers name that are not on the list, added (as a
+  company that can be scanned) or dismissed (for good, in later runs too), with undo.
 - **Term review** (`/settings/terms`, administrators): every phrase a finished scan found outside
   the map, across companies, with its evidence and the classifier's suggested family and tier. An
   administrator accepts one (with the text, language, family, tier and companies the map should
@@ -57,9 +88,10 @@ review terms, and open the admin settings
 - **Re-scans** (`POST /api/v1/admin/rescans`, administrators, on demand only): one scan per named
   company; with `all` of every company that is not archived, has a website and has data (the desk
   research studied it, or it was scanned before); or with `unscanned` of every company that is not
-  archived and has a website no scan reached yet. A company without a website is never taken, nor
-  by `all` one whose site turned its last scan away (`blocked`: bot protection that lets people in
-  but not the crawler, which says what it is and does not pose as a browser). A company with a scan
+  archived and has a website no scan reached yet. A company without a website is never taken. One
+  whose site turned its last scan away (`blocked`: bot protection that lets people in but not the
+  crawler, which says what it is and does not pose as a browser) is taken by `all` too: its pages
+  stay closed, but each scan records its AI readiness. A company with a scan
   still queued or running is skipped. Three scans run at a time, each on another company's site; the rest wait their turn.
   Administrators may start as many scans and re-scans as they like: there is no hourly limit and
   no cap on the queue.
@@ -67,7 +99,12 @@ review terms, and open the admin settings
 - **Admin settings** (`/api/v1/admin/llm`): API keys for Anthropic, OpenRouter and Mistral, more
   than one each, sealed in Postgres and never shown again; which key and model product matching
   uses; the monthly token budget; and a log of every change and test
-  ([ADR-0002](docs/adr/0002-sealed-llm-credentials-in-postgres.md)).
+  ([ADR-0002](docs/adr/0002-sealed-llm-credentials-in-postgres.md)). Each key shows, on request,
+  what its provider reports it used: OpenRouter's own spend for the key (today, this week, this
+  month, all time), its limit and the day's free-model requests; for an Anthropic key, this
+  month's tokens per model and the organisation's cost, read with an optional Anthropic Admin key
+  (`sk-ant-admin…`), stored sealed like the others, which only reads reports and is never chosen
+  for matching.
 
 It is built from the estate's [template-go-vue](https://github.com/JorisJonkers-dev/template-go-vue):
 a contract-first Go API (`openapi/v1/openapi.yaml`, ogen, sqlc, goose) and a Vue SPA embedded in
@@ -79,6 +116,7 @@ one binary. The architecture rules are in [`docs/blueprints/`](docs/blueprints/R
 | `internal/analysis/` | Website analyses: target, robots and sitemap rules, the link-scoring frontier, keyword and known-term extraction, the crawler, the matcher, company profiles and scan comparisons, re-scans, Postgres persistence |
 | `internal/companies/` | The researched companies, the ones administrators added, and administrators' changes to both |
 | `internal/identity/` | Signing in with auth-api: local accounts, server-side sessions, roles re-read from auth-api, the gate in front of the web app |
+| `internal/prompttest/` | The Prompt test: the prompt set, the model choice, runs (schedule, run lock, resume, budget), the OpenRouter adapter, extraction and measures, competitor candidates |
 | `internal/llm/` | The language-model settings: sealed API keys, the active credential and model, the event log, and the Anthropic, OpenRouter and Mistral clients |
 | `internal/shared/fold/` | The one text normalisation both contexts and the web client use |
 | `internal/shared/seal/` | AES-256-GCM sealing under keys derived from `SESSION_KEY`, for stored secrets and cookies |
@@ -102,7 +140,7 @@ Environment:
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URL` | The client registration at auth-api (required unless `DEV_USER` is set). Cookies are `Secure` unless the redirect URL is plain http |
 | `SESSION_KEY` | At least 32 characters; seals the session cookie, the refresh tokens and the API keys admins add (required unless `DEV_USER` is set) |
 | `ANTHROPIC_API_KEY` | The Vault key, shown as the read-only credential `vault-anthropic`; until an admin chooses, matching uses it with `claude-haiku-5-5` |
-| `LLM_MONTHLY_TOKENS` | The language-model budget per calendar month, every provider together (default 2,000,000) |
+| `LLM_MONTHLY_TOKENS` | The language-model budget per calendar month, every provider together (default 10,000,000) |
 | `CRAWLER_CONTACT` | Put in the crawler's User-Agent |
 | `DEV_USER`, `DEV_ROLES` | Local runs only: every request runs as `DEV_USER` with the comma-separated `DEV_ROLES` (`ROLE_ADMIN` opens the admin settings), without auth-api. Never set them in a deployment |
 
@@ -138,6 +176,15 @@ backfilled in the order the scans were started, unique per company), marks re-sc
 and adds `company_overrides`, `term_decisions` and `accepted_terms`. Nothing is dropped; existing
 scans keep their results, read as scan 1, 2, … of their company, and their phrases outside the map
 fill the review queue at once.
+
+### Migrations 00007 to 00010
+
+00007 adds a scan's AI readiness (`analysis_readiness`, its crawler rules and its raw files); scans
+made before have none and show "Not checked". 00008 adds the Prompt test (settings, runs and their
+models, answers, extractions, named companies, candidate decisions); a partial unique index keeps
+one run running. 00009 lets a stored key be an Anthropic Admin key (`anthropic_admin`), with the
+provider checks swapped `NOT VALID`; 00010 validates them in a transaction of its own. Nothing is
+dropped.
 
 ## Deploying
 

@@ -1,6 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { mountApp, routes } from '../../../testing/mountApp'
+import { promptResults } from '../../../testing/fixtures'
+import { json, mountApp, routes } from '../../../testing/mountApp'
 
 const rows = (wrapper: VueWrapper) => wrapper.findAll('ul[aria-label="Crawlers"] button')
 const detail = (wrapper: VueWrapper) => wrapper.get('section[aria-labelledby="tl-title"] [aria-live="polite"]')
@@ -30,16 +31,26 @@ describe('the AI search view', () => {
     expect(detail(wrapper).text()).toContain('It may not be GPTBot at all.')
   })
 
-  it('lists the prompt test and the ad surfaces', async () => {
+  it('shows the pilot until the first Prompt run, and the ad surfaces', async () => {
     const { wrapper } = await mountApp(routes({}), '/ai-search')
-    const [prompts, ads] = wrapper.findAll('table')
-    expect(prompts?.get('caption').text()).toBe('Whether Tribelt appeared, per search type and assistant')
-    expect(prompts?.findAll('tbody tr').map((r) => r.text())).toEqual([
-      expect.stringMatching(/^Supplier search\s*No\s*No\s*Yes\s*In both searches$/),
-      expect.stringMatching(/^Technical and quotation\s*No\s*No\s*FAQ cited once\s*No$/),
-    ])
+    const summary = wrapper.get('[data-testid="prompt-summary"]')
+    expect(summary.text()).toContain('Pilot, Oct 2026 (by hand: 5 prompts in Gemini and ChatGPT): Tribelt named in 1 of 6 searches.')
+    expect(summary.get('a').attributes('href')).toBe('/ai-search/prompt-test')
+    const [ads] = wrapper.findAll('table')
     expect(ads?.findAll('tbody th').map((t) => t.text())).toEqual(['Inside Gemini', 'Inside AI Overviews', 'Around AI Overviews', 'AI Mode', 'ChatGPT'])
-    expect(wrapper.get('ul[aria-label="Named instead"]').findAll('li')).toHaveLength(6)
     expect(wrapper.text()).toContain('Goal G4')
+  })
+
+  it('shows the latest Prompt run in place of the pilot', async () => {
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/prompt-test': () => json(promptResults()) }), '/ai-search')
+    const summary = wrapper.get('[data-testid="prompt-summary"]')
+    expect(summary.text()).toContain('Prompt run of 1 Nov 2026: 12 answers, read by one model.')
+    expect(summary.findAll('dd').map((d) => d.text())).toEqual(['17%', '33%'])
+    expect(summary.get('ul[aria-label="Named instead"]').text()).toBe('Twentebelt')
+  })
+
+  it('leads on to the AI readiness of the competitors', async () => {
+    const { wrapper } = await mountApp(routes({}), '/ai-search')
+    expect(wrapper.get('a[href="/ai-search/readiness"]').text()).toBe('Who follows this: AI readiness of the competitors')
   })
 })

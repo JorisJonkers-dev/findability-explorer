@@ -27,10 +27,11 @@ type repo struct {
 	failOn    map[string]bool
 	failedRun string
 	first     map[domain.PhraseKey]int
+	raw       map[uuid.UUID]domain.RawFiles
 }
 
 func newRepo(failOn ...string) *repo {
-	r := &repo{analyses: map[uuid.UUID]*domain.Analysis{}, failOn: map[string]bool{}}
+	r := &repo{analyses: map[uuid.UUID]*domain.Analysis{}, failOn: map[string]bool{}, raw: map[uuid.UUID]domain.RawFiles{}}
 	for _, f := range failOn {
 		r.failOn[f] = true
 	}
@@ -174,6 +175,32 @@ func (r *repo) SaveMatching(_ context.Context, id uuid.UUID, m domain.Matching, 
 	return r.update("SaveMatching", id, func(a *domain.Analysis) { a.Matching, a.MatchingModel, a.Equivalents = m, model, eqs })
 }
 
+func (r *repo) SaveReadiness(_ context.Context, id uuid.UUID, rd domain.Readiness, raw domain.RawFiles) error {
+	return r.update("SaveReadiness", id, func(a *domain.Analysis) { a.Readiness, r.raw[id] = &rd, raw })
+}
+
+func (r *repo) ReadinessFiles(_ context.Context, id uuid.UUID) (domain.RawFiles, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	raw, ok := r.raw[id]
+	if !ok {
+		return domain.RawFiles{}, domain.ErrNoReadiness
+	}
+	return raw, r.err("ReadinessFiles")
+}
+
+func (r *repo) LatestReadiness(context.Context) (map[string]domain.Analysis, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := map[string]domain.Analysis{}
+	for _, id := range r.order {
+		if a := r.analyses[id]; a.Readiness != nil {
+			out[a.CompetitorID] = *a
+		}
+	}
+	return out, r.err("LatestReadiness")
+}
+
 func (r *repo) Finish(_ context.Context, id uuid.UUID, at time.Time) error {
 	return r.update("Finish", id, func(a *domain.Analysis) { a.Status, a.FinishedAt = domain.StatusDone, at })
 }
@@ -184,10 +211,16 @@ func (r *repo) Fail(_ context.Context, id uuid.UUID, reason string, at time.Time
 	})
 }
 
-// crawler hands out pages, then err.
+// crawler hands out the readiness files, then pages, then err.
 type crawler struct {
-	pages []domain.Page
-	err   error
+	files        domain.ReadinessFiles
+	readinessErr error
+	pages        []domain.Page
+	err          error
+}
+
+func (c crawler) Readiness(context.Context, domain.Target) (domain.ReadinessFiles, error) {
+	return c.files, c.readinessErr
 }
 
 func (c crawler) Crawl(_ context.Context, _ domain.Target, maxPages int, _ domain.LinkScorer, onPage func(domain.Page) error) error {

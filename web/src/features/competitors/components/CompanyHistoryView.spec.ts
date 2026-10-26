@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { CompetitorProfile, ScanComparison } from '../../../infrastructure/api/types.gen'
-import { competitor, summary } from '../../../testing/fixtures'
+import { competitor, me, readinessRow, summary } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { PROFILE_GROUPS } from '../domain/history'
 
@@ -93,7 +93,7 @@ describe('a company’s search terms and history', () => {
     expect(compare.text()).toContain('1 added')
     expect(compare.text()).toContain('1 removed')
     expect(compare.text()).toContain('1 moved')
-    expect(compare.findAll('h3').map((h) => h.text())).toEqual(['Eyelink', 'Broad'])
+    expect(compare.findAll('h3').map((h) => h.text())).toEqual(['AI readiness', 'Eyelink', 'Broad'])
     const items = compare.findAll('li').map((li) => li.text())
     expect(items).toEqual([
       'Addeddraadogenband(nl) score 12, 2 pages',
@@ -153,5 +153,66 @@ describe('a company’s search terms and history', () => {
     missing.wrapper.unmount()
     const failing = await mountApp(api({ 'GET /api/v1/competitors/twentebelt': () => problem(500, 'Internal Server Error') }), '/competitors/twentebelt/history')
     expect(failing.wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
+  })
+})
+
+describe('a company’s AI readiness over time', () => {
+  it('lists what changed in AI readiness between the two scans', async () => {
+    const { wrapper } = await mountApp(
+      api({
+        'GET /api/v1/competitors/twentebelt/scans/compare': () =>
+          json({ ...comparison, readiness: [{ field: 'bot:GPTBot', from: 'allowed', to: 'blocked' }, { field: 'llmsTxt', from: 'no', to: 'yes' }] }),
+      }),
+      '/competitors/twentebelt/history',
+    )
+    const changes = wrapper.get('[data-testid="readiness-changes"]')
+    expect(changes.findAll('li').map((li) => li.text())).toEqual(['GPTBot: allowed → blocked', 'llms.txt: no → yes'])
+  })
+
+  it('says when nothing changed', async () => {
+    const { wrapper } = await mountApp(
+      api({ 'GET /api/v1/competitors/twentebelt/scans/compare': () => json({ ...comparison, readiness: [] }) }),
+      '/competitors/twentebelt/history',
+    )
+    expect(wrapper.get('[data-testid="readiness-changes"]').text()).toContain('Nothing changed.')
+  })
+
+  it('shows administrators the raw files, with the lines about AI crawlers marked', async () => {
+    const files = { robotsTxt: 'User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nAllow: /', robotsTruncated: false, llmsTxt: '# Twentebelt', llmsTruncated: true, llmsFullTxt: '', llmsFullTruncated: false }
+    const { wrapper, requests } = await mountApp(
+      api({
+        'GET /api/v1/me': () => json(me({ isAdmin: true })),
+        'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { scan: summary({ id: SCAN_3 }) })] }),
+        [`GET /api/v1/admin/analyses/${SCAN_3}/readiness-files`]: () => json(files),
+      }),
+      '/competitors/twentebelt/history',
+    )
+    expect(requests()).toContain(`GET /api/v1/admin/analyses/${SCAN_3}/readiness-files`)
+    const section = wrapper.get('section[aria-labelledby="files-title"]')
+    expect(section.findAll('summary').map((s) => s.text())).toEqual(['robots.txt', 'llms.txt: the first 100 KB', 'llms-full.txt: not served'])
+    const marked = section.findAll('pre')[0]?.findAll('span.font-semibold').map((l) => l.text())
+    expect(marked).toEqual(['User-agent: GPTBot'])
+  })
+
+  it('tells administrators when no scan recorded the files, and hides them from others', async () => {
+    const admin = await mountApp(
+      api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })), 'GET /api/v1/ai-readiness': () => json({ items: [] }) }),
+      '/competitors/twentebelt/history',
+    )
+    expect(admin.wrapper.get('section[aria-labelledby="files-title"]').text()).toContain('No scan of it recorded its AI readiness yet.')
+    admin.wrapper.unmount()
+    const failing = await mountApp(
+      api({
+        'GET /api/v1/me': () => json(me({ isAdmin: true })),
+        'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { scan: summary({ id: SCAN_3 }) })] }),
+        [`GET /api/v1/admin/analyses/${SCAN_3}/readiness-files`]: () => problem(500, 'Internal Server Error', 'Down.'),
+      }),
+      '/competitors/twentebelt/history',
+    )
+    expect(failing.wrapper.get('section[aria-labelledby="files-title"] [role="alert"]').text()).toContain('Down.')
+    failing.wrapper.unmount()
+    const viewer = await mountApp(api(), '/competitors/twentebelt/history')
+    expect(viewer.wrapper.find('section[aria-labelledby="files-title"]').exists()).toBe(false)
+    expect(viewer.requests().some((r) => r.includes('readiness-files'))).toBe(false)
   })
 })

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, toRef, useTemplateRef } from 'vue'
 import type { LlmCredential } from '../../../infrastructure/api/types.gen'
-import { useCredentialTest, useRemoveCredential } from '../composables/useLlmSettings'
+import { useCredentialTest, useKeyUsage, useRemoveCredential } from '../composables/useLlmSettings'
 import { canRemove, credentialName, originLabel, sourceLabel, testOutcome } from '../domain/credentials'
+import { usageLines } from '../domain/usage'
 
 const props = defineProps<{ credential: LlmCredential }>()
 const emit = defineEmits<{ removed: [] }>()
@@ -10,6 +11,9 @@ const emit = defineEmits<{ removed: [] }>()
 const { isTesting, outcome, error: testError, test } = useCredentialTest()
 const { isRemoving, error: removeError, remove } = useRemoveCredential()
 const confirming = ref(false)
+// What the provider reports the key used, asked of it only when someone looks.
+const showUsage = ref(false)
+const { usage, isLoading: usageLoading, error: usageError } = useKeyUsage(toRef(() => props.credential.id), showUsage)
 const removeButton = useTemplateRef<HTMLButtonElement>('removeButton')
 const cancelButton = useTemplateRef<HTMLButtonElement>('cancelButton')
 
@@ -57,6 +61,14 @@ function confirmRemove(): void {
       </template>
       <span v-else class="text-muted">Not tested yet.</span>
     </p>
+    <div v-if="showUsage" class="flex flex-col gap-1 rounded-xl bg-white p-4 text-sm" aria-live="polite" data-testid="key-usage">
+      <p v-if="usageLoading" class="m-0 text-muted">Asking the provider…</p>
+      <p v-else-if="usageError" role="alert" class="m-0 font-medium text-orange-ink">{{ usageError }}</p>
+      <template v-else-if="usage">
+        <p class="m-0 font-semibold">{{ usage.message }}</p>
+        <p v-for="line in usageLines(usage)" :key="line" class="m-0">{{ line }}</p>
+      </template>
+    </div>
     <p v-if="testError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ testError }}</p>
     <p v-if="removeError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ removeError }}</p>
 
@@ -69,6 +81,16 @@ function confirmRemove(): void {
         @click="test(credential.id)"
       >
         {{ isTesting ? 'Testing…' : 'Test' }}
+      </button>
+      <button
+        type="button"
+        :disabled="!credential.readable"
+        :aria-expanded="showUsage"
+        class="min-h-11 rounded-full border-2 border-black bg-white px-5 font-medium text-black hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:border-grey disabled:text-muted disabled:hover:bg-white"
+        :aria-describedby="titleId"
+        @click="showUsage = !showUsage"
+      >
+        {{ showUsage ? 'Hide usage' : 'Usage and cost' }}
       </button>
       <template v-if="canRemove(credential)">
         <button

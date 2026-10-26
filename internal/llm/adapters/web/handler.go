@@ -25,6 +25,7 @@ type UseCases interface {
 	Models(ctx context.Context, id string) ([]domain.Model, error)
 	SetActive(ctx context.Context, actor, credentialID, model string) (app.Settings, error)
 	ClearActive(ctx context.Context, actor string) (app.Settings, error)
+	Usage(ctx context.Context, id string) (domain.Usage, error)
 }
 
 // Actor names who makes a request, for the events.
@@ -121,6 +122,54 @@ func (h *Handler) ListLlmModels(ctx context.Context, params oas.ListLlmModelsPar
 		items = append(items, oas.LlmModel{ID: clip(m.ID, 200), Name: clip(m.Name, 300)})
 	}
 	return &oas.LlmModelList{Items: items}, nil
+}
+
+// GetLlmKeyUsage implements getLlmKeyUsage.
+func (h *Handler) GetLlmKeyUsage(ctx context.Context, params oas.GetLlmKeyUsageParams) (oas.GetLlmKeyUsageRes, error) {
+	u, err := h.uc.Usage(ctx, string(params.CredentialId))
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.GetLlmKeyUsageNotFound{StatusCode: http.StatusNotFound, Response: notFound()}, nil
+	case app.IsInputError(err):
+		return &oas.GetLlmKeyUsageUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, detail(err)),
+		}, nil
+	case errors.Is(err, domain.ErrProvider):
+		return &oas.GetLlmKeyUsageBadGateway{
+			StatusCode: http.StatusBadGateway, Response: httpx.Problem(http.StatusBadGateway, detail(err)),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := &oas.LlmKeyUsage{
+		Source: oas.LlmUsageSource(u.Source), Message: clip(u.Message, 500), Models: make([]oas.LlmModelTokens, 0, len(u.Models)),
+		TotalUsd: optFloat(u.Total), DailyUsd: optFloat(u.Daily), WeeklyUsd: optFloat(u.Weekly), MonthlyUsd: optFloat(u.Monthly),
+		LimitUsd: optFloat(u.Limit), LimitRemainingUsd: optFloat(u.LimitRemaining), OrganisationCostUsd: optFloat(u.OrganisationCost),
+	}
+	if u.LimitReset != "" {
+		out.LimitReset = oas.NewOptString(clip(u.LimitReset, 20))
+	}
+	if f := u.Free; f != nil {
+		out.FreeRequests = oas.NewOptLlmFreeRequests(oas.LlmFreeRequests{
+			Used: int32(f.Used), Limit: int32(f.Limit), Remaining: int32(f.Remaining), //nolint:gosec // small counts
+		})
+	}
+	if !u.Since.IsZero() {
+		out.Since = oas.NewOptDateTime(u.Since)
+	}
+	for _, m := range u.Models[:min(len(u.Models), 200)] {
+		out.Models = append(out.Models, oas.LlmModelTokens{
+			Model: clip(m.Model, 200), InputTokens: m.InputTokens, OutputTokens: m.OutputTokens, CacheReadTokens: m.CacheRead,
+		})
+	}
+	return out, nil
+}
+
+func optFloat(v *float64) oas.OptFloat64 {
+	if v == nil {
+		return oas.OptFloat64{}
+	}
+	return oas.NewOptFloat64(*v)
 }
 
 // SetActiveLlm implements setActiveLlm.

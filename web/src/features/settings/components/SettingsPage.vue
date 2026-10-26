@@ -38,7 +38,11 @@ function removed(): void {
       <div class="flex flex-col gap-4">
         <SectionEyebrow>Settings</SectionEyebrow>
         <h1 class="m-0 font-display text-4xl leading-[0.95] font-semibold tracking-[-0.03em] sm:text-6xl">Language model</h1>
-        <RouterLink to="/settings/terms" class="self-start font-medium">Review the terms scans found</RouterLink>
+        <p class="m-0 flex flex-wrap gap-x-6 gap-y-1">
+          <RouterLink to="/settings/terms" class="font-medium">Review the terms scans found</RouterLink>
+          <RouterLink to="/settings/prompt-test" class="font-medium">The Prompt test</RouterLink>
+          <RouterLink to="/settings/candidates" class="font-medium">Competitor candidates</RouterLink>
+        </p>
         <p class="m-0 max-w-[62ch] text-lg text-ink-2">
           The model that matches a scanned website's products to Tribelt's belt families. API keys are checked with
           their provider, stored sealed, and never shown again.

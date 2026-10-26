@@ -5,6 +5,10 @@ type AcceptTermCandidateRes interface {
 	acceptTermCandidateRes()
 }
 
+type AddCompetitorCandidateRes interface {
+	addCompetitorCandidateRes()
+}
+
 type AddCompetitorRes interface {
 	addCompetitorRes()
 }
@@ -29,6 +33,14 @@ type DeleteLlmCredentialRes interface {
 	deleteLlmCredentialRes()
 }
 
+type DismissCompetitorCandidateRes interface {
+	dismissCompetitorCandidateRes()
+}
+
+type GetAiReadinessRes interface {
+	getAiReadinessRes()
+}
+
 type GetAnalysisRes interface {
 	getAnalysisRes()
 }
@@ -41,6 +53,10 @@ type GetCompetitorRes interface {
 	getCompetitorRes()
 }
 
+type GetLlmKeyUsageRes interface {
+	getLlmKeyUsageRes()
+}
+
 type GetLlmSettingsRes interface {
 	getLlmSettingsRes()
 }
@@ -49,8 +65,24 @@ type GetMeRes interface {
 	getMeRes()
 }
 
+type GetPromptTestResultsRes interface {
+	getPromptTestResultsRes()
+}
+
+type GetPromptTestSettingsRes interface {
+	getPromptTestSettingsRes()
+}
+
+type GetReadinessFilesRes interface {
+	getReadinessFilesRes()
+}
+
 type ListAnalysesRes interface {
 	listAnalysesRes()
+}
+
+type ListCompetitorCandidatesRes interface {
+	listCompetitorCandidatesRes()
 }
 
 type ListCompetitorsRes interface {
@@ -59,6 +91,10 @@ type ListCompetitorsRes interface {
 
 type ListLlmModelsRes interface {
 	listLlmModelsRes()
+}
+
+type ListPromptAnswersRes interface {
+	listPromptAnswersRes()
 }
 
 type ListTermCandidatesRes interface {
@@ -81,6 +117,10 @@ type StartAnalysisRes interface {
 	startAnalysisRes()
 }
 
+type StartPromptRunRes interface {
+	startPromptRunRes()
+}
+
 type StartRescansRes interface {
 	startRescansRes()
 }
@@ -89,10 +129,18 @@ type TestLlmCredentialRes interface {
 	testLlmCredentialRes()
 }
 
+type UndoCompetitorCandidateRes interface {
+	undoCompetitorCandidateRes()
+}
+
 type UndoTermDecisionRes interface {
 	undoTermDecisionRes()
 }
 
 type UpdateCompetitorRes interface {
 	updateCompetitorRes()
+}
+
+type UpdatePromptTestSettingsRes interface {
+	updatePromptTestSettingsRes()
 }

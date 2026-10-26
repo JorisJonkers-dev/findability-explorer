@@ -19,6 +19,7 @@ import {
 const company = (name: string, overrides: Partial<Competitor> = {}): Competitor => ({
   id: name.toLowerCase(),
   source: 'research',
+  role: 'competitor',
   archived: false,
   scans: 0,
   name,

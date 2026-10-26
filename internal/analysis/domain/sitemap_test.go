@@ -21,7 +21,8 @@ func TestParseSitemapReadsPagesAndTheirLanguageVersions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(sm.Pages, " ") != "https://x.test/en/eyelink https://x.test/de/oesen" || len(sm.Sitemaps) != 0 {
+	if strings.Join(sm.Pages, " ") != "https://x.test/en/eyelink https://x.test/de/oesen" || len(sm.Sitemaps) != 0 ||
+		strings.Join(sm.Languages, " ") != "de" {
 		t.Fatalf("sitemap = %+v", sm)
 	}
 }

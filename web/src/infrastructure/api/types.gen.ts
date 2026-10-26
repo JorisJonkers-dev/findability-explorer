@@ -121,6 +121,7 @@ export type CompetitorSource = 'research' | 'added';
  * A known company.
  */
 export type Competitor = {
+    role: CompanyRole;
     /**
      * True for a researched company an administrator archived: it is left out of the re-scans and the web app hides it.
      */
@@ -173,6 +174,11 @@ export type Competitor = {
      */
     homepageTitle: string;
 };
+
+/**
+ * What a company is to Tribelt - Tribelt itself (the baseline), the group's mirror of tribelt.nl (the report's recommendations in practice), a company in Tribelt's group (a benchmark), or a competitor. Only competitors count as competitors.
+ */
+export type CompanyRole = 'tribelt' | 'mirror' | 'group' | 'competitor';
 
 /**
  * A company to add.
@@ -264,9 +270,10 @@ export type AnalysisSummary = {
      */
     failure?: string;
     /**
-     * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. Re-scanning all companies leaves such a company out.
+     * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. The scan still records the site's AI readiness.
      */
     blocked?: boolean;
+    aiReadiness?: AiReadinessBrief;
     /**
      * The most pages the crawl fetches.
      */
@@ -434,6 +441,7 @@ export type Analysis = {
      * The site's products matched to Tribelt's belt families.
      */
     equivalents: Array<Equivalent>;
+    aiReadiness?: AiReadiness;
 };
 
 /**
@@ -459,9 +467,9 @@ export type Me = {
 };
 
 /**
- * A language-model provider.
+ * A language-model provider. `anthropic_admin` is an Anthropic Admin key, which only reads the organisation's usage and cost reports and never answers.
  */
-export type LlmProvider = 'anthropic' | 'openrouter' | 'mistral';
+export type LlmProvider = 'anthropic' | 'openrouter' | 'mistral' | 'anthropic_admin';
 
 /**
  * A credential's id: a UUID for a stored key, or `vault-anthropic` for the key Vault delivers in ANTHROPIC_API_KEY.
@@ -548,6 +556,103 @@ export type LlmModel = {
      * The provider's display name for it, or the id.
      */
     name: string;
+};
+
+/**
+ * Where a key's usage figures come from - OpenRouter's own figures, Anthropic's reports read with an Admin key, or none (the provider reports nothing for the key).
+ */
+export type LlmUsageSource = 'openrouter' | 'anthropic' | 'none';
+
+/**
+ * OpenRouter's count of the day's requests to free models.
+ */
+export type LlmFreeRequests = {
+    /**
+     * Requests today.
+     */
+    used: number;
+    /**
+     * Requests allowed a day.
+     */
+    limit: number;
+    /**
+     * Requests left today.
+     */
+    remaining: number;
+};
+
+/**
+ * The tokens a key used with one model this month, as Anthropic reports them.
+ */
+export type LlmModelTokens = {
+    /**
+     * The model.
+     */
+    model: string;
+    /**
+     * Input tokens, cache writes included.
+     */
+    inputTokens: number;
+    /**
+     * Output tokens.
+     */
+    outputTokens: number;
+    /**
+     * Input tokens read from the cache.
+     */
+    cacheReadTokens: number;
+};
+
+/**
+ * What a provider reports a key used.
+ */
+export type LlmKeyUsage = {
+    source: LlmUsageSource;
+    /**
+     * What the figures are, or why there are none.
+     */
+    message: string;
+    /**
+     * OpenRouter - the key's spend, all time.
+     */
+    totalUsd?: number;
+    /**
+     * OpenRouter - today's (UTC).
+     */
+    dailyUsd?: number;
+    /**
+     * OpenRouter - this week's (UTC, from Monday).
+     */
+    weeklyUsd?: number;
+    /**
+     * OpenRouter - this month's (UTC).
+     */
+    monthlyUsd?: number;
+    /**
+     * OpenRouter - the key's own limit; absent when it has none.
+     */
+    limitUsd?: number;
+    /**
+     * OpenRouter - what is left of the limit.
+     */
+    limitRemainingUsd?: number;
+    /**
+     * OpenRouter - when the limit resets (daily, weekly, monthly); absent when never.
+     */
+    limitReset?: string;
+    freeRequests?: LlmFreeRequests;
+    /**
+     * Anthropic - this month's tokens per model.
+     */
+    models: Array<LlmModelTokens>;
+    /**
+     * Anthropic - the whole organisation's cost this month; Anthropic does not report it per key.
+     */
+    organisationCostUsd?: number;
+    /**
+     * Anthropic - the start of the month the figures cover.
+     */
+    since?: string;
 };
 
 /**
@@ -864,6 +969,10 @@ export type ScanComparison = {
      * Every group, in the profile's order.
      */
     groups: Array<ComparisonGroup>;
+    /**
+     * What changed in AI readiness, in the readiness's order; absent when either scan recorded no AI readiness, empty when nothing changed.
+     */
+    readiness?: Array<ReadinessChange>;
 };
 
 /**
@@ -993,6 +1102,810 @@ export type TermAcceptance = {
 };
 
 /**
+ * How far robots.txt lets a crawler in - allowed (no page kept from it), partly (some pages kept from it, or only some open to it), or blocked (the whole site).
+ */
+export type CrawlerAccess = 'allowed' | 'partly' | 'blocked';
+
+/**
+ * One search or AI crawler's access, by its robots.txt token.
+ */
+export type BotRule = {
+    /**
+     * The crawler's robots.txt token.
+     */
+    bot: string;
+    access: CrawlerAccess;
+    /**
+     * True when robots.txt names the crawler in a group of its own; otherwise it follows the * group, and robots.txt does not mention it.
+     */
+    named: boolean;
+    /**
+     * True unless the crawler is blocked; the report recommends letting every one in.
+     */
+    followsAdvice: boolean;
+};
+
+/**
+ * What became of robots.txt - found, missing (so every crawler may read every page), or unreachable (the site would not serve it, so the crawler policy is unknown).
+ */
+export type RobotsStatus = 'found' | 'missing' | 'unreachable';
+
+/**
+ * One of the report's recommendations besides each crawler's access.
+ */
+export type ReadinessCheck = 'sitemapDeclared' | 'sitemapLanguages' | 'llmsTxt' | 'markdown' | 'organization' | 'product' | 'languages';
+
+/**
+ * Whether a site follows one recommendation.
+ */
+export type ReadinessAdvice = {
+    check: ReadinessCheck;
+    /**
+     * True when the site follows it.
+     */
+    ok: boolean;
+};
+
+/**
+ * What a site's sitemaps list, without the addresses.
+ */
+export type SitemapSummary = {
+    /**
+     * True when robots.txt lists a sitemap.
+     */
+    declared: boolean;
+    /**
+     * How many sitemap files were read (at most 10).
+     */
+    files: number;
+    /**
+     * How many different addresses they list.
+     */
+    addresses: number;
+    /**
+     * The ones of Dutch, German and English the addresses cover, by path or hreflang.
+     */
+    languages: Array<string>;
+};
+
+/**
+ * What a site's llms.txt holds.
+ */
+export type LlmsFacts = {
+    /**
+     * True when the site serves llms.txt.
+     */
+    present: boolean;
+    /**
+     * Its size in bytes, as far as it was read.
+     */
+    bytes: number;
+    /**
+     * How many links it lists.
+     */
+    links: number;
+};
+
+/**
+ * The tools behind a site, as far as its headers and home page tell; each absent when unknown.
+ */
+export type SiteStack = {
+    /**
+     * The content management system.
+     */
+    cms?: string;
+    /**
+     * The SEO plugin.
+     */
+    seoPlugin?: string;
+    /**
+     * The bot protection in front of it.
+     */
+    botProtection?: string;
+};
+
+/**
+ * What a site tells search engines and AI assistants about itself, read by a scan before its page crawl, held against the report's recommendations.
+ */
+export type AiReadiness = {
+    robots: RobotsStatus;
+    /**
+     * Each search and AI crawler's access; empty when robots.txt was unreachable.
+     */
+    bots: Array<BotRule>;
+    sitemap: SitemapSummary;
+    llmsTxt: LlmsFacts;
+    /**
+     * True when the site serves llms-full.txt.
+     */
+    llmsFullTxt: boolean;
+    /**
+     * True when llms.txt links to .md pages or the home page has a .md twin.
+     */
+    markdown: boolean;
+    /**
+     * True when the home page could be read; the structured data and languages need it.
+     */
+    homeRead: boolean;
+    /**
+     * The JSON-LD types on the home page, alphabetically.
+     */
+    structuredData: Array<string>;
+    /**
+     * The language versions the home page declares (hreflang), Dutch, German and English first.
+     */
+    languages: Array<string>;
+    stack: SiteStack;
+    /**
+     * Each recommendation besides the crawlers', and whether the site follows it.
+     */
+    advice: Array<ReadinessAdvice>;
+    /**
+     * How many recommendations the site does not follow, each blocked crawler included.
+     */
+    gaps: number;
+};
+
+/**
+ * A scan's AI readiness in brief.
+ */
+export type AiReadinessBrief = {
+    /**
+     * How many recommendations the site does not follow.
+     */
+    gaps: number;
+    /**
+     * The crawlers robots.txt blocks.
+     */
+    blockedBots: Array<string>;
+};
+
+/**
+ * One company in the AI readiness table.
+ */
+export type AiReadinessRow = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    scan?: AnalysisSummary;
+    readiness?: AiReadiness;
+};
+
+/**
+ * Every company's AI readiness, Tribelt and the mirror first.
+ */
+export type AiReadinessTable = {
+    /**
+     * The rows.
+     */
+    items: Array<AiReadinessRow>;
+};
+
+/**
+ * One field of AI readiness that differs between two scans: a crawler (bot:GPTBot), robots, sitemapDeclared, sitemapLanguages, llmsTxt, llmsFullTxt, markdown, organization, product, languages, cms, seoPlugin or botProtection, with both values as they read.
+ */
+export type ReadinessChange = {
+    /**
+     * The field.
+     */
+    field: string;
+    /**
+     * Its value in the older scan.
+     */
+    from: string;
+    /**
+     * Its value in the newer scan.
+     */
+    to: string;
+};
+
+/**
+ * The raw files a scan read its AI readiness from; empty when the site served none.
+ */
+export type ReadinessFiles = {
+    /**
+     * robots.txt.
+     */
+    robotsTxt: string;
+    /**
+     * True when robots.txt was longer than 100 KB and is cut there.
+     */
+    robotsTruncated: boolean;
+    /**
+     * llms.txt.
+     */
+    llmsTxt: string;
+    /**
+     * True when llms.txt was cut at 100 KB.
+     */
+    llmsTruncated: boolean;
+    /**
+     * llms-full.txt.
+     */
+    llmsFullTxt: string;
+    /**
+     * True when llms-full.txt was cut at 100 KB.
+     */
+    llmsFullTruncated: boolean;
+};
+
+/**
+ * One of Tribelt's five belt families a prompt asks about.
+ */
+export type PromptFamily = 'eyelink' | 'open_spiral' | 'closed_spiral' | 'tri_flex_turn_curve' | 'other';
+
+/**
+ * The kind of question - for a supplier, for a belt for an application, or about a problem.
+ */
+export type PromptKind = 'supplier' | 'application' | 'problem';
+
+/**
+ * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
+ */
+export type PromptScope = 'twente' | 'netherlands' | 'germany' | 'dutch' | 'german' | 'english';
+
+/**
+ * How a prompt is asked - from the model's own knowledge, or with live web search.
+ */
+export type PromptMode = 'knowledge' | 'web';
+
+/**
+ * Where a Prompt run is - running, done, stopped (the month's budget was reached; its answers are kept) or failed.
+ */
+export type PromptRunStatus = 'running' | 'done' | 'stopped' | 'failed';
+
+/**
+ * What started a run - an administrator, or the schedule.
+ */
+export type PromptTrigger = 'manual' | 'schedule';
+
+/**
+ * An amount in US dollars.
+ */
+export type Usd = number;
+
+/**
+ * The model a run asks for one provider, and the paid fallback of a free one.
+ */
+export type PromptModelChoice = {
+    /**
+     * The provider's OpenRouter id.
+     */
+    provider: string;
+    /**
+     * The provider's cheapest text model.
+     */
+    model: string;
+    /**
+     * True when the model costs nothing.
+     */
+    free: boolean;
+    /**
+     * The cheapest paid model, which answers what the free one cannot finish.
+     */
+    fallback?: string;
+};
+
+/**
+ * One provider's part of a run.
+ */
+export type PromptProviderProgress = {
+    /**
+     * The provider.
+     */
+    provider: string;
+    /**
+     * Its answers so far.
+     */
+    answered: number;
+    /**
+     * The prompts it gave no answer to.
+     */
+    failed: number;
+    costUsd: Usd;
+    /**
+     * The models that answered; two when the free one handed over to the paid one.
+     */
+    models: Array<string>;
+};
+
+/**
+ * The answers of one provider, scope, belt family and mode that were read, and how many name and cite Tribelt.
+ */
+export type PromptCell = {
+    /**
+     * The provider.
+     */
+    provider: string;
+    scope: PromptScope;
+    family: PromptFamily;
+    mode: PromptMode;
+    /**
+     * The answers read.
+     */
+    answers: number;
+    /**
+     * Those that name Tribelt.
+     */
+    named: number;
+    /**
+     * Those that cite a Tribelt address.
+     */
+    cited: number;
+};
+
+/**
+ * One Prompt run, with how far it got and what it cost.
+ */
+export type PromptRun = {
+    /**
+     * The run's id.
+     */
+    id: string;
+    /**
+     * The version of the prompt set it asked.
+     */
+    promptSetVersion: number;
+    /**
+     * The version of the fact sheet its answers were judged against.
+     */
+    factSheetVersion: number;
+    trigger: PromptTrigger;
+    /**
+     * Who started it, or "schedule".
+     */
+    startedBy: string;
+    /**
+     * When it started.
+     */
+    startedAt: string;
+    /**
+     * When it ended; absent while it runs.
+     */
+    finishedAt?: string;
+    status: PromptRunStatus;
+    /**
+     * Why it stopped or failed.
+     */
+    failure?: string;
+    /**
+     * The model asked for each provider.
+     */
+    models: Array<PromptModelChoice>;
+    /**
+     * How many answers it asks for.
+     */
+    tasks: number;
+    /**
+     * Its answers so far.
+     */
+    answered: number;
+    /**
+     * The prompts a model gave no answer to.
+     */
+    failed: number;
+    /**
+     * The tokens its prompts and readings sent, extraction included.
+     */
+    inputTokens: number;
+    /**
+     * The tokens its answers and readings returned.
+     */
+    outputTokens: number;
+    costUsd: Usd;
+    /**
+     * Each provider's part.
+     */
+    byProvider: Array<PromptProviderProgress>;
+    /**
+     * Its answers counted per provider, scope, belt family and mode.
+     */
+    cells: Array<PromptCell>;
+};
+
+/**
+ * How often the answers of the newest run with any name one company on the list.
+ */
+export type PromptMention = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    /**
+     * The answers that name it.
+     */
+    answers: number;
+    /**
+     * The answers that name it first.
+     */
+    first: number;
+    /**
+     * Its average place in the answers that name it, from 1.
+     */
+    averagePosition: number;
+};
+
+/**
+ * A claim about Tribelt an answer made that the fact sheet contradicts.
+ */
+export type PromptWrongClaim = {
+    /**
+     * The answer's id.
+     */
+    answerId: string;
+    /**
+     * The run's id.
+     */
+    runId: string;
+    /**
+     * When the answer was given.
+     */
+    at: string;
+    /**
+     * The provider.
+     */
+    provider: string;
+    /**
+     * The model.
+     */
+    model: string;
+    /**
+     * The prompt's id.
+     */
+    promptId: string;
+    mode: PromptMode;
+    correctness?: PromptCorrectness;
+    /**
+     * The claim, quoted.
+     */
+    claim: string;
+};
+
+/**
+ * How what an answer says about Tribelt holds against the fact sheet.
+ */
+export type PromptCorrectness = 'correct' | 'partly' | 'wrong';
+
+/**
+ * The Prompt test's results.
+ */
+export type PromptTestResults = {
+    /**
+     * The version of the prompt set runs ask now.
+     */
+    promptSetVersion: number;
+    /**
+     * The latest runs, newest first.
+     */
+    runs: Array<PromptRun>;
+    /**
+     * The companies the answers of the newest run with any name, most answers first.
+     */
+    mentions: Array<PromptMention>;
+    /**
+     * The claims about Tribelt the answers got wrong, newest first.
+     */
+    wrongClaims: Array<PromptWrongClaim>;
+};
+
+/**
+ * A company an answer names, matched to the company list when it is on it.
+ */
+export type PromptNamedCompany = {
+    /**
+     * The name, as the answer writes it.
+     */
+    name: string;
+    /**
+     * The address the answer gives for it.
+     */
+    url?: string;
+    competitorId?: CompetitorId;
+    /**
+     * Its place in the answer.
+     */
+    position: number;
+};
+
+/**
+ * How the extractor read an answer; failed when it could not, after a retry.
+ */
+export type PromptExtraction = {
+    /**
+     * True when the extractor could not read it.
+     */
+    failed: boolean;
+    /**
+     * The companies named, in order.
+     */
+    companies: Array<PromptNamedCompany>;
+    /**
+     * The addresses cited.
+     */
+    addresses: Array<string>;
+    /**
+     * True when it names Tribelt.
+     */
+    namesTribelt: boolean;
+    /**
+     * True when it cites a Tribelt address.
+     */
+    citesTribelt: boolean;
+    correctness?: PromptCorrectness;
+    /**
+     * Each claim about Tribelt the fact sheet contradicts, quoted.
+     */
+    wrongClaims: Array<string>;
+    costUsd: Usd;
+};
+
+/**
+ * One model's answer to one prompt, with how it was read.
+ */
+export type PromptAnswer = {
+    /**
+     * The answer's id.
+     */
+    id: string;
+    /**
+     * The prompt's id.
+     */
+    promptId: string;
+    family: PromptFamily;
+    kind: PromptKind;
+    scope: PromptScope;
+    /**
+     * The prompt's language.
+     */
+    language: string;
+    /**
+     * The prompt, as asked.
+     */
+    prompt: string;
+    /**
+     * The version of the prompt set it answered.
+     */
+    promptSetVersion: number;
+    /**
+     * The provider.
+     */
+    provider: string;
+    /**
+     * The exact model that answered.
+     */
+    model: string;
+    mode: PromptMode;
+    /**
+     * The answer, as a buyer would see it.
+     */
+    text: string;
+    /**
+     * The sources web search cited.
+     */
+    citations: Array<string>;
+    /**
+     * Why the model gave no answer.
+     */
+    failure?: string;
+    /**
+     * When it answered.
+     */
+    at: string;
+    costUsd: Usd;
+    extraction?: PromptExtraction;
+};
+
+/**
+ * A run's answers.
+ */
+export type PromptAnswerList = {
+    run: PromptRun;
+    /**
+     * The answers, in the order they came.
+     */
+    items: Array<PromptAnswer>;
+};
+
+/**
+ * How often scheduled runs start - monthly, on the first at 06:00 UTC, or weekly, on Mondays.
+ */
+export type PromptCadence = 'monthly' | 'weekly';
+
+/**
+ * What is true about Tribelt, which answers about Tribelt are judged against.
+ */
+export type PromptFactSheet = {
+    /**
+     * The fact sheet.
+     */
+    text: string;
+    /**
+     * Its version; each change is a new one.
+     */
+    version: number;
+    /**
+     * Who last changed it.
+     */
+    updatedBy?: string;
+    /**
+     * When.
+     */
+    updatedAt?: string;
+};
+
+/**
+ * One prompt of the prompt set.
+ */
+export type PromptQuestion = {
+    /**
+     * Its id.
+     */
+    id: string;
+    family: PromptFamily;
+    kind: PromptKind;
+    scope: PromptScope;
+    /**
+     * Its language.
+     */
+    language: string;
+    /**
+     * The question.
+     */
+    text: string;
+};
+
+/**
+ * The fixed, versioned prompt set runs ask.
+ */
+export type PromptSet = {
+    /**
+     * Its version.
+     */
+    version: number;
+    /**
+     * The prompts.
+     */
+    prompts: Array<PromptQuestion>;
+};
+
+/**
+ * The Prompt test's settings.
+ */
+export type PromptTestSettings = {
+    credentialId?: LlmCredentialId;
+    /**
+     * The providers whose cheapest model runs ask, by OpenRouter id.
+     */
+    providers: Array<string>;
+    monthlyBudgetUsd: Usd;
+    spentThisMonthUsd: Usd;
+    cadence: PromptCadence;
+    /**
+     * When the next scheduled run starts.
+     */
+    nextDueAt: string;
+    factSheet: PromptFactSheet;
+    promptSet: PromptSet;
+    /**
+     * The one model that reads every answer, fixed in this release.
+     */
+    extractorModel: string;
+};
+
+/**
+ * The settings to change; at least one.
+ */
+export type PromptTestSettingsChange = {
+    credentialId?: LlmCredentialId;
+    /**
+     * The providers whose cheapest model runs ask.
+     */
+    providers?: Array<string>;
+    /**
+     * The month's budget in dollars.
+     */
+    monthlyBudgetUsd?: number;
+    cadence?: PromptCadence;
+    /**
+     * The fact sheet.
+     */
+    factSheet?: string;
+};
+
+/**
+ * A competitor candidate's id, made from its name.
+ */
+export type CompetitorCandidateId = string;
+
+/**
+ * Where a competitor candidate is in the review.
+ */
+export type CompetitorCandidateStatus = 'pending' | 'added' | 'dismissed';
+
+/**
+ * An administrator's decision on a competitor candidate.
+ */
+export type CompetitorCandidateDecision = {
+    status: CompetitorCandidateStatus;
+    competitorId?: CompetitorId;
+    /**
+     * Who decided.
+     */
+    by: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * A company the answers name that is not on the company list.
+ */
+export type CompetitorCandidate = {
+    id: CompetitorCandidateId;
+    /**
+     * How the answers spell it most often.
+     */
+    name: string;
+    status: CompetitorCandidateStatus;
+    /**
+     * How many answers name it.
+     */
+    answers: number;
+    /**
+     * The providers whose models named it.
+     */
+    providers: Array<string>;
+    /**
+     * The exact models that named it.
+     */
+    models: Array<string>;
+    /**
+     * The addresses the answers gave for it.
+     */
+    addresses: Array<string>;
+    /**
+     * When an answer last named it.
+     */
+    lastSeenAt: string;
+    decision?: CompetitorCandidateDecision;
+};
+
+/**
+ * How many candidates have each status.
+ */
+export type CompetitorCandidateCounts = {
+    /**
+     * Pending candidates.
+     */
+    pending: number;
+    /**
+     * Added ones.
+     */
+    added: number;
+    /**
+     * Dismissed ones.
+     */
+    dismissed: number;
+};
+
+/**
+ * The competitor candidates with one status.
+ */
+export type CompetitorCandidateList = {
+    /**
+     * The candidates, most answers first.
+     */
+    items: Array<CompetitorCandidate>;
+    counts: CompetitorCandidateCounts;
+};
+
+/**
  * An RFC 9457 problem detail.
  */
 export type Problem = {
@@ -1023,6 +1936,16 @@ export type CompetitorIdPath = CompetitorId;
  * The candidate's id.
  */
 export type CandidateId = TermCandidateId;
+
+/**
+ * The Prompt run's id.
+ */
+export type RunId = string;
+
+/**
+ * The competitor candidate's id.
+ */
+export type CompetitorCandidateIdPath = CompetitorCandidateId;
 
 /**
  * The credential's id.
@@ -1394,6 +2317,35 @@ export type CompareScansResponses = {
 
 export type CompareScansResponse = CompareScansResponses[keyof CompareScansResponses];
 
+export type GetAiReadinessData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai-readiness';
+};
+
+export type GetAiReadinessErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetAiReadinessError = GetAiReadinessErrors[keyof GetAiReadinessErrors];
+
+export type GetAiReadinessResponses = {
+    /**
+     * The table.
+     */
+    200: AiReadinessTable;
+};
+
+export type GetAiReadinessResponse = GetAiReadinessResponses[keyof GetAiReadinessResponses];
+
 export type StartRescansData = {
     /**
      * Which companies to scan again.
@@ -1757,6 +2709,457 @@ export type GetAnalysisResponses = {
 
 export type GetAnalysisResponse = GetAnalysisResponses[keyof GetAnalysisResponses];
 
+export type GetReadinessFilesData = {
+    body?: never;
+    path: {
+        /**
+         * The analysis's id.
+         */
+        analysisId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/analyses/{analysisId}/readiness-files';
+};
+
+export type GetReadinessFilesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetReadinessFilesError = GetReadinessFilesErrors[keyof GetReadinessFilesErrors];
+
+export type GetReadinessFilesResponses = {
+    /**
+     * The files.
+     */
+    200: ReadinessFiles;
+};
+
+export type GetReadinessFilesResponse = GetReadinessFilesResponses[keyof GetReadinessFilesResponses];
+
+export type GetPromptTestResultsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/prompt-test';
+};
+
+export type GetPromptTestResultsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptTestResultsError = GetPromptTestResultsErrors[keyof GetPromptTestResultsErrors];
+
+export type GetPromptTestResultsResponses = {
+    /**
+     * The results.
+     */
+    200: PromptTestResults;
+};
+
+export type GetPromptTestResultsResponse = GetPromptTestResultsResponses[keyof GetPromptTestResultsResponses];
+
+export type ListPromptAnswersData = {
+    body?: never;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: {
+        /**
+         * Only this provider's answers.
+         */
+        provider?: string;
+        /**
+         * Only this scope's answers.
+         */
+        scope?: PromptScope;
+        /**
+         * Only this belt family's answers.
+         */
+        family?: PromptFamily;
+        /**
+         * Only answers of this mode.
+         */
+        mode?: PromptMode;
+    };
+    url: '/api/v1/prompt-runs/{runId}/answers';
+};
+
+export type ListPromptAnswersErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListPromptAnswersError = ListPromptAnswersErrors[keyof ListPromptAnswersErrors];
+
+export type ListPromptAnswersResponses = {
+    /**
+     * The answers.
+     */
+    200: PromptAnswerList;
+};
+
+export type ListPromptAnswersResponse = ListPromptAnswersResponses[keyof ListPromptAnswersResponses];
+
+export type StartPromptRunData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-runs';
+};
+
+export type StartPromptRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartPromptRunError = StartPromptRunErrors[keyof StartPromptRunErrors];
+
+export type StartPromptRunResponses = {
+    /**
+     * The run, started.
+     */
+    202: PromptRun;
+};
+
+export type StartPromptRunResponse = StartPromptRunResponses[keyof StartPromptRunResponses];
+
+export type GetPromptTestSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-test';
+};
+
+export type GetPromptTestSettingsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptTestSettingsError = GetPromptTestSettingsErrors[keyof GetPromptTestSettingsErrors];
+
+export type GetPromptTestSettingsResponses = {
+    /**
+     * The settings.
+     */
+    200: PromptTestSettings;
+};
+
+export type GetPromptTestSettingsResponse = GetPromptTestSettingsResponses[keyof GetPromptTestSettingsResponses];
+
+export type UpdatePromptTestSettingsData = {
+    /**
+     * The settings to change.
+     */
+    body: PromptTestSettingsChange;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-test';
+};
+
+export type UpdatePromptTestSettingsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type UpdatePromptTestSettingsError = UpdatePromptTestSettingsErrors[keyof UpdatePromptTestSettingsErrors];
+
+export type UpdatePromptTestSettingsResponses = {
+    /**
+     * The settings after the change.
+     */
+    200: PromptTestSettings;
+};
+
+export type UpdatePromptTestSettingsResponse = UpdatePromptTestSettingsResponses[keyof UpdatePromptTestSettingsResponses];
+
+export type ListCompetitorCandidatesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only candidates with this status.
+         */
+        status?: CompetitorCandidateStatus;
+    };
+    url: '/api/v1/admin/competitor-candidates';
+};
+
+export type ListCompetitorCandidatesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListCompetitorCandidatesError = ListCompetitorCandidatesErrors[keyof ListCompetitorCandidatesErrors];
+
+export type ListCompetitorCandidatesResponses = {
+    /**
+     * The candidates and how many have each status.
+     */
+    200: CompetitorCandidateList;
+};
+
+export type ListCompetitorCandidatesResponse = ListCompetitorCandidatesResponses[keyof ListCompetitorCandidatesResponses];
+
+export type AddCompetitorCandidateData = {
+    /**
+     * The company to add.
+     */
+    body: NewCompetitor;
+    path: {
+        /**
+         * The competitor candidate's id.
+         */
+        competitorCandidateId: CompetitorCandidateId;
+    };
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/{competitorCandidateId}/add';
+};
+
+export type AddCompetitorCandidateErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddCompetitorCandidateError = AddCompetitorCandidateErrors[keyof AddCompetitorCandidateErrors];
+
+export type AddCompetitorCandidateResponses = {
+    /**
+     * The candidate, added.
+     */
+    200: CompetitorCandidate;
+};
+
+export type AddCompetitorCandidateResponse = AddCompetitorCandidateResponses[keyof AddCompetitorCandidateResponses];
+
+export type DismissCompetitorCandidateData = {
+    body?: never;
+    path: {
+        /**
+         * The competitor candidate's id.
+         */
+        competitorCandidateId: CompetitorCandidateId;
+    };
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss';
+};
+
+export type DismissCompetitorCandidateErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type DismissCompetitorCandidateError = DismissCompetitorCandidateErrors[keyof DismissCompetitorCandidateErrors];
+
+export type DismissCompetitorCandidateResponses = {
+    /**
+     * The candidate, dismissed.
+     */
+    200: CompetitorCandidate;
+};
+
+export type DismissCompetitorCandidateResponse = DismissCompetitorCandidateResponses[keyof DismissCompetitorCandidateResponses];
+
+export type UndoCompetitorCandidateData = {
+    body?: never;
+    path: {
+        /**
+         * The competitor candidate's id.
+         */
+        competitorCandidateId: CompetitorCandidateId;
+    };
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/{competitorCandidateId}/decision';
+};
+
+export type UndoCompetitorCandidateErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type UndoCompetitorCandidateError = UndoCompetitorCandidateErrors[keyof UndoCompetitorCandidateErrors];
+
+export type UndoCompetitorCandidateResponses = {
+    /**
+     * Undone.
+     */
+    204: void;
+};
+
+export type UndoCompetitorCandidateResponse = UndoCompetitorCandidateResponses[keyof UndoCompetitorCandidateResponses];
+
 export type GetMeData = {
     body?: never;
     path?: never;
@@ -2016,6 +3419,60 @@ export type ListLlmModelsResponses = {
 };
 
 export type ListLlmModelsResponse = ListLlmModelsResponses[keyof ListLlmModelsResponses];
+
+export type GetLlmKeyUsageData = {
+    body?: never;
+    path: {
+        /**
+         * The credential's id.
+         */
+        credentialId: LlmCredentialId;
+    };
+    query?: never;
+    url: '/api/v1/admin/llm/credentials/{credentialId}/usage';
+};
+
+export type GetLlmKeyUsageErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    502: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetLlmKeyUsageError = GetLlmKeyUsageErrors[keyof GetLlmKeyUsageErrors];
+
+export type GetLlmKeyUsageResponses = {
+    /**
+     * The usage.
+     */
+    200: LlmKeyUsage;
+};
+
+export type GetLlmKeyUsageResponse = GetLlmKeyUsageResponses[keyof GetLlmKeyUsageResponses];
 
 export type ClearActiveLlmData = {
     body?: never;

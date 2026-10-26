@@ -23,6 +23,13 @@ type Handler interface {
 	//
 	// POST /api/v1/competitors
 	AddCompetitor(ctx context.Context, req *NewCompetitor) (AddCompetitorRes, error)
+	// AddCompetitorCandidate implements addCompetitorCandidate operation.
+	//
+	// Administrators only. Adds the candidate as a company with the name and website given, which can then
+	// be scanned. 409 when it was decided already or another company has the website.
+	//
+	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/add
+	AddCompetitorCandidate(ctx context.Context, req *NewCompetitor, params AddCompetitorCandidateParams) (AddCompetitorCandidateRes, error)
 	// AddLlmCredential implements addLlmCredential operation.
 	//
 	// Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
@@ -60,6 +67,21 @@ type Handler interface {
 	//
 	// DELETE /api/v1/admin/llm/credentials/{credentialId}
 	DeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (DeleteLlmCredentialRes, error)
+	// DismissCompetitorCandidate implements dismissCompetitorCandidate operation.
+	//
+	// Administrators only. Dismisses the candidate; it stays dismissed in later runs until the decision is
+	// undone. 409 when it was decided already.
+	//
+	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss
+	DismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (DismissCompetitorCandidateRes, error)
+	// GetAiReadiness implements getAiReadiness operation.
+	//
+	// Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt
+	// on top as the baseline, the mirror of tribelt.nl below it as the target, then Tribelt's group
+	// companies, then the competitors, each band by name. A company no scan checked yet has no readiness.
+	//
+	// GET /api/v1/ai-readiness
+	GetAiReadiness(ctx context.Context) (GetAiReadinessRes, error)
 	// GetAnalysis implements getAnalysis operation.
 	//
 	// Returns the analysis, its progress, and every result found so far.
@@ -80,6 +102,15 @@ type Handler interface {
 	//
 	// GET /api/v1/competitors/{competitorId}/profile
 	GetCompetitorProfile(ctx context.Context, params GetCompetitorProfileParams) (GetCompetitorProfileRes, error)
+	// GetLlmKeyUsage implements getLlmKeyUsage operation.
+	//
+	// Administrators only. OpenRouter's own figures for an OpenRouter key (spend all time, today, this
+	// week and this month, its limit, the day's free-model requests); Anthropic's usage report of this
+	// month for an Anthropic key, per model, and the organisation's cost, read with a stored Anthropic
+	// Admin key (without one, nothing). Mistral reports nothing. 502 when the provider fails.
+	//
+	// GET /api/v1/admin/llm/credentials/{credentialId}/usage
+	GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (GetLlmKeyUsageRes, error)
 	// GetLlmSettings implements getLlmSettings operation.
 	//
 	// Returns every credential (never a secret), the model product matching uses now, the token budget,
@@ -94,12 +125,44 @@ type Handler interface {
 	//
 	// GET /api/v1/me
 	GetMe(ctx context.Context) (GetMeRes, error)
+	// GetPromptTestResults implements getPromptTestResults operation.
+	//
+	// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
+	// provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited /
+	// answers); how often the answers of the newest run with any name each company on the list; and the
+	// claims about Tribelt the answers got wrong, newest first.
+	//
+	// GET /api/v1/prompt-test
+	GetPromptTestResults(ctx context.Context) (GetPromptTestResultsRes, error)
+	// GetPromptTestSettings implements getPromptTestSettings operation.
+	//
+	// Administrators only. Returns the OpenRouter key Prompt runs use, the providers, the monthly budget
+	// and this month's spend, the schedule, the fact sheet and the prompt set.
+	//
+	// GET /api/v1/admin/prompt-test
+	GetPromptTestSettings(ctx context.Context) (GetPromptTestSettingsRes, error)
+	// GetReadinessFiles implements getReadinessFiles operation.
+	//
+	// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
+	// each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI
+	// readiness.
+	//
+	// GET /api/v1/admin/analyses/{analysisId}/readiness-files
+	GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (GetReadinessFilesRes, error)
 	// ListAnalyses implements listAnalyses operation.
 	//
 	// Returns at most `limit` analyses, newest first, without their results.
 	//
 	// GET /api/v1/analyses
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
+	// ListCompetitorCandidates implements listCompetitorCandidates operation.
+	//
+	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
+	// with how often and by which providers' models, and the addresses given; filtered by status, most
+	// answers first.
+	//
+	// GET /api/v1/admin/competitor-candidates
+	ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (ListCompetitorCandidatesRes, error)
 	// ListCompetitors implements listCompetitors operation.
 	//
 	// Returns every company the research studied and every company added since, with its names for each
@@ -114,6 +177,13 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/llm/credentials/{credentialId}/models
 	ListLlmModels(ctx context.Context, params ListLlmModelsParams) (ListLlmModelsRes, error)
+	// ListPromptAnswers implements listPromptAnswers operation.
+	//
+	// Returns a run's answers in full, each with how the extractor read it, optionally only one
+	// provider's, scope's, belt family's or mode's.
+	//
+	// GET /api/v1/prompt-runs/{runId}/answers
+	ListPromptAnswers(ctx context.Context, params ListPromptAnswersParams) (ListPromptAnswersRes, error)
 	// ListTermCandidates implements listTermCandidates operation.
 	//
 	// Administrators only. Every phrase a finished scan found that the terminology map did not hold,
@@ -154,13 +224,22 @@ type Handler interface {
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, req *NewAnalysis) (StartAnalysisRes, error)
+	// StartPromptRun implements startPromptRun operation.
+	//
+	// Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
+	// model of each large provider, from its own knowledge and with web search, each answer read by the
+	// extractor. It runs in the background within the month's budget. 409 while a run is running; 422
+	// without an OpenRouter key or a model to ask.
+	//
+	// POST /api/v1/admin/prompt-runs
+	StartPromptRun(ctx context.Context) (StartPromptRunRes, error)
 	// StartRescans implements startRescans operation.
 	//
 	// Administrators only. Queues one scan for each named company with a website, or with `all`, for every
 	// company that is not archived, has a website and has data: the desk research studied it, or it was
-	// scanned before; a company whose site turned its last scan away (`blocked`) is left out. A company
-	// whose scan is still queued or running is skipped, and so is one without a website. The scans run a
-	// few at a time, each site politely.
+	// scanned before. A company whose site turned its last scan away (`blocked`) is scanned too: its pages
+	// stay closed, but the scan records its AI readiness. A company whose scan is still queued or running
+	// is skipped, and so is one without a website. The scans run a few at a time, each site politely.
 	//
 	// POST /api/v1/admin/rescans
 	StartRescans(ctx context.Context, req *RescanRequest) (StartRescansRes, error)
@@ -172,6 +251,13 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/llm/credentials/{credentialId}/test
 	TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (TestLlmCredentialRes, error)
+	// UndoCompetitorCandidate implements undoCompetitorCandidate operation.
+	//
+	// Administrators only. Puts the candidate back among the pending ones; an added candidate's company is
+	// removed again, with its scans. 404 when it has no decision.
+	//
+	// DELETE /api/v1/admin/competitor-candidates/{competitorCandidateId}/decision
+	UndoCompetitorCandidate(ctx context.Context, params UndoCompetitorCandidateParams) (UndoCompetitorCandidateRes, error)
 	// UndoTermDecision implements undoTermDecision operation.
 	//
 	// Administrators only. Puts the candidate back in the queue; an accepted term leaves the terminology
@@ -187,6 +273,14 @@ type Handler interface {
 	//
 	// PATCH /api/v1/competitors/{competitorId}
 	UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (UpdateCompetitorRes, error)
+	// UpdatePromptTestSettings implements updatePromptTestSettings operation.
+	//
+	// Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact
+	// sheet. A new schedule counts from now; a new fact sheet is a new version. 422 for a key that is no
+	// readable OpenRouter key or a value that breaks a rule.
+	//
+	// PATCH /api/v1/admin/prompt-test
+	UpdatePromptTestSettings(ctx context.Context, req *PromptTestSettingsChange) (UpdatePromptTestSettingsRes, error)
 	// NewError creates *ProblemStatusCode from error returned by handler.
 	//
 	// Used for common default response.

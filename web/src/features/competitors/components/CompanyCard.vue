@@ -11,6 +11,9 @@ import RoundedPhoto from '../../../shared/ui/RoundedPhoto.vue'
 import { isInProgress, progress } from '../../scan/domain/status'
 import { useCompany } from '../composables/useCompany'
 import CompanyAdmin from './CompanyAdmin.vue'
+import CompanyReadiness from '../../readiness/components/CompanyReadiness.vue'
+import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
+import { mentionLine } from '../../prompt-test/domain/results'
 import { type Company, companyTerms, lastScanLabel, scanCountLabel, scanLinkLabel } from '../domain/company'
 import { beltRows, companyKind, termsTitle, whereLine } from '../domain/list'
 
@@ -28,6 +31,9 @@ const newest = computed(() => props.company.lastScan ?? scans.value[0])
 const lastScan = computed(() => lastScanLabel(newest.value))
 /** The scan running now, if one is, for its progress bar. */
 const running = computed(() => (newest.value && isInProgress(newest.value.status) ? newest.value : undefined))
+const { results: prompts } = usePromptResults()
+/** How often the latest Prompt run's answers name the company. */
+const mentioned = computed(() => mentionLine(prompts.value, props.company.id))
 </script>
 
 <template>
@@ -78,7 +84,7 @@ const running = computed(() => (newest.value && isInProgress(newest.value.status
       <p v-else-if="company.scans === 0" class="m-0 text-ink-2 stage:text-[28px]">No scan of its website has run yet.</p>
       <p v-if="newest?.blocked" class="m-0 text-sm text-ink-2 stage:text-[26px]" data-testid="blocked-note">
         Its site lets people in but turns automated readers away with bot protection, so the scan could not read it.
-        Only the site's owner can let scanners in. Re-scanning all companies leaves it out; Re-scan still tries.
+        Only the site's owner can let scanners in. Each scan still records its AI readiness.
       </p>
       <ProgressBar
         v-if="running"
@@ -90,6 +96,12 @@ const running = computed(() => (newest.value && isInProgress(newest.value.status
     </div>
     <p v-if="company.archived" class="m-0 font-medium text-orange-ink stage:text-[28px]">Archived: hidden from the list and the re-scans.</p>
     <CompanyAdmin v-if="isAdmin" :company="company" @removed="emit('removed')" />
+
+    <CompanyReadiness :company-id="company.id" />
+    <p v-if="mentioned" class="m-0 text-sm text-ink-2 stage:text-[26px]" data-testid="prompt-mentions">
+      <span class="font-semibold text-black">AI answers:</span> {{ mentioned }}
+      <RouterLink to="/ai-search/prompt-test" class="underline underline-offset-4">The Prompt test</RouterLink>
+    </p>
 
     <table class="w-full border-collapse stage:text-[30px]">
       <caption class="pb-2 text-left text-sm text-muted stage:pb-3 stage:text-[26px]">Its names for Tribelt's belt families</caption>

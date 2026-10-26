@@ -13,6 +13,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addAnalysisBotRule = `-- name: AddAnalysisBotRule :exec
+INSERT INTO analysis_bot_rules (analysis_id, position, bot, access, named)
+VALUES ($1, $2, $3, $4, $5)
+`
+
+type AddAnalysisBotRuleParams struct {
+	AnalysisID uuid.UUID
+	Position   int64
+	Bot        string
+	Access     string
+	Named      bool
+}
+
+func (q *Queries) AddAnalysisBotRule(ctx context.Context, arg AddAnalysisBotRuleParams) error {
+	_, err := q.db.Exec(ctx, addAnalysisBotRule,
+		arg.AnalysisID,
+		arg.Position,
+		arg.Bot,
+		arg.Access,
+		arg.Named,
+	)
+	return err
+}
+
 const addAnalysisEquivalent = `-- name: AddAnalysisEquivalent :exec
 INSERT INTO analysis_equivalents (analysis_id, position, product, family, reason)
 VALUES ($1, $2, $3, $4, $5)
@@ -156,6 +180,88 @@ func (q *Queries) AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams
 		arg.Language,
 		arg.WordCount,
 		arg.Family,
+	)
+	return err
+}
+
+const addAnalysisReadiness = `-- name: AddAnalysisReadiness :exec
+INSERT INTO analysis_readiness (
+    analysis_id, robots, sitemap_declared, sitemap_files, sitemap_addresses, sitemap_languages, llms_present,
+    llms_bytes, llms_links, llms_full_present, markdown, home_read, structured_data, languages, cms, seo_plugin,
+    bot_protection
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+`
+
+type AddAnalysisReadinessParams struct {
+	AnalysisID       uuid.UUID
+	Robots           string
+	SitemapDeclared  bool
+	SitemapFiles     int64
+	SitemapAddresses int64
+	SitemapLanguages []string
+	LlmsPresent      bool
+	LlmsBytes        int64
+	LlmsLinks        int64
+	LlmsFullPresent  bool
+	Markdown         bool
+	HomeRead         bool
+	StructuredData   []string
+	Languages        []string
+	Cms              string
+	SeoPlugin        string
+	BotProtection    string
+}
+
+func (q *Queries) AddAnalysisReadiness(ctx context.Context, arg AddAnalysisReadinessParams) error {
+	_, err := q.db.Exec(ctx, addAnalysisReadiness,
+		arg.AnalysisID,
+		arg.Robots,
+		arg.SitemapDeclared,
+		arg.SitemapFiles,
+		arg.SitemapAddresses,
+		arg.SitemapLanguages,
+		arg.LlmsPresent,
+		arg.LlmsBytes,
+		arg.LlmsLinks,
+		arg.LlmsFullPresent,
+		arg.Markdown,
+		arg.HomeRead,
+		arg.StructuredData,
+		arg.Languages,
+		arg.Cms,
+		arg.SeoPlugin,
+		arg.BotProtection,
+	)
+	return err
+}
+
+const addAnalysisReadinessFiles = `-- name: AddAnalysisReadinessFiles :exec
+INSERT INTO analysis_readiness_files (
+    analysis_id, robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+`
+
+type AddAnalysisReadinessFilesParams struct {
+	AnalysisID        uuid.UUID
+	RobotsTxt         string
+	RobotsTruncated   bool
+	LlmsTxt           string
+	LlmsTruncated     bool
+	LlmsFullTxt       string
+	LlmsFullTruncated bool
+}
+
+func (q *Queries) AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error {
+	_, err := q.db.Exec(ctx, addAnalysisReadinessFiles,
+		arg.AnalysisID,
+		arg.RobotsTxt,
+		arg.RobotsTruncated,
+		arg.LlmsTxt,
+		arg.LlmsTruncated,
+		arg.LlmsFullTxt,
+		arg.LlmsFullTruncated,
 	)
 	return err
 }
@@ -402,6 +508,82 @@ func (q *Queries) GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow
 	return i, err
 }
 
+const getAnalysisReadiness = `-- name: GetAnalysisReadiness :many
+SELECT analysis_id, robots, sitemap_declared, sitemap_files, sitemap_addresses, sitemap_languages, llms_present,
+    llms_bytes, llms_links, llms_full_present, markdown, home_read, structured_data, languages, cms, seo_plugin,
+    bot_protection
+FROM analysis_readiness
+WHERE analysis_id = $1
+`
+
+// An analysis's readiness, or no row when it has none.
+func (q *Queries) GetAnalysisReadiness(ctx context.Context, analysisID uuid.UUID) ([]AnalysisReadiness, error) {
+	rows, err := q.db.Query(ctx, getAnalysisReadiness, analysisID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnalysisReadiness{}
+	for rows.Next() {
+		var i AnalysisReadiness
+		if err := rows.Scan(
+			&i.AnalysisID,
+			&i.Robots,
+			&i.SitemapDeclared,
+			&i.SitemapFiles,
+			&i.SitemapAddresses,
+			&i.SitemapLanguages,
+			&i.LlmsPresent,
+			&i.LlmsBytes,
+			&i.LlmsLinks,
+			&i.LlmsFullPresent,
+			&i.Markdown,
+			&i.HomeRead,
+			&i.StructuredData,
+			&i.Languages,
+			&i.Cms,
+			&i.SeoPlugin,
+			&i.BotProtection,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAnalysisReadinessFiles = `-- name: GetAnalysisReadinessFiles :one
+SELECT robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated
+FROM analysis_readiness_files
+WHERE analysis_id = $1
+`
+
+type GetAnalysisReadinessFilesRow struct {
+	RobotsTxt         string
+	RobotsTruncated   bool
+	LlmsTxt           string
+	LlmsTruncated     bool
+	LlmsFullTxt       string
+	LlmsFullTruncated bool
+}
+
+func (q *Queries) GetAnalysisReadinessFiles(ctx context.Context, analysisID uuid.UUID) (GetAnalysisReadinessFilesRow, error) {
+	row := q.db.QueryRow(ctx, getAnalysisReadinessFiles, analysisID)
+	var i GetAnalysisReadinessFilesRow
+	err := row.Scan(
+		&i.RobotsTxt,
+		&i.RobotsTruncated,
+		&i.LlmsTxt,
+		&i.LlmsTruncated,
+		&i.LlmsFullTxt,
+		&i.LlmsFullTruncated,
+	)
+	return i, err
+}
+
 const keywordFirstScans = `-- name: KeywordFirstScans :many
 SELECT k.phrase, k.language, min(a.scan_number)::bigint AS first_scan
 FROM analysis_keywords AS k
@@ -577,6 +759,102 @@ func (q *Queries) LatestMatchedProducts(ctx context.Context) ([]LatestMatchedPro
 	return items, nil
 }
 
+const latestReadinessPerCompetitor = `-- name: LatestReadinessPerCompetitor :many
+SELECT DISTINCT ON (a.competitor_id) a.competitor_id::text AS competitor_id, a.id, a.url, a.max_pages, a.status,
+    a.failure, a.pages_crawled, a.matching, a.created_by, a.created_at, a.finished_at, a.matching_model,
+    coalesce(a.scan_number, 0)::bigint AS scan_number,
+    r.robots, r.sitemap_declared, r.sitemap_files, r.sitemap_addresses, r.sitemap_languages, r.llms_present,
+    r.llms_bytes, r.llms_links, r.llms_full_present, r.markdown, r.home_read, r.structured_data, r.languages, r.cms,
+    r.seo_plugin, r.bot_protection
+FROM analyses AS a
+JOIN analysis_readiness AS r ON r.analysis_id = a.id
+WHERE a.competitor_id IS NOT NULL
+ORDER BY a.competitor_id, a.created_at DESC, a.id
+`
+
+type LatestReadinessPerCompetitorRow struct {
+	CompetitorID     string
+	ID               uuid.UUID
+	Url              string
+	MaxPages         int64
+	Status           string
+	Failure          pgtype.Text
+	PagesCrawled     int64
+	Matching         string
+	CreatedBy        string
+	CreatedAt        time.Time
+	FinishedAt       pgtype.Timestamptz
+	MatchingModel    pgtype.Text
+	ScanNumber       int64
+	Robots           string
+	SitemapDeclared  bool
+	SitemapFiles     int64
+	SitemapAddresses int64
+	SitemapLanguages []string
+	LlmsPresent      bool
+	LlmsBytes        int64
+	LlmsLinks        int64
+	LlmsFullPresent  bool
+	Markdown         bool
+	HomeRead         bool
+	StructuredData   []string
+	Languages        []string
+	Cms              string
+	SeoPlugin        string
+	BotProtection    string
+}
+
+// Each company's newest scan that recorded its AI readiness, with that readiness.
+func (q *Queries) LatestReadinessPerCompetitor(ctx context.Context) ([]LatestReadinessPerCompetitorRow, error) {
+	rows, err := q.db.Query(ctx, latestReadinessPerCompetitor)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LatestReadinessPerCompetitorRow{}
+	for rows.Next() {
+		var i LatestReadinessPerCompetitorRow
+		if err := rows.Scan(
+			&i.CompetitorID,
+			&i.ID,
+			&i.Url,
+			&i.MaxPages,
+			&i.Status,
+			&i.Failure,
+			&i.PagesCrawled,
+			&i.Matching,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.FinishedAt,
+			&i.MatchingModel,
+			&i.ScanNumber,
+			&i.Robots,
+			&i.SitemapDeclared,
+			&i.SitemapFiles,
+			&i.SitemapAddresses,
+			&i.SitemapLanguages,
+			&i.LlmsPresent,
+			&i.LlmsBytes,
+			&i.LlmsLinks,
+			&i.LlmsFullPresent,
+			&i.Markdown,
+			&i.HomeRead,
+			&i.StructuredData,
+			&i.Languages,
+			&i.Cms,
+			&i.SeoPlugin,
+			&i.BotProtection,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAnalyses = `-- name: ListAnalyses :many
 SELECT id, url, max_pages, status, failure, pages_crawled, matching, created_by, created_at, finished_at, competitor_id, matching_model, coalesce(scan_number, 0)::bigint AS scan_number
 FROM analyses
@@ -686,6 +964,46 @@ func (q *Queries) ListAnalysesByCompetitor(ctx context.Context, arg ListAnalyses
 			&i.CompetitorID,
 			&i.MatchingModel,
 			&i.ScanNumber,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAnalysisBotRules = `-- name: ListAnalysisBotRules :many
+SELECT analysis_id, bot, access, named
+FROM analysis_bot_rules
+WHERE analysis_id = ANY($1::uuid [])
+ORDER BY analysis_id, position
+`
+
+type ListAnalysisBotRulesRow struct {
+	AnalysisID uuid.UUID
+	Bot        string
+	Access     string
+	Named      bool
+}
+
+// The crawler rules of the analyses named, in each one's order.
+func (q *Queries) ListAnalysisBotRules(ctx context.Context, ids []uuid.UUID) ([]ListAnalysisBotRulesRow, error) {
+	rows, err := q.db.Query(ctx, listAnalysisBotRules, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAnalysisBotRulesRow{}
+	for rows.Next() {
+		var i ListAnalysisBotRulesRow
+		if err := rows.Scan(
+			&i.AnalysisID,
+			&i.Bot,
+			&i.Access,
+			&i.Named,
 		); err != nil {
 			return nil, err
 		}

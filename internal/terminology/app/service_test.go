@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -89,7 +90,31 @@ func (r *reviews) Undo(_ context.Context, id string) (bool, error) {
 }
 
 func newService(c catalogue) *app.Service {
-	return app.New(c, &reviews{}, evidence(nil, nil), func() time.Time { return now })
+	return app.New(c, &reviews{}, evidence(nil, nil), sightings(nil, nil), func() time.Time { return now })
+}
+
+func sightings(seen []domain.Sighting, err error) app.Sightings {
+	return func(context.Context) ([]domain.Sighting, error) { return seen, err }
+}
+
+// The companies whose newest scan found a term use it: they are listed per term, sorted, once.
+func TestFoundBy(t *testing.T) {
+	seen := []domain.Sighting{
+		{Text: "spiral belt", Language: "en", CompanyID: "x"},
+		{Text: "spiral belt", Language: "en", CompanyID: "a"},
+		{Text: "spiral belt", Language: "en", CompanyID: "x"},
+		{Text: "Spiralband", Language: "de", CompanyID: "a"},
+	}
+	svc := app.New(catalogue{}, &reviews{}, evidence(nil, nil), sightings(seen, nil), func() time.Time { return now })
+	got, err := svc.FoundBy(t.Context())
+	if err != nil || len(got) != 2 || !slices.Equal(got[domain.TermKey{Text: "spiral belt", Language: "en"}], []string{"a", "x"}) ||
+		!slices.Equal(got[domain.Term{Text: "Spiralband", Language: "de"}.Key()], []string{"a"}) {
+		t.Fatalf("FoundBy = %v, %v", got, err)
+	}
+	failing := app.New(catalogue{}, &reviews{}, evidence(nil, nil), sightings(nil, errors.New("down")), func() time.Time { return now })
+	if _, err := failing.FoundBy(t.Context()); err == nil {
+		t.Fatal("FoundBy with failing sightings succeeded")
+	}
 }
 
 func evidence(obs []domain.Observation, err error) app.Evidence {
@@ -110,7 +135,7 @@ func observations() []domain.Observation {
 }
 
 func review(r *reviews) *app.Service {
-	return app.New(catalogue{terms: many(3)}, r, evidence(observations(), nil), func() time.Time { return now })
+	return app.New(catalogue{terms: many(3)}, r, evidence(observations(), nil), sightings(nil, nil), func() time.Time { return now })
 }
 
 func TestAcceptAddsTheTermToTheMap(t *testing.T) {
@@ -172,7 +197,7 @@ func TestReviewFailures(t *testing.T) {
 	accept := domain.Acceptance{Text: "x", Language: "en", Family: "other", Tier: "broad"}
 	id := domain.CandidateID("belt cleaning")
 	failing := func(r *reviews, e app.Evidence) *app.Service {
-		return app.New(catalogue{}, r, e, func() time.Time { return now })
+		return app.New(catalogue{}, r, e, sightings(nil, nil), func() time.Time { return now })
 	}
 	checks := map[string]func() error{
 		"Load": func() error { return failing(&reviews{listErr: errBoom}, evidence(nil, nil)).Load(ctx) },

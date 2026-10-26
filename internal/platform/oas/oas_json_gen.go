@@ -857,11 +857,18 @@ func (s *BeltName) encodeFields(e *jx.Encoder) {
 		e.FieldStart("family")
 		s.Family.Encode(e)
 	}
+	{
+		if s.FromScan.Set {
+			e.FieldStart("fromScan")
+			s.FromScan.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfBeltName = [2]string{
+var jsonFieldsNameOfBeltName = [3]string{
 	0: "name",
 	1: "family",
+	2: "fromScan",
 }
 
 // Decode decodes BeltName from json.
@@ -894,6 +901,16 @@ func (s *BeltName) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"family\"")
+			}
+		case "fromScan":
+			if err := func() error {
+				s.FromScan.Reset()
+				if err := s.FromScan.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"fromScan\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -6477,6 +6494,12 @@ func (s *RescanRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Unscanned.Set {
+			e.FieldStart("unscanned")
+			s.Unscanned.Encode(e)
+		}
+	}
+	{
 		if s.MaxPages.Set {
 			e.FieldStart("maxPages")
 			s.MaxPages.Encode(e)
@@ -6484,10 +6507,11 @@ func (s *RescanRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRescanRequest = [3]string{
+var jsonFieldsNameOfRescanRequest = [4]string{
 	0: "competitorIds",
 	1: "all",
-	2: "maxPages",
+	2: "unscanned",
+	3: "maxPages",
 }
 
 // Decode decodes RescanRequest from json.
@@ -6525,6 +6549,16 @@ func (s *RescanRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"all\"")
+			}
+		case "unscanned":
+			if err := func() error {
+				s.Unscanned.Reset()
+				if err := s.Unscanned.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"unscanned\"")
 			}
 		case "maxPages":
 			if err := func() error {
@@ -6975,19 +7009,30 @@ func (s *Term) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
+		if s.FoundBy != nil {
+			e.FieldStart("foundBy")
+			e.ArrStart()
+			for _, elem := range s.FoundBy {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		e.FieldStart("source")
 		e.Str(s.Source)
 	}
 }
 
-var jsonFieldsNameOfTerm = [7]string{
+var jsonFieldsNameOfTerm = [8]string{
 	0: "origin",
 	1: "term",
 	2: "language",
 	3: "family",
 	4: "tier",
 	5: "usedBy",
-	6: "source",
+	6: "foundBy",
+	7: "source",
 }
 
 // Decode decodes Term from json.
@@ -7071,8 +7116,25 @@ func (s *Term) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"usedBy\"")
 			}
+		case "foundBy":
+			if err := func() error {
+				s.FoundBy = make([]CompetitorId, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem CompetitorId
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.FoundBy = append(s.FoundBy, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"foundBy\"")
+			}
 		case "source":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.Source = string(v)
@@ -7093,7 +7155,7 @@ func (s *Term) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b01111111,
+		0b10111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

@@ -1,6 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { term, termSearch } from '../../../testing/fixtures'
+import { competitor, term, termSearch } from '../../../testing/fixtures'
 import { json, problem } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { useTermMap } from './useTermSearch'
@@ -14,11 +14,16 @@ describe('useTermMap', () => {
     expect(state.error.value).toBeNull()
   })
 
-  it('asks for the whole map at once', async () => {
-    const { state, sent } = mountComposable(useTermMap, () => json(termSearch([term()], { total: 146 })))
+  it('asks for the whole map at once, with the makers the scans found', async () => {
+    const { state, sent } = mountComposable(useTermMap, (request) =>
+      new URL(request.url).pathname === '/api/v1/competitors'
+        ? json({ items: [competitor('Twentebelt'), competitor('Pelger GmbH', { id: 'pelger' })] })
+        : json(termSearch([term({ foundBy: ['pelger', 'twentebelt'] })], { total: 146 })),
+    )
     await flushPromises()
-    expect(sent).toEqual(['GET /api/v1/terms?limit=200'])
-    expect(state.terms.value).toEqual([term()])
+    expect([...sent].sort()).toEqual(['GET /api/v1/competitors', 'GET /api/v1/terms?limit=200'])
+    // Twentebelt is named already; Pelger only a scan found.
+    expect(state.terms.value).toEqual([{ ...term({ foundBy: ['pelger', 'twentebelt'] }), usedBy: ['Twentebelt', 'Pelger'], scanMakers: ['Pelger'] }])
     expect(state.total.value).toBe(146)
   })
 

@@ -175,6 +175,21 @@ type Repository interface {
 	Fail(ctx context.Context, id uuid.UUID, reason string, at time.Time) error
 }
 
+// Sighting is a map term a company's newest finished scan found on its site.
+type Sighting struct {
+	CompetitorID string
+	Term         string
+	Language     string
+}
+
+// MatchedProduct is a product the language model matched to a Tribelt family on a company's
+// newest finished scan whose matching ran.
+type MatchedProduct struct {
+	CompetitorID string
+	Product      string
+	Family       string
+}
+
 // CompetitorStats is how often one company's website was analysed, and its newest analysis.
 type CompetitorStats struct {
 	Count int

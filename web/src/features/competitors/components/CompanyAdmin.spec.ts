@@ -177,6 +177,27 @@ describe('the administrator tools', () => {
     expect(wrapper.text()).toContain('Queued 2 scans. Skipped 1: Märtens (a scan of it is still queued or running).')
   })
 
+  it('scans the unscanned, and says which companies the sweeps leave out', async () => {
+    const sent: Sent[] = []
+    const fresh = competitor('New Belts', { id: 'new-belts', source: 'added', scans: 0, websiteUrl: 'https://new-belts.test/', host: 'new-belts.test' })
+    const siteless = competitor('No Site', { id: 'no-site', websiteUrl: undefined, host: undefined, website: '' })
+    const { wrapper } = await mountApp(api(sent, { 'GET /api/v1/competitors': () => json({ items: [twentebelt, added, fresh, siteless] }) }), '/competitors')
+    expect(wrapper.text()).toContain('Left out of both: 1 company without a website.')
+    const budget = wrapper.get('input[type="number"]')
+    await budget.setValue('60')
+    await budget.trigger('change')
+    await button(wrapper, 'Scan the 1 unscanned').trigger('click')
+    expect(wrapper.get('#rescan-question').text()).toContain('Scan 1 company, up to 60 pages each?')
+    await button(wrapper, 'Scan 1 company').trigger('click')
+    await settle()
+    expect(sent).toEqual([{ method: 'POST', path: '/api/v1/admin/rescans', body: { unscanned: true, maxPages: 60 } }])
+  })
+
+  it('says when every company with a website was scanned', async () => {
+    const { wrapper } = await mountApp(api([]), '/competitors')
+    expect(button(wrapper, 'Every company with a website was scanned').attributes('disabled')).toBeDefined()
+  })
+
   it('follows the queued scans until each has finished', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
     const sent: Sent[] = []

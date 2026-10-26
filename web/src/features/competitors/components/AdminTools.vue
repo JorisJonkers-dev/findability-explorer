@@ -9,7 +9,7 @@ import { progress as scanProgress } from '../../scan/domain/status'
 import { useAddCompany, useRescan } from '../composables/useCompanyAdmin'
 import type { AnalysisSummary } from '../../../infrastructure/api/types.gen'
 import type { Company } from '../domain/company'
-import { checkCompanyForm, rescanCandidates, rescanSummary } from '../domain/admin'
+import { checkCompanyForm, leftOut, rescanCandidates, rescanSummary, unscannedCandidates } from '../domain/admin'
 
 const props = defineProps<{ companies: readonly Company[] }>()
 const emit = defineEmits<{ added: [id: string] }>()
@@ -17,8 +17,13 @@ const emit = defineEmits<{ added: [id: string] }>()
 const { pages } = usePageBudget()
 const { isQueuing, batch, progress, error: rescanError, rescan } = useRescan()
 const candidates = computed(() => rescanCandidates(props.companies).length)
-// A re-scan of all reads many sites and uses the language model for each, so it asks first.
-const confirming = ref(false)
+const unscanned = computed(() => unscannedCandidates(props.companies).length)
+const leftOutNote = computed(() => leftOut(props.companies))
+// A sweep reads many sites and uses the language model for each, so it asks first.
+type Sweep = 'all' | 'unscanned'
+const confirming = ref<Sweep | null>(null)
+const sweepCount = computed(() => (confirming.value === 'unscanned' ? unscanned.value : candidates.value))
+const busy = computed(() => isQueuing.value || (progress.value !== null && !progress.value.finished))
 const { isAdding, error: addError, add, reset } = useAddCompany()
 const name = ref('')
 const website = ref('')
@@ -36,9 +41,11 @@ function companyOf(scan: AnalysisSummary): string {
 const BUTTON = 'min-h-11 rounded-full border-2 px-5 font-medium stage:min-h-[76px] stage:border-[3px] stage:px-8 stage:text-[26px]'
 const FIELD = 'h-11 min-w-0 rounded-xl border-2 bg-white px-3 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-5 stage:text-[28px]'
 
-function rescanAll(): void {
-  confirming.value = false
-  rescan({ all: true, maxPages: pages.value })
+function sweep(): void {
+  const which = confirming.value
+  confirming.value = null
+  if (which === 'unscanned') rescan({ unscanned: true, maxPages: pages.value })
+  else if (which === 'all') rescan({ all: true, maxPages: pages.value })
 }
 
 function budget(event: Event): void {
@@ -78,27 +85,38 @@ function submit(): void {
           @change="budget"
         />
       </label>
-      <button
-        v-if="!confirming"
-        type="button"
-        :disabled="isQueuing || (progress !== null && !progress.finished)"
-        :class="BUTTON"
-        class="border-black bg-white text-black hover:bg-black hover:text-white disabled:opacity-70"
-        @click="confirming = true"
-      >
-        {{ isQueuing ? 'Queuing…' : `Re-scan all ${String(candidates)} companies with data` }}
-      </button>
+      <template v-if="confirming === null">
+        <button
+          type="button"
+          :disabled="busy"
+          :class="BUTTON"
+          class="border-black bg-white text-black hover:bg-black hover:text-white disabled:opacity-70"
+          @click="confirming = 'all'"
+        >
+          {{ isQueuing ? 'Queuing…' : `Re-scan all ${String(candidates)} companies with data` }}
+        </button>
+        <button
+          type="button"
+          :disabled="busy || unscanned === 0"
+          :class="BUTTON"
+          class="border-black bg-white text-black hover:bg-black hover:text-white disabled:opacity-70"
+          @click="confirming = 'unscanned'"
+        >
+          {{ unscanned === 0 ? 'Every company with a website was scanned' : `Scan the ${String(unscanned)} unscanned` }}
+        </button>
+      </template>
     </div>
+    <p v-if="leftOutNote" class="m-0 text-sm text-ink-2 stage:text-[26px]">{{ leftOutNote }}</p>
     <div v-if="confirming" role="group" aria-labelledby="rescan-question" class="flex flex-col gap-3 rounded-2xl bg-white p-4 stage:gap-5 stage:p-8">
       <p id="rescan-question" class="m-0 text-sm stage:text-[26px]">
-        Re-scan {{ candidates }} companies, up to {{ pages }} pages each? Each scan also uses the language model, so this spends
-        part of the monthly budget.
+        {{ confirming === 'unscanned' ? 'Scan' : 'Re-scan' }} {{ sweepCount }} {{ sweepCount === 1 ? 'company' : 'companies' }}, up to
+        {{ pages }} pages each? Each scan also uses the language model, so this spends part of the monthly budget.
       </p>
       <div class="flex flex-wrap gap-3">
-        <button type="button" :class="BUTTON" class="border-black bg-black text-white hover:bg-ink-2" @click="rescanAll">
-          Re-scan {{ candidates }} companies
+        <button type="button" :class="BUTTON" class="border-black bg-black text-white hover:bg-ink-2" @click="sweep">
+          {{ confirming === 'unscanned' ? 'Scan' : 'Re-scan' }} {{ sweepCount }} {{ sweepCount === 1 ? 'company' : 'companies' }}
         </button>
-        <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="confirming = false">Cancel</button>
+        <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="confirming = null">Cancel</button>
       </div>
     </div>
     <div v-if="summary || progress" class="flex flex-col gap-3 rounded-2xl bg-white p-4 stage:gap-5 stage:p-8" data-testid="rescan-progress">

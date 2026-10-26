@@ -9,9 +9,13 @@ conveyor belts are named across companies and languages, and analyses any websit
 - **Search terms** (`/terms`): search the terminology map (146 terms, 10 languages) from the
   group's desk research of 22 October 2026, plus every term an administrator accepted from the
   review queue, with filters by language, intent tier, belt family and company. Every filter lives
-  in the URL, so a view can be shared.
-- **Competitors** (`/competitors`): the 25 competitors and 3 group companies, with their own name
-  for each Tribelt belt family, and every company an administrator added.
+  in the URL, so a view can be shared. A term's makers are the companies the research or the
+  review named, plus every company whose newest finished scan found the term on its site (`foundBy`,
+  marked "(scan)"), so the counts, the per-company heat map and the ranking follow the scans.
+- **Competitors** (`/competitors`): the 25 competitors and 3 group companies, seeded from the desk
+  research, and every company an administrator added or a scan of a new website brought in. Each
+  has its own name for each Tribelt belt family: the research's, plus the products its newest scan
+  with product matching matched (`fromScan`).
 - **Scans** (`/scan/:id`): crawl up to 100 pages of a company's website (default 60) and report its
   most prominent search terms, the terms from the map it uses, and, when a language model is
   active, its products matched to Tribelt's families. The crawl starts from the home page, reads
@@ -44,9 +48,12 @@ review terms, and open the admin settings
   archives it (it leaves the list and the re-scans; its scans stay; restoring it brings it back).
   Nothing is removed while a scan of it is queued or running.
 - **Re-scans** (`POST /api/v1/admin/rescans`, administrators, on demand only): one scan per named
-  company, or of every company that is not archived, has a website and has data: the desk
-  research studied it, or it was scanned before. A company with a scan still queued or running is
-  skipped. Three scans run at a time, each on another company's site; the rest wait their turn.
+  company; with `all` of every company that is not archived, has a website and has data (the desk
+  research studied it, or it was scanned before); or with `unscanned` of every company that is not
+  archived and has a website no scan reached yet. A company without a website is never taken, nor
+  by `all` one whose site turned its last scan away (`blocked`: bot protection that lets people in
+  but not the crawler, which says what it is and does not pose as a browser). A company with a scan
+  still queued or running is skipped. Three scans run at a time, each on another company's site; the rest wait their turn.
   Administrators may start as many scans and re-scans as they like: there is no hourly limit and
   no cap on the queue.
 

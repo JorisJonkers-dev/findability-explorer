@@ -148,9 +148,14 @@ func sentence(err error) string {
 }
 
 func toCompetitor(l domain.Listed) oas.Competitor {
-	names := make([]oas.BeltName, 0, len(l.BeltNames))
-	for _, b := range l.BeltNames {
-		names = append(names, oas.BeltName{Name: b.Name, Family: oas.BeltFamily(b.Family)})
+	all := l.AllBeltNames()
+	names := make([]oas.BeltName, 0, len(all))
+	for _, b := range all {
+		n := oas.BeltName{Name: b.Name, Family: oas.BeltFamily(b.Family)}
+		if b.FromScan {
+			n.FromScan = oas.NewOptBool(true)
+		}
+		names = append(names, n)
 	}
 	languages := l.Languages
 	if languages == nil {

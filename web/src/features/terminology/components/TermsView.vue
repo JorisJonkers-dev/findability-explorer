@@ -47,7 +47,7 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
 </script>
 
 <template>
-  <SectionView section="terms" :title="title" :source="['Terminology map, desk research', '22 October 2026']">
+  <SectionView section="terms" :title="title" :source="['Terminology map, desk research of 22 October 2026', 'Makers: also found by live scans']">
     <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,0.85fr)_minmax(0,1.1fr)_minmax(0,1.25fr)] stage:gap-24">
       <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5 stage:col-span-3">{{ error }}</p>
 

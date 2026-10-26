@@ -159,6 +159,11 @@ describe('rankTerms', () => {
     ])
   })
 
+  it('marks the makers only a scan found', () => {
+    const scanned = { ...term({ term: 'spiral belt', usedBy: ['Märtens', 'Pelger'] }), scanMakers: ['Pelger'] }
+    expect(rankTerms([scanned], [scanned])[0]?.meta).toBe('English · Tri-Flex · Märtens, Pelger (scan)')
+  })
+
   it('describes each term and measures its bar against the whole map', () => {
     const [first] = rankTerms([MAP[2] as Term], MAP)
     expect(first).toEqual({

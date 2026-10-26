@@ -185,6 +185,33 @@ func (r *Repository) CompetitorStats(ctx context.Context) (map[string]domain.Com
 	return out, nil
 }
 
+// Sightings returns the map terms each company's newest finished scan found, once per company.
+func (r *Repository) Sightings(ctx context.Context) ([]domain.Sighting, error) {
+	rows, err := r.store.Queries().KnownTermSightings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("known-term sightings: %w", err)
+	}
+	out := make([]domain.Sighting, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Sighting{CompetitorID: row.CompetitorID, Term: row.Term, Language: row.Language})
+	}
+	return out, nil
+}
+
+// MatchedProducts returns the products matched on each company's newest finished scan whose
+// matching ran, in the order the model named them.
+func (r *Repository) MatchedProducts(ctx context.Context) ([]domain.MatchedProduct, error) {
+	rows, err := r.store.Queries().LatestMatchedProducts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("matched products: %w", err)
+	}
+	out := make([]domain.MatchedProduct, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.MatchedProduct{CompetitorID: row.CompetitorID, Product: row.Product, Family: row.Family})
+	}
+	return out, nil
+}
+
 // TokensSince sums the language-model tokens of analyses created at or after since.
 func (r *Repository) TokensSince(ctx context.Context, since time.Time) (int64, error) {
 	n, err := r.store.Queries().TokensSince(ctx, since)

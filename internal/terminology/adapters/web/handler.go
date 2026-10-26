@@ -16,6 +16,7 @@ import (
 // UseCases is what the adapter needs from the application layer.
 type UseCases interface {
 	Search(q domain.Query) domain.Result
+	FoundBy(ctx context.Context) (map[domain.TermKey][]string, error)
 	Candidates(ctx context.Context, status domain.Status) ([]domain.Candidate, domain.Counts, error)
 	Accept(ctx context.Context, user, id string, a domain.Acceptance) (domain.Candidate, error)
 	Reject(ctx context.Context, user, id string) (domain.Candidate, error)
@@ -148,7 +149,11 @@ func toCandidate(c domain.Candidate) oas.TermCandidate {
 
 // SearchTerms implements searchTerms. ogen has already checked every enum against the contract,
 // whose values are the domain's.
-func (h *Handler) SearchTerms(_ context.Context, params oas.SearchTermsParams) (oas.SearchTermsRes, error) {
+func (h *Handler) SearchTerms(ctx context.Context, params oas.SearchTermsParams) (oas.SearchTermsRes, error) {
+	foundBy, err := h.uc.FoundBy(ctx)
+	if err != nil {
+		return nil, err
+	}
 	result := h.uc.Search(domain.Query{
 		Text:     params.Q.Or(""),
 		Language: domain.Language(params.Language.Or("")),
@@ -159,7 +164,11 @@ func (h *Handler) SearchTerms(_ context.Context, params oas.SearchTermsParams) (
 	})
 	items := make([]oas.Term, 0, len(result.Items))
 	for _, t := range result.Items {
-		items = append(items, ToTerm(t))
+		term := ToTerm(t)
+		for _, id := range foundBy[t.Key()] {
+			term.FoundBy = append(term.FoundBy, oas.CompetitorId(id))
+		}
+		items = append(items, term)
 	}
 	return &oas.TermSearch{
 		Items: items,

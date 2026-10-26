@@ -5,6 +5,7 @@ package domain
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
 )
@@ -132,3 +133,34 @@ type Company struct {
 
 // Fold reduces s to the form searches compare; see fold.Fold.
 func Fold(s string) string { return fold.Fold(s) }
+
+// TermKey identifies a term of the map: its text in one language.
+type TermKey struct {
+	Text     string
+	Language Language
+}
+
+// Key is the term's key.
+func (t Term) Key() TermKey { return TermKey{Text: t.Text, Language: t.Language} }
+
+// Sighting is a map term a company's newest finished scan found on its site.
+type Sighting struct {
+	Text      string
+	Language  Language
+	CompanyID string
+}
+
+// FoundBy groups sightings by term: the ids of the companies that use each one, sorted, once each.
+func FoundBy(seen []Sighting) map[TermKey][]string {
+	out := map[TermKey][]string{}
+	for _, s := range seen {
+		k := TermKey{Text: s.Text, Language: s.Language}
+		if !slices.Contains(out[k], s.CompanyID) {
+			out[k] = append(out[k], s.CompanyID)
+		}
+	}
+	for k := range out {
+		slices.Sort(out[k])
+	}
+	return out
+}

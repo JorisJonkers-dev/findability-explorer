@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed } from 'vue'
 import type { LlmEvent } from '../../../infrastructure/api/types.gen'
 import { eventLines } from '../domain/events'
@@ -10,7 +11,7 @@ const lines = computed(() => eventLines(props.events))
 <template>
   <section aria-labelledby="events-title" class="flex flex-col gap-4">
     <h2 id="events-title" class="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">Recent changes</h2>
-    <ol v-if="lines.length > 0" class="m-0 flex max-h-[28rem] list-none flex-col overflow-y-auto p-0" tabindex="0" aria-labelledby="events-title">
+    <ol v-if="lines.length > 0" v-scroll-hint class="scroll-hint m-0 flex max-h-[28rem] list-none flex-col overflow-y-auto p-0" tabindex="0" aria-labelledby="events-title">
       <li v-for="line in lines" :key="line.key" class="flex flex-col gap-1 border-t-2 border-grey py-3">
         <span class="flex flex-wrap items-center gap-x-3 text-sm text-muted">
           <span>{{ line.when }}</span>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, ref } from 'vue'
 import { familyLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
 import PillButton from '../../../shared/ui/PillButton.vue'
@@ -57,7 +58,7 @@ const SHORT: Record<(typeof PRODUCT_FAMILIES)[number], string> = {
         <span>Country</span>
       </div>
       <p v-if="loading" class="m-0 py-4 text-muted">Loading the companies…</p>
-      <ul v-else aria-label="Companies" class="m-0 max-h-[26rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1">
+      <ul v-else v-scroll-hint aria-label="Companies" class="scroll-hint m-0 max-h-[26rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1">
         <li v-for="company in shown" :key="company.id" class="border-b border-grey">
           <button
             type="button"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, ref, watch } from 'vue'
 import type { CompetitorProfile, ProfileGroup } from '../../../infrastructure/api/types.gen'
 import { tierFill } from '../../../shared/tiers'
@@ -37,7 +38,7 @@ const latest = computed(() => props.profile.scan?.number)
           {{ groupTabLabel(g) }}
         </PillButton>
       </div>
-      <div class="flex flex-col gap-5 stage:min-h-0 stage:flex-1 stage:gap-8 stage:overflow-y-auto">
+      <div v-scroll-hint class="scroll-hint flex flex-col gap-5 stage:min-h-0 stage:flex-1 stage:gap-8 stage:overflow-y-auto">
         <p v-if="languages.length === 0" class="m-0 text-ink-2 stage:text-[30px]">
           The scan found no {{ group ? groupLabel(group.group).toLowerCase() : '' }} terms.
         </p>

@@ -149,6 +149,47 @@
   }
 }
 
+/*
+ * A list that scrolls says so: its scrollbar always shows, also where the system hides it until
+ * one scrolls, and while it holds more below (data-more, set by vScrollHint) its bottom edge
+ * fades. On the stage both are drawn at the slide's size.
+ */
+@utility scroll-hint {
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: var(--color-mist);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--color-silver);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-ink-2);
+  }
+  &[data-more] {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 3rem), transparent);
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-silver) var(--color-mist);
+  }
+
+  @variant stage {
+    &::-webkit-scrollbar {
+      width: 24px;
+    }
+    &[data-more] {
+      mask-image: linear-gradient(to bottom, #000 calc(100% - 120px), transparent);
+    }
+  }
+}
+
 /* A scan in progress: its bar slides slowly, like a belt on its drive. Still under reduced motion. */
 @utility belt {
   background-color: var(--color-orange);

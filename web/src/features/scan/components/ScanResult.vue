@@ -35,7 +35,7 @@ const model = computed(() => matchedBy(props.scan.matchingModel))
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 stage:min-h-0 stage:flex-1 stage:gap-5">
+  <div class="flex flex-col gap-4 stage:gap-5">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 stage:gap-5">
       <h3 class="m-0 font-display text-2xl leading-none font-semibold stage:text-[52px]">{{ siteHost(summary.url) }}</h3>
       <span class="text-sm text-muted stage:text-[24px]">{{ resultLine(scan.pages.length, newTermCount(scan.keywords)) }}</span>
@@ -79,7 +79,7 @@ const model = computed(() => matchedBy(props.scan.matchingModel))
       v-scroll-hint
       aria-label="Ranked phrases"
       tabindex="0"
-      class="scroll-hint m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1"
+      class="scroll-hint m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:overflow-visible"
     >
       <li
         v-for="(p, index) in ranked"

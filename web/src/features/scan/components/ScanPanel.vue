@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, useTemplateRef } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
@@ -32,8 +33,9 @@ defineExpose({
 
 <template>
   <section
+    v-scroll-hint
     aria-labelledby="scan-title"
-    class="flex flex-col gap-5 rounded-3xl bg-mist p-5 sm:p-8 stage:min-h-0 stage:gap-7 stage:rounded-[36px] stage:p-14"
+    class="scroll-hint flex flex-col gap-5 rounded-3xl bg-mist p-5 sm:p-8 stage:min-h-0 stage:gap-7 stage:overflow-y-auto stage:rounded-[36px] stage:p-14"
   >
     <div class="flex flex-col gap-2 stage:gap-2.5">
       <SectionHeading id="scan-title">{{ isAdmin ? 'Scan a competitor' : 'Scans' }}</SectionHeading>

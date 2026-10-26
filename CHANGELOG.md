@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.3.0...v1.4.0) (2026-10-26)
+
+
+### Features
+
+* keep to Dutch, German and English everywhere ([#18](https://github.com/JorisJonkers-dev/findability-explorer/issues/18)) ([a213abb](https://github.com/JorisJonkers-dev/findability-explorer/commit/a213abba16b147ccf29ad851d3cb1c30fc1702e0))
+* seed 19 more metal-belt makers from desk research of 26 October ([#17](https://github.com/JorisJonkers-dev/findability-explorer/issues/17)) ([8e2b1f2](https://github.com/JorisJonkers-dev/findability-explorer/commit/8e2b1f2f851dbce10723e49df5f786298603a271))
+
+
+### Bug Fixes
+
+* **web:** list all of a company's terms on its card, and follow every finished scan live ([#16](https://github.com/JorisJonkers-dev/findability-explorer/issues/16)) ([83594db](https://github.com/JorisJonkers-dev/findability-explorer/commit/83594db3ec2883037353d8597b944f6592648965))
+
 ## [1.3.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.2.0...v1.3.0) (2026-10-26)
 
 

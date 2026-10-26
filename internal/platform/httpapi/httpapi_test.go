@@ -328,8 +328,6 @@ func TestStartAnalysis(t *testing.T) {
 	cases := map[error]int{
 		domain.ErrInvalidTarget:     http.StatusUnprocessableEntity,
 		domain.ErrInvalidMaxPages:   http.StatusUnprocessableEntity,
-		analysisapp.ErrRateLimited:  http.StatusTooManyRequests,
-		analysisapp.ErrBusy:         http.StatusTooManyRequests,
 		analysisapp.ErrScanActive:   http.StatusConflict,
 		errors.New("database down"): http.StatusInternalServerError,
 	}

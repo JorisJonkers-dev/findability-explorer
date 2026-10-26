@@ -611,10 +611,6 @@ export type LlmBudget = {
      */
     usedThisMonth: number;
     /**
-     * How many analyses one account may start per hour.
-     */
-    analysesPerHour: number;
-    /**
      * The tokens one scan's product matching used on average, over every scan the language model answered for; 0 before the first.
      */
     averageTokensPerScan: number;
@@ -1412,10 +1408,6 @@ export type StartRescansErrors = {
     /**
      * An RFC 9457 problem.
      */
-    429: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
     default: Problem;
 };
 
@@ -1694,10 +1686,6 @@ export type StartAnalysisErrors = {
      * An RFC 9457 problem.
      */
     422: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    429: Problem;
     /**
      * An RFC 9457 problem.
      */

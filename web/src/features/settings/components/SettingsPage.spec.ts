@@ -69,7 +69,7 @@ describe('the settings page', () => {
 
     expect(wrapper.text()).toContain('claude-haiku-5-5 with Anthropic (Claude) · Vault key, the default.')
     expect(wrapper.text()).toContain('48,211 of 2,000,000 tokens used this month (2%)')
-    expect(wrapper.text()).toContain('10 analyses per account per hour')
+    expect(wrapper.text()).not.toContain('per hour')
     expect(wrapper.get('[data-testid="per-scan"]').text()).toBe(
       'A company scan uses 29,137 tokens on average, over 2 scans.What is left this month covers about 66 more scans.',
     )

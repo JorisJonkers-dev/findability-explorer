@@ -185,17 +185,6 @@ func (r *Repository) CompetitorStats(ctx context.Context) (map[string]domain.Com
 	return out, nil
 }
 
-// CountCreatedSince counts the analyses user started at or after since.
-func (r *Repository) CountCreatedSince(ctx context.Context, user string, since time.Time) (int, error) {
-	n, err := r.store.Queries().CountAnalysesCreatedSince(ctx, queries.CountAnalysesCreatedSinceParams{
-		CreatedBy: user, CreatedAt: since,
-	})
-	if err != nil {
-		return 0, fmt.Errorf("count analyses: %w", err)
-	}
-	return int(n), nil
-}
-
 // TokensSince sums the language-model tokens of analyses created at or after since.
 func (r *Repository) TokensSince(ctx context.Context, since time.Time) (int64, error) {
 	n, err := r.store.Queries().TokensSince(ctx, since)

@@ -211,7 +211,8 @@ func (UnimplementedHandler) SetActiveLlm(ctx context.Context, req *ActiveLlm) (r
 // Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
 // site, product and application pages first, following robots.txt and the site's sitemaps and language
 // versions. The analysis runs in the background; poll it until its status is done or failed. 409 while
-// a scan of the same company is queued or running.
+// a scan of the same company is queued or running. There is no limit on how many scans an
+// administrator starts: each waits its turn.
 //
 // POST /api/v1/analyses
 func (UnimplementedHandler) StartAnalysis(ctx context.Context, req *NewAnalysis) (r StartAnalysisRes, _ error) {

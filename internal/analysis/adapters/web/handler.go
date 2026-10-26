@@ -55,11 +55,6 @@ func (h *Handler) StartAnalysis(ctx context.Context, req *oas.NewAnalysis) (oas.
 			StatusCode: http.StatusConflict,
 			Response:   httpx.Problem(http.StatusConflict, capitalise(err.Error())),
 		}, nil
-	case errors.Is(err, app.ErrRateLimited), errors.Is(err, app.ErrBusy):
-		return &oas.StartAnalysisTooManyRequests{
-			StatusCode: http.StatusTooManyRequests,
-			Response:   httpx.Problem(http.StatusTooManyRequests, capitalise(err.Error())),
-		}, nil
 	case err != nil:
 		return nil, err
 	}

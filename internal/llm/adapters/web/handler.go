@@ -179,7 +179,6 @@ func toSettings(s app.Settings) oas.LlmSettings {
 		Budget: oas.LlmBudget{
 			MonthlyTokens: s.Budget.MonthlyTokens, UsedThisMonth: s.Budget.UsedThisMonth,
 			AverageTokensPerScan: s.Budget.AveragePerScan, ScansMatched: int64(s.Budget.ScansMatched),
-			AnalysesPerHour: int32(min(s.Budget.AnalysesPerHour, 100_000)), //nolint:gosec // bounded above
 		},
 	}
 	if s.Active != nil {

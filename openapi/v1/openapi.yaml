@@ -346,8 +346,6 @@ paths:
           $ref: "#/components/responses/Problem"
         "422":
           $ref: "#/components/responses/Problem"
-        "429":
-          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
   /api/v1/admin/term-candidates:
@@ -521,7 +519,8 @@ paths:
         Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on
         the same site, product and application pages first, following robots.txt and the site's
         sitemaps and language versions. The analysis runs in the background; poll it until its
-        status is done or failed. 409 while a scan of the same company is queued or running.
+        status is done or failed. 409 while a scan of the same company is queued or running. There
+        is no limit on how many scans an administrator starts: each waits its turn.
       tags: [analyses]
       requestBody:
         required: true
@@ -549,8 +548,6 @@ paths:
         "409":
           $ref: "#/components/responses/Problem"
         "422":
-          $ref: "#/components/responses/Problem"
-        "429":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -1625,7 +1622,7 @@ components:
       description: What analyses may spend on the language model.
       type: object
       additionalProperties: false
-      required: [monthlyTokens, usedThisMonth, analysesPerHour, averageTokensPerScan, scansMatched]
+      required: [monthlyTokens, usedThisMonth, averageTokensPerScan, scansMatched]
       properties:
         monthlyTokens:
           type: integer
@@ -1641,13 +1638,6 @@ components:
           maximum: 1000000000000
           description: The tokens analyses created this month used so far.
           example: 48211
-        analysesPerHour:
-          type: integer
-          format: int32
-          minimum: 0
-          maximum: 100000
-          description: How many analyses one account may start per hour.
-          example: 10
         averageTokensPerScan:
           type: integer
           format: int64

@@ -20,6 +20,5 @@ const meter = computed(() => budgetMeter(props.budget))
       <p class="m-0 text-lg font-semibold">{{ meter.perScan }}</p>
       <p v-if="meter.left" class="m-0 text-ink-2">{{ meter.left }}</p>
     </div>
-    <p class="m-0 text-lg">{{ meter.hourly }}</p>
   </section>
 </template>

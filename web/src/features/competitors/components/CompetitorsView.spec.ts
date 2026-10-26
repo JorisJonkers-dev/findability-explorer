@@ -302,15 +302,15 @@ describe('the scan form', () => {
 
   it("puts the server's refusal under the address or under the form", async () => {
     let status = 422
-    const refuse = { 'POST /api/v1/analyses': () => problem(status, 'Refused', status === 422 ? 'The host is not public.' : 'Too many scans. Wait a minute.') }
+    const refuse = { 'POST /api/v1/analyses': () => problem(status, 'Refused', status === 422 ? 'The host is not public.' : 'A scan of this company is still queued or running.') }
     const { wrapper } = await mountApp(api(refuse), '/competitors')
     await type(wrapper, 'https://www.example.com')
     await submit(wrapper)
     expect(wrapper.get('#scan-url-error').text()).toBe('The host is not public.')
-    status = 429
+    status = 409
     await submit(wrapper)
     expect(wrapper.find('#scan-url-error').exists()).toBe(false)
-    expect(wrapper.get('[role="alert"]').text()).toBe('Too many scans. Wait a minute.')
+    expect(wrapper.get('[role="alert"]').text()).toBe('A scan of this company is still queued or running.')
   })
 
   it('suggests known companies as you type, and picks one with the keyboard', async () => {

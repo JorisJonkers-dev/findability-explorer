@@ -7,22 +7,19 @@ export type BudgetMeter = {
   fraction: number
   /** "48,211 of 2,000,000 tokens used this month (2%)". */
   text: string
-  /** "10 analyses per account per hour". */
-  hourly: string
   /** What one company scan uses on average: "A company scan uses 29,137 tokens on average, over 2 scans." */
   perScan: string
   /** How many more scans this month's tokens cover, or null before there is an average. */
   left: string | null
 }
 
-/** The token budget as a meter, and the hourly limit in words. */
+/** The token budget as a meter, and what one scan uses. */
 export function budgetMeter(budget: LlmBudget): BudgetMeter {
   const fraction = budget.monthlyTokens > 0 ? Math.min(budget.usedThisMonth / budget.monthlyTokens, 1) : budget.usedThisMonth > 0 ? 1 : 0
   const share = `${String(Math.round(fraction * 100))}%`
   return {
     fraction,
     text: `${NUMBER.format(budget.usedThisMonth)} of ${NUMBER.format(budget.monthlyTokens)} tokens used this month (${share})`,
-    hourly: `${NUMBER.format(budget.analysesPerHour)} ${budget.analysesPerHour === 1 ? 'analysis' : 'analyses'} per account per hour`,
     ...perScan(budget),
   }
 }

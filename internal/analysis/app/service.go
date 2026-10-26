@@ -19,18 +19,14 @@ import (
 const (
 	// DefaultListLimit is how many analyses List returns when the caller names no limit.
 	DefaultListLimit = 20
-	// MaxListLimit is the most analyses one List returns: more than the queue holds, so a re-scan
-	// of every company can be followed in one list.
+	// MaxListLimit is the most analyses one List returns, so a re-scan of every company can be
+	// followed in one list.
 	MaxListLimit = 300
 	// maxFailure is the longest failure reason stored; the contract and the database agree.
 	maxFailure = 500
 )
 
 var (
-	// ErrRateLimited is returned when a user has started too many analyses in the past hour.
-	ErrRateLimited = errors.New("too many analyses started in the past hour; try again later")
-	// ErrBusy is returned when the queue is full.
-	ErrBusy = errors.New("the analysis queue is full; try again in a few minutes")
 	// ErrScanActive is returned when a scan of the same company is queued or running.
 	ErrScanActive = errors.New("a scan of this company is still queued or running")
 	// ErrUnknownCompany is returned for a company id nobody knows.
@@ -44,14 +40,10 @@ const MaxHistory = 100
 
 // Limits bound what analyses may cost.
 type Limits struct {
-	// PerUserPerHour is how many analyses one user may start in an hour.
-	PerUserPerHour int
 	// MonthlyTokens is how many language-model tokens all analyses of a calendar month may use.
 	MonthlyTokens int64
 	// SiteTextChars is how much site text the language model reads per analysis.
 	SiteTextChars int
-	// QueueSize is how many analyses may wait to run.
-	QueueSize int
 	// Workers is how many analyses run at once, each on its own site; at least one.
 	Workers int
 }
@@ -68,7 +60,7 @@ type Service struct {
 	glossary  Glossary
 	now       func() time.Time
 	limits    Limits
-	queue     chan uuid.UUID
+	queue     *queue
 }
 
 // New returns a Service. matchers names the matcher each analysis uses when it runs.
@@ -77,13 +69,13 @@ func New(repo domain.Repository, directory domain.Directory, crawler domain.Craw
 ) *Service {
 	return &Service{
 		repo: repo, directory: directory, crawler: crawler, matchers: matchers, glossary: glossary, now: now, limits: limits,
-		queue: make(chan uuid.UUID, max(limits.QueueSize, 1)),
+		queue: newQueue(),
 	}
 }
 
-// Start validates the request, checks the user's hourly limit, names the company the website
-// belongs to (adding it under companyName when it is new), stores a queued analysis and puts it
-// on the queue.
+// Start validates the request, names the company the website belongs to (adding it under
+// companyName when it is new), stores a queued analysis and puts it on the queue. Only
+// administrators start scans, and they may start as many as they like.
 func (s *Service) Start(ctx context.Context, user, rawURL string, maxPages int, companyName string) (domain.Analysis, error) {
 	target, err := domain.NewTarget(rawURL)
 	if err != nil {
@@ -92,14 +84,6 @@ func (s *Service) Start(ctx context.Context, user, rawURL string, maxPages int, 
 	pages, err := domain.CheckMaxPages(maxPages)
 	if err != nil {
 		return domain.Analysis{}, err
-	}
-	now := s.now()
-	started, err := s.repo.CountCreatedSince(ctx, user, now.Add(-time.Hour))
-	if err != nil {
-		return domain.Analysis{}, fmt.Errorf("count analyses: %w", err)
-	}
-	if started >= s.limits.PerUserPerHour {
-		return domain.Analysis{}, ErrRateLimited
 	}
 	competitor, err := s.directory.Resolve(ctx, user, target.URL(), companyName)
 	if err != nil {
@@ -126,15 +110,8 @@ func (s *Service) queueScan(ctx context.Context, user string, target domain.Targ
 	if a.Number, err = s.repo.Create(ctx, a); err != nil {
 		return domain.Analysis{}, fmt.Errorf("create analysis: %w", err)
 	}
-	select {
-	case s.queue <- a.ID:
-		return a, nil
-	default:
-		if err := s.repo.Fail(ctx, a.ID, ErrBusy.Error(), now); err != nil {
-			return domain.Analysis{}, fmt.Errorf("fail analysis: %w", err)
-		}
-		return domain.Analysis{}, ErrBusy
-	}
+	s.queue.push(a.ID)
+	return a, nil
 }
 
 // Skipped is a company a re-scan left out, and why.
@@ -145,9 +122,9 @@ type Skipped struct {
 }
 
 // Rescan queues one scan of each company named, or with all of every company that is not
-// archived, has a website and has data: the desk research studied it, or it was scanned before. A company without a website, or with a scan
-// queued or running, is skipped; so is every company once the queue is full. The hourly limit on
-// single scans does not apply.
+// archived, has a website and has data: the desk research studied it, or it was scanned before.
+// A company without a website, or with a scan queued or running, is skipped. There is no limit
+// on how many companies one re-scan takes.
 func (s *Service) Rescan(ctx context.Context, user string, ids []string, all bool, maxPages int) ([]domain.Analysis, []Skipped, error) {
 	if all == (len(ids) > 0) {
 		return nil, nil, ErrInvalidRescan
@@ -197,8 +174,6 @@ func (s *Service) rescanOne(ctx context.Context, user string, c domain.Company, 
 	switch {
 	case errors.Is(err, ErrScanActive):
 		return "A scan of it is still queued or running.", nil
-	case errors.Is(err, ErrBusy):
-		return "The queue is full; try it again in a few minutes.", nil
 	case err != nil:
 		return "", err
 	}
@@ -323,11 +298,7 @@ func (s *Service) Recover(ctx context.Context) error {
 		return fmt.Errorf("list queued analyses: %w", err)
 	}
 	for _, id := range ids {
-		select {
-		case s.queue <- id:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
+		s.queue.push(id)
 	}
 	return nil
 }
@@ -341,13 +312,12 @@ func (s *Service) Work(ctx context.Context, onError func(uuid.UUID, error)) {
 	for range max(s.limits.Workers, 1) {
 		wg.Go(func() {
 			for {
-				select {
-				case <-ctx.Done():
+				id, ok := s.queue.pop(ctx)
+				if !ok {
 					return
-				case id := <-s.queue:
-					if err := s.Run(ctx, id); err != nil {
-						onError(id, err)
-					}
+				}
+				if err := s.Run(ctx, id); err != nil {
+					onError(id, err)
 				}
 			}
 		})

@@ -24,7 +24,6 @@ type Querier interface {
 	// Every phrase a finished scan of a company found outside the terminology map.
 	CandidateEvidence(ctx context.Context) ([]CandidateEvidenceRow, error)
 	CountActiveAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) (int64, error)
-	CountAnalysesCreatedSince(ctx context.Context, arg CountAnalysesCreatedSinceParams) (int64, error)
 	// A company's scan takes the next number among its scans; the unique index refuses a duplicate.
 	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error

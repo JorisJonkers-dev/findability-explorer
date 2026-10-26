@@ -52,7 +52,7 @@ func (l *llmCases) settings() llmapp.Settings {
 			},
 		},
 		Choice: llm.ChoiceChosen, Active: &llm.Active{CredentialID: llm.VaultID, Model: llm.DefaultModel}, MatchingEnabled: true,
-		Budget: llmapp.Budget{MonthlyTokens: 2_000_000, UsedThisMonth: 1234, AnalysesPerHour: 10},
+		Budget: llmapp.Budget{MonthlyTokens: 2_000_000, UsedThisMonth: 1234, AveragePerScan: 617, ScansMatched: 2},
 		Events: []llm.Event{
 			{At: at, Actor: "Admin", Action: llm.ActionCredentialTested, CredentialID: llm.VaultID, Provider: llm.Anthropic, OK: &ok, Message: "ok"},
 			{At: at, Actor: "Admin", Action: llm.ActionActiveSet, CredentialID: llm.VaultID, Provider: llm.Anthropic, Model: llm.DefaultModel, Message: "set"},
@@ -160,7 +160,7 @@ func TestLlmSettings(t *testing.T) {
 	if a := r.body["active"].(map[string]any); a["credentialId"] != "vault-anthropic" || a["model"] != "claude-haiku-5-5" {
 		t.Fatalf("active = %v", a)
 	}
-	if b := r.body["budget"].(map[string]any); b["usedThisMonth"] != float64(1234) || b["analysesPerHour"] != float64(10) {
+	if b := r.body["budget"].(map[string]any); b["usedThisMonth"] != float64(1234) || b["averageTokensPerScan"] != float64(617) || b["scansMatched"] != float64(2) {
 		t.Fatalf("budget = %v", b)
 	}
 	if e := events[0].(map[string]any); e["ok"] != true || e["model"] != nil || events[1].(map[string]any)["model"] != "claude-haiku-5-5" {

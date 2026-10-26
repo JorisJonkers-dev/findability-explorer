@@ -41,9 +41,8 @@ type Repository interface {
 
 // Budget is what analyses may spend on the language model, and what one scan uses on average.
 type Budget struct {
-	MonthlyTokens   int64
-	UsedThisMonth   int64
-	AnalysesPerHour int
+	MonthlyTokens int64
+	UsedThisMonth int64
 	// AveragePerScan is the tokens one scan's matching used on average, over ScansMatched scans
 	// the language model answered for; both are 0 before the first.
 	AveragePerScan int64
@@ -63,9 +62,8 @@ type Spent func(ctx context.Context) (Spending, error)
 // Config is the service's fixed settings.
 type Config struct {
 	// VaultKey is ANTHROPIC_API_KEY, empty when Vault delivers none.
-	VaultKey        string
-	MonthlyTokens   int64
-	AnalysesPerHour int
+	VaultKey      string
+	MonthlyTokens int64
 }
 
 // Settings is everything the admin settings show.
@@ -118,7 +116,7 @@ func (s *Service) Settings(ctx context.Context) (Settings, error) {
 	return Settings{
 		Credentials: creds, Choice: choice, Active: active, MatchingEnabled: enabled, Events: events,
 		Budget: Budget{
-			MonthlyTokens: s.cfg.MonthlyTokens, UsedThisMonth: spent.ThisMonth, AnalysesPerHour: s.cfg.AnalysesPerHour,
+			MonthlyTokens: s.cfg.MonthlyTokens, UsedThisMonth: spent.ThisMonth,
 			AveragePerScan: spent.AveragePerScan, ScansMatched: spent.ScansMatched,
 		},
 	}, nil

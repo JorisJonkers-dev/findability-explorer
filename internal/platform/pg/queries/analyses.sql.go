@@ -262,24 +262,6 @@ func (q *Queries) CountActiveAnalysesOfCompetitor(ctx context.Context, competito
 	return column_1, err
 }
 
-const countAnalysesCreatedSince = `-- name: CountAnalysesCreatedSince :one
-SELECT count(*)::bigint
-FROM analyses
-WHERE created_by = $1 AND created_at >= $2 AND NOT rescan
-`
-
-type CountAnalysesCreatedSinceParams struct {
-	CreatedBy string
-	CreatedAt time.Time
-}
-
-func (q *Queries) CountAnalysesCreatedSince(ctx context.Context, arg CountAnalysesCreatedSinceParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countAnalysesCreatedSince, arg.CreatedBy, arg.CreatedAt)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
-}
-
 const createAnalysis = `-- name: CreateAnalysis :one
 INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_at, competitor_id, rescan, scan_number)
 VALUES (

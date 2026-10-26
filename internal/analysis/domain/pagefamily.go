@@ -29,23 +29,26 @@ func tribeltFamilyIDs() []string {
 // at a family when most map terms holding it are of that family. It is empty when no family leads.
 func (l Lexicon) PageFamily(p Page) string {
 	scores := map[string]float64{}
-	add := func(words []string, weight float64) {
-		for _, w := range distinct(words) {
-			if v := l.wordWeight(w); v >= l.specific/2 {
-				if family, ok := l.familyOf(w); ok {
-					scores[family] += v * weight
-				}
+	l.addFamilyScores(scores, foldedWords(p.Title), familyWeightTitle)
+	if u, err := url.Parse(p.URL); err == nil {
+		l.addFamilyScores(scores, linkWords(u, ""), familyWeightURL)
+	}
+	if len(p.Headings) > 0 {
+		l.addFamilyScores(scores, foldedWords(p.Headings[0]), familyWeightHeading)
+	}
+	return leader(scores)
+}
+
+// addFamilyScores adds, for each distinct specific word that points at a family, its weight
+// times weight to that family's score.
+func (l Lexicon) addFamilyScores(scores map[string]float64, words []string, weight float64) {
+	for _, w := range distinct(words) {
+		if v := l.wordWeight(w); v >= l.specific/2 {
+			if family, ok := l.familyOf(w); ok {
+				scores[family] += v * weight
 			}
 		}
 	}
-	add(foldedWords(p.Title), familyWeightTitle)
-	if u, err := url.Parse(p.URL); err == nil {
-		add(linkWords(u, ""), familyWeightURL)
-	}
-	if len(p.Headings) > 0 {
-		add(foldedWords(p.Headings[0]), familyWeightHeading)
-	}
-	return leader(scores)
 }
 
 // leader is the family with the highest score when it leads the runner-up by familyLead, or empty.
@@ -65,16 +68,20 @@ func leader(scores map[string]float64) string {
 	return best
 }
 
-// familyOf is the Tribelt family most map terms holding w are of, when they are at least
-// familyShare of all the terms that hold it; a word broad and specification terms share, such as
-// "conveyor", points at no family.
+// familyOf is the Tribelt family a word points at: the family of the product terms among at least
+// familyShare of all the map terms that hold w. Only product terms name which belt a word is
+// about; a word that application, problem, specification or broad terms also hold ("baking" of
+// "baking band", "tension", "open" of "open area", "conveyor") says what a belt does, how it is
+// measured or that it is a belt, and points at no family.
 func (l Lexicon) familyOf(w string) (string, bool) {
 	counts := map[string]int{}
 	total := 0
 	for _, t := range l.terms {
 		if t.shares(w) {
-			counts[t.term.Family]++
 			total++
+			if t.term.Tier == "product" {
+				counts[t.term.Family]++
+			}
 		}
 	}
 	best, n := "", 0

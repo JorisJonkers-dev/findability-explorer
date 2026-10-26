@@ -73,3 +73,42 @@ func TestBrandWords(t *testing.T) {
 }
 
 func splitWords(s string) []string { return strings.Fields(fold.Fold(s)) }
+
+// Only words that point at a family decide a phrase's family; a map spelling inside a phrase
+// still counts, and a specification term needs a specification word.
+func TestClassifyNamesAFamilyOnlyWithEvidence(t *testing.T) {
+	lex := domain.NewLexicon([]domain.GlossaryTerm{
+		{Text: "spiral belt / spiral conveyor belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product"},
+		{Text: "metal conveyor belt(s)", Language: "en", Family: "all", Tier: "broad"},
+		{Text: "baking band", Language: "en", Family: "closed_spiral", Tier: "application"},
+		{Text: "request spiral tension", Language: "en", Family: "tri_flex_turn_curve", Tier: "problem"},
+		{Text: "pitch / spiral pitch", Language: "en", Family: "spec_all", Tier: "spec"},
+		{Text: "honeycomb belt", Language: "en", Family: "other", Tier: "product"},
+		{Text: "flat wire belt", Language: "en", Family: "other", Tier: "product"},
+		{Text: "eye-link belt", Language: "en", Family: "eyelink", Tier: "product"},
+		{Text: "balanced weave belt", Language: "en", Family: "open_spiral", Tier: "product"},
+		{Text: "compound balanced belt / compound balance weave", Language: "en", Family: "closed_spiral", Tier: "product"},
+		{Text: "rod belt", Language: "en", Family: "other", Tier: "product"},
+	})
+	cases := map[string]domain.Classification{
+		// "conveyor" is in a broad term too, so it points at no family.
+		"conveyor belts": {Tier: "broad", Family: "all", Closest: "metal conveyor belt(s)"},
+		// "tension" is only in a problem term: broad, keeping the problem tier.
+		"tension": {Tier: "problem", Closest: "request spiral tension"},
+		// A map spelling inside the phrase.
+		"cb5 baking band": {Tier: "application", Family: "closed_spiral", Closest: "baking band"},
+		// Its words, but not the spelling: no family.
+		"band baking": {Tier: "application", Closest: "baking band"},
+		// A specification word makes a specification term.
+		"belt pitch": {Tier: "spec", Family: "spec_all", Closest: "pitch / spiral pitch"},
+		// "compound" points at closed spiral; no family leads, but the closest term is of it.
+		"compound balanced weave": {Tier: "product", Family: "closed_spiral", Closest: "compound balanced belt / compound balance weave"},
+		"honeycomb":               {Tier: "product", Family: "other", Closest: "honeycomb belt"},
+		"stainless":               {Tier: "broad"},
+	}
+	for phrase, want := range cases {
+		if got := lex.Classify(splitWords(phrase), "en"); got != want {
+			t.Errorf("Classify(%q) = %+v, want %+v", phrase, got, want)
+		}
+	}
+}

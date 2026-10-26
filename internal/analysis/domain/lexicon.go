@@ -170,13 +170,135 @@ type Classification struct {
 	InMap bool
 }
 
-// Classify finds the map term that shares the most specific words with the phrase and takes its
-// tier and family; on a tie a term in the phrase's language, then the term with fewer words of its
-// own wins. Generic words (belt, conveyor, metal) decide nothing, so a phrase of only those is
-// broad, with no family.
+// Classify finds the map term closest to the phrase and takes its tier and family.
+//
+// A phrase that is one of the map's own spellings takes that term's family and tier. Otherwise only the phrase's words
+// that point at a family decide its family (see familyOf): a phrase of generic words, such as
+// "conveyor belts", "belt width" or "tension", names no family even when the term that shares
+// most of its words is of one. The closest term is the one of the family the phrase's words
+// point at most clearly; or the closest of all when a word points at its family; or else the
+// closest of no family (broad terms, and specification terms for a phrase with a specification
+// word). Closest is the term sharing the most specific words; on a tie a term in the phrase's
+// language, then the term with fewer words of its own wins. A phrase whose only close terms are
+// of a family it does not name is broad, keeping a specification, application or problem tier.
 func (l Lexicon) Classify(words []string, language string) Classification {
+	if i, ok := l.spelling(words); ok {
+		// The spelling's family and tier; the closest term of them, so one in the phrase's
+		// language if the map has it.
+		spelt := l.terms[i].term
+		if j := l.closest(words, language, func(t GlossaryTerm) bool { return t.Family == spelt.Family && t.Tier == spelt.Tier }); j >= 0 {
+			i = j
+		}
+		return l.from(i, true)
+	}
+	if i, ok := l.ofFamily(words, language); ok {
+		return l.from(i, false)
+	}
+	return l.withoutFamily(words, language)
+}
+
+// ofFamily is the index of the closest term of the family the phrase names, if it names one: the
+// family its words point at most clearly; or the closest term's family when a word points at it,
+// as "compound" does in "compound balanced weave"; or the family of a map spelling of two words
+// or more inside the phrase, so "cb5 baking band" is a baking band.
+func (l Lexicon) ofFamily(words []string, language string) (int, bool) {
+	scores := map[string]float64{}
+	l.addFamilyScores(scores, words, 1)
+	if family := leader(scores); family != "" {
+		if i := l.closest(words, language, func(t GlossaryTerm) bool { return t.Family == family }); i >= 0 {
+			return i, true
+		}
+	}
+	if i := l.closest(words, language, func(GlossaryTerm) bool { return true }); i >= 0 && scores[l.terms[i].term.Family] > 0 {
+		return i, true
+	}
+	return l.containedSpelling(words)
+}
+
+// withoutFamily classifies a phrase that names no family by the closest term of no family. A
+// phrase with a specification word ("maximum belt width") is closest to a specification term if
+// one shares more; a phrase without one is closest to a broad term first, so "belt life" is
+// "metal conveyor belt(s)", not "furnace belt", and never to a specification term, so "spiral"
+// alone is not "spiral pitch". Failing those it is broad, closest to any term and keeping that
+// term's tier unless it is a product of a family the phrase does not name.
+func (l Lexicon) withoutFamily(words []string, language string) Classification {
+	spec := slices.ContainsFunc(words, l.specWord)
+	if !spec {
+		if i := l.closest(words, language, func(t GlossaryTerm) bool { return !isTribeltFamily(t.Family) && t.Tier == "broad" }); i >= 0 {
+			return l.from(i, false)
+		}
+	}
+	if i := l.closest(words, language, func(t GlossaryTerm) bool {
+		return !isTribeltFamily(t.Family) && (t.Tier != "spec" || spec)
+	}); i >= 0 {
+		return l.from(i, false)
+	}
+	i := l.closest(words, language, func(GlossaryTerm) bool { return true })
+	if i < 0 {
+		return Classification{Tier: "broad"}
+	}
+	t := l.terms[i].term
+	tier := t.Tier
+	if tier == "product" {
+		tier = "broad"
+	}
+	return Classification{Tier: tier, Closest: t.Text}
+}
+
+// containedSpelling is the index of the term with the longest spelling of two words or more that
+// the phrase holds word for word, plural or not.
+func (l Lexicon) containedSpelling(words []string) (int, bool) {
+	plain := singularAll(words)
+	best, length := -1, 1
+	for i, t := range l.terms {
+		for _, alt := range t.alts {
+			if len(alt) > length && holds(plain, singularAll(alt)) {
+				best, length = i, len(alt)
+			}
+		}
+	}
+	return best, best >= 0
+}
+
+// holds reports whether part is a run of consecutive words of words.
+func holds(words, part []string) bool {
+	for i := 0; i+len(part) <= len(words); i++ {
+		if slices.Equal(words[i:i+len(part)], part) {
+			return true
+		}
+	}
+	return false
+}
+
+// specWord reports whether w is a specification word: at least familyShare of the map terms that
+// hold the word itself are specification terms, as for "pitch", "sprocket" and "t316". Only the
+// whole word counts, so "posidrive" is not "drive".
+func (l Lexicon) specWord(w string) bool {
+	spec, total := 0, 0
+	for _, t := range l.terms {
+		if slices.Contains(t.words, w) || slices.Contains(t.words, singular(w)) {
+			total++
+			if t.term.Tier == "spec" {
+				spec++
+			}
+		}
+	}
+	return total > 0 && float64(spec) >= familyShare*float64(total)
+}
+
+func (l Lexicon) from(i int, inMap bool) Classification {
+	t := l.terms[i].term
+	return Classification{Tier: t.Tier, Family: t.Family, Closest: t.Text, InMap: inMap}
+}
+
+// closest is the index of the term keep accepts that shares the most specific words with the
+// phrase, by the tie-breaks Classify names, or -1 when none shares a specific word.
+func (l Lexicon) closest(words []string, language string, keep func(GlossaryTerm) bool) int {
 	best, bestScore := -1, 0.0
 	for i, t := range l.terms {
+		if !keep(t.term) {
+			continue
+		}
 		score := 0.0
 		for _, w := range words {
 			if weight := l.wordWeight(w); weight >= l.specific/2 && t.shares(w) {
@@ -196,12 +318,10 @@ func (l Lexicon) Classify(words []string, language string) Classification {
 			best, bestScore = i, score
 		}
 	}
-	if best < 0 {
-		return Classification{Tier: "broad", InMap: l.inMap(words)}
-	}
-	t := l.terms[best]
-	return Classification{Tier: t.term.Tier, Family: t.term.Family, Closest: t.term.Text, InMap: l.inMap(words)}
+	return best
 }
+
+func isTribeltFamily(family string) bool { return slices.Contains(tribeltFamilyIDs(), family) }
 
 // shares reports whether the term has the word w, plural or not, or a word of at least
 // minCompoundPart letters inside w, as "drahtgliedergurt" holds the term's "gliedergurt".
@@ -218,19 +338,17 @@ func sameLanguage(a, b string) bool {
 	return pa != "" && pa == pb
 }
 
-func (l Lexicon) inMap(words []string) bool {
-	plain := make([]string, 0, len(words))
-	for _, w := range words {
-		plain = append(plain, singular(w))
-	}
-	for _, t := range l.terms {
+// spelling is the index of the term the phrase is one of the spellings of, plural or not.
+func (l Lexicon) spelling(words []string) (int, bool) {
+	plain := singularAll(words)
+	for i, t := range l.terms {
 		for _, alt := range t.alts {
 			if slices.Equal(alt, words) || slices.Equal(alt, plain) || slices.Equal(singularAll(alt), plain) {
-				return true
+				return i, true
 			}
 		}
 	}
-	return false
+	return -1, false
 }
 
 func singularAll(words []string) []string {

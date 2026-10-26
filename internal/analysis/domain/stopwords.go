@@ -63,7 +63,8 @@ var stopwords = map[string]map[string]struct{}{
 }
 
 // fillerWords are the marketing words a phrase about belts often starts with ("every", "custom",
-// "high-quality"): they start or end no keyword, but do not tell a page's language.
+// "high-quality"), and the words of links and buttons ("view", "details"): they start or end no
+// keyword, but do not tell a page's language.
 //
 //nolint:gochecknoglobals // a read-only table
 var fillerWords = set(
@@ -72,6 +73,9 @@ var fillerWords = set(
 	"range", "new", "great", "huidige", "eenmaal", "toegepaste", "langer",
 	"viele", "verschiedene", "hochwertige", "hochwertigen", "individuelle", "neue",
 	"verschillende", "hoogwaardige", "nieuwe",
+	// Link and button text: "Conveyor belts details", "View flat wire".
+	"details", "detail", "view", "more", "read", "learn", "download", "overview",
+	"mehr", "weiterlesen", "meer", "bekijk", "lees", "voir",
 )
 
 func set(words ...string) map[string]struct{} {

@@ -14,11 +14,11 @@ func TestReadinessTablePinsTribeltAndTheMirrorAboveTheGroupAndTheCompetitors(t *
 		{ID: "old", Name: "Archived Belts", Role: domain.RoleCompetitor, Archived: true},
 		{ID: "tribelt-mirror", Name: "Mirror of tribelt.nl", Role: domain.RoleMirror},
 		{ID: "lesjofors", Name: "Lesjöfors", Role: domain.RoleGroup},
-		{ID: "tribelt-b-v", Name: "Tribelt B.V.", Role: domain.RoleTribelt},
+		{ID: "tribelt", Name: "Tribelt B.V.", Role: domain.RoleTribelt},
 	}
 	r := domain.AssessReadiness(domain.ReadinessFiles{})
 	rows := domain.ReadinessTable(companies, map[string]domain.Analysis{"esfo": {Number: 2, Readiness: &r}})
-	want := []string{"tribelt-b-v", "tribelt-mirror", "de-spiraal", "lesjofors", "esfo", "twentebelt"}
+	want := []string{"tribelt", "tribelt-mirror", "de-spiraal", "lesjofors", "esfo", "twentebelt"}
 	if len(rows) != len(want) {
 		t.Fatalf("rows = %+v", rows)
 	}

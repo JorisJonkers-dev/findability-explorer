@@ -51,7 +51,7 @@ func promptAnswers() []domain.Answer {
 			ID: uuid.New(), RunID: runID, Prompt: set.Prompts[0], PromptSetVersion: 1, Provider: "google", Model: "google/gemini", Mode: domain.ModeWeb,
 			Reply: domain.Reply{Text: "Tribelt and Twentebelt.", Citations: []string{"https://www.tribelt.nl/"}, Cost: 1_500_000}, At: answered,
 			Extraction: &domain.Extraction{
-				Companies:    []domain.Company{{Name: "Tribelt", CompetitorID: "tribelt-b-v", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
+				Companies:    []domain.Company{{Name: "Tribelt", CompetitorID: "tribelt", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
 				Addresses:    []string{"https://www.tribelt.nl/"},
 				NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."}, Cost: 500_000,
 			},
@@ -65,7 +65,7 @@ func (p *promptTests) Results(context.Context) (app.Results, error) {
 	return app.Results{
 		Runs:        []app.RunResult{{Run: promptRun(), Progress: domain.Progressed(answers, promptRun().Models), Cells: domain.Cells(answers)}},
 		Mentions:    domain.Mentions(answers),
-		Companies:   []domain.DirectoryCompany{{ID: "tribelt-b-v", Name: "Tribelt B.V.", Role: domain.RoleTribelt}},
+		Companies:   []domain.DirectoryCompany{{ID: "tribelt", Name: "Tribelt B.V.", Role: domain.RoleTribelt}},
 		WrongClaims: domain.WrongClaims(answers),
 	}, p.err
 }
@@ -158,7 +158,7 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	first := items[0].(map[string]any)
 	x := first["extraction"].(map[string]any)
 	if first["costUsd"].(float64) != 2 || first["kind"] != "supplier" || x["correctness"] != "wrong" ||
-		x["companies"].([]any)[0].(map[string]any)["competitorId"] != "tribelt-b-v" || x["companies"].([]any)[1].(map[string]any)["url"] != "https://ashworth.com" {
+		x["companies"].([]any)[0].(map[string]any)["competitorId"] != "tribelt" || x["companies"].([]any)[1].(map[string]any)["url"] != "https://ashworth.com" {
 		t.Errorf("answer = %v", first)
 	}
 	if second := items[1].(map[string]any); second["failure"] != "Rate limited." || second["extraction"] != nil {

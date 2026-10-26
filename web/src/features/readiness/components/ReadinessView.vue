@@ -17,7 +17,7 @@ const { rows, isLoading, error } = useReadinessTable()
       <p class="m-0 max-w-4xl text-ink-2 stage:max-w-none stage:text-[30px]">
         Every scan first reads robots.txt, the sitemaps, llms.txt, llms-full.txt and the home page. Tribelt's own site is the
         baseline; the mirror of tribelt.nl shows the recommendations in practice. A company not scanned since shows "Not checked".
-        <RouterLink to="/ai-search" class="font-medium">Back to AI search</RouterLink>
+        <RouterLink to="/ai-search" class="font-medium underline underline-offset-4">Back to AI search</RouterLink>
       </p>
       <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
       <p v-else-if="isLoading" class="m-0 text-muted">Loading the AI readiness…</p>

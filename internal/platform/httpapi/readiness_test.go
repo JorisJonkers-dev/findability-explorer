@@ -38,7 +38,7 @@ func TestAIReadinessTable(t *testing.T) {
 	rd := readiness()
 	scan.Readiness = &rd
 	a := &analyses{readinessRows: []domain.ReadinessRow{
-		{Company: domain.Company{ID: "tribelt-b-v", Name: "Tribelt B.V.", Role: domain.RoleTribelt}, Scan: &scan},
+		{Company: domain.Company{ID: "tribelt", Name: "Tribelt B.V.", Role: domain.RoleTribelt}, Scan: &scan},
 		{Company: domain.Company{ID: "twentebelt", Name: "Twentebelt", Role: domain.RoleCompetitor}},
 	}}
 	srv := serve(t, a)

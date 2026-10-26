@@ -234,6 +234,9 @@ func TestAllBeltNames(t *testing.T) {
 }
 
 func TestRolesSetTribeltAndTheMirrorApartFromTheCompetitors(t *testing.T) {
+	if got := domain.ID("Tribelt B.V."); got != domain.TribeltID {
+		t.Fatalf("the research's Tribelt B.V. has id %q, not TribeltID %q", got, domain.TribeltID)
+	}
 	mirror := domain.Mirror()
 	if mirror.Host != "tribelt.jorisjonkers.dev" || mirror.URL.String() != domain.MirrorURL || mirror.Source != domain.SourceResearch {
 		t.Fatalf("mirror = %+v", mirror)

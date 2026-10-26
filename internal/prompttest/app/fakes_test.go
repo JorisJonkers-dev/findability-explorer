@@ -379,7 +379,7 @@ func (d *directory) Companies(context.Context) ([]domain.DirectoryCompany, error
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return append([]domain.DirectoryCompany{
-		{ID: "tribelt-b-v", Name: "Tribelt B.V.", Host: "tribelt.nl", Role: domain.RoleTribelt},
+		{ID: "tribelt", Name: "Tribelt B.V.", Host: "tribelt.nl", Role: domain.RoleTribelt},
 		{ID: "twentebelt", Name: "Twentebelt", Host: "twentebelt.com", Role: domain.RoleCompetitor},
 	}, d.added...), d.err
 }

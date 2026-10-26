@@ -207,7 +207,7 @@ export function promptResults(overrides: Partial<PromptTestResults> = {}): Promp
     runs: [promptRun()],
     mentions: [
       { competitorId: 'twentebelt', name: 'Twentebelt', role: 'competitor', answers: 9, first: 4, averagePosition: 1.6 },
-      { competitorId: 'tribelt-b-v', name: 'Tribelt B.V.', role: 'tribelt', answers: 3, first: 1, averagePosition: 2 },
+      { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', answers: 3, first: 1, averagePosition: 2 },
     ],
     wrongClaims: [
       { answerId: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', runId: RUN_ID, at: '2026-11-01T06:10:00Z', provider: 'openai', model: 'openai/gpt-oss-20b', promptId: 'eyelink-supplier-twente', mode: 'knowledge', correctness: 'wrong', claim: 'Tribelt is in Hengelo.' },

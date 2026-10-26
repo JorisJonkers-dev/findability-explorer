@@ -132,7 +132,7 @@ function saveFactSheet(): void {
             <option v-for="k in keys" :key="k.id" :value="k.id">{{ credentialName(k) }}</option>
           </select>
           <span v-if="keys.length === 0" class="text-sm font-normal text-ink-2">
-            Add an OpenRouter key in <RouterLink to="/settings">the language-model settings</RouterLink> first.
+            Add an OpenRouter key in <RouterLink to="/settings" class="underline underline-offset-4">the language-model settings</RouterLink> first.
           </span>
         </label>
         <label class="flex flex-col gap-1.5 font-medium">

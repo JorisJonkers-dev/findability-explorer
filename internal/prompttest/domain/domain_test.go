@@ -117,7 +117,7 @@ func TestTasksAskEveryPromptOfEveryModelInBothModes(t *testing.T) {
 
 func directory() []domain.DirectoryCompany {
 	return []domain.DirectoryCompany{
-		{ID: "tribelt-b-v", Name: "Tribelt B.V.", Host: "tribelt.nl", Role: domain.RoleTribelt},
+		{ID: "tribelt", Name: "Tribelt B.V.", Host: "tribelt.nl", Role: domain.RoleTribelt},
 		{ID: "esfo", Name: "ESFO Transportbanden B.V. (ESFO Metal Belts, Narviflex Group)", Host: "esfo-metalbelts.com", Role: domain.RoleCompetitor},
 		{ID: "martens", Name: "Märtens Transportbänder GmbH", Host: "martens-belts.com", Role: domain.RoleCompetitor},
 		{ID: "wire-belt", Name: "Wire Belt Company Ltd", Host: "wirebelt.co.uk", Role: domain.RoleCompetitor},
@@ -128,11 +128,11 @@ func directory() []domain.DirectoryCompany {
 
 func TestMatchFindsACompanyByNameAliasOrWebsite(t *testing.T) {
 	cases := map[string]domain.Named{
-		"esfo":        {Name: "ESFO"},
-		"martens":     {Name: "Martens Transportbander"},
-		"wire-belt":   {Name: "Wire Belt"},
-		"tribelt-b-v": {Name: "Some Dutch maker", URL: "https://shop.tribelt.nl/en"},
-		"de-spiraal":  {Name: "De Spiraal"},
+		"esfo":       {Name: "ESFO"},
+		"martens":    {Name: "Martens Transportbander"},
+		"wire-belt":  {Name: "Wire Belt"},
+		"tribelt":    {Name: "Some Dutch maker", URL: "https://shop.tribelt.nl/en"},
+		"de-spiraal": {Name: "De Spiraal"},
 	}
 	for want, n := range cases {
 		if got := domain.Match(n, directory()); got != want {
@@ -183,7 +183,7 @@ func answer(provider string, scope domain.Scope, mode domain.Mode, x *domain.Ext
 }
 
 func TestCellsMentionsAndWrongClaims(t *testing.T) {
-	tribelt := &domain.Extraction{NamesTribelt: true, CitesTribelt: true, Companies: []domain.Company{{CompetitorID: "tribelt-b-v", Position: 1}, {CompetitorID: "esfo", Position: 2}, {CompetitorID: "esfo", Position: 3}}, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Belgium."}, Cost: 10, InputTokens: 3, OutputTokens: 2}
+	tribelt := &domain.Extraction{NamesTribelt: true, CitesTribelt: true, Companies: []domain.Company{{CompetitorID: "tribelt", Position: 1}, {CompetitorID: "esfo", Position: 2}, {CompetitorID: "esfo", Position: 3}}, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Belgium."}, Cost: 10, InputTokens: 3, OutputTokens: 2}
 	others := &domain.Extraction{Companies: []domain.Company{{CompetitorID: "esfo", Position: 1}, {Name: "Unknown", Position: 2}}}
 	failedRead := answer("google", domain.ScopeTwente, domain.ModeKnowledge, &domain.Extraction{Failed: true})
 	noAnswer := answer("google", domain.ScopeTwente, domain.ModeKnowledge, nil)
@@ -210,7 +210,7 @@ func TestCellsMentionsAndWrongClaims(t *testing.T) {
 	if len(mentions) != 2 || mentions[0].CompetitorID != "esfo" || mentions[0].Answers != 4 || mentions[0].First != 2 || mentions[0].AveragePosition() != 1.5 {
 		t.Errorf("mentions = %+v", mentions)
 	}
-	if mentions[1].CompetitorID != "tribelt-b-v" || (domain.Mention{}).AveragePosition() != 0 {
+	if mentions[1].CompetitorID != "tribelt" || (domain.Mention{}).AveragePosition() != 0 {
 		t.Errorf("mentions[1] = %+v", mentions[1])
 	}
 	claims := domain.WrongClaims(answers)

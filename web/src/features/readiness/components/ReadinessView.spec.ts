@@ -17,7 +17,7 @@ const table = [
   readinessRow('Unibelt', { readiness: undefined, scan: undefined }),
   readinessRow('Lesjöfors', { role: 'group', readiness: gappy }),
   readinessRow('Mirror of tribelt.nl', { competitorId: 'tribelt-mirror', role: 'mirror' }),
-  readinessRow('Tribelt B.V.', { competitorId: 'tribelt-b-v', role: 'tribelt', readiness: gappy }),
+  readinessRow('Tribelt B.V.', { competitorId: 'tribelt', role: 'tribelt', readiness: gappy }),
 ]
 
 const api = () => routes({ 'GET /api/v1/ai-readiness': () => json({ items: table }) })

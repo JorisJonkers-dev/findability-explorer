@@ -303,7 +303,7 @@ func NewWebsite(raw string) (*url.URL, error) {
 const (
 	// TribeltID is Tribelt's own id among the researched companies: the baseline of the AI
 	// readiness table.
-	TribeltID = "tribelt-b-v"
+	TribeltID = "tribelt"
 	// MirrorID is the id of the group's mirror of tribelt.nl.
 	MirrorID = "tribelt-mirror"
 	// MirrorURL is where the mirror runs.

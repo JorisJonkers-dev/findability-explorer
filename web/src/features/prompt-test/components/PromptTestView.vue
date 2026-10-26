@@ -29,7 +29,7 @@ const competitors = computed(() => (results.value ? ranking(results.value.mentio
         90 buyer questions in general terms, about each belt family, for a supplier, an application and a problem, in six
         scopes, asked of the cheapest model of each large provider, from its own knowledge and with web search. One fixed
         model reads every answer.
-        <RouterLink to="/ai-search" class="font-medium">Back to AI search</RouterLink>
+        <RouterLink to="/ai-search" class="font-medium underline underline-offset-4">Back to AI search</RouterLink>
       </p>
       <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
       <p v-else-if="isLoading" class="m-0 text-muted">Loading the results…</p>
@@ -48,7 +48,7 @@ const competitors = computed(() => (results.value ? ranking(results.value.mentio
           </div>
           <p v-if="!run" class="m-0 text-ink-2">
             The first run starts on the schedule, or when an administrator starts one in
-            <RouterLink v-if="isAdmin" to="/settings/prompt-test">the Prompt test's settings</RouterLink><template v-else>Settings</template>.
+            <RouterLink v-if="isAdmin" to="/settings/prompt-test" class="underline underline-offset-4">the Prompt test's settings</RouterLink><template v-else>Settings</template>.
           </p>
           <template v-else>
             <p class="m-0 text-sm text-ink-2 stage:text-[26px]">

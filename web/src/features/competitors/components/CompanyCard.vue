@@ -100,7 +100,7 @@ const mentioned = computed(() => mentionLine(prompts.value, props.company.id))
     <CompanyReadiness :company-id="company.id" />
     <p v-if="mentioned" class="m-0 text-sm text-ink-2 stage:text-[26px]" data-testid="prompt-mentions">
       <span class="font-semibold text-black">AI answers:</span> {{ mentioned }}
-      <RouterLink to="/ai-search/prompt-test">The Prompt test</RouterLink>
+      <RouterLink to="/ai-search/prompt-test" class="underline underline-offset-4">The Prompt test</RouterLink>
     </p>
 
     <table class="w-full border-collapse stage:text-[30px]">

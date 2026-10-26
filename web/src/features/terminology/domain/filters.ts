@@ -1,5 +1,5 @@
 import type { IntentTier } from '../../../infrastructure/api/types.gen'
-import { isLanguage, isTier } from '../../../shared/vocabulary'
+import { isFocusLanguage, isTier } from '../../../shared/vocabulary'
 
 /** The two halves of the map: what a belt is called or used for, and what engineers type. */
 export type TermGroup = 'marketing' | 'technical'
@@ -63,7 +63,7 @@ export function parseView(query: RawQuery): TermView {
   const user = first(query.user)
   return {
     q: first(query.q),
-    language: isLanguage(language) ? chartLanguage(language) : null,
+    language: isFocusLanguage(language) ? chartLanguage(language) : null,
     tier: isTier(tier) ? tier : null,
     user: user.trim() === '' ? '' : companyName(user),
     group: isGroup(group) ? group : null,

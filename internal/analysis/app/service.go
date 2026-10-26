@@ -247,7 +247,7 @@ func (s *Service) Profile(ctx context.Context, competitorID string) (domain.Prof
 	if len(finished) == 0 {
 		return domain.Profile{Languages: []string{}, Groups: []domain.GroupTerms{}}, nil
 	}
-	latest, err := s.repo.Get(ctx, finished[0].ID)
+	latest, err := s.load(ctx, finished[0].ID)
 	if err != nil {
 		return domain.Profile{}, fmt.Errorf("load scan: %w", err)
 	}
@@ -269,11 +269,11 @@ func (s *Service) Compare(ctx context.Context, competitorID string, from, to uui
 	if err != nil {
 		return domain.Analysis{}, domain.Analysis{}, nil, err
 	}
-	a, err := s.repo.Get(ctx, older.ID)
+	a, err := s.load(ctx, older.ID)
 	if err != nil {
 		return domain.Analysis{}, domain.Analysis{}, nil, fmt.Errorf("load scan: %w", err)
 	}
-	b, err := s.repo.Get(ctx, newer.ID)
+	b, err := s.load(ctx, newer.ID)
 	if err != nil {
 		return domain.Analysis{}, domain.Analysis{}, nil, fmt.Errorf("load scan: %w", err)
 	}
@@ -298,7 +298,16 @@ func (s *Service) finished(ctx context.Context, competitorID string) ([]domain.A
 
 // Get returns one analysis with its results, or domain.ErrNotFound.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (domain.Analysis, error) {
-	return s.repo.Get(ctx, id)
+	return s.load(ctx, id)
+}
+
+// load reads an analysis with only what is in Dutch, German or English (domain.Analysis.InFocus).
+func (s *Service) load(ctx context.Context, id uuid.UUID) (domain.Analysis, error) {
+	a, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return domain.Analysis{}, err
+	}
+	return a.InFocus(), nil
 }
 
 // List returns up to limit analyses, newest first. A limit below 1 means DefaultListLimit.

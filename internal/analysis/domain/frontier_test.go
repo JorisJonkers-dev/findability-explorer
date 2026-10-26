@@ -2,6 +2,7 @@ package domain_test
 
 import (
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 
@@ -55,7 +56,7 @@ func TestFrontierPopsBestFirstThenInOrder(t *testing.T) {
 		link("https://x.test/news", "", false),        // off topic
 		link("https://x.test/eyelink?x=1", "", false), // belt word
 		link("https://x.test/eyelink", "", false),     // the same page
-		link("https://x.test/fr/", "", true),          // a language version
+		link("https://x.test/de/", "", true),          // a language version
 		link("https://other.test/eyelink", "", false), // another site
 		link("mailto:x@x.test", "", false),            // not a page
 		link("https://x.test/file.pdf", "", false),    // not a page
@@ -66,11 +67,36 @@ func TestFrontierPopsBestFirstThenInOrder(t *testing.T) {
 	for next, _ := f.Pop(); next != nil; next, _ = f.Pop() {
 		got = append(got, next.Path)
 	}
-	if strings.Join(got, " ") != "/fr/ /eyelink /a /b /news" {
+	if strings.Join(got, " ") != "/de/ /eyelink /a /b /news" {
 		t.Fatalf("popped %q", got)
 	}
 	if next, score := f.Pop(); next != nil || score != 0 || f.Len() != 0 {
 		t.Fatal("an empty frontier popped something")
+	}
+}
+
+// Only the Dutch, German and English parts of a site are read: a language version in another
+// language, and an address under another language's path, are not queued.
+func TestFrontierKeepsToTheFocusLanguages(t *testing.T) {
+	f := domain.NewFrontier("x.test", domain.NewLinkScorer(testLexicon()))
+	f.Push([]domain.Link{
+		{URL: mustURL(t, "https://x.test/de/produkte"), Alternate: true, Language: "de"},
+		{URL: mustURL(t, "https://x.test/en-us/belts"), Alternate: true, Language: "en-US"},
+		{URL: mustURL(t, "https://x.test/?lang=fr"), Alternate: true, Language: "fr"},
+		{URL: mustURL(t, "https://x.test/"), Alternate: true, Language: "x-default"},
+		{URL: mustURL(t, "https://x.test/fr/produits"), Text: "Bandes"},
+		{URL: mustURL(t, "https://x.test/es-es/productos")},
+		{URL: mustURL(t, "https://x.test/uk/belts")},
+		{URL: mustURL(t, "https://x.test/products")},
+	}, 0)
+	var got []string
+	for f.Len() > 0 {
+		u, _ := f.Pop()
+		got = append(got, u.Path)
+	}
+	slices.Sort(got)
+	if want := []string{"/", "/de/produkte", "/en-us/belts", "/products", "/uk/belts"}; !slices.Equal(got, want) {
+		t.Fatalf("queued %q, want %q", got, want)
 	}
 }
 

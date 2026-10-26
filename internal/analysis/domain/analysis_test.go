@@ -106,3 +106,24 @@ func TestCheckEquivalent(t *testing.T) {
 		t.Errorf("%d Tribelt families, want 5", n)
 	}
 }
+
+// A stored scan reads with only what is in Dutch, German or English.
+func TestAnalysisInFocus(t *testing.T) {
+	a := domain.Analysis{
+		Pages:       []domain.PageSummary{{URL: "/de", Language: "de"}, {URL: "/fr", Language: "fr"}, {URL: "/x", Language: domain.UnknownLanguage}},
+		Keywords:    []domain.Keyword{{Phrase: "Gliederband", Language: "de"}, {Phrase: "bande", Language: "fr"}, {Phrase: "belt", Language: domain.UnknownLanguage}},
+		KnownTerms:  []domain.KnownTerm{{GlossaryTerm: domain.GlossaryTerm{Text: "belt", Language: "en-US"}}, {GlossaryTerm: domain.GlossaryTerm{Text: "nastro", Language: "it"}}},
+		Equivalents: []domain.Equivalent{{Product: "X", SearchTerms: []domain.SearchTerm{{Term: "band", Language: "nl"}, {Term: "cinta", Language: "es"}}}},
+	}
+	got := a.InFocus()
+	if len(got.Pages) != 2 || len(got.Keywords) != 2 || got.Keywords[1].Phrase != "belt" || len(got.KnownTerms) != 1 ||
+		len(got.Equivalents[0].SearchTerms) != 1 || got.Equivalents[0].SearchTerms[0].Term != "band" {
+		t.Fatalf("InFocus = %+v", got)
+	}
+	if len(a.Keywords) != 3 {
+		t.Fatal("InFocus changed the analysis it was called on")
+	}
+	if (domain.Analysis{}).InFocus().Equivalents != nil {
+		t.Fatal("no equivalents became an empty list")
+	}
+}

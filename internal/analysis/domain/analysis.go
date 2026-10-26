@@ -9,12 +9,15 @@ import (
 	"fmt"
 	"net/netip"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/site"
+
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 )
 
 const (
@@ -227,6 +230,29 @@ const blockedPrefix = "Blocked by the site:"
 func BlockedReason(detail string) string {
 	return blockedPrefix + " it lets people in but turns automated readers away with bot protection, so its pages " +
 		"cannot be read. Only the site's owner can let readers in. (" + detail + ")"
+}
+
+// InFocus returns the analysis with only what is in Dutch, German or English: its pages,
+// keywords and known terms, and the search terms of its matched products. A page or keyword
+// whose language could not be told stays, as it is most often English. A scan of a multilingual
+// site so shows, also when it was made before the crawler kept to these languages, what matters
+// to Tribelt.
+func (a Analysis) InFocus() Analysis {
+	keep := func(language string) bool {
+		return language == UnknownLanguage || language == "" || lang.InFocus(language)
+	}
+	a.Pages = slices.DeleteFunc(slices.Clone(a.Pages), func(p PageSummary) bool { return !keep(p.Language) })
+	a.Keywords = slices.DeleteFunc(slices.Clone(a.Keywords), func(k Keyword) bool { return !keep(k.Language) })
+	a.KnownTerms = slices.DeleteFunc(slices.Clone(a.KnownTerms), func(k KnownTerm) bool { return !lang.InFocus(k.Language) })
+	eqs := make([]Equivalent, 0, len(a.Equivalents))
+	for _, e := range a.Equivalents {
+		e.SearchTerms = slices.DeleteFunc(slices.Clone(e.SearchTerms), func(t SearchTerm) bool { return !lang.InFocus(t.Language) })
+		eqs = append(eqs, e)
+	}
+	if a.Equivalents != nil {
+		a.Equivalents = eqs
+	}
+	return a
 }
 
 // Blocked reports whether the scan failed because its site turned the crawler away.

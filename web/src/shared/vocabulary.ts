@@ -56,8 +56,12 @@ const TIER_LABELS: Record<IntentTier, string> = {
   broad: 'Broad',
 }
 
-/** Every language, in the contract's order. */
-export const LANGUAGES = Object.keys(LANGUAGE_LABELS) as Language[]
+/**
+ * The languages that matter to Tribelt, the ones its buyers search in: Dutch, German and
+ * English (American English is English). The map, the scans and the views keep to them; the
+ * labels of the others stay only so an old value still reads as a word.
+ */
+export const LANGUAGES: readonly Language[] = ['nl', 'de', 'en', 'en-US']
 /** Every belt family, in the contract's order. */
 export const FAMILIES = Object.keys(FAMILY_LABELS) as BeltFamily[]
 /** Every intent tier, in the contract's order. */
@@ -65,6 +69,11 @@ export const TIERS = Object.keys(TIER_LABELS) as IntentTier[]
 
 export function isLanguage(value: string): value is Language {
   return Object.hasOwn(LANGUAGE_LABELS, value)
+}
+
+/** Whether value is one of the languages that matter: Dutch, German or English. */
+export function isFocusLanguage(value: string): value is Language {
+  return (LANGUAGES as readonly string[]).includes(value)
 }
 
 export function isFamily(value: string): value is BeltFamily {

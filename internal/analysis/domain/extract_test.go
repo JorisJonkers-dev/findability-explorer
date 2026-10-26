@@ -299,3 +299,16 @@ func TestFindKnownTermsCountsAlternativesAndPlurals(t *testing.T) {
 		t.Fatalf("found %+v, want both terms twice", got)
 	}
 }
+
+// Only Dutch, German and English phrases are keywords: a French page's are not, whatever they say.
+func TestKeywordsKeepToTheFocusLanguages(t *testing.T) {
+	pages := []domain.Page{
+		{URL: "https://belts.test/fr/", Language: "fr", Title: "Bandes à spirale", Text: "Spiral belts"},
+		{URL: "https://belts.test/en/", Language: "en", Title: "Eyelink belts"},
+		{URL: "https://belts.test/x", Title: "Balanced weave belts"}, // language not told: kept
+	}
+	got := phrasesOf(domain.Keywords(pages, testLexicon(), nil))
+	if slices.Contains(got, "spiral belts") || !slices.Contains(got, "eyelink belts") || !slices.Contains(got, "balanced weave belts") {
+		t.Fatalf("keywords %q", got)
+	}
+}

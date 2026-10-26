@@ -33,7 +33,8 @@ const rows = computed(() =>
         </select>
       </label>
     </div>
-    <div class="overflow-x-auto">
+    <!-- Focusable, so a keyboard can scroll it sideways on a phone. -->
+    <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Shares across runs">
       <table class="w-full border-collapse text-sm stage:text-[26px]">
         <caption class="sr-only">AI share of voice and citation share across Prompt runs, oldest first</caption>
         <thead>

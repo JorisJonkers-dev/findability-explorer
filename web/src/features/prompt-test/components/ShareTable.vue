@@ -23,7 +23,8 @@ const model = (provider: string) => props.run.models.find((m) => m.provider === 
     <div role="group" aria-label="Break down" class="flex flex-wrap gap-2 stage:gap-3">
       <PillButton v-for="d in DIMENSIONS" :key="d.value" size="sm" :pressed="by === d.value" @click="by = d.value">{{ d.label }}</PillButton>
     </div>
-    <div class="overflow-x-auto">
+    <!-- Focusable, so a keyboard can scroll it sideways on a phone. -->
+    <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Shares of the run">
       <table class="w-full border-collapse text-sm stage:text-[26px]">
         <caption class="sr-only">AI share of voice and citation share, from the models' own knowledge and with web search</caption>
         <thead>

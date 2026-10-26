@@ -14,7 +14,7 @@
 //     the language-model API keys an admin adds (required unless DEV_USER is set)
 //   - ANTHROPIC_API_KEY: the Vault-delivered key, shown as the read-only credential
 //     vault-anthropic; until an admin chooses, product matching uses it with claude-haiku-5-5
-//   - LLM_MONTHLY_TOKENS: the language-model budget per calendar month (default 2000000)
+//   - LLM_MONTHLY_TOKENS: the language-model budget per calendar month (default 10000000)
 //   - CRAWLER_CONTACT: a contact address for the crawler's User-Agent
 //   - DEV_USER, and DEV_ROLES (comma-separated, such as ROLE_ADMIN): stand in for a signed-in
 //     account on a local run, without auth-api; never set in a deployment
@@ -276,7 +276,7 @@ type limits struct {
 }
 
 func limitsOf(getenv func(string) string) (limits, error) {
-	monthly, err := intEnv(getenv, "LLM_MONTHLY_TOKENS", 2_000_000)
+	monthly, err := intEnv(getenv, "LLM_MONTHLY_TOKENS", 10_000_000)
 	if err != nil {
 		return limits{}, err
 	}

@@ -1651,7 +1651,7 @@ components:
           minimum: 0
           maximum: 1000000000000
           description: The tokens all analyses of a calendar month (UTC) may use.
-          example: 2000000
+          example: 10000000
         usedThisMonth:
           type: integer
           format: int64

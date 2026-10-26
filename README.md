@@ -102,7 +102,7 @@ Environment:
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URL` | The client registration at auth-api (required unless `DEV_USER` is set). Cookies are `Secure` unless the redirect URL is plain http |
 | `SESSION_KEY` | At least 32 characters; seals the session cookie, the refresh tokens and the API keys admins add (required unless `DEV_USER` is set) |
 | `ANTHROPIC_API_KEY` | The Vault key, shown as the read-only credential `vault-anthropic`; until an admin chooses, matching uses it with `claude-haiku-5-5` |
-| `LLM_MONTHLY_TOKENS` | The language-model budget per calendar month, every provider together (default 2,000,000) |
+| `LLM_MONTHLY_TOKENS` | The language-model budget per calendar month, every provider together (default 10,000,000) |
 | `CRAWLER_CONTACT` | Put in the crawler's User-Agent |
 | `DEV_USER`, `DEV_ROLES` | Local runs only: every request runs as `DEV_USER` with the comma-separated `DEV_ROLES` (`ROLE_ADMIN` opens the admin settings), without auth-api. Never set them in a deployment |
 

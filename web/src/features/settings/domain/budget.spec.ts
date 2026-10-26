@@ -3,16 +3,16 @@ import { budgetMeter } from './budget'
 
 describe('the budget meter', () => {
   it('shows the tokens used against the month, and what one scan uses', () => {
-    expect(budgetMeter({ monthlyTokens: 2_000_000, usedThisMonth: 48_211, averageTokensPerScan: 29_137, scansMatched: 2 })).toEqual({
-      fraction: 48_211 / 2_000_000,
-      text: '48,211 of 2,000,000 tokens used this month (2%)',
+    expect(budgetMeter({ monthlyTokens: 10_000_000, usedThisMonth: 48_211, averageTokensPerScan: 29_137, scansMatched: 2 })).toEqual({
+      fraction: 48_211 / 10_000_000,
+      text: '48,211 of 10,000,000 tokens used this month (0%)',
       perScan: 'A company scan uses 29,137 tokens on average, over 2 scans.',
-      left: 'What is left this month covers about 66 more scans.',
+      left: 'What is left this month covers about 341 more scans.',
     })
   })
 
   it('says what one scan uses, and how many more fit, once a scan has used the language model', () => {
-    const none = budgetMeter({ monthlyTokens: 2_000_000, usedThisMonth: 0, averageTokensPerScan: 0, scansMatched: 0 })
+    const none = budgetMeter({ monthlyTokens: 10_000_000, usedThisMonth: 0, averageTokensPerScan: 0, scansMatched: 0 })
     expect(none.perScan).toBe('No scan has used the language model yet, so there is no average.')
     expect(none.left).toBeNull()
     const one = budgetMeter({ monthlyTokens: 30_000, usedThisMonth: 40_000, averageTokensPerScan: 25_000, scansMatched: 1 })

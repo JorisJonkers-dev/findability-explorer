@@ -1,1214 +1,2109 @@
 [
- {
-  "name": "Twentebelt",
-  "country": "NL (production also in Kudowa-Zdrój, PL)",
-  "website": "https://www.twentebelt.com",
-  "languages": [
-   "en"
-  ],
-  "markets": [
-   "food processing",
-   "baking",
-   "freezing",
-   "worldwide (sites NL + PL)"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Eyelink belts",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Balanced weave belts (types GS, RS, SP)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "CB 'Compound' conveyor belt",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "TwenteFlex spiral belts",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "TwenteSideFlex",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - side-flexing variant, unverified exact match",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Wire mesh belts",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "Twentebelt | Metal conveyor belts",
-  "homepage_meta": "For over a century Twentebelt has been a leading manufacturer of high quality metal conveyor belts for the food processing industry.",
-  "group_company": false,
-  "sources": [
-   "https://www.twentebelt.com/",
-   "https://www.twentebelt.com/locations/",
-   "https://www.twentebelt.com/conveyor-belts/balanced-weave-belts/",
-   "https://www.twentebelt.com/conveyor-belts/twenteflex-spiral-belts/"
-  ]
- },
- {
-  "name": "ESFO Transportbanden B.V. (ESFO Metal Belts, Narviflex Group)",
-  "country": "NL",
-  "website": "https://www.esfo-metalbelts.com",
-  "languages": [
-   "nl",
-   "en",
-   "de"
-  ],
-  "markets": [
-   "bread & bakery",
-   "potato processing",
-   "vegetables & fruit",
-   "fish & other food",
-   "packaging",
-   "thermal processes",
-   "washing & cleaning",
-   "architecture"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "OB draadogenband (OBKK)",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "nl"
-   },
-   {
-    "competitor_name": "BS breedspiraalband (BSKK)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "nl"
-   },
-   {
-    "competitor_name": "RA rondloopband",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
-    "language": "nl"
-   },
-   {
-    "competitor_name": "EBZ biscuit bakband",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "nl"
-   },
-   {
-    "competitor_name": "GRZK grilleband",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "nl"
-   },
-   {
-    "competitor_name": "HO honingraatband",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "nl"
-   },
-   {
-    "competitor_name": "ST stavenband",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "nl"
-   },
-   {
-    "competitor_name": "SC scharnierplatenband",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "nl"
-   },
-   {
-    "competitor_name": "MT-E modulenband",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "nl"
-   }
-  ],
-  "homepage_title": "ESFO | TRANSPORTBANDEN",
-  "homepage_meta": "Esfo Transportbanden staat bekend als dé kwaliteitsreferentie in metaalbanden, door de hoge kwaliteitsstandaard en de uitgebreide product-range.",
-  "group_company": false,
-  "sources": [
-   "https://www.esfo-metalbelts.com/",
-   "https://www.esfo-metalbelts.com/en",
-   "https://www.esfo-metalbelts.com/obkk-draadogenband",
-   "https://www.esfo-metalbelts.com/bskk-breedspiraalband",
-   "https://www.esfo-metalbelts.com/ra-rondloopband"
-  ]
- },
- {
-  "name": "Unibelt",
-  "country": "NL (Panheel)",
-  "website": "https://unibelt.nl",
-  "languages": [
-   "en",
-   "nl"
-  ],
-  "markets": [
-   "food industry",
-   "baking",
-   "automotive",
-   "industrial drying",
-   "worldwide"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Group 100 (flat wire spirals), Group 200 / 400 (round wire spirals)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Group 800 / 800S wire link belt",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Group 900 crossrod belt",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Z belts (rolled baking oven belts)",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "World leader in wire mesh conveyor belts | Unibelt",
-  "homepage_meta": "Unibelt is the market leader for wire mesh conveyor belts, offering custom solutions for the food industry, automotive and the industrial drying sector.",
-  "group_company": false,
-  "sources": [
-   "https://unibelt.nl/",
-   "https://unibelt.nl/nl",
-   "https://unibelt.nl/products",
-   "https://village.ai/company/unibelt"
-  ]
- },
- {
-  "name": "Ashworth (Ashworth Bros.; Ashworth Belts B.V. Amsterdam; Ashworth Europe Ltd UK)",
-  "country": "US (EU units NL + UK)",
-  "website": "https://www.ashworth.com",
-  "languages": [
-   "en",
-   "de",
-   "es",
-   "fr",
-   "it",
-   "nl",
-   "pt"
-  ],
-  "markets": [
-   "food processing",
-   "industrial",
-   "spiral and turn-curve systems",
-   "baking"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Eye-Link belts (OGBL, OGBL Plus)",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Balanced Weave conveyor belts",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Compound Balance Weave Baking Band; CB3 / CB5 Baking Band",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Omni-Grid, Omni-Grid 360, Omni-Flex, Omni-Pro, Small Radius Omni-Grid",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Flat Wire, Z-Baking Belts, Cleatrac, WG Woven Wire",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Metall-Spiral- und Wendekurvenbänder",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Metalen spiraal & draaicurve riemen",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
-    "language": "nl"
-   }
-  ],
-  "homepage_title": "Conveyor Belt Manufacturer — Metal & Plastic Belts | Ashworth",
-  "homepage_meta": "The inventor of the spiral belt still engineers the widest range in food and industrial conveying — metal, hybrid, and plastic. Request a quote.",
-  "group_company": false,
-  "sources": [
-   "https://www.ashworth.com/",
-   "https://www.ashworth.com/metal-conveyor-belts/metal-straight-running-belts/",
-   "https://www.ashworth.com/metal-conveyor-belts/metal-spiral-turn-curve-belts/",
-   "https://www.ashworth.com/de/",
-   "https://www.ashworth.com/nl/",
-   "https://www.potatobusiness.com/supplier/ashworth-belts-b-v/",
-   "https://www.ashworth.com/media/i43flbmd/ash402-flat_wire_brochure_v1r1_ash_us_flatwire_0225_001_lq-2.pdf"
-  ]
- },
- {
-  "name": "Wire Belt Company Ltd",
-  "country": "UK (Sittingbourne)",
-  "website": "https://wirebelt.co.uk",
-  "languages": [
-   "en-GB",
-   "fr",
-   "it",
-   "sv",
-   "zh"
-  ],
-  "markets": [
-   "food processing",
-   "baking",
-   "industrial",
-   "representatives worldwide"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Eye-Flex",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Compact-Grid",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - unverified exact match",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Flat-Flex",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Honeycomb",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Versa-Link",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Balanced Spiral",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Tapis convoyeur Eye-Flex / Nid d'abeilles",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband) / honeycomb",
-    "language": "fr"
-   },
-   {
-    "competitor_name": "Nido d'ape; Nastri speciali",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "it"
-   }
-  ],
-  "homepage_title": "Metal Conveyor Belt Manufacturer | Wire Belt | Get In Touch",
-  "homepage_meta": "Metal Conveyor Belt Manufacturer. Wire Belt Company offer many styles and specifications of industrial conveyor belts to suit your specific application.",
-  "group_company": false,
-  "sources": [
-   "https://wirebelt.co.uk/",
-   "https://wirebelt.co.uk/products/conveyor-belts/eye-flex-conveyor-belt/",
-   "https://wirebelt.fr/",
-   "https://wirebelt.it/",
-   "https://wirebelt.se/",
-   "https://www.confectioneryproduction.com/?p=53327"
-  ]
- },
- {
-  "name": "Wire Belt Company Osterloh GmbH",
-  "country": "DE (Selmsdorf)",
-  "website": "https://wirebelt.de",
-  "languages": [
-   "de"
-  ],
-  "markets": [
-   "food processing",
-   "cooling",
-   "heat treatment",
-   "annealing furnaces",
-   "Handelsvertretungen (agents)"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Eye-Flex Drahtösengliedergurte",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Spiralgurte / Spiralgliedergurte",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Flat-Flex Stabgeflechtsgurte",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Wabengurte",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Flex-Turn",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - conveyor, unverified exact match",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Compact-Grid",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - unverified exact match",
-    "language": "de"
-   }
-  ],
-  "homepage_title": "Metallfördergurte für effiziente Produktionsprozesse",
-  "homepage_meta": "Erfahren Sie mehr über Metallfördergurte und Metallförderbänder, die auf Ihre spezifischen Anwendungen zugeschnitten sind.",
-  "group_company": false,
-  "sources": [
-   "https://wirebelt.de/",
-   "https://wirebelt.de/produkte/metallfoerdergurte/eye-flex-drahtoesengliedergurte/",
-   "https://wirebelt.de/produkte/metallfoerdergurte/spiralgurte/",
-   "https://www.yumda.com/en/companies/1025633/wire-belt-company-osterloh-gmbh.html"
-  ]
- },
- {
-  "name": "Wire Belt Company of America",
-  "country": "US (Londonderry, NH)",
-  "website": "https://wirebelt.com",
-  "languages": [
-   "en-US"
-  ],
-  "markets": [
-   "food processing",
-   "industrial",
-   "USDA"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Eye-Flex",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Compact-Grid",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - unverified exact match",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Flat-Flex; Ladder-Track; Versa-Link",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "Wire Belt Company | Wire Mesh Belt Manufacturers",
-  "homepage_meta": "At Wire Belt, we offer many styles and specifications of mesh conveyor belts to suit your needs. Call us today on (603)644-2500 to find out more.",
-  "group_company": false,
-  "sources": [
-   "https://wirebelt.com/"
-  ]
- },
- {
-  "name": "Märtens Transportbänder GmbH (MARTENS)",
-  "country": "DE (Flensburg)",
-  "website": "https://www.martens-belts.com",
-  "languages": [
-   "de",
-   "en-GB",
-   "es",
-   "fr",
-   "it",
-   "pl",
-   "ru"
-  ],
-  "markets": [
-   "food industry (since 1929)",
-   "frying to freezing",
-   "ovens",
-   "cleaning systems",
-   "drying"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Drahtösengliederband / Loop-joined wire belt / Tapis à œillets / Taśma pętlicowa / Cinta transportadora de malla gancho",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "de/en/fr/pl/es"
-   },
-   {
-    "competitor_name": "Weitspiralgliederband / Wide spiral link belt / Tapis à spirales larges / Taśma z ogniwami spiralnymi otwartymi",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "de/en/fr/pl"
-   },
-   {
-    "competitor_name": "Engspiralgliederband / Tight spiral link belt / Tapis à spirales continues / Taśmy z ogniwami spiralnymi przylegającymi",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
-    "language": "de/en/fr/pl"
-   },
-   {
-    "competitor_name": "Drahtgeflechtband / Wire mesh belt; Stabgeflechtband / Rod network belt; Flachgewalztes Backofenband",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "de/en"
-   }
-  ],
-  "homepage_title": "Industrial conveyor belts | plastic & metal - MARTENS",
-  "homepage_meta": "Martens manufactures plastic and metal conveyor belts for industrial use. Find out more about our industrial conveyor belts.",
-  "group_company": false,
-  "sources": [
-   "https://www.martens-belts.com/",
-   "https://www.martens-belts.com/products/metal-conveyor-belt",
-   "https://www.martens-belts.com/de/produkte/metallfoerderband",
-   "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane",
-   "https://gulfood-manufacturing.german-pavilion.com/en/sites/exhibitors/124818"
-  ]
- },
- {
-  "name": "STEINHAUS GmbH (Siebtechnik Tema / Multotec group)",
-  "country": "DE (Mülheim an der Ruhr)",
-  "website": "https://www.steinhaus-gmbh.de",
-  "languages": [
-   "de",
-   "en"
-  ],
-  "markets": [
-   "bakery (bread baking belts)",
-   "fruit & vegetable washing",
-   "food & dairy",
-   "blasting / casting cleaning"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Wire link belts Groups 100/200 (flat or round spiral wires)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Braided link belts Groups 300/400",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Braided rod belts Group 700",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Rolled baking oven belts (Z-belts), CLEANBELT",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "STEINHAUS GmbH - Siebböden aus Stahl, Gummi und Kunststoff",
-  "homepage_meta": "Wir sind ein seit 100 Jahren bestehendes dynamisches, gut fundiertes mittelständisches Unternehmen mit Sitz im Ruhrgebiet.",
-  "group_company": false,
-  "sources": [
-   "https://www.steinhaus-gmbh.de/",
-   "https://www.steinhaus-gmbh.de/en/products/wire-mesh-conveyor-belts/",
-   "http://www.beltconfiguration.com/en",
-   "https://pdf.directindustry.com/pdf/steinhaus/groups-100-200/60252-651936.html",
-   "https://www.siebtechnik-tema.com/group/global-network/"
-  ]
- },
- {
-  "name": "HEIN, LEHMANN GmbH (Siebtechnik Tema / Multotec group)",
-  "country": "DE (Krefeld)",
-  "website": "https://www.heinlehmann.com",
-  "languages": [
-   "de",
-   "en",
-   "es",
-   "fr",
-   "nl"
-  ],
-  "markets": [
-   "most industrial sectors",
-   "-150 °C to approx. 1,200 °C processes",
-   "furnaces",
-   "sugar",
-   "automation"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Wide-spiral-wire link belt",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Spiral-wire link belt",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Wire-link belt",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband) - unverified exact match",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Woven wire belt; Belt with interlaced bars; Crossrod belt; Wire-mesh-link belt",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "HEIN, LEHMANN – Your expert for screening and conveying solutions",
-  "homepage_meta": "Tailor-made perforated plates, screens, screening machines, wedge wire screens, conveyer belts and more – for almost all industry branches. Ask us!",
-  "group_company": false,
-  "sources": [
-   "https://www.heinlehmann.com/en/",
-   "https://www.heinlehmann.com/en/products/wire-conveyor-belts",
-   "https://www.siebtechnik-tema.com/unit_operation/hl-conveyor-belts/"
-  ]
- },
- {
-  "name": "PELGER GmbH",
-  "country": "DE (Neuhäusel)",
-  "website": "https://pelger-drahtgewebe.de",
-  "languages": [
-   "de",
-   "en"
-  ],
-  "markets": [
-   "drying plants",
-   "continuous furnaces",
-   "industrial automation",
-   "worldwide",
-   "exhibited iba 2025"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Drahtösengliedergurte Typ 800",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Weitspiral-Flachdrahtgliedergurte Typ 300; Weitspiral-Runddrahtgliedergurte Typ 400",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Flachdrahtgliedergurte Typ 100; Runddrahtgliedergurte Typ 200",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Flachspiral-Drahtgliedergurte Typ 500; Rundspiral-Drahtgeflechtsgurte Typ 550",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Stabgeflechtsgurte Typ 700; Doppelspiralgurte Typ 1100; Geflechtsgliedergurte Typ 1300",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "de"
-   }
-  ],
-  "homepage_title": "Drahtgurte und Förderlösungen für Industrie | PELGER",
-  "homepage_meta": "Mit Drahtgurten, Drahtgurtförderern und Intralogistiklösungen bringt PELGER Ihre Produktionsprozesse sicher und effizient in Bewegung. ▶︎ Jetzt entdecken!",
-  "group_company": false,
-  "sources": [
-   "https://pelger-drahtgewebe.de/",
-   "https://pelger-drahtgewebe.de/en/",
-   "https://pelger-drahtgewebe.de/drahtgurte/drahtgurttypen-standard/weitspiral-runddrahtgliedergurte-typ-400/",
-   "https://pelger-drahtgewebe.de/news-detail/pelger-auf-der-iba-2025-40/"
-  ]
- },
- {
-  "name": "GEPPERT-Band GmbH (Dorner)",
-  "country": "DE (Jülich)",
-  "website": "unverified (geppert-band.de did not resolve on 2026-10-22)",
-  "languages": [
-   "unverified"
-  ],
-  "markets": [
-   "conveyors for sharp-edged or hot parts"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Runddraht-Gliedergurte (Gruppe 400, stainless)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
-    "language": "de"
-   }
-  ],
-  "homepage_title": "unverified",
-  "homepage_meta": "unverified",
-  "group_company": false,
-  "sources": [
-   "https://www.industrial-production.de/antriebstechnik/runddraht-gliedergurte-jetzt-mit-gliedergurt.htm",
-   "https://www.yumda.com/en/companies/1027620/geppert-band-gmbh.html",
-   "https://packaging-journal.de/en/?p=1898"
-  ]
- },
- {
-  "name": "Codina Metal (Bandas Metálicas Codina S.L.)",
-  "country": "ES (La Torre de Claramunt)",
-  "website": "https://codinametal.com",
-  "languages": [
-   "es",
-   "en",
-   "fr"
-  ],
-  "markets": [
-   "food industry",
-   "heat treatment",
-   "glass",
-   "sintering",
-   "shot blasting",
-   "brazing / continuous welding",
-   "beach cleaning"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Type A / A1 / A2 / A3-A6 (right and left spirals joined by straight or wavy rod)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Type Vaucanson",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "fr"
-   },
-   {
-    "competitor_name": "Type fils entrelacés (Z)",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "fr"
-   }
-  ],
-  "homepage_title": "Mallas metálicas y soluciones técnicas para industria y arquitectura | Codina Metal",
-  "homepage_meta": "Con más de un siglo de experiencia, Codina Metal diseña y fabrica soluciones metálicas de alta calidad para la industria y la arquitectura: cintas transportadoras, telas y mallas metálicas, sistemas de filtración metálica y demisters.",
-  "group_company": false,
-  "sources": [
-   "https://codinametal.com/",
-   "https://codinametal.com/en/conveyor-belts/conveyor-belt-models/",
-   "https://codinametal.com/fr/bandes-transporteuses/",
-   "https://www.hellopro.fr/type-vaucanson-bandes-transporteuses-metalliques-codina-largeur-max-1-m-1002162-6597605-produit.html"
-  ]
- },
- {
-  "name": "Campbelt S.A.",
-  "country": "ES (Reus)",
-  "website": "https://campbelt.es",
-  "languages": [
-   "es",
-   "en",
-   "fr",
-   "de"
-  ],
-  "markets": [
-   "industrial processes",
-   "architecture",
-   "Spain, Europe and America",
-   "distributors"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Eye link belts (CMG) / Tapis métallique à oeillets / Haken-Drahtmetallbänder",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "en/fr/de"
-   },
-   {
-    "competitor_name": "Wire spiral metal belts / Bandas metálicas de alambre de espirales / Spiralgeflecht-Förderbänder",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en/es/de"
-   },
-   {
-    "competitor_name": "Wire mesh belts (TDA); Flat metal belt (TDF); Plate link (CT-LP); Laminated (Z)",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "Campbelt fabricación de bandas transportadoras metálicas",
-  "homepage_meta": "Campbelt fabricación de bandas transportadoras metálicas para procesos industriales y diseños arquitectónicos",
-  "group_company": false,
-  "sources": [
-   "https://www.campbelt.com/",
-   "https://campbelt.es/en",
-   "https://campbelt.es/fr",
-   "https://campbelt.es/de",
-   "https://proveedores.com/proveedores/campbelt/"
-  ]
- },
- {
-  "name": "Fratelli Mariani S.p.A.",
-  "country": "IT (Cormano, Milano)",
-  "website": "https://www.fratellimariani.it",
-  "languages": [
-   "it",
-   "en (bilingual catalogue)"
-  ],
-  "markets": [
-   "furnaces",
-   "dryers",
-   "cooling plants",
-   "washing plants",
-   "architecture"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Nastri trasportatori tipo S.A.O. (spirali alternate, traversino ondulato) / S.A.L. (traversino liscio)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "it"
-   },
-   {
-    "competitor_name": "M.S. (maglia speciale); Grecato GR",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "it"
-   }
-  ],
-  "homepage_title": "Fratelli Mariani & MARIANItech®: Lamiere stirate e tele metalliche",
-  "homepage_meta": "Fondata nel 1929 in provincia di Como, dove la tradizione della tessitura ha da sempre incontrato l'abilità nella lavorazione del filo.",
-  "group_company": false,
-  "sources": [
-   "https://www.fratellimariani.it/",
-   "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
-  ]
- },
- {
-  "name": "NTM (Italy)",
-  "country": "IT",
-  "website": "unverified (no official site found)",
-  "languages": [
-   "unverified"
-  ],
-  "markets": [
-   "fastener/screw lines",
-   "heat-treatment furnaces",
-   "food lines (per CB Insights, unverified)"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "NSDTD wire mesh belt with straight crossbar and double spiral; NSDTO wavy crossbar",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "unverified",
-  "homepage_meta": "unverified",
-  "group_company": false,
-  "sources": [
-   "https://www.expometals.net/en/hall/services/stand/ntm/products/wire-mesh-belt-with-straight-crossbar-and-double-spiral",
-   "https://www.cbinsights.com/company/ntm-2"
-  ]
- },
- {
-  "name": "Cambridge Engineered Solutions (Regal Rexnord)",
-  "country": "US (Cambridge, MD; plants US, Mexico, Brazil)",
-  "website": "https://www.cambridge-es.com (blocked by Cloudflare 403 on 2026-10-22)",
-  "languages": [
-   "en",
-   "it (catalogue via Italian distributor)"
-  ],
-  "markets": [
-   "food processing",
-   "bakery & snacks",
-   "spiral cage systems",
-   "Europe via agents"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Cam-Grid, Cam-Grid Pro-Form (spiral)",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Balanced Weave (Wire Mesh and Balanced Weave Belts)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "DuraFlex",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "unverified (403)",
-  "homepage_meta": "unverified (403)",
-  "group_company": false,
-  "sources": [
-   "https://www.tecnicaindustriale.it/cambridge_catalogues/cambridge_catalogue.pdf",
-   "https://www.slsbearings.com/uploads/pdf/Cambridge_FoodCatalog_2024.pdf",
-   "https://www.bakeryandsnacks.com/Article/2013/07/12/Belt-suited-for-tight-turns-in-spiral-cage-conveyors/",
-   "https://investors.zurnelkay.com/news/news-details/2016/Rexnord-to-Acquire-Cambridge-International-Holdings-Corp-2016-5-18/default.aspx",
-   "https://www.packworld.com/home/product/22974400/regal-rexnord-corporation-regal-rexnord-introduces-new-cambridge-camgrid-proform-metal-belt"
-  ]
- },
- {
-  "name": "Audubon (meshbelt.com)",
-  "country": "US (Feasterville, PA)",
-  "website": "https://www.meshbelt.com",
-  "languages": [
-   "en"
-  ],
-  "markets": [
-   "heat treating",
-   "forging",
-   "food processing",
-   "baking",
-   "automotive"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Balance weave",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Compound Balance Weave; Cordweave baking bands",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Flatwire; Chainweave; Pinroll positive drive; Lehr belts; Furnace belts",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "Metal Conveyor Belts and Wire Mesh Belting by Audubon",
-  "homepage_meta": "Audubon wire mesh conveyor belts and metal wire belting. Our conveyor belts are available in steel, stainless steel, and Inconel and Nichrome alloys.",
-  "group_company": false,
-  "sources": [
-   "https://www.meshbelt.com/",
-   "https://www.meshbelt.com/BakingBand.html",
-   "https://www.meshbelt.com/FURNACEBELTS.html",
-   "https://us.metoree.com/companies/152628/"
-  ]
- },
- {
-  "name": "Lumsden Belting (Fenner Precision Polymers)",
-  "country": "US (Lancaster, PA)",
-  "website": "https://www.fenner.com/brands/lumsden",
-  "languages": [
-   "en"
-  ],
-  "markets": [
-   "industrial",
-   "baking"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Balance weave",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Flat wire belts",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Baking band",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Sidewinder",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "Fenner Drives Portal (JavaScript portal; no product meta in HTML)",
-  "homepage_meta": "(none)",
-  "group_company": false,
-  "sources": [
-   "https://www.fenner.com/brands/lumsden",
-   "https://www.plantautomation-technology.com/products/lumsden-belting-corp/balance-weave-belts",
-   "https://www.plantautomation-technology.com/products/lumsden-belting-corp/flat-wire-belts",
-   "https://industrialmachinerydigest.com/?p=60356"
-  ]
- },
- {
-  "name": "Belt Technologies, Inc.",
-  "country": "US",
-  "website": "https://www.belttechnologies.com",
-  "languages": [
-   "en"
-  ],
-  "markets": [
-   "food processing",
-   "automation",
-   "FDA/USDA sanitation"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "PureSteel metal conveyor belts (solid steel)",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Balanced weave, double balanced, conventional, rod reinforced, Gratex (after acquiring Wire Mesh Belt Co. of Canada)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "Belt Technologies, Inc.",
-  "homepage_meta": "Belt Technologies, Inc., has been producing PureSteel metal conveyor belts, metal timing belts, pulleys and conveyor systems for over 50 years.",
-  "group_company": false,
-  "sources": [
-   "https://www.belttechnologies.com/",
-   "https://www.motek-messe.de/en/Product-Innovations/14109-wire-mesh-belts"
-  ]
- },
- {
-  "name": "The Furnace Belt Company Ltd",
-  "country": "CA (Mississauga) - unverified, Thomasnet lists Buffalo NY",
-  "website": "unverified (furnacebelt.com returned a database error)",
-  "languages": [
-   "unverified"
-  ],
-  "markets": [
-   "food processing",
-   "freezer tunnels",
-   "agriculture",
-   "marine"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Balanced weave (alternating LH/RH spirals, cross-rod connector)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en"
-   },
-   {
-    "competitor_name": "Flat wire belting",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "unverified",
-  "homepage_meta": "unverified",
-  "group_company": false,
-  "sources": [
-   "https://www.iqsdirectory.com/profile/the-furnace-belt-limited-66141/",
-   "https://www.thomasnet.com/company/furnace-belt-co-1242298/profile",
-   "https://datasheets.globalspec.com/ds/2411/FurnaceBeltCompanyLimited"
-  ]
- },
- {
-  "name": "IPCO (formerly Sandvik Process Systems)",
-  "country": "SE",
-  "website": "https://www.ipco.com",
-  "languages": [
-   "en",
-   "de",
-   "es",
-   "fr",
-   "it",
-   "jp",
-   "ko",
-   "sv",
-   "zh"
-  ],
-  "markets": [
-   "baking (oven belts)",
-   "freezing",
-   "drying",
-   "chemicals"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Steel belts (solid / perforated)",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product, competes for oven/baking belts",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "IPCO - Industrial equipment and steel belts for production processes",
-  "homepage_meta": "Welcome to IPCO. Our industrial equipment and steel belts are used in production processes for thousands of consumer and business products.",
-  "group_company": false,
-  "sources": [
-   "https://www.ipco.com/",
-   "https://www.confectioneryproduction.com/organisation/sandvik/",
-   "https://www.yumda.com/it/aziende/1042054/ipco-sweden-ab.html"
-  ]
- },
- {
-  "name": "Berndorf Band Group",
-  "country": "AT",
-  "website": "https://www.berndorfband-group.com",
-  "languages": [
-   "en-GB",
-   "others unverified"
-  ],
-  "markets": [
-   "steel belts and belt systems (various)"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Steel belts",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product",
-    "language": "en"
-   }
-  ],
-  "homepage_title": "Steel Belts & Belt Systems by Berndorf Band Group",
-  "homepage_meta": "Discover Berndorf Band Group’s Steel Belts & Belt Systems here! ✓ global leader ✓ complete solution provider ✓ suitable for numerous applications",
-  "group_company": false,
-  "sources": [
-   "https://www.berndorfband-group.com/"
-  ]
- },
- {
-  "name": "Tissmetal",
-  "country": "FR (unverified)",
-  "website": "https://www.tissmetal.fr (maintenance page on 2026-10-22)",
-  "languages": [
-   "fr"
-  ],
-  "markets": [
-   "France"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Transbande (bandes transporteuses métalliques légères, entraînement positif)",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - unverified exact match",
-    "language": "fr"
-   }
-  ],
-  "homepage_title": "Maintenance - Mise à jour de sécurité PHP (site down)",
-  "homepage_meta": "(none)",
-  "group_company": false,
-  "sources": [
-   "https://www.hellopro.fr/transbande-bandes-transporteuses-metalliques-tissmetal--1002162-6597558-produit.html"
-  ]
- },
- {
-  "name": "GKD – Gebr. Kufferath AG",
-  "country": "DE (Düren)",
-  "website": "https://www.gkd-group.com (Cloudflare 403 on 2026-10-22)",
-  "languages": [
-   "unverified"
-  ],
-  "markets": [
-   "process belts (mesh and spiral belts), mainly industrial/corrugated board; metal food belts unverified"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Spiralgliederbänder (process belts; material metal vs synthetic unverified)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified",
-    "language": "de"
-   },
-   {
-    "competitor_name": "Ofenband (glossary)",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "de"
-   }
-  ],
-  "homepage_title": "unverified (403)",
-  "homepage_meta": "unverified (403)",
-  "group_company": false,
-  "sources": [
-   "https://www.gkd-group.com/de-de/glossar/ofenband/",
-   "https://kunststoff.kuhn-fachmedien.de/wp-content/themes/kuhn-magazin/pdf/mpdf/kuhn/print-post.php?postid=32",
-   "https://www.gkd-group.com/en/company/about-us/"
-  ]
- },
- {
-  "name": "Tribelt B.V.",
-  "country": "NL (Haaksbergen)",
-  "website": "https://www.tribelt.nl",
-  "languages": [
-   "nl",
-   "en",
-   "de"
-  ],
-  "markets": [
-   "NL",
-   "DACH",
-   "FR (Sales FR)",
-   "Europe (approx. MEUR 14, primarily European market in 2019)",
-   "worldwide use"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Draadogenbanden / Eyelink belts / Drahtösengliederbänder (OGB, OGB-L, OGB-LF, OGB-F, OGB-S, KE-band)",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "nl/en/de"
-   },
-   {
-    "competitor_name": "Open spiraalbanden / Balanced weave belts / Weitspiralbänder (Type 100 WG, 200 WG, 150)",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "nl/en/de"
-   },
-   {
-    "competitor_name": "Gesloten spiraalbanden / Compound balanced belts / Engspiralbänder",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
-    "language": "nl/en/de"
-   },
-   {
-    "competitor_name": "Tri-Flex",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
-    "language": "nl/en/de"
-   },
-   {
-    "competitor_name": "Overige banden / Other belts / Andere Bandtypen",
-    "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
-    "language": "nl/en/de"
-   }
-  ],
-  "homepage_title": "Tribelt | Uw partner in metalen transportbanden",
-  "homepage_meta": "Tribelt levert hoogwaardige metalen transportbanden voor elke industrie. Efficiënt, duurzaam en volledig afgestemd op uw behoeften.",
-  "group_company": true,
-  "sources": [
-   "https://www.tribelt.nl/",
-   "https://www.tribelt.nl/en",
-   "https://www.tribelt.nl/de",
-   "https://www.tribelt.nl/en/about-us",
-   "https://www.lesjoforsab.com/about-lesjofors/news/lesjofors-acquires-tribelt-and-de-spiraal-in-the-netherlands/"
-  ]
- },
- {
-  "name": "Lesjöfors (metal conveyor belts product line on lesjofors.com)",
-  "country": "SE",
-  "website": "https://www.lesjofors.com/en/products/metal-conveyor-belts/",
-  "languages": [
-   "en",
-   "sv"
-  ],
-  "markets": [
-   "group sales channel for Tribelt's range (inferred from identical belt names; unverified)"
-  ],
-  "belt_names": [
-   {
-    "competitor_name": "Eyelink belts / Eyelink-band",
-    "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
-    "language": "en/sv"
-   },
-   {
-    "competitor_name": "Balanced weave belts / Band med balanserad väv",
-    "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
-    "language": "en/sv"
-   },
-   {
-    "competitor_name": "Compound balanced belts / compound balanced-band",
-    "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
-    "language": "en/sv"
-   },
-   {
-    "competitor_name": "Tri-Flex",
-    "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
-    "language": "en/sv"
-   }
-  ],
-  "homepage_title": "Custom Metal Conveyor Belts | Lesjöfors",
-  "homepage_meta": "We develop and produce wide variety of metal conveyor belts (or transportation belts) from wire and strip steel for for multiple applications.",
-  "group_company": true,
-  "sources": [
-   "https://www.lesjofors.com/en/products/metal-conveyor-belts/",
-   "https://www.lesjofors.com/sv/produkter/transportband/"
-  ]
- },
- {
-  "name": "De Spiraal B.V.",
-  "country": "NL (Haaksbergen)",
-  "website": "https://www.tribelt.nl/over-ons",
-  "languages": [
-   "nl"
-  ],
-  "markets": [
-   "springs and wire forms (NL market leader per Tribelt)"
-  ],
-  "belt_names": [],
-  "homepage_title": "n/a (shares site/LinkedIn with Tribelt)",
-  "homepage_meta": "n/a",
-  "group_company": true,
-  "sources": [
-   "https://www.tribelt.nl/over-ons",
-   "https://www.lesjoforsab.com/about-lesjofors/news/lesjofors-acquires-tribelt-and-de-spiraal-in-the-netherlands/"
-  ]
- }
+  {
+    "name": "Twentebelt",
+    "country": "NL (production also in Kudowa-Zdrój, PL)",
+    "website": "https://www.twentebelt.com",
+    "languages": [
+      "en"
+    ],
+    "markets": [
+      "food processing",
+      "baking",
+      "freezing",
+      "worldwide (sites NL + PL)"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Eyelink belts",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Balanced weave belts (types GS, RS, SP)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "CB 'Compound' conveyor belt",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "TwenteFlex spiral belts",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "TwenteSideFlex",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - side-flexing variant, unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Wire mesh belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Twentebelt | Metal conveyor belts",
+    "homepage_meta": "For over a century Twentebelt has been a leading manufacturer of high quality metal conveyor belts for the food processing industry.",
+    "group_company": false,
+    "sources": [
+      "https://www.twentebelt.com/",
+      "https://www.twentebelt.com/locations/",
+      "https://www.twentebelt.com/conveyor-belts/balanced-weave-belts/",
+      "https://www.twentebelt.com/conveyor-belts/twenteflex-spiral-belts/"
+    ]
+  },
+  {
+    "name": "ESFO Transportbanden B.V. (ESFO Metal Belts, Narviflex Group)",
+    "country": "NL",
+    "website": "https://www.esfo-metalbelts.com",
+    "languages": [
+      "nl",
+      "en",
+      "de"
+    ],
+    "markets": [
+      "bread & bakery",
+      "potato processing",
+      "vegetables & fruit",
+      "fish & other food",
+      "packaging",
+      "thermal processes",
+      "washing & cleaning",
+      "architecture"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "OB draadogenband (OBKK)",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "nl"
+      },
+      {
+        "competitor_name": "BS breedspiraalband (BSKK)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "nl"
+      },
+      {
+        "competitor_name": "RA rondloopband",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
+        "language": "nl"
+      },
+      {
+        "competitor_name": "EBZ biscuit bakband",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "nl"
+      },
+      {
+        "competitor_name": "GRZK grilleband",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "nl"
+      },
+      {
+        "competitor_name": "HO honingraatband",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "nl"
+      },
+      {
+        "competitor_name": "ST stavenband",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "nl"
+      },
+      {
+        "competitor_name": "SC scharnierplatenband",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "nl"
+      },
+      {
+        "competitor_name": "MT-E modulenband",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "nl"
+      }
+    ],
+    "homepage_title": "ESFO | TRANSPORTBANDEN",
+    "homepage_meta": "Esfo Transportbanden staat bekend als dé kwaliteitsreferentie in metaalbanden, door de hoge kwaliteitsstandaard en de uitgebreide product-range.",
+    "group_company": false,
+    "sources": [
+      "https://www.esfo-metalbelts.com/",
+      "https://www.esfo-metalbelts.com/en",
+      "https://www.esfo-metalbelts.com/obkk-draadogenband",
+      "https://www.esfo-metalbelts.com/bskk-breedspiraalband",
+      "https://www.esfo-metalbelts.com/ra-rondloopband"
+    ]
+  },
+  {
+    "name": "Unibelt",
+    "country": "NL (Panheel)",
+    "website": "https://unibelt.nl",
+    "languages": [
+      "en",
+      "nl"
+    ],
+    "markets": [
+      "food industry",
+      "baking",
+      "automotive",
+      "industrial drying",
+      "worldwide"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Group 100 (flat wire spirals), Group 200 / 400 (round wire spirals)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Group 800 / 800S wire link belt",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Group 900 crossrod belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Z belts (rolled baking oven belts)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "World leader in wire mesh conveyor belts | Unibelt",
+    "homepage_meta": "Unibelt is the market leader for wire mesh conveyor belts, offering custom solutions for the food industry, automotive and the industrial drying sector.",
+    "group_company": false,
+    "sources": [
+      "https://unibelt.nl/",
+      "https://unibelt.nl/nl",
+      "https://unibelt.nl/products",
+      "https://village.ai/company/unibelt"
+    ]
+  },
+  {
+    "name": "Ashworth (Ashworth Bros.; Ashworth Belts B.V. Amsterdam; Ashworth Europe Ltd UK)",
+    "country": "US (EU units NL + UK)",
+    "website": "https://www.ashworth.com",
+    "languages": [
+      "en",
+      "de",
+      "es",
+      "fr",
+      "it",
+      "nl",
+      "pt"
+    ],
+    "markets": [
+      "food processing",
+      "industrial",
+      "spiral and turn-curve systems",
+      "baking"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Eye-Link belts (OGBL, OGBL Plus)",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Balanced Weave conveyor belts",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Compound Balance Weave Baking Band; CB3 / CB5 Baking Band",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Omni-Grid, Omni-Grid 360, Omni-Flex, Omni-Pro, Small Radius Omni-Grid",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flat Wire, Z-Baking Belts, Cleatrac, WG Woven Wire",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Metall-Spiral- und Wendekurvenbänder",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Metalen spiraal & draaicurve riemen",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
+        "language": "nl"
+      }
+    ],
+    "homepage_title": "Conveyor Belt Manufacturer — Metal & Plastic Belts | Ashworth",
+    "homepage_meta": "The inventor of the spiral belt still engineers the widest range in food and industrial conveying — metal, hybrid, and plastic. Request a quote.",
+    "group_company": false,
+    "sources": [
+      "https://www.ashworth.com/",
+      "https://www.ashworth.com/metal-conveyor-belts/metal-straight-running-belts/",
+      "https://www.ashworth.com/metal-conveyor-belts/metal-spiral-turn-curve-belts/",
+      "https://www.ashworth.com/de/",
+      "https://www.ashworth.com/nl/",
+      "https://www.potatobusiness.com/supplier/ashworth-belts-b-v/",
+      "https://www.ashworth.com/media/i43flbmd/ash402-flat_wire_brochure_v1r1_ash_us_flatwire_0225_001_lq-2.pdf"
+    ]
+  },
+  {
+    "name": "Wire Belt Company Ltd",
+    "country": "UK (Sittingbourne)",
+    "website": "https://wirebelt.co.uk",
+    "languages": [
+      "en-GB",
+      "fr",
+      "it",
+      "sv",
+      "zh"
+    ],
+    "markets": [
+      "food processing",
+      "baking",
+      "industrial",
+      "representatives worldwide"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Eye-Flex",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Compact-Grid",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flat-Flex",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Honeycomb",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Versa-Link",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Balanced Spiral",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Tapis convoyeur Eye-Flex / Nid d'abeilles",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband) / honeycomb",
+        "language": "fr"
+      },
+      {
+        "competitor_name": "Nido d'ape; Nastri speciali",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "it"
+      }
+    ],
+    "homepage_title": "Metal Conveyor Belt Manufacturer | Wire Belt | Get In Touch",
+    "homepage_meta": "Metal Conveyor Belt Manufacturer. Wire Belt Company offer many styles and specifications of industrial conveyor belts to suit your specific application.",
+    "group_company": false,
+    "sources": [
+      "https://wirebelt.co.uk/",
+      "https://wirebelt.co.uk/products/conveyor-belts/eye-flex-conveyor-belt/",
+      "https://wirebelt.fr/",
+      "https://wirebelt.it/",
+      "https://wirebelt.se/",
+      "https://www.confectioneryproduction.com/?p=53327"
+    ]
+  },
+  {
+    "name": "Wire Belt Company Osterloh GmbH",
+    "country": "DE (Selmsdorf)",
+    "website": "https://wirebelt.de",
+    "languages": [
+      "de"
+    ],
+    "markets": [
+      "food processing",
+      "cooling",
+      "heat treatment",
+      "annealing furnaces",
+      "Handelsvertretungen (agents)"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Eye-Flex Drahtösengliedergurte",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Spiralgurte / Spiralgliedergurte",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Flat-Flex Stabgeflechtsgurte",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Wabengurte",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Flex-Turn",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - conveyor, unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Compact-Grid",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - unverified exact match",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "Metallfördergurte für effiziente Produktionsprozesse",
+    "homepage_meta": "Erfahren Sie mehr über Metallfördergurte und Metallförderbänder, die auf Ihre spezifischen Anwendungen zugeschnitten sind.",
+    "group_company": false,
+    "sources": [
+      "https://wirebelt.de/",
+      "https://wirebelt.de/produkte/metallfoerdergurte/eye-flex-drahtoesengliedergurte/",
+      "https://wirebelt.de/produkte/metallfoerdergurte/spiralgurte/",
+      "https://www.yumda.com/en/companies/1025633/wire-belt-company-osterloh-gmbh.html"
+    ]
+  },
+  {
+    "name": "Wire Belt Company of America",
+    "country": "US (Londonderry, NH)",
+    "website": "https://wirebelt.com",
+    "languages": [
+      "en-US"
+    ],
+    "markets": [
+      "food processing",
+      "industrial",
+      "USDA"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Eye-Flex",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Compact-Grid",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flat-Flex; Ladder-Track; Versa-Link",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Wire Belt Company | Wire Mesh Belt Manufacturers",
+    "homepage_meta": "At Wire Belt, we offer many styles and specifications of mesh conveyor belts to suit your needs. Call us today on (603)644-2500 to find out more.",
+    "group_company": false,
+    "sources": [
+      "https://wirebelt.com/"
+    ]
+  },
+  {
+    "name": "Märtens Transportbänder GmbH (MARTENS)",
+    "country": "DE (Flensburg)",
+    "website": "https://www.martens-belts.com",
+    "languages": [
+      "de",
+      "en-GB",
+      "es",
+      "fr",
+      "it",
+      "pl",
+      "ru"
+    ],
+    "markets": [
+      "food industry (since 1929)",
+      "frying to freezing",
+      "ovens",
+      "cleaning systems",
+      "drying"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Drahtösengliederband / Loop-joined wire belt / Tapis à œillets / Taśma pętlicowa / Cinta transportadora de malla gancho",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "de/en/fr/pl/es"
+      },
+      {
+        "competitor_name": "Weitspiralgliederband / Wide spiral link belt / Tapis à spirales larges / Taśma z ogniwami spiralnymi otwartymi",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "de/en/fr/pl"
+      },
+      {
+        "competitor_name": "Engspiralgliederband / Tight spiral link belt / Tapis à spirales continues / Taśmy z ogniwami spiralnymi przylegającymi",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "de/en/fr/pl"
+      },
+      {
+        "competitor_name": "Drahtgeflechtband / Wire mesh belt; Stabgeflechtband / Rod network belt; Flachgewalztes Backofenband",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de/en"
+      }
+    ],
+    "homepage_title": "Industrial conveyor belts | plastic & metal - MARTENS",
+    "homepage_meta": "Martens manufactures plastic and metal conveyor belts for industrial use. Find out more about our industrial conveyor belts.",
+    "group_company": false,
+    "sources": [
+      "https://www.martens-belts.com/",
+      "https://www.martens-belts.com/products/metal-conveyor-belt",
+      "https://www.martens-belts.com/de/produkte/metallfoerderband",
+      "https://www.martens-belts.com/pl/produkty/metalowe-tasmy-transportowe-druciane",
+      "https://gulfood-manufacturing.german-pavilion.com/en/sites/exhibitors/124818"
+    ]
+  },
+  {
+    "name": "STEINHAUS GmbH (Siebtechnik Tema / Multotec group)",
+    "country": "DE (Mülheim an der Ruhr)",
+    "website": "https://www.steinhaus-gmbh.de",
+    "languages": [
+      "de",
+      "en"
+    ],
+    "markets": [
+      "bakery (bread baking belts)",
+      "fruit & vegetable washing",
+      "food & dairy",
+      "blasting / casting cleaning"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Wire link belts Groups 100/200 (flat or round spiral wires)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Braided link belts Groups 300/400",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Braided rod belts Group 700",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Rolled baking oven belts (Z-belts), CLEANBELT",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "STEINHAUS GmbH - Siebböden aus Stahl, Gummi und Kunststoff",
+    "homepage_meta": "Wir sind ein seit 100 Jahren bestehendes dynamisches, gut fundiertes mittelständisches Unternehmen mit Sitz im Ruhrgebiet.",
+    "group_company": false,
+    "sources": [
+      "https://www.steinhaus-gmbh.de/",
+      "https://www.steinhaus-gmbh.de/en/products/wire-mesh-conveyor-belts/",
+      "http://www.beltconfiguration.com/en",
+      "https://pdf.directindustry.com/pdf/steinhaus/groups-100-200/60252-651936.html",
+      "https://www.siebtechnik-tema.com/group/global-network/"
+    ]
+  },
+  {
+    "name": "HEIN, LEHMANN GmbH (Siebtechnik Tema / Multotec group)",
+    "country": "DE (Krefeld)",
+    "website": "https://www.heinlehmann.com",
+    "languages": [
+      "de",
+      "en",
+      "es",
+      "fr",
+      "nl"
+    ],
+    "markets": [
+      "most industrial sectors",
+      "-150 °C to approx. 1,200 °C processes",
+      "furnaces",
+      "sugar",
+      "automation"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Wide-spiral-wire link belt",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Spiral-wire link belt",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Wire-link belt",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Woven wire belt; Belt with interlaced bars; Crossrod belt; Wire-mesh-link belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "HEIN, LEHMANN – Your expert for screening and conveying solutions",
+    "homepage_meta": "Tailor-made perforated plates, screens, screening machines, wedge wire screens, conveyer belts and more – for almost all industry branches. Ask us!",
+    "group_company": false,
+    "sources": [
+      "https://www.heinlehmann.com/en/",
+      "https://www.heinlehmann.com/en/products/wire-conveyor-belts",
+      "https://www.siebtechnik-tema.com/unit_operation/hl-conveyor-belts/"
+    ]
+  },
+  {
+    "name": "PELGER GmbH",
+    "country": "DE (Neuhäusel)",
+    "website": "https://pelger-drahtgewebe.de",
+    "languages": [
+      "de",
+      "en"
+    ],
+    "markets": [
+      "drying plants",
+      "continuous furnaces",
+      "industrial automation",
+      "worldwide",
+      "exhibited iba 2025"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Drahtösengliedergurte Typ 800",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Weitspiral-Flachdrahtgliedergurte Typ 300; Weitspiral-Runddrahtgliedergurte Typ 400",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Flachdrahtgliedergurte Typ 100; Runddrahtgliedergurte Typ 200",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Flachspiral-Drahtgliedergurte Typ 500; Rundspiral-Drahtgeflechtsgurte Typ 550",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Stabgeflechtsgurte Typ 700; Doppelspiralgurte Typ 1100; Geflechtsgliedergurte Typ 1300",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "Drahtgurte und Förderlösungen für Industrie | PELGER",
+    "homepage_meta": "Mit Drahtgurten, Drahtgurtförderern und Intralogistiklösungen bringt PELGER Ihre Produktionsprozesse sicher und effizient in Bewegung. ▶︎ Jetzt entdecken!",
+    "group_company": false,
+    "sources": [
+      "https://pelger-drahtgewebe.de/",
+      "https://pelger-drahtgewebe.de/en/",
+      "https://pelger-drahtgewebe.de/drahtgurte/drahtgurttypen-standard/weitspiral-runddrahtgliedergurte-typ-400/",
+      "https://pelger-drahtgewebe.de/news-detail/pelger-auf-der-iba-2025-40/"
+    ]
+  },
+  {
+    "name": "GEPPERT-Band GmbH (Dorner)",
+    "country": "DE (Jülich)",
+    "website": "unverified (geppert-band.de did not resolve on 2026-10-22)",
+    "languages": [
+      "unverified"
+    ],
+    "markets": [
+      "conveyors for sharp-edged or hot parts"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Runddraht-Gliedergurte (Gruppe 400, stainless)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "unverified",
+    "homepage_meta": "unverified",
+    "group_company": false,
+    "sources": [
+      "https://www.industrial-production.de/antriebstechnik/runddraht-gliedergurte-jetzt-mit-gliedergurt.htm",
+      "https://www.yumda.com/en/companies/1027620/geppert-band-gmbh.html",
+      "https://packaging-journal.de/en/?p=1898"
+    ]
+  },
+  {
+    "name": "Codina Metal (Bandas Metálicas Codina S.L.)",
+    "country": "ES (La Torre de Claramunt)",
+    "website": "https://codinametal.com",
+    "languages": [
+      "es",
+      "en",
+      "fr"
+    ],
+    "markets": [
+      "food industry",
+      "heat treatment",
+      "glass",
+      "sintering",
+      "shot blasting",
+      "brazing / continuous welding",
+      "beach cleaning"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Type A / A1 / A2 / A3-A6 (right and left spirals joined by straight or wavy rod)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Type Vaucanson",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "fr"
+      },
+      {
+        "competitor_name": "Type fils entrelacés (Z)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "fr"
+      }
+    ],
+    "homepage_title": "Mallas metálicas y soluciones técnicas para industria y arquitectura | Codina Metal",
+    "homepage_meta": "Con más de un siglo de experiencia, Codina Metal diseña y fabrica soluciones metálicas de alta calidad para la industria y la arquitectura: cintas transportadoras, telas y mallas metálicas, sistemas de filtración metálica y demisters.",
+    "group_company": false,
+    "sources": [
+      "https://codinametal.com/",
+      "https://codinametal.com/en/conveyor-belts/conveyor-belt-models/",
+      "https://codinametal.com/fr/bandes-transporteuses/",
+      "https://www.hellopro.fr/type-vaucanson-bandes-transporteuses-metalliques-codina-largeur-max-1-m-1002162-6597605-produit.html"
+    ]
+  },
+  {
+    "name": "Campbelt S.A.",
+    "country": "ES (Reus)",
+    "website": "https://campbelt.es",
+    "languages": [
+      "es",
+      "en",
+      "fr",
+      "de"
+    ],
+    "markets": [
+      "industrial processes",
+      "architecture",
+      "Spain, Europe and America",
+      "distributors"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Eye link belts (CMG) / Tapis métallique à oeillets / Haken-Drahtmetallbänder",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en/fr/de"
+      },
+      {
+        "competitor_name": "Wire spiral metal belts / Bandas metálicas de alambre de espirales / Spiralgeflecht-Förderbänder",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en/es/de"
+      },
+      {
+        "competitor_name": "Wire mesh belts (TDA); Flat metal belt (TDF); Plate link (CT-LP); Laminated (Z)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Campbelt fabricación de bandas transportadoras metálicas",
+    "homepage_meta": "Campbelt fabricación de bandas transportadoras metálicas para procesos industriales y diseños arquitectónicos",
+    "group_company": false,
+    "sources": [
+      "https://www.campbelt.com/",
+      "https://campbelt.es/en",
+      "https://campbelt.es/fr",
+      "https://campbelt.es/de",
+      "https://proveedores.com/proveedores/campbelt/"
+    ]
+  },
+  {
+    "name": "Fratelli Mariani S.p.A.",
+    "country": "IT (Cormano, Milano)",
+    "website": "https://www.fratellimariani.it",
+    "languages": [
+      "it",
+      "en (bilingual catalogue)"
+    ],
+    "markets": [
+      "furnaces",
+      "dryers",
+      "cooling plants",
+      "washing plants",
+      "architecture"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Nastri trasportatori tipo S.A.O. (spirali alternate, traversino ondulato) / S.A.L. (traversino liscio)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "it"
+      },
+      {
+        "competitor_name": "M.S. (maglia speciale); Grecato GR",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "it"
+      }
+    ],
+    "homepage_title": "Fratelli Mariani & MARIANItech®: Lamiere stirate e tele metalliche",
+    "homepage_meta": "Fondata nel 1929 in provincia di Como, dove la tradizione della tessitura ha da sempre incontrato l'abilità nella lavorazione del filo.",
+    "group_company": false,
+    "sources": [
+      "https://www.fratellimariani.it/",
+      "https://www.hellopro.fr//documentation/pdf_prod/6/1/6/2542687_417b7027ad298485e96545a788d34142_6597616.pdf"
+    ]
+  },
+  {
+    "name": "NTM (Italy)",
+    "country": "IT",
+    "website": "unverified (no official site found)",
+    "languages": [
+      "unverified"
+    ],
+    "markets": [
+      "fastener/screw lines",
+      "heat-treatment furnaces",
+      "food lines (per CB Insights, unverified)"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "NSDTD wire mesh belt with straight crossbar and double spiral; NSDTO wavy crossbar",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "unverified",
+    "homepage_meta": "unverified",
+    "group_company": false,
+    "sources": [
+      "https://www.expometals.net/en/hall/services/stand/ntm/products/wire-mesh-belt-with-straight-crossbar-and-double-spiral",
+      "https://www.cbinsights.com/company/ntm-2"
+    ]
+  },
+  {
+    "name": "Cambridge Engineered Solutions (Regal Rexnord)",
+    "country": "US (Cambridge, MD; plants US, Mexico, Brazil)",
+    "website": "https://www.cambridge-es.com (blocked by Cloudflare 403 on 2026-10-22)",
+    "languages": [
+      "en",
+      "it (catalogue via Italian distributor)"
+    ],
+    "markets": [
+      "food processing",
+      "bakery & snacks",
+      "spiral cage systems",
+      "Europe via agents"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Cam-Grid, Cam-Grid Pro-Form (spiral)",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Balanced Weave (Wire Mesh and Balanced Weave Belts)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "DuraFlex",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "unverified (403)",
+    "homepage_meta": "unverified (403)",
+    "group_company": false,
+    "sources": [
+      "https://www.tecnicaindustriale.it/cambridge_catalogues/cambridge_catalogue.pdf",
+      "https://www.slsbearings.com/uploads/pdf/Cambridge_FoodCatalog_2024.pdf",
+      "https://www.bakeryandsnacks.com/Article/2013/07/12/Belt-suited-for-tight-turns-in-spiral-cage-conveyors/",
+      "https://investors.zurnelkay.com/news/news-details/2016/Rexnord-to-Acquire-Cambridge-International-Holdings-Corp-2016-5-18/default.aspx",
+      "https://www.packworld.com/home/product/22974400/regal-rexnord-corporation-regal-rexnord-introduces-new-cambridge-camgrid-proform-metal-belt"
+    ]
+  },
+  {
+    "name": "Audubon (meshbelt.com)",
+    "country": "US (Feasterville, PA)",
+    "website": "https://www.meshbelt.com",
+    "languages": [
+      "en"
+    ],
+    "markets": [
+      "heat treating",
+      "forging",
+      "food processing",
+      "baking",
+      "automotive"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Balance weave",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Compound Balance Weave; Cordweave baking bands",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flatwire; Chainweave; Pinroll positive drive; Lehr belts; Furnace belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Metal Conveyor Belts and Wire Mesh Belting by Audubon",
+    "homepage_meta": "Audubon wire mesh conveyor belts and metal wire belting. Our conveyor belts are available in steel, stainless steel, and Inconel and Nichrome alloys.",
+    "group_company": false,
+    "sources": [
+      "https://www.meshbelt.com/",
+      "https://www.meshbelt.com/BakingBand.html",
+      "https://www.meshbelt.com/FURNACEBELTS.html",
+      "https://us.metoree.com/companies/152628/"
+    ]
+  },
+  {
+    "name": "Lumsden Belting (Fenner Precision Polymers)",
+    "country": "US (Lancaster, PA)",
+    "website": "https://www.fenner.com/brands/lumsden",
+    "languages": [
+      "en"
+    ],
+    "markets": [
+      "industrial",
+      "baking"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Balance weave",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flat wire belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Baking band",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Sidewinder",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Fenner Drives Portal (JavaScript portal; no product meta in HTML)",
+    "homepage_meta": "(none)",
+    "group_company": false,
+    "sources": [
+      "https://www.fenner.com/brands/lumsden",
+      "https://www.plantautomation-technology.com/products/lumsden-belting-corp/balance-weave-belts",
+      "https://www.plantautomation-technology.com/products/lumsden-belting-corp/flat-wire-belts",
+      "https://industrialmachinerydigest.com/?p=60356"
+    ]
+  },
+  {
+    "name": "Belt Technologies, Inc.",
+    "country": "US",
+    "website": "https://www.belttechnologies.com",
+    "languages": [
+      "en"
+    ],
+    "markets": [
+      "food processing",
+      "automation",
+      "FDA/USDA sanitation"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "PureSteel metal conveyor belts (solid steel)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Balanced weave, double balanced, conventional, rod reinforced, Gratex (after acquiring Wire Mesh Belt Co. of Canada)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Belt Technologies, Inc.",
+    "homepage_meta": "Belt Technologies, Inc., has been producing PureSteel metal conveyor belts, metal timing belts, pulleys and conveyor systems for over 50 years.",
+    "group_company": false,
+    "sources": [
+      "https://www.belttechnologies.com/",
+      "https://www.motek-messe.de/en/Product-Innovations/14109-wire-mesh-belts"
+    ]
+  },
+  {
+    "name": "The Furnace Belt Company Ltd",
+    "country": "CA (Mississauga) - unverified, Thomasnet lists Buffalo NY",
+    "website": "unverified (furnacebelt.com returned a database error)",
+    "languages": [
+      "unverified"
+    ],
+    "markets": [
+      "food processing",
+      "freezer tunnels",
+      "agriculture",
+      "marine"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Balanced weave (alternating LH/RH spirals, cross-rod connector)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flat wire belting",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "unverified",
+    "homepage_meta": "unverified",
+    "group_company": false,
+    "sources": [
+      "https://www.iqsdirectory.com/profile/the-furnace-belt-limited-66141/",
+      "https://www.thomasnet.com/company/furnace-belt-co-1242298/profile",
+      "https://datasheets.globalspec.com/ds/2411/FurnaceBeltCompanyLimited"
+    ]
+  },
+  {
+    "name": "IPCO (formerly Sandvik Process Systems)",
+    "country": "SE",
+    "website": "https://www.ipco.com",
+    "languages": [
+      "en",
+      "de",
+      "es",
+      "fr",
+      "it",
+      "jp",
+      "ko",
+      "sv",
+      "zh"
+    ],
+    "markets": [
+      "baking (oven belts)",
+      "freezing",
+      "drying",
+      "chemicals"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Steel belts (solid / perforated)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product, competes for oven/baking belts",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "IPCO - Industrial equipment and steel belts for production processes",
+    "homepage_meta": "Welcome to IPCO. Our industrial equipment and steel belts are used in production processes for thousands of consumer and business products.",
+    "group_company": false,
+    "sources": [
+      "https://www.ipco.com/",
+      "https://www.confectioneryproduction.com/organisation/sandvik/",
+      "https://www.yumda.com/it/aziende/1042054/ipco-sweden-ab.html"
+    ]
+  },
+  {
+    "name": "Berndorf Band Group",
+    "country": "AT",
+    "website": "https://www.berndorfband-group.com",
+    "languages": [
+      "en-GB",
+      "others unverified"
+    ],
+    "markets": [
+      "steel belts and belt systems (various)"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Steel belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Steel Belts & Belt Systems by Berndorf Band Group",
+    "homepage_meta": "Discover Berndorf Band Group’s Steel Belts & Belt Systems here! ✓ global leader ✓ complete solution provider ✓ suitable for numerous applications",
+    "group_company": false,
+    "sources": [
+      "https://www.berndorfband-group.com/"
+    ]
+  },
+  {
+    "name": "Tissmetal",
+    "country": "FR (unverified)",
+    "website": "https://www.tissmetal.fr (maintenance page on 2026-10-22)",
+    "languages": [
+      "fr"
+    ],
+    "markets": [
+      "France"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Transbande (bandes transporteuses métalliques légères, entraînement positif)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - unverified exact match",
+        "language": "fr"
+      }
+    ],
+    "homepage_title": "Maintenance - Mise à jour de sécurité PHP (site down)",
+    "homepage_meta": "(none)",
+    "group_company": false,
+    "sources": [
+      "https://www.hellopro.fr/transbande-bandes-transporteuses-metalliques-tissmetal--1002162-6597558-produit.html"
+    ]
+  },
+  {
+    "name": "GKD – Gebr. Kufferath AG",
+    "country": "DE (Düren)",
+    "website": "https://www.gkd-group.com (Cloudflare 403 on 2026-10-22)",
+    "languages": [
+      "unverified"
+    ],
+    "markets": [
+      "process belts (mesh and spiral belts), mainly industrial/corrugated board; metal food belts unverified"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Spiralgliederbänder (process belts; material metal vs synthetic unverified)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Ofenband (glossary)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "unverified (403)",
+    "homepage_meta": "unverified (403)",
+    "group_company": false,
+    "sources": [
+      "https://www.gkd-group.com/de-de/glossar/ofenband/",
+      "https://kunststoff.kuhn-fachmedien.de/wp-content/themes/kuhn-magazin/pdf/mpdf/kuhn/print-post.php?postid=32",
+      "https://www.gkd-group.com/en/company/about-us/"
+    ]
+  },
+  {
+    "name": "Tribelt B.V.",
+    "country": "NL (Haaksbergen)",
+    "website": "https://www.tribelt.nl",
+    "languages": [
+      "nl",
+      "en",
+      "de"
+    ],
+    "markets": [
+      "NL",
+      "DACH",
+      "FR (Sales FR)",
+      "Europe (approx. MEUR 14, primarily European market in 2019)",
+      "worldwide use"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Draadogenbanden / Eyelink belts / Drahtösengliederbänder (OGB, OGB-L, OGB-LF, OGB-F, OGB-S, KE-band)",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "nl/en/de"
+      },
+      {
+        "competitor_name": "Open spiraalbanden / Balanced weave belts / Weitspiralbänder (Type 100 WG, 200 WG, 150)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "nl/en/de"
+      },
+      {
+        "competitor_name": "Gesloten spiraalbanden / Compound balanced belts / Engspiralbänder",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "nl/en/de"
+      },
+      {
+        "competitor_name": "Tri-Flex",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
+        "language": "nl/en/de"
+      },
+      {
+        "competitor_name": "Overige banden / Other belts / Andere Bandtypen",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "nl/en/de"
+      }
+    ],
+    "homepage_title": "Tribelt | Uw partner in metalen transportbanden",
+    "homepage_meta": "Tribelt levert hoogwaardige metalen transportbanden voor elke industrie. Efficiënt, duurzaam en volledig afgestemd op uw behoeften.",
+    "group_company": true,
+    "sources": [
+      "https://www.tribelt.nl/",
+      "https://www.tribelt.nl/en",
+      "https://www.tribelt.nl/de",
+      "https://www.tribelt.nl/en/about-us",
+      "https://www.lesjoforsab.com/about-lesjofors/news/lesjofors-acquires-tribelt-and-de-spiraal-in-the-netherlands/"
+    ]
+  },
+  {
+    "name": "Lesjöfors (metal conveyor belts product line on lesjofors.com)",
+    "country": "SE",
+    "website": "https://www.lesjofors.com/en/products/metal-conveyor-belts/",
+    "languages": [
+      "en",
+      "sv"
+    ],
+    "markets": [
+      "group sales channel for Tribelt's range (inferred from identical belt names; unverified)"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Eyelink belts / Eyelink-band",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en/sv"
+      },
+      {
+        "competitor_name": "Balanced weave belts / Band med balanserad väv",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en/sv"
+      },
+      {
+        "competitor_name": "Compound balanced belts / compound balanced-band",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "en/sv"
+      },
+      {
+        "competitor_name": "Tri-Flex",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt)",
+        "language": "en/sv"
+      }
+    ],
+    "homepage_title": "Custom Metal Conveyor Belts | Lesjöfors",
+    "homepage_meta": "We develop and produce wide variety of metal conveyor belts (or transportation belts) from wire and strip steel for for multiple applications.",
+    "group_company": true,
+    "sources": [
+      "https://www.lesjofors.com/en/products/metal-conveyor-belts/",
+      "https://www.lesjofors.com/sv/produkter/transportband/"
+    ]
+  },
+  {
+    "name": "De Spiraal B.V.",
+    "country": "NL (Haaksbergen)",
+    "website": "https://www.tribelt.nl/over-ons",
+    "languages": [
+      "nl"
+    ],
+    "markets": [
+      "springs and wire forms (NL market leader per Tribelt)"
+    ],
+    "belt_names": [],
+    "homepage_title": "n/a (shares site/LinkedIn with Tribelt)",
+    "homepage_meta": "n/a",
+    "group_company": true,
+    "sources": [
+      "https://www.tribelt.nl/over-ons",
+      "https://www.lesjoforsab.com/about-lesjofors/news/lesjofors-acquires-tribelt-and-de-spiraal-in-the-netherlands/"
+    ]
+  },
+  {
+    "name": "CSS Draht Schmidt GmbH (CSS Belts)",
+    "country": "DE (Lahnstein)",
+    "website": "https://www.css-belts.com",
+    "languages": [
+      "de",
+      "en",
+      "es",
+      "fr",
+      "it",
+      "pl"
+    ],
+    "markets": [
+      "food",
+      "bakery",
+      "heat treatment",
+      "industrial"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Weitspiral-Gliedergurt",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Drahtösen-Gliedergurt",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Geflechtsgliedergurt",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Runddraht-Gliedergurt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Stangengewebegurt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Flachgewalzter Backofengurt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "CSS Belts: Metal conveyor belts for the food industry",
+    "homepage_meta": "Wire and conveyor belts from CSS Belts. Find out more about our metal conveyor belts and get some advice.",
+    "group_company": false,
+    "sources": [
+      "https://www.css-belts.com/de",
+      "https://www.css-belts.com"
+    ]
+  },
+  {
+    "name": "DOH Drahtwerk Oberndorfer Hütte (Peter Weil GmbH & Co. KG)",
+    "country": "DE (Solms-Oberndorf)",
+    "website": "https://www.d-o-h.de/de/",
+    "languages": [
+      "de",
+      "en"
+    ],
+    "markets": [
+      "baking",
+      "food",
+      "heat treatment",
+      "glass and ceramics",
+      "beverages",
+      "plant engineering",
+      "chemicals",
+      "packaging machinery"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Drahtösengliedergurte (Gruppe 800)",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Mehrfachspiralgurte (Gruppe 3000/4000)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Drahtgeflechtsgurte (Gruppe 500/516)",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Drahtgurtkurven (Gruppe 400 RW)",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - adjacent product",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Wabenbänder (Gruppe 1000)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Flachdrahtgliedergurte (Gruppe 100/300)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Gewalzte Backgurte",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "DOH in Solms - Ihre Manufaktur für Drahtfördergurte und Gliedergurte",
+    "homepage_meta": "DOH liefert Gliedergurt-Lösungen - Drahtösengurte, Runddrahtgliedergurte, Drahtgeflechstgurte, Backgurte, Wabengurte und kurvengängige Fördergurte.",
+    "group_company": false,
+    "sources": [
+      "https://www.d-o-h.de/de/"
+    ]
+  },
+  {
+    "name": "Rothstein Metallfördergurte (GmbH & Co. KG)",
+    "country": "DE (Reichshof-Brüchermühle / Gummersbach area; location differs between sources, unverified)",
+    "website": "unverified (official site not found; rothstein-group.de is a different company)",
+    "languages": [
+      "de"
+    ],
+    "markets": [
+      "glass",
+      "heat treatment",
+      "food",
+      "baking",
+      "mechanical engineering"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Drahtfördergurte / Metallfördergurte",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "kurvengängige Fördergurte",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - adjacent product - unverified",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "unverified",
+    "homepage_meta": "unverified",
+    "group_company": false,
+    "sources": [
+      "https://www.glaswelt.de/sites/default/files/ulmer/de-gw/document/file_196839.pdf",
+      "https://www.lieferanten.de/produkt-Gurte.html"
+    ]
+  },
+  {
+    "name": "Heinrich Heidecker (e.K.)",
+    "country": "DE (Königsbach-Stein)",
+    "website": "https://www.heidecker.de",
+    "languages": [
+      "de",
+      "en"
+    ],
+    "markets": [
+      "heat treatment",
+      "furnace construction",
+      "plant engineering",
+      "jewellery and watch mesh (other business)"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Spiralgeflecht-Förderband (Runddraht)",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Ofenbänder",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "Metallgeflechte & -Bänder seit 1921 | Heinrich Heidecker",
+    "homepage_meta": "Heinrich Heidecker fertigt seit 1921 in Deutschland Metallgeflechte und -Bänder: Geflechtketten, Milanaise-Uhrbänder und Förderbänder aus einer Hand.",
+    "group_company": false,
+    "sources": [
+      "https://www.heidecker.de"
+    ]
+  },
+  {
+    "name": "ASP Automationstechnik GmbH (Ing. Walter Schweighofer GmbH)",
+    "country": "AT (Anger / Weiz)",
+    "website": "https://asp-gmbh.at",
+    "languages": [
+      "de"
+    ],
+    "markets": [
+      "drying systems",
+      "continuous ovens",
+      "food",
+      "bakery",
+      "confectionery",
+      "tobacco",
+      "chemical"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Drahtöse-Gliedergurt Typ 800",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Weitspiral-Gliedergurt Typ 300/400",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Spiral-Drahtgeflechtgurt Typ 500/550",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Doppelspiralgurt Typ 1100",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Stabgeflechtgurt Typ 700",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Flach-/Runddraht-Gliedergurt Typ 100/200",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "de"
+      }
+    ],
+    "homepage_title": "ASP Automationstechnik GmbH. | Ing. Walter Schweighofer",
+    "homepage_meta": "unverified (no meta description found)",
+    "group_company": false,
+    "sources": [
+      "https://asp-gmbh.at/produkte/drahtgurte/"
+    ]
+  },
+  {
+    "name": "DK Transportbaand (DK Transportbaand ApS)",
+    "country": "DK (Ferritslev, Fyn; Eastern/Western Europe office in Borne, NL)",
+    "website": "https://www.dk-transportbaand.com",
+    "languages": [
+      "en"
+    ],
+    "markets": [
+      "food processing"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Metal Conveyor Belts (Multi Eye Link)",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Balanced Weave Metal Conveyor Belt",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Home - DK Transportbaand",
+    "homepage_meta": "DK Transportbaand is the producer of conveyor belts, primary focused on the food processing industry.",
+    "group_company": false,
+    "sources": [
+      "https://www.dk-transportbaand.com/",
+      "https://www.potatopro.com/nl/product-group/producten/dk-transportbaand"
+    ]
+  },
+  {
+    "name": "Neobelting",
+    "country": "FR (Gundershoffen)",
+    "website": "https://www.neobelting.com",
+    "languages": [
+      "fr"
+    ],
+    "markets": [
+      "food processing",
+      "metallurgy",
+      "mechanical engineering",
+      "pharmaceutical",
+      "ovens and washers"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Grille à fil entrelacé / tapis à maille",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "fr"
+      },
+      {
+        "competitor_name": "Tapis à œillets",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "fr"
+      },
+      {
+        "competitor_name": "Tapis à spirale (spirale large / continue)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "fr"
+      },
+      {
+        "competitor_name": "Tapis surgélateur",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - unverified exact match",
+        "language": "fr"
+      },
+      {
+        "competitor_name": "Tapis à maillons, à lattes, à charnières",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "fr"
+      }
+    ],
+    "homepage_title": "Neobelting -  tapis métalliques, tapis à maille et tapis convoyeur",
+    "homepage_meta": "Neobelting, votre expert en tapis métalliques et bandes transporteuses. Exigez notre service et notre réactivité. Une équipe proche de vous partout en France. Tapis à maille, grille à fil entrelacé, tapis de convoyeur, tapis  surgélateur, tapis à œillet, tapis à spirale",
+    "group_company": false,
+    "sources": [
+      "https://www.neobelting.com/"
+    ]
+  },
+  {
+    "name": "Métal Étiré & Tissé Solutions (METAL ETIRE)",
+    "country": "FR (Saint-Maixant)",
+    "website": "https://www.metaletire.fr",
+    "languages": [
+      "fr"
+    ],
+    "markets": [
+      "metallurgy",
+      "mechanical engineering",
+      "food",
+      "chemicals",
+      "pharmaceutical",
+      "ceramics",
+      "glass",
+      "ovens and washing/drying"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Bande convoyeur type S.A.L. / S.A.O. (spirales alternées)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "fr"
+      },
+      {
+        "competitor_name": "Type M.S. (maille très dense)",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "fr"
+      },
+      {
+        "competitor_name": "Type Ondulé",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product",
+        "language": "fr"
+      }
+    ],
+    "homepage_title": "Métal déployé | METAL ETIRE",
+    "homepage_meta": "Métal déployé par Métal Étiré : production et distribution de métal déployé et toile tissée métallique, pour applications architecturales ou industrielles.",
+    "group_company": false,
+    "sources": [
+      "https://www.metaletire.fr/toile-tissee-bande-convoyeur.html",
+      "https://www.metaletire.fr"
+    ]
+  },
+  {
+    "name": "Costacurta (Costacurta S.p.A.-VICO)",
+    "country": "IT (Milan)",
+    "website": "https://www.costacurta.com",
+    "languages": [
+      "en",
+      "it",
+      "fr"
+    ],
+    "markets": [
+      "metalworking",
+      "food",
+      "pharmaceutical",
+      "packaging",
+      "heat treatment",
+      "textile",
+      "architecture"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Straight conveyor belts (nastri rettilinei)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Curved / spiral conveyor belts",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Slat conveyor belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Costacurta | Metal components for industry and architecture",
+    "homepage_meta": "Costacurta S.p.A.-VICO is an internationally acclaimed Italian company specialised in the design and manufacture of metal components.",
+    "group_company": false,
+    "sources": [
+      "https://www.costacurta.com/products/conveyor-belts/",
+      "https://www.costacurta.it/prodotti/nastri-trasportatori/"
+    ]
+  },
+  {
+    "name": "Pietro Bonaiti (Pietro Bonaiti S.r.l.)",
+    "country": "IT (Lecco)",
+    "website": "https://www.pietrobonaiti.com",
+    "languages": [
+      "it",
+      "en"
+    ],
+    "markets": [
+      "glass",
+      "heat treatment",
+      "sintering and brazing",
+      "industrial processes"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Nastri a Spirale",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "it"
+      },
+      {
+        "competitor_name": "Nastri Speciali (open-mesh metal belts)",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "it"
+      },
+      {
+        "competitor_name": "Catensil",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product",
+        "language": "it"
+      }
+    ],
+    "homepage_title": "Nastri trasportatori in rete metallica - Pietro Bonaiti Srl",
+    "homepage_meta": "unverified (homepage returned 403 to automated fetch; title seen via search result)",
+    "group_company": false,
+    "sources": [
+      "https://www.pietrobonaiti.com/it/"
+    ]
+  },
+  {
+    "name": "Vulcano Nastri",
+    "country": "IT (Vicenza / Romano d'Ezzelino)",
+    "website": "http://www.vulcanonastri.it",
+    "languages": [
+      "it",
+      "en"
+    ],
+    "markets": [
+      "jewellery and silverware",
+      "watchmaking",
+      "eyewear",
+      "electronics",
+      "heat treatment",
+      "sintering",
+      "brazing"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Vulcano Regular",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "it"
+      },
+      {
+        "competitor_name": "Vulcano Strong",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "it"
+      },
+      {
+        "competitor_name": "VN DX+SX+Traversino",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "it"
+      }
+    ],
+    "homepage_title": "Vulcano Nastri - Nastri trasportatori",
+    "homepage_meta": "unverified (no meta description found)",
+    "group_company": false,
+    "sources": [
+      "http://www.vulcanonastri.it/"
+    ]
+  },
+  {
+    "name": "Spiraltech (Spiraltech S.r.l.)",
+    "country": "IT (Pasturo, Lecco)",
+    "website": "https://www.spiraltech.it",
+    "languages": [
+      "it"
+    ],
+    "markets": [
+      "food",
+      "fruit and vegetable handling",
+      "filtration",
+      "furniture",
+      "high/low temperature processes"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Nastri a spirale a bordi saldati / concatenati",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "it"
+      },
+      {
+        "competitor_name": "Nastri a catene con traversini",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "it"
+      },
+      {
+        "competitor_name": "Nastri a piastre",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "it"
+      },
+      {
+        "competitor_name": "Catensil",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt) - adjacent product",
+        "language": "it"
+      }
+    ],
+    "homepage_title": "Home - Spiraltech - %nastri trasportatori%",
+    "homepage_meta": "Spiraltech SRL è una azienda della provincia di Lecco che si occupa della produzione di nastri trasportatori di diverse tipologie.",
+    "group_company": false,
+    "sources": [
+      "https://www.spiraltech.it/nastri-trasportatori-2/nastri-a-spirale/"
+    ]
+  },
+  {
+    "name": "Palmet (Zakład mechaniczny Joanna Leśniak)",
+    "country": "PL (Moszczenica)",
+    "website": "https://palmet.pl",
+    "languages": [
+      "pl"
+    ],
+    "markets": [
+      "food processing",
+      "pharmaceutical",
+      "glass",
+      "ceramics",
+      "chemicals",
+      "bakery",
+      "confectionery",
+      "foundries"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Taśmy transportowe typ TS / TZK / TZ / TSG",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "pl"
+      },
+      {
+        "competitor_name": "Taśmy typ TD1 / TD2 / TŁ1",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "pl"
+      },
+      {
+        "competitor_name": "Taśmy wysokotemperaturowe",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "pl"
+      }
+    ],
+    "homepage_title": "Taśmy transportowe - producent | Palmet",
+    "homepage_meta": "Poznaj Palmet – producenta taśm transportowych na wymiar z drutów o różnych grubościach i przekrojach. Co możemy dla Ciebie zrobić? Sprawdź naszą ofertę!",
+    "group_company": false,
+    "sources": [
+      "https://palmet.pl/"
+    ]
+  },
+  {
+    "name": "SAP Polska",
+    "country": "PL (Rybnik per search result; city unverified on page)",
+    "website": "https://sap-polska.pl",
+    "languages": [
+      "pl",
+      "en"
+    ],
+    "markets": [
+      "bakery",
+      "confectionery",
+      "fruit and vegetable processing",
+      "frozen food",
+      "wood",
+      "paper",
+      "refrigeration tunnels"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Siatki pętlicowe typ 13/60 i 14/60",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband) - unverified exact match",
+        "language": "pl"
+      },
+      {
+        "competitor_name": "Siatka spiralna z drutu okrągłego",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "pl"
+      },
+      {
+        "competitor_name": "Siatka prętowa J01/40, J02/40",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "pl"
+      }
+    ],
+    "homepage_title": "Taśmy transportujące i pasy napędowe, taśmy przemysłowe – producent SAP Polska",
+    "homepage_meta": "SAP Polska produkuje i dostarcza taśmy przemysłowe, taśmy transportujące oraz pasy napędowe dla przemysłu. Szeroki wybór materiałów, wycena na wymiar. Sprawdź ofertę.",
+    "group_company": false,
+    "sources": [
+      "https://sap-polska.pl/produkty/siatki-stalowe",
+      "https://sap-polska.pl"
+    ]
+  },
+  {
+    "name": "Screen Systems (Wedge Wire Screens / Screen Systems Ltd)",
+    "country": "UK (St Helens)",
+    "website": "https://www.screensystems.com",
+    "languages": [
+      "en"
+    ],
+    "markets": [
+      "food processing",
+      "heat treatment",
+      "steel industry",
+      "ceramics and glass",
+      "oil filtering"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Balanced spiral belt",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Cordweave / close mesh",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Round coil / flat spiral belt",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Honeycomb belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Plain / rod reinforced chain link",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Ladder / wire link belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Wedge Wire Screens | Looped Wedge Wire | Screen Systems",
+    "homepage_meta": "We are specialists in wedge wire, we supply looped & welded wedge wire screens and wedge wire gratings. Call Screen Systems on 01942 272895",
+    "group_company": false,
+    "sources": [
+      "https://www.screensystems.com/wire-conveyor-belts/",
+      "https://www.screensystems.com"
+    ]
+  },
+  {
+    "name": "Wire-Mesh Products, Inc.",
+    "country": "US (York, PA)",
+    "website": "https://wire-mesh.com",
+    "languages": [
+      "en",
+      "es"
+    ],
+    "markets": [
+      "food processing",
+      "food packaging",
+      "heat treat",
+      "furnace"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Balanced Weave Belt",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Compound Balanced Weave Belt",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Double Balanced Weave Conveyor Belt",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flat Flex Conveyor Belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flat Wire Conveyor Belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Rod Conveyor Belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Chain Conveyor Belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Custom Wire Mesh Conveyor Belts | Wire-Mesh Products",
+    "homepage_meta": "Wire-Mesh Products has engineered custom wire mesh conveyor belts since 1975 for 1,000+ customers in food processing, heat treat, and 100+ industries.",
+    "group_company": false,
+    "sources": [
+      "https://wire-mesh.com/"
+    ]
+  },
+  {
+    "name": "Saryee Belting",
+    "country": "CN (Anping County, Hebei)",
+    "website": "https://saryeebelting.com",
+    "languages": [
+      "en",
+      "es",
+      "fr"
+    ],
+    "markets": [
+      "food processing",
+      "freezing",
+      "textiles",
+      "electronics",
+      "agriculture",
+      "automotive",
+      "chemical",
+      "pharmaceutical",
+      "packaging",
+      "glass and ceramics"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Balanced Weave Conveyor Belts",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Compound Balanced Weave Belts",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Eye Link Conveyor Belts",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Self-Stacking Spiral Freezer Belts",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - adjacent product",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Honeycomb / Flat Wire Conveyor Belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Standard Flexible Rod Belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "HOME | Saryee Belting | The Trusted Conveyor Belts Manufacturer",
+    "homepage_meta": "Saryee Belting, a leading in stainless steel, plastic, wire mesh, spiral, and PTFE conveyor belts manufacturer.",
+    "group_company": false,
+    "sources": [
+      "https://saryeebelting.com/products/metal-conveyor-belts/",
+      "https://saryeebelting.com"
+    ]
+  },
+  {
+    "name": "Beijing PFM Screen (PFM SCREEN Belting)",
+    "country": "CN (Langfang, Hebei)",
+    "website": "https://www.industrialconveyorbelt.com",
+    "languages": [
+      "en"
+    ],
+    "markets": [
+      "food processing",
+      "freezing",
+      "baking",
+      "glass",
+      "chemical",
+      "pharmaceutical",
+      "packaging"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Eye Link Conveyor Belt & Eye Flex Belt",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Balanced Spiral Woven Conveyor Belts",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Compound Weave Conveyor Belts",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Self-Stacking / Edge Drive Spiral Freezer Belts",
+        "tribelt_equivalent": "Tri-Flex (turn-curve / spiral tower belt) - adjacent product",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Flexible Rod Conveyor Belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Honeycomb / Flat Wire Belt",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Wire Mesh Metal Conveyor Belt Manufacturer | PFM SCREEN Belting",
+    "homepage_meta": "PFM SCREEN Belting manufacture custom wire mesh and metal conveyor belts for food, freezing, baking, glass and industrial line. 30+ years. Request a quote.",
+    "group_company": false,
+    "sources": [
+      "https://www.industrialconveyorbelt.com/metal-conveyor-belts/eye-link-conveyor-belt-1528.html",
+      "https://www.industrialconveyorbelt.com"
+    ]
+  },
+  {
+    "name": "Hebei General Metal Netting (Hebei General Metal Netting Co., Ltd.)",
+    "country": "CN (Anping County, Hebei)",
+    "website": "https://www.generalmesh.com",
+    "languages": [
+      "en",
+      "de",
+      "es",
+      "fr",
+      "it",
+      "nl"
+    ],
+    "markets": [
+      "food processing",
+      "electronics",
+      "pharmaceutical",
+      "glass and ceramics",
+      "heat treatment",
+      "recycling",
+      "automotive"
+    ],
+    "belt_names": [
+      {
+        "competitor_name": "Wire eye link belts (Drahtösengliedergurte)",
+        "tribelt_equivalent": "Eyelink belt (draadogenband / Drahtösengliederband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Wide-spiral link belts (Weitspiral-Gliedergurt)",
+        "tribelt_equivalent": "Open spiral / balanced weave (open spiraalband / Weitspiralband)",
+        "language": "de"
+      },
+      {
+        "competitor_name": "Round / flat spiral wire mesh belts",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Double spiral belts",
+        "tribelt_equivalent": "Closed spiral / compound balanced (gesloten spiraalband / Engspiralband) - unverified exact match",
+        "language": "en"
+      },
+      {
+        "competitor_name": "Rod mesh belts",
+        "tribelt_equivalent": "Other belts (rod, flat wire, honeycomb, chain, Z-belt)",
+        "language": "en"
+      }
+    ],
+    "homepage_title": "Wire Mesh Manufacturer|Hebei General Metal Netting Co.,Ltd.",
+    "homepage_meta": "General company offers phosphor brone wire mesh, copper wire mesh, brass wire mesh, stainless steel wire mesh,stainless steel wire mesh for screen printing,ultra-thin stainless steel wire mesh,titanium wire mesh,monel wire mesh,tungsten wire mesh, nickel wire mesh,molybdenum wire mesh.",
+    "group_company": false,
+    "sources": [
+      "https://www.generalmesh.com/de/drahtgurte.html",
+      "https://www.generalmesh.com"
+    ]
+  }
 ]

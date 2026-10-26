@@ -236,7 +236,7 @@ func TestSearchTerms(t *testing.T) {
 func TestListCompetitors(t *testing.T) {
 	r := call(t, serve(t, &analyses{}), http.MethodGet, "/api/v1/competitors", "", true)
 	items, _ := r.body["items"].([]any)
-	if r.code != http.StatusOK || len(items) != 28 {
+	if r.code != http.StatusOK || len(items) != 47 {
 		t.Fatalf("status %d, %d companies", r.code, len(items))
 	}
 	last := items[len(items)-1].(map[string]any)
@@ -289,7 +289,7 @@ func TestGetAndAddCompetitor(t *testing.T) {
 		}
 	}
 	list := call(t, srv, http.MethodGet, "/api/v1/competitors", "", true)
-	if items := list.body["items"].([]any); len(items) != 29 {
+	if items := list.body["items"].([]any); len(items) != 48 {
 		t.Errorf("after adding: %d companies", len(items))
 	}
 }

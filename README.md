@@ -12,8 +12,8 @@ conveyor belts are named across companies and languages, and analyses any websit
   in the URL, so a view can be shared. A term's makers are the companies the research or the
   review named, plus every company whose newest finished scan found the term on its site (`foundBy`,
   marked "(scan)"), so the counts, the per-company heat map and the ranking follow the scans.
-- **Competitors** (`/competitors`): the 25 competitors and 3 group companies, seeded from the desk
-  research, and every company an administrator added or a scan of a new website brought in. Each
+- **Competitors** (`/competitors`): the 44 competitors and 3 group companies, seeded from the desk
+  research (25 on 22 October 2026, 19 more on 26 October), and every company an administrator added or a scan of a new website brought in. Each
   has its own name for each Tribelt belt family: the research's, plus the products its newest scan
   with product matching matched (`fromScan`).
 - **Scans** (`/scan/:id`): crawl up to 100 pages of a company's website (default 60) and report its

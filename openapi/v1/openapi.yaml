@@ -647,8 +647,8 @@ paths:
       description: >-
         Returns the latest Prompt runs, newest first, each with its progress and its answers
         counted per provider, scope, belt family and mode (AI share of voice is named / answers,
-        citation share cited / answers); how often the newest run's answers name each company on
-        the list; and the claims about Tribelt the answers got wrong, newest first.
+        citation share cited / answers); how often the answers of the newest run with any name
+        each company on the list; and the claims about Tribelt the answers got wrong, newest first.
       tags: [prompt-test]
       responses:
         "200":
@@ -3270,7 +3270,7 @@ components:
           items:
             $ref: "#/components/schemas/PromptCell"
     PromptMention:
-      description: How often the newest run's answers name one company on the list.
+      description: How often the answers of the newest run with any name one company on the list.
       type: object
       additionalProperties: false
       required: [competitorId, name, role, answers, first, averagePosition]
@@ -3379,7 +3379,7 @@ components:
         mentions:
           type: array
           maxItems: 1000
-          description: The companies the newest run's answers name, most answers first.
+          description: The companies the answers of the newest run with any name, most answers first.
           items:
             $ref: "#/components/schemas/PromptMention"
         wrongClaims:

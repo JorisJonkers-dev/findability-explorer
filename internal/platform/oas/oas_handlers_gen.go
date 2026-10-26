@@ -3236,8 +3236,8 @@ func (s *Server) handleGetMeRequest(args [0]string, argsEscaped bool, w http.Res
 //
 // Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
 // provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited /
-// answers); how often the newest run's answers name each company on the list; and the claims about
-// Tribelt the answers got wrong, newest first.
+// answers); how often the answers of the newest run with any name each company on the list; and the
+// claims about Tribelt the answers got wrong, newest first.
 //
 // GET /api/v1/prompt-test
 func (s *Server) handleGetPromptTestResultsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

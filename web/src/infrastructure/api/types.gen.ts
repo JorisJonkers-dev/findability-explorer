@@ -1507,7 +1507,7 @@ export type PromptRun = {
 };
 
 /**
- * How often the newest run's answers name one company on the list.
+ * How often the answers of the newest run with any name one company on the list.
  */
 export type PromptMention = {
     competitorId: CompetitorId;
@@ -1584,7 +1584,7 @@ export type PromptTestResults = {
      */
     runs: Array<PromptRun>;
     /**
-     * The companies the newest run's answers name, most answers first.
+     * The companies the answers of the newest run with any name, most answers first.
      */
     mentions: Array<PromptMention>;
     /**

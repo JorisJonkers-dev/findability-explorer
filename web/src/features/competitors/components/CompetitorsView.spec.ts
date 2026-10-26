@@ -1,7 +1,7 @@
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Analysis, AnalysisStatus } from '../../../infrastructure/api/types.gen'
-import { ANALYSIS_ID, analysis, bots, competitor, me, readiness, readinessRow, summary, term, termSearch } from '../../../testing/fixtures'
+import { ANALYSIS_ID, analysis, bots, competitor, me, promptResults, readiness, readinessRow, summary, term, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 
@@ -490,5 +490,14 @@ describe('the AI readiness on a company card', () => {
   it('says when no scan has checked the company yet', async () => {
     const { wrapper } = await mountApp(api({ 'GET /api/v1/ai-readiness': () => json({ items: [] }) }), '/competitors')
     expect(wrapper.get('[data-testid="company-readiness"]').text()).toContain('Not checked yet: the next scan records it.')
+  })
+})
+
+describe('the AI answers on a company card', () => {
+  it('says how often the latest Prompt run named the company', async () => {
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/prompt-test': () => json(promptResults()) }), '/competitors')
+    expect(wrapper.get('[data-testid="prompt-mentions"]').text()).toBe(
+      'AI answers: Named in 9 of 12 answers of the Prompt run of 1 Nov 2026, first in 4. The Prompt test',
+    )
   })
 })

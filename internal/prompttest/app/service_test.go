@@ -481,3 +481,16 @@ func TestSettingsFailures(t *testing.T) {
 		t.Errorf("settings failing: %v", err)
 	}
 }
+
+func TestMentionsComeFromTheNewestRunWithAnswers(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	e.repo.runs = append(e.repo.runs, &storedRun{run: domain.Run{ID: uuid.New(), Status: domain.RunRunning, StartedAt: start.Add(time.Hour)}, owner: "a"})
+	res, err := e.svc.Results(t.Context())
+	if err != nil || len(res.Runs) != 2 || len(res.Runs[0].Cells) != 0 || len(res.Mentions) == 0 {
+		t.Errorf("results = %d runs, %d mentions, %v", len(res.Runs), len(res.Mentions), err)
+	}
+}

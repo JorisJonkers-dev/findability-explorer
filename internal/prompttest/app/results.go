@@ -23,8 +23,8 @@ type RunResult struct {
 }
 
 // Results are the Prompt test's results: the latest runs, newest first, each with its measures
-// (the trends); how often the newest run's answers name each company; and the claims about
-// Tribelt the answers got wrong, newest first.
+// (the trends); how often the answers of the newest run with any name each company; and the
+// claims about Tribelt the answers got wrong, newest first.
 type Results struct {
 	Runs        []RunResult
 	Mentions    []domain.Mention
@@ -43,14 +43,16 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 		return Results{}, fmt.Errorf("list the companies: %w", err)
 	}
 	out := Results{Runs: make([]RunResult, 0, len(runs)), Mentions: []domain.Mention{}, Companies: companies, WrongClaims: []domain.WrongClaim{}}
-	for i, r := range runs {
+	mentioned := false
+	for _, r := range runs {
 		answers, err := s.repo.Answers(ctx, r.ID, false)
 		if err != nil {
 			return Results{}, fmt.Errorf("the answers of run %s: %w", r.ID, err)
 		}
-		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: domain.Cells(answers)})
-		if i == 0 {
-			out.Mentions = domain.Mentions(answers)
+		cells := domain.Cells(answers)
+		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells})
+		if !mentioned && len(cells) > 0 {
+			out.Mentions, mentioned = domain.Mentions(answers), true
 		}
 		out.WrongClaims = append(out.WrongClaims, domain.WrongClaims(answers)...)
 	}

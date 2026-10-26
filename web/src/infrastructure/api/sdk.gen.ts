@@ -422,7 +422,7 @@ export const getReadinessFiles = <ThrowOnError extends boolean = false>(options:
 /**
  * Get the Prompt test's results
  *
- * Returns the latest Prompt runs, newest first, each with its progress and its answers counted per provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited / answers); how often the newest run's answers name each company on the list; and the claims about Tribelt the answers got wrong, newest first.
+ * Returns the latest Prompt runs, newest first, each with its progress and its answers counted per provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited / answers); how often the answers of the newest run with any name each company on the list; and the claims about Tribelt the answers got wrong, newest first.
  */
 export const getPromptTestResults = <ThrowOnError extends boolean = false>(options?: Options<GetPromptTestResultsData, ThrowOnError>): RequestResult<GetPromptTestResultsResponses, GetPromptTestResultsErrors, ThrowOnError> => (options?.client ?? client).get<GetPromptTestResultsResponses, GetPromptTestResultsErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

@@ -12,6 +12,8 @@ import { isInProgress, progress } from '../../scan/domain/status'
 import { useCompany } from '../composables/useCompany'
 import CompanyAdmin from './CompanyAdmin.vue'
 import CompanyReadiness from '../../readiness/components/CompanyReadiness.vue'
+import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
+import { mentionLine } from '../../prompt-test/domain/results'
 import { type Company, companyTerms, lastScanLabel, scanCountLabel, scanLinkLabel } from '../domain/company'
 import { beltRows, companyKind, termsTitle, whereLine } from '../domain/list'
 
@@ -29,6 +31,9 @@ const newest = computed(() => props.company.lastScan ?? scans.value[0])
 const lastScan = computed(() => lastScanLabel(newest.value))
 /** The scan running now, if one is, for its progress bar. */
 const running = computed(() => (newest.value && isInProgress(newest.value.status) ? newest.value : undefined))
+const { results: prompts } = usePromptResults()
+/** How often the latest Prompt run's answers name the company. */
+const mentioned = computed(() => mentionLine(prompts.value, props.company.id))
 </script>
 
 <template>
@@ -93,6 +98,10 @@ const running = computed(() => (newest.value && isInProgress(newest.value.status
     <CompanyAdmin v-if="isAdmin" :company="company" @removed="emit('removed')" />
 
     <CompanyReadiness :company-id="company.id" />
+    <p v-if="mentioned" class="m-0 text-sm text-ink-2 stage:text-[26px]" data-testid="prompt-mentions">
+      <span class="font-semibold text-black">AI answers:</span> {{ mentioned }}
+      <RouterLink to="/ai-search/prompt-test">The Prompt test</RouterLink>
+    </p>
 
     <table class="w-full border-collapse stage:text-[30px]">
       <caption class="pb-2 text-left text-sm text-muted stage:pb-3 stage:text-[26px]">Its names for Tribelt's belt families</caption>

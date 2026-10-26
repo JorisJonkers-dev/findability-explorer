@@ -17,6 +17,24 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         component: () => import('../features/readiness/components/ReadinessView.vue'),
         meta: { title: 'AI readiness' },
       },
+      {
+        path: '/ai-search/prompt-test',
+        name: 'prompt-test',
+        component: () => import('../features/prompt-test/components/PromptTestView.vue'),
+        meta: { title: 'Prompt test' },
+      },
+      {
+        path: '/settings/prompt-test',
+        name: 'prompt-test-settings',
+        component: () => import('../features/prompt-test/components/PromptSettingsPage.vue'),
+        meta: { title: 'Prompt test settings' },
+      },
+      {
+        path: '/settings/candidates',
+        name: 'competitor-candidates',
+        component: () => import('../features/prompt-test/components/CandidateReviewPage.vue'),
+        meta: { title: 'Competitor candidates' },
+      },
       // One view for the companies alone and for a scan beside them, so a started scan keeps the form.
       { path: '/competitors', name: 'competitors', component: competitors, meta: { title: 'Competitors' } },
       { path: '/scan/:id', name: 'scan', component: competitors, props: (to) => ({ scanId: String(to.params.id) }), meta: { title: 'Scan' } },

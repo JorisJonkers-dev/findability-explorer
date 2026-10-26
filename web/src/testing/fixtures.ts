@@ -6,6 +6,8 @@ import type {
   BotRule,
   Competitor,
   Me,
+  PromptRun,
+  PromptTestResults,
   Term,
   TermSearch,
 } from '../infrastructure/api/types.gen'
@@ -160,4 +162,56 @@ export function readiness(overrides: Partial<AiReadiness> = {}): AiReadiness {
 /** A row of the AI readiness table. */
 export function readinessRow(name: string, overrides: Partial<AiReadinessRow> = {}): AiReadinessRow {
   return { competitorId: slug(name), name, role: 'competitor', scan: summary({ competitorId: slug(name) }), readiness: readiness(), ...overrides }
+}
+
+export const RUN_ID = '9d8e7f6a-5b4c-4d3e-8f2a-1b0c9d8e7f6a'
+
+/** A Prompt run of two providers: Tribelt named in Dutch Twente supplier answers, cited with web search. */
+export function promptRun(overrides: Partial<PromptRun> = {}): PromptRun {
+  return {
+    id: RUN_ID,
+    promptSetVersion: 1,
+    factSheetVersion: 1,
+    trigger: 'manual',
+    startedBy: 'joris',
+    startedAt: '2026-11-01T06:00:00Z',
+    finishedAt: '2026-11-01T06:20:00Z',
+    status: 'done',
+    models: [
+      { provider: 'openai', model: 'openai/gpt-oss-20b', free: false },
+      { provider: 'google', model: 'google/gemma:free', free: true, fallback: 'google/gemini-2.5-flash-lite' },
+    ],
+    tasks: 360,
+    answered: 358,
+    failed: 2,
+    inputTokens: 40_000,
+    outputTokens: 90_000,
+    costUsd: 0.42,
+    byProvider: [
+      { provider: 'openai', answered: 180, failed: 0, costUsd: 0.3, models: ['openai/gpt-oss-20b'] },
+      { provider: 'google', answered: 178, failed: 2, costUsd: 0.12, models: ['google/gemma:free', 'google/gemini-2.5-flash-lite'] },
+    ],
+    cells: [
+      { provider: 'openai', scope: 'twente', family: 'eyelink', mode: 'knowledge', answers: 3, named: 1, cited: 0 },
+      { provider: 'openai', scope: 'twente', family: 'eyelink', mode: 'web', answers: 3, named: 2, cited: 1 },
+      { provider: 'google', scope: 'germany', family: 'open_spiral', mode: 'knowledge', answers: 3, named: 0, cited: 0 },
+      { provider: 'google', scope: 'germany', family: 'open_spiral', mode: 'web', answers: 3, named: 0, cited: 0 },
+    ],
+    ...overrides,
+  }
+}
+
+export function promptResults(overrides: Partial<PromptTestResults> = {}): PromptTestResults {
+  return {
+    promptSetVersion: 1,
+    runs: [promptRun()],
+    mentions: [
+      { competitorId: 'twentebelt', name: 'Twentebelt', role: 'competitor', answers: 9, first: 4, averagePosition: 1.6 },
+      { competitorId: 'tribelt-b-v', name: 'Tribelt B.V.', role: 'tribelt', answers: 3, first: 1, averagePosition: 2 },
+    ],
+    wrongClaims: [
+      { answerId: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', runId: RUN_ID, at: '2026-11-01T06:10:00Z', provider: 'openai', model: 'openai/gpt-oss-20b', promptId: 'eyelink-supplier-twente', mode: 'knowledge', correctness: 'wrong', claim: 'Tribelt is in Hengelo.' },
+    ],
+    ...overrides,
+  }
 }

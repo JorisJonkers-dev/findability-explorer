@@ -6118,7 +6118,7 @@ func (s *PromptKind) UnmarshalText(data []byte) error {
 	}
 }
 
-// How often the newest run's answers name one company on the list.
+// How often the answers of the newest run with any name one company on the list.
 // Ref: #/components/schemas/PromptMention
 type PromptMention struct {
 	CompetitorId CompetitorId `json:"competitorId"`
@@ -6865,7 +6865,7 @@ type PromptTestResults struct {
 	PromptSetVersion int32 `json:"promptSetVersion"`
 	// The latest runs, newest first.
 	Runs []PromptRun `json:"runs"`
-	// The companies the newest run's answers name, most answers first.
+	// The companies the answers of the newest run with any name, most answers first.
 	Mentions []PromptMention `json:"mentions"`
 	// The claims about Tribelt the answers got wrong, newest first.
 	WrongClaims []PromptWrongClaim `json:"wrongClaims"`

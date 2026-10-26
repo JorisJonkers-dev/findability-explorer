@@ -931,7 +931,7 @@ export const zPromptRun = z.object({
 });
 
 /**
- * How often the newest run's answers name one company on the list.
+ * How often the answers of the newest run with any name one company on the list.
  */
 export const zPromptMention = z.object({
     competitorId: zCompetitorId,

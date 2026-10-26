@@ -63,11 +63,21 @@ func (p *robotsParser) line(line string) {
 		p.current = append(p.current, strings.ToLower(value))
 	case "allow", "disallow":
 		p.inRules = true
+		p.open()
 		if value == "" {
 			return // an empty rule matches nothing
 		}
 		for _, a := range p.current {
 			p.groups[a] = append(p.groups[a], robotsRule{allow: key == "allow", pattern: value})
+		}
+	}
+}
+
+// open records the current group's agents, so a group whose only rule is empty allows everything.
+func (p *robotsParser) open() {
+	for _, a := range p.current {
+		if _, ok := p.groups[a]; !ok {
+			p.groups[a] = nil
 		}
 	}
 }

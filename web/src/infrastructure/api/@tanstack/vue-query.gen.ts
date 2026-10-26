@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen';
-import { acceptTermCandidate, addCompetitor, addLlmCredential, clearActiveLlm, compareScans, deleteCompetitor, deleteLlmCredential, getAnalysis, getCompetitor, getCompetitorProfile, getLlmSettings, getMe, listAnalyses, listCompetitors, listLlmModels, listTermCandidates, type Options, rejectTermCandidate, searchTerms, setActiveLlm, startAnalysis, startRescans, testLlmCredential, undoTermDecision, updateCompetitor } from '../sdk.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartRescansData, StartRescansError, StartRescansResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse } from '../types.gen';
+import { acceptTermCandidate, addCompetitor, addLlmCredential, clearActiveLlm, compareScans, deleteCompetitor, deleteLlmCredential, getAiReadiness, getAnalysis, getCompetitor, getCompetitorProfile, getLlmSettings, getMe, getReadinessFiles, listAnalyses, listCompetitors, listLlmModels, listTermCandidates, type Options, rejectTermCandidate, searchTerms, setActiveLlm, startAnalysis, startRescans, testLlmCredential, undoTermDecision, updateCompetitor } from '../sdk.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartRescansData, StartRescansError, StartRescansResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -196,6 +196,26 @@ export const compareScansOptions = (options: Options<CompareScansData>) => query
     queryKey: compareScansQueryKey(options)
 });
 
+export const getAiReadinessQueryKey = (options?: Options<GetAiReadinessData>) => createQueryKey('getAiReadiness', options);
+
+/**
+ * Get every company's AI readiness
+ *
+ * Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt on top as the baseline, the mirror of tribelt.nl below it as the target, then Tribelt's group companies, then the competitors, each band by name. A company no scan checked yet has no readiness.
+ */
+export const getAiReadinessOptions = (options?: Options<GetAiReadinessData>) => queryOptions<GetAiReadinessResponse, GetAiReadinessError, GetAiReadinessResponse, ReturnType<typeof getAiReadinessQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAiReadiness({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAiReadinessQueryKey(options)
+});
+
 /**
  * Re-scan companies
  *
@@ -349,6 +369,26 @@ export const getAnalysisOptions = (options: Options<GetAnalysisData>) => queryOp
         return data;
     },
     queryKey: getAnalysisQueryKey(options)
+});
+
+export const getReadinessFilesQueryKey = (options: Options<GetReadinessFilesData>) => createQueryKey('getReadinessFiles', options);
+
+/**
+ * Get the raw files a scan read its AI readiness from
+ *
+ * Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI readiness.
+ */
+export const getReadinessFilesOptions = (options: Options<GetReadinessFilesData>) => queryOptions<GetReadinessFilesResponse, GetReadinessFilesError, GetReadinessFilesResponse, ReturnType<typeof getReadinessFilesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getReadinessFiles({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getReadinessFilesQueryKey(options)
 });
 
 export const getMeQueryKey = (options?: Options<GetMeData>) => createQueryKey('getMe', options);

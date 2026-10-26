@@ -133,6 +133,8 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.AddCompetitorOperation:    domain.NeedAdminChange,
 	oas.UpdateCompetitorOperation: domain.NeedAdminChange,
 	oas.DeleteCompetitorOperation: domain.NeedAdminChange,
+	// The raw files a scan read its AI readiness from.
+	oas.GetReadinessFilesOperation: domain.NeedAdminView,
 	// The review queue of the terminology map.
 	oas.ListTermCandidatesOperation:  domain.NeedAdminView,
 	oas.AcceptTermCandidateOperation: domain.NeedAdminChange,

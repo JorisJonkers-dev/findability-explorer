@@ -23,7 +23,9 @@ type UseCases interface {
 	List(ctx context.Context, limit int) ([]domain.Analysis, error)
 	Rescan(ctx context.Context, user string, pick app.Pick, maxPages int) ([]domain.Analysis, []app.Skipped, error)
 	Profile(ctx context.Context, competitorID string) (domain.Profile, error)
-	Compare(ctx context.Context, competitorID string, from, to uuid.UUID) (domain.Analysis, domain.Analysis, []domain.ComparisonGroup, error)
+	Compare(ctx context.Context, competitorID string, from, to uuid.UUID) (domain.Comparison, error)
+	ReadinessTable(ctx context.Context) ([]domain.ReadinessRow, error)
+	ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.RawFiles, error)
 }
 
 // Handler implements the analysis operations. Business rules stay in the use cases.
@@ -158,7 +160,7 @@ const maxLanguages = 20
 
 // CompareScans implements compareScans.
 func (h *Handler) CompareScans(ctx context.Context, params oas.CompareScansParams) (oas.CompareScansRes, error) {
-	from, to, groups, err := h.uc.Compare(ctx, string(params.CompetitorId), params.From.Or(uuid.Nil), params.To.Or(uuid.Nil))
+	c, err := h.uc.Compare(ctx, string(params.CompetitorId), params.From.Or(uuid.Nil), params.To.Or(uuid.Nil))
 	switch {
 	case errors.Is(err, app.ErrUnknownCompany):
 		return &oas.CompareScansNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No company has this id.")}, nil
@@ -169,13 +171,108 @@ func (h *Handler) CompareScans(ctx context.Context, params oas.CompareScansParam
 	case err != nil:
 		return nil, err
 	}
-	out := &oas.ScanComparison{From: toSummary(from), To: toSummary(to), Groups: make([]oas.ComparisonGroup, 0, len(groups))}
-	for _, g := range groups {
+	out := &oas.ScanComparison{From: toSummary(c.From), To: toSummary(c.To), Groups: make([]oas.ComparisonGroup, 0, len(c.Groups))}
+	if c.Readiness != nil {
+		out.Readiness = make([]oas.ReadinessChange, 0, len(c.Readiness))
+		for _, r := range c.Readiness {
+			out.Readiness = append(out.Readiness, oas.ReadinessChange{Field: r.Field, From: r.From, To: r.To})
+		}
+	}
+	for _, g := range c.Groups {
 		out.Groups = append(out.Groups, oas.ComparisonGroup{
 			Group: oas.ProfileGroup(g.Group), Added: toChanges(g.Added), Removed: toChanges(g.Removed), Moved: toChanges(g.Moved),
 		})
 	}
 	return out, nil
+}
+
+// GetAiReadiness implements getAiReadiness.
+func (h *Handler) GetAiReadiness(ctx context.Context) (oas.GetAiReadinessRes, error) {
+	rows, err := h.uc.ReadinessTable(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.AiReadinessTable{Items: make([]oas.AiReadinessRow, 0, len(rows))}
+	for _, r := range rows {
+		row := oas.AiReadinessRow{CompetitorId: oas.CompetitorId(r.Company.ID), Name: r.Company.Name, Role: oas.CompanyRole(r.Company.Role)}
+		if r.Scan != nil {
+			row.Scan = oas.NewOptAnalysisSummary(toSummary(*r.Scan))
+			if r.Scan.Readiness != nil {
+				row.Readiness = oas.NewOptAiReadiness(toReadiness(*r.Scan.Readiness))
+			}
+		}
+		out.Items = append(out.Items, row)
+	}
+	return out, nil
+}
+
+// GetReadinessFiles implements getReadinessFiles.
+func (h *Handler) GetReadinessFiles(ctx context.Context, params oas.GetReadinessFilesParams) (oas.GetReadinessFilesRes, error) {
+	raw, err := h.uc.ReadinessFiles(ctx, params.AnalysisId)
+	if errors.Is(err, domain.ErrNoReadiness) {
+		return &oas.GetReadinessFilesNotFound{
+			StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, capitalise(err.Error())),
+		}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &oas.ReadinessFiles{
+		RobotsTxt: raw.Robots, RobotsTruncated: raw.RobotsTruncated, LlmsTxt: raw.LLMs, LlmsTruncated: raw.LLMsTruncated,
+		LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTrunc,
+	}, nil
+}
+
+func toReadiness(r domain.Readiness) oas.AiReadiness {
+	bots := make([]oas.BotRule, 0, len(r.Bots))
+	for _, b := range r.Bots {
+		bots = append(bots, oas.BotRule{Bot: b.Bot, Access: oas.CrawlerAccess(b.Access), Named: b.Named, FollowsAdvice: b.FollowsAdvice()})
+	}
+	advice := make([]oas.ReadinessAdvice, 0, len(r.Advice()))
+	for _, a := range r.Advice() {
+		advice = append(advice, oas.ReadinessAdvice{Check: oas.ReadinessCheck(a.Check), Ok: a.OK})
+	}
+	stack := oas.SiteStack{}
+	if r.Stack.CMS != "" {
+		stack.Cms = oas.NewOptString(r.Stack.CMS)
+	}
+	if r.Stack.SEOPlugin != "" {
+		stack.SeoPlugin = oas.NewOptString(r.Stack.SEOPlugin)
+	}
+	if r.Stack.BotProtection != "" {
+		stack.BotProtection = oas.NewOptString(r.Stack.BotProtection)
+	}
+	return oas.AiReadiness{
+		Robots: oas.RobotsStatus(r.Robots), Bots: bots,
+		Sitemap: oas.SitemapSummary{
+			Declared: r.Sitemap.Declared, Files: int32(r.Sitemap.Files), //nolint:gosec // at most 10
+			Addresses: int32(min(r.Sitemap.Addresses, 1_000_000)), Languages: orEmpty(r.Sitemap.Languages), //nolint:gosec // capped
+		},
+		LlmsTxt: oas.LlmsFacts{
+			Present: r.LLMs.Present, Bytes: int32(min(r.LLMs.Bytes, 100_000_000)), //nolint:gosec // capped
+			Links: int32(min(r.LLMs.Links, 10_000_000)), //nolint:gosec // capped
+		},
+		LlmsFullTxt: r.LLMsFull, Markdown: r.Markdown, HomeRead: r.Home,
+		StructuredData: orEmpty(r.StructuredData), Languages: orEmpty(r.Languages), Stack: stack, Advice: advice,
+		Gaps: int32(r.Gaps()), //nolint:gosec // at most a few dozen
+	}
+}
+
+func toBrief(r domain.Readiness) oas.AiReadinessBrief {
+	blocked := []string{}
+	for _, b := range r.Bots {
+		if b.Access == domain.AccessBlocked {
+			blocked = append(blocked, b.Bot)
+		}
+	}
+	return oas.AiReadinessBrief{Gaps: int32(r.Gaps()), BlockedBots: blocked} //nolint:gosec // at most a few dozen
+}
+
+func orEmpty(items []string) []string {
+	if items == nil {
+		return []string{}
+	}
+	return items
 }
 
 func toProfileTerm(t domain.ProfileTerm) oas.ProfileTerm {
@@ -241,6 +338,9 @@ func toSummary(a domain.Analysis) oas.AnalysisSummary {
 	if a.Blocked() {
 		s.Blocked = oas.NewOptBool(true)
 	}
+	if a.Readiness != nil {
+		s.AiReadiness = oas.NewOptAiReadinessBrief(toBrief(*a.Readiness))
+	}
 	if a.CompetitorID != "" {
 		s.CompetitorId = oas.NewOptCompetitorId(oas.CompetitorId(a.CompetitorID))
 	}
@@ -298,6 +398,9 @@ func toAnalysis(a domain.Analysis) oas.Analysis {
 	}
 	if a.MatchingModel != "" {
 		out.MatchingModel = oas.NewOptString(a.MatchingModel)
+	}
+	if a.Readiness != nil {
+		out.AiReadiness = oas.NewOptAiReadiness(toReadiness(*a.Readiness))
 	}
 	return out
 }

@@ -29,6 +29,10 @@ type DeleteLlmCredentialRes interface {
 	deleteLlmCredentialRes()
 }
 
+type GetAiReadinessRes interface {
+	getAiReadinessRes()
+}
+
 type GetAnalysisRes interface {
 	getAnalysisRes()
 }
@@ -47,6 +51,10 @@ type GetLlmSettingsRes interface {
 
 type GetMeRes interface {
 	getMeRes()
+}
+
+type GetReadinessFilesRes interface {
+	getReadinessFilesRes()
 }
 
 type ListAnalysesRes interface {

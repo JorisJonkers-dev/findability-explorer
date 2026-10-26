@@ -13,11 +13,14 @@ import (
 )
 
 type Querier interface {
+	AddAnalysisBotRule(ctx context.Context, arg AddAnalysisBotRuleParams) error
 	AddAnalysisEquivalent(ctx context.Context, arg AddAnalysisEquivalentParams) error
 	AddAnalysisEquivalentTerm(ctx context.Context, arg AddAnalysisEquivalentTermParams) error
 	AddAnalysisKeyword(ctx context.Context, arg AddAnalysisKeywordParams) error
 	AddAnalysisKnownTerm(ctx context.Context, arg AddAnalysisKnownTermParams) error
 	AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams) error
+	AddAnalysisReadiness(ctx context.Context, arg AddAnalysisReadinessParams) error
+	AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error
 	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
 	AddLlmEvent(ctx context.Context, arg AddLlmEventParams) error
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
@@ -37,6 +40,9 @@ type Querier interface {
 	FailRunningAnalyses(ctx context.Context, arg FailRunningAnalysesParams) error
 	FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) error
 	GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow, error)
+	// An analysis's readiness, or no row when it has none.
+	GetAnalysisReadiness(ctx context.Context, analysisID uuid.UUID) ([]AnalysisReadiness, error)
+	GetAnalysisReadinessFiles(ctx context.Context, analysisID uuid.UUID) (GetAnalysisReadinessFilesRow, error)
 	GetLlmActive(ctx context.Context) (GetLlmActiveRow, error)
 	GetLlmCredential(ctx context.Context, id uuid.UUID) (LlmCredential, error)
 	GetSession(ctx context.Context, arg GetSessionParams) (GetSessionRow, error)
@@ -52,9 +58,13 @@ type Querier interface {
 	// The products the language model matched to Tribelt's families on each company's newest finished
 	// scan whose matching ran.
 	LatestMatchedProducts(ctx context.Context) ([]LatestMatchedProductsRow, error)
+	// Each company's newest scan that recorded its AI readiness, with that readiness.
+	LatestReadinessPerCompetitor(ctx context.Context) ([]LatestReadinessPerCompetitorRow, error)
 	ListAcceptedTerms(ctx context.Context) ([]AcceptedTerm, error)
 	ListAnalyses(ctx context.Context, limit int32) ([]ListAnalysesRow, error)
 	ListAnalysesByCompetitor(ctx context.Context, arg ListAnalysesByCompetitorParams) ([]ListAnalysesByCompetitorRow, error)
+	// The crawler rules of the analyses named, in each one's order.
+	ListAnalysisBotRules(ctx context.Context, ids []uuid.UUID) ([]ListAnalysisBotRulesRow, error)
 	ListAnalysisEquivalentTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentTermsRow, error)
 	ListAnalysisEquivalents(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentsRow, error)
 	ListAnalysisKeywords(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKeywordsRow, error)

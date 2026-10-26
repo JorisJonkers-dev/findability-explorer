@@ -310,6 +310,27 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/ai-readiness:
+    get:
+      operationId: getAiReadiness
+      summary: Get every company's AI readiness
+      description: >-
+        Returns every company that is not archived with the AI readiness its newest scan recorded:
+        Tribelt on top as the baseline, the mirror of tribelt.nl below it as the target, then
+        Tribelt's group companies, then the competitors, each band by name. A company no scan
+        checked yet has no readiness.
+      tags: [competitors]
+      responses:
+        "200":
+          description: The table.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiReadinessTable"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/rescans:
     post:
       operationId: startRescans
@@ -575,6 +596,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/Analysis"
         "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/analyses/{analysisId}/readiness-files:
+    get:
+      operationId: getReadinessFiles
+      summary: Get the raw files a scan read its AI readiness from
+      description: >-
+        Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to
+        the scan, each capped at 100 KB, to check the classification against. 404 when the scan
+        recorded no AI readiness.
+      tags: [admin]
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          description: The analysis's id.
+          schema:
+            type: string
+            format: uuid
+            maxLength: 36
+      responses:
+        "200":
+          description: The files.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessFiles"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
           $ref: "#/components/responses/Problem"
         "404":
           $ref: "#/components/responses/Problem"
@@ -989,8 +1045,10 @@ components:
       description: A known company.
       type: object
       additionalProperties: false
-      required: [id, source, name, country, website, languages, groupCompany, beltNames, homepageTitle, scans, archived]
+      required: [id, source, role, name, country, website, languages, groupCompany, beltNames, homepageTitle, scans, archived]
       properties:
+        role:
+          $ref: "#/components/schemas/CompanyRole"
         archived:
           type: boolean
           description: >-
@@ -1065,6 +1123,13 @@ components:
           maxLength: 300
           description: The title of its home page, or "unverified" when it could not be read.
           example: Twentebelt | Metal conveyor belts
+    CompanyRole:
+      description: >-
+        What a company is to Tribelt - Tribelt itself (the baseline), the group's mirror of
+        tribelt.nl (the report's recommendations in practice), a company in Tribelt's group (a
+        benchmark), or a competitor. Only competitors count as competitors.
+      type: string
+      enum: [tribelt, mirror, group, competitor]
     NewCompetitor:
       description: A company to add.
       type: object
@@ -1196,6 +1261,8 @@ components:
             True when the analysis failed because its site turned automated readers away (bot
             protection) although people can open it; only then is it present. Re-scanning all
             companies leaves such a company out.
+        aiReadiness:
+          $ref: "#/components/schemas/AiReadinessBrief"
         maxPages:
           type: integer
           format: int32
@@ -1425,6 +1492,8 @@ components:
           description: The site's products matched to Tribelt's belt families.
           items:
             $ref: "#/components/schemas/Equivalent"
+        aiReadiness:
+          $ref: "#/components/schemas/AiReadiness"
     Me:
       description: The signed-in account.
       type: object
@@ -1997,6 +2066,14 @@ components:
           description: Every group, in the profile's order.
           items:
             $ref: "#/components/schemas/ComparisonGroup"
+        readiness:
+          type: array
+          maxItems: 50
+          description: >-
+            What changed in AI readiness, in the readiness's order; absent when either scan recorded
+            no AI readiness, empty when nothing changed.
+          items:
+            $ref: "#/components/schemas/ReadinessChange"
     TermCandidateId:
       description: A candidate's id, made from its phrase.
       type: string
@@ -2179,6 +2256,294 @@ components:
             minLength: 1
             maxLength: 200
             example: Twentebelt
+    CrawlerAccess:
+      description: >-
+        How far robots.txt lets a crawler in - allowed (no page kept from it), partly (some pages
+        kept from it, or only some open to it), or blocked (the whole site).
+      type: string
+      enum: [allowed, partly, blocked]
+    BotRule:
+      description: One search or AI crawler's access, by its robots.txt token.
+      type: object
+      additionalProperties: false
+      required: [bot, access, named, followsAdvice]
+      properties:
+        bot:
+          type: string
+          maxLength: 40
+          description: The crawler's robots.txt token.
+          example: GPTBot
+        access:
+          $ref: "#/components/schemas/CrawlerAccess"
+        named:
+          type: boolean
+          description: >-
+            True when robots.txt names the crawler in a group of its own; otherwise it follows the
+            * group, and robots.txt does not mention it.
+        followsAdvice:
+          type: boolean
+          description: True unless the crawler is blocked; the report recommends letting every one in.
+    RobotsStatus:
+      description: >-
+        What became of robots.txt - found, missing (so every crawler may read every page), or
+        unreachable (the site would not serve it, so the crawler policy is unknown).
+      type: string
+      enum: [found, missing, unreachable]
+    ReadinessCheck:
+      description: One of the report's recommendations besides each crawler's access.
+      type: string
+      enum: [sitemapDeclared, sitemapLanguages, llmsTxt, markdown, organization, product, languages]
+    ReadinessAdvice:
+      description: Whether a site follows one recommendation.
+      type: object
+      additionalProperties: false
+      required: [check, ok]
+      properties:
+        check:
+          $ref: "#/components/schemas/ReadinessCheck"
+        ok:
+          type: boolean
+          description: True when the site follows it.
+    SitemapSummary:
+      description: What a site's sitemaps list, without the addresses.
+      type: object
+      additionalProperties: false
+      required: [declared, files, addresses, languages]
+      properties:
+        declared:
+          type: boolean
+          description: True when robots.txt lists a sitemap.
+        files:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many sitemap files were read (at most 10).
+          example: 3
+        addresses:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many different addresses they list.
+          example: 124
+        languages:
+          type: array
+          maxItems: 3
+          description: The ones of Dutch, German and English the addresses cover, by path or hreflang.
+          items:
+            type: string
+            maxLength: 16
+            example: de
+    LlmsFacts:
+      description: What a site's llms.txt holds.
+      type: object
+      additionalProperties: false
+      required: [present, bytes, links]
+      properties:
+        present:
+          type: boolean
+          description: True when the site serves llms.txt.
+        bytes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000000
+          description: Its size in bytes, as far as it was read.
+          example: 5120
+        links:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000000
+          description: How many links it lists.
+          example: 124
+    SiteStack:
+      description: The tools behind a site, as far as its headers and home page tell; each absent when unknown.
+      type: object
+      additionalProperties: false
+      properties:
+        cms:
+          type: string
+          maxLength: 60
+          description: The content management system.
+          example: WordPress
+        seoPlugin:
+          type: string
+          maxLength: 60
+          description: The SEO plugin.
+          example: Yoast SEO
+        botProtection:
+          type: string
+          maxLength: 60
+          description: The bot protection in front of it.
+          example: Cloudflare
+    AiReadiness:
+      description: >-
+        What a site tells search engines and AI assistants about itself, read by a scan before its
+        page crawl, held against the report's recommendations.
+      type: object
+      additionalProperties: false
+      required: [robots, bots, sitemap, llmsTxt, llmsFullTxt, markdown, homeRead, structuredData, languages, stack, advice, gaps]
+      properties:
+        robots:
+          $ref: "#/components/schemas/RobotsStatus"
+        bots:
+          type: array
+          maxItems: 20
+          description: Each search and AI crawler's access; empty when robots.txt was unreachable.
+          items:
+            $ref: "#/components/schemas/BotRule"
+        sitemap:
+          $ref: "#/components/schemas/SitemapSummary"
+        llmsTxt:
+          $ref: "#/components/schemas/LlmsFacts"
+        llmsFullTxt:
+          type: boolean
+          description: True when the site serves llms-full.txt.
+        markdown:
+          type: boolean
+          description: True when llms.txt links to .md pages or the home page has a .md twin.
+        homeRead:
+          type: boolean
+          description: True when the home page could be read; the structured data and languages need it.
+        structuredData:
+          type: array
+          maxItems: 50
+          description: The JSON-LD types on the home page, alphabetically.
+          items:
+            type: string
+            maxLength: 100
+            example: Organization
+        languages:
+          type: array
+          maxItems: 50
+          description: The language versions the home page declares (hreflang), Dutch, German and English first.
+          items:
+            type: string
+            maxLength: 16
+            example: de
+        stack:
+          $ref: "#/components/schemas/SiteStack"
+        advice:
+          type: array
+          maxItems: 20
+          description: Each recommendation besides the crawlers', and whether the site follows it.
+          items:
+            $ref: "#/components/schemas/ReadinessAdvice"
+        gaps:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many recommendations the site does not follow, each blocked crawler included.
+          example: 3
+    AiReadinessBrief:
+      description: A scan's AI readiness in brief.
+      type: object
+      additionalProperties: false
+      required: [gaps, blockedBots]
+      properties:
+        gaps:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many recommendations the site does not follow.
+          example: 3
+        blockedBots:
+          type: array
+          maxItems: 20
+          description: The crawlers robots.txt blocks.
+          items:
+            type: string
+            maxLength: 40
+            example: GPTBot
+    AiReadinessRow:
+      description: One company in the AI readiness table.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        scan:
+          $ref: "#/components/schemas/AnalysisSummary"
+        readiness:
+          $ref: "#/components/schemas/AiReadiness"
+    AiReadinessTable:
+      description: Every company's AI readiness, Tribelt and the mirror first.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 300
+          description: The rows.
+          items:
+            $ref: "#/components/schemas/AiReadinessRow"
+    ReadinessChange:
+      description: >-
+        One field of AI readiness that differs between two scans: a crawler (bot:GPTBot), robots,
+        sitemapDeclared, sitemapLanguages, llmsTxt, llmsFullTxt, markdown, organization, product,
+        languages, cms, seoPlugin or botProtection, with both values as they read.
+      type: object
+      additionalProperties: false
+      required: [field, from, to]
+      properties:
+        field:
+          type: string
+          maxLength: 60
+          description: The field.
+          example: bot:GPTBot
+        from:
+          type: string
+          maxLength: 300
+          description: Its value in the older scan.
+          example: allowed
+        to:
+          type: string
+          maxLength: 300
+          description: Its value in the newer scan.
+          example: blocked
+    ReadinessFiles:
+      description: The raw files a scan read its AI readiness from; empty when the site served none.
+      type: object
+      additionalProperties: false
+      required: [robotsTxt, robotsTruncated, llmsTxt, llmsTruncated, llmsFullTxt, llmsFullTruncated]
+      properties:
+        robotsTxt:
+          type: string
+          maxLength: 100000
+          description: robots.txt.
+          example: "User-agent: GPTBot\nDisallow: /"
+        robotsTruncated:
+          type: boolean
+          description: True when robots.txt was longer than 100 KB and is cut there.
+        llmsTxt:
+          type: string
+          maxLength: 100000
+          description: llms.txt.
+          example: "# Tribelt"
+        llmsTruncated:
+          type: boolean
+          description: True when llms.txt was cut at 100 KB.
+        llmsFullTxt:
+          type: string
+          maxLength: 100000
+          description: llms-full.txt.
+          example: "# Tribelt, every page"
+        llmsFullTruncated:
+          type: boolean
+          description: True when llms-full.txt was cut at 100 KB.
     Problem:
       description: An RFC 9457 problem detail.
       type: object

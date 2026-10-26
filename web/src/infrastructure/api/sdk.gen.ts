@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartRescansData, StartRescansErrors, StartRescansResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses } from './types.gen';
-import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmSettingsResponse, zGetMeResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartRescansBody, zStartRescansResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse } from './zod.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, GetAiReadinessData, GetAiReadinessErrors, GetAiReadinessResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, GetReadinessFilesData, GetReadinessFilesErrors, GetReadinessFilesResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartRescansData, StartRescansErrors, StartRescansResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses } from './types.gen';
+import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zGetAiReadinessResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmSettingsResponse, zGetMeResponse, zGetReadinessFilesPath, zGetReadinessFilesResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartRescansBody, zStartRescansResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -198,6 +198,27 @@ export const compareScans = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
+ * Get every company's AI readiness
+ *
+ * Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt on top as the baseline, the mirror of tribelt.nl below it as the target, then Tribelt's group companies, then the competitors, each band by name. A company no scan checked yet has no readiness.
+ */
+export const getAiReadiness = <ThrowOnError extends boolean = false>(options?: Options<GetAiReadinessData, ThrowOnError>): RequestResult<GetAiReadinessResponses, GetAiReadinessErrors, ThrowOnError> => (options?.client ?? client).get<GetAiReadinessResponses, GetAiReadinessErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetAiReadinessResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/ai-readiness',
+    ...options
+});
+
+/**
  * Re-scan companies
  *
  * Administrators only. Queues one scan for each named company with a website, or with `all`, for every company that is not archived, has a website and has data: the desk research studied it, or it was scanned before; a company whose site turned its last scan away (`blocked`) is left out. A company whose scan is still queued or running is skipped, and so is one without a website. The scans run a few at a time, each site politely.
@@ -374,6 +395,27 @@ export const getAnalysis = <ThrowOnError extends boolean = false>(options: Optio
             type: 'apiKey'
         }],
     url: '/api/v1/analyses/{analysisId}',
+    ...options
+});
+
+/**
+ * Get the raw files a scan read its AI readiness from
+ *
+ * Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI readiness.
+ */
+export const getReadinessFiles = <ThrowOnError extends boolean = false>(options: Options<GetReadinessFilesData, ThrowOnError>): RequestResult<GetReadinessFilesResponses, GetReadinessFilesErrors, ThrowOnError> => (options.client ?? client).get<GetReadinessFilesResponses, GetReadinessFilesErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zGetReadinessFilesPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetReadinessFilesResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/analyses/{analysisId}/readiness-files',
     ...options
 });
 

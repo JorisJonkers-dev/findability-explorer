@@ -672,6 +672,72 @@ func decodeGetCompetitorProfileParams(args [1]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
+// GetReadinessFilesParams is parameters of getReadinessFiles operation.
+type GetReadinessFilesParams struct {
+	// The analysis's id.
+	AnalysisId uuid.UUID
+}
+
+func unpackGetReadinessFilesParams(packed middleware.Parameters) (params GetReadinessFilesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "analysisId",
+			In:   "path",
+		}
+		params.AnalysisId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetReadinessFilesParams(args [1]string, argsEscaped bool, r *http.Request) (params GetReadinessFilesParams, _ error) {
+	// Decode path: analysisId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "analysisId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.AnalysisId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "analysisId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListAnalysesParams is parameters of listAnalyses operation.
 type ListAnalysesParams struct {
 	// How many analyses to return; up to 300, so a re-scan of every company can be followed in one list.

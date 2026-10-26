@@ -121,6 +121,7 @@ export type CompetitorSource = 'research' | 'added';
  * A known company.
  */
 export type Competitor = {
+    role: CompanyRole;
     /**
      * True for a researched company an administrator archived: it is left out of the re-scans and the web app hides it.
      */
@@ -173,6 +174,11 @@ export type Competitor = {
      */
     homepageTitle: string;
 };
+
+/**
+ * What a company is to Tribelt - Tribelt itself (the baseline), the group's mirror of tribelt.nl (the report's recommendations in practice), a company in Tribelt's group (a benchmark), or a competitor. Only competitors count as competitors.
+ */
+export type CompanyRole = 'tribelt' | 'mirror' | 'group' | 'competitor';
 
 /**
  * A company to add.
@@ -267,6 +273,7 @@ export type AnalysisSummary = {
      * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. Re-scanning all companies leaves such a company out.
      */
     blocked?: boolean;
+    aiReadiness?: AiReadinessBrief;
     /**
      * The most pages the crawl fetches.
      */
@@ -434,6 +441,7 @@ export type Analysis = {
      * The site's products matched to Tribelt's belt families.
      */
     equivalents: Array<Equivalent>;
+    aiReadiness?: AiReadiness;
 };
 
 /**
@@ -864,6 +872,10 @@ export type ScanComparison = {
      * Every group, in the profile's order.
      */
     groups: Array<ComparisonGroup>;
+    /**
+     * What changed in AI readiness, in the readiness's order; absent when either scan recorded no AI readiness, empty when nothing changed.
+     */
+    readiness?: Array<ReadinessChange>;
 };
 
 /**
@@ -990,6 +1002,237 @@ export type TermAcceptance = {
      * The companies that use it.
      */
     usedBy: Array<string>;
+};
+
+/**
+ * How far robots.txt lets a crawler in - allowed (no page kept from it), partly (some pages kept from it, or only some open to it), or blocked (the whole site).
+ */
+export type CrawlerAccess = 'allowed' | 'partly' | 'blocked';
+
+/**
+ * One search or AI crawler's access, by its robots.txt token.
+ */
+export type BotRule = {
+    /**
+     * The crawler's robots.txt token.
+     */
+    bot: string;
+    access: CrawlerAccess;
+    /**
+     * True when robots.txt names the crawler in a group of its own; otherwise it follows the * group, and robots.txt does not mention it.
+     */
+    named: boolean;
+    /**
+     * True unless the crawler is blocked; the report recommends letting every one in.
+     */
+    followsAdvice: boolean;
+};
+
+/**
+ * What became of robots.txt - found, missing (so every crawler may read every page), or unreachable (the site would not serve it, so the crawler policy is unknown).
+ */
+export type RobotsStatus = 'found' | 'missing' | 'unreachable';
+
+/**
+ * One of the report's recommendations besides each crawler's access.
+ */
+export type ReadinessCheck = 'sitemapDeclared' | 'sitemapLanguages' | 'llmsTxt' | 'markdown' | 'organization' | 'product' | 'languages';
+
+/**
+ * Whether a site follows one recommendation.
+ */
+export type ReadinessAdvice = {
+    check: ReadinessCheck;
+    /**
+     * True when the site follows it.
+     */
+    ok: boolean;
+};
+
+/**
+ * What a site's sitemaps list, without the addresses.
+ */
+export type SitemapSummary = {
+    /**
+     * True when robots.txt lists a sitemap.
+     */
+    declared: boolean;
+    /**
+     * How many sitemap files were read (at most 10).
+     */
+    files: number;
+    /**
+     * How many different addresses they list.
+     */
+    addresses: number;
+    /**
+     * The ones of Dutch, German and English the addresses cover, by path or hreflang.
+     */
+    languages: Array<string>;
+};
+
+/**
+ * What a site's llms.txt holds.
+ */
+export type LlmsFacts = {
+    /**
+     * True when the site serves llms.txt.
+     */
+    present: boolean;
+    /**
+     * Its size in bytes, as far as it was read.
+     */
+    bytes: number;
+    /**
+     * How many links it lists.
+     */
+    links: number;
+};
+
+/**
+ * The tools behind a site, as far as its headers and home page tell; each absent when unknown.
+ */
+export type SiteStack = {
+    /**
+     * The content management system.
+     */
+    cms?: string;
+    /**
+     * The SEO plugin.
+     */
+    seoPlugin?: string;
+    /**
+     * The bot protection in front of it.
+     */
+    botProtection?: string;
+};
+
+/**
+ * What a site tells search engines and AI assistants about itself, read by a scan before its page crawl, held against the report's recommendations.
+ */
+export type AiReadiness = {
+    robots: RobotsStatus;
+    /**
+     * Each search and AI crawler's access; empty when robots.txt was unreachable.
+     */
+    bots: Array<BotRule>;
+    sitemap: SitemapSummary;
+    llmsTxt: LlmsFacts;
+    /**
+     * True when the site serves llms-full.txt.
+     */
+    llmsFullTxt: boolean;
+    /**
+     * True when llms.txt links to .md pages or the home page has a .md twin.
+     */
+    markdown: boolean;
+    /**
+     * True when the home page could be read; the structured data and languages need it.
+     */
+    homeRead: boolean;
+    /**
+     * The JSON-LD types on the home page, alphabetically.
+     */
+    structuredData: Array<string>;
+    /**
+     * The language versions the home page declares (hreflang), Dutch, German and English first.
+     */
+    languages: Array<string>;
+    stack: SiteStack;
+    /**
+     * Each recommendation besides the crawlers', and whether the site follows it.
+     */
+    advice: Array<ReadinessAdvice>;
+    /**
+     * How many recommendations the site does not follow, each blocked crawler included.
+     */
+    gaps: number;
+};
+
+/**
+ * A scan's AI readiness in brief.
+ */
+export type AiReadinessBrief = {
+    /**
+     * How many recommendations the site does not follow.
+     */
+    gaps: number;
+    /**
+     * The crawlers robots.txt blocks.
+     */
+    blockedBots: Array<string>;
+};
+
+/**
+ * One company in the AI readiness table.
+ */
+export type AiReadinessRow = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    scan?: AnalysisSummary;
+    readiness?: AiReadiness;
+};
+
+/**
+ * Every company's AI readiness, Tribelt and the mirror first.
+ */
+export type AiReadinessTable = {
+    /**
+     * The rows.
+     */
+    items: Array<AiReadinessRow>;
+};
+
+/**
+ * One field of AI readiness that differs between two scans: a crawler (bot:GPTBot), robots, sitemapDeclared, sitemapLanguages, llmsTxt, llmsFullTxt, markdown, organization, product, languages, cms, seoPlugin or botProtection, with both values as they read.
+ */
+export type ReadinessChange = {
+    /**
+     * The field.
+     */
+    field: string;
+    /**
+     * Its value in the older scan.
+     */
+    from: string;
+    /**
+     * Its value in the newer scan.
+     */
+    to: string;
+};
+
+/**
+ * The raw files a scan read its AI readiness from; empty when the site served none.
+ */
+export type ReadinessFiles = {
+    /**
+     * robots.txt.
+     */
+    robotsTxt: string;
+    /**
+     * True when robots.txt was longer than 100 KB and is cut there.
+     */
+    robotsTruncated: boolean;
+    /**
+     * llms.txt.
+     */
+    llmsTxt: string;
+    /**
+     * True when llms.txt was cut at 100 KB.
+     */
+    llmsTruncated: boolean;
+    /**
+     * llms-full.txt.
+     */
+    llmsFullTxt: string;
+    /**
+     * True when llms-full.txt was cut at 100 KB.
+     */
+    llmsFullTruncated: boolean;
 };
 
 /**
@@ -1394,6 +1637,35 @@ export type CompareScansResponses = {
 
 export type CompareScansResponse = CompareScansResponses[keyof CompareScansResponses];
 
+export type GetAiReadinessData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai-readiness';
+};
+
+export type GetAiReadinessErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetAiReadinessError = GetAiReadinessErrors[keyof GetAiReadinessErrors];
+
+export type GetAiReadinessResponses = {
+    /**
+     * The table.
+     */
+    200: AiReadinessTable;
+};
+
+export type GetAiReadinessResponse = GetAiReadinessResponses[keyof GetAiReadinessResponses];
+
 export type StartRescansData = {
     /**
      * Which companies to scan again.
@@ -1756,6 +2028,52 @@ export type GetAnalysisResponses = {
 };
 
 export type GetAnalysisResponse = GetAnalysisResponses[keyof GetAnalysisResponses];
+
+export type GetReadinessFilesData = {
+    body?: never;
+    path: {
+        /**
+         * The analysis's id.
+         */
+        analysisId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/analyses/{analysisId}/readiness-files';
+};
+
+export type GetReadinessFilesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetReadinessFilesError = GetReadinessFilesErrors[keyof GetReadinessFilesErrors];
+
+export type GetReadinessFilesResponses = {
+    /**
+     * The files.
+     */
+    200: ReadinessFiles;
+};
+
+export type GetReadinessFilesResponse = GetReadinessFilesResponses[keyof GetReadinessFilesResponses];
 
 export type GetMeData = {
     body?: never;

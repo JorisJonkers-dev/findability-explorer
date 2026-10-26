@@ -12,6 +12,8 @@ import (
 type Sitemap struct {
 	Pages    []string
 	Sitemaps []string
+	// Languages are the hreflang values of the language versions its pages declare.
+	Languages []string
 }
 
 // MaxSitemapEntries is the most addresses one sitemap file yields.
@@ -71,6 +73,9 @@ func (p *sitemapParser) start(t xml.StartElement) {
 	case "link":
 		if href := xmlAttr(t, "href"); p.inURL && xmlAttr(t, "rel") == "alternate" && href != "" {
 			p.out.Pages = append(p.out.Pages, strings.TrimSpace(href))
+			if hreflang := strings.TrimSpace(xmlAttr(t, "hreflang")); hreflang != "" {
+				p.out.Languages = append(p.out.Languages, hreflang)
+			}
 		}
 	}
 }

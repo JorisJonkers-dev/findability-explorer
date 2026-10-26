@@ -233,7 +233,7 @@ func TestProfileAndCompareFailures(t *testing.T) {
 			svc := rescanService(r, c.dir, limits())
 			var err error
 			if strings.HasPrefix(name, "compare") {
-				_, _, _, err = svc.Compare(t.Context(), c.id, uuid.Nil, uuid.Nil)
+				_, err = svc.Compare(t.Context(), c.id, uuid.Nil, uuid.Nil)
 			} else {
 				_, err = svc.Profile(t.Context(), c.id)
 			}
@@ -248,14 +248,18 @@ func TestCompareTheLatestTwoFinishedScans(t *testing.T) {
 	r := newRepo()
 	first, third := history(r)
 	svc := rescanService(r, &directory{companies: companies()}, limits())
-	from, to, groups, err := svc.Compare(t.Context(), "x", uuid.Nil, uuid.Nil)
-	if err != nil || from.ID != first || to.ID != third || len(groups) != len(domain.Groups()) {
-		t.Fatalf("Compare = %v %v %d, %v", from.ID, to.ID, len(groups), err)
+	c, err := svc.Compare(t.Context(), "x", uuid.Nil, uuid.Nil)
+	groups := c.Groups
+	if err != nil || c.From.ID != first || c.To.ID != third || len(groups) != len(domain.Groups()) {
+		t.Fatalf("Compare = %v %v %d, %v", c.From.ID, c.To.ID, len(groups), err)
+	}
+	if c.Readiness != nil {
+		t.Fatalf("scans without readiness compare to no readiness change: %+v", c.Readiness)
 	}
 	if len(groups[0].Moved) != 1 || len(groups[3].Added) != 1 {
 		t.Fatalf("groups %+v", groups)
 	}
-	if _, _, _, err := svc.Compare(t.Context(), "x", third, third); !errors.Is(err, domain.ErrNotComparable) {
+	if _, err := svc.Compare(t.Context(), "x", third, third); !errors.Is(err, domain.ErrNotComparable) {
 		t.Fatalf("Compare of one scan = %v", err)
 	}
 }
@@ -265,7 +269,7 @@ func TestCompareReportsTheSecondLoadFailing(t *testing.T) {
 	history(r)
 	g := &failingSecondGet{repo: r}
 	svc := app.New(g, &directory{companies: companies()}, crawler{}, source{}, glossary, func() time.Time { return now }, limits())
-	if _, _, _, err := svc.Compare(t.Context(), "x", uuid.Nil, uuid.Nil); !errors.Is(err, errBoom) {
+	if _, err := svc.Compare(t.Context(), "x", uuid.Nil, uuid.Nil); !errors.Is(err, errBoom) {
 		t.Fatalf("Compare = %v", err)
 	}
 }
@@ -315,6 +319,10 @@ func TestWorkRunsScansSideBySide(t *testing.T) {
 type blockingCrawler struct {
 	block          chan struct{}
 	inFlight, most *atomic.Int32
+}
+
+func (blockingCrawler) Readiness(context.Context, domain.Target) (domain.ReadinessFiles, error) {
+	return domain.ReadinessFiles{}, nil
 }
 
 func (b blockingCrawler) Crawl(ctx context.Context, _ domain.Target, _ int, _ domain.LinkScorer, _ func(domain.Page) error) error {

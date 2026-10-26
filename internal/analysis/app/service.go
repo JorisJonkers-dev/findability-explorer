@@ -259,25 +259,47 @@ func (s *Service) Profile(ctx context.Context, competitorID string) (domain.Prof
 }
 
 // Compare compares two finished scans of a company; a nil id means the default for that side
-// (see domain.Pick). It returns the older scan, the newer and the changes.
-func (s *Service) Compare(ctx context.Context, competitorID string, from, to uuid.UUID) (domain.Analysis, domain.Analysis, []domain.ComparisonGroup, error) {
+// (see domain.Pick). The older scan is From, without its results.
+func (s *Service) Compare(ctx context.Context, competitorID string, from, to uuid.UUID) (domain.Comparison, error) {
 	finished, err := s.finished(ctx, competitorID)
 	if err != nil {
-		return domain.Analysis{}, domain.Analysis{}, nil, err
+		return domain.Comparison{}, err
 	}
 	older, newer, err := domain.Pick(finished, from, to)
 	if err != nil {
-		return domain.Analysis{}, domain.Analysis{}, nil, err
+		return domain.Comparison{}, err
 	}
 	a, err := s.load(ctx, older.ID)
 	if err != nil {
-		return domain.Analysis{}, domain.Analysis{}, nil, fmt.Errorf("load scan: %w", err)
+		return domain.Comparison{}, fmt.Errorf("load scan: %w", err)
 	}
 	b, err := s.load(ctx, newer.ID)
 	if err != nil {
-		return domain.Analysis{}, domain.Analysis{}, nil, fmt.Errorf("load scan: %w", err)
+		return domain.Comparison{}, fmt.Errorf("load scan: %w", err)
 	}
-	return older, newer, domain.Compare(a, b), nil
+	return domain.Comparison{
+		From: older, To: newer, Groups: domain.Compare(a, b), Readiness: domain.CompareReadiness(a.Readiness, b.Readiness),
+	}, nil
+}
+
+// ReadinessTable lists every company that is not archived with its latest AI readiness, Tribelt
+// and the mirror first (domain.ReadinessTable).
+func (s *Service) ReadinessTable(ctx context.Context) ([]domain.ReadinessRow, error) {
+	companies, err := s.directory.Companies(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list companies: %w", err)
+	}
+	latest, err := s.repo.LatestReadiness(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("latest readiness: %w", err)
+	}
+	return domain.ReadinessTable(companies, latest), nil
+}
+
+// ReadinessFiles returns the raw robots.txt, llms.txt and llms-full.txt a scan read, or
+// domain.ErrNoReadiness.
+func (s *Service) ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.RawFiles, error) {
+	return s.repo.ReadinessFiles(ctx, id)
 }
 
 // finished returns a known company's finished scans without results, newest first.
@@ -376,6 +398,13 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	target, err := domain.NewTarget(a.URL)
 	if err != nil {
 		return s.fail(ctx, id, err.Error())
+	}
+	// The readiness files come first, so a site that turns the page crawl away still shows its
+	// crawler policy. When ctx ends while they are read, the crawl below ends too.
+	if files, err := s.crawler.Readiness(ctx, target); err == nil {
+		if err := s.repo.SaveReadiness(ctx, id, domain.AssessReadiness(files), domain.RawFilesOf(files)); err != nil {
+			return s.abort(ctx, id, fmt.Errorf("save readiness: %w", err))
+		}
 	}
 	glossary := s.glossary()
 	lexicon := domain.NewLexicon(glossary)

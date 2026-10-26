@@ -196,3 +196,54 @@ FROM analysis_keywords AS k
 JOIN analyses AS a ON a.id = k.analysis_id
 WHERE a.status = 'done' AND a.competitor_id IS NOT NULL AND NOT coalesce(k.in_map, false)
 ORDER BY a.created_at, a.id, k.position;
+
+-- name: AddAnalysisReadiness :exec
+INSERT INTO analysis_readiness (
+    analysis_id, robots, sitemap_declared, sitemap_files, sitemap_addresses, sitemap_languages, llms_present,
+    llms_bytes, llms_links, llms_full_present, markdown, home_read, structured_data, languages, cms, seo_plugin,
+    bot_protection
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);
+
+-- name: AddAnalysisBotRule :exec
+INSERT INTO analysis_bot_rules (analysis_id, position, bot, access, named)
+VALUES ($1, $2, $3, $4, $5);
+
+-- name: AddAnalysisReadinessFiles :exec
+INSERT INTO analysis_readiness_files (
+    analysis_id, robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7);
+
+-- name: GetAnalysisReadiness :many
+-- An analysis's readiness, or no row when it has none.
+SELECT analysis_id, robots, sitemap_declared, sitemap_files, sitemap_addresses, sitemap_languages, llms_present,
+    llms_bytes, llms_links, llms_full_present, markdown, home_read, structured_data, languages, cms, seo_plugin,
+    bot_protection
+FROM analysis_readiness
+WHERE analysis_id = $1;
+
+-- name: ListAnalysisBotRules :many
+-- The crawler rules of the analyses named, in each one's order.
+SELECT analysis_id, bot, access, named
+FROM analysis_bot_rules
+WHERE analysis_id = ANY(sqlc.arg(ids)::uuid [])
+ORDER BY analysis_id, position;
+
+-- name: GetAnalysisReadinessFiles :one
+SELECT robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated
+FROM analysis_readiness_files
+WHERE analysis_id = $1;
+
+-- name: LatestReadinessPerCompetitor :many
+-- Each company's newest scan that recorded its AI readiness, with that readiness.
+SELECT DISTINCT ON (a.competitor_id) a.competitor_id::text AS competitor_id, a.id, a.url, a.max_pages, a.status,
+    a.failure, a.pages_crawled, a.matching, a.created_by, a.created_at, a.finished_at, a.matching_model,
+    coalesce(a.scan_number, 0)::bigint AS scan_number,
+    r.robots, r.sitemap_declared, r.sitemap_files, r.sitemap_addresses, r.sitemap_languages, r.llms_present,
+    r.llms_bytes, r.llms_links, r.llms_full_present, r.markdown, r.home_read, r.structured_data, r.languages, r.cms,
+    r.seo_plugin, r.bot_protection
+FROM analyses AS a
+JOIN analysis_readiness AS r ON r.analysis_id = a.id
+WHERE a.competitor_id IS NOT NULL
+ORDER BY a.competitor_id, a.created_at DESC, a.id;

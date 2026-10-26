@@ -162,7 +162,7 @@ func toCompetitor(l domain.Listed) oas.Competitor {
 		languages = []string{}
 	}
 	c := oas.Competitor{
-		ID: oas.CompetitorId(l.ID), Source: oas.CompetitorSource(l.Source), Name: l.Name, Country: l.Country,
+		ID: oas.CompetitorId(l.ID), Source: oas.CompetitorSource(l.Source), Role: oas.CompanyRole(l.Role()), Name: l.Name, Country: l.Country,
 		Website: l.Website, Languages: languages, GroupCompany: l.GroupCompany, BeltNames: names,
 		HomepageTitle: l.HomepageTitle, Archived: l.Archived,
 		Scans: int32(l.Stats.Count), //nolint:gosec // scans of one company

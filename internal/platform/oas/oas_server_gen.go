@@ -60,6 +60,14 @@ type Handler interface {
 	//
 	// DELETE /api/v1/admin/llm/credentials/{credentialId}
 	DeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (DeleteLlmCredentialRes, error)
+	// GetAiReadiness implements getAiReadiness operation.
+	//
+	// Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt
+	// on top as the baseline, the mirror of tribelt.nl below it as the target, then Tribelt's group
+	// companies, then the competitors, each band by name. A company no scan checked yet has no readiness.
+	//
+	// GET /api/v1/ai-readiness
+	GetAiReadiness(ctx context.Context) (GetAiReadinessRes, error)
 	// GetAnalysis implements getAnalysis operation.
 	//
 	// Returns the analysis, its progress, and every result found so far.
@@ -94,6 +102,14 @@ type Handler interface {
 	//
 	// GET /api/v1/me
 	GetMe(ctx context.Context) (GetMeRes, error)
+	// GetReadinessFiles implements getReadinessFiles operation.
+	//
+	// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
+	// each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI
+	// readiness.
+	//
+	// GET /api/v1/admin/analyses/{analysisId}/readiness-files
+	GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (GetReadinessFilesRes, error)
 	// ListAnalyses implements listAnalyses operation.
 	//
 	// Returns at most `limit` analyses, newest first, without their results.

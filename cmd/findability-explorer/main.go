@@ -128,7 +128,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		return err
 	}
 	companies = companiesapp.New(
-		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
+		func() []companiesdomain.Company {
+			return append(research.Companies(terminology.Companies()), companiesdomain.Mirror())
+		},
 		companiespersistence.New(store.Queries()),
 		scans{repo: analysisRepo},
 		now,
@@ -372,7 +374,8 @@ func (d directory) Companies(ctx context.Context) ([]analysisdomain.Company, err
 	out := make([]analysisdomain.Company, 0, len(listed))
 	for _, l := range listed {
 		out = append(out, analysisdomain.Company{
-			ID: l.ID, Name: l.Name, Website: l.URL, Archived: l.Archived, Researched: l.Source == companiesdomain.SourceResearch,
+			ID: l.ID, Name: l.Name, Role: analysisdomain.Role(l.Role()), Website: l.URL, Archived: l.Archived,
+			Researched: l.Source == companiesdomain.SourceResearch,
 		})
 	}
 	return out, nil

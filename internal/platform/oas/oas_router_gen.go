@@ -17,13 +17,13 @@ var (
 	rn7AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn28AllowedHeaders = map[string]string{
+	rn32AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn22AllowedHeaders = map[string]string{
+	rn26AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn5AllowedHeaders = map[string]string{
@@ -109,6 +109,56 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					switch elem[0] {
+					case 'a': // Prefix: "analyses/"
+
+						if l := len("analyses/"); len(elem) >= l && elem[0:l] == "analyses/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						// Param: "analysisId"
+						// Match until "/"
+						idx := strings.IndexByte(elem, '/')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/readiness-files"
+
+							if l := len("/readiness-files"); len(elem) >= l && elem[0:l] == "/readiness-files" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleGetReadinessFilesRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						}
+
 					case 'l': // Prefix: "llm"
 
 						if l := len("llm"); len(elem) >= l && elem[0:l] == "llm" {
@@ -323,7 +373,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn28AllowedHeaders,
+									allowedHeaders: rn32AllowedHeaders,
 									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
@@ -478,6 +528,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 					}
 
+				case 'i': // Prefix: "i-readiness"
+
+					if l := len("i-readiness"); len(elem) >= l && elem[0:l] == "i-readiness" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetAiReadinessRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET",
+								allowedHeaders: nil,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
+					}
+
 				case 'n': // Prefix: "nalyses"
 
 					if l := len("nalyses"); len(elem) >= l && elem[0:l] == "nalyses" {
@@ -495,7 +570,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn22AllowedHeaders,
+								allowedHeaders: rn26AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -859,6 +934,54 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 					switch elem[0] {
+					case 'a': // Prefix: "analyses/"
+
+						if l := len("analyses/"); len(elem) >= l && elem[0:l] == "analyses/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						// Param: "analysisId"
+						// Match until "/"
+						idx := strings.IndexByte(elem, '/')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/readiness-files"
+
+							if l := len("/readiness-files"); len(elem) >= l && elem[0:l] == "/readiness-files" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = GetReadinessFilesOperation
+									r.summary = "Get the raw files a scan read its AI readiness from"
+									r.operationID = "getReadinessFiles"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/admin/analyses/{analysisId}/readiness-files"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
+						}
+
 					case 'l': // Prefix: "llm"
 
 						if l := len("llm"); len(elem) >= l && elem[0:l] == "llm" {
@@ -1221,6 +1344,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 						}
 
+					}
+
+				case 'i': // Prefix: "i-readiness"
+
+					if l := len("i-readiness"); len(elem) >= l && elem[0:l] == "i-readiness" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "GET":
+							r.name = GetAiReadinessOperation
+							r.summary = "Get every company's AI readiness"
+							r.operationID = "getAiReadiness"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/ai-readiness"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
 					}
 
 				case 'n': // Prefix: "nalyses"

@@ -146,6 +146,16 @@ type ComparisonGroup struct {
 	Moved   []TermChange
 }
 
+// Comparison is two finished scans of a company compared: their search terms per group, and
+// their AI readiness.
+type Comparison struct {
+	From   Analysis
+	To     Analysis
+	Groups []ComparisonGroup
+	// Readiness is what changed in AI readiness; nil when either scan recorded none.
+	Readiness []ReadinessChange
+}
+
 // ErrNotComparable is returned when two scans cannot be compared.
 var ErrNotComparable = errors.New("a comparison needs two different finished scans of the company")
 

@@ -86,6 +86,17 @@ func (UnimplementedHandler) DeleteLlmCredential(ctx context.Context, params Dele
 	return r, ht.ErrNotImplemented
 }
 
+// GetAiReadiness implements getAiReadiness operation.
+//
+// Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt
+// on top as the baseline, the mirror of tribelt.nl below it as the target, then Tribelt's group
+// companies, then the competitors, each band by name. A company no scan checked yet has no readiness.
+//
+// GET /api/v1/ai-readiness
+func (UnimplementedHandler) GetAiReadiness(ctx context.Context) (r GetAiReadinessRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAnalysis implements getAnalysis operation.
 //
 // Returns the analysis, its progress, and every result found so far.
@@ -132,6 +143,17 @@ func (UnimplementedHandler) GetLlmSettings(ctx context.Context) (r GetLlmSetting
 //
 // GET /api/v1/me
 func (UnimplementedHandler) GetMe(ctx context.Context) (r GetMeRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetReadinessFiles implements getReadinessFiles operation.
+//
+// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
+// each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI
+// readiness.
+//
+// GET /api/v1/admin/analyses/{analysisId}/readiness-files
+func (UnimplementedHandler) GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (r GetReadinessFilesRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

@@ -40,6 +40,11 @@ type analyses struct {
 	profileErr  error
 	compareErr  error
 	profile     domain.Profile
+	// readinessChanges is what Compare reports changed in AI readiness.
+	readinessChanges []domain.ReadinessChange
+	readinessRows    []domain.ReadinessRow
+	readinessErr     error
+	rawFiles         map[uuid.UUID]domain.RawFiles
 }
 
 // companyRepo is an in-memory store of added companies.

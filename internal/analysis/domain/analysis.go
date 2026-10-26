@@ -136,6 +136,9 @@ type Analysis struct {
 	// MatchingModel names the provider and model that matched the products; empty when none was asked.
 	MatchingModel string
 	Equivalents   []Equivalent
+	// Readiness is the site's AI readiness, read before the crawl; nil for a scan made before
+	// scans recorded it, or one still queued.
+	Readiness *Readiness
 }
 
 // Usage is what one call to the language model consumed.
@@ -174,6 +177,13 @@ type Repository interface {
 	AddPage(ctx context.Context, id uuid.UUID, page PageSummary) error
 	SaveFindings(ctx context.Context, id uuid.UUID, keywords []Keyword, known []KnownTerm) error
 	SaveMatching(ctx context.Context, id uuid.UUID, m Matching, model string, eqs []Equivalent, usage Usage) error
+	// SaveReadiness stores the site's AI readiness and the raw files it was read from.
+	SaveReadiness(ctx context.Context, id uuid.UUID, r Readiness, raw RawFiles) error
+	// ReadinessFiles returns the raw files of an analysis's readiness, or ErrNoReadiness.
+	ReadinessFiles(ctx context.Context, id uuid.UUID) (RawFiles, error)
+	// LatestReadiness returns, per company, its newest analysis that recorded its readiness,
+	// without its other results.
+	LatestReadiness(ctx context.Context) (map[string]Analysis, error)
 	Finish(ctx context.Context, id uuid.UUID, at time.Time) error
 	Fail(ctx context.Context, id uuid.UUID, reason string, at time.Time) error
 }
@@ -206,10 +216,25 @@ type Directory interface {
 	Companies(ctx context.Context) ([]Company, error)
 }
 
+// Role is what a company is to Tribelt, as the AI readiness table bands it.
+type Role string
+
+const (
+	// RoleTribelt is Tribelt itself, the baseline every competitor is compared with.
+	RoleTribelt Role = "tribelt"
+	// RoleMirror is the group's mirror of tribelt.nl, the report's recommendations in practice.
+	RoleMirror Role = "mirror"
+	// RoleGroup is a company in Tribelt's group: a benchmark, never a competitor.
+	RoleGroup Role = "group"
+	// RoleCompetitor is every other company.
+	RoleCompetitor Role = "competitor"
+)
+
 // Company is what the analysis context knows of a company: whether and where it can be scanned.
 type Company struct {
 	ID   string
 	Name string
+	Role Role
 	// Website is nil when the company has none.
 	Website  *url.URL
 	Archived bool
@@ -262,6 +287,9 @@ func (a Analysis) Blocked() bool {
 
 // ErrNotFound is returned for an analysis id that does not exist.
 var ErrNotFound = fmt.Errorf("no such analysis")
+
+// ErrNoReadiness is returned for an analysis that recorded no AI readiness.
+var ErrNoReadiness = errors.New("the scan recorded no AI readiness")
 
 // Finding is a keyword one finished scan of a company found, with where and when; the review
 // queue reads the ones the terminology map did not hold.

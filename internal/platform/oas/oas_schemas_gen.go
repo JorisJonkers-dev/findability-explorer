@@ -103,6 +103,261 @@ type AddLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*AddLlmCredentialUnprocessableEntity) addLlmCredentialRes() {}
 
+// What a site tells search engines and AI assistants about itself, read by a scan before its page
+// crawl, held against the report's recommendations.
+// Ref: #/components/schemas/AiReadiness
+type AiReadiness struct {
+	Robots RobotsStatus `json:"robots"`
+	// Each search and AI crawler's access; empty when robots.txt was unreachable.
+	Bots    []BotRule      `json:"bots"`
+	Sitemap SitemapSummary `json:"sitemap"`
+	LlmsTxt LlmsFacts      `json:"llmsTxt"`
+	// True when the site serves llms-full.txt.
+	LlmsFullTxt bool `json:"llmsFullTxt"`
+	// True when llms.txt links to .md pages or the home page has a .md twin.
+	Markdown bool `json:"markdown"`
+	// True when the home page could be read; the structured data and languages need it.
+	HomeRead bool `json:"homeRead"`
+	// The JSON-LD types on the home page, alphabetically.
+	StructuredData []string `json:"structuredData"`
+	// The language versions the home page declares (hreflang), Dutch, German and English first.
+	Languages []string  `json:"languages"`
+	Stack     SiteStack `json:"stack"`
+	// Each recommendation besides the crawlers', and whether the site follows it.
+	Advice []ReadinessAdvice `json:"advice"`
+	// How many recommendations the site does not follow, each blocked crawler included.
+	Gaps int32 `json:"gaps"`
+}
+
+// GetRobots returns the value of Robots.
+func (s *AiReadiness) GetRobots() RobotsStatus {
+	return s.Robots
+}
+
+// GetBots returns the value of Bots.
+func (s *AiReadiness) GetBots() []BotRule {
+	return s.Bots
+}
+
+// GetSitemap returns the value of Sitemap.
+func (s *AiReadiness) GetSitemap() SitemapSummary {
+	return s.Sitemap
+}
+
+// GetLlmsTxt returns the value of LlmsTxt.
+func (s *AiReadiness) GetLlmsTxt() LlmsFacts {
+	return s.LlmsTxt
+}
+
+// GetLlmsFullTxt returns the value of LlmsFullTxt.
+func (s *AiReadiness) GetLlmsFullTxt() bool {
+	return s.LlmsFullTxt
+}
+
+// GetMarkdown returns the value of Markdown.
+func (s *AiReadiness) GetMarkdown() bool {
+	return s.Markdown
+}
+
+// GetHomeRead returns the value of HomeRead.
+func (s *AiReadiness) GetHomeRead() bool {
+	return s.HomeRead
+}
+
+// GetStructuredData returns the value of StructuredData.
+func (s *AiReadiness) GetStructuredData() []string {
+	return s.StructuredData
+}
+
+// GetLanguages returns the value of Languages.
+func (s *AiReadiness) GetLanguages() []string {
+	return s.Languages
+}
+
+// GetStack returns the value of Stack.
+func (s *AiReadiness) GetStack() SiteStack {
+	return s.Stack
+}
+
+// GetAdvice returns the value of Advice.
+func (s *AiReadiness) GetAdvice() []ReadinessAdvice {
+	return s.Advice
+}
+
+// GetGaps returns the value of Gaps.
+func (s *AiReadiness) GetGaps() int32 {
+	return s.Gaps
+}
+
+// SetRobots sets the value of Robots.
+func (s *AiReadiness) SetRobots(val RobotsStatus) {
+	s.Robots = val
+}
+
+// SetBots sets the value of Bots.
+func (s *AiReadiness) SetBots(val []BotRule) {
+	s.Bots = val
+}
+
+// SetSitemap sets the value of Sitemap.
+func (s *AiReadiness) SetSitemap(val SitemapSummary) {
+	s.Sitemap = val
+}
+
+// SetLlmsTxt sets the value of LlmsTxt.
+func (s *AiReadiness) SetLlmsTxt(val LlmsFacts) {
+	s.LlmsTxt = val
+}
+
+// SetLlmsFullTxt sets the value of LlmsFullTxt.
+func (s *AiReadiness) SetLlmsFullTxt(val bool) {
+	s.LlmsFullTxt = val
+}
+
+// SetMarkdown sets the value of Markdown.
+func (s *AiReadiness) SetMarkdown(val bool) {
+	s.Markdown = val
+}
+
+// SetHomeRead sets the value of HomeRead.
+func (s *AiReadiness) SetHomeRead(val bool) {
+	s.HomeRead = val
+}
+
+// SetStructuredData sets the value of StructuredData.
+func (s *AiReadiness) SetStructuredData(val []string) {
+	s.StructuredData = val
+}
+
+// SetLanguages sets the value of Languages.
+func (s *AiReadiness) SetLanguages(val []string) {
+	s.Languages = val
+}
+
+// SetStack sets the value of Stack.
+func (s *AiReadiness) SetStack(val SiteStack) {
+	s.Stack = val
+}
+
+// SetAdvice sets the value of Advice.
+func (s *AiReadiness) SetAdvice(val []ReadinessAdvice) {
+	s.Advice = val
+}
+
+// SetGaps sets the value of Gaps.
+func (s *AiReadiness) SetGaps(val int32) {
+	s.Gaps = val
+}
+
+// A scan's AI readiness in brief.
+// Ref: #/components/schemas/AiReadinessBrief
+type AiReadinessBrief struct {
+	// How many recommendations the site does not follow.
+	Gaps int32 `json:"gaps"`
+	// The crawlers robots.txt blocks.
+	BlockedBots []string `json:"blockedBots"`
+}
+
+// GetGaps returns the value of Gaps.
+func (s *AiReadinessBrief) GetGaps() int32 {
+	return s.Gaps
+}
+
+// GetBlockedBots returns the value of BlockedBots.
+func (s *AiReadinessBrief) GetBlockedBots() []string {
+	return s.BlockedBots
+}
+
+// SetGaps sets the value of Gaps.
+func (s *AiReadinessBrief) SetGaps(val int32) {
+	s.Gaps = val
+}
+
+// SetBlockedBots sets the value of BlockedBots.
+func (s *AiReadinessBrief) SetBlockedBots(val []string) {
+	s.BlockedBots = val
+}
+
+// One company in the AI readiness table.
+// Ref: #/components/schemas/AiReadinessRow
+type AiReadinessRow struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name      string             `json:"name"`
+	Role      CompanyRole        `json:"role"`
+	Scan      OptAnalysisSummary `json:"scan"`
+	Readiness OptAiReadiness     `json:"readiness"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *AiReadinessRow) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *AiReadinessRow) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *AiReadinessRow) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetScan returns the value of Scan.
+func (s *AiReadinessRow) GetScan() OptAnalysisSummary {
+	return s.Scan
+}
+
+// GetReadiness returns the value of Readiness.
+func (s *AiReadinessRow) GetReadiness() OptAiReadiness {
+	return s.Readiness
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *AiReadinessRow) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *AiReadinessRow) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *AiReadinessRow) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetScan sets the value of Scan.
+func (s *AiReadinessRow) SetScan(val OptAnalysisSummary) {
+	s.Scan = val
+}
+
+// SetReadiness sets the value of Readiness.
+func (s *AiReadinessRow) SetReadiness(val OptAiReadiness) {
+	s.Readiness = val
+}
+
+// Every company's AI readiness, Tribelt and the mirror first.
+// Ref: #/components/schemas/AiReadinessTable
+type AiReadinessTable struct {
+	// The rows.
+	Items []AiReadinessRow `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *AiReadinessTable) GetItems() []AiReadinessRow {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *AiReadinessTable) SetItems(val []AiReadinessRow) {
+	s.Items = val
+}
+
+func (*AiReadinessTable) getAiReadinessRes() {}
+
 // An analysis with its progress and results.
 // Ref: #/components/schemas/Analysis
 type Analysis struct {
@@ -117,7 +372,8 @@ type Analysis struct {
 	// The provider and model that matched the products, when a model was asked.
 	MatchingModel OptString `json:"matchingModel"`
 	// The site's products matched to Tribelt's belt families.
-	Equivalents []Equivalent `json:"equivalents"`
+	Equivalents []Equivalent   `json:"equivalents"`
+	AiReadiness OptAiReadiness `json:"aiReadiness"`
 }
 
 // GetSummary returns the value of Summary.
@@ -155,6 +411,11 @@ func (s *Analysis) GetEquivalents() []Equivalent {
 	return s.Equivalents
 }
 
+// GetAiReadiness returns the value of AiReadiness.
+func (s *Analysis) GetAiReadiness() OptAiReadiness {
+	return s.AiReadiness
+}
+
 // SetSummary sets the value of Summary.
 func (s *Analysis) SetSummary(val AnalysisSummary) {
 	s.Summary = val
@@ -188,6 +449,11 @@ func (s *Analysis) SetMatchingModel(val OptString) {
 // SetEquivalents sets the value of Equivalents.
 func (s *Analysis) SetEquivalents(val []Equivalent) {
 	s.Equivalents = val
+}
+
+// SetAiReadiness sets the value of AiReadiness.
+func (s *Analysis) SetAiReadiness(val OptAiReadiness) {
+	s.AiReadiness = val
 }
 
 func (*Analysis) getAnalysisRes()   {}
@@ -288,7 +554,8 @@ type AnalysisSummary struct {
 	// True when the analysis failed because its site turned automated readers away (bot protection)
 	// although people can open it; only then is it present. Re-scanning all companies leaves such a
 	// company out.
-	Blocked OptBool `json:"blocked"`
+	Blocked     OptBool             `json:"blocked"`
+	AiReadiness OptAiReadinessBrief `json:"aiReadiness"`
 	// The most pages the crawl fetches.
 	MaxPages int32 `json:"maxPages"`
 	// How many pages were fetched so far.
@@ -337,6 +604,11 @@ func (s *AnalysisSummary) GetFailure() OptString {
 // GetBlocked returns the value of Blocked.
 func (s *AnalysisSummary) GetBlocked() OptBool {
 	return s.Blocked
+}
+
+// GetAiReadiness returns the value of AiReadiness.
+func (s *AnalysisSummary) GetAiReadiness() OptAiReadinessBrief {
+	return s.AiReadiness
 }
 
 // GetMaxPages returns the value of MaxPages.
@@ -397,6 +669,11 @@ func (s *AnalysisSummary) SetFailure(val OptString) {
 // SetBlocked sets the value of Blocked.
 func (s *AnalysisSummary) SetBlocked(val OptBool) {
 	s.Blocked = val
+}
+
+// SetAiReadiness sets the value of AiReadiness.
+func (s *AnalysisSummary) SetAiReadiness(val OptAiReadinessBrief) {
+	s.AiReadiness = val
 }
 
 // SetMaxPages sets the value of MaxPages.
@@ -538,6 +815,59 @@ func (s *BeltName) SetFromScan(val OptBool) {
 	s.FromScan = val
 }
 
+// One search or AI crawler's access, by its robots.txt token.
+// Ref: #/components/schemas/BotRule
+type BotRule struct {
+	// The crawler's robots.txt token.
+	Bot    string        `json:"bot"`
+	Access CrawlerAccess `json:"access"`
+	// True when robots.txt names the crawler in a group of its own; otherwise it follows the * group, and
+	// robots.txt does not mention it.
+	Named bool `json:"named"`
+	// True unless the crawler is blocked; the report recommends letting every one in.
+	FollowsAdvice bool `json:"followsAdvice"`
+}
+
+// GetBot returns the value of Bot.
+func (s *BotRule) GetBot() string {
+	return s.Bot
+}
+
+// GetAccess returns the value of Access.
+func (s *BotRule) GetAccess() CrawlerAccess {
+	return s.Access
+}
+
+// GetNamed returns the value of Named.
+func (s *BotRule) GetNamed() bool {
+	return s.Named
+}
+
+// GetFollowsAdvice returns the value of FollowsAdvice.
+func (s *BotRule) GetFollowsAdvice() bool {
+	return s.FollowsAdvice
+}
+
+// SetBot sets the value of Bot.
+func (s *BotRule) SetBot(val string) {
+	s.Bot = val
+}
+
+// SetAccess sets the value of Access.
+func (s *BotRule) SetAccess(val CrawlerAccess) {
+	s.Access = val
+}
+
+// SetNamed sets the value of Named.
+func (s *BotRule) SetNamed(val bool) {
+	s.Named = val
+}
+
+// SetFollowsAdvice sets the value of FollowsAdvice.
+func (s *BotRule) SetFollowsAdvice(val bool) {
+	s.FollowsAdvice = val
+}
+
 // A company whose scan found a candidate.
 // Ref: #/components/schemas/CandidateCompany
 type CandidateCompany struct {
@@ -573,6 +903,65 @@ func (*ClearActiveLlmForbidden) clearActiveLlmRes() {}
 type ClearActiveLlmUnauthorized ProblemStatusCode
 
 func (*ClearActiveLlmUnauthorized) clearActiveLlmRes() {}
+
+// What a company is to Tribelt - Tribelt itself (the baseline), the group's mirror of tribelt.nl (the
+// report's recommendations in practice), a company in Tribelt's group (a benchmark), or a competitor.
+// Only competitors count as competitors.
+// Ref: #/components/schemas/CompanyRole
+type CompanyRole string
+
+const (
+	CompanyRoleTribelt    CompanyRole = "tribelt"
+	CompanyRoleMirror     CompanyRole = "mirror"
+	CompanyRoleGroup      CompanyRole = "group"
+	CompanyRoleCompetitor CompanyRole = "competitor"
+)
+
+// AllValues returns all CompanyRole values.
+func (CompanyRole) AllValues() []CompanyRole {
+	return []CompanyRole{
+		CompanyRoleTribelt,
+		CompanyRoleMirror,
+		CompanyRoleGroup,
+		CompanyRoleCompetitor,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CompanyRole) MarshalText() ([]byte, error) {
+	switch s {
+	case CompanyRoleTribelt:
+		return []byte(s), nil
+	case CompanyRoleMirror:
+		return []byte(s), nil
+	case CompanyRoleGroup:
+		return []byte(s), nil
+	case CompanyRoleCompetitor:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CompanyRole) UnmarshalText(data []byte) error {
+	switch CompanyRole(data) {
+	case CompanyRoleTribelt:
+		*s = CompanyRoleTribelt
+		return nil
+	case CompanyRoleMirror:
+		*s = CompanyRoleMirror
+		return nil
+	case CompanyRoleGroup:
+		*s = CompanyRoleGroup
+		return nil
+	case CompanyRoleCompetitor:
+		*s = CompanyRoleCompetitor
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 type CompareScansBadRequest ProblemStatusCode
 
@@ -641,6 +1030,7 @@ func (s *ComparisonGroup) SetMoved(val []TermChange) {
 // A known company.
 // Ref: #/components/schemas/Competitor
 type Competitor struct {
+	Role CompanyRole `json:"role"`
 	// True for a researched company an administrator archived: it is left out of the re-scans and the web
 	// app hides it.
 	Archived bool             `json:"archived"`
@@ -670,6 +1060,11 @@ type Competitor struct {
 	BeltNames []BeltName `json:"beltNames"`
 	// The title of its home page, or "unverified" when it could not be read.
 	HomepageTitle string `json:"homepageTitle"`
+}
+
+// GetRole returns the value of Role.
+func (s *Competitor) GetRole() CompanyRole {
+	return s.Role
 }
 
 // GetArchived returns the value of Archived.
@@ -745,6 +1140,11 @@ func (s *Competitor) GetBeltNames() []BeltName {
 // GetHomepageTitle returns the value of HomepageTitle.
 func (s *Competitor) GetHomepageTitle() string {
 	return s.HomepageTitle
+}
+
+// SetRole sets the value of Role.
+func (s *Competitor) SetRole(val CompanyRole) {
+	s.Role = val
 }
 
 // SetArchived sets the value of Archived.
@@ -1102,6 +1502,57 @@ func (s *CrawledPage) SetFamily(val OptBeltFamily) {
 	s.Family = val
 }
 
+// How far robots.txt lets a crawler in - allowed (no page kept from it), partly (some pages kept from
+// it, or only some open to it), or blocked (the whole site).
+// Ref: #/components/schemas/CrawlerAccess
+type CrawlerAccess string
+
+const (
+	CrawlerAccessAllowed CrawlerAccess = "allowed"
+	CrawlerAccessPartly  CrawlerAccess = "partly"
+	CrawlerAccessBlocked CrawlerAccess = "blocked"
+)
+
+// AllValues returns all CrawlerAccess values.
+func (CrawlerAccess) AllValues() []CrawlerAccess {
+	return []CrawlerAccess{
+		CrawlerAccessAllowed,
+		CrawlerAccessPartly,
+		CrawlerAccessBlocked,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CrawlerAccess) MarshalText() ([]byte, error) {
+	switch s {
+	case CrawlerAccessAllowed:
+		return []byte(s), nil
+	case CrawlerAccessPartly:
+		return []byte(s), nil
+	case CrawlerAccessBlocked:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CrawlerAccess) UnmarshalText(data []byte) error {
+	switch CrawlerAccess(data) {
+	case CrawlerAccessAllowed:
+		*s = CrawlerAccessAllowed
+		return nil
+	case CrawlerAccessPartly:
+		*s = CrawlerAccessPartly
+		return nil
+	case CrawlerAccessBlocked:
+		*s = CrawlerAccessBlocked
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type DeleteCompetitorBadRequest ProblemStatusCode
 
 func (*DeleteCompetitorBadRequest) deleteCompetitorRes() {}
@@ -1305,6 +1756,22 @@ func (*GetLlmSettingsForbidden) getLlmSettingsRes() {}
 type GetLlmSettingsUnauthorized ProblemStatusCode
 
 func (*GetLlmSettingsUnauthorized) getLlmSettingsRes() {}
+
+type GetReadinessFilesBadRequest ProblemStatusCode
+
+func (*GetReadinessFilesBadRequest) getReadinessFilesRes() {}
+
+type GetReadinessFilesForbidden ProblemStatusCode
+
+func (*GetReadinessFilesForbidden) getReadinessFilesRes() {}
+
+type GetReadinessFilesNotFound ProblemStatusCode
+
+func (*GetReadinessFilesNotFound) getReadinessFilesRes() {}
+
+type GetReadinessFilesUnauthorized ProblemStatusCode
+
+func (*GetReadinessFilesUnauthorized) getReadinessFilesRes() {}
 
 // The kind of search a term represents.
 // Ref: #/components/schemas/IntentTier
@@ -2326,6 +2793,47 @@ func (s *LlmTest) SetMessage(val string) {
 
 func (*LlmTest) testLlmCredentialRes() {}
 
+// What a site's llms.txt holds.
+// Ref: #/components/schemas/LlmsFacts
+type LlmsFacts struct {
+	// True when the site serves llms.txt.
+	Present bool `json:"present"`
+	// Its size in bytes, as far as it was read.
+	Bytes int32 `json:"bytes"`
+	// How many links it lists.
+	Links int32 `json:"links"`
+}
+
+// GetPresent returns the value of Present.
+func (s *LlmsFacts) GetPresent() bool {
+	return s.Present
+}
+
+// GetBytes returns the value of Bytes.
+func (s *LlmsFacts) GetBytes() int32 {
+	return s.Bytes
+}
+
+// GetLinks returns the value of Links.
+func (s *LlmsFacts) GetLinks() int32 {
+	return s.Links
+}
+
+// SetPresent sets the value of Present.
+func (s *LlmsFacts) SetPresent(val bool) {
+	s.Present = val
+}
+
+// SetBytes sets the value of Bytes.
+func (s *LlmsFacts) SetBytes(val int32) {
+	s.Bytes = val
+}
+
+// SetLinks sets the value of Links.
+func (s *LlmsFacts) SetLinks(val int32) {
+	s.Links = val
+}
+
 // What happened to the product matching by the language model: pending until the crawl ends, disabled
 // when no model is configured, skipped when the budget is spent or the site gave no text, then done or
 // failed.
@@ -2598,6 +3106,98 @@ func (o OptActiveLlm) Get() (v ActiveLlm, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptActiveLlm) Or(d ActiveLlm) ActiveLlm {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptAiReadiness returns new OptAiReadiness with value set to v.
+func NewOptAiReadiness(v AiReadiness) OptAiReadiness {
+	return OptAiReadiness{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAiReadiness is optional AiReadiness.
+type OptAiReadiness struct {
+	Value AiReadiness
+	Set   bool
+}
+
+// IsSet returns true if OptAiReadiness was set.
+func (o OptAiReadiness) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAiReadiness) Reset() {
+	var v AiReadiness
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAiReadiness) SetTo(v AiReadiness) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAiReadiness) Get() (v AiReadiness, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAiReadiness) Or(d AiReadiness) AiReadiness {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptAiReadinessBrief returns new OptAiReadinessBrief with value set to v.
+func NewOptAiReadinessBrief(v AiReadinessBrief) OptAiReadinessBrief {
+	return OptAiReadinessBrief{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAiReadinessBrief is optional AiReadinessBrief.
+type OptAiReadinessBrief struct {
+	Value AiReadinessBrief
+	Set   bool
+}
+
+// IsSet returns true if OptAiReadinessBrief was set.
+func (o OptAiReadinessBrief) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAiReadinessBrief) Reset() {
+	var v AiReadinessBrief
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAiReadinessBrief) SetTo(v AiReadinessBrief) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAiReadinessBrief) Get() (v AiReadinessBrief, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAiReadinessBrief) Or(d AiReadinessBrief) AiReadinessBrief {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3511,6 +4111,7 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 	s.Response = val
 }
 
+func (*ProblemStatusCode) getAiReadinessRes()  {}
 func (*ProblemStatusCode) getMeRes()           {}
 func (*ProblemStatusCode) listAnalysesRes()    {}
 func (*ProblemStatusCode) listCompetitorsRes() {}
@@ -3734,6 +4335,234 @@ func (s *ProfileTerm) SetFirstScan(val int32) {
 	s.FirstScan = val
 }
 
+// Whether a site follows one recommendation.
+// Ref: #/components/schemas/ReadinessAdvice
+type ReadinessAdvice struct {
+	Check ReadinessCheck `json:"check"`
+	// True when the site follows it.
+	Ok bool `json:"ok"`
+}
+
+// GetCheck returns the value of Check.
+func (s *ReadinessAdvice) GetCheck() ReadinessCheck {
+	return s.Check
+}
+
+// GetOk returns the value of Ok.
+func (s *ReadinessAdvice) GetOk() bool {
+	return s.Ok
+}
+
+// SetCheck sets the value of Check.
+func (s *ReadinessAdvice) SetCheck(val ReadinessCheck) {
+	s.Check = val
+}
+
+// SetOk sets the value of Ok.
+func (s *ReadinessAdvice) SetOk(val bool) {
+	s.Ok = val
+}
+
+// One field of AI readiness that differs between two scans: a crawler (bot:GPTBot), robots,
+// sitemapDeclared, sitemapLanguages, llmsTxt, llmsFullTxt, markdown, organization, product, languages,
+// cms, seoPlugin or botProtection, with both values as they read.
+// Ref: #/components/schemas/ReadinessChange
+type ReadinessChange struct {
+	// The field.
+	Field string `json:"field"`
+	// Its value in the older scan.
+	From string `json:"from"`
+	// Its value in the newer scan.
+	To string `json:"to"`
+}
+
+// GetField returns the value of Field.
+func (s *ReadinessChange) GetField() string {
+	return s.Field
+}
+
+// GetFrom returns the value of From.
+func (s *ReadinessChange) GetFrom() string {
+	return s.From
+}
+
+// GetTo returns the value of To.
+func (s *ReadinessChange) GetTo() string {
+	return s.To
+}
+
+// SetField sets the value of Field.
+func (s *ReadinessChange) SetField(val string) {
+	s.Field = val
+}
+
+// SetFrom sets the value of From.
+func (s *ReadinessChange) SetFrom(val string) {
+	s.From = val
+}
+
+// SetTo sets the value of To.
+func (s *ReadinessChange) SetTo(val string) {
+	s.To = val
+}
+
+// One of the report's recommendations besides each crawler's access.
+// Ref: #/components/schemas/ReadinessCheck
+type ReadinessCheck string
+
+const (
+	ReadinessCheckSitemapDeclared  ReadinessCheck = "sitemapDeclared"
+	ReadinessCheckSitemapLanguages ReadinessCheck = "sitemapLanguages"
+	ReadinessCheckLlmsTxt          ReadinessCheck = "llmsTxt"
+	ReadinessCheckMarkdown         ReadinessCheck = "markdown"
+	ReadinessCheckOrganization     ReadinessCheck = "organization"
+	ReadinessCheckProduct          ReadinessCheck = "product"
+	ReadinessCheckLanguages        ReadinessCheck = "languages"
+)
+
+// AllValues returns all ReadinessCheck values.
+func (ReadinessCheck) AllValues() []ReadinessCheck {
+	return []ReadinessCheck{
+		ReadinessCheckSitemapDeclared,
+		ReadinessCheckSitemapLanguages,
+		ReadinessCheckLlmsTxt,
+		ReadinessCheckMarkdown,
+		ReadinessCheckOrganization,
+		ReadinessCheckProduct,
+		ReadinessCheckLanguages,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ReadinessCheck) MarshalText() ([]byte, error) {
+	switch s {
+	case ReadinessCheckSitemapDeclared:
+		return []byte(s), nil
+	case ReadinessCheckSitemapLanguages:
+		return []byte(s), nil
+	case ReadinessCheckLlmsTxt:
+		return []byte(s), nil
+	case ReadinessCheckMarkdown:
+		return []byte(s), nil
+	case ReadinessCheckOrganization:
+		return []byte(s), nil
+	case ReadinessCheckProduct:
+		return []byte(s), nil
+	case ReadinessCheckLanguages:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ReadinessCheck) UnmarshalText(data []byte) error {
+	switch ReadinessCheck(data) {
+	case ReadinessCheckSitemapDeclared:
+		*s = ReadinessCheckSitemapDeclared
+		return nil
+	case ReadinessCheckSitemapLanguages:
+		*s = ReadinessCheckSitemapLanguages
+		return nil
+	case ReadinessCheckLlmsTxt:
+		*s = ReadinessCheckLlmsTxt
+		return nil
+	case ReadinessCheckMarkdown:
+		*s = ReadinessCheckMarkdown
+		return nil
+	case ReadinessCheckOrganization:
+		*s = ReadinessCheckOrganization
+		return nil
+	case ReadinessCheckProduct:
+		*s = ReadinessCheckProduct
+		return nil
+	case ReadinessCheckLanguages:
+		*s = ReadinessCheckLanguages
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The raw files a scan read its AI readiness from; empty when the site served none.
+// Ref: #/components/schemas/ReadinessFiles
+type ReadinessFiles struct {
+	// Robots.txt.
+	RobotsTxt string `json:"robotsTxt"`
+	// True when robots.txt was longer than 100 KB and is cut there.
+	RobotsTruncated bool `json:"robotsTruncated"`
+	// Llms.txt.
+	LlmsTxt string `json:"llmsTxt"`
+	// True when llms.txt was cut at 100 KB.
+	LlmsTruncated bool `json:"llmsTruncated"`
+	// Llms-full.txt.
+	LlmsFullTxt string `json:"llmsFullTxt"`
+	// True when llms-full.txt was cut at 100 KB.
+	LlmsFullTruncated bool `json:"llmsFullTruncated"`
+}
+
+// GetRobotsTxt returns the value of RobotsTxt.
+func (s *ReadinessFiles) GetRobotsTxt() string {
+	return s.RobotsTxt
+}
+
+// GetRobotsTruncated returns the value of RobotsTruncated.
+func (s *ReadinessFiles) GetRobotsTruncated() bool {
+	return s.RobotsTruncated
+}
+
+// GetLlmsTxt returns the value of LlmsTxt.
+func (s *ReadinessFiles) GetLlmsTxt() string {
+	return s.LlmsTxt
+}
+
+// GetLlmsTruncated returns the value of LlmsTruncated.
+func (s *ReadinessFiles) GetLlmsTruncated() bool {
+	return s.LlmsTruncated
+}
+
+// GetLlmsFullTxt returns the value of LlmsFullTxt.
+func (s *ReadinessFiles) GetLlmsFullTxt() string {
+	return s.LlmsFullTxt
+}
+
+// GetLlmsFullTruncated returns the value of LlmsFullTruncated.
+func (s *ReadinessFiles) GetLlmsFullTruncated() bool {
+	return s.LlmsFullTruncated
+}
+
+// SetRobotsTxt sets the value of RobotsTxt.
+func (s *ReadinessFiles) SetRobotsTxt(val string) {
+	s.RobotsTxt = val
+}
+
+// SetRobotsTruncated sets the value of RobotsTruncated.
+func (s *ReadinessFiles) SetRobotsTruncated(val bool) {
+	s.RobotsTruncated = val
+}
+
+// SetLlmsTxt sets the value of LlmsTxt.
+func (s *ReadinessFiles) SetLlmsTxt(val string) {
+	s.LlmsTxt = val
+}
+
+// SetLlmsTruncated sets the value of LlmsTruncated.
+func (s *ReadinessFiles) SetLlmsTruncated(val bool) {
+	s.LlmsTruncated = val
+}
+
+// SetLlmsFullTxt sets the value of LlmsFullTxt.
+func (s *ReadinessFiles) SetLlmsFullTxt(val string) {
+	s.LlmsFullTxt = val
+}
+
+// SetLlmsFullTruncated sets the value of LlmsFullTruncated.
+func (s *ReadinessFiles) SetLlmsFullTruncated(val bool) {
+	s.LlmsFullTruncated = val
+}
+
+func (*ReadinessFiles) getReadinessFilesRes() {}
+
 type RejectTermCandidateBadRequest ProblemStatusCode
 
 func (*RejectTermCandidateBadRequest) rejectTermCandidateRes() {}
@@ -3880,6 +4709,57 @@ func (s *RescanSkip) SetReason(val string) {
 	s.Reason = val
 }
 
+// What became of robots.txt - found, missing (so every crawler may read every page), or unreachable
+// (the site would not serve it, so the crawler policy is unknown).
+// Ref: #/components/schemas/RobotsStatus
+type RobotsStatus string
+
+const (
+	RobotsStatusFound       RobotsStatus = "found"
+	RobotsStatusMissing     RobotsStatus = "missing"
+	RobotsStatusUnreachable RobotsStatus = "unreachable"
+)
+
+// AllValues returns all RobotsStatus values.
+func (RobotsStatus) AllValues() []RobotsStatus {
+	return []RobotsStatus{
+		RobotsStatusFound,
+		RobotsStatusMissing,
+		RobotsStatusUnreachable,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RobotsStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case RobotsStatusFound:
+		return []byte(s), nil
+	case RobotsStatusMissing:
+		return []byte(s), nil
+	case RobotsStatusUnreachable:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RobotsStatus) UnmarshalText(data []byte) error {
+	switch RobotsStatus(data) {
+	case RobotsStatusFound:
+		*s = RobotsStatusFound
+		return nil
+	case RobotsStatusMissing:
+		*s = RobotsStatusMissing
+		return nil
+	case RobotsStatusUnreachable:
+		*s = RobotsStatusUnreachable
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Two finished scans of a company compared, per group. A term moved when its score changed by at least
 // a quarter and 5 points, or its page count by at least 2.
 // Ref: #/components/schemas/ScanComparison
@@ -3888,6 +4768,9 @@ type ScanComparison struct {
 	To   AnalysisSummary `json:"to"`
 	// Every group, in the profile's order.
 	Groups []ComparisonGroup `json:"groups"`
+	// What changed in AI readiness, in the readiness's order; absent when either scan recorded no AI
+	// readiness, empty when nothing changed.
+	Readiness []ReadinessChange `json:"readiness"`
 }
 
 // GetFrom returns the value of From.
@@ -3905,6 +4788,11 @@ func (s *ScanComparison) GetGroups() []ComparisonGroup {
 	return s.Groups
 }
 
+// GetReadiness returns the value of Readiness.
+func (s *ScanComparison) GetReadiness() []ReadinessChange {
+	return s.Readiness
+}
+
 // SetFrom sets the value of From.
 func (s *ScanComparison) SetFrom(val AnalysisSummary) {
 	s.From = val
@@ -3918,6 +4806,11 @@ func (s *ScanComparison) SetTo(val AnalysisSummary) {
 // SetGroups sets the value of Groups.
 func (s *ScanComparison) SetGroups(val []ComparisonGroup) {
 	s.Groups = val
+}
+
+// SetReadiness sets the value of Readiness.
+func (s *ScanComparison) SetReadiness(val []ReadinessChange) {
+	s.Readiness = val
 }
 
 func (*ScanComparison) compareScansRes() {}
@@ -3995,6 +4888,100 @@ func (*SetActiveLlmUnauthorized) setActiveLlmRes() {}
 type SetActiveLlmUnprocessableEntity ProblemStatusCode
 
 func (*SetActiveLlmUnprocessableEntity) setActiveLlmRes() {}
+
+// The tools behind a site, as far as its headers and home page tell; each absent when unknown.
+// Ref: #/components/schemas/SiteStack
+type SiteStack struct {
+	// The content management system.
+	Cms OptString `json:"cms"`
+	// The SEO plugin.
+	SeoPlugin OptString `json:"seoPlugin"`
+	// The bot protection in front of it.
+	BotProtection OptString `json:"botProtection"`
+}
+
+// GetCms returns the value of Cms.
+func (s *SiteStack) GetCms() OptString {
+	return s.Cms
+}
+
+// GetSeoPlugin returns the value of SeoPlugin.
+func (s *SiteStack) GetSeoPlugin() OptString {
+	return s.SeoPlugin
+}
+
+// GetBotProtection returns the value of BotProtection.
+func (s *SiteStack) GetBotProtection() OptString {
+	return s.BotProtection
+}
+
+// SetCms sets the value of Cms.
+func (s *SiteStack) SetCms(val OptString) {
+	s.Cms = val
+}
+
+// SetSeoPlugin sets the value of SeoPlugin.
+func (s *SiteStack) SetSeoPlugin(val OptString) {
+	s.SeoPlugin = val
+}
+
+// SetBotProtection sets the value of BotProtection.
+func (s *SiteStack) SetBotProtection(val OptString) {
+	s.BotProtection = val
+}
+
+// What a site's sitemaps list, without the addresses.
+// Ref: #/components/schemas/SitemapSummary
+type SitemapSummary struct {
+	// True when robots.txt lists a sitemap.
+	Declared bool `json:"declared"`
+	// How many sitemap files were read (at most 10).
+	Files int32 `json:"files"`
+	// How many different addresses they list.
+	Addresses int32 `json:"addresses"`
+	// The ones of Dutch, German and English the addresses cover, by path or hreflang.
+	Languages []string `json:"languages"`
+}
+
+// GetDeclared returns the value of Declared.
+func (s *SitemapSummary) GetDeclared() bool {
+	return s.Declared
+}
+
+// GetFiles returns the value of Files.
+func (s *SitemapSummary) GetFiles() int32 {
+	return s.Files
+}
+
+// GetAddresses returns the value of Addresses.
+func (s *SitemapSummary) GetAddresses() int32 {
+	return s.Addresses
+}
+
+// GetLanguages returns the value of Languages.
+func (s *SitemapSummary) GetLanguages() []string {
+	return s.Languages
+}
+
+// SetDeclared sets the value of Declared.
+func (s *SitemapSummary) SetDeclared(val bool) {
+	s.Declared = val
+}
+
+// SetFiles sets the value of Files.
+func (s *SitemapSummary) SetFiles(val int32) {
+	s.Files = val
+}
+
+// SetAddresses sets the value of Addresses.
+func (s *SitemapSummary) SetAddresses(val int32) {
+	s.Addresses = val
+}
+
+// SetLanguages sets the value of Languages.
+func (s *SitemapSummary) SetLanguages(val []string) {
+	s.Languages = val
+}
 
 type StartAnalysisBadRequest ProblemStatusCode
 

@@ -79,6 +79,16 @@ export const zCompetitorId = z.string().min(1).max(80).regex(/^[a-z0-9]+(-[a-z0-
 export const zCompetitorSource = z.enum(['research', 'added']);
 
 /**
+ * What a company is to Tribelt - Tribelt itself (the baseline), the group's mirror of tribelt.nl (the report's recommendations in practice), a company in Tribelt's group (a benchmark), or a competitor. Only competitors count as competitors.
+ */
+export const zCompanyRole = z.enum([
+    'tribelt',
+    'mirror',
+    'group',
+    'competitor'
+]);
+
+/**
  * A company to add.
  */
 export const zNewCompetitor = z.object({
@@ -115,67 +125,6 @@ export const zMatchingStatus = z.enum([
     'done',
     'failed'
 ]);
-
-/**
- * An analysis without its results.
- */
-export const zAnalysisSummary = z.object({
-    competitorId: zCompetitorId.optional(),
-    number: z.int().gte(1).lte(100000).optional(),
-    matchingModel: z.string().max(300).optional(),
-    id: z.uuid().max(36),
-    url: z.string().max(500),
-    status: zAnalysisStatus,
-    failure: z.string().max(500).optional(),
-    blocked: z.boolean().optional(),
-    maxPages: z.int().gte(1).lte(100),
-    pagesCrawled: z.int().gte(0).lte(100),
-    createdAt: z.iso.datetime({ offset: true }).max(64),
-    finishedAt: z.iso.datetime({ offset: true }).max(64).optional()
-});
-
-/**
- * A known company.
- */
-export const zCompetitor = z.object({
-    archived: z.boolean(),
-    id: zCompetitorId,
-    source: zCompetitorSource,
-    websiteUrl: z.url().max(500).optional(),
-    host: z.string().max(253).optional(),
-    scans: z.int().gte(0).lte(100000),
-    lastScan: zAnalysisSummary.optional(),
-    addedAt: z.iso.datetime({ offset: true }).max(64).optional(),
-    name: z.string().max(200),
-    country: z.string().max(200),
-    website: z.string().max(500),
-    languages: z.array(z.string().max(16)).max(20),
-    groupCompany: z.boolean(),
-    beltNames: z.array(zBeltName).max(100),
-    homepageTitle: z.string().max(300)
-});
-
-/**
- * A company with its most recent scans.
- */
-export const zCompetitorDetail = z.object({
-    competitor: zCompetitor,
-    scans: z.array(zAnalysisSummary).max(100)
-});
-
-/**
- * Every known company.
- */
-export const zCompetitorList = z.object({
-    items: z.array(zCompetitor).max(200)
-});
-
-/**
- * Recent analyses, newest first.
- */
-export const zAnalysisList = z.object({
-    items: z.array(zAnalysisSummary).max(50)
-});
 
 /**
  * One page the crawl fetched, with the belt family it is about when that is clear.
@@ -231,19 +180,6 @@ export const zEquivalent = z.object({
     family: zBeltFamily,
     reason: z.string().max(1000),
     searchTerms: z.array(zSearchTerm).max(30)
-});
-
-/**
- * An analysis with its progress and results.
- */
-export const zAnalysis = z.object({
-    summary: zAnalysisSummary,
-    pages: z.array(zCrawledPage).max(100),
-    keywords: z.array(zKeyword).max(200),
-    knownTerms: z.array(zKnownTerm).max(200),
-    matching: zMatchingStatus,
-    matchingModel: z.string().max(300).optional(),
-    equivalents: z.array(zEquivalent).max(50)
 });
 
 /**
@@ -444,14 +380,6 @@ export const zRescanSkip = z.object({
 });
 
 /**
- * The scans a re-scan queued, and the companies it left out.
- */
-export const zRescanBatch = z.object({
-    queued: z.array(zAnalysisSummary).max(200),
-    skipped: z.array(zRescanSkip).max(200)
-});
-
-/**
  * How a company's search terms are grouped - one of Tribelt's belt families, other metal belts, broad terms that name no family, or material and specification terms.
  */
 export const zProfileGroup = z.enum([
@@ -488,17 +416,6 @@ export const zProfileGroupTerms = z.object({
 });
 
 /**
- * A company's search terms from its latest finished scan, by group, every group present in a fixed order (Tribelt's families, other, broad, spec).
- */
-export const zCompetitorProfile = z.object({
-    competitorId: zCompetitorId,
-    scan: zAnalysisSummary.optional(),
-    finishedScans: z.int().gte(0).lte(100000),
-    languages: z.array(z.string().max(16)).max(20),
-    groups: z.array(zProfileGroupTerms).max(7)
-});
-
-/**
  * A search term one scan found and the other did not, or whose score or page count moved. The from fields are absent for an added term, the to fields for a removed one.
  */
 export const zTermChange = z.object({
@@ -521,15 +438,6 @@ export const zComparisonGroup = z.object({
     added: z.array(zTermChange).max(200),
     removed: z.array(zTermChange).max(200),
     moved: z.array(zTermChange).max(200)
-});
-
-/**
- * Two finished scans of a company compared, per group. A term moved when its score changed by at least a quarter and 5 points, or its page count by at least 2.
- */
-export const zScanComparison = z.object({
-    from: zAnalysisSummary,
-    to: zAnalysisSummary,
-    groups: z.array(zComparisonGroup).max(7)
 });
 
 /**
@@ -609,6 +517,254 @@ export const zTermAcceptance = z.object({
     family: zBeltFamily,
     tier: zIntentTier,
     usedBy: z.array(z.string().min(1).max(200)).max(20)
+});
+
+/**
+ * How far robots.txt lets a crawler in - allowed (no page kept from it), partly (some pages kept from it, or only some open to it), or blocked (the whole site).
+ */
+export const zCrawlerAccess = z.enum([
+    'allowed',
+    'partly',
+    'blocked'
+]);
+
+/**
+ * One search or AI crawler's access, by its robots.txt token.
+ */
+export const zBotRule = z.object({
+    bot: z.string().max(40),
+    access: zCrawlerAccess,
+    named: z.boolean(),
+    followsAdvice: z.boolean()
+});
+
+/**
+ * What became of robots.txt - found, missing (so every crawler may read every page), or unreachable (the site would not serve it, so the crawler policy is unknown).
+ */
+export const zRobotsStatus = z.enum([
+    'found',
+    'missing',
+    'unreachable'
+]);
+
+/**
+ * One of the report's recommendations besides each crawler's access.
+ */
+export const zReadinessCheck = z.enum([
+    'sitemapDeclared',
+    'sitemapLanguages',
+    'llmsTxt',
+    'markdown',
+    'organization',
+    'product',
+    'languages'
+]);
+
+/**
+ * Whether a site follows one recommendation.
+ */
+export const zReadinessAdvice = z.object({
+    check: zReadinessCheck,
+    ok: z.boolean()
+});
+
+/**
+ * What a site's sitemaps list, without the addresses.
+ */
+export const zSitemapSummary = z.object({
+    declared: z.boolean(),
+    files: z.int().gte(0).lte(100),
+    addresses: z.int().gte(0).lte(1000000),
+    languages: z.array(z.string().max(16)).max(3)
+});
+
+/**
+ * What a site's llms.txt holds.
+ */
+export const zLlmsFacts = z.object({
+    present: z.boolean(),
+    bytes: z.int().gte(0).lte(100000000),
+    links: z.int().gte(0).lte(10000000)
+});
+
+/**
+ * The tools behind a site, as far as its headers and home page tell; each absent when unknown.
+ */
+export const zSiteStack = z.object({
+    cms: z.string().max(60).optional(),
+    seoPlugin: z.string().max(60).optional(),
+    botProtection: z.string().max(60).optional()
+});
+
+/**
+ * What a site tells search engines and AI assistants about itself, read by a scan before its page crawl, held against the report's recommendations.
+ */
+export const zAiReadiness = z.object({
+    robots: zRobotsStatus,
+    bots: z.array(zBotRule).max(20),
+    sitemap: zSitemapSummary,
+    llmsTxt: zLlmsFacts,
+    llmsFullTxt: z.boolean(),
+    markdown: z.boolean(),
+    homeRead: z.boolean(),
+    structuredData: z.array(z.string().max(100)).max(50),
+    languages: z.array(z.string().max(16)).max(50),
+    stack: zSiteStack,
+    advice: z.array(zReadinessAdvice).max(20),
+    gaps: z.int().gte(0).lte(100)
+});
+
+/**
+ * A scan's AI readiness in brief.
+ */
+export const zAiReadinessBrief = z.object({
+    gaps: z.int().gte(0).lte(100),
+    blockedBots: z.array(z.string().max(40)).max(20)
+});
+
+/**
+ * An analysis without its results.
+ */
+export const zAnalysisSummary = z.object({
+    competitorId: zCompetitorId.optional(),
+    number: z.int().gte(1).lte(100000).optional(),
+    matchingModel: z.string().max(300).optional(),
+    id: z.uuid().max(36),
+    url: z.string().max(500),
+    status: zAnalysisStatus,
+    failure: z.string().max(500).optional(),
+    blocked: z.boolean().optional(),
+    aiReadiness: zAiReadinessBrief.optional(),
+    maxPages: z.int().gte(1).lte(100),
+    pagesCrawled: z.int().gte(0).lte(100),
+    createdAt: z.iso.datetime({ offset: true }).max(64),
+    finishedAt: z.iso.datetime({ offset: true }).max(64).optional()
+});
+
+/**
+ * A known company.
+ */
+export const zCompetitor = z.object({
+    role: zCompanyRole,
+    archived: z.boolean(),
+    id: zCompetitorId,
+    source: zCompetitorSource,
+    websiteUrl: z.url().max(500).optional(),
+    host: z.string().max(253).optional(),
+    scans: z.int().gte(0).lte(100000),
+    lastScan: zAnalysisSummary.optional(),
+    addedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    name: z.string().max(200),
+    country: z.string().max(200),
+    website: z.string().max(500),
+    languages: z.array(z.string().max(16)).max(20),
+    groupCompany: z.boolean(),
+    beltNames: z.array(zBeltName).max(100),
+    homepageTitle: z.string().max(300)
+});
+
+/**
+ * A company with its most recent scans.
+ */
+export const zCompetitorDetail = z.object({
+    competitor: zCompetitor,
+    scans: z.array(zAnalysisSummary).max(100)
+});
+
+/**
+ * Every known company.
+ */
+export const zCompetitorList = z.object({
+    items: z.array(zCompetitor).max(200)
+});
+
+/**
+ * Recent analyses, newest first.
+ */
+export const zAnalysisList = z.object({
+    items: z.array(zAnalysisSummary).max(50)
+});
+
+/**
+ * An analysis with its progress and results.
+ */
+export const zAnalysis = z.object({
+    summary: zAnalysisSummary,
+    pages: z.array(zCrawledPage).max(100),
+    keywords: z.array(zKeyword).max(200),
+    knownTerms: z.array(zKnownTerm).max(200),
+    matching: zMatchingStatus,
+    matchingModel: z.string().max(300).optional(),
+    equivalents: z.array(zEquivalent).max(50),
+    aiReadiness: zAiReadiness.optional()
+});
+
+/**
+ * The scans a re-scan queued, and the companies it left out.
+ */
+export const zRescanBatch = z.object({
+    queued: z.array(zAnalysisSummary).max(200),
+    skipped: z.array(zRescanSkip).max(200)
+});
+
+/**
+ * A company's search terms from its latest finished scan, by group, every group present in a fixed order (Tribelt's families, other, broad, spec).
+ */
+export const zCompetitorProfile = z.object({
+    competitorId: zCompetitorId,
+    scan: zAnalysisSummary.optional(),
+    finishedScans: z.int().gte(0).lte(100000),
+    languages: z.array(z.string().max(16)).max(20),
+    groups: z.array(zProfileGroupTerms).max(7)
+});
+
+/**
+ * One company in the AI readiness table.
+ */
+export const zAiReadinessRow = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    scan: zAnalysisSummary.optional(),
+    readiness: zAiReadiness.optional()
+});
+
+/**
+ * Every company's AI readiness, Tribelt and the mirror first.
+ */
+export const zAiReadinessTable = z.object({
+    items: z.array(zAiReadinessRow).max(300)
+});
+
+/**
+ * One field of AI readiness that differs between two scans: a crawler (bot:GPTBot), robots, sitemapDeclared, sitemapLanguages, llmsTxt, llmsFullTxt, markdown, organization, product, languages, cms, seoPlugin or botProtection, with both values as they read.
+ */
+export const zReadinessChange = z.object({
+    field: z.string().max(60),
+    from: z.string().max(300),
+    to: z.string().max(300)
+});
+
+/**
+ * Two finished scans of a company compared, per group. A term moved when its score changed by at least a quarter and 5 points, or its page count by at least 2.
+ */
+export const zScanComparison = z.object({
+    from: zAnalysisSummary,
+    to: zAnalysisSummary,
+    groups: z.array(zComparisonGroup).max(7),
+    readiness: z.array(zReadinessChange).max(50).optional()
+});
+
+/**
+ * The raw files a scan read its AI readiness from; empty when the site served none.
+ */
+export const zReadinessFiles = z.object({
+    robotsTxt: z.string().max(100000),
+    robotsTruncated: z.boolean(),
+    llmsTxt: z.string().max(100000),
+    llmsTruncated: z.boolean(),
+    llmsFullTxt: z.string().max(100000),
+    llmsFullTruncated: z.boolean()
 });
 
 /**
@@ -721,6 +877,11 @@ export const zCompareScansQuery = z.object({
 export const zCompareScansResponse = zScanComparison;
 
 /**
+ * The table.
+ */
+export const zGetAiReadinessResponse = zAiReadinessTable;
+
+/**
  * Which companies to scan again.
  */
 export const zStartRescansBody = zRescanRequest;
@@ -798,6 +959,15 @@ export const zGetAnalysisPath = z.object({
  * The analysis.
  */
 export const zGetAnalysisResponse = zAnalysis;
+
+export const zGetReadinessFilesPath = z.object({
+    analysisId: z.uuid().max(36)
+});
+
+/**
+ * The files.
+ */
+export const zGetReadinessFilesResponse = zReadinessFiles;
 
 /**
  * The signed-in account.

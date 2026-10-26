@@ -81,6 +81,8 @@ type Company struct {
 	HomepageTitle string
 	AddedBy       string
 	AddedAt       time.Time // zero for a researched company
+	// Mirror is true for the group's mirror of tribelt.nl (Mirror).
+	Mirror bool
 	// Archived is true for a researched company an administrator archived.
 	Archived   bool
 	ArchivedBy string
@@ -298,6 +300,51 @@ func NewWebsite(raw string) (*url.URL, error) {
 	return u, nil
 }
 
+const (
+	// TribeltID is Tribelt's own id among the researched companies: the baseline of the AI
+	// readiness table.
+	TribeltID = "tribelt-b-v"
+	// MirrorID is the id of the group's mirror of tribelt.nl.
+	MirrorID = "tribelt-mirror"
+	// MirrorURL is where the mirror runs.
+	MirrorURL = "https://tribelt.jorisjonkers.dev/"
+)
+
+// Mirror is the group's mirror of tribelt.nl, with Tribelt's permission: the report's
+// recommendations in practice, scanned by the same sweeps as the competitors so the AI readiness
+// table shows what following them looks like. It is never a competitor.
+func Mirror() Company {
+	u, _ := url.Parse(MirrorURL) // a constant address
+	return Company{
+		ID: MirrorID, Source: SourceResearch, Name: "Mirror of tribelt.nl", Country: "NL", Website: MirrorURL,
+		URL: u, Host: site.Host(u), Languages: []string{"nl", "en", "de"}, HomepageTitle: "unverified", Mirror: true,
+	}
+}
+
+// Role is what a company is to Tribelt.
+type Role string
+
+const (
+	RoleTribelt    Role = "tribelt"
+	RoleMirror     Role = "mirror"
+	RoleGroup      Role = "group"
+	RoleCompetitor Role = "competitor"
+)
+
+// Role is Tribelt itself, the mirror, a company of Tribelt's group, or a competitor.
+func (c Company) Role() Role {
+	switch {
+	case c.ID == TribeltID:
+		return RoleTribelt
+	case c.Mirror:
+		return RoleMirror
+	case c.GroupCompany:
+		return RoleGroup
+	default:
+		return RoleCompetitor
+	}
+}
+
 // ResearchWebsite reads the research's note on a website ("https://www.cambridge-es.com
 // (blocked by Cloudflare 403 on 2026-10-22)", "unverified (no official site found)") as an
 // address, or nil when the note holds none.
@@ -368,7 +415,7 @@ func (d Directory) NewCompany(name string, website *url.URL, by string, at time.
 }
 
 // Sorted returns the directory's companies with their stats: researched competitors by name,
-// then added companies by name, then Tribelt's own group.
+// then added companies by name, then Tribelt's own group, then the mirror.
 func (d Directory) Sorted(stats map[string]Stats) []Listed {
 	out := make([]Listed, 0, len(d.companies))
 	for _, c := range d.companies {
@@ -382,6 +429,8 @@ func (d Directory) Sorted(stats map[string]Stats) []Listed {
 
 func rank(c Company) int {
 	switch {
+	case c.Mirror:
+		return 3
 	case c.GroupCompany:
 		return 2
 	case c.Source == SourceAdded:

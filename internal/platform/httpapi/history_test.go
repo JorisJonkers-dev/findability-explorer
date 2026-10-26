@@ -70,9 +70,9 @@ func (a *analyses) Profile(context.Context, string) (domain.Profile, error) {
 	return a.profile, a.profileErr
 }
 
-func (a *analyses) Compare(_ context.Context, _ string, _, _ uuid.UUID) (domain.Analysis, domain.Analysis, []domain.ComparisonGroup, error) {
+func (a *analyses) Compare(_ context.Context, _ string, _, _ uuid.UUID) (domain.Comparison, error) {
 	if a.compareErr != nil {
-		return domain.Analysis{}, domain.Analysis{}, nil, a.compareErr
+		return domain.Comparison{}, a.compareErr
 	}
 	older, newer := done(), done()
 	older.Number, newer.Number = 1, 2
@@ -86,7 +86,7 @@ func (a *analyses) Compare(_ context.Context, _ string, _, _ uuid.UUID) (domain.
 			{Phrase: "eyelink belt", Language: "en", Score: 30, Pages: 5, Classification: domain.Classification{Tier: "product", Family: "eyelink"}},
 		}},
 	)
-	return older, newer, groups, nil
+	return domain.Comparison{From: older, To: newer, Groups: groups, Readiness: a.readinessChanges}, nil
 }
 
 // reviewStore is an in-memory terminology Reviews.

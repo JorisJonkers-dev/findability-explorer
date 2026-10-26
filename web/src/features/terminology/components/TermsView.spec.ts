@@ -44,12 +44,36 @@ describe('the search terms view', () => {
     const { wrapper } = await mountApp(api, '/terms')
     const languages = wrapper.get('[role="group"][aria-label="By language"]').findAll('button')
     expect(languages.map((b) => b.attributes('aria-label'))).toEqual(['English: 3 terms, Tribelt uses 1', 'German: 2 terms, Tribelt uses 1'])
-    expect(languages[0]?.findAll('[aria-hidden="true"] span').map((s) => s.attributes('style'))).toEqual([
+    expect(languages[0]?.findAll('[aria-hidden="true"] span[style]').map((s) => s.attributes('style'))).toEqual([
       'width: 33.33%;',
       'width: 66.67%;',
     ])
+    // Above a bar, on hover: what Tribelt uses and what only others still have; at its end, a fraction.
+    expect(languages[0]?.get('[data-testid="bar-info"]').text()).toBe('Tribelt uses 1 · only others use 2')
     const tiers = wrapper.get('[role="group"][aria-label="By kind of search"]').findAll('button')
-    expect(tiers.map((b) => b.findAll(':scope > span').map((s) => s.text()).join(' ').trim())).toEqual(['Broad  1', 'Product  2', 'Application  0', 'Specification  1', 'Problem  1'])
+    const ends = (b: (typeof tiers)[number]) => {
+      const parts = b.findAll(':scope > span')
+      return `${parts[0]?.text() ?? ''} ${parts[2]?.text() ?? ''}`
+    }
+    expect(tiers.map(ends)).toEqual(['Broad 0/1', 'Product 2/2', 'Application 0/0', 'Specification 0/1', 'Problem 0/1'])
+    expect(wrapper.text()).toContain('2/5 terms are used by Tribelt')
+  })
+
+  it("filters the ranking by language from above it, and names Tribelt's term for each", async () => {
+    const { wrapper, router } = await mountApp(api, '/terms')
+    const pills = wrapper.get('[role="group"][aria-label="Language"]')
+    expect(pills.findAll('button').map((b) => b.text())).toEqual(['All languages', 'English', 'German'])
+    await pills.findAll('button')[2]?.trigger('click')
+    await settle()
+    expect(router.currentRoute.value.query).toEqual({ language: 'de' })
+    expect(ranked(wrapper)).toEqual(['AISI 304', 'Drahtösengliederband'])
+    // The chart on the left agrees.
+    expect(button(wrapper, 'German:').attributes('aria-pressed')).toBe('true')
+    const cells = wrapper.get('ol[aria-label="Ranked terms"]').findAll('li').map((li) => li.text())
+    expect(cells.some((t) => t.includes('Tribelt: Lacks it'))).toBe(true)
+    await pills.findAll('button')[0]?.trigger('click')
+    await settle()
+    expect(router.currentRoute.value.query).toEqual({})
   })
 
   it('filters by a language and a kind, with chips to remove them', async () => {

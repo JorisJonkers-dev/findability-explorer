@@ -3,7 +3,7 @@ import { expect, expectAccessible, test } from './fixtures'
 const SECTIONS = [
   { path: '/buyers', title: 'Buyers', heading: 'Paid search buys traffic, not buyers.' },
   { path: '/ai-search', title: 'AI search', heading: 'Google never came. AI crawlers read everything.' },
-  { path: '/competitors', title: 'Competitors', heading: /makers, the same belts, other names\.$/ },
+  { path: '/competitors', title: 'Competitors', heading: /competitors, the same belts, other names\.$/ },
   { path: '/terms', title: 'Search terms', heading: /ways to search for a metal belt\.$/ },
   { path: '/plan', title: 'The plan', heading: 'Measure first. Then build. Then expand.' },
 ] as const
@@ -14,8 +14,8 @@ test('the poster renders and is accessible', async ({ page }) => {
   await expect(page).toHaveTitle('Overview · Findability Explorer')
   const sections = page.getByRole('navigation', { name: 'Sections' })
   await expect(sections.getByRole('link')).toHaveCount(5)
-  // The live figures: the research's 44 makers and the map's 90 terms in Dutch, German and English.
-  await expect(sections.getByRole('link', { name: /^Competitors: 44 makers/ })).toBeVisible()
+  // The live figures: the research's 44 competitors and the map's 90 terms in Dutch, German and English.
+  await expect(sections.getByRole('link', { name: /^Competitors: 44 competitors/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^Search terms: 90 search terms in 3 languages\. Tribelt's own website uses 30 of them\./ })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Account' }).first()).toContainText('Signed in as')
   await expectAccessible(page)

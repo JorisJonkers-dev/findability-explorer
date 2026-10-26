@@ -26,12 +26,14 @@ import {
   rankTerms,
   summary,
   tierRows,
+  tribeltUses,
 } from '../domain/terms'
 
 const { terms, total, error } = useTermMap()
 const { view, draft, toggle, clear, toggleGap } = useTermView()
 
 const languages = computed(() => languageRows(terms.value))
+const tribeltTotal = computed(() => terms.value.filter(tribeltUses).length)
 const tiers = computed(() => tierRows(terms.value))
 const heat = computed(() => heatmap(terms.value))
 const ranked = computed(() => rankTerms(filterTerms(terms.value, view.value), terms.value))
@@ -80,16 +82,19 @@ const chartRowClass =
 // Mobile: company and six narrow cells; the stage: the design's columns, a gap between the halves.
 const heatGrid =
   'grid grid-cols-[minmax(0,1fr)_repeat(3,1.75rem)_0.25rem_repeat(2,1.75rem)_2rem] gap-1 stage:grid-cols-[minmax(0,1fr)_repeat(3,120px)_24px_repeat(2,120px)_100px] stage:gap-2'
-const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:gap-4'
+const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_190px_150px_minmax(0,0.7fr)] stage:gap-4'
 </script>
 
 <template>
-  <SectionView section="terms" :title="title" :source="['Terminology map, desk research of 22 October 2026', 'Makers: also found by live scans']">
+  <SectionView section="terms" :title="title" :source="['Terminology map, desk research of 22 October 2026', 'Competitors: also found by live scans']">
     <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,0.85fr)_minmax(0,1.1fr)_minmax(0,1.25fr)] stage:gap-24">
       <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5 stage:col-span-3">{{ error }}</p>
 
       <section aria-labelledby="terms-charts-title" class="flex flex-col gap-6 stage:min-h-0 stage:gap-8">
         <SectionHeading id="terms-charts-title">Where Tribelt's words fall short</SectionHeading>
+        <p v-if="terms.length > 0" class="m-0 text-base font-semibold stage:text-[30px]">
+          {{ tribeltTotal }}/{{ terms.length }} terms are used by Tribelt
+        </p>
         <span class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted stage:gap-8 stage:text-2xl">
           <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-orange stage:size-6"></span>Tribelt's site uses it</span>
           <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-silver stage:size-6"></span>Only others use it</span>
@@ -104,19 +109,27 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
             :aria-pressed="view[chart.key] === row.value"
             :aria-label="row.description"
             :class="[chartRowClass, view[chart.key] === row.value ? 'bg-mist' : '']"
+            class="group relative"
             @click="toggle(chart.key, row.value)"
           >
             <span :class="view[chart.key] === row.value ? 'font-semibold' : ''">{{ row.label }}</span>
-            <span aria-hidden="true" class="flex h-4 stage:h-7">
+            <span aria-hidden="true" class="relative flex h-4 stage:h-7">
               <span class="h-full bg-orange" :style="{ width: percent(row.tribeltShare) }"></span>
               <span class="h-full bg-silver" :style="{ width: percent(row.otherShare) }"></span>
+              <!-- Above the bar while it is hovered or focused: what Tribelt uses, and what only others still have. -->
+              <span
+                class="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 hidden whitespace-nowrap rounded-lg bg-black px-2.5 py-1.5 text-xs font-medium text-white shadow group-hover:block group-focus-visible:block stage:mb-3 stage:rounded-xl stage:px-5 stage:py-3 stage:text-[24px]"
+                data-testid="bar-info"
+              >
+                Tribelt uses {{ row.tribelt }} · only others use {{ row.count - row.tribelt }}
+              </span>
             </span>
-            <span class="text-right font-semibold">{{ row.count }}</span>
+            <span class="text-right font-semibold">{{ row.tribelt }}/{{ row.count }}</span>
           </button>
         </div>
 
         <p class="m-0 rounded-2xl bg-mist p-5 stage:mt-auto stage:rounded-[28px] stage:px-10 stage:py-9 stage:text-[30px]">
-          A specifier who knows only the installed belt searches with its maker's name.
+          A specifier who knows only the installed belt searches with the competitor's name for it.
           <strong class="font-semibold">Recommendation 3:</strong> every Tribelt belt page names its competitor equivalents, in
           Dutch, German and English.
         </p>
@@ -181,7 +194,19 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
       </section>
 
       <section aria-labelledby="terms-ranked-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
-        <SectionHeading id="terms-ranked-title">Ranked by how many makers use them</SectionHeading>
+        <SectionHeading id="terms-ranked-title">Ranked by how many competitors use them</SectionHeading>
+        <div role="group" aria-label="Language" class="flex flex-wrap gap-2 stage:gap-2.5">
+          <PillButton size="sm" :pressed="view.language === null" @click="clear('language')">All languages</PillButton>
+          <PillButton
+            v-for="row in languages"
+            :key="row.value"
+            size="sm"
+            :pressed="view.language === row.value"
+            @click="view.language !== row.value && toggle('language', row.value)"
+          >
+            {{ row.label }}
+          </PillButton>
+        </div>
         <div class="flex flex-wrap items-center gap-2 stage:gap-3">
           <div role="group" aria-label="Terms" class="flex flex-wrap gap-2 stage:gap-2.5">
             <PillButton v-for="group in GROUPS" :key="group.label" size="sm" :pressed="view.group === group.value" @click="pickGroup(group.value)">
@@ -226,8 +251,8 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
             <SortButton label="Rank" :direction="directionOf(rankSort, 'rank')" @sort="sortRank('rank', 'asc')">#</SortButton>
             <SortButton label="Term" :direction="directionOf(rankSort, 'term')" @sort="sortRank('term', 'asc')" />
             <SortButton label="Kind" :direction="directionOf(rankSort, 'kind')" @sort="sortRank('kind', 'asc')" />
-            <SortButton label="Makers" :direction="directionOf(rankSort, 'makers')" @sort="sortRank('makers', 'desc')" />
-            <SortButton label="Tribelt" :direction="directionOf(rankSort, 'tribelt')" @sort="sortRank('tribelt', 'desc')" />
+            <SortButton label="Competitors" :direction="directionOf(rankSort, 'makers')" @sort="sortRank('makers', 'desc')" />
+            <SortButton label="Tribelt's term" :direction="directionOf(rankSort, 'tribelt')" @sort="sortRank('tribelt', 'desc')" />
           </div>
           <ol
             v-scroll-hint
@@ -255,15 +280,16 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
                 <span aria-hidden="true" class="size-2.5 flex-none rounded-full stage:size-[18px]" :class="tierFill(row.tier)"></span>{{ row.kind }}
               </span>
               <span class="col-start-3 row-start-1 flex items-center gap-2 stage:col-start-auto stage:row-start-auto stage:gap-2.5">
-                <span class="w-5 text-right font-semibold stage:w-8">{{ row.makers }}<span class="sr-only"> makers</span></span>
+                <span class="w-5 text-right font-semibold stage:w-8">{{ row.makers }}<span class="sr-only"> competitors</span></span>
                 <span aria-hidden="true" class="h-2 flex-1 bg-mist stage:h-3">
                   <span class="block h-full bg-black" :style="{ width: percent(row.share) }"></span>
                 </span>
               </span>
               <span
-                class="col-start-3 row-start-2 text-xs font-medium stage:col-start-auto stage:row-start-auto stage:text-[26px]"
-                :class="row.tribelt ? 'text-ink-2' : 'text-orange-ink'"
-              >{{ row.tribelt ? 'Uses it' : 'Lacks it' }}</span>
+                class="col-span-2 col-start-2 row-start-3 truncate text-xs font-medium stage:col-span-1 stage:col-start-auto stage:row-start-auto stage:text-[26px]"
+                :class="row.tribelt ? 'text-ink-2' : row.tribeltTerm === 'Lacks it' ? 'text-orange-ink' : 'text-black'"
+                :title="row.tribelt ? undefined : row.tribeltTerm"
+              ><span class="stage:hidden">Tribelt: </span>{{ row.tribeltTerm }}</span>
             </li>
           </ol>
         </div>

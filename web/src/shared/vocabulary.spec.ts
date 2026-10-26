@@ -16,7 +16,7 @@ import {
 
 describe('the vocabulary', () => {
   it("lists every value in the contract's order", () => {
-    expect(LANGUAGES).toEqual(['de', 'en', 'en-US', 'nl', 'fr', 'pl', 'it', 'es', 'sv', 'da'])
+    expect(LANGUAGES).toEqual(['nl', 'de', 'en', 'en-US'])
     expect(FAMILIES).toEqual(['eyelink', 'open_spiral', 'closed_spiral', 'tri_flex_turn_curve', 'other', 'all', 'spec_all'])
     expect(TIERS).toEqual(['spec', 'product', 'application', 'problem', 'broad'])
   })

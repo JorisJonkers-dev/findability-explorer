@@ -14,6 +14,9 @@ describe('parseView', () => {
 
   it('drops values it does not know', () => {
     expect(parseView({ language: 'xx', tier: 'narrow', group: 'both', gap: 'yes', q: null, user: '  ' })).toEqual(NO_VIEW)
+    // Only Dutch, German and English are languages to filter by.
+    expect(parseView({ language: 'fr' }).language).toBeNull()
+    expect(parseView({ language: 'en-US' }).language).toBe('en')
   })
 
   it('reads American English as English, and a used-by entry as its company', () => {

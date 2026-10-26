@@ -118,6 +118,8 @@ const (
 type BeltName struct {
 	Name   string
 	Family Family
+	// Language is the language the company writes the name in, when the research noted it.
+	Language string
 }
 
 // Company is a company in the map: a competitor, or a company in Tribelt's own group.

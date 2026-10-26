@@ -50,8 +50,8 @@ describe('the search terms tile', () => {
   })
 
   it('counts the languages, and says how many terms Tribelt uses', () => {
-    expect(languageCount(terms)).toBe(4)
-    expect(termsText(terms)).toBe("search terms in 4 languages. Tribelt's own website uses 2 of them.")
+    expect(languageCount(terms)).toBe(3)
+    expect(termsText(terms)).toBe("search terms in 3 languages. Tribelt's own website uses 2 of them.")
   })
 
   it('shows the eight largest languages only', () => {

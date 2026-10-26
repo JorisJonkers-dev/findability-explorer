@@ -14,9 +14,9 @@ test('the poster renders and is accessible', async ({ page }) => {
   await expect(page).toHaveTitle('Overview · Findability Explorer')
   const sections = page.getByRole('navigation', { name: 'Sections' })
   await expect(sections.getByRole('link')).toHaveCount(5)
-  // The live figures: the research's 25 makers and the map's 146 terms.
+  // The live figures: the research's 25 makers and the map's 90 terms in Dutch, German and English.
   await expect(sections.getByRole('link', { name: /^Competitors: 25 makers/ })).toBeVisible()
-  await expect(sections.getByRole('link', { name: /^Search terms: 146 search terms in 10 languages\. Tribelt's own website uses 30 of them\./ })).toBeVisible()
+  await expect(sections.getByRole('link', { name: /^Search terms: 90 search terms in 3 languages\. Tribelt's own website uses 30 of them\./ })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Account' }).first()).toContainText('Signed in as')
   await expectAccessible(page)
 })

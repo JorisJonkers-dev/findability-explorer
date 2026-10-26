@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 )
 
 // Link is an address the crawl found: in an anchor, as a language version a page declares, or in
@@ -18,6 +19,8 @@ type Link struct {
 	Text string
 	// Alternate is true for a language version of the page (<link rel="alternate" hreflang>).
 	Alternate bool
+	// Language is a language version's hreflang; empty for any other link.
+	Language string
 }
 
 // Score bonuses and penalties a link earns from the words of its address and anchor text.
@@ -144,12 +147,15 @@ func NewFrontier(host string, scorer LinkScorer) *Frontier {
 	return &Frontier{site: SiteOf(host), scorer: scorer, seen: map[string]bool{}, fetched: map[string]bool{}}
 }
 
-// Push queues each link that is an http(s) page of the site not seen before. A language version
-// scores at least as high as the page that declares it (parentScore), plus a little.
+// Push queues each link that is an http(s) page of the site not seen before, in Dutch, German or
+// English: a language version in another language, or an address under another language's path
+// (/fr/, /es-es/), is left out, so the page budget goes to the languages Tribelt sells in. A
+// language version scores at least as high as the page that declares it (parentScore), plus a
+// little.
 func (f *Frontier) Push(links []Link, parentScore float64) {
 	for _, l := range links {
 		u := Clean(l.URL)
-		if u == nil || SiteOf(u.Hostname()) != f.site || f.seen[Key(u)] || f.queue.Len() >= maxFrontier {
+		if u == nil || SiteOf(u.Hostname()) != f.site || f.seen[Key(u)] || f.queue.Len() >= maxFrontier || otherLanguage(l, u) {
 			continue
 		}
 		f.seen[Key(u)] = true
@@ -160,6 +166,12 @@ func (f *Frontier) Push(links []Link, parentScore float64) {
 		heap.Push(&f.queue, frontierItem{url: u, score: score, order: f.next})
 		f.next++
 	}
+}
+
+// otherLanguage reports whether a link leads to a part of the site in a language not in focus.
+func otherLanguage(l Link, u *url.URL) bool {
+	declared := l.Alternate && l.Language != "" && !strings.EqualFold(l.Language, "x-default") && !lang.InFocus(l.Language)
+	return declared || lang.OtherLanguagePath(u.Path)
 }
 
 // Seen marks u visited without queueing it, as the start page is.

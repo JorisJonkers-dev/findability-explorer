@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 )
 
 // Page is one crawled page as the extraction reads it.
@@ -295,7 +296,8 @@ const (
 	boilerplateMinPages = 4
 )
 
-// Keywords returns the phrases about metal belts that the pages emphasise, highest score first.
+// Keywords returns the phrases about metal belts that the pages emphasise, highest score first,
+// in Dutch, German or English (or a language that could not be told).
 // A phrase scores its field weight for each time it appears in a field (up to maxCountPerField),
 // longer phrases count more, and a phrase found on more pages counts more. Phrases without a word
 // of the lexicon, phrases that name only the site (brand), and menu and footer text are left out.
@@ -310,7 +312,7 @@ func Keywords(pages []Page, lex Lexicon, brand []string) []Keyword {
 	for phrase, t := range tally {
 		words := strings.Fields(fold.Fold(phrase))
 		lang := t.language()
-		if !keepPhrase(words, lex, brandOnly) || t.boilerplate(perLanguage[lang], lang) {
+		if !inFocus(lang) || !keepPhrase(words, lex, brandOnly) || t.boilerplate(perLanguage[lang], lang) {
 			continue
 		}
 		n := float64(len(words))
@@ -326,6 +328,10 @@ func Keywords(pages []Page, lex Lexicon, brand []string) []Keyword {
 	})
 	return out[:min(len(out), MaxKeywords)]
 }
+
+// inFocus reports whether a phrase in language is kept: Dutch, German or English, or a language
+// that could not be told, which is most often English.
+func inFocus(language string) bool { return language == UnknownLanguage || lang.InFocus(language) }
 
 // tallyPages adds up each phrase's score, pages and languages across the pages.
 func tallyPages(pages []Page) map[string]*keywordTally {

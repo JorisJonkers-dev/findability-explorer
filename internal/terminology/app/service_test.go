@@ -138,6 +138,29 @@ func review(r *reviews) *app.Service {
 	return app.New(catalogue{terms: many(3)}, r, evidence(observations(), nil), sightings(nil, nil), func() time.Time { return now })
 }
 
+// The map holds only Dutch, German and English terms, and only phrases in them are candidates.
+func TestTheMapKeepsToTheFocusLanguages(t *testing.T) {
+	terms := []domain.Term{
+		{Text: "Gliederband", Language: domain.LanguageDe},
+		{Text: "bande", Language: "fr"},
+		{Text: "spiral belt", Language: "en-US"},
+		{Text: "draadogenband", Language: domain.LanguageNl},
+	}
+	obs := append(observations(), domain.Observation{ScanID: "s3", CompanyID: "x", Phrase: "nastro a spirale", Language: "it", Score: 9, Pages: 2})
+	svc := app.New(catalogue{terms: terms}, &reviews{}, evidence(obs, nil), sightings(nil, nil), func() time.Time { return now })
+	var got []string
+	for _, term := range svc.Terms() {
+		got = append(got, term.Text)
+	}
+	if !slices.Equal(got, []string{"Gliederband", "spiral belt", "draadogenband"}) {
+		t.Fatalf("Terms = %q", got)
+	}
+	candidates, _, err := svc.Candidates(t.Context(), domain.StatusPending)
+	if err != nil || slices.ContainsFunc(candidates, func(c domain.Candidate) bool { return c.Phrase == "nastro a spirale" }) {
+		t.Fatalf("Candidates = %+v, %v", candidates, err)
+	}
+}
+
 func TestAcceptAddsTheTermToTheMap(t *testing.T) {
 	r := &reviews{}
 	svc := review(r)

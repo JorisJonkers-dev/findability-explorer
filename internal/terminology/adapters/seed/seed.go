@@ -28,6 +28,7 @@ type rawTerm struct {
 type rawBeltName struct {
 	Name       string `json:"competitor_name"`
 	Equivalent string `json:"tribelt_equivalent"`
+	Language   string `json:"language"`
 }
 
 type rawCompany struct {
@@ -112,7 +113,7 @@ func toTerm(r rawTerm) (domain.Term, error) {
 func toCompany(r rawCompany) domain.Company {
 	names := make([]domain.BeltName, 0, len(r.BeltNames))
 	for _, b := range r.BeltNames {
-		names = append(names, domain.BeltName{Name: b.Name, Family: familyOf(b.Equivalent)})
+		names = append(names, domain.BeltName{Name: b.Name, Family: familyOf(b.Equivalent), Language: b.Language})
 	}
 	title := r.HomepageTitle
 	if title == "" {

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	focus "github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 )
 
 // The review queue: phrases finished scans found that the map does not hold are candidates, and
@@ -287,6 +289,9 @@ func NewTerm(a Acceptance, source string, terms []Term) (Term, error) {
 	lang, err := ParseLanguage(a.Language)
 	if err != nil {
 		return Term{}, fmt.Errorf("%w: language", err)
+	}
+	if !focus.InFocus(string(lang)) {
+		return Term{}, fmt.Errorf("%w: language; only Dutch, German and English terms join the map", ErrUnknownValue)
 	}
 	family, err := ParseFamily(a.Family)
 	if err != nil {

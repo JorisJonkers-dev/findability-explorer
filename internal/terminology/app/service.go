@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
@@ -108,11 +109,14 @@ func (s *Service) Companies() []domain.Company {
 }
 
 // Terms returns the whole map: the research's terms, then the accepted ones, for search and for
-// other contexts that match text against it.
+// other contexts that match text against it; only those in Dutch, German or English, the
+// languages Tribelt's buyers search in.
 func (s *Service) Terms() []domain.Term {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return slices.Concat(s.catalogue.Terms(), s.accepted)
+	return slices.DeleteFunc(slices.Concat(s.catalogue.Terms(), s.accepted), func(t domain.Term) bool {
+		return !lang.InFocus(string(t.Language))
+	})
 }
 
 // Candidates returns the candidates with status, and how many have each status.
@@ -130,6 +134,8 @@ func (s *Service) candidates(ctx context.Context) ([]domain.Candidate, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read the scans' findings: %w", err)
 	}
+	// Only phrases in Dutch, German or English are candidates for the map.
+	obs = slices.DeleteFunc(obs, func(o domain.Observation) bool { return !lang.InFocus(o.Language) })
 	decisions, err := s.reviews.Decisions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load decisions: %w", err)

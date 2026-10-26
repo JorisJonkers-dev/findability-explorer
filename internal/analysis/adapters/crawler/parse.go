@@ -120,18 +120,28 @@ func (pr *pageReader) element(n *html.Node) {
 		pr.link(attr(n, "href"), collapse(textOf(n)+" "+attr(n, "title")), false)
 	case atom.Link:
 		if strings.EqualFold(attr(n, "rel"), "alternate") && attr(n, "hreflang") != "" {
-			pr.link(attr(n, "href"), "", true)
+			pr.alternate(attr(n, "href"), attr(n, "hreflang"))
 		}
 	}
 }
 
-// link records a link with its anchor text, or a language version of the page.
+// link records a link with its anchor text.
 func (pr *pageReader) link(href, text string, alternate bool) {
+	pr.add(href, domain.Link{Text: text, Alternate: alternate})
+}
+
+// alternate records a language version of the page, in the language hreflang names.
+func (pr *pageReader) alternate(href, hreflang string) {
+	pr.add(href, domain.Link{Alternate: true, Language: strings.TrimSpace(hreflang)})
+}
+
+func (pr *pageReader) add(href string, l domain.Link) {
 	if href = strings.TrimSpace(href); href == "" {
 		return
 	}
 	if u, err := pr.base.Parse(href); err == nil {
-		pr.links = append(pr.links, domain.Link{URL: u, Text: text, Alternate: alternate})
+		l.URL = u
+		pr.links = append(pr.links, l)
 	}
 }
 

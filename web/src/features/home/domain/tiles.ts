@@ -1,5 +1,6 @@
 import type { Competitor, Term } from '../../../infrastructure/api/types.gen'
 import { familyLabel, languageLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
+import { chartLanguage } from '../../terminology/domain/filters'
 import { companyName } from '../../terminology/domain/filters'
 
 /** One bar of a tile's chart: a filled part, optionally a second part after it, and its value. */
@@ -84,10 +85,10 @@ export function originOf(box: { left: number; top: number; width: number; height
 
 /** How many languages the map's terms are in, each code once: American English counts on its own. */
 export function languageCount(terms: readonly Pick<Term, 'language'>[]): number {
-  return new Set(terms.map((t) => t.language)).size
+  return new Set(terms.map((t) => chartLanguage(t.language))).size // American English is English
 }
 
-/** The search terms tile's line: "search terms in 10 languages. Tribelt's own website uses 30 of them." */
+/** The search terms tile's line: "search terms in 3 languages. Tribelt's own website uses 30 of them." */
 export function termsText(terms: readonly Pick<Term, 'language' | 'usedBy'>[]): string {
   return `search terms in ${String(languageCount(terms))} languages. Tribelt's own website uses ${String(tribeltTermCount(terms))} of them.`
 }

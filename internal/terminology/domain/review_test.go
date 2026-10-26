@@ -90,6 +90,7 @@ func TestNewTerm(t *testing.T) {
 		"many companies": {bad(func(a *domain.Acceptance) { a.UsedBy = make([]string, 21) }), domain.ErrInvalidTerm},
 		"empty company":  {bad(func(a *domain.Acceptance) { a.UsedBy = []string{" "} }), domain.ErrInvalidTerm},
 		"language":       {bad(func(a *domain.Acceptance) { a.Language = "xx" }), domain.ErrUnknownValue},
+		"other language": {bad(func(a *domain.Acceptance) { a.Language = "fr" }), domain.ErrUnknownValue},
 		"family":         {bad(func(a *domain.Acceptance) { a.Family = "xx" }), domain.ErrUnknownValue},
 		"tier":           {bad(func(a *domain.Acceptance) { a.Tier = "xx" }), domain.ErrUnknownValue},
 		"exists":         {bad(func(a *domain.Acceptance) { a.Text = "SPIRAL BELT" }), domain.ErrTermExists},

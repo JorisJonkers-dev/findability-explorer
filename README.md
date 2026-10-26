@@ -6,7 +6,14 @@ The interactive companion to the Digital Strategy group report on Tribelt B.V. (
 Twente, 2026-1A), served privately at `digital-strategy.jorisjonkers.dev`. It shows how metal
 conveyor belts are named across companies and languages, and analyses any website's keywords.
 
-- **Search terms** (`/terms`): search the terminology map (146 terms, 10 languages) from the
+- **Languages**: everything keeps to Dutch, German and English, the languages Tribelt's buyers
+  search in (`internal/shared/lang`). The map shows only those terms; a scan skips a site's other
+  language versions and addresses under another language's path (`/fr/`, `/es-es/`), keeps only
+  phrases in those languages (or in one it cannot tell), and asks the language model for those
+  terms only; the review queue takes only those phrases; older scans read back the same way; and
+  a company's website languages and belt names put those first.
+- **Search terms** (`/terms`): search the terminology map (90 terms in Dutch, German and English,
+  of the 146 in 10 languages the research collected) from the
   group's desk research of 22 October 2026, plus every term an administrator accepted from the
   review queue, with filters by language, intent tier, belt family and company. Every filter lives
   in the URL, so a view can be shared. A term's makers are the companies the research or the

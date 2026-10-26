@@ -26,7 +26,7 @@ func (c *client) Complete(_ context.Context, p llm.Prompt) (llm.Completion, erro
 }
 
 const answer = `{"equivalents":[{"product":"TwenteFlex spiral belts","family":"tri_flex_turn_curve",
-"reason":"A curve-going spiral belt.","searchTerms":[{"term":"spiral belt","language":"en"}]}]}`
+"reason":"A curve-going spiral belt.","searchTerms":[{"term":"spiral belt","language":"en"},{"term":"nastro a spirale","language":"it"}]}]}`
 
 func TestMatchSendsAStructuredPromptAndReadsTheAnswer(t *testing.T) {
 	for name, text := range map[string]string{

@@ -74,6 +74,32 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+describe('the columns', () => {
+  it('widens, minimises and restores a column, keeps one open, and remembers the layout', async () => {
+    localStorage.clear()
+    const first = await mountApp(api(), '/competitors')
+    const grid = () => first.wrapper.get('[style*="grid-template-columns"]').attributes('style') ?? ''
+    const control = (name: string) => first.wrapper.get(`button[aria-label="${name}"]`)
+    expect(grid()).toContain('minmax(0,1.3fr) minmax(0,0.95fr) minmax(0,1fr)')
+    await control('Widen Who makes which belt').trigger('click')
+    expect(grid()).toContain('minmax(0,3.25fr)')
+    expect(control('Put Who makes which belt back to its width').attributes('aria-pressed')).toBe('true')
+    await control('Minimise Company').trigger('click')
+    expect(grid()).toContain('150px')
+    expect(first.wrapper.find('button[aria-label="Restore Company"]').exists()).toBe(true)
+    await control('Minimise Scan a competitor').trigger('click')
+    // The last open column cannot be minimised.
+    expect(control('Minimise Who makes which belt').attributes('disabled')).toBeDefined()
+    first.wrapper.unmount()
+
+    const again = await mountApp(api(), '/competitors')
+    expect(again.wrapper.get('[style*="grid-template-columns"]').attributes('style')).toContain('minmax(0,3.25fr) 150px 150px')
+    await again.wrapper.get('button[aria-label="Restore Company"]').trigger('click')
+    expect(again.wrapper.get('[style*="grid-template-columns"]').attributes('style')).toContain('minmax(0,3.25fr) minmax(0,0.95fr) 150px')
+    localStorage.clear()
+  })
+})
+
 describe('the company list', () => {
   it('lists every company with the families it offers, counting what is shown', async () => {
     const { wrapper } = await mountApp(api(), '/competitors')

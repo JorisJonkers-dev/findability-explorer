@@ -1,9 +1,10 @@
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { competitor, summary } from '../../../testing/fixtures'
+import { competitor, summary, termSearch } from '../../../testing/fixtures'
 import { json, problem } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
+import { useTermMap } from '../../terminology/composables/useTermSearch'
 import { useCompetitors } from './useCompetitors'
 
 afterEach(() => {
@@ -24,6 +25,26 @@ describe('useCompetitors', () => {
     const { state } = mountComposable(useCompetitors, () => problem(401, 'Unauthorized'))
     await flushPromises()
     expect(state.error.value).toBe('Unauthorized')
+  })
+
+  it('asks for the map again when a scan finishes, so its makers follow the scan', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    let call = 0
+    const { sent } = mountComposable(
+      () => {
+        const companies = useCompetitors()
+        useTermMap()
+        return companies
+      },
+      (request) =>
+        new URL(request.url).pathname === '/api/v1/terms'
+          ? json(termSearch([]))
+          : json({ items: [competitor('Twentebelt', { scans: 1, lastScan: summary({ status: call++ === 0 ? 'running' : 'done' }) })] }),
+    )
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    await flushPromises()
+    expect(sent.filter((s) => s.startsWith('GET /api/v1/terms'))).toHaveLength(2)
   })
 
   it('asks again while a company is being scanned, and stops once none is', async () => {

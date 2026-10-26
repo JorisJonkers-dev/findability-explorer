@@ -165,6 +165,8 @@ export type RankedTerm = {
   /** The makers' bar, from 0 to 1 of the most-used term in the whole map. */
   share: number
   tribelt: boolean
+  /** What Tribelt's own site calls the same thing: "Uses it", its term, or "Lacks it". */
+  tribeltTerm: string
 }
 
 /**
@@ -197,7 +199,30 @@ export function rankTerms(shown: readonly (Term & { scanMakers?: readonly string
       makers: makers.length,
       share: makers.length / top,
       tribelt: tribeltUses(t),
+      tribeltTerm: tribeltTerm(t, all),
     }))
+}
+
+/** The kinds of search a term can stand in for another in: they name a belt or its use. */
+const NAMING_TIERS: readonly string[] = ['broad', 'product', 'application']
+
+/**
+ * What Tribelt's own site calls the same thing: "Uses it" for a term Tribelt uses, else
+ * Tribelt's term for the same belt family that names a belt or its use too (the same kind of
+ * search first), in the term's language if Tribelt has one there, else naming its language; or
+ * "Lacks it". A specification or a problem is its own thing: another one is no stand-in for it.
+ */
+export function tribeltTerm(term: Term, all: readonly Term[]): string {
+  if (tribeltUses(term)) return 'Uses it'
+  if (!NAMING_TIERS.includes(term.tier)) return 'Lacks it'
+  const own = all.filter((t) => t !== term && tribeltUses(t) && t.family === term.family && NAMING_TIERS.includes(t.tier))
+  const sameTier = own.filter((t) => t.tier === term.tier)
+  const pool = sameTier.length > 0 ? sameTier : own
+  const language = chartLanguage(term.language)
+  const match = pool.find((t) => chartLanguage(t.language) === language) ?? pool[0]
+  if (match === undefined) return 'Lacks it'
+  const other = chartLanguage(match.language) === language ? '' : ` (${languageLabel(chartLanguage(match.language))})`
+  return `${match.term}${other}`
 }
 
 /** A filter in use that a chip can remove. */

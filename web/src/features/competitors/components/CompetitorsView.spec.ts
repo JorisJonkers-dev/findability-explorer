@@ -103,7 +103,7 @@ describe('the columns', () => {
 describe('the company list', () => {
   it('lists every company with the families it offers, counting what is shown', async () => {
     const { wrapper } = await mountApp(api(), '/competitors')
-    expect(wrapper.get('h1').text()).toBe('3 makers, the same belts, other names.')
+    expect(wrapper.get('h1').text()).toBe('3 competitors, the same belts, other names.')
     expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual([
       'Twentebelt, Netherlands: Tri-Flex; 2 scans',
       'Märtens, Germany: Eyelink; No scans',

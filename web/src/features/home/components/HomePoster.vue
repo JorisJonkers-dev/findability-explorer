@@ -117,7 +117,7 @@ onMounted(() => {
                 v-else-if="section.id === 'competitors'"
                 :bars="familyBars(competitors)"
                 fill="orange"
-                :legend="[{ label: `Makers offering each Tribelt family, of ${figures[2]?.big}`, fill: 'orange' }]"
+                :legend="[{ label: `Competitors offering each Tribelt family, of ${figures[2]?.big}`, fill: 'orange' }]"
               />
               <TileBars
                 v-else-if="section.id === 'terms'"

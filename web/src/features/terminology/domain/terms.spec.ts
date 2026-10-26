@@ -16,6 +16,7 @@ import {
   summary,
   termsOf,
   tierRows,
+  tribeltTerm,
   tribeltUses,
 } from './terms'
 
@@ -177,6 +178,7 @@ describe('rankTerms', () => {
       makers: 1,
       share: 0.5,
       tribelt: true,
+      tribeltTerm: 'Uses it',
     })
     expect(rankTerms([MAP[3] as Term], MAP)[0]?.meta).toBe('German · Any belt · Märtens, Twentebelt')
     expect(rankTerms([MAP[4] as Term], MAP)[0]?.meta).toBe('English · All belts')
@@ -221,5 +223,22 @@ describe('sorting the tables', () => {
     if (!ranked) throw new Error('no term')
     expect(rankSortValue(ranked, 'makers')).toBe(ranked.makers)
     expect(rankSortValue(ranked, 'tribelt')).toBe(ranked.tribelt)
+  })
+})
+
+describe("Tribelt's term", () => {
+  it('says Tribelt uses a term, names its own term for the same thing, or that it lacks one', () => {
+    expect(MAP.map((t) => tribeltTerm(t, MAP))).toEqual(['Uses it', 'Eyelink belt', 'Uses it', 'Lacks it', 'Lacks it'])
+    // In another language than Tribelt has, it names the language.
+    const dutch = term({ term: 'draadogenband', language: 'nl', family: 'eyelink', tier: 'product', usedBy: ['ESFO'] })
+    expect(tribeltTerm(dutch, [...MAP, dutch])).toBe('Eyelink belt (English)')
+    // A specification is its own thing: Tribelt's other specification is no stand-in for it.
+    const pitch = term({ term: 'belt pitch', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Ashworth'] })
+    const steel = term({ term: 'AISI 316', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Tribelt'] })
+    expect(tribeltTerm(pitch, [pitch, steel])).toBe('Lacks it')
+    // Nor is a specification a stand-in for a product name of the same family.
+    const ratio = term({ term: 'turn ratio', language: 'en', family: 'tri_flex_turn_curve', tier: 'spec', usedBy: ['Tribelt'] })
+    const spiral = term({ term: 'spiral belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'product', usedBy: ['Ashworth'] })
+    expect(tribeltTerm(spiral, [spiral, ratio])).toBe('Lacks it')
   })
 })

@@ -38,7 +38,7 @@ const selected = computed(() =>
 )
 const title = computed(() => {
   const count = researchedCompetitors(companies.value).length
-  return count > 0 ? `${String(count)} makers, the same belts, other names.` : 'The same belts, other names.'
+  return count > 0 ? `${String(count)} competitors, the same belts, other names.` : 'The same belts, other names.'
 })
 
 /** Shows a company: the address keeps it, so a link or a reload shows the same one. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Term } from '../../../infrastructure/api/types.gen'
-import { competitor } from '../../../testing/fixtures'
+import { competitor, summary } from '../../../testing/fixtures'
 import {
   companyByHost,
   companyTerms,
@@ -11,6 +11,8 @@ import {
   pickerState,
   readableName,
   scanCompany,
+  lastScanLabel,
+  listScanLabel,
   scanCountLabel,
   scanOutcome,
   sourceLabel,
@@ -97,8 +99,28 @@ describe('pickerState', () => {
 
 describe('labels', () => {
   it('counts scans', () => {
-    expect(scanCountLabel(0)).toBe('Not scanned yet')
-    expect(scanCountLabel(3)).toBe('Scanned 3×')
+    expect(scanCountLabel(0)).toBe('Never scanned')
+    expect(scanCountLabel(1)).toBe('Scanned once')
+    expect(scanCountLabel(3)).toBe('Scanned 3 times')
+  })
+
+  it('says when the last scan was, to the minute, and how it went', () => {
+    // Local times, so the test reads the same in every time zone.
+    const now = new Date(2026, 9, 26, 9, 0)
+    const at = (d: number, h: number, m: number) => new Date(2026, 9, d, h, m).toISOString()
+    expect(lastScanLabel(undefined, now)).toBeNull()
+    expect(lastScanLabel(summary({ createdAt: at(26, 7, 24), pagesCrawled: 60 }), now)).toBe('Last scan: today at 07:24, 60 pages read')
+    expect(lastScanLabel(summary({ createdAt: at(25, 18, 5), status: 'failed' }), now)).toBe('Last scan: yesterday at 18:05, failed')
+    expect(lastScanLabel(summary({ createdAt: at(3, 7, 0), pagesCrawled: 1 }), now)).toBe('Last scan: 3 October 2026 at 07:00, 1 page read')
+    expect(lastScanLabel(summary({ createdAt: at(26, 8, 59), status: 'running' }), now)).toBe('Last scan: today at 08:59, scanning now')
+  })
+
+  it('sums the scans up for the company list', () => {
+    const now = new Date(2026, 9, 26, 9, 0)
+    expect(listScanLabel({ scans: 0 }, now)).toBe('No scans')
+    expect(listScanLabel({ scans: 2, lastScan: summary({ createdAt: new Date(2026, 9, 26, 7, 24).toISOString() }) }, now)).toBe('2 scans · today')
+    expect(listScanLabel({ scans: 1, lastScan: summary({ createdAt: new Date(2026, 9, 3).toISOString() }) }, now)).toBe('1 scan · 3 Oct')
+    expect(listScanLabel({ scans: 4, lastScan: summary({ status: 'queued' }) }, now)).toBe('4 scans · scanning')
   })
 
   it('says where a company comes from', () => {

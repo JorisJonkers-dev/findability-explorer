@@ -767,7 +767,7 @@ export const zUndoTermDecisionPath = z.object({
 export const zUndoTermDecisionResponse = zTermCandidate;
 
 export const zListAnalysesQuery = z.object({
-    limit: z.int().gte(1).lte(50).optional().default(20)
+    limit: z.int().gte(1).lte(300).optional().default(20)
 });
 
 /**

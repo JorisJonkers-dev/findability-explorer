@@ -1,8 +1,14 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RescanBatch } from '../../../infrastructure/api/types.gen'
 import { competitor, me, summary } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
+import { POLL_INTERVAL_MS } from '../../scan/domain/status'
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 const twentebelt = competitor('Twentebelt', { scans: 2 })
 const added = competitor('Example Belts', {
@@ -158,10 +164,39 @@ describe('the administrator tools', () => {
     expect((budget.element as HTMLInputElement).value).toBe('100')
     await budget.setValue('40')
     await budget.trigger('change')
-    await button(wrapper, 'Re-scan all companies with data').trigger('click')
+    // Twentebelt is researched and the added company was scanned: both have data.
+    await button(wrapper, 'Re-scan all 2 companies with data').trigger('click')
+    expect(wrapper.get('#rescan-question').text()).toContain('Re-scan 2 companies, up to 40 pages each?')
+    await button(wrapper, 'Cancel').trigger('click')
+    expect(wrapper.find('#rescan-question').exists()).toBe(false)
+    expect(sent).toEqual([])
+    await button(wrapper, 'Re-scan all 2 companies with data').trigger('click')
+    await button(wrapper, 'Re-scan 2 companies').trigger('click')
     await settle()
     expect(sent).toEqual([{ method: 'POST', path: '/api/v1/admin/rescans', body: { all: true, maxPages: 40 } }])
     expect(wrapper.text()).toContain('Queued 2 scans. Skipped 1: Märtens (a scan of it is still queued or running).')
+  })
+
+  it('follows the queued scans until each has finished', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    const sent: Sent[] = []
+    let finished = false
+    const { wrapper } = await mountApp(
+      api(sent, {
+        'GET /api/v1/analyses': () =>
+          json({ items: [summary({ status: finished ? 'done' : 'running' }), summary({ id: '6c1d2b0f-3e4a-4f6b-9c7d-8e9f0a1b2c3d', status: finished ? 'failed' : 'queued' })] }),
+      }),
+      '/competitors',
+    )
+    await button(wrapper, 'Re-scan all 2 companies with data').trigger('click')
+    await button(wrapper, 'Re-scan 2 companies').trigger('click')
+    await settle()
+    expect(wrapper.text()).toContain('Re-scanning 2 companies: 0 done, 1 running, 1 waiting.')
+    expect(button(wrapper, 'Re-scan all 2 companies with data').attributes('disabled')).toBeDefined()
+    finished = true
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Re-scan finished: 1 done, 1 failed.')
   })
 
   it('adds a company by name and website, checks both first, and shows it', async () => {
@@ -202,7 +237,8 @@ describe('the administrator tools', () => {
     await form.trigger('submit')
     await settle()
     expect(form.get('[role="alert"]').text()).toBe('Twentebelt already has this website.')
-    await button(wrapper, 'Re-scan all companies with data').trigger('click')
+    await button(wrapper, 'Re-scan all 2 companies with data').trigger('click')
+    await button(wrapper, 'Re-scan 2 companies').trigger('click')
     await settle()
     expect(wrapper.get('section[aria-labelledby="admin-title"] > [role="alert"]').text()).toBe('Internal Server Error')
   })

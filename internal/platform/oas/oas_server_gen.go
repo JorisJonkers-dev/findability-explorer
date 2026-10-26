@@ -156,9 +156,9 @@ type Handler interface {
 	// StartRescans implements startRescans operation.
 	//
 	// Administrators only. Queues one scan for each named company with a website, or with `all`, for every
-	// company that is not archived, has a website and was scanned before. A company whose scan is still
-	// queued or running is skipped, and so is one without a website. The scans run a few at a time, each
-	// site politely.
+	// company that is not archived, has a website and has data: the desk research studied it, or it was
+	// scanned before. A company whose scan is still queued or running is skipped, and so is one without a
+	// website. The scans run a few at a time, each site politely.
 	//
 	// POST /api/v1/admin/rescans
 	StartRescans(ctx context.Context, req *RescanRequest) (StartRescansRes, error)

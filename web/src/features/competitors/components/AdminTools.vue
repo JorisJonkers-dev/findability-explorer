@@ -3,12 +3,17 @@ import { computed, ref } from 'vue'
 import { usePageBudget } from '../../scan/composables/usePageBudget'
 import { MAX_SCAN_PAGES } from '../../scan/domain/newScan'
 import { useAddCompany, useRescan } from '../composables/useCompanyAdmin'
-import { checkCompanyForm, rescanSummary } from '../domain/admin'
+import type { Competitor } from '../../../infrastructure/api/types.gen'
+import { checkCompanyForm, rescanCandidates, rescanSummary } from '../domain/admin'
 
+const props = defineProps<{ companies: readonly Competitor[] }>()
 const emit = defineEmits<{ added: [id: string] }>()
 
 const { pages } = usePageBudget()
-const { isQueuing, batch, error: rescanError, rescan } = useRescan()
+const { isQueuing, batch, progress, error: rescanError, rescan } = useRescan()
+const candidates = computed(() => rescanCandidates(props.companies).length)
+// A re-scan of all reads many sites and uses the language model for each, so it asks first.
+const confirming = ref(false)
 const { isAdding, error: addError, add, reset } = useAddCompany()
 const name = ref('')
 const website = ref('')
@@ -19,6 +24,11 @@ const summary = computed(() => (batch.value ? rescanSummary(batch.value) : null)
 
 const BUTTON = 'min-h-11 rounded-full border-2 px-5 font-medium stage:min-h-[76px] stage:border-[3px] stage:px-8 stage:text-[26px]'
 const FIELD = 'h-11 min-w-0 rounded-xl border-2 bg-white px-3 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-5 stage:text-[28px]'
+
+function rescanAll(): void {
+  confirming.value = false
+  rescan({ all: true, maxPages: pages.value })
+}
 
 function budget(event: Event): void {
   pages.value = Number((event.target as HTMLInputElement).value)
@@ -58,16 +68,32 @@ function submit(): void {
         />
       </label>
       <button
+        v-if="!confirming"
         type="button"
-        :disabled="isQueuing"
+        :disabled="isQueuing || (progress !== null && !progress.finished)"
         :class="BUTTON"
         class="border-black bg-white text-black hover:bg-black hover:text-white disabled:opacity-70"
-        @click="rescan({ all: true, maxPages: pages })"
+        @click="confirming = true"
       >
-        {{ isQueuing ? 'Queuing…' : 'Re-scan all companies with data' }}
+        {{ isQueuing ? 'Queuing…' : `Re-scan all ${String(candidates)} companies with data` }}
       </button>
     </div>
-    <p class="m-0 text-sm stage:text-[26px]" aria-live="polite">{{ summary }}</p>
+    <div v-if="confirming" role="group" aria-labelledby="rescan-question" class="flex flex-col gap-3 rounded-2xl bg-white p-4 stage:gap-5 stage:p-8">
+      <p id="rescan-question" class="m-0 text-sm stage:text-[26px]">
+        Re-scan {{ candidates }} companies, up to {{ pages }} pages each? Each scan also uses the language model, so this spends
+        part of the monthly budget.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <button type="button" :class="BUTTON" class="border-black bg-black text-white hover:bg-ink-2" @click="rescanAll">
+          Re-scan {{ candidates }} companies
+        </button>
+        <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="confirming = false">Cancel</button>
+      </div>
+    </div>
+    <div v-if="summary || progress" class="flex flex-col gap-1 stage:gap-2" aria-live="polite">
+      <p v-if="progress" class="m-0 text-base font-semibold stage:text-[30px]">{{ progress.text }}</p>
+      <p v-if="summary" class="m-0 text-sm text-ink-2 stage:text-[26px]">{{ summary }}</p>
+    </div>
     <p v-if="rescanError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[26px]">{{ rescanError }}</p>
     <button
       type="button"

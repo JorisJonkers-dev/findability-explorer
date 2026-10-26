@@ -19,8 +19,9 @@ import (
 const (
 	// DefaultListLimit is how many analyses List returns when the caller names no limit.
 	DefaultListLimit = 20
-	// MaxListLimit is the most analyses one List returns.
-	MaxListLimit = 50
+	// MaxListLimit is the most analyses one List returns: more than the queue holds, so a re-scan
+	// of every company can be followed in one list.
+	MaxListLimit = 300
 	// maxFailure is the longest failure reason stored; the contract and the database agree.
 	maxFailure = 500
 )
@@ -144,7 +145,7 @@ type Skipped struct {
 }
 
 // Rescan queues one scan of each company named, or with all of every company that is not
-// archived, has a website and was scanned before. A company without a website, or with a scan
+// archived, has a website and has data: the desk research studied it, or it was scanned before. A company without a website, or with a scan
 // queued or running, is skipped; so is every company once the queue is full. The hourly limit on
 // single scans does not apply.
 func (s *Service) Rescan(ctx context.Context, user string, ids []string, all bool, maxPages int) ([]domain.Analysis, []Skipped, error) {
@@ -205,7 +206,8 @@ func (s *Service) rescanOne(ctx context.Context, user string, c domain.Company, 
 	return "", nil
 }
 
-// scanned keeps the companies that are not archived, have a website and were scanned before.
+// scanned keeps the companies that are not archived, have a website and have data: researched,
+// or scanned before.
 func (s *Service) scanned(ctx context.Context, companies []domain.Company) ([]domain.Company, error) {
 	stats, err := s.repo.CompetitorStats(ctx)
 	if err != nil {
@@ -213,7 +215,7 @@ func (s *Service) scanned(ctx context.Context, companies []domain.Company) ([]do
 	}
 	var out []domain.Company
 	for _, c := range companies {
-		if !c.Archived && c.Website != nil && stats[c.ID].Count > 0 {
+		if !c.Archived && c.Website != nil && (c.Researched || stats[c.ID].Count > 0) {
 			out = append(out, c)
 		}
 	}

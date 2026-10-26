@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkCompanyForm, companyProblem, removeAction, rescanSummary, splitArchived } from './admin'
+import { checkCompanyForm, companyProblem, removeAction, rescanCandidates, rescanProgress, rescanSummary, splitArchived } from './admin'
 
 describe('removing a company', () => {
   it('archives a researched one, and deletes an added one with its scans', () => {
@@ -27,6 +27,36 @@ describe('the company form', () => {
 })
 
 describe('a re-scan', () => {
+  it('takes every company with data: researched, or scanned before, with a website and not archived', () => {
+    const c = (id: string, source: 'research' | 'added', scans: number, websiteUrl?: string, archived = false) => ({ id, source, scans, websiteUrl, archived })
+    const companies = [
+      c('researched', 'research', 0, 'https://r.com'),
+      c('scanned', 'added', 2, 'https://s.com'),
+      c('never-scanned', 'added', 0, 'https://n.com'),
+      c('no-site', 'research', 0),
+      c('archived', 'research', 3, 'https://a.com', true),
+    ]
+    expect(rescanCandidates(companies).map((x) => x.id)).toEqual(['researched', 'scanned'])
+  })
+
+  it('follows the queued scans until every one has finished', () => {
+    const scan = (id: string, status: 'queued' | 'running' | 'done' | 'failed') => ({ id, status })
+    const queued = ['a', 'b', 'c', 'd']
+    expect(rescanProgress(queued, [scan('a', 'done'), scan('b', 'running'), scan('c', 'queued'), scan('d', 'queued'), scan('x', 'running')])).toEqual({
+      finished: false,
+      text: 'Re-scanning 4 companies: 1 done, 1 running, 2 waiting.',
+    })
+    expect(rescanProgress(queued, [scan('a', 'done'), scan('b', 'failed'), scan('c', 'done'), scan('d', 'done')])).toEqual({
+      finished: true,
+      text: 'Re-scan finished: 3 done, 1 failed.',
+    })
+    // A scan the list no longer holds cannot be followed, so it does not keep the line waiting.
+    expect(rescanProgress(['a', 'gone'], [scan('a', 'done')]).finished).toBe(true)
+    expect(rescanProgress([], []).finished).toBe(true)
+    expect(rescanProgress(['a', 'b'], [scan('a', 'failed'), scan('b', 'running')]).text).toBe('Re-scanning 2 companies: 0 done, 1 failed, 1 running, 0 waiting.')
+    expect(rescanProgress(['a'], [scan('a', 'queued')]).text).toBe('Re-scanning 1 company: 0 done, 0 running, 1 waiting.')
+  })
+
   it('says what was queued and skipped', () => {
     expect(rescanSummary({ queued: [], skipped: [] })).toBe('Queued 0 scans.')
     const one = { id: 'a', url: 'https://a.com', status: 'queued' as const, maxPages: 60, pagesCrawled: 0, createdAt: '2026-10-23T09:30:00Z' }

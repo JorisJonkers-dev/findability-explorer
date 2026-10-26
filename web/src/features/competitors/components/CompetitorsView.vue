@@ -59,7 +59,7 @@ function scan(url: string): void {
       <CompanyCard v-else-if="selected" :company="selected" :terms="map.terms.value" :is-admin="isAdmin" @scan="scan" @removed="removed" />
       <p v-else class="m-0 text-muted">Loading the companies…</p>
       <ScanPanel ref="panel" :scan-id="scanId" :is-admin="isAdmin">
-        <AdminTools v-if="isAdmin" @added="pick" />
+        <AdminTools v-if="isAdmin" :companies="companies" @added="pick" />
       </ScanPanel>
     </div>
   </SectionView>

@@ -197,6 +197,8 @@ type Company struct {
 	// Website is nil when the company has none.
 	Website  *url.URL
 	Archived bool
+	// Researched is true for a company the desk research studied: it has data before any scan.
+	Researched bool
 }
 
 // ErrNotFound is returned for an analysis id that does not exist.

@@ -369,7 +369,9 @@ func (d directory) Companies(ctx context.Context) ([]analysisdomain.Company, err
 	}
 	out := make([]analysisdomain.Company, 0, len(listed))
 	for _, l := range listed {
-		out = append(out, analysisdomain.Company{ID: l.ID, Name: l.Name, Website: l.URL, Archived: l.Archived})
+		out = append(out, analysisdomain.Company{
+			ID: l.ID, Name: l.Name, Website: l.URL, Archived: l.Archived, Researched: l.Source == companiesdomain.SourceResearch,
+		})
 	}
 	return out, nil
 }

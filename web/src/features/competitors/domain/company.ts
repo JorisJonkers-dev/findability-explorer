@@ -3,6 +3,7 @@ import { FAMILIES, familyLabel, TIERS } from '../../../shared/vocabulary'
 import { companyName } from '../../terminology/domain/filters'
 import { fold } from '../../terminology/domain/fold'
 import { checkScanUrl } from '../../scan/domain/newScan'
+import { recentLabel } from '../../scan/domain/recent'
 import { isInProgress } from '../../scan/domain/status'
 import { shortName } from './matrix'
 
@@ -84,7 +85,38 @@ export function pickerState(text: string, companies: readonly Company[]): Picker
 
 /** How often a company was scanned: "Scanned 3×", or "Not scanned yet". */
 export function scanCountLabel(scans: number): string {
-  return scans > 0 ? `Scanned ${String(scans)}×` : 'Not scanned yet'
+  if (scans === 0) return 'Never scanned'
+  return scans === 1 ? 'Scanned once' : `Scanned ${String(scans)} times`
+}
+
+const LONG_DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+const CLOCK = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+function startOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+}
+
+/** "today", "yesterday" or "3 October 2026", in the viewer's time zone. */
+function dayLabel(date: Date, now: Date): string {
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000)
+  if (days === 0) return 'today'
+  if (days === 1) return 'yesterday'
+  return LONG_DATE.format(date)
+}
+
+/** When the last scan started, to the minute, and how it went; null without a scan. */
+export function lastScanLabel(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'createdAt'> | undefined, now: Date = new Date()): string | null {
+  if (!scan) return null
+  const at = new Date(scan.createdAt)
+  const outcome = isInProgress(scan.status) ? 'scanning now' : scanOutcome(scan).toLowerCase()
+  return `Last scan: ${dayLabel(at, now)} at ${CLOCK.format(at)}, ${outcome}`
+}
+
+/** A company's scans in a few words for its row in the list: "2 scans · today". */
+export function listScanLabel(company: Pick<Competitor, 'scans' | 'lastScan'>, now: Date = new Date()): string {
+  if (company.scans === 0) return 'No scans'
+  const count = company.scans === 1 ? '1 scan' : `${String(company.scans)} scans`
+  return company.lastScan ? `${count} · ${recentLabel(company.lastScan, now)}` : count
 }
 
 const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })

@@ -20,13 +20,14 @@ func website(raw string) *url.URL {
 	return u
 }
 
-// companies: x and y were scanned before, z was not, a is archived, n has no website, p a
-// website that cannot be scanned.
+// companies: x and y were scanned before, z was not, r is researched and was not, a is archived,
+// n has no website, p a website that cannot be scanned.
 func companies() []domain.Company {
 	return []domain.Company{
 		{ID: "x", Name: "X", Website: website("https://x.test/")},
 		{ID: "y", Name: "Y", Website: website("https://y.test/")},
 		{ID: "z", Name: "Z", Website: website("https://z.test/")},
+		{ID: "r", Name: "R", Website: website("https://r.test/"), Researched: true},
 		{ID: "a", Name: "A", Website: website("https://a.test/"), Archived: true},
 		{ID: "n", Name: "N"},
 		{ID: "p", Name: "P", Website: website("https://10.0.0.1/")},
@@ -50,11 +51,13 @@ func TestRescanAllQueuesEveryCompanyWithData(t *testing.T) {
 	scanned(r, "x", "y", "a", "n")
 	svc := rescanService(r, &directory{companies: companies()}, app.Limits{QueueSize: 10})
 	queued, skipped, err := svc.Rescan(t.Context(), "admin", nil, true, 0)
-	if err != nil || len(queued) != 2 || len(skipped) != 0 {
+	if err != nil || len(queued) != 3 || len(skipped) != 0 {
 		t.Fatalf("Rescan = %+v, %+v, %v", queued, skipped, err)
 	}
+	// The desk research is data too: r is queued although no scan of it ran yet.
+	want := map[string]int{"x": 2, "y": 2, "r": 1}
 	for _, a := range queued {
-		if !a.Rescan || a.MaxPages != domain.DefaultMaxPages || a.Number != 2 || a.CreatedBy != "admin" {
+		if !a.Rescan || a.MaxPages != domain.DefaultMaxPages || a.Number != want[a.CompetitorID] || a.CreatedBy != "admin" {
 			t.Errorf("queued %+v", a)
 		}
 	}

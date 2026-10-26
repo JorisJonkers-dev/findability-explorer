@@ -1,4 +1,4 @@
-import type { Competitor, RescanBatch } from '../../../infrastructure/api/types.gen'
+import type { AnalysisSummary, Competitor, RescanBatch } from '../../../infrastructure/api/types.gen'
 import { zProblem } from '../../../infrastructure/api/zod.gen'
 import { describeError } from '../../../shared/describeError'
 import { checkScanUrl, describeScanUrlCheck } from '../../scan/domain/newScan'
@@ -51,4 +51,34 @@ export function rescanSummary(batch: RescanBatch): string {
 /** Archived researched companies apart from the rest, so only administrators see them. */
 export function splitArchived<T extends Pick<Competitor, 'archived'>>(companies: readonly T[]): { active: T[]; archived: T[] } {
   return { active: companies.filter((c) => !c.archived), archived: companies.filter((c) => c.archived) }
+}
+
+/**
+ * The companies a re-scan of all takes, as the server picks them: not archived, with a website,
+ * and with data, because the desk research studied them or a scan ran before.
+ */
+export function rescanCandidates<T extends Pick<Competitor, 'source' | 'scans' | 'websiteUrl' | 'archived'>>(companies: readonly T[]): T[] {
+  return companies.filter((c) => !c.archived && c.websiteUrl !== undefined && (c.source === 'research' || c.scans > 0))
+}
+
+/** Where a re-scan's scans are, in one line, and whether every one has finished. */
+export function rescanProgress(
+  queued: readonly string[],
+  scans: readonly Pick<AnalysisSummary, 'id' | 'status'>[],
+): { finished: boolean; text: string } {
+  const status = new Map(scans.map((s) => [s.id, s.status]))
+  const count = { queued: 0, running: 0, done: 0, failed: 0 }
+  for (const id of queued) {
+    const s = status.get(id)
+    if (s !== undefined) count[s]++
+  }
+  const failed = count.failed > 0 ? `, ${String(count.failed)} failed` : ''
+  if (count.queued + count.running === 0) {
+    return { finished: true, text: `Re-scan finished: ${String(count.done)} done${failed}.` }
+  }
+  const companies = queued.length === 1 ? '1 company' : `${String(queued.length)} companies`
+  return {
+    finished: false,
+    text: `Re-scanning ${companies}: ${String(count.done)} done${failed}, ${String(count.running)} running, ${String(count.queued)} waiting.`,
+  }
 }

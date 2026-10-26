@@ -1,7 +1,7 @@
 import type { BeltFamily, Competitor } from '../../../infrastructure/api/types.gen'
 import { familyLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
 import { fold } from '../../terminology/domain/fold'
-import type { Company } from './company'
+import { type Company, listScanLabel } from './company'
 import { countryName, familyCell, languageCount } from './matrix'
 
 /** Which companies the list shows: all, those in one country, elsewhere, or Tribelt's own group. */
@@ -44,7 +44,8 @@ export function familyDots(company: Pick<Competitor, 'beltNames'>): { family: Be
 /** A list row in words: "Twentebelt, Netherlands: Eyelink, Open spiral, Tri-Flex". */
 export function rowLabel(company: Company): string {
   const offered = familyDots(company).filter((d) => d.offers).map((d) => familyLabel(d.family))
-  return `${company.shortName}, ${countryName(company.country)}: ${offered.length > 0 ? offered.join(', ') : 'no families recorded'}`
+  const families = offered.length > 0 ? offered.join(', ') : 'no families recorded'
+  return `${company.shortName}, ${countryName(company.country)}: ${families}; ${listScanLabel(company)}`
 }
 
 /** How many companies are shown of how many there are: "3 of 28 companies". */

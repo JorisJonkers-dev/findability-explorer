@@ -79,10 +79,10 @@ describe('the company list', () => {
     const { wrapper } = await mountApp(api(), '/competitors')
     expect(wrapper.get('h1').text()).toBe('3 makers, the same belts, other names.')
     expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual([
-      'Twentebelt, Netherlands: Tri-Flex',
-      'Märtens, Germany: Eyelink',
-      'Ashworth, United States: no families recorded',
-      'Tribelt, Netherlands: Tri-Flex',
+      'Twentebelt, Netherlands: Tri-Flex; 2 scans',
+      'Märtens, Germany: Eyelink; No scans',
+      'Ashworth, United States: no families recorded; No scans',
+      'Tribelt, Netherlands: Tri-Flex; No scans',
     ])
     expect(wrapper.text()).toContain('4 of 4 companies')
   })
@@ -96,7 +96,7 @@ describe('the company list', () => {
     expect(rows(wrapper)).toHaveLength(1)
     await pill(wrapper, 'Show', 'All').trigger('click')
     await wrapper.get('#company-q').setValue('united')
-    expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual(['Ashworth, United States: no families recorded'])
+    expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual(['Ashworth, United States: no families recorded; No scans'])
     expect(wrapper.text()).toContain('1 of 4 companies')
   })
 
@@ -124,7 +124,10 @@ describe('the company card', () => {
     ])
     expect(card.text()).toContain('1 term in the terminology map')
     expect(card.text()).toContain('TwenteFlex, Product')
-    expect(card.text()).toContain('Scanned 2×')
+    const stats = card.get('[data-testid="scan-stats"]').text()
+    expect(stats).toContain('Scanned 2 times')
+    // The list has no last scan here, so the card reads it from the company's own scans.
+    expect(stats).toMatch(/Last scan: 22 October 2026 at \d\d:\d\d, 15 pages read/)
     expect(card.get(`a[href="/scan/${ANALYSIS_ID}?company=twentebelt"]`).text()).toContain('15 pages read')
     const visit = card.get('a[target="_blank"]')
     expect(visit.attributes('href')).toBe('https://www.twentebelt.com/')
@@ -139,7 +142,7 @@ describe('the company card', () => {
     const card = wrapper.get('section[aria-labelledby="company-name"]')
     expect(card.get('h2').text()).toBe('Märtens')
     expect(card.text()).toContain('Showing Märtens.')
-    expect(card.text()).toContain('Not scanned yet')
+    expect(card.get('[data-testid="scan-stats"]').text()).toBe('Never scannedNo scan of its website has run yet.')
   })
 
   it('opens on the company in the address, and says when it has no website', async () => {
@@ -306,7 +309,7 @@ describe('the scan form', () => {
     await combobox(wrapper).trigger('keydown', { key: 'Enter' })
     expect((combobox(wrapper).element as HTMLInputElement).value).toBe('https://www.twentebelt.com/')
     expect(combobox(wrapper).attributes('aria-expanded')).toBe('false')
-    expect(wrapper.get('#scan-url-company').text()).toBe('Twentebelt, a known competitor. Scanned 2×.')
+    expect(wrapper.get('#scan-url-company').text()).toBe('Twentebelt, a known competitor. Scanned 2 times.')
   })
 
   it('closes the suggestions on Escape or blur, picks one with the mouse, and ignores keys with nothing to suggest', async () => {

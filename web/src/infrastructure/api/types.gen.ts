@@ -1626,7 +1626,7 @@ export type ListAnalysesData = {
     path?: never;
     query?: {
         /**
-         * How many analyses to return.
+         * How many analyses to return; up to 300, so a re-scan of every company can be followed in one list.
          */
         limit?: number;
     };

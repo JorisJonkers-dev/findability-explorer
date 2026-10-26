@@ -50,7 +50,7 @@ function scan(url: string): void {
 </script>
 
 <template>
-  <SectionView section="competitors" :title="title" :source="['Desk research, 22 October 2026', 'Scans: live, from this app']">
+  <SectionView section="competitors" :title="title" :source="['Desk research, 22 and 26 October 2026', 'Scans: live, from this app']">
     <div
       class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.3fr)_minmax(0,0.95fr)_minmax(0,1fr)] stage:gap-24"
     >

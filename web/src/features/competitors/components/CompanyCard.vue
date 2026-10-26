@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, toRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import eyelink from '../../../assets/eyelink.webp'
@@ -16,8 +17,7 @@ import { beltRows, companyKind, termsTitle, whereLine } from '../domain/list'
 const props = defineProps<{ company: Company; terms: readonly Term[]; isAdmin: boolean }>()
 const emit = defineEmits<{ scan: [url: string]; removed: [] }>()
 
-/** How many of its terms are shown as chips, and how many of its scans are listed. */
-const TERMS_SHOWN = 12
+/** How many of its scans are listed; every one of its terms is, in a list that scrolls. */
 const SCANS_SHOWN = 3
 
 const { detail } = useCompany(toRef(() => props.company.id))
@@ -98,9 +98,14 @@ const running = computed(() => (newest.value && isInProgress(newest.value.status
 
     <div class="flex flex-col gap-3 stage:min-h-0 stage:shrink stage:gap-4">
       <span class="text-sm text-muted stage:text-[26px]">{{ termsTitle(used.length) }}</span>
-      <ul v-if="used.length > 0" class="m-0 flex list-none flex-wrap gap-2 p-0 stage:min-h-0 stage:gap-3 stage:overflow-hidden">
+      <ul
+        v-if="used.length > 0"
+        v-scroll-hint
+        aria-label="Its terms in the terminology map"
+        class="scroll-hint m-0 flex max-h-64 list-none flex-wrap content-start gap-2 overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:gap-3"
+      >
         <li
-          v-for="t in used.slice(0, TERMS_SHOWN)"
+          v-for="t in used"
           :key="`${t.term}-${t.language}`"
           class="inline-flex items-center gap-2 rounded-full bg-mist px-3 py-1 text-sm stage:gap-3 stage:px-[22px] stage:py-2 stage:text-[26px]"
         >

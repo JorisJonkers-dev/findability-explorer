@@ -13,8 +13,8 @@ func TestLoadTheEmbeddedMap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Terms()) != 146 || len(c.Companies()) != 28 {
-		t.Fatalf("loaded %d terms and %d companies, want 146 and 28", len(c.Terms()), len(c.Companies()))
+	if len(c.Terms()) != 146 || len(c.Companies()) != 47 {
+		t.Fatalf("loaded %d terms and %d companies, want 146 and 47", len(c.Terms()), len(c.Companies()))
 	}
 	var twentebelt domain.Company
 	for _, co := range c.Companies() {

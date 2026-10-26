@@ -72,7 +72,10 @@ export function beltRows(company: Pick<Competitor, 'beltNames'>): BeltRow[] {
   return PRODUCT_FAMILIES.map((family) => {
     const cell = familyCell(company.beltNames, family)
     const more = cell.more > 0 ? ` (and ${String(cell.more)} more)` : ''
-    return { family, label: familyLabel(family), name: cell.first === null ? 'Not offered' : `${cell.first}${more}`, offered: cell.first !== null }
+    // A family only a scan found the company offering says so.
+    const scanOnly = cell.first !== null && !company.beltNames.some((b) => b.family === family && b.fromScan !== true)
+    const name = cell.first === null ? 'Not offered' : `${cell.first}${more}${scanOnly ? ', from a scan' : ''}`
+    return { family, label: familyLabel(family), name, offered: cell.first !== null }
   })
 }
 

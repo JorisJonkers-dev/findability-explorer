@@ -122,6 +122,33 @@ FROM analysis_equivalent_terms
 WHERE analysis_id = $1
 ORDER BY equivalent_position, position;
 
+-- name: KnownTermSightings :many
+-- The map terms each company's newest finished scan found, once per company.
+WITH latest AS (
+    SELECT DISTINCT ON (competitor_id) id, competitor_id
+    FROM analyses
+    WHERE competitor_id IS NOT NULL AND status = 'done'
+    ORDER BY competitor_id, created_at DESC, id
+)
+SELECT DISTINCT latest.competitor_id::text AS competitor_id, k.term, k.language
+FROM analysis_known_terms k
+JOIN latest ON latest.id = k.analysis_id
+ORDER BY competitor_id, k.term, k.language;
+
+-- name: LatestMatchedProducts :many
+-- The products the language model matched to Tribelt's families on each company's newest finished
+-- scan whose matching ran.
+WITH latest AS (
+    SELECT DISTINCT ON (competitor_id) id, competitor_id
+    FROM analyses
+    WHERE competitor_id IS NOT NULL AND status = 'done' AND matching = 'done'
+    ORDER BY competitor_id, created_at DESC, id
+)
+SELECT latest.competitor_id::text AS competitor_id, e.product, e.family
+FROM analysis_equivalents e
+JOIN latest ON latest.id = e.analysis_id
+ORDER BY competitor_id, e.position;
+
 -- name: AnalysisStatsByCompetitor :many
 SELECT competitor_id::text AS competitor_id, count(*)::bigint AS scans
 FROM analyses

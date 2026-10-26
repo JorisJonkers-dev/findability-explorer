@@ -121,7 +121,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	terminology := terminologyapp.New(catalogue, terminologypersistence.New(store),
 		func(ctx context.Context) ([]terminologydomain.Observation, error) {
 			return observations(ctx, analysisRepo, companies)
-		}, now)
+		},
+		func(ctx context.Context) ([]terminologydomain.Sighting, error) { return sightings(ctx, analysisRepo) },
+		now)
 	if err := terminology.Load(ctx); err != nil {
 		return err
 	}
@@ -416,10 +418,19 @@ func (s scans) Stats(ctx context.Context) (map[string]companiesdomain.Stats, err
 	if err != nil {
 		return nil, err
 	}
+	products, err := s.repo.MatchedProducts(ctx)
+	if err != nil {
+		return nil, err
+	}
 	out := make(map[string]companiesdomain.Stats, len(stats))
 	for id, st := range stats {
 		last := scanOf(st.Last)
 		out[id] = companiesdomain.Stats{Count: st.Count, Last: &last}
+	}
+	for _, p := range products {
+		st := out[p.CompetitorID]
+		st.Products = append(st.Products, companiesdomain.BeltName{Name: p.Product, Family: p.Family})
+		out[p.CompetitorID] = st
 	}
 	return out, nil
 }
@@ -450,6 +461,19 @@ func scanOf(a analysisdomain.Analysis) companiesdomain.Scan {
 		PagesCrawled: a.PagesCrawled, CreatedAt: a.CreatedAt, FinishedAt: a.FinishedAt, Number: a.Number,
 		MatchingModel: a.MatchingModel, Blocked: a.Blocked(),
 	}
+}
+
+// sightings hands the terminology context the map terms the companies' newest scans found, by value.
+func sightings(ctx context.Context, repo *persistence.Repository) ([]terminologydomain.Sighting, error) {
+	seen, err := repo.Sightings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]terminologydomain.Sighting, 0, len(seen))
+	for _, s := range seen {
+		out = append(out, terminologydomain.Sighting{Text: s.Term, Language: terminologydomain.Language(s.Language), CompanyID: s.CompetitorID})
+	}
+	return out, nil
 }
 
 // glossary hands the terminology map to the analysis context by value.

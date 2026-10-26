@@ -41,11 +41,16 @@ type Reviews interface {
 // provides it.
 type Evidence func(ctx context.Context) ([]domain.Observation, error)
 
+// Sightings returns the map terms each company's newest finished scan found on its site; the
+// analysis context provides it.
+type Sightings func(ctx context.Context) ([]domain.Sighting, error)
+
 // Service runs the terminology use cases against the catalogue and the accepted terms.
 type Service struct {
 	catalogue Catalogue
 	reviews   Reviews
 	evidence  Evidence
+	sightings Sightings
 	now       func() time.Time
 
 	mu       sync.RWMutex
@@ -54,8 +59,18 @@ type Service struct {
 
 // New returns a Service reading catalogue and, through reviews, the terms accepted from the
 // review queue. Call Load before serving.
-func New(catalogue Catalogue, reviews Reviews, evidence Evidence, now func() time.Time) *Service {
-	return &Service{catalogue: catalogue, reviews: reviews, evidence: evidence, now: now}
+func New(catalogue Catalogue, reviews Reviews, evidence Evidence, sightings Sightings, now func() time.Time) *Service {
+	return &Service{catalogue: catalogue, reviews: reviews, evidence: evidence, sightings: sightings, now: now}
+}
+
+// FoundBy returns, per term of the map, the ids of the companies whose newest finished scan found
+// it, sorted. A term no scan found is absent.
+func (s *Service) FoundBy(ctx context.Context) (map[domain.TermKey][]string, error) {
+	seen, err := s.sightings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("read the scans' sightings: %w", err)
+	}
+	return domain.FoundBy(seen), nil
 }
 
 // Load reads the accepted terms into the map.

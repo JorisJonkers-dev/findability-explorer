@@ -437,6 +437,46 @@ func (q *Queries) KeywordFirstScans(ctx context.Context, competitorID pgtype.Tex
 	return items, nil
 }
 
+const knownTermSightings = `-- name: KnownTermSightings :many
+WITH latest AS (
+    SELECT DISTINCT ON (competitor_id) id, competitor_id
+    FROM analyses
+    WHERE competitor_id IS NOT NULL AND status = 'done'
+    ORDER BY competitor_id, created_at DESC, id
+)
+SELECT DISTINCT latest.competitor_id::text AS competitor_id, k.term, k.language
+FROM analysis_known_terms k
+JOIN latest ON latest.id = k.analysis_id
+ORDER BY competitor_id, k.term, k.language
+`
+
+type KnownTermSightingsRow struct {
+	CompetitorID string
+	Term         string
+	Language     string
+}
+
+// The map terms each company's newest finished scan found, once per company.
+func (q *Queries) KnownTermSightings(ctx context.Context) ([]KnownTermSightingsRow, error) {
+	rows, err := q.db.Query(ctx, knownTermSightings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []KnownTermSightingsRow{}
+	for rows.Next() {
+		var i KnownTermSightingsRow
+		if err := rows.Scan(&i.CompetitorID, &i.Term, &i.Language); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const latestAnalysisPerCompetitor = `-- name: LatestAnalysisPerCompetitor :many
 SELECT DISTINCT ON (competitor_id) competitor_id::text AS competitor_id, id, url, max_pages, status,
     failure, pages_crawled, matching, created_by, created_at, finished_at, matching_model,
@@ -486,6 +526,47 @@ func (q *Queries) LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnal
 			&i.MatchingModel,
 			&i.ScanNumber,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const latestMatchedProducts = `-- name: LatestMatchedProducts :many
+WITH latest AS (
+    SELECT DISTINCT ON (competitor_id) id, competitor_id
+    FROM analyses
+    WHERE competitor_id IS NOT NULL AND status = 'done' AND matching = 'done'
+    ORDER BY competitor_id, created_at DESC, id
+)
+SELECT latest.competitor_id::text AS competitor_id, e.product, e.family
+FROM analysis_equivalents e
+JOIN latest ON latest.id = e.analysis_id
+ORDER BY competitor_id, e.position
+`
+
+type LatestMatchedProductsRow struct {
+	CompetitorID string
+	Product      string
+	Family       string
+}
+
+// The products the language model matched to Tribelt's families on each company's newest finished
+// scan whose matching ran.
+func (q *Queries) LatestMatchedProducts(ctx context.Context) ([]LatestMatchedProductsRow, error) {
+	rows, err := q.db.Query(ctx, latestMatchedProducts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LatestMatchedProductsRow{}
+	for rows.Next() {
+		var i LatestMatchedProductsRow
+		if err := rows.Scan(&i.CompetitorID, &i.Product, &i.Family); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

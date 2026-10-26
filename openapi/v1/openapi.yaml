@@ -881,6 +881,15 @@ components:
             type: string
             maxLength: 200
             example: Märtens
+        foundBy:
+          type: array
+          maxItems: 500
+          description: >-
+            The companies whose newest finished scan found the term on their site, by id. They
+            use it too, though the desk research or the review did not name them; absent when no
+            scan found it.
+          items:
+            $ref: "#/components/schemas/CompetitorId"
         source:
           type: string
           maxLength: 500
@@ -962,6 +971,9 @@ components:
           example: TwenteFlex spiral belts
         family:
           $ref: "#/components/schemas/BeltFamily"
+        fromScan:
+          type: boolean
+          description: True when the company's newest scan found the name, not the desk research.
     CompetitorId:
       description: A company's id, made from its name.
       type: string
@@ -1042,8 +1054,10 @@ components:
           description: True for a company in Tribelt's own group, which is never a competitor.
         beltNames:
           type: array
-          maxItems: 50
-          description: The company's names for its belts.
+          maxItems: 100
+          description: >-
+            The company's names for its belts: the desk research's, then the products its newest
+            scan matched to Tribelt's families (fromScan).
           items:
             $ref: "#/components/schemas/BeltName"
         homepageTitle:
@@ -1720,8 +1734,9 @@ components:
           description: True archives a researched company, false restores it.
     RescanRequest:
       description: >-
-        Which companies to scan again - the ones named, or with `all` every company that is not
-        archived, has a website and was scanned before. One of the two.
+        Which companies to scan - the ones named; with `all` every company that is not archived,
+        has a website and has data; or with `unscanned` every company that is not archived and has
+        a website no scan reached yet. Exactly one of the three.
       type: object
       additionalProperties: false
       properties:
@@ -1736,6 +1751,9 @@ components:
         all:
           type: boolean
           description: True scans every company with data again.
+        unscanned:
+          type: boolean
+          description: True scans every company with a website that no scan reached yet.
         maxPages:
           type: integer
           format: int32

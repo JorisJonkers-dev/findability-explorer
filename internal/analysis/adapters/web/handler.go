@@ -21,7 +21,7 @@ type UseCases interface {
 	Start(ctx context.Context, user, rawURL string, maxPages int, companyName string) (domain.Analysis, error)
 	Get(ctx context.Context, id uuid.UUID) (domain.Analysis, error)
 	List(ctx context.Context, limit int) ([]domain.Analysis, error)
-	Rescan(ctx context.Context, user string, ids []string, all bool, maxPages int) ([]domain.Analysis, []app.Skipped, error)
+	Rescan(ctx context.Context, user string, pick app.Pick, maxPages int) ([]domain.Analysis, []app.Skipped, error)
 	Profile(ctx context.Context, competitorID string) (domain.Profile, error)
 	Compare(ctx context.Context, competitorID string, from, to uuid.UUID) (domain.Analysis, domain.Analysis, []domain.ComparisonGroup, error)
 }
@@ -97,7 +97,8 @@ func (h *Handler) StartRescans(ctx context.Context, req *oas.RescanRequest) (oas
 	for _, id := range req.CompetitorIds {
 		ids = append(ids, string(id))
 	}
-	queued, skipped, err := h.uc.Rescan(ctx, httpx.Subject(ctx), ids, req.All.Or(false), int(req.MaxPages.Or(0)))
+	pick := app.Pick{IDs: ids, All: req.All.Or(false), Unscanned: req.Unscanned.Or(false)}
+	queued, skipped, err := h.uc.Rescan(ctx, httpx.Subject(ctx), pick, int(req.MaxPages.Or(0)))
 	switch {
 	case errors.Is(err, app.ErrInvalidRescan), errors.Is(err, domain.ErrInvalidMaxPages):
 		return &oas.StartRescansUnprocessableEntity{

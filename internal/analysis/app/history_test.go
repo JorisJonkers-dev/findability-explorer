@@ -52,7 +52,7 @@ func TestRescanAllQueuesEveryCompanyWithData(t *testing.T) {
 	r := newRepo()
 	scanned(r, "x", "y", "a", "n")
 	svc := rescanService(r, &directory{companies: companies()}, app.Limits{})
-	queued, skipped, err := svc.Rescan(t.Context(), "admin", nil, true, 0)
+	queued, skipped, err := svc.Rescan(t.Context(), "admin", app.Pick{All: true}, 0)
 	if err != nil || len(queued) != 3 || len(skipped) != 0 {
 		t.Fatalf("Rescan = %+v, %+v, %v", queued, skipped, err)
 	}
@@ -68,7 +68,7 @@ func TestRescanAllQueuesEveryCompanyWithData(t *testing.T) {
 func TestRescanNamedCompanies(t *testing.T) {
 	r := running()
 	svc := rescanService(r, &directory{companies: companies()}, app.Limits{})
-	queued, skipped, err := svc.Rescan(t.Context(), "admin", []string{"z", "x", "n", "p", "unknown"}, false, 20)
+	queued, skipped, err := svc.Rescan(t.Context(), "admin", app.Pick{IDs: []string{"z", "x", "n", "p", "unknown"}}, 20)
 	if err != nil || len(queued) != 1 || queued[0].CompetitorID != "z" || queued[0].MaxPages != 20 {
 		t.Fatalf("Rescan = %+v, %v", queued, err)
 	}
@@ -88,6 +88,24 @@ func TestRescanNamedCompanies(t *testing.T) {
 	}
 }
 
+// Scanning the unscanned takes every company with a website that no scan reached yet, archived
+// ones aside, researched or added.
+func TestRescanTheUnscanned(t *testing.T) {
+	r := newRepo()
+	scanned(r, "x", "y", "a", "n")
+	queued, skipped, err := rescanService(r, &directory{companies: companies()}, app.Limits{}).Rescan(t.Context(), "admin", app.Pick{Unscanned: true}, 0)
+	got := make([]string, 0, len(queued))
+	for _, a := range queued {
+		got = append(got, a.CompetitorID)
+	}
+	slices.Sort(got)
+	// z (added) and r (researched) were never scanned; p's website cannot be scanned, so it is
+	// skipped with its reason; n has no website and a is archived, so neither is taken.
+	if err != nil || !slices.Equal(got, []string{"r", "z"}) || len(skipped) != 1 || skipped[0].CompetitorID != "p" {
+		t.Fatalf("Rescan unscanned = %v, %+v, %v", got, skipped, err)
+	}
+}
+
 // A company whose site turned the last scan away is left out of re-scanning all: it would only
 // be turned away again. Naming it still scans it.
 func TestRescanAllLeavesOutABlockedSite(t *testing.T) {
@@ -99,11 +117,11 @@ func TestRescanAllLeavesOutABlockedSite(t *testing.T) {
 		}
 	}
 	svc := rescanService(r, &directory{companies: companies()}, app.Limits{})
-	queued, _, err := svc.Rescan(t.Context(), "admin", nil, true, 0)
+	queued, _, err := svc.Rescan(t.Context(), "admin", app.Pick{All: true}, 0)
 	if err != nil || slices.ContainsFunc(queued, func(a domain.Analysis) bool { return a.CompetitorID == "y" }) {
 		t.Fatalf("Rescan all = %+v, %v", queued, err)
 	}
-	named, _, err := svc.Rescan(t.Context(), "admin", []string{"y"}, false, 0)
+	named, _, err := svc.Rescan(t.Context(), "admin", app.Pick{IDs: []string{"y"}}, 0)
 	if err != nil || len(named) != 1 {
 		t.Fatalf("Rescan y = %+v, %v", named, err)
 	}
@@ -116,7 +134,7 @@ func TestRescanTakesEveryCompanyHoweverMany(t *testing.T) {
 		id := fmt.Sprintf("c%d", i)
 		many = append(many, domain.Company{ID: id, Name: id, Website: website("https://" + id + ".test/"), Researched: true})
 	}
-	queued, skipped, err := rescanService(newRepo(), &directory{companies: many}, app.Limits{}).Rescan(t.Context(), "admin", nil, true, 1)
+	queued, skipped, err := rescanService(newRepo(), &directory{companies: many}, app.Limits{}).Rescan(t.Context(), "admin", app.Pick{All: true}, 1)
 	if err != nil || len(queued) != 300 || len(skipped) != 0 {
 		t.Fatalf("Rescan = %d queued, %+v, %v", len(queued), skipped, err)
 	}
@@ -126,22 +144,22 @@ func TestRescanRefuses(t *testing.T) {
 	cases := map[string]struct {
 		repo     *repo
 		dir      *directory
-		ids      []string
-		all      bool
+		pick     app.Pick
 		maxPages int
 		want     error
 	}{
-		"neither":            {newRepo(), &directory{}, nil, false, 0, app.ErrInvalidRescan},
-		"both":               {newRepo(), &directory{}, []string{"x"}, true, 0, app.ErrInvalidRescan},
-		"too many pages":     {newRepo(), &directory{}, nil, true, 101, domain.ErrInvalidMaxPages},
-		"no companies":       {newRepo(), &directory{companiesErr: errBoom}, nil, true, 0, errBoom},
-		"no statistics":      {newRepo("CompetitorStats"), &directory{companies: companies()}, nil, true, 0, errBoom},
-		"a create failure":   {newRepo("Create"), &directory{companies: companies()}, []string{"x"}, false, 0, errBoom},
-		"a counting failure": {newRepo("CountActive"), &directory{companies: companies()}, []string{"x"}, false, 0, errBoom},
+		"none":               {newRepo(), &directory{}, app.Pick{}, 0, app.ErrInvalidRescan},
+		"named and all":      {newRepo(), &directory{}, app.Pick{IDs: []string{"x"}, All: true}, 0, app.ErrInvalidRescan},
+		"all and unscanned":  {newRepo(), &directory{}, app.Pick{All: true, Unscanned: true}, 0, app.ErrInvalidRescan},
+		"too many pages":     {newRepo(), &directory{}, app.Pick{All: true}, 101, domain.ErrInvalidMaxPages},
+		"no companies":       {newRepo(), &directory{companiesErr: errBoom}, app.Pick{All: true}, 0, errBoom},
+		"no statistics":      {newRepo("CompetitorStats"), &directory{companies: companies()}, app.Pick{Unscanned: true}, 0, errBoom},
+		"a create failure":   {newRepo("Create"), &directory{companies: companies()}, app.Pick{IDs: []string{"x"}}, 0, errBoom},
+		"a counting failure": {newRepo("CountActive"), &directory{companies: companies()}, app.Pick{IDs: []string{"x"}}, 0, errBoom},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			if _, _, err := rescanService(c.repo, c.dir, app.Limits{}).Rescan(t.Context(), "u", c.ids, c.all, c.maxPages); !errors.Is(err, c.want) {
+			if _, _, err := rescanService(c.repo, c.dir, app.Limits{}).Rescan(t.Context(), "u", c.pick, c.maxPages); !errors.Is(err, c.want) {
 				t.Fatalf("Rescan error = %v, want %v", err, c.want)
 			}
 		})

@@ -98,6 +98,15 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 	if n, err := repo.TokensSince(ctx, created); err != nil || n != 1000 {
 		t.Fatalf("TokensSince = %d, %v", n, err)
 	}
+	// What the company's newest finished scan found: the map term, and the matched products.
+	if s, err := repo.Sightings(ctx); err != nil || len(s) != 1 || s[0] != (domain.Sighting{CompetitorID: "example", Term: "spiral belt", Language: "en"}) {
+		t.Fatalf("Sightings = %+v, %v", s, err)
+	}
+	if p, err := repo.MatchedProducts(ctx); err != nil || len(p) != 2 ||
+		p[0] != (domain.MatchedProduct{CompetitorID: "example", Product: "TwenteFlex", Family: "tri_flex_turn_curve"}) ||
+		p[1].Product != "Eyelink belts" {
+		t.Fatalf("MatchedProducts = %+v, %v", p, err)
+	}
 	if n, err := repo.TokensSince(ctx, created.Add(time.Hour)); err != nil || n != 0 {
 		t.Fatalf("TokensSince later = %d, %v", n, err)
 	}

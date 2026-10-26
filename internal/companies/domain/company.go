@@ -60,6 +60,8 @@ func (e AlreadyKnownError) Error() string {
 type BeltName struct {
 	Name   string
 	Family string
+	// FromScan is true for a product a scan matched to the family, not one the research named.
+	FromScan bool
 }
 
 // Company is a known company.
@@ -196,12 +198,35 @@ type Scan struct {
 type Stats struct {
 	Count int
 	Last  *Scan
+	// Products are the products the company's newest scan with product matching matched to
+	// Tribelt's families.
+	Products []BeltName
 }
 
 // Listed is a company with its scan statistics.
 type Listed struct {
 	Company
 	Stats Stats
+}
+
+// maxBeltNames is how many belt names a company lists at most.
+const maxBeltNames = 100
+
+// AllBeltNames are the company's names for its belts: the research's, then each product its newest
+// scan matched that the research does not name for the same family already (case and accents
+// aside), marked FromScan. A scan thus keeps a company's names up to date as its site changes.
+func (l Listed) AllBeltNames() []BeltName {
+	out := slices.Clone(l.BeltNames)
+	for _, p := range l.Stats.Products {
+		if len(out) >= maxBeltNames {
+			break
+		}
+		named := slices.ContainsFunc(out, func(b BeltName) bool { return b.Family == p.Family && fold.Fold(b.Name) == fold.Fold(p.Name) })
+		if !named && p.Name != "" {
+			out = append(out, BeltName{Name: p.Name, Family: p.Family, FromScan: true})
+		}
+	}
+	return out
 }
 
 // legalForms are the endings of a registered name that a company's id leaves out, as words.

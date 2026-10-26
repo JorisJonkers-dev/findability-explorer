@@ -81,13 +81,15 @@ describe('the company card', () => {
       beltNames: [
         { name: 'Flat Wire, Z-Belts', family: 'other' },
         { name: 'TwenteFlex', family: 'tri_flex_turn_curve' },
+        { name: 'TwenteFlex Turn', family: 'tri_flex_turn_curve', fromScan: true },
+        { name: 'Eyelink belts', family: 'eyelink', fromScan: true },
       ],
     })
     expect(rows.map((r) => [r.label, r.name, r.offered])).toEqual([
-      ['Eyelink', 'Not offered', false],
+      ['Eyelink', 'Eyelink belts, from a scan', true],
       ['Open spiral', 'Not offered', false],
       ['Closed spiral', 'Not offered', false],
-      ['Tri-Flex', 'TwenteFlex', true],
+      ['Tri-Flex', 'TwenteFlex (and 1 more)', true],
       ['Other belts', 'Flat Wire (and 1 more)', true],
     ])
   })

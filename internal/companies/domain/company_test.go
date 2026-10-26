@@ -2,7 +2,9 @@ package domain_test
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -198,5 +200,35 @@ func TestApply(t *testing.T) {
 	}
 	if _, err := d.Apply(x, domain.Change{Name: &empty}, "a", at); !errors.Is(err, domain.ErrInvalidName) {
 		t.Fatalf("bad name = %v", err)
+	}
+}
+
+// A company's names for its belts are the research's, then what its newest scan matched that the
+// research does not name for that family already.
+func TestAllBeltNames(t *testing.T) {
+	l := domain.Listed{
+		Company: domain.Company{BeltNames: []domain.BeltName{{Name: "TwenteFlex spiral belts", Family: "tri_flex_turn_curve"}}},
+		Stats: domain.Stats{Products: []domain.BeltName{
+			{Name: "twenteflex SPIRAL belts", Family: "tri_flex_turn_curve"}, // named already
+			{Name: "TwenteFlex spiral belts", Family: "other"},               // another family
+			{Name: "Eyelink belts", Family: "eyelink"},
+			{Name: "", Family: "eyelink"},
+		}},
+	}
+	got := l.AllBeltNames()
+	want := []domain.BeltName{
+		{Name: "TwenteFlex spiral belts", Family: "tri_flex_turn_curve"},
+		{Name: "TwenteFlex spiral belts", Family: "other", FromScan: true},
+		{Name: "Eyelink belts", Family: "eyelink", FromScan: true},
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("AllBeltNames = %+v", got)
+	}
+	many := domain.Listed{}
+	for i := range 120 {
+		many.Stats.Products = append(many.Stats.Products, domain.BeltName{Name: fmt.Sprint(i), Family: "other"})
+	}
+	if n := len(many.AllBeltNames()); n != 100 {
+		t.Fatalf("%d names, want at most 100", n)
 	}
 }

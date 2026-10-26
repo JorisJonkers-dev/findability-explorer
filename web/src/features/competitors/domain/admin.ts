@@ -107,6 +107,33 @@ export function rescanCandidates<
   );
 }
 
+/** The companies scanning the unscanned takes, as the server picks them: not archived, with a website no scan reached yet. */
+export function unscannedCandidates<
+  T extends Pick<Competitor, "scans" | "websiteUrl" | "archived">,
+>(companies: readonly T[]): T[] {
+  return companies.filter(
+    (c) => !c.archived && c.websiteUrl !== undefined && c.scans === 0,
+  );
+}
+
+/** Which companies the sweeps leave out and why, in one line, or null when none is. */
+export function leftOut(
+  companies: readonly (Pick<Competitor, "websiteUrl" | "archived"> & {
+    lastScan?: Pick<AnalysisSummary, "blocked">;
+  })[],
+): string | null {
+  const active = companies.filter((c) => !c.archived);
+  const noSite = active.filter((c) => c.websiteUrl === undefined).length;
+  const blocked = active.filter((c) => c.lastScan?.blocked === true).length;
+  const parts = [
+    noSite > 0
+      ? `${String(noSite)} ${noSite === 1 ? "company" : "companies"} without a website`
+      : "",
+    blocked > 0 ? `${String(blocked)} whose site turns scanners away` : "",
+  ].filter((p) => p !== "");
+  return parts.length === 0 ? null : `Left out of both: ${parts.join(", ")}.`;
+}
+
 /** Where a re-scan's scans are. */
 export type RescanProgress<T> = {
   /** True once no scan of the re-scan is waiting or running. */

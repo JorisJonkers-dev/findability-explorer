@@ -45,8 +45,13 @@ type Querier interface {
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
 	// The number of the first finished scan of a company that found each phrase.
 	KeywordFirstScans(ctx context.Context, competitorID pgtype.Text) ([]KeywordFirstScansRow, error)
+	// The map terms each company's newest finished scan found, once per company.
+	KnownTermSightings(ctx context.Context) ([]KnownTermSightingsRow, error)
 	LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnalysisPerCompetitorRow, error)
 	LatestLlmTests(ctx context.Context) ([]LatestLlmTestsRow, error)
+	// The products the language model matched to Tribelt's families on each company's newest finished
+	// scan whose matching ran.
+	LatestMatchedProducts(ctx context.Context) ([]LatestMatchedProductsRow, error)
 	ListAcceptedTerms(ctx context.Context) ([]AcceptedTerm, error)
 	ListAnalyses(ctx context.Context, limit int32) ([]ListAnalysesRow, error)
 	ListAnalysesByCompetitor(ctx context.Context, arg ListAnalysesByCompetitorParams) ([]ListAnalysesByCompetitorRow, error)

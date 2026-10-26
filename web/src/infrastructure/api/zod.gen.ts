@@ -64,7 +64,8 @@ export const zFacets = z.object({
  */
 export const zBeltName = z.object({
     name: z.string().max(300),
-    family: zBeltFamily
+    family: zBeltFamily,
+    fromScan: z.boolean().optional()
 });
 
 /**
@@ -150,7 +151,7 @@ export const zCompetitor = z.object({
     website: z.string().max(500),
     languages: z.array(z.string().max(16)).max(20),
     groupCompany: z.boolean(),
-    beltNames: z.array(zBeltName).max(50),
+    beltNames: z.array(zBeltName).max(100),
     homepageTitle: z.string().max(300)
 });
 
@@ -401,6 +402,7 @@ export const zTerm = z.object({
     family: zBeltFamily,
     tier: zIntentTier,
     usedBy: z.array(z.string().max(200)).max(20),
+    foundBy: z.array(zCompetitorId).max(500).optional(),
     source: z.string().max(500)
 });
 
@@ -423,11 +425,12 @@ export const zCompetitorUpdate = z.object({
 });
 
 /**
- * Which companies to scan again - the ones named, or with `all` every company that is not archived, has a website and was scanned before. One of the two.
+ * Which companies to scan - the ones named; with `all` every company that is not archived, has a website and has data; or with `unscanned` every company that is not archived and has a website no scan reached yet. Exactly one of the three.
  */
 export const zRescanRequest = z.object({
     competitorIds: z.array(zCompetitorId).min(1).max(200).optional(),
     all: z.boolean().optional(),
+    unscanned: z.boolean().optional(),
     maxPages: z.int().gte(1).lte(100).optional().default(60)
 });
 

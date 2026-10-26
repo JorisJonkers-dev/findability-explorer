@@ -36,6 +36,10 @@ export type Term = {
      */
     usedBy: Array<string>;
     /**
+     * The companies whose newest finished scan found the term on their site, by id. They use it too, though the desk research or the review did not name them; absent when no scan found it.
+     */
+    foundBy?: Array<CompetitorId>;
+    /**
      * The page the term was taken from.
      */
     source: string;
@@ -97,6 +101,10 @@ export type BeltName = {
      */
     name: string;
     family: BeltFamily;
+    /**
+     * True when the company's newest scan found the name, not the desk research.
+     */
+    fromScan?: boolean;
 };
 
 /**
@@ -157,7 +165,7 @@ export type Competitor = {
      */
     groupCompany: boolean;
     /**
-     * The company's names for its belts.
+     * The company's names for its belts: the desk research's, then the products its newest scan matched to Tribelt's families (fromScan).
      */
     beltNames: Array<BeltName>;
     /**
@@ -669,7 +677,7 @@ export type CompetitorUpdate = {
 };
 
 /**
- * Which companies to scan again - the ones named, or with `all` every company that is not archived, has a website and was scanned before. One of the two.
+ * Which companies to scan - the ones named; with `all` every company that is not archived, has a website and has data; or with `unscanned` every company that is not archived and has a website no scan reached yet. Exactly one of the three.
  */
 export type RescanRequest = {
     /**
@@ -680,6 +688,10 @@ export type RescanRequest = {
      * True scans every company with data again.
      */
     all?: boolean;
+    /**
+     * True scans every company with a website that no scan reached yet.
+     */
+    unscanned?: boolean;
     /**
      * The most pages each scan fetches.
      */

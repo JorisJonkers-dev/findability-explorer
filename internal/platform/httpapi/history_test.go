@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"testing"
 	"time"
 
@@ -53,7 +54,8 @@ func (s companyScans) Active(_ context.Context, id string) (int, error) {
 
 func (s companyScans) DeleteByCompany(context.Context, string) error { return nil }
 
-func (a *analyses) Rescan(_ context.Context, _ string, _ []string, _ bool, maxPages int) ([]domain.Analysis, []analysisapp.Skipped, error) {
+func (a *analyses) Rescan(_ context.Context, _ string, pick analysisapp.Pick, maxPages int) ([]domain.Analysis, []analysisapp.Skipped, error) {
+	a.pick = pick
 	if a.rescanErr != nil {
 		return nil, nil, a.rescanErr
 	}
@@ -171,6 +173,12 @@ func TestStartRescans(t *testing.T) {
 	if r.code != http.StatusAccepted || len(queued) != 1 || len(skipped) != 1 || queued[0].(map[string]any)["number"].(float64) != 3 ||
 		queued[0].(map[string]any)["matchingModel"] != "test: m" {
 		t.Fatalf("rescan = %d %v", r.code, r.body)
+	}
+	if !slices.Equal(a.pick.IDs, []string{"twentebelt", "martens"}) || a.pick.All || a.pick.Unscanned {
+		t.Fatalf("pick = %+v", a.pick)
+	}
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/rescans", `{"unscanned":true}`, "admin"); r.code != http.StatusAccepted || !a.pick.Unscanned {
+		t.Fatalf("unscanned: %d, pick %+v", r.code, a.pick)
 	}
 	for err, want := range map[error]int{
 		analysisapp.ErrInvalidRescan: http.StatusUnprocessableEntity,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -35,6 +36,7 @@ type analyses struct {
 	companyName string
 	stored      domain.Analysis
 	rescanErr   error
+	pick        analysisapp.Pick
 	profileErr  error
 	compareErr  error
 	profile     domain.Profile
@@ -129,6 +131,8 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 	}
 	terminology := terminologyapp.New(catalogue, &reviewStore{}, func(context.Context) ([]terminologydomain.Observation, error) {
 		return observations(), nil
+	}, func(context.Context) ([]terminologydomain.Sighting, error) {
+		return []terminologydomain.Sighting{{Text: "Drahtösengliederband", Language: "de", CompanyID: "pelger"}}, nil
 	}, time.Now)
 	companies := companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
@@ -200,6 +204,12 @@ func TestSearchTerms(t *testing.T) {
 	items, _ := r.body["items"].([]any)
 	if len(items) == 0 || r.body["total"].(float64) < 1 {
 		t.Fatalf("no TwenteFlex match: %v", r.body)
+	}
+	// A term a company's newest scan found lists that company.
+	found := call(t, srv, http.MethodGet, "/api/v1/terms?q=Drahtösengliederband&language=de", "", true)
+	first, _ := found.body["items"].([]any)
+	if len(first) == 0 || fmt.Sprint(first[0].(map[string]any)["foundBy"]) != "[pelger]" {
+		t.Fatalf("foundBy = %v", found.body)
 	}
 	facets, _ := r.body["facets"].(map[string]any)
 	if langs, _ := facets["languages"].([]any); len(langs) != 10 {
@@ -291,6 +301,8 @@ func TestCompetitorsFailures(t *testing.T) {
 	}
 	terminology := terminologyapp.New(catalogue, &reviewStore{}, func(context.Context) ([]terminologydomain.Observation, error) {
 		return nil, errors.New("database down")
+	}, func(context.Context) ([]terminologydomain.Sighting, error) {
+		return nil, errors.New("database down")
 	}, time.Now)
 	companies := companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
@@ -304,7 +316,7 @@ func TestCompetitorsFailures(t *testing.T) {
 	}
 	srv := httptest.NewServer(h)
 	defer srv.Close()
-	for _, path := range []string{"/api/v1/competitors", "/api/v1/competitors/twentebelt", "/api/v1/admin/term-candidates"} {
+	for _, path := range []string{"/api/v1/competitors", "/api/v1/competitors/twentebelt", "/api/v1/admin/term-candidates", "/api/v1/terms"} {
 		if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusInternalServerError {
 			t.Errorf("%s with failing scans: status %d", path, r.code)
 		}

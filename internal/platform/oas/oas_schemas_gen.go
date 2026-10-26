@@ -504,6 +504,8 @@ type BeltName struct {
 	// The company's product name.
 	Name   string     `json:"name"`
 	Family BeltFamily `json:"family"`
+	// True when the company's newest scan found the name, not the desk research.
+	FromScan OptBool `json:"fromScan"`
 }
 
 // GetName returns the value of Name.
@@ -516,6 +518,11 @@ func (s *BeltName) GetFamily() BeltFamily {
 	return s.Family
 }
 
+// GetFromScan returns the value of FromScan.
+func (s *BeltName) GetFromScan() OptBool {
+	return s.FromScan
+}
+
 // SetName sets the value of Name.
 func (s *BeltName) SetName(val string) {
 	s.Name = val
@@ -524,6 +531,11 @@ func (s *BeltName) SetName(val string) {
 // SetFamily sets the value of Family.
 func (s *BeltName) SetFamily(val BeltFamily) {
 	s.Family = val
+}
+
+// SetFromScan sets the value of FromScan.
+func (s *BeltName) SetFromScan(val OptBool) {
+	s.FromScan = val
 }
 
 // A company whose scan found a candidate.
@@ -653,7 +665,8 @@ type Competitor struct {
 	Languages []string `json:"languages"`
 	// True for a company in Tribelt's own group, which is never a competitor.
 	GroupCompany bool `json:"groupCompany"`
-	// The company's names for its belts.
+	// The company's names for its belts: the desk research's, then the products its newest scan matched to
+	// Tribelt's families (fromScan).
 	BeltNames []BeltName `json:"beltNames"`
 	// The title of its home page, or "unverified" when it could not be read.
 	HomepageTitle string `json:"homepageTitle"`
@@ -3772,14 +3785,17 @@ func (s *RescanBatch) SetSkipped(val []RescanSkip) {
 
 func (*RescanBatch) startRescansRes() {}
 
-// Which companies to scan again - the ones named, or with `all` every company that is not archived,
-// has a website and was scanned before. One of the two.
+// Which companies to scan - the ones named; with `all` every company that is not archived, has a
+// website and has data; or with `unscanned` every company that is not archived and has a website no
+// scan reached yet. Exactly one of the three.
 // Ref: #/components/schemas/RescanRequest
 type RescanRequest struct {
 	// The companies to scan again.
 	CompetitorIds []CompetitorId `json:"competitorIds"`
 	// True scans every company with data again.
 	All OptBool `json:"all"`
+	// True scans every company with a website that no scan reached yet.
+	Unscanned OptBool `json:"unscanned"`
 	// The most pages each scan fetches.
 	MaxPages OptInt32 `json:"maxPages"`
 }
@@ -3792,6 +3808,11 @@ func (s *RescanRequest) GetCompetitorIds() []CompetitorId {
 // GetAll returns the value of All.
 func (s *RescanRequest) GetAll() OptBool {
 	return s.All
+}
+
+// GetUnscanned returns the value of Unscanned.
+func (s *RescanRequest) GetUnscanned() OptBool {
+	return s.Unscanned
 }
 
 // GetMaxPages returns the value of MaxPages.
@@ -3807,6 +3828,11 @@ func (s *RescanRequest) SetCompetitorIds(val []CompetitorId) {
 // SetAll sets the value of All.
 func (s *RescanRequest) SetAll(val OptBool) {
 	s.All = val
+}
+
+// SetUnscanned sets the value of Unscanned.
+func (s *RescanRequest) SetUnscanned(val OptBool) {
+	s.Unscanned = val
 }
 
 // SetMaxPages sets the value of MaxPages.
@@ -4017,6 +4043,9 @@ type Term struct {
 	Tier     IntentTier `json:"tier"`
 	// The companies that use the term.
 	UsedBy []string `json:"usedBy"`
+	// The companies whose newest finished scan found the term on their site, by id. They use it too,
+	// though the desk research or the review did not name them; absent when no scan found it.
+	FoundBy []CompetitorId `json:"foundBy"`
 	// The page the term was taken from.
 	Source string `json:"source"`
 }
@@ -4049,6 +4078,11 @@ func (s *Term) GetTier() IntentTier {
 // GetUsedBy returns the value of UsedBy.
 func (s *Term) GetUsedBy() []string {
 	return s.UsedBy
+}
+
+// GetFoundBy returns the value of FoundBy.
+func (s *Term) GetFoundBy() []CompetitorId {
+	return s.FoundBy
 }
 
 // GetSource returns the value of Source.
@@ -4084,6 +4118,11 @@ func (s *Term) SetTier(val IntentTier) {
 // SetUsedBy sets the value of UsedBy.
 func (s *Term) SetUsedBy(val []string) {
 	s.UsedBy = val
+}
+
+// SetFoundBy sets the value of FoundBy.
+func (s *Term) SetFoundBy(val []CompetitorId) {
+	s.FoundBy = val
 }
 
 // SetSource sets the value of Source.

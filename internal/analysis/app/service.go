@@ -31,8 +31,8 @@ var (
 	ErrScanActive = errors.New("a scan of this company is still queued or running")
 	// ErrUnknownCompany is returned for a company id nobody knows.
 	ErrUnknownCompany = errors.New("no company has this id")
-	// ErrInvalidRescan is returned for a re-scan that names no companies, or both names and all.
-	ErrInvalidRescan = errors.New("a re-scan names companies or asks for all of them, not both")
+	// ErrInvalidRescan is returned for a re-scan that does not pick its companies in exactly one way.
+	ErrInvalidRescan = errors.New("a re-scan names companies, or asks for all of them, or for the unscanned ones: one of the three")
 )
 
 // MaxHistory is how many of a company's scans the profile and the comparison look through.
@@ -121,12 +121,31 @@ type Skipped struct {
 	Reason       string
 }
 
-// Rescan queues one scan of each company named, or with all of every company that is not
-// archived, has a website and has data: the desk research studied it, or it was scanned before.
-// A company without a website, or with a scan queued or running, is skipped. There is no limit
-// on how many companies one re-scan takes.
-func (s *Service) Rescan(ctx context.Context, user string, ids []string, all bool, maxPages int) ([]domain.Analysis, []Skipped, error) {
-	if all == (len(ids) > 0) {
+// Pick is how a re-scan picks its companies: the ones named, all with data, or the unscanned
+// ones. Exactly one is set.
+type Pick struct {
+	IDs       []string
+	All       bool
+	Unscanned bool
+}
+
+func (p Pick) valid() bool {
+	n := 0
+	for _, set := range []bool{len(p.IDs) > 0, p.All, p.Unscanned} {
+		if set {
+			n++
+		}
+	}
+	return n == 1
+}
+
+// Rescan queues one scan of each company pick takes: the ones named; with All every company that
+// is not archived, has a website and has data (the desk research studied it, or it was scanned
+// before); with Unscanned every company that is not archived and has a website no scan reached
+// yet. A company without a website, or with a scan queued or running, is skipped. There is no
+// limit on how many companies one re-scan takes.
+func (s *Service) Rescan(ctx context.Context, user string, pick Pick, maxPages int) ([]domain.Analysis, []Skipped, error) {
+	if !pick.valid() {
 		return nil, nil, ErrInvalidRescan
 	}
 	pages, err := domain.CheckMaxPages(maxPages)
@@ -137,12 +156,18 @@ func (s *Service) Rescan(ctx context.Context, user string, ids []string, all boo
 	if err != nil {
 		return nil, nil, fmt.Errorf("list companies: %w", err)
 	}
-	if all {
-		if companies, err = s.scanned(ctx, companies); err != nil {
-			return nil, nil, err
-		}
-	} else {
-		companies = pickCompanies(companies, ids)
+	switch {
+	case pick.All:
+		companies, err = s.withStats(ctx, companies, func(c domain.Company, st domain.CompetitorStats) bool {
+			return (c.Researched || st.Count > 0) && !st.Last.Blocked()
+		})
+	case pick.Unscanned:
+		companies, err = s.withStats(ctx, companies, func(_ domain.Company, st domain.CompetitorStats) bool { return st.Count == 0 })
+	default:
+		companies = pickCompanies(companies, pick.IDs)
+	}
+	if err != nil {
+		return nil, nil, err
 	}
 	var queued []domain.Analysis
 	var skipped []Skipped
@@ -181,16 +206,16 @@ func (s *Service) rescanOne(ctx context.Context, user string, c domain.Company, 
 	return "", nil
 }
 
-// scanned keeps the companies that are not archived, have a website and have data: researched,
-// or scanned before. A company whose site turned its last scan away is left out.
-func (s *Service) scanned(ctx context.Context, companies []domain.Company) ([]domain.Company, error) {
+// withStats keeps the companies that are not archived, have a website and that keep accepts by
+// their scan statistics.
+func (s *Service) withStats(ctx context.Context, companies []domain.Company, keep func(domain.Company, domain.CompetitorStats) bool) ([]domain.Company, error) {
 	stats, err := s.repo.CompetitorStats(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("scan statistics: %w", err)
 	}
 	var out []domain.Company
 	for _, c := range companies {
-		if !c.Archived && c.Website != nil && (c.Researched || stats[c.ID].Count > 0) && !stats[c.ID].Last.Blocked() {
+		if !c.Archived && c.Website != nil && keep(c, stats[c.ID]) {
 			out = append(out, c)
 		}
 	}

@@ -171,7 +171,7 @@ export type RankedTerm = {
  * kind of search, then the alphabet. The bars are against the most-used term of the whole map,
  * so they keep their length as filters narrow the list.
  */
-export function rankTerms(shown: readonly Term[], all: readonly Term[]): RankedTerm[] {
+export function rankTerms(shown: readonly (Term & { scanMakers?: readonly string[] })[], all: readonly Term[]): RankedTerm[] {
   const top = Math.max(1, ...all.map((t) => makersOf(t).length))
   return [...shown]
     .map((t) => ({ t, makers: makersOf(t) }))
@@ -184,7 +184,13 @@ export function rankTerms(shown: readonly Term[], all: readonly Term[]): RankedT
     .map(({ t, makers }, index) => ({
       rank: index + 1,
       term: t.term,
-      meta: [languageLabel(chartLanguage(t.language)), familyText(t.family), makers.join(', ')].filter((p) => p !== '').join(' · '),
+      meta: [
+        languageLabel(chartLanguage(t.language)),
+        familyText(t.family),
+        makers.map((m) => (t.scanMakers?.includes(m) === true ? `${m} (scan)` : m)).join(', '),
+      ]
+        .filter((p) => p !== '')
+        .join(' · '),
       tier: t.tier,
       kind: tierLabel(t.tier),
       makers: makers.length,

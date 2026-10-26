@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"sync"
@@ -22,7 +23,6 @@ type repo struct {
 	mu        sync.Mutex
 	analyses  map[uuid.UUID]*domain.Analysis
 	order     []uuid.UUID
-	count     int
 	tokens    int64
 	failOn    map[string]bool
 	failedRun string
@@ -121,10 +121,6 @@ func (r *repo) CompetitorStats(context.Context) (map[string]domain.CompetitorSta
 		out[a.CompetitorID] = s
 	}
 	return out, r.err("CompetitorStats")
-}
-
-func (r *repo) CountCreatedSince(context.Context, string, time.Time) (int, error) {
-	return r.count, r.err("CountCreatedSince")
 }
 
 func (r *repo) TokensSince(context.Context, time.Time) (int64, error) {
@@ -229,7 +225,7 @@ func (s source) Current(context.Context) (domain.Matcher, string, error) {
 var now = time.Date(2026, 10, 22, 9, 30, 0, 0, time.UTC)
 
 func limits() app.Limits {
-	return app.Limits{PerUserPerHour: 3, MonthlyTokens: 1000, SiteTextChars: 10_000, QueueSize: 2}
+	return app.Limits{MonthlyTokens: 1000, SiteTextChars: 10_000}
 }
 
 func glossary() []domain.GlossaryTerm {
@@ -292,8 +288,6 @@ func TestStartRefuses(t *testing.T) {
 		"too many pages":          {newRepo(), "https://x.test/", 101, domain.ErrInvalidMaxPages},
 		"a scan running":          {running(), "https://x.test/", 5, app.ErrScanActive},
 		"an active count failure": {newRepo("CountActive"), "https://x.test/", 5, errBoom},
-		"a count failure":         {newRepo("CountCreatedSince"), "https://x.test/", 5, errBoom},
-		"over the limit":          {&repo{analyses: map[uuid.UUID]*domain.Analysis{}, count: 3}, "https://x.test/", 5, app.ErrRateLimited},
 		"a create failure":        {newRepo("Create"), "https://x.test/", 5, errBoom},
 	}
 	for name, c := range cases {
@@ -328,23 +322,47 @@ func TestStartNumbersEachCompanysScans(t *testing.T) {
 	}
 }
 
-func TestStartFailsTheAnalysisWhenTheQueueIsFull(t *testing.T) {
+// An administrator may start as many scans as they like: none is refused for load, and every one
+// runs once workers are free.
+func TestStartNeverRefusesAScanForLoad(t *testing.T) {
 	r := newRepo()
-	svc := service(r, crawler{}, nil, app.Limits{PerUserPerHour: 10, QueueSize: 1})
-	if _, err := svc.Start(t.Context(), "u", "https://x.test/", 1, ""); err != nil {
-		t.Fatal(err)
+	svc := service(r, crawler{pages: pages()}, nil, app.Limits{MonthlyTokens: 1000, SiteTextChars: 10_000, Workers: 3})
+	const scans = 300
+	for i := range scans {
+		if _, err := svc.Start(t.Context(), "admin", fmt.Sprintf("https://site%d.test/", i), 1, ""); err != nil {
+			t.Fatalf("scan %d refused: %v", i, err)
+		}
 	}
-	if _, err := svc.Start(t.Context(), "u", "https://y.test/", 1, ""); !errors.Is(err, app.ErrBusy) {
-		t.Fatalf("second Start error = %v, want ErrBusy", err)
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	go func() {
+		svc.Work(ctx, func(id uuid.UUID, err error) { t.Errorf("run %s: %v", id, err) })
+		close(done)
+	}()
+	waitAll(t, r, scans, domain.StatusDone)
+	cancel()
+	<-done
+}
+
+// waitAll waits until n analyses have status, or fails the test after a few seconds.
+func waitAll(t *testing.T, r *repo, n int, status domain.Status) {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		r.mu.Lock()
+		got := 0
+		for _, a := range r.analyses {
+			if a.Status == status {
+				got++
+			}
+		}
+		r.mu.Unlock()
+		if got == n {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
 	}
-	second := r.analyses[r.order[1]]
-	if second.Status != domain.StatusFailed || second.Failure != app.ErrBusy.Error() {
-		t.Fatalf("the refused analysis is %+v", second)
-	}
-	r.failOn["Fail"] = true
-	if _, err := svc.Start(t.Context(), "u", "https://z.test/", 1, ""); !errors.Is(err, errBoom) {
-		t.Fatalf("Start with a failing Fail = %v", err)
-	}
+	t.Fatalf("not all %d analyses reached %s", n, status)
 }
 
 func TestGetAndListClampTheLimit(t *testing.T) {
@@ -559,18 +577,26 @@ func TestRecoverFailures(t *testing.T) {
 	if err := service(newRepo("Queued"), crawler{}, nil, limits()).Recover(t.Context()); !errors.Is(err, errBoom) {
 		t.Errorf("Queued failure = %v", err)
 	}
-	// More queued analyses than the queue holds, and nobody working: Recover waits until ctx ends.
+	// Every waiting analysis is queued again, however many, and runs once workers start.
 	r := newRepo()
 	for range 3 {
 		id := uuid.New()
-		r.analyses[id] = &domain.Analysis{ID: id, Status: domain.StatusQueued}
+		r.analyses[id] = &domain.Analysis{ID: id, URL: "https://x.test/", MaxPages: 1, Status: domain.StatusQueued}
 		r.order = append(r.order, id)
 	}
-	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
-	defer cancel()
-	if err := service(r, crawler{}, nil, app.Limits{QueueSize: 1}).Recover(ctx); !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("Recover with a full queue = %v", err)
+	svc := service(r, crawler{pages: pages()}, nil, app.Limits{SiteTextChars: 10_000, Workers: 1})
+	if err := svc.Recover(t.Context()); err != nil {
+		t.Fatalf("Recover = %v", err)
 	}
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	go func() {
+		svc.Work(ctx, func(uuid.UUID, error) {})
+		close(done)
+	}()
+	waitAll(t, r, 3, domain.StatusDone)
+	cancel()
+	<-done
 }
 
 func TestStartNamesTheCompany(t *testing.T) {

@@ -66,7 +66,8 @@ export type StartError = { field: 'url' | 'form'; message: string }
 
 /**
  * Places the server's answer to a refused scan. A 422 is about the address (not public, not
- * reachable), so it goes under the address; a 429 (too many scans) and anything else under the form.
+ * reachable), so it goes under the address; a 409 (a scan of the company is still running) and
+ * anything else under the form.
  */
 export function placeStartError(error: unknown): StartError {
   const problem = zProblem.safeParse(error)

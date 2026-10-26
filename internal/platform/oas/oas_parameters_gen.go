@@ -674,7 +674,7 @@ func decodeGetCompetitorProfileParams(args [1]string, argsEscaped bool, r *http.
 
 // ListAnalysesParams is parameters of listAnalyses operation.
 type ListAnalysesParams struct {
-	// How many analyses to return.
+	// How many analyses to return; up to 300, so a re-scan of every company can be followed in one list.
 	Limit OptInt32 `json:",omitempty,omitzero"`
 }
 
@@ -737,7 +737,7 @@ func decodeListAnalysesParams(args [0]string, argsEscaped bool, r *http.Request)
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           50,
+							Max:           300,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,

@@ -611,9 +611,13 @@ export type LlmBudget = {
      */
     usedThisMonth: number;
     /**
-     * How many analyses one account may start per hour.
+     * The tokens one scan's product matching used on average, over every scan the language model answered for; 0 before the first.
      */
-    analysesPerHour: number;
+    averageTokensPerScan: number;
+    /**
+     * How many scans the average is over.
+     */
+    scansMatched: number;
 };
 
 /**
@@ -1404,10 +1408,6 @@ export type StartRescansErrors = {
     /**
      * An RFC 9457 problem.
      */
-    429: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
     default: Problem;
 };
 
@@ -1626,7 +1626,7 @@ export type ListAnalysesData = {
     path?: never;
     query?: {
         /**
-         * How many analyses to return.
+         * How many analyses to return; up to 300, so a re-scan of every company can be followed in one list.
          */
         limit?: number;
     };
@@ -1686,10 +1686,6 @@ export type StartAnalysisErrors = {
      * An RFC 9457 problem.
      */
     422: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    429: Problem;
     /**
      * An RFC 9457 problem.
      */

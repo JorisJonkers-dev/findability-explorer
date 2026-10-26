@@ -47,8 +47,11 @@ describe('placeStartError', () => {
     expect(placeStartError(problem(422, 'The host is not public.'))).toEqual({ field: 'url', message: 'The host is not public.' })
   })
 
-  it('puts a 429 and anything else under the form', () => {
-    expect(placeStartError(problem(429, 'Too many scans.'))).toEqual({ field: 'form', message: 'Too many scans.' })
+  it('puts a 409 and anything else under the form', () => {
+    expect(placeStartError(problem(409, 'A scan of this company is still queued or running.'))).toEqual({
+      field: 'form',
+      message: 'A scan of this company is still queued or running.',
+    })
     expect(placeStartError(new TypeError('Failed to fetch'))).toEqual({
       field: 'form',
       message: 'Something went wrong. Try again.',

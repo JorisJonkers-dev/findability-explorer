@@ -57,8 +57,8 @@ describe('the company list', () => {
 
   it('marks the families a company offers, and says so in words', () => {
     expect(familyDots(twentebelt).filter((d) => d.offers).map((d) => d.family)).toEqual(['tri_flex_turn_curve'])
-    expect(rowLabel(twentebelt)).toBe('Twentebelt, Netherlands: Tri-Flex')
-    expect(rowLabel(martens)).toBe('Märtens, Germany: no families recorded')
+    expect(rowLabel(twentebelt)).toBe('Twentebelt, Netherlands: Tri-Flex; No scans')
+    expect(rowLabel(martens)).toBe('Märtens, Germany: no families recorded; No scans')
   })
 
   it('counts what is shown', () => {

@@ -45,7 +45,7 @@ func TestStartWithADatabase(t *testing.T) {
 			t.Fatalf("start with an invalid ADDR = %d, want 1", code)
 		}
 	})
-	for _, key := range []string{"ANALYSES_PER_HOUR", "LLM_MONTHLY_TOKENS"} {
+	for _, key := range []string{"LLM_MONTHLY_TOKENS"} {
 		t.Run("bad "+key, func(t *testing.T) {
 			if code := start(t.Context(), env(map[string]string{"DATABASE_URL": url, "DEV_USER": "dev", key: "lots"})); code != 1 {
 				t.Fatalf("start with %s=lots = %d, want 1", key, code)
@@ -57,7 +57,7 @@ func TestStartWithADatabase(t *testing.T) {
 		defer cancel()
 		vars := map[string]string{
 			"DATABASE_URL": url, "ADDR": "127.0.0.1:0", "ANTHROPIC_API_KEY": "test-key", "DEV_USER": "dev",
-			"DEV_ROLES": "ROLE_ADMIN", "SESSION_KEY": sessionKeyValue, "ANALYSES_PER_HOUR": "3", "LLM_MONTHLY_TOKENS": "1000",
+			"DEV_ROLES": "ROLE_ADMIN", "SESSION_KEY": sessionKeyValue, "LLM_MONTHLY_TOKENS": "1000",
 		}
 		if code := start(ctx, env(vars)); code != 0 {
 			t.Fatalf("start after a clean shutdown = %d, want 0", code)

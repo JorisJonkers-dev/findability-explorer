@@ -185,17 +185,6 @@ func (r *Repository) CompetitorStats(ctx context.Context) (map[string]domain.Com
 	return out, nil
 }
 
-// CountCreatedSince counts the analyses user started at or after since.
-func (r *Repository) CountCreatedSince(ctx context.Context, user string, since time.Time) (int, error) {
-	n, err := r.store.Queries().CountAnalysesCreatedSince(ctx, queries.CountAnalysesCreatedSinceParams{
-		CreatedBy: user, CreatedAt: since,
-	})
-	if err != nil {
-		return 0, fmt.Errorf("count analyses: %w", err)
-	}
-	return int(n), nil
-}
-
 // TokensSince sums the language-model tokens of analyses created at or after since.
 func (r *Repository) TokensSince(ctx context.Context, since time.Time) (int64, error) {
 	n, err := r.store.Queries().TokensSince(ctx, since)
@@ -203,6 +192,16 @@ func (r *Repository) TokensSince(ctx context.Context, since time.Time) (int64, e
 		return 0, fmt.Errorf("sum tokens: %w", err)
 	}
 	return n, nil
+}
+
+// TokensPerScan returns how many scans the language model answered for, and the tokens one of them
+// used on average; scans with matching off or skipped used none and are left out.
+func (r *Repository) TokensPerScan(ctx context.Context) (scans int, average int64, err error) {
+	row, err := r.store.Queries().TokensPerMatchedScan(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("average tokens per scan: %w", err)
+	}
+	return int(row.Scans), row.Average, nil
 }
 
 // Queued returns the ids of every queued analysis, oldest first.

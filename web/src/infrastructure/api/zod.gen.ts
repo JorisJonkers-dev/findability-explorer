@@ -369,7 +369,8 @@ export const zLlmEvent = z.object({
 export const zLlmBudget = z.object({
     monthlyTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
     usedThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    analysesPerHour: z.int().gte(0).lte(100000)
+    averageTokensPerScan: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    scansMatched: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
 });
 
 /**
@@ -767,7 +768,7 @@ export const zUndoTermDecisionPath = z.object({
 export const zUndoTermDecisionResponse = zTermCandidate;
 
 export const zListAnalysesQuery = z.object({
-    limit: z.int().gte(1).lte(50).optional().default(20)
+    limit: z.int().gte(1).lte(300).optional().default(20)
 });
 
 /**

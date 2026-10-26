@@ -1662,8 +1662,11 @@ type LlmBudget struct {
 	MonthlyTokens int64 `json:"monthlyTokens"`
 	// The tokens analyses created this month used so far.
 	UsedThisMonth int64 `json:"usedThisMonth"`
-	// How many analyses one account may start per hour.
-	AnalysesPerHour int32 `json:"analysesPerHour"`
+	// The tokens one scan's product matching used on average, over every scan the language model answered
+	// for; 0 before the first.
+	AverageTokensPerScan int64 `json:"averageTokensPerScan"`
+	// How many scans the average is over.
+	ScansMatched int64 `json:"scansMatched"`
 }
 
 // GetMonthlyTokens returns the value of MonthlyTokens.
@@ -1676,9 +1679,14 @@ func (s *LlmBudget) GetUsedThisMonth() int64 {
 	return s.UsedThisMonth
 }
 
-// GetAnalysesPerHour returns the value of AnalysesPerHour.
-func (s *LlmBudget) GetAnalysesPerHour() int32 {
-	return s.AnalysesPerHour
+// GetAverageTokensPerScan returns the value of AverageTokensPerScan.
+func (s *LlmBudget) GetAverageTokensPerScan() int64 {
+	return s.AverageTokensPerScan
+}
+
+// GetScansMatched returns the value of ScansMatched.
+func (s *LlmBudget) GetScansMatched() int64 {
+	return s.ScansMatched
 }
 
 // SetMonthlyTokens sets the value of MonthlyTokens.
@@ -1691,9 +1699,14 @@ func (s *LlmBudget) SetUsedThisMonth(val int64) {
 	s.UsedThisMonth = val
 }
 
-// SetAnalysesPerHour sets the value of AnalysesPerHour.
-func (s *LlmBudget) SetAnalysesPerHour(val int32) {
-	s.AnalysesPerHour = val
+// SetAverageTokensPerScan sets the value of AverageTokensPerScan.
+func (s *LlmBudget) SetAverageTokensPerScan(val int64) {
+	s.AverageTokensPerScan = val
+}
+
+// SetScansMatched sets the value of ScansMatched.
+func (s *LlmBudget) SetScansMatched(val int64) {
+	s.ScansMatched = val
 }
 
 // How the active model was decided - `default` (nobody chose; the Vault key with claude-haiku-5-5 when
@@ -3955,10 +3968,6 @@ type StartAnalysisForbidden ProblemStatusCode
 
 func (*StartAnalysisForbidden) startAnalysisRes() {}
 
-type StartAnalysisTooManyRequests ProblemStatusCode
-
-func (*StartAnalysisTooManyRequests) startAnalysisRes() {}
-
 type StartAnalysisUnauthorized ProblemStatusCode
 
 func (*StartAnalysisUnauthorized) startAnalysisRes() {}
@@ -3974,10 +3983,6 @@ func (*StartRescansBadRequest) startRescansRes() {}
 type StartRescansForbidden ProblemStatusCode
 
 func (*StartRescansForbidden) startRescansRes() {}
-
-type StartRescansTooManyRequests ProblemStatusCode
-
-func (*StartRescansTooManyRequests) startRescansRes() {}
 
 type StartRescansUnauthorized ProblemStatusCode
 

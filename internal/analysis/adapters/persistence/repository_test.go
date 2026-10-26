@@ -101,6 +101,14 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 	if n, err := repo.TokensSince(ctx, created.Add(time.Hour)); err != nil || n != 0 {
 		t.Fatalf("TokensSince later = %d, %v", n, err)
 	}
+	// A scan whose matching did not run used no tokens and does not count.
+	other := queued(t, repo, "joris", created.Add(time.Second))
+	if err := repo.SaveMatching(ctx, other.ID, domain.MatchingDisabled, "", nil, domain.Usage{}); err != nil {
+		t.Fatal(err)
+	}
+	if scans, avg, err := repo.TokensPerScan(ctx); err != nil || scans != 1 || avg != 1000 {
+		t.Fatalf("TokensPerScan = %d, %d, %v", scans, avg, err)
+	}
 }
 
 func TestFailingAndRecovering(t *testing.T) {
@@ -133,9 +141,6 @@ func TestFailingAndRecovering(t *testing.T) {
 	list, err := repo.List(ctx, 2)
 	if err != nil || len(list) != 2 || list[0].ID != waiting.ID || list[1].ID != running.ID {
 		t.Fatalf("List = %+v, %v", list, err)
-	}
-	if n, err := repo.CountCreatedSince(ctx, "u", created); err != nil || n != 2 {
-		t.Fatalf("CountCreatedSince(u) = %d, %v", n, err)
 	}
 }
 
@@ -278,10 +283,6 @@ func TestDeepScansHistoryAndFindings(t *testing.T) {
 	if len(mine) != 1 || mine[0].Phrase != "spiral freezer" || mine[0].Closest != "spiral belt" || mine[0].AnalysisID != second.ID ||
 		!mine[0].StartedAt.Equal(second.CreatedAt) || mine[0].URL != "https://deep.test/" {
 		t.Fatalf("findings %+v", mine)
-	}
-	// Re-scans do not count against the hourly limit on single scans.
-	if n, err := repo.CountCreatedSince(ctx, "u", created.Add(-time.Hour)); err != nil || n != 0 {
-		t.Fatalf("CountCreatedSince = %d, %v", n, err)
 	}
 	if n, err := repo.CountActive(ctx, "deep"); err != nil || n != 0 {
 		t.Fatalf("CountActive = %d, %v", n, err)

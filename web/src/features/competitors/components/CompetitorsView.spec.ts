@@ -79,10 +79,10 @@ describe('the company list', () => {
     const { wrapper } = await mountApp(api(), '/competitors')
     expect(wrapper.get('h1').text()).toBe('3 makers, the same belts, other names.')
     expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual([
-      'Twentebelt, Netherlands: Tri-Flex',
-      'Märtens, Germany: Eyelink',
-      'Ashworth, United States: no families recorded',
-      'Tribelt, Netherlands: Tri-Flex',
+      'Twentebelt, Netherlands: Tri-Flex; 2 scans',
+      'Märtens, Germany: Eyelink; No scans',
+      'Ashworth, United States: no families recorded; No scans',
+      'Tribelt, Netherlands: Tri-Flex; No scans',
     ])
     expect(wrapper.text()).toContain('4 of 4 companies')
   })
@@ -96,7 +96,7 @@ describe('the company list', () => {
     expect(rows(wrapper)).toHaveLength(1)
     await pill(wrapper, 'Show', 'All').trigger('click')
     await wrapper.get('#company-q').setValue('united')
-    expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual(['Ashworth, United States: no families recorded'])
+    expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual(['Ashworth, United States: no families recorded; No scans'])
     expect(wrapper.text()).toContain('1 of 4 companies')
   })
 
@@ -124,11 +124,32 @@ describe('the company card', () => {
     ])
     expect(card.text()).toContain('1 term in the terminology map')
     expect(card.text()).toContain('TwenteFlex, Product')
-    expect(card.text()).toContain('Scanned 2×')
+    const stats = card.get('[data-testid="scan-stats"]').text()
+    expect(stats).toContain('Scanned 2 times')
+    // The list has no last scan here, so the card reads it from the company's own scans.
+    expect(stats).toMatch(/Last scan: 22 October 2026 at \d\d:\d\d, 15 pages read/)
     expect(card.get(`a[href="/scan/${ANALYSIS_ID}?company=twentebelt"]`).text()).toContain('15 pages read')
     const visit = card.get('a[target="_blank"]')
     expect(visit.attributes('href')).toBe('https://www.twentebelt.com/')
     expect(visit.attributes('rel')).toBe('noopener noreferrer')
+  })
+
+  it('shows a company being scanned, live, in its row and on its card', async () => {
+    const scanning = { ...twentebelt, scans: 3, lastScan: summary({ status: 'running' as const, pagesCrawled: 4, maxPages: 15 }) }
+    const { wrapper } = await mountApp(
+      api({
+        'GET /api/v1/competitors': () => json({ items: [scanning, martens, ashworth, tribelt] }),
+        'GET /api/v1/competitors/twentebelt': () => json({ competitor: scanning, scans: [scanning.lastScan] }),
+      }),
+      '/competitors',
+    )
+    expect(rows(wrapper)[0]?.attributes('aria-label')).toBe('Twentebelt, Netherlands: Tri-Flex; 3 scans · reading page 5 of 15')
+    expect(rows(wrapper)[0]?.text()).toContain('3 scans · reading page 5 of 15')
+    const stats = wrapper.get('[data-testid="scan-stats"]')
+    expect(stats.text()).toMatch(/Last scan: .* at \d\d:\d\d, reading page 5 of 15/)
+    const bar = stats.get('[role="progressbar"]')
+    expect(bar.attributes('aria-label')).toBe('Scan of Twentebelt')
+    expect(bar.attributes('aria-valuenow')).toBe('27')
   })
 
   it('shows the company picked, and keeps it in the address', async () => {
@@ -139,7 +160,7 @@ describe('the company card', () => {
     const card = wrapper.get('section[aria-labelledby="company-name"]')
     expect(card.get('h2').text()).toBe('Märtens')
     expect(card.text()).toContain('Showing Märtens.')
-    expect(card.text()).toContain('Not scanned yet')
+    expect(card.get('[data-testid="scan-stats"]').text()).toBe('Never scannedNo scan of its website has run yet.')
   })
 
   it('opens on the company in the address, and says when it has no website', async () => {
@@ -281,15 +302,15 @@ describe('the scan form', () => {
 
   it("puts the server's refusal under the address or under the form", async () => {
     let status = 422
-    const refuse = { 'POST /api/v1/analyses': () => problem(status, 'Refused', status === 422 ? 'The host is not public.' : 'Too many scans. Wait a minute.') }
+    const refuse = { 'POST /api/v1/analyses': () => problem(status, 'Refused', status === 422 ? 'The host is not public.' : 'A scan of this company is still queued or running.') }
     const { wrapper } = await mountApp(api(refuse), '/competitors')
     await type(wrapper, 'https://www.example.com')
     await submit(wrapper)
     expect(wrapper.get('#scan-url-error').text()).toBe('The host is not public.')
-    status = 429
+    status = 409
     await submit(wrapper)
     expect(wrapper.find('#scan-url-error').exists()).toBe(false)
-    expect(wrapper.get('[role="alert"]').text()).toBe('Too many scans. Wait a minute.')
+    expect(wrapper.get('[role="alert"]').text()).toBe('A scan of this company is still queued or running.')
   })
 
   it('suggests known companies as you type, and picks one with the keyboard', async () => {
@@ -306,7 +327,7 @@ describe('the scan form', () => {
     await combobox(wrapper).trigger('keydown', { key: 'Enter' })
     expect((combobox(wrapper).element as HTMLInputElement).value).toBe('https://www.twentebelt.com/')
     expect(combobox(wrapper).attributes('aria-expanded')).toBe('false')
-    expect(wrapper.get('#scan-url-company').text()).toBe('Twentebelt, a known competitor. Scanned 2×.')
+    expect(wrapper.get('#scan-url-company').text()).toBe('Twentebelt, a known competitor. Scanned 2 times.')
   })
 
   it('closes the suggestions on Escape or blur, picks one with the mouse, and ignores keys with nothing to suggest', async () => {

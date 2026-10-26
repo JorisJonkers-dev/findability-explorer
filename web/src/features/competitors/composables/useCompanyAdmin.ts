@@ -1,15 +1,20 @@
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { computed } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed, watch } from 'vue'
 import {
   addCompetitorMutation,
   deleteCompetitorMutation,
+  listAnalysesOptions,
   listAnalysesQueryKey,
   listCompetitorsQueryKey,
   startRescansMutation,
   updateCompetitorMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
-import type { Competitor, CompetitorUpdate, RescanBatch, RescanRequest } from '../../../infrastructure/api/types.gen'
-import { companyProblem } from '../domain/admin'
+import type { AnalysisList, Competitor, CompetitorUpdate, RescanBatch, RescanRequest } from '../../../infrastructure/api/types.gen'
+import { POLL_INTERVAL_MS } from '../../scan/domain/status'
+import { companyProblem, rescanProgress } from '../domain/admin'
+
+/** The most scans one list returns: more than the server's queue holds, so a whole re-scan fits. */
+const RESCAN_LIST_LIMIT = 300
 
 /** Whether a query asks about this company: its detail, profile or scans. */
 function isAbout(competitorId: string, queryKey: readonly unknown[]): boolean {
@@ -102,13 +107,37 @@ export function useRemoveCompany() {
   }
 }
 
-/** Queues scans of named companies, or of every company with data; administrators only. */
+/**
+ * Queues scans of named companies, or of every company with data; administrators only. Once
+ * queued, the scans are followed until each has finished, and the companies are then asked for
+ * again so their scan counts show the new scans.
+ */
 export function useRescan() {
   const refresh = useRefresh()
   const rescan = useMutation(startRescansMutation())
+  const batch = computed<RescanBatch | undefined>(() => rescan.data.value)
+  const queuedIds = computed(() => (batch.value ? batch.value.queued.map((s) => s.id) : []))
+  const scans = useQuery(
+    computed(() => ({
+      ...listAnalysesOptions({ query: { limit: RESCAN_LIST_LIMIT } }),
+      enabled: queuedIds.value.length > 0,
+      refetchInterval: (q: { state: { data: AnalysisList | undefined } }) =>
+        q.state.data && rescanProgress(queuedIds.value, q.state.data.items).finished ? false : POLL_INTERVAL_MS,
+    })),
+  )
+  const progress = computed(() =>
+    queuedIds.value.length > 0 && scans.data.value ? rescanProgress(queuedIds.value, scans.data.value.items) : null,
+  )
+  watch(
+    () => progress.value?.finished,
+    (finished) => {
+      if (finished) refresh()
+    },
+  )
   return {
     isQueuing: rescan.isPending,
-    batch: computed<RescanBatch | undefined>(() => rescan.data.value),
+    batch,
+    progress,
     error: computed(() => (rescan.error.value ? companyProblem(rescan.error.value) : null)),
     rescan: (body: RescanRequest) => {
       rescan.mutate({ body }, { onSuccess: () => { refresh() } })

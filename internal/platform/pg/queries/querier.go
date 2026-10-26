@@ -24,7 +24,6 @@ type Querier interface {
 	// Every phrase a finished scan of a company found outside the terminology map.
 	CandidateEvidence(ctx context.Context) ([]CandidateEvidenceRow, error)
 	CountActiveAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) (int64, error)
-	CountAnalysesCreatedSince(ctx context.Context, arg CountAnalysesCreatedSinceParams) (int64, error)
 	// A company's scan takes the next number among its scans; the unique index refuses a duplicate.
 	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
@@ -68,6 +67,8 @@ type Querier interface {
 	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
+	// How many scans the language model answered for, and the tokens one of them used on average.
+	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)
 	TokensSince(ctx context.Context, createdAt time.Time) (int64, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error

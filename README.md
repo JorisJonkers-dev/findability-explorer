@@ -44,9 +44,11 @@ review terms, and open the admin settings
   archives it (it leaves the list and the re-scans; its scans stay; restoring it brings it back).
   Nothing is removed while a scan of it is queued or running.
 - **Re-scans** (`POST /api/v1/admin/rescans`, administrators, on demand only): one scan per named
-  company, or of every company that is not archived, has a website and was scanned before. A
-  company with a scan still queued or running is skipped. Three scans run at a time, each on
-  another company's site; re-scans do not count against the hourly limit on single scans.
+  company, or of every company that is not archived, has a website and has data: the desk
+  research studied it, or it was scanned before. A company with a scan still queued or running is
+  skipped. Three scans run at a time, each on another company's site; the rest wait their turn.
+  Administrators may start as many scans and re-scans as they like: there is no hourly limit and
+  no cap on the queue.
 
 - **Admin settings** (`/api/v1/admin/llm`): API keys for Anthropic, OpenRouter and Mistral, more
   than one each, sealed in Postgres and never shown again; which key and model product matching
@@ -87,7 +89,6 @@ Environment:
 | `SESSION_KEY` | At least 32 characters; seals the session cookie, the refresh tokens and the API keys admins add (required unless `DEV_USER` is set) |
 | `ANTHROPIC_API_KEY` | The Vault key, shown as the read-only credential `vault-anthropic`; until an admin chooses, matching uses it with `claude-haiku-5-5` |
 | `LLM_MONTHLY_TOKENS` | The language-model budget per calendar month, every provider together (default 2,000,000) |
-| `ANALYSES_PER_HOUR` | Single scans one account may start per hour (default 10); re-scans do not count |
 | `CRAWLER_CONTACT` | Put in the crawler's User-Agent |
 | `DEV_USER`, `DEV_ROLES` | Local runs only: every request runs as `DEV_USER` with the comma-separated `DEV_ROLES` (`ROLE_ADMIN` opens the admin settings), without auth-api. Never set them in a deployment |
 

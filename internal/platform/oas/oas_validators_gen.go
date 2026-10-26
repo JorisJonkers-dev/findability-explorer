@@ -2514,19 +2514,40 @@ func (s *LlmBudget) Validate() error {
 			MinSet:        true,
 			Min:           0,
 			MaxSet:        true,
-			Max:           100000,
+			Max:           1000000000000,
 			MinExclusive:  false,
 			MaxExclusive:  false,
 			MultipleOfSet: false,
 			MultipleOf:    0,
 			Pattern:       nil,
-		}).Validate(int64(s.AnalysesPerHour)); err != nil {
+		}).Validate(int64(s.AverageTokensPerScan)); err != nil {
 			return errors.Wrap(err, "int")
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "analysesPerHour",
+			Name:  "averageTokensPerScan",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           1000000000000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.ScansMatched)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "scansMatched",
 			Error: err,
 		})
 	}
@@ -4284,14 +4305,6 @@ func (s *StartAnalysisForbidden) Validate() error {
 	return nil
 }
 
-func (s *StartAnalysisTooManyRequests) Validate() error {
-	alias := (*ProblemStatusCode)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *StartAnalysisUnauthorized) Validate() error {
 	alias := (*ProblemStatusCode)(s)
 	if err := alias.Validate(); err != nil {
@@ -4317,14 +4330,6 @@ func (s *StartRescansBadRequest) Validate() error {
 }
 
 func (s *StartRescansForbidden) Validate() error {
-	alias := (*ProblemStatusCode)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *StartRescansTooManyRequests) Validate() error {
 	alias := (*ProblemStatusCode)(s)
 	if err := alias.Validate(); err != nil {
 		return err

@@ -1845,29 +1845,6 @@ func encodeStartAnalysisResponse(response StartAnalysisRes, w http.ResponseWrite
 		}
 		return nil
 
-	case *StartAnalysisTooManyRequests:
-		w.Header().Set("Content-Type", "application/problem+json")
-		code := response.StatusCode
-		if code == 0 {
-			// Set default status code.
-			code = http.StatusOK
-		}
-		w.WriteHeader(code)
-		if code >= http.StatusInternalServerError {
-			span.SetStatus(codes.Error, http.StatusText(code))
-		}
-
-		e := new(jx.Encoder)
-		response.Response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		if code >= http.StatusInternalServerError {
-			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
-		}
-		return nil
-
 	case *StartAnalysisUnauthorized:
 		w.Header().Set("Content-Type", "application/problem+json")
 		code := response.StatusCode
@@ -1957,29 +1934,6 @@ func encodeStartRescansResponse(response StartRescansRes, w http.ResponseWriter,
 		return nil
 
 	case *StartRescansForbidden:
-		w.Header().Set("Content-Type", "application/problem+json")
-		code := response.StatusCode
-		if code == 0 {
-			// Set default status code.
-			code = http.StatusOK
-		}
-		w.WriteHeader(code)
-		if code >= http.StatusInternalServerError {
-			span.SetStatus(codes.Error, http.StatusText(code))
-		}
-
-		e := new(jx.Encoder)
-		response.Response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		if code >= http.StatusInternalServerError {
-			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
-		}
-		return nil
-
-	case *StartRescansTooManyRequests:
 		w.Header().Set("Content-Type", "application/problem+json")
 		code := response.StatusCode
 		if code == 0 {

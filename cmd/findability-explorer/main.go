@@ -15,8 +15,6 @@
 //   - ANTHROPIC_API_KEY: the Vault-delivered key, shown as the read-only credential
 //     vault-anthropic; until an admin chooses, product matching uses it with claude-haiku-5-5
 //   - LLM_MONTHLY_TOKENS: the language-model budget per calendar month (default 2000000)
-//   - ANALYSES_PER_HOUR: how many single scans one user may start per hour (default 10); an
-//     administrator's re-scans do not count
 //   - CRAWLER_CONTACT: a contact address for the crawler's User-Agent
 //   - DEV_USER, and DEV_ROLES (comma-separated, such as ROLE_ADMIN): stand in for a signed-in
 //     account on a local run, without auth-api; never set in a deployment
@@ -272,20 +270,15 @@ func sessionKey(logger *slog.Logger, getenv func(string) string) (string, error)
 
 // limits are what analyses may cost.
 type limits struct {
-	perHour int
 	monthly int64
 }
 
 func limitsOf(getenv func(string) string) (limits, error) {
-	perHour, err := intEnv(getenv, "ANALYSES_PER_HOUR", 10)
-	if err != nil {
-		return limits{}, err
-	}
 	monthly, err := intEnv(getenv, "LLM_MONTHLY_TOKENS", 2_000_000)
 	if err != nil {
 		return limits{}, err
 	}
-	return limits{perHour: perHour, monthly: int64(monthly)}, nil
+	return limits{monthly: int64(monthly)}, nil
 }
 
 // newLLM builds the language-model settings: the Vault key, the keys admins add, and the active model.
@@ -300,9 +293,19 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 	if vault == "" {
 		logger.Info("ANTHROPIC_API_KEY is not set: product matching is off until an admin adds a key and chooses a model")
 	}
-	spent := func(ctx context.Context) (int64, error) { return analyses.TokensSince(ctx, monthStart(now())) }
+	spent := func(ctx context.Context) (llmapp.Spending, error) {
+		month, err := analyses.TokensSince(ctx, monthStart(now()))
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		scans, average, err := analyses.TokensPerScan(ctx)
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		return llmapp.Spending{ThisMonth: month, AveragePerScan: average, ScansMatched: scans}, nil
+	}
 	return llmapp.New(llmpersistence.New(store, sealer), providers.New(), spent,
-		llmapp.Config{VaultKey: vault, MonthlyTokens: l.monthly, AnalysesPerHour: l.perHour},
+		llmapp.Config{VaultKey: vault, MonthlyTokens: l.monthly},
 		now, uuid.NewString), nil
 }
 
@@ -337,7 +340,7 @@ func newAnalysis(ctx context.Context, getenv func(string) string, repo *persiste
 		func() []analysisdomain.GlossaryTerm { return glossary(terminology.Terms()) },
 		now,
 		analysisapp.Limits{
-			PerUserPerHour: l.perHour, MonthlyTokens: l.monthly, SiteTextChars: 60_000, QueueSize: scanQueue, Workers: scanWorkers,
+			MonthlyTokens: l.monthly, SiteTextChars: 60_000, Workers: scanWorkers,
 		},
 	)
 	if err := svc.Recover(ctx); err != nil {
@@ -346,12 +349,9 @@ func newAnalysis(ctx context.Context, getenv func(string) string, repo *persiste
 	return svc, nil
 }
 
-// Scans run scanWorkers at a time, each on another company's site, and up to scanQueue wait; a
-// re-scan of every company fits in the queue.
-const (
-	scanWorkers = 3
-	scanQueue   = 256
-)
+// Scans run scanWorkers at a time, each on another company's site; the rest wait their turn,
+// however many there are.
+const scanWorkers = 3
 
 // directory hands the companies to the analysis context by value.
 type directory struct {
@@ -369,7 +369,9 @@ func (d directory) Companies(ctx context.Context) ([]analysisdomain.Company, err
 	}
 	out := make([]analysisdomain.Company, 0, len(listed))
 	for _, l := range listed {
-		out = append(out, analysisdomain.Company{ID: l.ID, Name: l.Name, Website: l.URL, Archived: l.Archived})
+		out = append(out, analysisdomain.Company{
+			ID: l.ID, Name: l.Name, Website: l.URL, Archived: l.Archived, Researched: l.Source == companiesdomain.SourceResearch,
+		})
 	}
 	return out, nil
 }

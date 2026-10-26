@@ -4,6 +4,7 @@ import { familyLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
 import PillButton from '../../../shared/ui/PillButton.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
 import type { Company } from '../domain/company'
+import { isScanning, listScanLabel } from '../domain/company'
 import { countLabel, countryCode, familyDots, filterCompanies, type Region, REGIONS, rowLabel } from '../domain/list'
 
 const props = withDefaults(
@@ -66,7 +67,13 @@ const SHORT: Record<(typeof PRODUCT_FAMILIES)[number], string> = {
             :class="company.id === selectedId ? 'bg-mist' : 'bg-transparent hover:bg-mist'"
             @click="emit('pick', company.id)"
           >
-            <span class="truncate stage:text-[32px]" :class="company.id === selectedId ? 'font-semibold' : ''">{{ company.shortName }}</span>
+            <span class="flex min-w-0 flex-col">
+              <span class="truncate stage:text-[32px]" :class="company.id === selectedId ? 'font-semibold' : ''">{{ company.shortName }}</span>
+              <span class="flex items-center gap-1.5 truncate text-xs stage:gap-2.5 stage:text-[22px]" :class="isScanning(company) ? 'font-medium text-orange-ink' : 'text-muted'">
+                <span v-if="isScanning(company)" aria-hidden="true" class="size-2 flex-none rounded-full bg-orange motion-safe:animate-pulse stage:size-3.5"></span>
+                {{ listScanLabel(company) }}
+              </span>
+            </span>
             <span v-for="dot in familyDots(company)" :key="dot.family" class="flex justify-center">
               <span class="size-4 rounded-full stage:size-[30px]" :class="dot.offers ? 'bg-orange' : 'bg-grey'"></span>
             </span>

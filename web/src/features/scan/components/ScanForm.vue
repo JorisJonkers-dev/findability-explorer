@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useCompanies } from '../../competitors/composables/useCompanies'
-import { type Company, pickerState, scanCountLabel, suggestions } from '../../competitors/domain/company'
+import { type Company, isScanning, pickerState, scanCountLabel, suggestions } from '../../competitors/domain/company'
 import { useStartScan } from '../composables/useStartScan'
 import { usePageBudget } from '../composables/usePageBudget'
 import { checkScanUrl, describeScanUrlCheck } from '../domain/newScan'
@@ -165,7 +165,7 @@ defineExpose({
       <p v-if="state.kind === 'known'" class="m-0 text-sm text-ink-2 stage:text-[28px]">
         <strong class="font-semibold text-black">{{ state.company.shortName }}</strong>,
         {{ state.company.groupCompany ? "in Tribelt's own group" : 'a known competitor' }}.
-        {{ scanCountLabel(state.company.scans) }}.
+        {{ scanCountLabel(state.company.scans, isScanning(state.company)) }}.
       </p>
       <div v-else-if="state.kind === 'new'" class="flex flex-col gap-1.5 stage:gap-2">
         <label class="flex items-center gap-3 text-sm text-ink-2 stage:gap-5 stage:text-[26px]">

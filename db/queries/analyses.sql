@@ -21,15 +21,17 @@ FROM analyses
 ORDER BY created_at DESC, id
 LIMIT $1;
 
--- name: CountAnalysesCreatedSince :one
-SELECT count(*)::bigint
-FROM analyses
-WHERE created_by = $1 AND created_at >= $2 AND NOT rescan;
-
 -- name: TokensSince :one
 SELECT coalesce(sum(llm_input_tokens + llm_output_tokens), 0)::bigint
 FROM analyses
 WHERE created_at >= $1;
+
+-- name: TokensPerMatchedScan :one
+-- How many scans the language model answered for, and the tokens one of them used on average.
+SELECT count(*)::bigint AS scans,
+    coalesce(round(avg(llm_input_tokens + llm_output_tokens)), 0)::bigint AS average
+FROM analyses
+WHERE matching = 'done' AND llm_input_tokens + llm_output_tokens > 0;
 
 -- name: QueuedAnalyses :many
 SELECT id

@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"sync/atomic"
@@ -20,13 +21,14 @@ func website(raw string) *url.URL {
 	return u
 }
 
-// companies: x and y were scanned before, z was not, a is archived, n has no website, p a
-// website that cannot be scanned.
+// companies: x and y were scanned before, z was not, r is researched and was not, a is archived,
+// n has no website, p a website that cannot be scanned.
 func companies() []domain.Company {
 	return []domain.Company{
 		{ID: "x", Name: "X", Website: website("https://x.test/")},
 		{ID: "y", Name: "Y", Website: website("https://y.test/")},
 		{ID: "z", Name: "Z", Website: website("https://z.test/")},
+		{ID: "r", Name: "R", Website: website("https://r.test/"), Researched: true},
 		{ID: "a", Name: "A", Website: website("https://a.test/"), Archived: true},
 		{ID: "n", Name: "N"},
 		{ID: "p", Name: "P", Website: website("https://10.0.0.1/")},
@@ -48,13 +50,15 @@ func rescanService(r *repo, d *directory, l app.Limits) *app.Service {
 func TestRescanAllQueuesEveryCompanyWithData(t *testing.T) {
 	r := newRepo()
 	scanned(r, "x", "y", "a", "n")
-	svc := rescanService(r, &directory{companies: companies()}, app.Limits{QueueSize: 10})
+	svc := rescanService(r, &directory{companies: companies()}, app.Limits{})
 	queued, skipped, err := svc.Rescan(t.Context(), "admin", nil, true, 0)
-	if err != nil || len(queued) != 2 || len(skipped) != 0 {
+	if err != nil || len(queued) != 3 || len(skipped) != 0 {
 		t.Fatalf("Rescan = %+v, %+v, %v", queued, skipped, err)
 	}
+	// The desk research is data too: r is queued although no scan of it ran yet.
+	want := map[string]int{"x": 2, "y": 2, "r": 1}
 	for _, a := range queued {
-		if !a.Rescan || a.MaxPages != domain.DefaultMaxPages || a.Number != 2 || a.CreatedBy != "admin" {
+		if !a.Rescan || a.MaxPages != domain.DefaultMaxPages || a.Number != want[a.CompetitorID] || a.CreatedBy != "admin" {
 			t.Errorf("queued %+v", a)
 		}
 	}
@@ -62,7 +66,7 @@ func TestRescanAllQueuesEveryCompanyWithData(t *testing.T) {
 
 func TestRescanNamedCompanies(t *testing.T) {
 	r := running()
-	svc := rescanService(r, &directory{companies: companies()}, app.Limits{QueueSize: 10})
+	svc := rescanService(r, &directory{companies: companies()}, app.Limits{})
 	queued, skipped, err := svc.Rescan(t.Context(), "admin", []string{"z", "x", "n", "p", "unknown"}, false, 20)
 	if err != nil || len(queued) != 1 || queued[0].CompetitorID != "z" || queued[0].MaxPages != 20 {
 		t.Fatalf("Rescan = %+v, %v", queued, err)
@@ -83,11 +87,16 @@ func TestRescanNamedCompanies(t *testing.T) {
 	}
 }
 
-func TestRescanSkipsWhatTheQueueCannotHold(t *testing.T) {
-	svc := rescanService(newRepo(), &directory{companies: companies()}, app.Limits{QueueSize: 1})
-	queued, skipped, err := svc.Rescan(t.Context(), "admin", []string{"x", "y"}, false, 1)
-	if err != nil || len(queued) != 1 || len(skipped) != 1 || skipped[0].Reason != "The queue is full; try it again in a few minutes." {
-		t.Fatalf("Rescan = %+v, %+v, %v", queued, skipped, err)
+// A re-scan takes every company, however many: nothing is skipped for load.
+func TestRescanTakesEveryCompanyHoweverMany(t *testing.T) {
+	var many []domain.Company
+	for i := range 300 {
+		id := fmt.Sprintf("c%d", i)
+		many = append(many, domain.Company{ID: id, Name: id, Website: website("https://" + id + ".test/"), Researched: true})
+	}
+	queued, skipped, err := rescanService(newRepo(), &directory{companies: many}, app.Limits{}).Rescan(t.Context(), "admin", nil, true, 1)
+	if err != nil || len(queued) != 300 || len(skipped) != 0 {
+		t.Fatalf("Rescan = %d queued, %+v, %v", len(queued), skipped, err)
 	}
 }
 
@@ -110,7 +119,7 @@ func TestRescanRefuses(t *testing.T) {
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			if _, _, err := rescanService(c.repo, c.dir, app.Limits{QueueSize: 5}).Rescan(t.Context(), "u", c.ids, c.all, c.maxPages); !errors.Is(err, c.want) {
+			if _, _, err := rescanService(c.repo, c.dir, app.Limits{}).Rescan(t.Context(), "u", c.ids, c.all, c.maxPages); !errors.Is(err, c.want) {
 				t.Fatalf("Rescan error = %v, want %v", err, c.want)
 			}
 		})
@@ -241,7 +250,7 @@ func TestWorkRunsScansSideBySide(t *testing.T) {
 	var inFlight, most atomic.Int32
 	c := blockingCrawler{block: block, inFlight: &inFlight, most: &most}
 	svc := app.New(r, &directory{}, c, source{}, glossary, func() time.Time { return now },
-		app.Limits{PerUserPerHour: 10, QueueSize: 5, Workers: 2})
+		app.Limits{Workers: 2})
 	for _, host := range []string{"https://x.test/", "https://y.test/"} {
 		if _, err := svc.Start(t.Context(), "u", host, 1, ""); err != nil {
 			t.Fatal(err)

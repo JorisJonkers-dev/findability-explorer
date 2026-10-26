@@ -5,11 +5,12 @@ import eyelink from '../../../assets/eyelink.webp'
 import type { Term } from '../../../infrastructure/api/types.gen'
 import { tierFill } from '../../../shared/tiers'
 import { tierLabel } from '../../../shared/vocabulary'
+import ProgressBar from '../../../shared/ui/ProgressBar.vue'
 import RoundedPhoto from '../../../shared/ui/RoundedPhoto.vue'
-import { recentLabel } from '../../scan/domain/recent'
+import { isInProgress, progress } from '../../scan/domain/status'
 import { useCompany } from '../composables/useCompany'
 import CompanyAdmin from './CompanyAdmin.vue'
-import { type Company, companyTerms, scanCountLabel, scanOutcome } from '../domain/company'
+import { type Company, companyTerms, lastScanLabel, scanCountLabel, scanLinkLabel } from '../domain/company'
 import { beltRows, companyKind, termsTitle, whereLine } from '../domain/list'
 
 const props = defineProps<{ company: Company; terms: readonly Term[]; isAdmin: boolean }>()
@@ -22,6 +23,11 @@ const SCANS_SHOWN = 3
 const { detail } = useCompany(toRef(() => props.company.id))
 const used = computed(() => companyTerms(props.terms, props.company.shortName))
 const scans = computed(() => (detail.value ? detail.value.scans.slice(0, SCANS_SHOWN) : []))
+// The list carries the last scan; the company's own scans stand in until it does.
+const newest = computed(() => props.company.lastScan ?? scans.value[0])
+const lastScan = computed(() => lastScanLabel(newest.value))
+/** The scan running now, if one is, for its progress bar. */
+const running = computed(() => (newest.value && isInProgress(newest.value.status) ? newest.value : undefined))
 </script>
 
 <template>
@@ -61,6 +67,18 @@ const scans = computed(() => (detail.value ? detail.value.scans.slice(0, SCANS_S
       <p v-else class="m-0 text-muted stage:text-[30px]">The research found no website for this company.</p>
       <RouterLink :to="`/competitors/${company.id}/history`" class="font-medium stage:text-[30px]">Search terms and history</RouterLink>
     </div>
+    <div class="flex flex-col gap-0.5 border-l-4 border-orange pl-3 stage:gap-1 stage:border-l-[6px] stage:pl-6" data-testid="scan-stats">
+      <p class="m-0 font-display text-xl font-semibold stage:text-[44px]">{{ scanCountLabel(company.scans, running !== undefined) }}</p>
+      <p v-if="lastScan" class="m-0 stage:text-[28px]" :class="running ? 'font-medium text-orange-ink' : 'text-ink-2'">{{ lastScan }}</p>
+      <p v-else-if="company.scans === 0" class="m-0 text-ink-2 stage:text-[28px]">No scan of its website has run yet.</p>
+      <ProgressBar
+        v-if="running"
+        class="mt-1.5 stage:mt-3"
+        :fraction="progress(running).fraction"
+        :label="`Scan of ${company.shortName}`"
+        :text="progress(running).label"
+      />
+    </div>
     <p v-if="company.archived" class="m-0 font-medium text-orange-ink stage:text-[28px]">Archived: hidden from the list and the re-scans.</p>
     <CompanyAdmin v-if="isAdmin" :company="company" @removed="emit('removed')" />
 
@@ -87,9 +105,9 @@ const scans = computed(() => (detail.value ? detail.value.scans.slice(0, SCANS_S
         </li>
       </ul>
       <p class="m-0 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-muted stage:gap-x-6 stage:text-[24px]">
-        <span>{{ scanCountLabel(company.scans) }}</span>
+        <span v-if="scans.length > 0">Latest scans:</span>
         <RouterLink v-for="scan in scans" :key="scan.id" :to="{ path: `/scan/${scan.id}`, query: { company: company.id } }">
-          {{ recentLabel(scan) }}: {{ scanOutcome(scan) }}
+          {{ scanLinkLabel(scan) }}
         </RouterLink>
       </p>
     </div>

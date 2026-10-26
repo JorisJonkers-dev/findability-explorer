@@ -316,7 +316,8 @@ paths:
       summary: Re-scan companies
       description: >-
         Administrators only. Queues one scan for each named company with a website, or with
-        `all`, for every company that is not archived, has a website and was scanned before. A
+        `all`, for every company that is not archived, has a website and has data: the desk
+        research studied it, or it was scanned before. A
         company whose scan is still queued or running is skipped, and so is one without a
         website. The scans run a few at a time, each site politely.
       tags: [admin]
@@ -344,8 +345,6 @@ paths:
         "403":
           $ref: "#/components/responses/Problem"
         "422":
-          $ref: "#/components/responses/Problem"
-        "429":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -493,12 +492,14 @@ paths:
         - name: limit
           in: query
           required: false
-          description: How many analyses to return.
+          description: >-
+            How many analyses to return; up to 300, so a re-scan of every company can be followed
+            in one list.
           schema:
             type: integer
             format: int32
             minimum: 1
-            maximum: 50
+            maximum: 300
             default: 20
       responses:
         "200":
@@ -518,7 +519,8 @@ paths:
         Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on
         the same site, product and application pages first, following robots.txt and the site's
         sitemaps and language versions. The analysis runs in the background; poll it until its
-        status is done or failed. 409 while a scan of the same company is queued or running.
+        status is done or failed. 409 while a scan of the same company is queued or running. There
+        is no limit on how many scans an administrator starts: each waits its turn.
       tags: [analyses]
       requestBody:
         required: true
@@ -546,8 +548,6 @@ paths:
         "409":
           $ref: "#/components/responses/Problem"
         "422":
-          $ref: "#/components/responses/Problem"
-        "429":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -1622,7 +1622,7 @@ components:
       description: What analyses may spend on the language model.
       type: object
       additionalProperties: false
-      required: [monthlyTokens, usedThisMonth, analysesPerHour]
+      required: [monthlyTokens, usedThisMonth, averageTokensPerScan, scansMatched]
       properties:
         monthlyTokens:
           type: integer
@@ -1638,13 +1638,22 @@ components:
           maximum: 1000000000000
           description: The tokens analyses created this month used so far.
           example: 48211
-        analysesPerHour:
+        averageTokensPerScan:
           type: integer
-          format: int32
+          format: int64
           minimum: 0
-          maximum: 100000
-          description: How many analyses one account may start per hour.
-          example: 10
+          maximum: 1000000000000
+          description: >-
+            The tokens one scan's product matching used on average, over every scan the language
+            model answered for; 0 before the first.
+          example: 29137
+        scansMatched:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: How many scans the average is over.
+          example: 2
     LlmSettings:
       description: The language-model settings.
       type: object

@@ -149,16 +149,17 @@ type Handler interface {
 	// Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
 	// site, product and application pages first, following robots.txt and the site's sitemaps and language
 	// versions. The analysis runs in the background; poll it until its status is done or failed. 409 while
-	// a scan of the same company is queued or running.
+	// a scan of the same company is queued or running. There is no limit on how many scans an
+	// administrator starts: each waits its turn.
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, req *NewAnalysis) (StartAnalysisRes, error)
 	// StartRescans implements startRescans operation.
 	//
 	// Administrators only. Queues one scan for each named company with a website, or with `all`, for every
-	// company that is not archived, has a website and was scanned before. A company whose scan is still
-	// queued or running is skipped, and so is one without a website. The scans run a few at a time, each
-	// site politely.
+	// company that is not archived, has a website and has data: the desk research studied it, or it was
+	// scanned before. A company whose scan is still queued or running is skipped, and so is one without a
+	// website. The scans run a few at a time, each site politely.
 	//
 	// POST /api/v1/admin/rescans
 	StartRescans(ctx context.Context, req *RescanRequest) (StartRescansRes, error)

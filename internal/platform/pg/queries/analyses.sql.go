@@ -262,24 +262,6 @@ func (q *Queries) CountActiveAnalysesOfCompetitor(ctx context.Context, competito
 	return column_1, err
 }
 
-const countAnalysesCreatedSince = `-- name: CountAnalysesCreatedSince :one
-SELECT count(*)::bigint
-FROM analyses
-WHERE created_by = $1 AND created_at >= $2 AND NOT rescan
-`
-
-type CountAnalysesCreatedSinceParams struct {
-	CreatedBy string
-	CreatedAt time.Time
-}
-
-func (q *Queries) CountAnalysesCreatedSince(ctx context.Context, arg CountAnalysesCreatedSinceParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countAnalysesCreatedSince, arg.CreatedBy, arg.CreatedAt)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
-}
-
 const createAnalysis = `-- name: CreateAnalysis :one
 INSERT INTO analyses (id, url, max_pages, status, matching, created_by, created_at, competitor_id, rescan, scan_number)
 VALUES (
@@ -901,6 +883,26 @@ func (q *Queries) SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchi
 		arg.MatchingModel,
 	)
 	return err
+}
+
+const tokensPerMatchedScan = `-- name: TokensPerMatchedScan :one
+SELECT count(*)::bigint AS scans,
+    coalesce(round(avg(llm_input_tokens + llm_output_tokens)), 0)::bigint AS average
+FROM analyses
+WHERE matching = 'done' AND llm_input_tokens + llm_output_tokens > 0
+`
+
+type TokensPerMatchedScanRow struct {
+	Scans   int64
+	Average int64
+}
+
+// How many scans the language model answered for, and the tokens one of them used on average.
+func (q *Queries) TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error) {
+	row := q.db.QueryRow(ctx, tokensPerMatchedScan)
+	var i TokensPerMatchedScanRow
+	err := row.Scan(&i.Scans, &i.Average)
+	return i, err
 }
 
 const tokensSince = `-- name: TokensSince :one

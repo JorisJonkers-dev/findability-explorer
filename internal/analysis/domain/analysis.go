@@ -116,8 +116,7 @@ type Analysis struct {
 	CompetitorID string
 	// Number is the scan's number among its company's scans, from 1; 0 without a company.
 	Number int
-	// Rescan is true for a scan an administrator's re-scan of many companies queued; the hourly
-	// limit on single scans leaves it out.
+	// Rescan is true for a scan an administrator's re-scan of many companies queued.
 	Rescan       bool
 	MaxPages     int
 	Status       Status
@@ -160,8 +159,6 @@ type Repository interface {
 	CountActive(ctx context.Context, competitorID string) (int, error)
 	// FirstScans returns, per phrase, the number of the company's first finished scan that found it.
 	FirstScans(ctx context.Context, competitorID string) (map[PhraseKey]int, error)
-	// CountCreatedSince counts the single analyses user started at or after since.
-	CountCreatedSince(ctx context.Context, user string, since time.Time) (int, error)
 	// TokensSince sums the language-model tokens of analyses created at or after since.
 	TokensSince(ctx context.Context, since time.Time) (int64, error)
 	// Queued returns the ids of every queued analysis, oldest first.
@@ -197,6 +194,8 @@ type Company struct {
 	// Website is nil when the company has none.
 	Website  *url.URL
 	Archived bool
+	// Researched is true for a company the desk research studied: it has data before any scan.
+	Researched bool
 }
 
 // ErrNotFound is returned for an analysis id that does not exist.

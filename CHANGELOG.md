@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.4.0...v1.5.0) (2026-10-26)
+
+
+### Features
+
+* **web:** sort the tables by any column, and back ([#22](https://github.com/JorisJonkers-dev/findability-explorer/issues/22)) ([92ef16a](https://github.com/JorisJonkers-dev/findability-explorer/commit/92ef16ab55581a9bb3d1dc4a2a71269eba64d574))
+* **web:** Tribelt's term beside each ranked term, bar details on hover, a language filter, and "competitors" ([#40](https://github.com/JorisJonkers-dev/findability-explorer/issues/40)) ([ac596a4](https://github.com/JorisJonkers-dev/findability-explorer/commit/ac596a49077eab0450ea486c452139ee2190c2dd))
+* **web:** widen or minimise a page's columns ([#41](https://github.com/JorisJonkers-dev/findability-explorer/issues/41)) ([a483548](https://github.com/JorisJonkers-dev/findability-explorer/commit/a483548272598fe60149067497d299723b1cc024))
+
+
+### Bug Fixes
+
+* **web:** scroll the whole company card and the whole scan panel ([#21](https://github.com/JorisJonkers-dev/findability-explorer/issues/21)) ([406d1a0](https://github.com/JorisJonkers-dev/findability-explorer/commit/406d1a0d93171915a93c5f13cfcf3abd42dc62e4))
+
 ## [1.4.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.3.0...v1.4.0) (2026-10-26)
 
 

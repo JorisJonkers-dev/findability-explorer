@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import triflex from '../../../assets/triflex.webp'
 import { percent } from '../../../shared/percent'
 import GoalCard from '../../../shared/ui/GoalCard.vue'
@@ -167,6 +168,12 @@ const AD_DOT: Record<AdState, string> = { no: 'bg-orange-ink', notYet: 'bg-blue-
         <RoundedPhoto :src="triflex" alt="A Tri-Flex turn-curve belt by Tribelt" class="stage:h-[560px]" />
         <SectionHeading id="so2-title">So we recommend</SectionHeading>
         <RecommendationList :items="RECOMMENDATIONS" />
+        <RouterLink
+          to="/ai-search/readiness"
+          class="inline-flex min-h-11 items-center gap-2 self-start rounded-full border-2 border-black px-5 font-medium text-black no-underline hover:bg-black hover:text-white stage:min-h-[88px] stage:border-[3px] stage:px-10 stage:text-[30px]"
+        >
+          Who follows this: AI readiness of the competitors
+        </RouterLink>
         <GoalCard :goal="GOAL.goal" :text="GOAL.text" :rows="GOAL.rows" class="stage:mt-auto" />
       </aside>
     </div>

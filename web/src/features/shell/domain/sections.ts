@@ -17,10 +17,10 @@ export const SECTIONS: readonly Section[] = [
   { id: 'plan', number: '05', label: 'The plan', path: '/plan' },
 ]
 
-/** The section a path shows, or undefined: a scan is shown in the competitors section. */
+/** The section a path shows, or undefined: a scan is shown in the competitors section, a detail view in its own. */
 export function sectionOfPath(path: string): Section | undefined {
   const scan = path.startsWith('/scan/') || path.startsWith('/competitors/') ? '/competitors' : path
-  return SECTIONS.find((s) => s.path === scan)
+  return SECTIONS.find((s) => s.path === scan || scan.startsWith(`${s.path}/`))
 }
 
 /** The section with this id. */

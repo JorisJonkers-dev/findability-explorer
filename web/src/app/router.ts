@@ -11,6 +11,12 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       { path: '/', name: 'home', component: () => import('../features/home/components/HomePoster.vue'), meta: { title: 'Overview' } },
       { path: '/buyers', name: 'buyers', component: () => import('../features/buyers/components/BuyersView.vue'), meta: { title: 'Buyers' } },
       { path: '/ai-search', name: 'ai-search', component: () => import('../features/ai-search/components/AiSearchView.vue'), meta: { title: 'AI search' } },
+      {
+        path: '/ai-search/readiness',
+        name: 'ai-readiness',
+        component: () => import('../features/readiness/components/ReadinessView.vue'),
+        meta: { title: 'AI readiness' },
+      },
       // One view for the companies alone and for a scan beside them, so a started scan keeps the form.
       { path: '/competitors', name: 'competitors', component: competitors, meta: { title: 'Competitors' } },
       { path: '/scan/:id', name: 'scan', component: competitors, props: (to) => ({ scanId: String(to.params.id) }), meta: { title: 'Scan' } },

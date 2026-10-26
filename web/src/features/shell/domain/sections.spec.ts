@@ -10,6 +10,7 @@ describe('the sections', () => {
     expect(sectionOfPath('/terms')?.id).toBe('terms')
     expect(sectionOfPath('/scan/5b0c')?.id).toBe('competitors')
     expect(sectionOfPath('/competitors/twentebelt/history')?.id).toBe('competitors')
+    expect(sectionOfPath('/ai-search/readiness')?.id).toBe('ai-search')
     expect(sectionOfPath('/')).toBeUndefined()
     expect(sectionOfPath('/settings')).toBeUndefined()
     expect(section('plan').path).toBe('/plan')

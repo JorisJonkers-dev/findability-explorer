@@ -1,6 +1,9 @@
 import type {
+  AiReadiness,
+  AiReadinessRow,
   Analysis,
   AnalysisSummary,
+  BotRule,
   Competitor,
   Me,
   Term,
@@ -52,6 +55,7 @@ export function competitor(name: string, overrides: Partial<Competitor> = {}): C
   return {
     id: slug(name),
     source: 'research',
+    role: 'competitor',
     websiteUrl: 'https://www.twentebelt.com/',
     host: 'twentebelt.com',
     scans: 0,
@@ -121,4 +125,39 @@ export function analysis(overrides: Partial<Analysis> = {}, summaryOverrides: Pa
 /** The account signed in: not an administrator unless the test says so. */
 export function me(overrides: Partial<Me> = {}): Me {
   return { subject: 'joris', name: 'Joris Jonkers', isAdmin: false, ...overrides }
+}
+
+const BOT_TOKENS = ['Googlebot', 'Google-Extended', 'Bingbot', 'OAI-SearchBot', 'ChatGPT-User', 'GPTBot', 'Claude-SearchBot', 'ClaudeBot', 'PerplexityBot', 'CCBot']
+
+/** Every crawler's rule: allowed and named, unless access names it otherwise. */
+export function bots(access: Record<string, BotRule['access']> = {}, named = true): BotRule[] {
+  return BOT_TOKENS.map((bot) => {
+    const a = access[bot] ?? 'allowed'
+    return { bot, access: a, named, followsAdvice: a !== 'blocked' }
+  })
+}
+
+/** A site that follows every recommendation, as the mirror does, unless overridden. */
+export function readiness(overrides: Partial<AiReadiness> = {}): AiReadiness {
+  const r: AiReadiness = {
+    robots: 'found',
+    bots: bots(),
+    sitemap: { declared: true, files: 2, addresses: 124, languages: ['nl', 'de', 'en'] },
+    llmsTxt: { present: true, bytes: 5120, links: 124 },
+    llmsFullTxt: true,
+    markdown: true,
+    homeRead: true,
+    structuredData: ['Organization', 'Product'],
+    languages: ['nl', 'de', 'en'],
+    stack: { cms: 'WordPress', seoPlugin: 'Yoast SEO' },
+    advice: (['sitemapDeclared', 'sitemapLanguages', 'llmsTxt', 'markdown', 'organization', 'product', 'languages'] as const).map((check) => ({ check, ok: true })),
+    gaps: 0,
+    ...overrides,
+  }
+  return r
+}
+
+/** A row of the AI readiness table. */
+export function readinessRow(name: string, overrides: Partial<AiReadinessRow> = {}): AiReadinessRow {
+  return { competitorId: slug(name), name, role: 'competitor', scan: summary({ competitorId: slug(name) }), readiness: readiness(), ...overrides }
 }

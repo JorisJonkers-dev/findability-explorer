@@ -11,6 +11,7 @@ import RoundedPhoto from '../../../shared/ui/RoundedPhoto.vue'
 import { isInProgress, progress } from '../../scan/domain/status'
 import { useCompany } from '../composables/useCompany'
 import CompanyAdmin from './CompanyAdmin.vue'
+import CompanyReadiness from '../../readiness/components/CompanyReadiness.vue'
 import { type Company, companyTerms, lastScanLabel, scanCountLabel, scanLinkLabel } from '../domain/company'
 import { beltRows, companyKind, termsTitle, whereLine } from '../domain/list'
 
@@ -90,6 +91,8 @@ const running = computed(() => (newest.value && isInProgress(newest.value.status
     </div>
     <p v-if="company.archived" class="m-0 font-medium text-orange-ink stage:text-[28px]">Archived: hidden from the list and the re-scans.</p>
     <CompanyAdmin v-if="isAdmin" :company="company" @removed="emit('removed')" />
+
+    <CompanyReadiness :company-id="company.id" />
 
     <table class="w-full border-collapse stage:text-[30px]">
       <caption class="pb-2 text-left text-sm text-muted stage:pb-3 stage:text-[26px]">Its names for Tribelt's belt families</caption>

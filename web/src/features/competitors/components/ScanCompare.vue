@@ -3,6 +3,7 @@ import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, ref, toRef, watch } from 'vue'
 import type { AnalysisSummary } from '../../../infrastructure/api/types.gen'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
+import { changeLabel } from '../../readiness/domain/readiness'
 import { useScanComparison } from '../composables/useCompanyHistory'
 import {
   type ChangeKind,
@@ -71,6 +72,14 @@ const PHRASE: Record<ChangeKind, string> = { added: 'font-semibold', removed: 't
           </span>
         </p>
         <p v-if="groups.length === 0" class="m-0 text-ink-2 stage:text-[28px]">The two scans found the same terms.</p>
+        <section aria-label="AI readiness" class="flex flex-col gap-2 stage:gap-3" data-testid="readiness-changes">
+          <h3 class="m-0 text-base font-semibold stage:text-[32px]">AI readiness</h3>
+          <p v-if="comparison.readiness === undefined" class="m-0 text-sm text-ink-2 stage:text-[26px]">One of the two scans did not record its AI readiness.</p>
+          <p v-else-if="comparison.readiness.length === 0" class="m-0 text-sm text-ink-2 stage:text-[26px]">Nothing changed.</p>
+          <ul v-else class="m-0 flex list-none flex-col gap-1 p-0 text-sm stage:gap-2 stage:text-[26px]">
+            <li v-for="c in comparison.readiness" :key="c.field">{{ changeLabel(c) }}</li>
+          </ul>
+        </section>
         <div v-scroll-hint class="scroll-hint flex flex-col gap-5 stage:min-h-0 stage:flex-1 stage:gap-8 stage:overflow-y-auto">
           <section v-for="g in groups" :key="g.group" :aria-label="groupLabel(g.group)" class="flex flex-col gap-2 stage:gap-3">
             <h3 class="m-0 text-base font-semibold stage:text-[32px]">{{ groupLabel(g.group) }}</h3>

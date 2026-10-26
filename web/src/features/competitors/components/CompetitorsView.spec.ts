@@ -1,7 +1,7 @@
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Analysis, AnalysisStatus } from '../../../infrastructure/api/types.gen'
-import { ANALYSIS_ID, analysis, competitor, me, summary, term, termSearch } from '../../../testing/fixtures'
+import { ANALYSIS_ID, analysis, bots, competitor, me, readiness, readinessRow, summary, term, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 
@@ -284,7 +284,7 @@ describe('the scan', () => {
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
     await flushPromises()
     expect(wrapper.find('[role="progressbar"]').exists()).toBe(false)
-    expect(wrapper.get('h3').text()).toBe('twentebelt.com')
+    expect(wrapper.findAll('h3').map((h) => h.text())).toContain('twentebelt.com')
     expect(wrapper.text()).toContain('1 page read · 2 new terms')
   })
 
@@ -466,5 +466,29 @@ describe('for an account that is no administrator', () => {
     expect(card.get('h2').text()).toBe('Old Belts')
     expect(card.text()).toContain('Archived: hidden from the list and the re-scans.')
     expect(card.findAll('button').map((b) => b.text())).toContain('Restore')
+  })
+})
+
+describe('the AI readiness on a company card', () => {
+  it('sums up the crawler policy and the other signals, and leaves the mirror out of the list', async () => {
+    const mirror = competitor('Mirror of tribelt.nl', { id: 'tribelt-mirror', role: 'mirror', host: 'tribelt.jorisjonkers.dev' })
+    const { wrapper } = await mountApp(
+      api({
+        'GET /api/v1/competitors': () => json({ items: [twentebelt, martens, mirror] }),
+        'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { readiness: readiness({ bots: bots({ GPTBot: 'blocked', ClaudeBot: 'blocked' }), gaps: 2 }) })] }),
+      }),
+      '/competitors',
+    )
+    const block = wrapper.get('[data-testid="company-readiness"]')
+    expect(block.text()).toContain('Blocks GPTBot and ClaudeBot.')
+    expect(block.text()).toContain('Follows 15 of 17 recommendations.')
+    expect(block.text()).toContain('llms.txtYes, 124 links')
+    expect(block.get('a').attributes('href')).toBe('/ai-search/readiness')
+    expect(rows(wrapper).map((r) => r.text())).not.toContain(expect.stringContaining('Mirror'))
+  })
+
+  it('says when no scan has checked the company yet', async () => {
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/ai-readiness': () => json({ items: [] }) }), '/competitors')
+    expect(wrapper.get('[data-testid="company-readiness"]').text()).toContain('Not checked yet: the next scan records it.')
   })
 })

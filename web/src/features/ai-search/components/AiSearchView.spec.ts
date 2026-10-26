@@ -42,4 +42,9 @@ describe('the AI search view', () => {
     expect(wrapper.get('ul[aria-label="Named instead"]').findAll('li')).toHaveLength(6)
     expect(wrapper.text()).toContain('Goal G4')
   })
+
+  it('leads on to the AI readiness of the competitors', async () => {
+    const { wrapper } = await mountApp(routes({}), '/ai-search')
+    expect(wrapper.get('a[href="/ai-search/readiness"]').text()).toBe('Who follows this: AI readiness of the competitors')
+  })
 })

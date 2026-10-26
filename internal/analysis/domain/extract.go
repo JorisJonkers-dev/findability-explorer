@@ -301,14 +301,18 @@ const (
 // of the lexicon, phrases that name only the site (brand), and menu and footer text are left out.
 func Keywords(pages []Page, lex Lexicon, brand []string) []Keyword {
 	tally := tallyPages(pages)
+	perLanguage := map[string]int{}
+	for _, p := range pages {
+		perLanguage[PageLanguage(p)]++
+	}
 	brandOnly := slices.DeleteFunc(slices.Clone(brand), func(w string) bool { return lex.Relevant([]string{w}) })
 	out := make([]Keyword, 0, len(tally))
 	for phrase, t := range tally {
 		words := strings.Fields(fold.Fold(phrase))
-		if !keepPhrase(words, lex, brandOnly) || t.boilerplate(len(pages)) {
+		lang := t.language()
+		if !keepPhrase(words, lex, brandOnly) || t.boilerplate(perLanguage[lang], lang) {
 			continue
 		}
-		lang := t.language()
 		n := float64(len(words))
 		score := t.score * (1 + 0.5*(n-1)) * (1 + math.Log(float64(t.pages)))
 		out = append(out, Keyword{
@@ -361,11 +365,12 @@ func keepPhrase(words []string, lex Lexicon, brandOnly []string) bool {
 	return true
 }
 
-// boilerplate says whether a phrase is menu or footer text: only in body text, on most of a
-// site's pages, once the site has enough pages to tell.
-func (t *keywordTally) boilerplate(sitePages int) bool {
+// boilerplate says whether a phrase is menu or footer text: only in body text, on most of the
+// site's pages in its language lang (sitePages of them), once there are enough pages to tell. A
+// site in four languages has a menu per language, each on a quarter of the site.
+func (t *keywordTally) boilerplate(sitePages int, lang string) bool {
 	return sitePages >= boilerplateMinPages && t.bodyOnly == t.pages &&
-		float64(t.pages) >= boilerplateShare*float64(sitePages)
+		float64(t.languages[lang]) >= boilerplateShare*float64(sitePages)
 }
 
 // withoutFragments drops a phrase that is mostly a part of a longer one: "metal conveyor" when

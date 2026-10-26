@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -122,6 +123,39 @@ func TestKeywordsDropTheBrandMenusAndFragments(t *testing.T) {
 	}
 	if !slices.Contains(got, "balanced weave belts") {
 		t.Errorf("balanced weave belts missing from %q", got)
+	}
+}
+
+// A site in two languages has a menu per language: the English menu is on every English page but
+// on only half the site's pages, and it is still the menu.
+func TestKeywordsDropAMenuOfOneLanguage(t *testing.T) {
+	var pages []domain.Page
+	for i := range 4 {
+		pages = append(pages,
+			domain.Page{URL: fmt.Sprintf("https://belts.test/en/%d", i), Language: "en", Title: "Balanced weave belts", Text: "Spiral belts\nContact"},
+			domain.Page{URL: fmt.Sprintf("https://belts.test/de/%d", i), Language: "de", Title: "Gliedergurte", Text: "Spiralgurte\nKontakt"},
+		)
+	}
+	got := phrasesOf(domain.Keywords(pages, testLexicon(), nil))
+	if slices.Contains(got, "spiral belts") {
+		t.Errorf("the English menu kept in %q", got)
+	}
+	if !slices.Contains(got, "balanced weave belts") {
+		t.Errorf("balanced weave belts missing from %q", got)
+	}
+}
+
+// Link and button text starts or ends no keyword: "View flat wire", "Spiral belts details".
+func TestKeywordsDropLinkText(t *testing.T) {
+	pages := []domain.Page{{Language: "en", Title: "Spiral belts", Headings: []string{"View eyelink belts", "Spiral belts details", "Read more"}}}
+	got := phrasesOf(domain.Keywords(pages, testLexicon(), nil))
+	for _, unwanted := range []string{"view eyelink belts", "view eyelink", "spiral belts details", "belts details"} {
+		if slices.Contains(got, unwanted) {
+			t.Errorf("phrase %q kept in %q", unwanted, got)
+		}
+	}
+	if !slices.Contains(got, "eyelink belts") || !slices.Contains(got, "spiral belts") {
+		t.Errorf("eyelink belts or spiral belts missing from %q", got)
 	}
 }
 

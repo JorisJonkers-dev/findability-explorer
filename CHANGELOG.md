@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.5.0...v1.6.0) (2026-10-26)
+
+
+### Features
+
+* AI readiness of competitors, and an automated Prompt test ([#42](https://github.com/JorisJonkers-dev/findability-explorer/issues/42)) ([de6f134](https://github.com/JorisJonkers-dev/findability-explorer/commit/de6f134a552324b0fb5301d95b3c8a2aac4fc20e))
+
 ## [1.5.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.4.0...v1.5.0) (2026-10-26)
 
 

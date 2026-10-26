@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.2.0...v1.3.0) (2026-10-26)
+
+
+### Features
+
+* scans feed the map's makers and the companies' belt names, and scan the unscanned ([#15](https://github.com/JorisJonkers-dev/findability-explorer/issues/15)) ([88a3c2a](https://github.com/JorisJonkers-dev/findability-explorer/commit/88a3c2a863109074560927cd6fb01e8fd6339c39))
+
+
+### Bug Fixes
+
+* read pages in their own encoding, tell sites that block scanners, and never leave a scan running ([#12](https://github.com/JorisJonkers-dev/findability-explorer/issues/12)) ([d434157](https://github.com/JorisJonkers-dev/findability-explorer/commit/d43415713a7237ede22cbd89b8cfe241526067e4))
+* **web:** show that a list scrolls ([#11](https://github.com/JorisJonkers-dev/findability-explorer/issues/11)) ([77e3536](https://github.com/JorisJonkers-dev/findability-explorer/commit/77e3536c151c7178d24a0b9c5470cc0324efba31))
+
 ## [1.2.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.1.0...v1.2.0) (2026-10-26)
 
 

@@ -35,6 +35,7 @@ describe('a re-scan', () => {
       c('never-scanned', 'added', 0, 'https://n.com'),
       c('no-site', 'research', 0),
       c('archived', 'research', 3, 'https://a.com', true),
+      { ...c('blocked', 'research', 1, 'https://b.com'), lastScan: { blocked: true } },
     ]
     expect(rescanCandidates(companies).map((x) => x.id)).toEqual(['researched', 'scanned'])
   })

@@ -317,7 +317,8 @@ paths:
       description: >-
         Administrators only. Queues one scan for each named company with a website, or with
         `all`, for every company that is not archived, has a website and has data: the desk
-        research studied it, or it was scanned before. A
+        research studied it, or it was scanned before; a company whose site turned its last scan
+        away (`blocked`) is left out. A
         company whose scan is still queued or running is skipped, and so is one without a
         website. The scans run a few at a time, each site politely.
       tags: [admin]
@@ -1175,6 +1176,12 @@ components:
           maxLength: 500
           description: Why the analysis failed; only when status is failed.
           example: The site did not answer within 10 seconds.
+        blocked:
+          type: boolean
+          description: >-
+            True when the analysis failed because its site turned automated readers away (bot
+            protection) although people can open it; only then is it present. Re-scanning all
+            companies leaves such a company out.
         maxPages:
           type: integer
           format: int32

@@ -9,6 +9,7 @@ describe('recentLabel', () => {
     expect(recentLabel({ status: 'running', createdAt: at(22) }, now)).toBe('scanning')
     expect(recentLabel({ status: 'queued', createdAt: at(20) }, now)).toBe('scanning')
     expect(recentLabel({ status: 'failed', createdAt: at(22) }, now)).toBe('failed')
+    expect(recentLabel({ status: 'failed', blocked: true, createdAt: at(22) }, now)).toBe('blocked')
   })
 
   it('dates a finished scan by the day', () => {

@@ -71,6 +71,10 @@ const running = computed(() => (newest.value && isInProgress(newest.value.status
       <p class="m-0 font-display text-xl font-semibold stage:text-[44px]">{{ scanCountLabel(company.scans, running !== undefined) }}</p>
       <p v-if="lastScan" class="m-0 stage:text-[28px]" :class="running ? 'font-medium text-orange-ink' : 'text-ink-2'">{{ lastScan }}</p>
       <p v-else-if="company.scans === 0" class="m-0 text-ink-2 stage:text-[28px]">No scan of its website has run yet.</p>
+      <p v-if="newest?.blocked" class="m-0 text-sm text-ink-2 stage:text-[26px]" data-testid="blocked-note">
+        Its site lets people in but turns automated readers away with bot protection, so the scan could not read it.
+        Only the site's owner can let scanners in. Re-scanning all companies leaves it out; Re-scan still tries.
+      </p>
       <ProgressBar
         v-if="running"
         class="mt-1.5 stage:mt-3"

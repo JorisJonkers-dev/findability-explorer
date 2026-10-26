@@ -36,7 +36,18 @@ func parse(r io.Reader, base *url.URL) (domain.Page, []domain.Link, error) {
 	pr.flush()
 	// One line per block, so no keyword phrase runs from one block into the next.
 	pr.page.Text = strings.Join(pr.lines, "\n")
-	return pr.page, pr.links, nil
+	return clean(pr.page), pr.links, nil
+}
+
+// clean keeps a page's text valid UTF-8 without NUL characters, as the database stores it: a page
+// that declares one encoding but holds bytes of another loses those bytes, not the whole scan.
+func clean(p domain.Page) domain.Page {
+	fix := func(s string) string { return strings.ReplaceAll(strings.ToValidUTF8(s, ""), "\x00", "") }
+	p.Title, p.Description, p.Language, p.Text = fix(p.Title), fix(p.Description), fix(p.Language), fix(p.Text)
+	for i, h := range p.Headings {
+		p.Headings[i] = fix(h)
+	}
+	return p
 }
 
 type pageReader struct {

@@ -5,6 +5,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/netip"
 	"net/url"
@@ -196,6 +197,26 @@ type Company struct {
 	Archived bool
 	// Researched is true for a company the desk research studied: it has data before any scan.
 	Researched bool
+}
+
+// ErrBlockedBySite is returned when a site turns automated readers away (a 401, 403 or 429, or a
+// bot challenge such as Cloudflare's) although a person's browser may open it.
+var ErrBlockedBySite = errors.New("the site turns automated readers away")
+
+// blockedPrefix starts the failure of a scan its site turned away; Blocked tells it by it.
+const blockedPrefix = "Blocked by the site:"
+
+// BlockedReason is the failure of a scan the site turned away, with detail such as the answer.
+// Such a site lets people in but turns automated readers away with bot protection (Cloudflare,
+// a security plugin); passing it would mean posing as a person, so the scan does not try.
+func BlockedReason(detail string) string {
+	return blockedPrefix + " it lets people in but turns automated readers away with bot protection, so its pages " +
+		"cannot be read. Only the site's owner can let readers in. (" + detail + ")"
+}
+
+// Blocked reports whether the scan failed because its site turned the crawler away.
+func (a Analysis) Blocked() bool {
+	return a.Status == StatusFailed && strings.HasPrefix(a.Failure, blockedPrefix)
 }
 
 // ErrNotFound is returned for an analysis id that does not exist.

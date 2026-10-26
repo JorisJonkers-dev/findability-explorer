@@ -237,6 +237,9 @@ func toSummary(a domain.Analysis) oas.AnalysisSummary {
 	if a.Failure != "" {
 		s.Failure = oas.NewOptString(a.Failure)
 	}
+	if a.Blocked() {
+		s.Blocked = oas.NewOptBool(true)
+	}
 	if a.CompetitorID != "" {
 		s.CompetitorId = oas.NewOptCompetitorId(oas.CompetitorId(a.CompetitorID))
 	}

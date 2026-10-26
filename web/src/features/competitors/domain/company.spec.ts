@@ -123,6 +123,9 @@ describe('labels', () => {
     expect(lastScanLabel(undefined, now)).toBeNull()
     expect(lastScanLabel(summary({ createdAt: at(26, 7, 24), pagesCrawled: 60 }), now)).toBe('Last scan: today at 07:24, 60 pages read')
     expect(lastScanLabel(summary({ createdAt: at(25, 18, 5), status: 'failed' }), now)).toBe('Last scan: yesterday at 18:05, failed')
+    expect(lastScanLabel(summary({ createdAt: at(25, 18, 5), status: 'failed', blocked: true }), now)).toBe(
+      'Last scan: yesterday at 18:05, blocked by its site',
+    )
     expect(lastScanLabel(summary({ createdAt: at(3, 7, 0), pagesCrawled: 1 }), now)).toBe('Last scan: 3 October 2026 at 07:00, 1 page read')
     expect(lastScanLabel(summary({ createdAt: at(26, 8, 59), status: 'running', pagesCrawled: 11, maxPages: 60 }), now)).toBe(
       'Last scan: today at 08:59, reading page 12 of 60',

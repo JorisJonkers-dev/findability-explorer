@@ -285,6 +285,10 @@ type AnalysisSummary struct {
 	Status AnalysisStatus `json:"status"`
 	// Why the analysis failed; only when status is failed.
 	Failure OptString `json:"failure"`
+	// True when the analysis failed because its site turned automated readers away (bot protection)
+	// although people can open it; only then is it present. Re-scanning all companies leaves such a
+	// company out.
+	Blocked OptBool `json:"blocked"`
 	// The most pages the crawl fetches.
 	MaxPages int32 `json:"maxPages"`
 	// How many pages were fetched so far.
@@ -328,6 +332,11 @@ func (s *AnalysisSummary) GetStatus() AnalysisStatus {
 // GetFailure returns the value of Failure.
 func (s *AnalysisSummary) GetFailure() OptString {
 	return s.Failure
+}
+
+// GetBlocked returns the value of Blocked.
+func (s *AnalysisSummary) GetBlocked() OptBool {
+	return s.Blocked
 }
 
 // GetMaxPages returns the value of MaxPages.
@@ -383,6 +392,11 @@ func (s *AnalysisSummary) SetStatus(val AnalysisStatus) {
 // SetFailure sets the value of Failure.
 func (s *AnalysisSummary) SetFailure(val OptString) {
 	s.Failure = val
+}
+
+// SetBlocked sets the value of Blocked.
+func (s *AnalysisSummary) SetBlocked(val OptBool) {
+	s.Blocked = val
 }
 
 // SetMaxPages sets the value of MaxPages.

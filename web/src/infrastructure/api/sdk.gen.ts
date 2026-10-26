@@ -200,7 +200,7 @@ export const compareScans = <ThrowOnError extends boolean = false>(options: Opti
 /**
  * Re-scan companies
  *
- * Administrators only. Queues one scan for each named company with a website, or with `all`, for every company that is not archived, has a website and has data: the desk research studied it, or it was scanned before. A company whose scan is still queued or running is skipped, and so is one without a website. The scans run a few at a time, each site politely.
+ * Administrators only. Queues one scan for each named company with a website, or with `all`, for every company that is not archived, has a website and has data: the desk research studied it, or it was scanned before; a company whose site turned its last scan away (`blocked`) is left out. A company whose scan is still queued or running is skipped, and so is one without a website. The scans run a few at a time, each site politely.
  */
 export const startRescans = <ThrowOnError extends boolean = false>(options: Options<StartRescansData, ThrowOnError>): RequestResult<StartRescansResponses, StartRescansErrors, ThrowOnError> => (options.client ?? client).post<StartRescansResponses, StartRescansErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

@@ -4046,8 +4046,9 @@ func (s *Server) handleStartAnalysisRequest(args [0]string, argsEscaped bool, w 
 //
 // Administrators only. Queues one scan for each named company with a website, or with `all`, for every
 // company that is not archived, has a website and has data: the desk research studied it, or it was
-// scanned before. A company whose scan is still queued or running is skipped, and so is one without a
-// website. The scans run a few at a time, each site politely.
+// scanned before; a company whose site turned its last scan away (`blocked`) is left out. A company
+// whose scan is still queued or running is skipped, and so is one without a website. The scans run a
+// few at a time, each site politely.
 //
 // POST /api/v1/admin/rescans
 func (s *Server) handleStartRescansRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

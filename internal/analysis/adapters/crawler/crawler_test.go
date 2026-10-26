@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/crawler"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
@@ -170,6 +171,85 @@ func TestCrawlFailsWhenTheStartPageFails(t *testing.T) {
 		if _, err := crawl(t, c, localTarget(t, srv, path), 5); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("crawl %s error = %v, want %q", path, err, want)
 		}
+	}
+}
+
+// A page in another encoding than UTF-8 is read in it: a Spanish site in Latin-1, declared in the
+// Content-Type or only in a <meta> tag, yields "metálicas", not the bytes that broke the database.
+func TestCrawlReadsPagesInTheirOwnEncoding(t *testing.T) {
+	latin1 := "<html lang=\"es\"><title>Cintas met\xe1licas</title><p>Transportadoras de malla met\xe1lica\x00.</p></html>"
+	for name, serve := range map[string]func(w http.ResponseWriter){
+		"declared in the header": func(w http.ResponseWriter) {
+			w.Header().Set("Content-Type", "text/html; charset=iso-8859-1")
+			_, _ = w.Write([]byte(latin1))
+		},
+		"declared in a meta tag": func(w http.ResponseWriter) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<meta charset="windows-1252">` + latin1))
+		},
+		"invalid bytes in a UTF-8 page": func(w http.ResponseWriter) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte("<title>Cintas met\xe1licas</title><p>malla met\xc3\xa1lica</p>"))
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/robots.txt" {
+					http.NotFound(w, r)
+					return
+				}
+				serve(w)
+			}))
+			defer srv.Close()
+			c := crawler.New(options(srv, crawler.Options{AllowAddr: loopback, AllowHost: anyHost}))
+			pages, err := crawl(t, c, localTarget(t, srv, "/"), 1)
+			if err != nil || len(pages) != 1 {
+				t.Fatalf("crawl = %+v, %v", pages, err)
+			}
+			p := pages[0]
+			for _, s := range []string{p.Title, p.Text} {
+				if !utf8.ValidString(s) || strings.ContainsRune(s, 0) {
+					t.Errorf("not clean UTF-8: %q", s)
+				}
+			}
+			if name != "invalid bytes in a UTF-8 page" && (p.Title != "Cintas metálicas" || !strings.Contains(p.Text, "malla metálica")) {
+				t.Errorf("page = %q / %q", p.Title, p.Text)
+			}
+		})
+	}
+}
+
+// A site that lets people in but turns automated readers away says so, apart from other failures.
+func TestCrawlTellsASiteThatBlocksAutomatedReaders(t *testing.T) {
+	for name, answer := range map[string]func(w http.ResponseWriter){
+		"403": func(w http.ResponseWriter) { w.WriteHeader(http.StatusForbidden) },
+		"429": func(w http.ResponseWriter) { w.WriteHeader(http.StatusTooManyRequests) },
+		"a Cloudflare challenge": func(w http.ResponseWriter) {
+			w.Header().Set("Cf-Mitigated", "challenge")
+			w.WriteHeader(http.StatusServiceUnavailable)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/robots.txt" {
+					http.NotFound(w, r)
+					return
+				}
+				answer(w)
+			}))
+			defer srv.Close()
+			c := crawler.New(options(srv, crawler.Options{AllowAddr: loopback, AllowHost: anyHost}))
+			if _, err := crawl(t, c, localTarget(t, srv, "/"), 3); !errors.Is(err, domain.ErrBlockedBySite) {
+				t.Fatalf("crawl error = %v, want ErrBlockedBySite", err)
+			}
+		})
+	}
+	// A page that is simply gone is not a block.
+	srv := httptest.NewServer((&site{}).handler(t))
+	defer srv.Close()
+	c := crawler.New(options(srv, crawler.Options{Delay: time.Millisecond, AllowAddr: loopback, AllowHost: anyHost}))
+	if _, err := crawl(t, c, localTarget(t, srv, "/missing"), 1); err == nil || errors.Is(err, domain.ErrBlockedBySite) {
+		t.Fatalf("404 error = %v", err)
 	}
 }
 

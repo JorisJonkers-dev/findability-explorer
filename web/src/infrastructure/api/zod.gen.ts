@@ -126,6 +126,7 @@ export const zAnalysisSummary = z.object({
     url: z.string().max(500),
     status: zAnalysisStatus,
     failure: z.string().max(500).optional(),
+    blocked: z.boolean().optional(),
     maxPages: z.int().gte(1).lte(100),
     pagesCrawled: z.int().gte(0).lte(100),
     createdAt: z.iso.datetime({ offset: true }).max(64),

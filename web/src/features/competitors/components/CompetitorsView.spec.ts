@@ -87,6 +87,26 @@ describe('the company list', () => {
     expect(wrapper.text()).toContain('4 of 4 companies')
   })
 
+  it('sorts by a column, then the other way, then back to the list order', async () => {
+    const { wrapper } = await mountApp(api(), '/competitors')
+    const order = () => rows(wrapper).map((r) => r.attributes('aria-label')?.split(',')[0])
+    const header = wrapper.get('[role="group"][aria-label="Sort the companies"]')
+    const eyelink = () => header.get('button[aria-label^="Eyelink"]')
+    expect(order()).toEqual(['Twentebelt', 'Märtens', 'Ashworth', 'Tribelt'])
+    await eyelink().trigger('click')
+    // The eyelink maker first.
+    expect(eyelink().attributes('aria-label')).toBe('Eyelink, sorted descending')
+    expect(order()[0]).toBe('Märtens')
+    await eyelink().trigger('click')
+    expect(eyelink().attributes('aria-label')).toBe('Eyelink, sorted ascending')
+    expect(order()[3]).toBe('Märtens')
+    await eyelink().trigger('click')
+    expect(eyelink().attributes('aria-label')).toBe('Eyelink, not sorted')
+    expect(order()).toEqual(['Twentebelt', 'Märtens', 'Ashworth', 'Tribelt'])
+    await header.get('button[aria-label^="Country"]').trigger('click')
+    expect(order()).toEqual(['Märtens', 'Twentebelt', 'Tribelt', 'Ashworth'])
+  })
+
   it('filters by region and by name or country', async () => {
     const { wrapper } = await mountApp(api(), '/competitors')
     await pill(wrapper, 'Show', 'Germany').trigger('click')

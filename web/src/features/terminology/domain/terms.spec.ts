@@ -8,8 +8,10 @@ import {
   filterTerms,
   groupOf,
   heatmap,
+  heatSortValue,
   languageRows,
   makersOf,
+  rankSortValue,
   rankTerms,
   summary,
   termsOf,
@@ -204,5 +206,20 @@ describe('chips and summary', () => {
     expect(summary(35, 146)).toBe('35 of 146 terms')
     expect(summary(146, 146)).toBe('146 of 146 terms')
     expect(summary(0, 1)).toBe('0 of 1 term')
+  })
+})
+
+describe('sorting the tables', () => {
+  it('sorts the per-company table by company, kind and total, and the ranking by any column', () => {
+    const [row] = heatmap(MAP)
+    if (!row) throw new Error('no row')
+    expect(heatSortValue(row, 'company')).toBe(row.company)
+    expect(heatSortValue(row, 'total')).toBe(row.total)
+    expect(heatSortValue(row, 'product')).toBe(row.cells.find((c) => c.tier === 'product')?.count)
+    expect(heatSortValue({ ...row, cells: [] }, 'spec')).toBe(0)
+    const [ranked] = rankTerms(MAP, MAP)
+    if (!ranked) throw new Error('no term')
+    expect(rankSortValue(ranked, 'makers')).toBe(ranked.makers)
+    expect(rankSortValue(ranked, 'tribelt')).toBe(ranked.tribelt)
   })
 })

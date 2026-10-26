@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { vScrollHint } from '../../../shared/scrollHint'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { percent } from '../../../shared/percent'
 import { tierFill } from '../../../shared/tiers'
 import PillButton from '../../../shared/ui/PillButton.vue'
@@ -10,7 +10,23 @@ import { useTermMap } from '../composables/useTermSearch'
 import { useTermView } from '../composables/useTermView'
 import type { TermGroup } from '../domain/filters'
 import { highlight } from '../domain/fold'
-import { cellBackground, chips, filterTerms, GROUP_LABELS, heatmap, languageRows, rankTerms, summary, tierRows } from '../domain/terms'
+import { directionOf, nextSort, type Sort, type SortDirection, sortRows } from '../../../shared/sort'
+import SortButton from '../../../shared/ui/SortButton.vue'
+import {
+  cellBackground,
+  chips,
+  filterTerms,
+  GROUP_LABELS,
+  type HeatColumn,
+  heatmap,
+  heatSortValue,
+  languageRows,
+  type RankColumn,
+  rankSortValue,
+  rankTerms,
+  summary,
+  tierRows,
+} from '../domain/terms'
 
 const { terms, total, error } = useTermMap()
 const { view, draft, toggle, clear, toggleGap } = useTermView()
@@ -19,6 +35,27 @@ const languages = computed(() => languageRows(terms.value))
 const tiers = computed(() => tierRows(terms.value))
 const heat = computed(() => heatmap(terms.value))
 const ranked = computed(() => rankTerms(filterTerms(terms.value, view.value), terms.value))
+
+// Each table sorts by a column while one is picked: names A to Z first, counts highest first.
+const heatSort = ref<Sort<HeatColumn>>(null)
+const sortedHeat = computed(() => sortRows(heat.value, heatSort.value, heatSortValue))
+const rankSort = ref<Sort<RankColumn>>(null)
+const sortedRanked = computed(() => sortRows(ranked.value, rankSort.value, rankSortValue))
+function sortHeat(column: HeatColumn, first: SortDirection): void {
+  heatSort.value = nextSort(heatSort.value, column, first)
+}
+function sortRank(column: RankColumn, first: SortDirection): void {
+  rankSort.value = nextSort(rankSort.value, column, first)
+}
+
+/** The per-company table's columns of kinds of search, with their short headers. */
+const HEAT_COLUMNS: readonly { key: HeatColumn; label: string; short: string }[] = [
+  { key: 'broad', label: 'Broad', short: 'Broad' },
+  { key: 'product', label: 'Product', short: 'Prod.' },
+  { key: 'application', label: 'Application', short: 'Appl.' },
+  { key: 'spec', label: 'Specification', short: 'Spec.' },
+  { key: 'problem', label: 'Problem', short: 'Probl.' },
+]
 const activeChips = computed(() => chips(view.value))
 const title = computed(() =>
   total.value > 0 ? `${String(total.value)} ways to search for a metal belt.` : 'Ways to search for a metal belt.',
@@ -102,15 +139,20 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
             <span></span>
           </div>
           <div
-            aria-hidden="true"
+            role="group"
+            aria-label="Sort the companies"
             :class="heatGrid"
             class="items-end border-b-[3px] border-black px-1 pb-2 text-center text-[10px] font-semibold stage:px-3 stage:pb-3.5 stage:text-[22px]"
           >
-            <span class="text-left text-xs font-medium text-muted stage:text-[22px]">Company</span>
-            <span>Broad</span><span>Prod.</span><span>Appl.</span><span></span><span>Spec.</span><span>Probl.</span><span>Total</span>
+            <SortButton label="Company" :direction="directionOf(heatSort, 'company')" class="text-xs font-medium text-muted stage:text-[22px]" @sort="sortHeat('company', 'asc')" />
+            <template v-for="(column, index) in HEAT_COLUMNS" :key="column.key">
+              <span v-if="index === 3"></span>
+              <SortButton :label="column.label" :direction="directionOf(heatSort, column.key)" align="center" @sort="sortHeat(column.key, 'desc')">{{ column.short }}</SortButton>
+            </template>
+            <SortButton label="Total" :direction="directionOf(heatSort, 'total')" align="center" @sort="sortHeat('total', 'desc')" />
           </div>
           <ul v-scroll-hint aria-label="Terms per company and kind" class="scroll-hint m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1">
-            <li v-for="row in heat" :key="row.company" class="border-b border-grey">
+            <li v-for="row in sortedHeat" :key="row.company" class="border-b border-grey">
               <button
                 type="button"
                 :aria-pressed="view.user === row.company"
@@ -175,8 +217,17 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
           </button>
         </div>
         <div class="flex flex-col stage:min-h-0 stage:flex-1">
-          <div aria-hidden="true" :class="rankGrid" class="hidden border-b-[3px] border-black pb-3 text-[22px] font-semibold stage:grid">
-            <span>#</span><span>Term</span><span>Kind</span><span>Makers</span><span>Tribelt</span>
+          <div
+            role="group"
+            aria-label="Sort the terms"
+            :class="rankGrid"
+            class="flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-black pb-2 text-xs font-semibold stage:grid stage:border-b-[3px] stage:pb-3 stage:text-[22px]"
+          >
+            <SortButton label="Rank" :direction="directionOf(rankSort, 'rank')" @sort="sortRank('rank', 'asc')">#</SortButton>
+            <SortButton label="Term" :direction="directionOf(rankSort, 'term')" @sort="sortRank('term', 'asc')" />
+            <SortButton label="Kind" :direction="directionOf(rankSort, 'kind')" @sort="sortRank('kind', 'asc')" />
+            <SortButton label="Makers" :direction="directionOf(rankSort, 'makers')" @sort="sortRank('makers', 'desc')" />
+            <SortButton label="Tribelt" :direction="directionOf(rankSort, 'tribelt')" @sort="sortRank('tribelt', 'desc')" />
           </div>
           <ol
             v-scroll-hint
@@ -185,7 +236,7 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
             class="scroll-hint m-0 max-h-[36rem] list-none overflow-y-auto border-t-2 border-black p-0 stage:max-h-none stage:min-h-0 stage:flex-1 stage:border-t-0"
           >
             <li
-              v-for="row in ranked"
+              v-for="row in sortedRanked"
               :key="`${row.term}-${row.meta}`"
               :class="rankGrid"
               class="grid grid-cols-[1.75rem_minmax(0,1fr)_4.5rem] items-center gap-x-2 gap-y-0.5 border-b border-grey py-2 text-sm stage:min-h-[72px] stage:py-1.5 stage:text-[26px]"

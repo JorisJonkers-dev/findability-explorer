@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { competitor } from '../../../testing/fixtures'
 import type { Company } from './company'
 import {
+  REGIONS,
   beltRows,
   companyKind,
+  companySortValue,
   countLabel,
   countryCode,
   familyDots,
   filterCompanies,
   inRegion,
-  REGIONS,
   researchedCompetitors,
   rowLabel,
   selectedCompany,
@@ -113,5 +114,14 @@ describe('the researched competitors', () => {
   it('leaves out the group and the companies added since', () => {
     const added = company('Example Belts', { source: 'added' })
     expect(researchedCompetitors([...all, added])).toEqual([twentebelt, martens, ashworth])
+  })
+})
+
+describe('sorting the company list', () => {
+  it('sorts by name, by whether a company offers a family, and by country', () => {
+    expect(companySortValue(twentebelt, 'name')).toBe('Twentebelt')
+    expect(companySortValue(twentebelt, 'tri_flex_turn_curve')).toBe(true)
+    expect(companySortValue(twentebelt, 'eyelink')).toBe(false)
+    expect(companySortValue(martens, 'country')).toBe('Germany')
   })
 })

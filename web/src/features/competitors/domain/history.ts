@@ -1,3 +1,4 @@
+import type { SortValue } from '../../../shared/sort'
 import type {
   AnalysisSummary,
   ComparisonGroup,
@@ -6,7 +7,7 @@ import type {
   ProfileTerm,
   TermChange,
 } from '../../../infrastructure/api/types.gen'
-import { languageLabel } from '../../../shared/vocabulary'
+import { languageLabel, tierLabel } from '../../../shared/vocabulary'
 import { isInProgress } from '../../scan/domain/status'
 
 const GROUP_LABELS: Record<ProfileGroup, string> = {
@@ -150,4 +151,25 @@ export function changeCounts(groups: readonly ComparisonGroup[]): Record<ChangeK
 /** The groups with any change, which the compare view lists. */
 export function changedGroups(groups: readonly ComparisonGroup[]): ComparisonGroup[] {
   return groups.filter((g) => g.added.length + g.removed.length + g.moved.length > 0)
+}
+
+/** A column of a company's term tables to sort by. */
+export type ProfileColumn = 'phrase' | 'score' | 'pages' | 'tier' | 'map' | 'found'
+
+/** What a term sorts by in a column; in the map first, and the newest first, when descending. */
+export function profileSortValue(t: Pick<ProfileTerm, 'phrase' | 'score' | 'pages' | 'tier' | 'inMap' | 'firstScan'>, column: ProfileColumn): SortValue {
+  switch (column) {
+    case 'phrase':
+      return t.phrase
+    case 'score':
+      return t.score
+    case 'pages':
+      return t.pages
+    case 'tier':
+      return tierLabel(t.tier)
+    case 'map':
+      return t.inMap
+    case 'found':
+      return t.firstScan
+  }
 }

@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.1.0...v1.2.0) (2026-10-26)
+
+
+### Features
+
+* re-scan the researched companies, follow scans live, show scan counts and tokens per scan, no cap on admin scans ([#8](https://github.com/JorisJonkers-dev/findability-explorer/issues/8)) ([1eea9bd](https://github.com/JorisJonkers-dev/findability-explorer/commit/1eea9bdbcabd6482711c26f72ee2ee8f104d36ea))
+
+
+### Bug Fixes
+
+* sort scanned terms into a belt family only on evidence, and drop menu and link text ([#9](https://github.com/JorisJonkers-dev/findability-explorer/issues/9)) ([65d44ac](https://github.com/JorisJonkers-dev/findability-explorer/commit/65d44aca5f8a9a1512cdddc8bd218a1fddec7ec3))
+
 ## [1.1.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.0.0...v1.1.0) (2026-10-23)
 
 

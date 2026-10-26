@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed } from 'vue'
 import { percent } from '../../../shared/percent'
 import { tierFill } from '../../../shared/tiers'
@@ -108,7 +109,7 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
             <span class="text-left text-xs font-medium text-muted stage:text-[22px]">Company</span>
             <span>Broad</span><span>Prod.</span><span>Appl.</span><span></span><span>Spec.</span><span>Probl.</span><span>Total</span>
           </div>
-          <ul aria-label="Terms per company and kind" class="m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1">
+          <ul v-scroll-hint aria-label="Terms per company and kind" class="scroll-hint m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1">
             <li v-for="row in heat" :key="row.company" class="border-b border-grey">
               <button
                 type="button"
@@ -178,9 +179,10 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_210px_150px_170px] stage:g
             <span>#</span><span>Term</span><span>Kind</span><span>Makers</span><span>Tribelt</span>
           </div>
           <ol
+            v-scroll-hint
             aria-label="Ranked terms"
             tabindex="0"
-            class="m-0 max-h-[36rem] list-none overflow-y-auto border-t-2 border-black p-0 stage:max-h-none stage:min-h-0 stage:flex-1 stage:border-t-0"
+            class="scroll-hint m-0 max-h-[36rem] list-none overflow-y-auto border-t-2 border-black p-0 stage:max-h-none stage:min-h-0 stage:flex-1 stage:border-t-0"
           >
             <li
               v-for="row in ranked"

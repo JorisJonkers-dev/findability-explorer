@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, ref } from 'vue'
 import type { Analysis } from '../../../infrastructure/api/types.gen'
 import { percent } from '../../../shared/percent'
@@ -75,9 +76,10 @@ const model = computed(() => matchedBy(props.scan.matchingModel))
 
     <ol
       v-if="ranked.length > 0"
+      v-scroll-hint
       aria-label="Ranked phrases"
       tabindex="0"
-      class="m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1"
+      class="scroll-hint m-0 max-h-[28rem] list-none overflow-y-auto p-0 stage:max-h-none stage:min-h-0 stage:flex-1"
     >
       <li
         v-for="(p, index) in ranked"

@@ -182,7 +182,7 @@ func (s *Service) rescanOne(ctx context.Context, user string, c domain.Company, 
 }
 
 // scanned keeps the companies that are not archived, have a website and have data: researched,
-// or scanned before.
+// or scanned before. A company whose site turned its last scan away is left out.
 func (s *Service) scanned(ctx context.Context, companies []domain.Company) ([]domain.Company, error) {
 	stats, err := s.repo.CompetitorStats(ctx)
 	if err != nil {
@@ -190,7 +190,7 @@ func (s *Service) scanned(ctx context.Context, companies []domain.Company) ([]do
 	}
 	var out []domain.Company
 	for _, c := range companies {
-		if !c.Archived && c.Website != nil && (c.Researched || stats[c.ID].Count > 0) {
+		if !c.Archived && c.Website != nil && (c.Researched || stats[c.ID].Count > 0) && !stats[c.ID].Last.Blocked() {
 			out = append(out, c)
 		}
 	}
@@ -356,27 +356,42 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 		return nil
 	})
 	if recordErr != nil {
-		return recordErr
+		return s.abort(ctx, id, recordErr)
 	}
 	if len(pages) == 0 {
-		reason := "No page could be fetched."
-		if crawlErr != nil {
-			reason = "No page could be fetched: " + crawlErr.Error()
-		}
-		return s.fail(ctx, id, reason)
+		return s.fail(ctx, id, noPages(crawlErr))
 	}
 	keywords := domain.Keywords(pages, lexicon, domain.BrandWords(target.URL().Hostname()))
 	if err := s.repo.SaveFindings(ctx, id, keywords, domain.FindKnownTerms(pages, glossary)); err != nil {
-		return fmt.Errorf("save findings: %w", err)
+		return s.abort(ctx, id, fmt.Errorf("save findings: %w", err))
 	}
 	matching, model, eqs, usage := s.match(ctx, pages)
 	if err := s.repo.SaveMatching(ctx, id, matching, model, eqs, usage); err != nil {
-		return fmt.Errorf("save matching: %w", err)
+		return s.abort(ctx, id, fmt.Errorf("save matching: %w", err))
 	}
 	if err := s.repo.Finish(ctx, id, s.now()); err != nil {
-		return fmt.Errorf("finish analysis: %w", err)
+		return s.abort(ctx, id, fmt.Errorf("finish analysis: %w", err))
 	}
 	return nil
+}
+
+// noPages is the failure of a scan that read no page: blocked by the site, or why else.
+func noPages(crawlErr error) string {
+	switch {
+	case errors.Is(crawlErr, domain.ErrBlockedBySite):
+		return domain.BlockedReason(strings.TrimPrefix(crawlErr.Error(), domain.ErrBlockedBySite.Error()+": "))
+	case crawlErr != nil:
+		return "No page could be fetched: " + crawlErr.Error()
+	default:
+		return "No page could be fetched."
+	}
+}
+
+// abort fails a scan that could not be recorded, so it does not stay running for good (and keep
+// every later scan of its company out), and returns err for the logs.
+func (s *Service) abort(ctx context.Context, id uuid.UUID, err error) error {
+	_ = s.fail(ctx, id, "The scan could not be recorded and stopped. Start it again. ("+err.Error()+")")
+	return err
 }
 
 // match asks the language model the settings name now for the site's equivalents of Tribelt's

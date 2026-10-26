@@ -188,6 +188,8 @@ type Scan struct {
 	// Number is the scan's number among the company's scans, from 1.
 	Number        int
 	MatchingModel string
+	// Blocked is true when the site turned the scan away (bot protection).
+	Blocked bool
 }
 
 // Stats is how often a company's website was scanned, and its newest scan.

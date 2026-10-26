@@ -448,7 +448,7 @@ func scanOf(a analysisdomain.Analysis) companiesdomain.Scan {
 	return companiesdomain.Scan{
 		ID: a.ID, URL: a.URL, Status: string(a.Status), Failure: a.Failure, MaxPages: a.MaxPages,
 		PagesCrawled: a.PagesCrawled, CreatedAt: a.CreatedAt, FinishedAt: a.FinishedAt, Number: a.Number,
-		MatchingModel: a.MatchingModel,
+		MatchingModel: a.MatchingModel, Blocked: a.Blocked(),
 	}
 }
 

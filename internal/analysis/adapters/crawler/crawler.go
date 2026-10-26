@@ -19,6 +19,8 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/net/html/charset"
+
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 )
 
@@ -300,13 +302,23 @@ func (c *Crawler) fetch(ctx context.Context, u *url.URL) (domain.Page, []domain.
 		return domain.Page{}, nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
+	if blocked(resp) {
+		return domain.Page{}, nil, fmt.Errorf("%w: %s answered %s", domain.ErrBlockedBySite, u.Redacted(), resp.Status)
+	}
 	if resp.StatusCode != http.StatusOK {
 		return domain.Page{}, nil, fmt.Errorf("%s answered %s", u.Redacted(), resp.Status)
 	}
-	if mt, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type")); mt != "text/html" && mt != "application/xhtml+xml" {
+	contentType := resp.Header.Get("Content-Type")
+	if mt, _, _ := mime.ParseMediaType(contentType); mt != "text/html" && mt != "application/xhtml+xml" {
 		return domain.Page{}, nil, fmt.Errorf("%s is %q, not HTML", u.Redacted(), mt)
 	}
-	return parse(io.LimitReader(resp.Body, maxBody), resp.Request.URL)
+	// Read the page in its own encoding (the Content-Type's charset, a byte order mark, or a
+	// <meta charset>), so a Latin-1 page yields UTF-8 text.
+	body, err := charset.NewReader(io.LimitReader(resp.Body, maxBody), contentType)
+	if err != nil {
+		return domain.Page{}, nil, fmt.Errorf("%s: %w", u.Redacted(), err)
+	}
+	return parse(body, resp.Request.URL)
 }
 
 func (c *Crawler) get(ctx context.Context, u *url.URL) (*http.Response, error) {
@@ -324,6 +336,18 @@ func (c *Crawler) get(ctx context.Context, u *url.URL) (*http.Response, error) {
 		return nil, fmt.Errorf("%s could not be fetched: %w", u.Redacted(), unwrapURLError(err))
 	}
 	return resp, nil
+}
+
+// blocked reports whether a site turned the crawler away rather than failing: a 401, 403 or 429,
+// or a bot challenge such as Cloudflare's (the cf-mitigated header). A person's browser passes
+// such checks; the crawler, which says honestly what it is, does not.
+func blocked(resp *http.Response) bool {
+	switch resp.StatusCode {
+	case http.StatusUnauthorized, http.StatusForbidden, http.StatusTooManyRequests:
+		return true
+	default:
+		return resp.Header.Get("Cf-Mitigated") != ""
+	}
 }
 
 // unwrapURLError drops the *url.Error wrapper, whose message repeats the address.

@@ -193,6 +193,9 @@ func toSummary(competitorID string, s domain.Scan) oas.AnalysisSummary {
 	if s.Failure != "" {
 		out.Failure = oas.NewOptString(s.Failure)
 	}
+	if s.Blocked {
+		out.Blocked = oas.NewOptBool(true)
+	}
 	if !s.FinishedAt.IsZero() {
 		out.FinishedAt = oas.NewOptDateTime(s.FinishedAt)
 	}

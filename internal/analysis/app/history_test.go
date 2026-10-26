@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -84,6 +85,27 @@ func TestRescanNamedCompanies(t *testing.T) {
 		if want[s.CompetitorID] != s.Reason {
 			t.Errorf("skipped %s: %q", s.CompetitorID, s.Reason)
 		}
+	}
+}
+
+// A company whose site turned the last scan away is left out of re-scanning all: it would only
+// be turned away again. Naming it still scans it.
+func TestRescanAllLeavesOutABlockedSite(t *testing.T) {
+	r := newRepo()
+	scanned(r, "x", "y")
+	for _, a := range r.analyses {
+		if a.CompetitorID == "y" {
+			a.Status, a.Failure = domain.StatusFailed, domain.BlockedReason("https://y.test/ answered 403 Forbidden")
+		}
+	}
+	svc := rescanService(r, &directory{companies: companies()}, app.Limits{})
+	queued, _, err := svc.Rescan(t.Context(), "admin", nil, true, 0)
+	if err != nil || slices.ContainsFunc(queued, func(a domain.Analysis) bool { return a.CompetitorID == "y" }) {
+		t.Fatalf("Rescan all = %+v, %v", queued, err)
+	}
+	named, _, err := svc.Rescan(t.Context(), "admin", []string{"y"}, false, 0)
+	if err != nil || len(named) != 1 {
+		t.Fatalf("Rescan y = %+v, %v", named, err)
 	}
 }
 

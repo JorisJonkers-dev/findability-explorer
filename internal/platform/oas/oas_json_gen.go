@@ -554,6 +554,12 @@ func (s *AnalysisSummary) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Blocked.Set {
+			e.FieldStart("blocked")
+			s.Blocked.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("maxPages")
 		e.Int32(s.MaxPages)
 	}
@@ -573,7 +579,7 @@ func (s *AnalysisSummary) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfAnalysisSummary = [11]string{
+var jsonFieldsNameOfAnalysisSummary = [12]string{
 	0:  "competitorId",
 	1:  "number",
 	2:  "matchingModel",
@@ -581,10 +587,11 @@ var jsonFieldsNameOfAnalysisSummary = [11]string{
 	4:  "url",
 	5:  "status",
 	6:  "failure",
-	7:  "maxPages",
-	8:  "pagesCrawled",
-	9:  "createdAt",
-	10: "finishedAt",
+	7:  "blocked",
+	8:  "maxPages",
+	9:  "pagesCrawled",
+	10: "createdAt",
+	11: "finishedAt",
 }
 
 // Decode decodes AnalysisSummary from json.
@@ -670,8 +677,18 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"failure\"")
 			}
+		case "blocked":
+			if err := func() error {
+				s.Blocked.Reset()
+				if err := s.Blocked.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"blocked\"")
+			}
 		case "maxPages":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Int32()
 				s.MaxPages = int32(v)
@@ -683,7 +700,7 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"maxPages\"")
 			}
 		case "pagesCrawled":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Int32()
 				s.PagesCrawled = int32(v)
@@ -695,7 +712,7 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"pagesCrawled\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -726,8 +743,8 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10111000,
-		0b00000011,
+		0b00111000,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

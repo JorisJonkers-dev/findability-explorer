@@ -94,7 +94,7 @@ export function scanCountLabel(scans: number, scanning = false): string {
 }
 
 /** A link to one of a company's scans: "3 Oct: 15 pages read", or "Reading page 13 of 60". */
-export function scanLinkLabel(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages' | 'createdAt'>, now: Date = new Date()): string {
+export function scanLinkLabel(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages' | 'createdAt' | 'blocked'>, now: Date = new Date()): string {
   if (isInProgress(scan.status)) return progress(scan).label
   return `${recentLabel(scan, now)}: ${scanOutcome(scan)}`
 }
@@ -116,7 +116,7 @@ function dayLabel(date: Date, now: Date): string {
 
 /** When the last scan started, to the minute, and how it went; null without a scan. */
 export function lastScanLabel(
-  scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages' | 'createdAt'> | undefined,
+  scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages' | 'createdAt' | 'blocked'> | undefined,
   now: Date = new Date(),
 ): string | null {
   if (!scan) return null
@@ -125,7 +125,7 @@ export function lastScanLabel(
 }
 
 /** How a scan went, or where it is: "60 pages read", "failed", "reading page 4 of 15". */
-function scanState(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages'>): string {
+function scanState(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'maxPages' | 'blocked'>): string {
   return isInProgress(scan.status) ? lowerFirst(progress(scan).label) : scanOutcome(scan).toLowerCase()
 }
 
@@ -186,9 +186,10 @@ export function companyTerms<T extends Pick<Term, 'term' | 'tier' | 'usedBy'>>(t
     .sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.term.localeCompare(b.term))
 }
 
-/** How a company's scan ended, for its list of scans: "12 pages read", "Scanning", "Failed". */
-export function scanOutcome(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled'>): string {
+/** How a company's scan ended, for its list of scans: "12 pages read", "Scanning", "Blocked by its site", "Failed". */
+export function scanOutcome(scan: Pick<AnalysisSummary, 'status' | 'pagesCrawled' | 'blocked'>): string {
   if (isInProgress(scan.status)) return 'Scanning'
+  if (scan.blocked === true) return 'Blocked by its site'
   if (scan.status === 'failed') return 'Failed'
   return `${String(scan.pagesCrawled)} ${scan.pagesCrawled === 1 ? 'page' : 'pages'} read`
 }

@@ -118,6 +118,9 @@ func (r *repo) CompetitorStats(context.Context) (map[string]domain.CompetitorSta
 	for _, a := range r.analyses {
 		s := out[a.CompetitorID]
 		s.Count++
+		if s.Count == 1 || a.CreatedAt.After(s.Last.CreatedAt) || a.Number > s.Last.Number {
+			s.Last = *a
+		}
 		out[a.CompetitorID] = s
 	}
 	return out, r.err("CompetitorStats")
@@ -509,7 +512,35 @@ func TestRunReportsWhatCouldNotBeRecorded(t *testing.T) {
 			if !errors.Is(err, errBoom) {
 				t.Fatalf("Run with a failing %s = %v", op, err)
 			}
+			// A scan that started but could not be recorded fails, rather than stay running for
+			// good and keep every later scan of the company out.
+			if op == "AddPage" || op == "SaveFindings" || op == "SaveMatching" || op == "Finish" {
+				got := r.analyses[a.ID]
+				if got.Status != domain.StatusFailed || !strings.HasPrefix(got.Failure, "The scan could not be recorded") {
+					t.Fatalf("after a failing %s: %s %q", op, got.Status, got.Failure)
+				}
+			}
 		})
+	}
+}
+
+func TestRunMarksASiteThatBlocksAutomatedReaders(t *testing.T) {
+	r := newRepo()
+	blocked := fmt.Errorf("%w: https://x.test/ answered 403 Forbidden", domain.ErrBlockedBySite)
+	svc := service(r, crawler{err: blocked}, nil, limits())
+	a, err := svc.Start(t.Context(), "u", "https://x.test/", 5, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Run(t.Context(), a.ID); err != nil {
+		t.Fatal(err)
+	}
+	got := *r.analyses[a.ID]
+	if !got.Blocked() || !strings.Contains(got.Failure, "https://x.test/ answered 403 Forbidden") {
+		t.Fatalf("blocked scan = %s %q", got.Status, got.Failure)
+	}
+	if (domain.Analysis{Status: domain.StatusFailed, Failure: "No page could be fetched."}).Blocked() {
+		t.Fatal("an ordinary failure counts as blocked")
 	}
 }
 

@@ -256,6 +256,10 @@ export type AnalysisSummary = {
      */
     failure?: string;
     /**
+     * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. Re-scanning all companies leaves such a company out.
+     */
+    blocked?: boolean;
+    /**
      * The most pages the crawl fetches.
      */
     maxPages: number;

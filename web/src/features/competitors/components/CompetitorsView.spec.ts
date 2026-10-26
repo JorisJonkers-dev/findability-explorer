@@ -152,6 +152,21 @@ describe('the company card', () => {
     expect(bar.attributes('aria-valuenow')).toBe('27')
   })
 
+  it('explains a company whose site turned the scan away', async () => {
+    const blocked = { ...twentebelt, scans: 1, lastScan: summary({ status: 'failed' as const, blocked: true, pagesCrawled: 0, failure: 'Blocked by the site: …' }) }
+    const { wrapper } = await mountApp(
+      api({
+        'GET /api/v1/competitors': () => json({ items: [blocked, martens, ashworth, tribelt] }),
+        'GET /api/v1/competitors/twentebelt': () => json({ competitor: blocked, scans: [blocked.lastScan] }),
+      }),
+      '/competitors',
+    )
+    expect(rows(wrapper)[0]?.text()).toContain('1 scan · blocked')
+    const stats = wrapper.get('[data-testid="scan-stats"]')
+    expect(stats.text()).toMatch(/Last scan: .*, blocked by its site/)
+    expect(stats.get('[data-testid="blocked-note"]').text()).toContain('turns automated readers away')
+  })
+
   it('shows the company picked, and keeps it in the address', async () => {
     const { wrapper, router } = await mountApp(api(), '/competitors')
     await rows(wrapper)[1]?.trigger('click')

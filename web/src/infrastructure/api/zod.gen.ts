@@ -369,7 +369,9 @@ export const zLlmEvent = z.object({
 export const zLlmBudget = z.object({
     monthlyTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
     usedThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    analysesPerHour: z.int().gte(0).lte(100000)
+    analysesPerHour: z.int().gte(0).lte(100000),
+    averageTokensPerScan: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    scansMatched: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
 });
 
 /**

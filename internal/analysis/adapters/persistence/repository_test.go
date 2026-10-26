@@ -101,6 +101,14 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 	if n, err := repo.TokensSince(ctx, created.Add(time.Hour)); err != nil || n != 0 {
 		t.Fatalf("TokensSince later = %d, %v", n, err)
 	}
+	// A scan whose matching did not run used no tokens and does not count.
+	other := queued(t, repo, "joris", created.Add(time.Second))
+	if err := repo.SaveMatching(ctx, other.ID, domain.MatchingDisabled, "", nil, domain.Usage{}); err != nil {
+		t.Fatal(err)
+	}
+	if scans, avg, err := repo.TokensPerScan(ctx); err != nil || scans != 1 || avg != 1000 {
+		t.Fatalf("TokensPerScan = %d, %d, %v", scans, avg, err)
+	}
 }
 
 func TestFailingAndRecovering(t *testing.T) {

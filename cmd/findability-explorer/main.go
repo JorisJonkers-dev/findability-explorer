@@ -300,7 +300,17 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 	if vault == "" {
 		logger.Info("ANTHROPIC_API_KEY is not set: product matching is off until an admin adds a key and chooses a model")
 	}
-	spent := func(ctx context.Context) (int64, error) { return analyses.TokensSince(ctx, monthStart(now())) }
+	spent := func(ctx context.Context) (llmapp.Spending, error) {
+		month, err := analyses.TokensSince(ctx, monthStart(now()))
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		scans, average, err := analyses.TokensPerScan(ctx)
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		return llmapp.Spending{ThisMonth: month, AveragePerScan: average, ScansMatched: scans}, nil
+	}
 	return llmapp.New(llmpersistence.New(store, sealer), providers.New(), spent,
 		llmapp.Config{VaultKey: vault, MonthlyTokens: l.monthly, AnalysesPerHour: l.perHour},
 		now, uuid.NewString), nil

@@ -16,6 +16,10 @@ const meter = computed(() => budgetMeter(props.budget))
       <div class="h-full bg-orange" :style="{ width: percent(meter.fraction) }"></div>
     </div>
     <p class="m-0 text-ink-2">The month runs in UTC. Once the tokens are used, scans run without product matching until the next month.</p>
+    <div class="flex flex-col gap-1" data-testid="per-scan">
+      <p class="m-0 text-lg font-semibold">{{ meter.perScan }}</p>
+      <p v-if="meter.left" class="m-0 text-ink-2">{{ meter.left }}</p>
+    </div>
     <p class="m-0 text-lg">{{ meter.hourly }}</p>
   </section>
 </template>

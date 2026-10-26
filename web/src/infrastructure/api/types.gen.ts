@@ -614,6 +614,14 @@ export type LlmBudget = {
      * How many analyses one account may start per hour.
      */
     analysesPerHour: number;
+    /**
+     * The tokens one scan's product matching used on average, over every scan the language model answered for; 0 before the first.
+     */
+    averageTokensPerScan: number;
+    /**
+     * How many scans the average is over.
+     */
+    scansMatched: number;
 };
 
 /**

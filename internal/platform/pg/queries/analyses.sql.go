@@ -903,6 +903,26 @@ func (q *Queries) SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchi
 	return err
 }
 
+const tokensPerMatchedScan = `-- name: TokensPerMatchedScan :one
+SELECT count(*)::bigint AS scans,
+    coalesce(round(avg(llm_input_tokens + llm_output_tokens)), 0)::bigint AS average
+FROM analyses
+WHERE matching = 'done' AND llm_input_tokens + llm_output_tokens > 0
+`
+
+type TokensPerMatchedScanRow struct {
+	Scans   int64
+	Average int64
+}
+
+// How many scans the language model answered for, and the tokens one of them used on average.
+func (q *Queries) TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error) {
+	row := q.db.QueryRow(ctx, tokensPerMatchedScan)
+	var i TokensPerMatchedScanRow
+	err := row.Scan(&i.Scans, &i.Average)
+	return i, err
+}
+
 const tokensSince = `-- name: TokensSince :one
 SELECT coalesce(sum(llm_input_tokens + llm_output_tokens), 0)::bigint
 FROM analyses

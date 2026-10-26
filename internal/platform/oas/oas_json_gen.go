@@ -3292,12 +3292,22 @@ func (s *LlmBudget) encodeFields(e *jx.Encoder) {
 		e.FieldStart("analysesPerHour")
 		e.Int32(s.AnalysesPerHour)
 	}
+	{
+		e.FieldStart("averageTokensPerScan")
+		e.Int64(s.AverageTokensPerScan)
+	}
+	{
+		e.FieldStart("scansMatched")
+		e.Int64(s.ScansMatched)
+	}
 }
 
-var jsonFieldsNameOfLlmBudget = [3]string{
+var jsonFieldsNameOfLlmBudget = [5]string{
 	0: "monthlyTokens",
 	1: "usedThisMonth",
 	2: "analysesPerHour",
+	3: "averageTokensPerScan",
+	4: "scansMatched",
 }
 
 // Decode decodes LlmBudget from json.
@@ -3345,6 +3355,30 @@ func (s *LlmBudget) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"analysesPerHour\"")
 			}
+		case "averageTokensPerScan":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Int64()
+				s.AverageTokensPerScan = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"averageTokensPerScan\"")
+			}
+		case "scansMatched":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Int64()
+				s.ScansMatched = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scansMatched\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -3355,7 +3389,7 @@ func (s *LlmBudget) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

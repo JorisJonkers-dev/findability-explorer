@@ -9,6 +9,10 @@ export type BudgetMeter = {
   text: string
   /** "10 analyses per account per hour". */
   hourly: string
+  /** What one company scan uses on average: "A company scan uses 29,137 tokens on average, over 2 scans." */
+  perScan: string
+  /** How many more scans this month's tokens cover, or null before there is an average. */
+  left: string | null
 }
 
 /** The token budget as a meter, and the hourly limit in words. */
@@ -19,5 +23,24 @@ export function budgetMeter(budget: LlmBudget): BudgetMeter {
     fraction,
     text: `${NUMBER.format(budget.usedThisMonth)} of ${NUMBER.format(budget.monthlyTokens)} tokens used this month (${share})`,
     hourly: `${NUMBER.format(budget.analysesPerHour)} ${budget.analysesPerHour === 1 ? 'analysis' : 'analyses'} per account per hour`,
+    ...perScan(budget),
   }
+}
+
+/** The average tokens of a scan, and how many more scans the month's remaining tokens cover. */
+function perScan(budget: LlmBudget): Pick<BudgetMeter, 'perScan' | 'left'> {
+  if (budget.scansMatched === 0 || budget.averageTokensPerScan === 0) {
+    return { perScan: 'No scan has used the language model yet, so there is no average.', left: null }
+  }
+  const over = budget.scansMatched === 1 ? '1 scan' : `${NUMBER.format(budget.scansMatched)} scans`
+  const text = `A company scan uses ${NUMBER.format(budget.averageTokensPerScan)} tokens on average, over ${over}.`
+  const remaining = Math.max(budget.monthlyTokens - budget.usedThisMonth, 0)
+  const more = Math.floor(remaining / budget.averageTokensPerScan)
+  if (more === 0 && remaining > 0) {
+    return { perScan: text, left: 'What is left this month covers less than one more scan.' }
+  }
+  if (more === 0) {
+    return { perScan: text, left: 'This month’s tokens are used up; scans run without product matching until next month.' }
+  }
+  return { perScan: text, left: `What is left this month covers about ${NUMBER.format(more)} more ${more === 1 ? 'scan' : 'scans'}.` }
 }

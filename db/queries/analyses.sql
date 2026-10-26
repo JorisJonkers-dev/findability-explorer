@@ -31,6 +31,13 @@ SELECT coalesce(sum(llm_input_tokens + llm_output_tokens), 0)::bigint
 FROM analyses
 WHERE created_at >= $1;
 
+-- name: TokensPerMatchedScan :one
+-- How many scans the language model answered for, and the tokens one of them used on average.
+SELECT count(*)::bigint AS scans,
+    coalesce(round(avg(llm_input_tokens + llm_output_tokens)), 0)::bigint AS average
+FROM analyses
+WHERE matching = 'done' AND llm_input_tokens + llm_output_tokens > 0;
+
 -- name: QueuedAnalyses :many
 SELECT id
 FROM analyses

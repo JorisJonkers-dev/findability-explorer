@@ -163,7 +163,9 @@ func setup(vault string, spentErr error) fixture {
 	r := newRepo()
 	conn := &connector{}
 	n := 0
-	svc := app.New(r, conn, func(context.Context) (int64, error) { return 1234, spentErr },
+	svc := app.New(r, conn, func(context.Context) (app.Spending, error) {
+		return app.Spending{ThisMonth: 1234, AveragePerScan: 617, ScansMatched: 2}, spentErr
+	},
 		app.Config{VaultKey: vault, MonthlyTokens: 2_000_000, AnalysesPerHour: 10},
 		func() time.Time { return now },
 		func() string { n++; return fmt.Sprintf("00000000-0000-4000-8000-%012d", n) })
@@ -178,7 +180,7 @@ func TestSettingsByDefault(t *testing.T) {
 	}
 	if len(s.Credentials) != 1 || s.Credentials[0].ID != domain.VaultID || s.Choice != domain.ChoiceDefault ||
 		s.Active == nil || s.Active.Model != domain.DefaultModel || !s.MatchingEnabled ||
-		s.Budget != (app.Budget{MonthlyTokens: 2_000_000, UsedThisMonth: 1234, AnalysesPerHour: 10}) {
+		s.Budget != (app.Budget{MonthlyTokens: 2_000_000, UsedThisMonth: 1234, AnalysesPerHour: 10, AveragePerScan: 617, ScansMatched: 2}) {
 		t.Fatalf("settings = %+v", s)
 	}
 	f = setup("", nil)

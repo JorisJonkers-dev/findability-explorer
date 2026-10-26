@@ -1664,6 +1664,11 @@ type LlmBudget struct {
 	UsedThisMonth int64 `json:"usedThisMonth"`
 	// How many analyses one account may start per hour.
 	AnalysesPerHour int32 `json:"analysesPerHour"`
+	// The tokens one scan's product matching used on average, over every scan the language model answered
+	// for; 0 before the first.
+	AverageTokensPerScan int64 `json:"averageTokensPerScan"`
+	// How many scans the average is over.
+	ScansMatched int64 `json:"scansMatched"`
 }
 
 // GetMonthlyTokens returns the value of MonthlyTokens.
@@ -1681,6 +1686,16 @@ func (s *LlmBudget) GetAnalysesPerHour() int32 {
 	return s.AnalysesPerHour
 }
 
+// GetAverageTokensPerScan returns the value of AverageTokensPerScan.
+func (s *LlmBudget) GetAverageTokensPerScan() int64 {
+	return s.AverageTokensPerScan
+}
+
+// GetScansMatched returns the value of ScansMatched.
+func (s *LlmBudget) GetScansMatched() int64 {
+	return s.ScansMatched
+}
+
 // SetMonthlyTokens sets the value of MonthlyTokens.
 func (s *LlmBudget) SetMonthlyTokens(val int64) {
 	s.MonthlyTokens = val
@@ -1694,6 +1709,16 @@ func (s *LlmBudget) SetUsedThisMonth(val int64) {
 // SetAnalysesPerHour sets the value of AnalysesPerHour.
 func (s *LlmBudget) SetAnalysesPerHour(val int32) {
 	s.AnalysesPerHour = val
+}
+
+// SetAverageTokensPerScan sets the value of AverageTokensPerScan.
+func (s *LlmBudget) SetAverageTokensPerScan(val int64) {
+	s.AverageTokensPerScan = val
+}
+
+// SetScansMatched sets the value of ScansMatched.
+func (s *LlmBudget) SetScansMatched(val int64) {
+	s.ScansMatched = val
 }
 
 // How the active model was decided - `default` (nobody chose; the Vault key with claude-haiku-5-5 when

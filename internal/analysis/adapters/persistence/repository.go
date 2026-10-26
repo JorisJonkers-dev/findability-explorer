@@ -205,6 +205,16 @@ func (r *Repository) TokensSince(ctx context.Context, since time.Time) (int64, e
 	return n, nil
 }
 
+// TokensPerScan returns how many scans the language model answered for, and the tokens one of them
+// used on average; scans with matching off or skipped used none and are left out.
+func (r *Repository) TokensPerScan(ctx context.Context) (scans int, average int64, err error) {
+	row, err := r.store.Queries().TokensPerMatchedScan(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("average tokens per scan: %w", err)
+	}
+	return int(row.Scans), row.Average, nil
+}
+
 // Queued returns the ids of every queued analysis, oldest first.
 func (r *Repository) Queued(ctx context.Context) ([]uuid.UUID, error) {
 	ids, err := r.store.Queries().QueuedAnalyses(ctx)

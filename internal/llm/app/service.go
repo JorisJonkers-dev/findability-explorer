@@ -39,15 +39,26 @@ type Repository interface {
 	LastTests(ctx context.Context) (map[string]domain.Test, error)
 }
 
-// Budget is what analyses may spend on the language model.
+// Budget is what analyses may spend on the language model, and what one scan uses on average.
 type Budget struct {
 	MonthlyTokens   int64
 	UsedThisMonth   int64
 	AnalysesPerHour int
+	// AveragePerScan is the tokens one scan's matching used on average, over ScansMatched scans
+	// the language model answered for; both are 0 before the first.
+	AveragePerScan int64
+	ScansMatched   int
 }
 
-// Spent returns the tokens analyses created this month used; the analysis context provides it.
-type Spent func(ctx context.Context) (int64, error)
+// Spending is what the analyses used: this month's tokens, and the average of a scan.
+type Spending struct {
+	ThisMonth      int64
+	AveragePerScan int64
+	ScansMatched   int
+}
+
+// Spent returns what analyses used; the analysis context provides it.
+type Spent func(ctx context.Context) (Spending, error)
 
 // Config is the service's fixed settings.
 type Config struct {
@@ -106,7 +117,10 @@ func (s *Service) Settings(ctx context.Context) (Settings, error) {
 	})
 	return Settings{
 		Credentials: creds, Choice: choice, Active: active, MatchingEnabled: enabled, Events: events,
-		Budget: Budget{MonthlyTokens: s.cfg.MonthlyTokens, UsedThisMonth: spent, AnalysesPerHour: s.cfg.AnalysesPerHour},
+		Budget: Budget{
+			MonthlyTokens: s.cfg.MonthlyTokens, UsedThisMonth: spent.ThisMonth, AnalysesPerHour: s.cfg.AnalysesPerHour,
+			AveragePerScan: spent.AveragePerScan, ScansMatched: spent.ScansMatched,
+		},
 	}, nil
 }
 

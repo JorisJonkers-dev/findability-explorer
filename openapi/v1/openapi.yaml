@@ -1625,7 +1625,7 @@ components:
       description: What analyses may spend on the language model.
       type: object
       additionalProperties: false
-      required: [monthlyTokens, usedThisMonth, analysesPerHour]
+      required: [monthlyTokens, usedThisMonth, analysesPerHour, averageTokensPerScan, scansMatched]
       properties:
         monthlyTokens:
           type: integer
@@ -1648,6 +1648,22 @@ components:
           maximum: 100000
           description: How many analyses one account may start per hour.
           example: 10
+        averageTokensPerScan:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: >-
+            The tokens one scan's product matching used on average, over every scan the language
+            model answered for; 0 before the first.
+          example: 29137
+        scansMatched:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: How many scans the average is over.
+          example: 2
     LlmSettings:
       description: The language-model settings.
       type: object

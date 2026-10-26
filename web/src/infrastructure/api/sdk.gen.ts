@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, GetAiReadinessData, GetAiReadinessErrors, GetAiReadinessResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, GetReadinessFilesData, GetReadinessFilesErrors, GetReadinessFilesResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartRescansData, StartRescansErrors, StartRescansResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses } from './types.gen';
-import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zGetAiReadinessResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmSettingsResponse, zGetMeResponse, zGetReadinessFilesPath, zGetReadinessFilesResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartRescansBody, zStartRescansResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse } from './zod.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorCandidateData, AddCompetitorCandidateErrors, AddCompetitorCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, DismissCompetitorCandidateData, DismissCompetitorCandidateErrors, DismissCompetitorCandidateResponses, GetAiReadinessData, GetAiReadinessErrors, GetAiReadinessResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, GetPromptTestResultsData, GetPromptTestResultsErrors, GetPromptTestResultsResponses, GetPromptTestSettingsData, GetPromptTestSettingsErrors, GetPromptTestSettingsResponses, GetReadinessFilesData, GetReadinessFilesErrors, GetReadinessFilesResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorCandidatesData, ListCompetitorCandidatesErrors, ListCompetitorCandidatesResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListPromptAnswersData, ListPromptAnswersErrors, ListPromptAnswersResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartPromptRunData, StartPromptRunErrors, StartPromptRunResponses, StartRescansData, StartRescansErrors, StartRescansResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, UndoCompetitorCandidateData, UndoCompetitorCandidateErrors, UndoCompetitorCandidateResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses, UpdatePromptTestSettingsData, UpdatePromptTestSettingsErrors, UpdatePromptTestSettingsResponses } from './types.gen';
+import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorCandidateBody, zAddCompetitorCandidatePath, zAddCompetitorCandidateResponse, zAddCompetitorResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zDismissCompetitorCandidatePath, zDismissCompetitorCandidateResponse, zGetAiReadinessResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmSettingsResponse, zGetMeResponse, zGetPromptTestResultsResponse, zGetPromptTestSettingsResponse, zGetReadinessFilesPath, zGetReadinessFilesResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorCandidatesQuery, zListCompetitorCandidatesResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListPromptAnswersPath, zListPromptAnswersQuery, zListPromptAnswersResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartPromptRunResponse, zStartRescansBody, zStartRescansResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zUndoCompetitorCandidatePath, zUndoCompetitorCandidateResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse, zUpdatePromptTestSettingsBody, zUpdatePromptTestSettingsResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -416,6 +416,203 @@ export const getReadinessFiles = <ThrowOnError extends boolean = false>(options:
             type: 'apiKey'
         }],
     url: '/api/v1/admin/analyses/{analysisId}/readiness-files',
+    ...options
+});
+
+/**
+ * Get the Prompt test's results
+ *
+ * Returns the latest Prompt runs, newest first, each with its progress and its answers counted per provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited / answers); how often the newest run's answers name each company on the list; and the claims about Tribelt the answers got wrong, newest first.
+ */
+export const getPromptTestResults = <ThrowOnError extends boolean = false>(options?: Options<GetPromptTestResultsData, ThrowOnError>): RequestResult<GetPromptTestResultsResponses, GetPromptTestResultsErrors, ThrowOnError> => (options?.client ?? client).get<GetPromptTestResultsResponses, GetPromptTestResultsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetPromptTestResultsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/prompt-test',
+    ...options
+});
+
+/**
+ * List a Prompt run's answers
+ *
+ * Returns a run's answers in full, each with how the extractor read it, optionally only one provider's, scope's, belt family's or mode's.
+ */
+export const listPromptAnswers = <ThrowOnError extends boolean = false>(options: Options<ListPromptAnswersData, ThrowOnError>): RequestResult<ListPromptAnswersResponses, ListPromptAnswersErrors, ThrowOnError> => (options.client ?? client).get<ListPromptAnswersResponses, ListPromptAnswersErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zListPromptAnswersPath,
+        query: zListPromptAnswersQuery.optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListPromptAnswersResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/prompt-runs/{runId}/answers',
+    ...options
+});
+
+/**
+ * Start a Prompt run now
+ *
+ * Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest model of each large provider, from its own knowledge and with web search, each answer read by the extractor. It runs in the background within the month's budget. 409 while a run is running; 422 without an OpenRouter key or a model to ask.
+ */
+export const startPromptRun = <ThrowOnError extends boolean = false>(options?: Options<StartPromptRunData, ThrowOnError>): RequestResult<StartPromptRunResponses, StartPromptRunErrors, ThrowOnError> => (options?.client ?? client).post<StartPromptRunResponses, StartPromptRunErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStartPromptRunResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/prompt-runs',
+    ...options
+});
+
+/**
+ * Get the Prompt test's settings
+ *
+ * Administrators only. Returns the OpenRouter key Prompt runs use, the providers, the monthly budget and this month's spend, the schedule, the fact sheet and the prompt set.
+ */
+export const getPromptTestSettings = <ThrowOnError extends boolean = false>(options?: Options<GetPromptTestSettingsData, ThrowOnError>): RequestResult<GetPromptTestSettingsResponses, GetPromptTestSettingsErrors, ThrowOnError> => (options?.client ?? client).get<GetPromptTestSettingsResponses, GetPromptTestSettingsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetPromptTestSettingsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/prompt-test',
+    ...options
+});
+
+/**
+ * Change the Prompt test's settings
+ *
+ * Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact sheet. A new schedule counts from now; a new fact sheet is a new version. 422 for a key that is no readable OpenRouter key or a value that breaks a rule.
+ */
+export const updatePromptTestSettings = <ThrowOnError extends boolean = false>(options: Options<UpdatePromptTestSettingsData, ThrowOnError>): RequestResult<UpdatePromptTestSettingsResponses, UpdatePromptTestSettingsErrors, ThrowOnError> => (options.client ?? client).patch<UpdatePromptTestSettingsResponses, UpdatePromptTestSettingsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zUpdatePromptTestSettingsBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zUpdatePromptTestSettingsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/prompt-test',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List the competitor candidates
+ *
+ * Administrators only. Every company the Prompt runs' answers name that is not on the company list, with how often and by which providers' models, and the addresses given; filtered by status, most answers first.
+ */
+export const listCompetitorCandidates = <ThrowOnError extends boolean = false>(options?: Options<ListCompetitorCandidatesData, ThrowOnError>): RequestResult<ListCompetitorCandidatesResponses, ListCompetitorCandidatesErrors, ThrowOnError> => (options?.client ?? client).get<ListCompetitorCandidatesResponses, ListCompetitorCandidatesErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: zListCompetitorCandidatesQuery.optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListCompetitorCandidatesResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-candidates',
+    ...options
+});
+
+/**
+ * Add a candidate to the competitor list
+ *
+ * Administrators only. Adds the candidate as a company with the name and website given, which can then be scanned. 409 when it was decided already or another company has the website.
+ */
+export const addCompetitorCandidate = <ThrowOnError extends boolean = false>(options: Options<AddCompetitorCandidateData, ThrowOnError>): RequestResult<AddCompetitorCandidateResponses, AddCompetitorCandidateErrors, ThrowOnError> => (options.client ?? client).post<AddCompetitorCandidateResponses, AddCompetitorCandidateErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zAddCompetitorCandidateBody,
+        path: zAddCompetitorCandidatePath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zAddCompetitorCandidateResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-candidates/{competitorCandidateId}/add',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Dismiss a candidate
+ *
+ * Administrators only. Dismisses the candidate; it stays dismissed in later runs until the decision is undone. 409 when it was decided already.
+ */
+export const dismissCompetitorCandidate = <ThrowOnError extends boolean = false>(options: Options<DismissCompetitorCandidateData, ThrowOnError>): RequestResult<DismissCompetitorCandidateResponses, DismissCompetitorCandidateErrors, ThrowOnError> => (options.client ?? client).post<DismissCompetitorCandidateResponses, DismissCompetitorCandidateErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zDismissCompetitorCandidatePath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zDismissCompetitorCandidateResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss',
+    ...options
+});
+
+/**
+ * Undo the decision on a candidate
+ *
+ * Administrators only. Puts the candidate back among the pending ones; an added candidate's company is removed again, with its scans. 404 when it has no decision.
+ */
+export const undoCompetitorCandidate = <ThrowOnError extends boolean = false>(options: Options<UndoCompetitorCandidateData, ThrowOnError>): RequestResult<UndoCompetitorCandidateResponses, UndoCompetitorCandidateErrors, ThrowOnError> => (options.client ?? client).delete<UndoCompetitorCandidateResponses, UndoCompetitorCandidateErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zUndoCompetitorCandidatePath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zUndoCompetitorCandidateResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-candidates/{competitorCandidateId}/decision',
     ...options
 });
 

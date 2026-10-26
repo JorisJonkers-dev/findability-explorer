@@ -16,6 +16,7 @@ import (
 	llmweb "github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/web"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
+	prompttestweb "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/web"
 	terminologyweb "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/web"
 )
 
@@ -26,6 +27,7 @@ type (
 	companiesHandler   = companiesweb.Handler
 	identityHandler    = identityweb.Handler
 	llmHandler         = llmweb.Handler
+	promptTestHandler  = prompttestweb.Handler
 )
 
 // api is the oas.Handler: one embedded web adapter per context, plus the shared error mapping.
@@ -35,6 +37,7 @@ type api struct {
 	*companiesHandler
 	*identityHandler
 	*llmHandler
+	*promptTestHandler
 	logger *slog.Logger
 }
 
@@ -66,6 +69,7 @@ type Contexts struct {
 	Analysis    analysisweb.UseCases
 	Companies   companiesweb.UseCases
 	LLM         llmweb.UseCases
+	PromptTest  prompttestweb.UseCases
 	// Auth resolves the session cookie to the principal a request runs as.
 	Auth identityweb.Authenticator
 }
@@ -87,6 +91,7 @@ func New(logger *slog.Logger, c Contexts) (http.Handler, error) {
 			companiesHandler:   companiesweb.New(c.Companies),
 			identityHandler:    identityweb.New(),
 			llmHandler:         llmweb.New(c.LLM, actor),
+			promptTestHandler:  prompttestweb.New(c.PromptTest, actor),
 			logger:             logger,
 		},
 		identityweb.NewSecurity(c.Auth),

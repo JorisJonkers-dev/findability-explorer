@@ -34,6 +34,16 @@ func (UnimplementedHandler) AddCompetitor(ctx context.Context, req *NewCompetito
 	return r, ht.ErrNotImplemented
 }
 
+// AddCompetitorCandidate implements addCompetitorCandidate operation.
+//
+// Administrators only. Adds the candidate as a company with the name and website given, which can then
+// be scanned. 409 when it was decided already or another company has the website.
+//
+// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/add
+func (UnimplementedHandler) AddCompetitorCandidate(ctx context.Context, req *NewCompetitor, params AddCompetitorCandidateParams) (r AddCompetitorCandidateRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // AddLlmCredential implements addLlmCredential operation.
 //
 // Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
@@ -83,6 +93,16 @@ func (UnimplementedHandler) DeleteCompetitor(ctx context.Context, params DeleteC
 //
 // DELETE /api/v1/admin/llm/credentials/{credentialId}
 func (UnimplementedHandler) DeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (r DeleteLlmCredentialRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DismissCompetitorCandidate implements dismissCompetitorCandidate operation.
+//
+// Administrators only. Dismisses the candidate; it stays dismissed in later runs until the decision is
+// undone. 409 when it was decided already.
+//
+// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss
+func (UnimplementedHandler) DismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (r DismissCompetitorCandidateRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -146,6 +166,28 @@ func (UnimplementedHandler) GetMe(ctx context.Context) (r GetMeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// GetPromptTestResults implements getPromptTestResults operation.
+//
+// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
+// provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited /
+// answers); how often the newest run's answers name each company on the list; and the claims about
+// Tribelt the answers got wrong, newest first.
+//
+// GET /api/v1/prompt-test
+func (UnimplementedHandler) GetPromptTestResults(ctx context.Context) (r GetPromptTestResultsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetPromptTestSettings implements getPromptTestSettings operation.
+//
+// Administrators only. Returns the OpenRouter key Prompt runs use, the providers, the monthly budget
+// and this month's spend, the schedule, the fact sheet and the prompt set.
+//
+// GET /api/v1/admin/prompt-test
+func (UnimplementedHandler) GetPromptTestSettings(ctx context.Context) (r GetPromptTestSettingsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetReadinessFiles implements getReadinessFiles operation.
 //
 // Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
@@ -166,6 +208,17 @@ func (UnimplementedHandler) ListAnalyses(ctx context.Context, params ListAnalyse
 	return r, ht.ErrNotImplemented
 }
 
+// ListCompetitorCandidates implements listCompetitorCandidates operation.
+//
+// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
+// with how often and by which providers' models, and the addresses given; filtered by status, most
+// answers first.
+//
+// GET /api/v1/admin/competitor-candidates
+func (UnimplementedHandler) ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (r ListCompetitorCandidatesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListCompetitors implements listCompetitors operation.
 //
 // Returns every company the research studied and every company added since, with its names for each
@@ -183,6 +236,16 @@ func (UnimplementedHandler) ListCompetitors(ctx context.Context) (r ListCompetit
 //
 // GET /api/v1/admin/llm/credentials/{credentialId}/models
 func (UnimplementedHandler) ListLlmModels(ctx context.Context, params ListLlmModelsParams) (r ListLlmModelsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListPromptAnswers implements listPromptAnswers operation.
+//
+// Returns a run's answers in full, each with how the extractor read it, optionally only one
+// provider's, scope's, belt family's or mode's.
+//
+// GET /api/v1/prompt-runs/{runId}/answers
+func (UnimplementedHandler) ListPromptAnswers(ctx context.Context, params ListPromptAnswersParams) (r ListPromptAnswersRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -241,6 +304,18 @@ func (UnimplementedHandler) StartAnalysis(ctx context.Context, req *NewAnalysis)
 	return r, ht.ErrNotImplemented
 }
 
+// StartPromptRun implements startPromptRun operation.
+//
+// Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
+// model of each large provider, from its own knowledge and with web search, each answer read by the
+// extractor. It runs in the background within the month's budget. 409 while a run is running; 422
+// without an OpenRouter key or a model to ask.
+//
+// POST /api/v1/admin/prompt-runs
+func (UnimplementedHandler) StartPromptRun(ctx context.Context) (r StartPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StartRescans implements startRescans operation.
 //
 // Administrators only. Queues one scan for each named company with a website, or with `all`, for every
@@ -265,6 +340,16 @@ func (UnimplementedHandler) TestLlmCredential(ctx context.Context, params TestLl
 	return r, ht.ErrNotImplemented
 }
 
+// UndoCompetitorCandidate implements undoCompetitorCandidate operation.
+//
+// Administrators only. Puts the candidate back among the pending ones; an added candidate's company is
+// removed again, with its scans. 404 when it has no decision.
+//
+// DELETE /api/v1/admin/competitor-candidates/{competitorCandidateId}/decision
+func (UnimplementedHandler) UndoCompetitorCandidate(ctx context.Context, params UndoCompetitorCandidateParams) (r UndoCompetitorCandidateRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // UndoTermDecision implements undoTermDecision operation.
 //
 // Administrators only. Puts the candidate back in the queue; an accepted term leaves the terminology
@@ -283,6 +368,17 @@ func (UnimplementedHandler) UndoTermDecision(ctx context.Context, params UndoTer
 //
 // PATCH /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (r UpdateCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdatePromptTestSettings implements updatePromptTestSettings operation.
+//
+// Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact
+// sheet. A new schedule counts from now; a new fact sheet is a new version. 422 for a key that is no
+// readable OpenRouter key or a value that breaks a rule.
+//
+// PATCH /api/v1/admin/prompt-test
+func (UnimplementedHandler) UpdatePromptTestSettings(ctx context.Context, req *PromptTestSettingsChange) (r UpdatePromptTestSettingsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

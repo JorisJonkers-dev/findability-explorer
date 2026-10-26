@@ -1,0 +1,208 @@
+package domain
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"net/url"
+	"slices"
+	"strings"
+	"unicode"
+
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
+)
+
+// Correctness is how what an answer says about Tribelt holds against the fact sheet; empty when
+// the answer does not mention Tribelt.
+type Correctness string
+
+const (
+	CorrectnessNone    Correctness = ""
+	CorrectnessCorrect Correctness = "correct"
+	CorrectnessPartly  Correctness = "partly"
+	CorrectnessWrong   Correctness = "wrong"
+)
+
+// Named is a company an answer names, as the extractor read it, with the address the answer
+// gives for it, if any.
+type Named struct {
+	Name string
+	URL  string
+}
+
+// Extracted is what the extractor read from one answer, in its strict format.
+type Extracted struct {
+	// Companies are the companies the answer names, in the order it names them.
+	Companies    []Named
+	Addresses    []string
+	NamesTribelt bool
+	CitesTribelt bool
+	Correctness  Correctness
+	WrongClaims  []string
+}
+
+// Company is a company an answer named, matched to the company list when it is on it.
+type Company struct {
+	Name string
+	URL  string
+	// CompetitorID is the matched company's id; empty for a name not on the list.
+	CompetitorID string
+	// Position is its place in the answer, from 1.
+	Position int
+}
+
+// Extraction is how one answer was read; Failed when the extractor could not read it, after a
+// retry, so the answer is marked rather than dropped.
+type Extraction struct {
+	Failed       bool
+	Companies    []Company
+	Addresses    []string
+	NamesTribelt bool
+	CitesTribelt bool
+	Correctness  Correctness
+	WrongClaims  []string
+	InputTokens  int64
+	OutputTokens int64
+	Cost         Micros
+}
+
+// Role is what a company is to Tribelt.
+type Role string
+
+const (
+	RoleTribelt    Role = "tribelt"
+	RoleMirror     Role = "mirror"
+	RoleGroup      Role = "group"
+	RoleCompetitor Role = "competitor"
+)
+
+// DirectoryCompany is what the prompt test knows of a company on the list: the names it goes by
+// and its website's host.
+type DirectoryCompany struct {
+	ID   string
+	Name string
+	Host string
+	Role Role
+}
+
+// legal are the words of a legal form an answer may add or leave out.
+func legal() []string {
+	return []string{"bv", "b.v.", "gmbh", "ltd", "inc", "nv", "n.v.", "ag", "llc", "sa", "s.a.", "spa", "s.p.a.", "sl", "co", "kg", "company", "group"}
+}
+
+// NameKey is a name as it compares: folded, without a remark in brackets, a legal form or
+// punctuation. "Märtens Transportbänder GmbH" and "martens transportbander" have one key.
+func NameKey(name string) string {
+	base, _, _ := strings.Cut(name, "(")
+	words := strings.FieldsFunc(fold.Fold(base), func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '.' })
+	words = slices.DeleteFunc(words, func(w string) bool { return slices.Contains(legal(), w) || strings.Trim(w, ".") == "" })
+	for i, w := range words {
+		words[i] = strings.Trim(w, ".")
+	}
+	return strings.Join(words, " ")
+}
+
+// aliases are the keys a directory company goes by: its name, and each name in its remark in
+// brackets ("ESFO Transportbanden B.V. (ESFO Metal Belts, Narviflex Group)").
+func aliases(c DirectoryCompany) []string {
+	out := []string{NameKey(c.Name)}
+	if _, remark, ok := strings.Cut(c.Name, "("); ok {
+		for _, part := range strings.Split(strings.TrimSuffix(strings.TrimSpace(remark), ")"), ",") {
+			if k := NameKey(part); k != "" {
+				out = append(out, k)
+			}
+		}
+	}
+	return out
+}
+
+// hostOf is an address's host without "www.", lower case; "" when it has none.
+func hostOf(raw string) string {
+	if !strings.Contains(raw, "://") {
+		raw = "https://" + raw
+	}
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+}
+
+// sameSite reports whether host is site or one of its subdomains.
+func sameSite(host, site string) bool {
+	return site != "" && (host == site || strings.HasSuffix(host, "."+site))
+}
+
+// Match finds the company on the list a name (and the address given for it) means: by website
+// host, by name or alias, or by a short name that starts one of them ("ESFO" for "ESFO
+// Transportbanden"). It returns "" for a name not on the list.
+func Match(n Named, directory []DirectoryCompany) string {
+	if h := hostOf(n.URL); h != "" {
+		for _, c := range directory {
+			if sameSite(h, c.Host) {
+				return c.ID
+			}
+		}
+	}
+	key := NameKey(n.Name)
+	if key == "" {
+		return ""
+	}
+	for _, c := range directory {
+		if slices.Contains(aliases(c), key) {
+			return c.ID
+		}
+	}
+	first, _, _ := strings.Cut(key, " ")
+	if len([]rune(first)) < 4 && !strings.Contains(key, " ") {
+		return ""
+	}
+	for _, c := range directory {
+		if slices.ContainsFunc(aliases(c), func(a string) bool { return strings.HasPrefix(a, key+" ") }) {
+			return c.ID
+		}
+	}
+	return ""
+}
+
+// Read turns what the extractor read into the answer's extraction: each named company matched to
+// the list, the answer's own citations added to the addresses, and Tribelt named or cited also
+// when the extractor missed it but a name or an address shows it.
+func Read(x Extracted, citations []string, directory []DirectoryCompany) Extraction {
+	out := Extraction{
+		NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, Correctness: x.Correctness,
+		WrongClaims: x.WrongClaims,
+	}
+	role := map[string]Role{}
+	tribeltHosts := []string{}
+	for _, c := range directory {
+		role[c.ID] = c.Role
+		if c.Role == RoleTribelt {
+			tribeltHosts = append(tribeltHosts, c.Host)
+		}
+	}
+	for i, n := range x.Companies {
+		id := Match(n, directory)
+		out.Companies = append(out.Companies, Company{Name: n.Name, URL: n.URL, CompetitorID: id, Position: i + 1})
+		out.NamesTribelt = out.NamesTribelt || (id != "" && role[id] == RoleTribelt)
+	}
+	for _, a := range append(slices.Clone(x.Addresses), citations...) {
+		if a = strings.TrimSpace(a); a != "" && !slices.Contains(out.Addresses, a) {
+			out.Addresses = append(out.Addresses, a)
+		}
+	}
+	for _, a := range out.Addresses {
+		h := hostOf(a)
+		out.CitesTribelt = out.CitesTribelt || slices.ContainsFunc(tribeltHosts, func(t string) bool { return sameSite(h, t) })
+	}
+	if !out.NamesTribelt {
+		out.Correctness, out.WrongClaims = CorrectnessNone, nil
+	}
+	return out
+}
+
+// CandidateID is the id of a competitor candidate: made from its name's key, so the same name in
+// every run is one candidate, and a dismissed one stays dismissed.
+func CandidateID(key string) string {
+	sum := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(sum[:])[:16]
+}

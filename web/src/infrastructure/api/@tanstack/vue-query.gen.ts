@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen';
-import { acceptTermCandidate, addCompetitor, addLlmCredential, clearActiveLlm, compareScans, deleteCompetitor, deleteLlmCredential, getAiReadiness, getAnalysis, getCompetitor, getCompetitorProfile, getLlmSettings, getMe, getReadinessFiles, listAnalyses, listCompetitors, listLlmModels, listTermCandidates, type Options, rejectTermCandidate, searchTerms, setActiveLlm, startAnalysis, startRescans, testLlmCredential, undoTermDecision, updateCompetitor } from '../sdk.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartRescansData, StartRescansError, StartRescansResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse } from '../types.gen';
+import { acceptTermCandidate, addCompetitor, addCompetitorCandidate, addLlmCredential, clearActiveLlm, compareScans, deleteCompetitor, deleteLlmCredential, dismissCompetitorCandidate, getAiReadiness, getAnalysis, getCompetitor, getCompetitorProfile, getLlmSettings, getMe, getPromptTestResults, getPromptTestSettings, getReadinessFiles, listAnalyses, listCompetitorCandidates, listCompetitors, listLlmModels, listPromptAnswers, listTermCandidates, type Options, rejectTermCandidate, searchTerms, setActiveLlm, startAnalysis, startPromptRun, startRescans, testLlmCredential, undoCompetitorCandidate, undoTermDecision, updateCompetitor, updatePromptTestSettings } from '../sdk.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorCandidateData, AddCompetitorCandidateError, AddCompetitorCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, DismissCompetitorCandidateData, DismissCompetitorCandidateError, DismissCompetitorCandidateResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetPromptTestResultsData, GetPromptTestResultsError, GetPromptTestResultsResponse, GetPromptTestSettingsData, GetPromptTestSettingsError, GetPromptTestSettingsResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorCandidatesData, ListCompetitorCandidatesError, ListCompetitorCandidatesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListPromptAnswersData, ListPromptAnswersError, ListPromptAnswersResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartPromptRunData, StartPromptRunError, StartPromptRunResponse, StartRescansData, StartRescansError, StartRescansResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, UndoCompetitorCandidateData, UndoCompetitorCandidateError, UndoCompetitorCandidateResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse, UpdatePromptTestSettingsData, UpdatePromptTestSettingsError, UpdatePromptTestSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -390,6 +390,181 @@ export const getReadinessFilesOptions = (options: Options<GetReadinessFilesData>
     },
     queryKey: getReadinessFilesQueryKey(options)
 });
+
+export const getPromptTestResultsQueryKey = (options?: Options<GetPromptTestResultsData>) => createQueryKey('getPromptTestResults', options);
+
+/**
+ * Get the Prompt test's results
+ *
+ * Returns the latest Prompt runs, newest first, each with its progress and its answers counted per provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited / answers); how often the newest run's answers name each company on the list; and the claims about Tribelt the answers got wrong, newest first.
+ */
+export const getPromptTestResultsOptions = (options?: Options<GetPromptTestResultsData>) => queryOptions<GetPromptTestResultsResponse, GetPromptTestResultsError, GetPromptTestResultsResponse, ReturnType<typeof getPromptTestResultsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getPromptTestResults({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getPromptTestResultsQueryKey(options)
+});
+
+export const listPromptAnswersQueryKey = (options: Options<ListPromptAnswersData>) => createQueryKey('listPromptAnswers', options);
+
+/**
+ * List a Prompt run's answers
+ *
+ * Returns a run's answers in full, each with how the extractor read it, optionally only one provider's, scope's, belt family's or mode's.
+ */
+export const listPromptAnswersOptions = (options: Options<ListPromptAnswersData>) => queryOptions<ListPromptAnswersResponse, ListPromptAnswersError, ListPromptAnswersResponse, ReturnType<typeof listPromptAnswersQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listPromptAnswers({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listPromptAnswersQueryKey(options)
+});
+
+/**
+ * Start a Prompt run now
+ *
+ * Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest model of each large provider, from its own knowledge and with web search, each answer read by the extractor. It runs in the background within the month's budget. 409 while a run is running; 422 without an OpenRouter key or a model to ask.
+ */
+export const startPromptRunMutation = (options?: Partial<Options<StartPromptRunData>>): UseMutationOptions<StartPromptRunResponse, StartPromptRunError, Options<StartPromptRunData>> => {
+    const mutationOptions: UseMutationOptions<StartPromptRunResponse, StartPromptRunError, Options<StartPromptRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startPromptRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getPromptTestSettingsQueryKey = (options?: Options<GetPromptTestSettingsData>) => createQueryKey('getPromptTestSettings', options);
+
+/**
+ * Get the Prompt test's settings
+ *
+ * Administrators only. Returns the OpenRouter key Prompt runs use, the providers, the monthly budget and this month's spend, the schedule, the fact sheet and the prompt set.
+ */
+export const getPromptTestSettingsOptions = (options?: Options<GetPromptTestSettingsData>) => queryOptions<GetPromptTestSettingsResponse, GetPromptTestSettingsError, GetPromptTestSettingsResponse, ReturnType<typeof getPromptTestSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getPromptTestSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getPromptTestSettingsQueryKey(options)
+});
+
+/**
+ * Change the Prompt test's settings
+ *
+ * Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact sheet. A new schedule counts from now; a new fact sheet is a new version. 422 for a key that is no readable OpenRouter key or a value that breaks a rule.
+ */
+export const updatePromptTestSettingsMutation = (options?: Partial<Options<UpdatePromptTestSettingsData>>): UseMutationOptions<UpdatePromptTestSettingsResponse, UpdatePromptTestSettingsError, Options<UpdatePromptTestSettingsData>> => {
+    const mutationOptions: UseMutationOptions<UpdatePromptTestSettingsResponse, UpdatePromptTestSettingsError, Options<UpdatePromptTestSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updatePromptTestSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listCompetitorCandidatesQueryKey = (options?: Options<ListCompetitorCandidatesData>) => createQueryKey('listCompetitorCandidates', options);
+
+/**
+ * List the competitor candidates
+ *
+ * Administrators only. Every company the Prompt runs' answers name that is not on the company list, with how often and by which providers' models, and the addresses given; filtered by status, most answers first.
+ */
+export const listCompetitorCandidatesOptions = (options?: Options<ListCompetitorCandidatesData>) => queryOptions<ListCompetitorCandidatesResponse, ListCompetitorCandidatesError, ListCompetitorCandidatesResponse, ReturnType<typeof listCompetitorCandidatesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listCompetitorCandidates({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listCompetitorCandidatesQueryKey(options)
+});
+
+/**
+ * Add a candidate to the competitor list
+ *
+ * Administrators only. Adds the candidate as a company with the name and website given, which can then be scanned. 409 when it was decided already or another company has the website.
+ */
+export const addCompetitorCandidateMutation = (options?: Partial<Options<AddCompetitorCandidateData>>): UseMutationOptions<AddCompetitorCandidateResponse, AddCompetitorCandidateError, Options<AddCompetitorCandidateData>> => {
+    const mutationOptions: UseMutationOptions<AddCompetitorCandidateResponse, AddCompetitorCandidateError, Options<AddCompetitorCandidateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await addCompetitorCandidate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Dismiss a candidate
+ *
+ * Administrators only. Dismisses the candidate; it stays dismissed in later runs until the decision is undone. 409 when it was decided already.
+ */
+export const dismissCompetitorCandidateMutation = (options?: Partial<Options<DismissCompetitorCandidateData>>): UseMutationOptions<DismissCompetitorCandidateResponse, DismissCompetitorCandidateError, Options<DismissCompetitorCandidateData>> => {
+    const mutationOptions: UseMutationOptions<DismissCompetitorCandidateResponse, DismissCompetitorCandidateError, Options<DismissCompetitorCandidateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await dismissCompetitorCandidate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Undo the decision on a candidate
+ *
+ * Administrators only. Puts the candidate back among the pending ones; an added candidate's company is removed again, with its scans. 404 when it has no decision.
+ */
+export const undoCompetitorCandidateMutation = (options?: Partial<Options<UndoCompetitorCandidateData>>): UseMutationOptions<UndoCompetitorCandidateResponse, UndoCompetitorCandidateError, Options<UndoCompetitorCandidateData>> => {
+    const mutationOptions: UseMutationOptions<UndoCompetitorCandidateResponse, UndoCompetitorCandidateError, Options<UndoCompetitorCandidateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await undoCompetitorCandidate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const getMeQueryKey = (options?: Options<GetMeData>) => createQueryKey('getMe', options);
 

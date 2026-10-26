@@ -96,6 +96,87 @@ func decodeAcceptTermCandidateParams(args [1]string, argsEscaped bool, r *http.R
 	return params, nil
 }
 
+// AddCompetitorCandidateParams is parameters of addCompetitorCandidate operation.
+type AddCompetitorCandidateParams struct {
+	// The competitor candidate's id.
+	CompetitorCandidateId CompetitorCandidateId
+}
+
+func unpackAddCompetitorCandidateParams(packed middleware.Parameters) (params AddCompetitorCandidateParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorCandidateId",
+			In:   "path",
+		}
+		params.CompetitorCandidateId = packed[key].(CompetitorCandidateId)
+	}
+	return params
+}
+
+func decodeAddCompetitorCandidateParams(args [1]string, argsEscaped bool, r *http.Request) (params AddCompetitorCandidateParams, _ error) {
+	// Decode path: competitorCandidateId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorCandidateId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorCandidateIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorCandidateIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorCandidateId = CompetitorCandidateId(paramsDotCompetitorCandidateIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorCandidateId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorCandidateId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CompareScansParams is parameters of compareScans operation.
 type CompareScansParams struct {
 	// The company's id.
@@ -437,6 +518,87 @@ func decodeDeleteLlmCredentialParams(args [1]string, argsEscaped bool, r *http.R
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "credentialId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DismissCompetitorCandidateParams is parameters of dismissCompetitorCandidate operation.
+type DismissCompetitorCandidateParams struct {
+	// The competitor candidate's id.
+	CompetitorCandidateId CompetitorCandidateId
+}
+
+func unpackDismissCompetitorCandidateParams(packed middleware.Parameters) (params DismissCompetitorCandidateParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorCandidateId",
+			In:   "path",
+		}
+		params.CompetitorCandidateId = packed[key].(CompetitorCandidateId)
+	}
+	return params
+}
+
+func decodeDismissCompetitorCandidateParams(args [1]string, argsEscaped bool, r *http.Request) (params DismissCompetitorCandidateParams, _ error) {
+	// Decode path: competitorCandidateId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorCandidateId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorCandidateIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorCandidateIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorCandidateId = CompetitorCandidateId(paramsDotCompetitorCandidateIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorCandidateId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorCandidateId",
 			In:   "path",
 			Err:  err,
 		}
@@ -833,6 +995,86 @@ func decodeListAnalysesParams(args [0]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
+// ListCompetitorCandidatesParams is parameters of listCompetitorCandidates operation.
+type ListCompetitorCandidatesParams struct {
+	// Only candidates with this status.
+	Status OptCompetitorCandidateStatus `json:",omitempty,omitzero"`
+}
+
+func unpackListCompetitorCandidatesParams(packed middleware.Parameters) (params ListCompetitorCandidatesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.(OptCompetitorCandidateStatus)
+		}
+	}
+	return params
+}
+
+func decodeListCompetitorCandidatesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListCompetitorCandidatesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotStatusVal CompetitorCandidateStatus
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotStatusVal = CompetitorCandidateStatus(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Status.SetTo(paramsDotStatusVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Status.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListLlmModelsParams is parameters of listLlmModels operation.
 type ListLlmModelsParams struct {
 	// The credential's id.
@@ -908,6 +1150,353 @@ func decodeListLlmModelsParams(args [1]string, argsEscaped bool, r *http.Request
 		return params, &ogenerrors.DecodeParamError{
 			Name: "credentialId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListPromptAnswersParams is parameters of listPromptAnswers operation.
+type ListPromptAnswersParams struct {
+	// The Prompt run's id.
+	RunId uuid.UUID
+	// Only this provider's answers.
+	Provider OptString `json:",omitempty,omitzero"`
+	// Only this scope's answers.
+	Scope OptPromptScope `json:",omitempty,omitzero"`
+	// Only this belt family's answers.
+	Family OptPromptFamily `json:",omitempty,omitzero"`
+	// Only answers of this mode.
+	Mode OptPromptMode `json:",omitempty,omitzero"`
+}
+
+func unpackListPromptAnswersParams(packed middleware.Parameters) (params ListPromptAnswersParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "runId",
+			In:   "path",
+		}
+		params.RunId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "provider",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Provider = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "scope",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Scope = v.(OptPromptScope)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "family",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Family = v.(OptPromptFamily)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "mode",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Mode = v.(OptPromptMode)
+		}
+	}
+	return params
+}
+
+func decodeListPromptAnswersParams(args [1]string, argsEscaped bool, r *http.Request) (params ListPromptAnswersParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: runId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "runId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RunId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "runId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: provider.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "provider",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotProviderVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotProviderVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Provider.SetTo(paramsDotProviderVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Provider.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     40,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         regexMap["^[a-z0-9][a-z0-9-]*$"],
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "provider",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: scope.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "scope",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotScopeVal PromptScope
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotScopeVal = PromptScope(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Scope.SetTo(paramsDotScopeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Scope.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "scope",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: family.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "family",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotFamilyVal PromptFamily
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotFamilyVal = PromptFamily(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Family.SetTo(paramsDotFamilyVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Family.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "family",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: mode.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotModeVal PromptMode
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotModeVal = PromptMode(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Mode.SetTo(paramsDotModeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Mode.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "mode",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -1603,6 +2192,87 @@ func decodeTestLlmCredentialParams(args [1]string, argsEscaped bool, r *http.Req
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "credentialId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UndoCompetitorCandidateParams is parameters of undoCompetitorCandidate operation.
+type UndoCompetitorCandidateParams struct {
+	// The competitor candidate's id.
+	CompetitorCandidateId CompetitorCandidateId
+}
+
+func unpackUndoCompetitorCandidateParams(packed middleware.Parameters) (params UndoCompetitorCandidateParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorCandidateId",
+			In:   "path",
+		}
+		params.CompetitorCandidateId = packed[key].(CompetitorCandidateId)
+	}
+	return params
+}
+
+func decodeUndoCompetitorCandidateParams(args [1]string, argsEscaped bool, r *http.Request) (params UndoCompetitorCandidateParams, _ error) {
+	// Decode path: competitorCandidateId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorCandidateId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorCandidateIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorCandidateIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorCandidateId = CompetitorCandidateId(paramsDotCompetitorCandidateIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorCandidateId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorCandidateId",
 			In:   "path",
 			Err:  err,
 		}

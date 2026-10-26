@@ -44,6 +44,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/competitors
 	AddCompetitor(ctx context.Context, request *NewCompetitor) (AddCompetitorRes, error)
+	// AddCompetitorCandidate invokes addCompetitorCandidate operation.
+	//
+	// Administrators only. Adds the candidate as a company with the name and website given, which can then
+	// be scanned. 409 when it was decided already or another company has the website.
+	//
+	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/add
+	AddCompetitorCandidate(ctx context.Context, request *NewCompetitor, params AddCompetitorCandidateParams) (AddCompetitorCandidateRes, error)
 	// AddLlmCredential invokes addLlmCredential operation.
 	//
 	// Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
@@ -81,6 +88,13 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/admin/llm/credentials/{credentialId}
 	DeleteLlmCredential(ctx context.Context, params DeleteLlmCredentialParams) (DeleteLlmCredentialRes, error)
+	// DismissCompetitorCandidate invokes dismissCompetitorCandidate operation.
+	//
+	// Administrators only. Dismisses the candidate; it stays dismissed in later runs until the decision is
+	// undone. 409 when it was decided already.
+	//
+	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss
+	DismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (DismissCompetitorCandidateRes, error)
 	// GetAiReadiness invokes getAiReadiness operation.
 	//
 	// Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt
@@ -123,6 +137,22 @@ type Invoker interface {
 	//
 	// GET /api/v1/me
 	GetMe(ctx context.Context) (GetMeRes, error)
+	// GetPromptTestResults invokes getPromptTestResults operation.
+	//
+	// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
+	// provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited /
+	// answers); how often the newest run's answers name each company on the list; and the claims about
+	// Tribelt the answers got wrong, newest first.
+	//
+	// GET /api/v1/prompt-test
+	GetPromptTestResults(ctx context.Context) (GetPromptTestResultsRes, error)
+	// GetPromptTestSettings invokes getPromptTestSettings operation.
+	//
+	// Administrators only. Returns the OpenRouter key Prompt runs use, the providers, the monthly budget
+	// and this month's spend, the schedule, the fact sheet and the prompt set.
+	//
+	// GET /api/v1/admin/prompt-test
+	GetPromptTestSettings(ctx context.Context) (GetPromptTestSettingsRes, error)
 	// GetReadinessFiles invokes getReadinessFiles operation.
 	//
 	// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
@@ -137,6 +167,14 @@ type Invoker interface {
 	//
 	// GET /api/v1/analyses
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
+	// ListCompetitorCandidates invokes listCompetitorCandidates operation.
+	//
+	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
+	// with how often and by which providers' models, and the addresses given; filtered by status, most
+	// answers first.
+	//
+	// GET /api/v1/admin/competitor-candidates
+	ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (ListCompetitorCandidatesRes, error)
 	// ListCompetitors invokes listCompetitors operation.
 	//
 	// Returns every company the research studied and every company added since, with its names for each
@@ -151,6 +189,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/admin/llm/credentials/{credentialId}/models
 	ListLlmModels(ctx context.Context, params ListLlmModelsParams) (ListLlmModelsRes, error)
+	// ListPromptAnswers invokes listPromptAnswers operation.
+	//
+	// Returns a run's answers in full, each with how the extractor read it, optionally only one
+	// provider's, scope's, belt family's or mode's.
+	//
+	// GET /api/v1/prompt-runs/{runId}/answers
+	ListPromptAnswers(ctx context.Context, params ListPromptAnswersParams) (ListPromptAnswersRes, error)
 	// ListTermCandidates invokes listTermCandidates operation.
 	//
 	// Administrators only. Every phrase a finished scan found that the terminology map did not hold,
@@ -191,6 +236,15 @@ type Invoker interface {
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, request *NewAnalysis) (StartAnalysisRes, error)
+	// StartPromptRun invokes startPromptRun operation.
+	//
+	// Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
+	// model of each large provider, from its own knowledge and with web search, each answer read by the
+	// extractor. It runs in the background within the month's budget. 409 while a run is running; 422
+	// without an OpenRouter key or a model to ask.
+	//
+	// POST /api/v1/admin/prompt-runs
+	StartPromptRun(ctx context.Context) (StartPromptRunRes, error)
 	// StartRescans invokes startRescans operation.
 	//
 	// Administrators only. Queues one scan for each named company with a website, or with `all`, for every
@@ -209,6 +263,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/llm/credentials/{credentialId}/test
 	TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (TestLlmCredentialRes, error)
+	// UndoCompetitorCandidate invokes undoCompetitorCandidate operation.
+	//
+	// Administrators only. Puts the candidate back among the pending ones; an added candidate's company is
+	// removed again, with its scans. 404 when it has no decision.
+	//
+	// DELETE /api/v1/admin/competitor-candidates/{competitorCandidateId}/decision
+	UndoCompetitorCandidate(ctx context.Context, params UndoCompetitorCandidateParams) (UndoCompetitorCandidateRes, error)
 	// UndoTermDecision invokes undoTermDecision operation.
 	//
 	// Administrators only. Puts the candidate back in the queue; an accepted term leaves the terminology
@@ -224,6 +285,14 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/competitors/{competitorId}
 	UpdateCompetitor(ctx context.Context, request *CompetitorUpdate, params UpdateCompetitorParams) (UpdateCompetitorRes, error)
+	// UpdatePromptTestSettings invokes updatePromptTestSettings operation.
+	//
+	// Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact
+	// sheet. A new schedule counts from now; a new fact sheet is a new version. 422 for a key that is no
+	// readable OpenRouter key or a value that breaks a rule.
+	//
+	// PATCH /api/v1/admin/prompt-test
+	UpdatePromptTestSettings(ctx context.Context, request *PromptTestSettingsChange) (UpdatePromptTestSettingsRes, error)
 }
 
 // Client implements OAS client.
@@ -517,6 +586,145 @@ func (c *Client) sendAddCompetitor(ctx context.Context, request *NewCompetitor) 
 
 	stage = "DecodeResponse"
 	result, err := decodeAddCompetitorResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// AddCompetitorCandidate invokes addCompetitorCandidate operation.
+//
+// Administrators only. Adds the candidate as a company with the name and website given, which can then
+// be scanned. 409 when it was decided already or another company has the website.
+//
+// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/add
+func (c *Client) AddCompetitorCandidate(ctx context.Context, request *NewCompetitor, params AddCompetitorCandidateParams) (AddCompetitorCandidateRes, error) {
+	res, err := c.sendAddCompetitorCandidate(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendAddCompetitorCandidate(ctx context.Context, request *NewCompetitor, params AddCompetitorCandidateParams) (res AddCompetitorCandidateRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("addCompetitorCandidate"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates/{competitorCandidateId}/add"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, AddCompetitorCandidateOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates/"
+	{
+		// Encode "competitorCandidateId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "competitorCandidateId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CompetitorCandidateId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/add"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeAddCompetitorCandidateRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, AddCompetitorCandidateOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeAddCompetitorCandidateResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1194,6 +1402,142 @@ func (c *Client) sendDeleteLlmCredential(ctx context.Context, params DeleteLlmCr
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteLlmCredentialResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DismissCompetitorCandidate invokes dismissCompetitorCandidate operation.
+//
+// Administrators only. Dismisses the candidate; it stays dismissed in later runs until the decision is
+// undone. 409 when it was decided already.
+//
+// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss
+func (c *Client) DismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (DismissCompetitorCandidateRes, error) {
+	res, err := c.sendDismissCompetitorCandidate(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (res DismissCompetitorCandidateRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("dismissCompetitorCandidate"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DismissCompetitorCandidateOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates/"
+	{
+		// Encode "competitorCandidateId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "competitorCandidateId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CompetitorCandidateId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/dismiss"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, DismissCompetitorCandidateOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDismissCompetitorCandidateResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1946,6 +2290,236 @@ func (c *Client) sendGetMe(ctx context.Context) (res GetMeRes, err error) {
 	return result, nil
 }
 
+// GetPromptTestResults invokes getPromptTestResults operation.
+//
+// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
+// provider, scope, belt family and mode (AI share of voice is named / answers, citation share cited /
+// answers); how often the newest run's answers name each company on the list; and the claims about
+// Tribelt the answers got wrong, newest first.
+//
+// GET /api/v1/prompt-test
+func (c *Client) GetPromptTestResults(ctx context.Context) (GetPromptTestResultsRes, error) {
+	res, err := c.sendGetPromptTestResults(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetPromptTestResults(ctx context.Context) (res GetPromptTestResultsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getPromptTestResults"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/prompt-test"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPromptTestResultsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/prompt-test"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetPromptTestResultsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPromptTestResultsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetPromptTestSettings invokes getPromptTestSettings operation.
+//
+// Administrators only. Returns the OpenRouter key Prompt runs use, the providers, the monthly budget
+// and this month's spend, the schedule, the fact sheet and the prompt set.
+//
+// GET /api/v1/admin/prompt-test
+func (c *Client) GetPromptTestSettings(ctx context.Context) (GetPromptTestSettingsRes, error) {
+	res, err := c.sendGetPromptTestSettings(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetPromptTestSettings(ctx context.Context) (res GetPromptTestSettingsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getPromptTestSettings"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/prompt-test"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPromptTestSettingsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/prompt-test"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetPromptTestSettingsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPromptTestSettingsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetReadinessFiles invokes getReadinessFiles operation.
 //
 // Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
@@ -2214,6 +2788,142 @@ func (c *Client) sendListAnalyses(ctx context.Context, params ListAnalysesParams
 	return result, nil
 }
 
+// ListCompetitorCandidates invokes listCompetitorCandidates operation.
+//
+// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
+// with how often and by which providers' models, and the addresses given; filtered by status, most
+// answers first.
+//
+// GET /api/v1/admin/competitor-candidates
+func (c *Client) ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (ListCompetitorCandidatesRes, error) {
+	res, err := c.sendListCompetitorCandidates(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (res ListCompetitorCandidatesRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listCompetitorCandidates"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCompetitorCandidatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListCompetitorCandidatesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCompetitorCandidatesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListCompetitors invokes listCompetitors operation.
 //
 // Returns every company the research studied and every company added since, with its names for each
@@ -2457,6 +3167,211 @@ func (c *Client) sendListLlmModels(ctx context.Context, params ListLlmModelsPara
 
 	stage = "DecodeResponse"
 	result, err := decodeListLlmModelsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPromptAnswers invokes listPromptAnswers operation.
+//
+// Returns a run's answers in full, each with how the extractor read it, optionally only one
+// provider's, scope's, belt family's or mode's.
+//
+// GET /api/v1/prompt-runs/{runId}/answers
+func (c *Client) ListPromptAnswers(ctx context.Context, params ListPromptAnswersParams) (ListPromptAnswersRes, error) {
+	res, err := c.sendListPromptAnswers(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPromptAnswers(ctx context.Context, params ListPromptAnswersParams) (res ListPromptAnswersRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listPromptAnswers"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/prompt-runs/{runId}/answers"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPromptAnswersOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/prompt-runs/"
+	{
+		// Encode "runId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "runId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RunId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/answers"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "provider" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "provider",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Provider.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "scope" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "scope",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Scope.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "family" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "family",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Family.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Mode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListPromptAnswersOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPromptAnswersResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3194,6 +4109,122 @@ func (c *Client) sendStartAnalysis(ctx context.Context, request *NewAnalysis) (r
 	return result, nil
 }
 
+// StartPromptRun invokes startPromptRun operation.
+//
+// Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
+// model of each large provider, from its own knowledge and with web search, each answer read by the
+// extractor. It runs in the background within the month's budget. 409 while a run is running; 422
+// without an OpenRouter key or a model to ask.
+//
+// POST /api/v1/admin/prompt-runs
+func (c *Client) StartPromptRun(ctx context.Context) (StartPromptRunRes, error) {
+	res, err := c.sendStartPromptRun(ctx)
+	return res, err
+}
+
+func (c *Client) sendStartPromptRun(ctx context.Context) (res StartPromptRunRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("startPromptRun"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/prompt-runs"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StartPromptRunOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/prompt-runs"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, StartPromptRunOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStartPromptRunResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // StartRescans invokes startRescans operation.
 //
 // Administrators only. Queues one scan for each named company with a website, or with `all`, for every
@@ -3444,6 +4475,142 @@ func (c *Client) sendTestLlmCredential(ctx context.Context, params TestLlmCreden
 
 	stage = "DecodeResponse"
 	result, err := decodeTestLlmCredentialResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UndoCompetitorCandidate invokes undoCompetitorCandidate operation.
+//
+// Administrators only. Puts the candidate back among the pending ones; an added candidate's company is
+// removed again, with its scans. 404 when it has no decision.
+//
+// DELETE /api/v1/admin/competitor-candidates/{competitorCandidateId}/decision
+func (c *Client) UndoCompetitorCandidate(ctx context.Context, params UndoCompetitorCandidateParams) (UndoCompetitorCandidateRes, error) {
+	res, err := c.sendUndoCompetitorCandidate(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendUndoCompetitorCandidate(ctx context.Context, params UndoCompetitorCandidateParams) (res UndoCompetitorCandidateRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("undoCompetitorCandidate"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates/{competitorCandidateId}/decision"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UndoCompetitorCandidateOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates/"
+	{
+		// Encode "competitorCandidateId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "competitorCandidateId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CompetitorCandidateId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/decision"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, UndoCompetitorCandidateOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUndoCompetitorCandidateResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3719,6 +4886,124 @@ func (c *Client) sendUpdateCompetitor(ctx context.Context, request *CompetitorUp
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateCompetitorResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdatePromptTestSettings invokes updatePromptTestSettings operation.
+//
+// Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact
+// sheet. A new schedule counts from now; a new fact sheet is a new version. 422 for a key that is no
+// readable OpenRouter key or a value that breaks a rule.
+//
+// PATCH /api/v1/admin/prompt-test
+func (c *Client) UpdatePromptTestSettings(ctx context.Context, request *PromptTestSettingsChange) (UpdatePromptTestSettingsRes, error) {
+	res, err := c.sendUpdatePromptTestSettings(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendUpdatePromptTestSettings(ctx context.Context, request *PromptTestSettingsChange) (res UpdatePromptTestSettingsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("updatePromptTestSettings"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/admin/prompt-test"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdatePromptTestSettingsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/prompt-test"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdatePromptTestSettingsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, UpdatePromptTestSettingsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdatePromptTestSettingsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

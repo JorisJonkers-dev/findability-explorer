@@ -192,6 +192,99 @@ type LlmEvent struct {
 	Message      string
 }
 
+type PromptAnswer struct {
+	ID               uuid.UUID
+	RunID            uuid.UUID
+	PromptID         string
+	Family           string
+	Kind             string
+	Scope            string
+	Language         string
+	PromptText       string
+	PromptSetVersion int64
+	Provider         string
+	Model            string
+	Mode             string
+	Answer           string
+	Citations        []string
+	InputTokens      int64
+	OutputTokens     int64
+	CostMicros       int64
+	Failure          pgtype.Text
+	AnsweredAt       time.Time
+}
+
+type PromptAnswerCompany struct {
+	AnswerID     uuid.UUID
+	Position     int64
+	Name         string
+	Url          string
+	CompetitorID pgtype.Text
+}
+
+type PromptCandidateDecision struct {
+	ID           string
+	Name         string
+	Status       string
+	CompetitorID pgtype.Text
+	DecidedBy    string
+	DecidedAt    time.Time
+}
+
+type PromptExtraction struct {
+	AnswerID     uuid.UUID
+	Failed       bool
+	Addresses    []string
+	NamesTribelt bool
+	CitesTribelt bool
+	Correctness  string
+	WrongClaims  []string
+	InputTokens  int64
+	OutputTokens int64
+	CostMicros   int64
+	ExtractedAt  time.Time
+}
+
+type PromptRun struct {
+	ID               uuid.UUID
+	PromptSetVersion int64
+	FactSheetVersion int64
+	FactSheet        string
+	Trigger          string
+	StartedBy        string
+	StartedAt        time.Time
+	FinishedAt       pgtype.Timestamptz
+	Status           string
+	Failure          pgtype.Text
+	Tasks            int64
+	Owner            string
+	HeartbeatAt      time.Time
+}
+
+type PromptRunModel struct {
+	RunID    uuid.UUID
+	Position int64
+	Provider string
+	Model    string
+	Free     bool
+	Fallback string
+}
+
+type PromptSetting struct {
+	Singleton           bool
+	CredentialID        pgtype.Text
+	Providers           []string
+	MonthlyBudgetMicros int64
+	Cadence             string
+	NextDue             time.Time
+	FactSheet           string
+	FactSheetVersion    int64
+	FactSheetUpdatedBy  pgtype.Text
+	FactSheetUpdatedAt  pgtype.Timestamptz
+	UpdatedBy           string
+	UpdatedAt           time.Time
+}
+
 type Session struct {
 	ID             string
 	AccountID      int64

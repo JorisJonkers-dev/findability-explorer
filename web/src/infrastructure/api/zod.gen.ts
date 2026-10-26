@@ -768,6 +768,338 @@ export const zReadinessFiles = z.object({
 });
 
 /**
+ * One of Tribelt's five belt families a prompt asks about.
+ */
+export const zPromptFamily = z.enum([
+    'eyelink',
+    'open_spiral',
+    'closed_spiral',
+    'tri_flex_turn_curve',
+    'other'
+]);
+
+/**
+ * The kind of question - for a supplier, for a belt for an application, or about a problem.
+ */
+export const zPromptKind = z.enum([
+    'supplier',
+    'application',
+    'problem'
+]);
+
+/**
+ * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
+ */
+export const zPromptScope = z.enum([
+    'twente',
+    'netherlands',
+    'germany',
+    'dutch',
+    'german',
+    'english'
+]);
+
+/**
+ * How a prompt is asked - from the model's own knowledge, or with live web search.
+ */
+export const zPromptMode = z.enum(['knowledge', 'web']);
+
+/**
+ * Where a Prompt run is - running, done, stopped (the month's budget was reached; its answers are kept) or failed.
+ */
+export const zPromptRunStatus = z.enum([
+    'running',
+    'done',
+    'stopped',
+    'failed'
+]);
+
+/**
+ * What started a run - an administrator, or the schedule.
+ */
+export const zPromptTrigger = z.enum(['manual', 'schedule']);
+
+/**
+ * An amount in US dollars.
+ */
+export const zUsd = z.number().gte(0).lte(1000000);
+
+/**
+ * The model a run asks for one provider, and the paid fallback of a free one.
+ */
+export const zPromptModelChoice = z.object({
+    provider: z.string().max(40),
+    model: z.string().max(200),
+    free: z.boolean(),
+    fallback: z.string().max(200).optional()
+});
+
+/**
+ * One provider's part of a run.
+ */
+export const zPromptProviderProgress = z.object({
+    provider: z.string().max(40),
+    answered: z.int().gte(0).lte(100000),
+    failed: z.int().gte(0).lte(100000),
+    costUsd: zUsd,
+    models: z.array(z.string().max(200)).max(2)
+});
+
+/**
+ * The answers of one provider, scope, belt family and mode that were read, and how many name and cite Tribelt.
+ */
+export const zPromptCell = z.object({
+    provider: z.string().max(40),
+    scope: zPromptScope,
+    family: zPromptFamily,
+    mode: zPromptMode,
+    answers: z.int().gte(0).lte(100000),
+    named: z.int().gte(0).lte(100000),
+    cited: z.int().gte(0).lte(100000)
+});
+
+/**
+ * One Prompt run, with how far it got and what it cost.
+ */
+export const zPromptRun = z.object({
+    id: z.uuid().max(36),
+    promptSetVersion: z.int().gte(1).lte(100000),
+    factSheetVersion: z.int().gte(1).lte(100000),
+    trigger: zPromptTrigger,
+    startedBy: z.string().max(200),
+    startedAt: z.iso.datetime({ offset: true }).max(64),
+    finishedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    status: zPromptRunStatus,
+    failure: z.string().max(300).optional(),
+    models: z.array(zPromptModelChoice).max(20),
+    tasks: z.int().gte(0).lte(100000),
+    answered: z.int().gte(0).lte(100000),
+    failed: z.int().gte(0).lte(100000),
+    inputTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    outputTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    costUsd: zUsd,
+    byProvider: z.array(zPromptProviderProgress).max(20),
+    cells: z.array(zPromptCell).max(10000)
+});
+
+/**
+ * How often the newest run's answers name one company on the list.
+ */
+export const zPromptMention = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    answers: z.int().gte(1).lte(100000),
+    first: z.int().gte(0).lte(100000),
+    averagePosition: z.number().gte(0).lte(1000)
+});
+
+/**
+ * How what an answer says about Tribelt holds against the fact sheet.
+ */
+export const zPromptCorrectness = z.enum([
+    'correct',
+    'partly',
+    'wrong'
+]);
+
+/**
+ * A claim about Tribelt an answer made that the fact sheet contradicts.
+ */
+export const zPromptWrongClaim = z.object({
+    answerId: z.uuid().max(36),
+    runId: z.uuid().max(36),
+    at: z.iso.datetime({ offset: true }).max(64),
+    provider: z.string().max(40),
+    model: z.string().max(200),
+    promptId: z.string().max(80),
+    mode: zPromptMode,
+    correctness: zPromptCorrectness.optional(),
+    claim: z.string().max(500)
+});
+
+/**
+ * The Prompt test's results.
+ */
+export const zPromptTestResults = z.object({
+    promptSetVersion: z.int().gte(1).lte(100000),
+    runs: z.array(zPromptRun).max(24),
+    mentions: z.array(zPromptMention).max(1000),
+    wrongClaims: z.array(zPromptWrongClaim).max(200)
+});
+
+/**
+ * A company an answer names, matched to the company list when it is on it.
+ */
+export const zPromptNamedCompany = z.object({
+    name: z.string().max(200),
+    url: z.string().max(500).optional(),
+    competitorId: zCompetitorId.optional(),
+    position: z.int().gte(1).lte(30)
+});
+
+/**
+ * How the extractor read an answer; failed when it could not, after a retry.
+ */
+export const zPromptExtraction = z.object({
+    failed: z.boolean(),
+    companies: z.array(zPromptNamedCompany).max(30),
+    addresses: z.array(z.string().max(500)).max(200),
+    namesTribelt: z.boolean(),
+    citesTribelt: z.boolean(),
+    correctness: zPromptCorrectness.optional(),
+    wrongClaims: z.array(z.string().max(500)).max(10),
+    costUsd: zUsd
+});
+
+/**
+ * One model's answer to one prompt, with how it was read.
+ */
+export const zPromptAnswer = z.object({
+    id: z.uuid().max(36),
+    promptId: z.string().max(80),
+    family: zPromptFamily,
+    kind: zPromptKind,
+    scope: zPromptScope,
+    language: z.string().max(2),
+    prompt: z.string().max(1000),
+    promptSetVersion: z.int().gte(1).lte(100000),
+    provider: z.string().max(40),
+    model: z.string().max(200),
+    mode: zPromptMode,
+    text: z.string().max(100000),
+    citations: z.array(z.string().max(500)).max(100),
+    failure: z.string().max(300).optional(),
+    at: z.iso.datetime({ offset: true }).max(64),
+    costUsd: zUsd,
+    extraction: zPromptExtraction.optional()
+});
+
+/**
+ * A run's answers.
+ */
+export const zPromptAnswerList = z.object({
+    run: zPromptRun,
+    items: z.array(zPromptAnswer).max(5000)
+});
+
+/**
+ * How often scheduled runs start - monthly, on the first at 06:00 UTC, or weekly, on Mondays.
+ */
+export const zPromptCadence = z.enum(['monthly', 'weekly']);
+
+/**
+ * What is true about Tribelt, which answers about Tribelt are judged against.
+ */
+export const zPromptFactSheet = z.object({
+    text: z.string().max(4000),
+    version: z.int().gte(1).lte(100000),
+    updatedBy: z.string().max(200).optional(),
+    updatedAt: z.iso.datetime({ offset: true }).max(64).optional()
+});
+
+/**
+ * One prompt of the prompt set.
+ */
+export const zPromptQuestion = z.object({
+    id: z.string().max(80),
+    family: zPromptFamily,
+    kind: zPromptKind,
+    scope: zPromptScope,
+    language: z.string().max(2),
+    text: z.string().max(1000)
+});
+
+/**
+ * The fixed, versioned prompt set runs ask.
+ */
+export const zPromptSet = z.object({
+    version: z.int().gte(1).lte(100000),
+    prompts: z.array(zPromptQuestion).max(1000)
+});
+
+/**
+ * The Prompt test's settings.
+ */
+export const zPromptTestSettings = z.object({
+    credentialId: zLlmCredentialId.optional(),
+    providers: z.array(z.string().max(40)).max(20),
+    monthlyBudgetUsd: zUsd,
+    spentThisMonthUsd: zUsd,
+    cadence: zPromptCadence,
+    nextDueAt: z.iso.datetime({ offset: true }).max(64),
+    factSheet: zPromptFactSheet,
+    promptSet: zPromptSet,
+    extractorModel: z.string().max(200)
+});
+
+/**
+ * The settings to change; at least one.
+ */
+export const zPromptTestSettingsChange = z.object({
+    credentialId: zLlmCredentialId.optional(),
+    providers: z.array(z.string().max(40)).min(1).max(20).optional(),
+    monthlyBudgetUsd: z.number().gte(0.01).lte(1000).optional(),
+    cadence: zPromptCadence.optional(),
+    factSheet: z.string().min(20).max(4000).optional()
+});
+
+/**
+ * A competitor candidate's id, made from its name.
+ */
+export const zCompetitorCandidateId = z.string().length(16).regex(/^[0-9a-f]{16}$/);
+
+/**
+ * Where a competitor candidate is in the review.
+ */
+export const zCompetitorCandidateStatus = z.enum([
+    'pending',
+    'added',
+    'dismissed'
+]);
+
+/**
+ * An administrator's decision on a competitor candidate.
+ */
+export const zCompetitorCandidateDecision = z.object({
+    status: zCompetitorCandidateStatus,
+    competitorId: zCompetitorId.optional(),
+    by: z.string().max(200),
+    at: z.iso.datetime({ offset: true }).max(64)
+});
+
+/**
+ * A company the answers name that is not on the company list.
+ */
+export const zCompetitorCandidate = z.object({
+    id: zCompetitorCandidateId,
+    name: z.string().max(200),
+    status: zCompetitorCandidateStatus,
+    answers: z.int().gte(1).lte(1000000),
+    providers: z.array(z.string().max(40)).max(20),
+    addresses: z.array(z.string().max(500)).max(50),
+    lastSeenAt: z.iso.datetime({ offset: true }).max(64),
+    decision: zCompetitorCandidateDecision.optional()
+});
+
+/**
+ * How many candidates have each status.
+ */
+export const zCompetitorCandidateCounts = z.object({
+    pending: z.int().gte(0).lte(1000000),
+    added: z.int().gte(0).lte(1000000),
+    dismissed: z.int().gte(0).lte(1000000)
+});
+
+/**
+ * The competitor candidates with one status.
+ */
+export const zCompetitorCandidateList = z.object({
+    items: z.array(zCompetitorCandidate).max(1000),
+    counts: zCompetitorCandidateCounts
+});
+
+/**
  * An RFC 9457 problem detail.
  */
 export const zProblem = z.object({
@@ -786,6 +1118,16 @@ export const zCompetitorIdPath = zCompetitorId;
  * The candidate's id.
  */
 export const zCandidateId = zTermCandidateId;
+
+/**
+ * The Prompt run's id.
+ */
+export const zRunId = z.uuid().max(36);
+
+/**
+ * The competitor candidate's id.
+ */
+export const zCompetitorCandidateIdPath = zCompetitorCandidateId;
 
 /**
  * The credential's id.
@@ -968,6 +1310,88 @@ export const zGetReadinessFilesPath = z.object({
  * The files.
  */
 export const zGetReadinessFilesResponse = zReadinessFiles;
+
+/**
+ * The results.
+ */
+export const zGetPromptTestResultsResponse = zPromptTestResults;
+
+export const zListPromptAnswersPath = z.object({
+    runId: z.uuid().max(36)
+});
+
+export const zListPromptAnswersQuery = z.object({
+    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/).optional(),
+    scope: zPromptScope.optional(),
+    family: zPromptFamily.optional(),
+    mode: zPromptMode.optional()
+});
+
+/**
+ * The answers.
+ */
+export const zListPromptAnswersResponse = zPromptAnswerList;
+
+/**
+ * The run, started.
+ */
+export const zStartPromptRunResponse = zPromptRun;
+
+/**
+ * The settings.
+ */
+export const zGetPromptTestSettingsResponse = zPromptTestSettings;
+
+/**
+ * The settings to change.
+ */
+export const zUpdatePromptTestSettingsBody = zPromptTestSettingsChange;
+
+/**
+ * The settings after the change.
+ */
+export const zUpdatePromptTestSettingsResponse = zPromptTestSettings;
+
+export const zListCompetitorCandidatesQuery = z.object({
+    status: zCompetitorCandidateStatus.optional()
+});
+
+/**
+ * The candidates and how many have each status.
+ */
+export const zListCompetitorCandidatesResponse = zCompetitorCandidateList;
+
+/**
+ * The company to add.
+ */
+export const zAddCompetitorCandidateBody = zNewCompetitor;
+
+export const zAddCompetitorCandidatePath = z.object({
+    competitorCandidateId: zCompetitorCandidateId
+});
+
+/**
+ * The candidate, added.
+ */
+export const zAddCompetitorCandidateResponse = zCompetitorCandidate;
+
+export const zDismissCompetitorCandidatePath = z.object({
+    competitorCandidateId: zCompetitorCandidateId
+});
+
+/**
+ * The candidate, dismissed.
+ */
+export const zDismissCompetitorCandidateResponse = zCompetitorCandidate;
+
+export const zUndoCompetitorCandidatePath = z.object({
+    competitorCandidateId: zCompetitorCandidateId
+});
+
+/**
+ * Undone.
+ */
+export const zUndoCompetitorCandidateResponse = z.void();
 
 /**
  * The signed-in account.

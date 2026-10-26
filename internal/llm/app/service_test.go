@@ -374,3 +374,20 @@ func TestClearActiveAndCurrent(t *testing.T) {
 		t.Fatalf("current with the store down: %v", err)
 	}
 }
+
+func TestOpenRouterKeyHandsOutOnlyAStoredOpenRouterKey(t *testing.T) {
+	f := setup("sk-ant-vault", nil)
+	c, err := f.svc.Add(t.Context(), "joris", "openrouter", "Prompt runs", "sk-or-v1-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if key, err := f.svc.OpenRouterKey(t.Context(), c.ID); err != nil || key != "sk-or-v1-key" {
+		t.Errorf("key = %q, %v", key, err)
+	}
+	if _, err := f.svc.OpenRouterKey(t.Context(), domain.VaultID); !errors.Is(err, app.ErrNotOpenRouter) {
+		t.Errorf("the Vault key = %v", err)
+	}
+	if _, err := f.svc.OpenRouterKey(t.Context(), "00000000-0000-4000-8000-000000000099"); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("no key = %v", err)
+	}
+}

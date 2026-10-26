@@ -71,6 +71,30 @@ type AddCompetitorBadRequest ProblemStatusCode
 
 func (*AddCompetitorBadRequest) addCompetitorRes() {}
 
+type AddCompetitorCandidateBadRequest ProblemStatusCode
+
+func (*AddCompetitorCandidateBadRequest) addCompetitorCandidateRes() {}
+
+type AddCompetitorCandidateConflict ProblemStatusCode
+
+func (*AddCompetitorCandidateConflict) addCompetitorCandidateRes() {}
+
+type AddCompetitorCandidateForbidden ProblemStatusCode
+
+func (*AddCompetitorCandidateForbidden) addCompetitorCandidateRes() {}
+
+type AddCompetitorCandidateNotFound ProblemStatusCode
+
+func (*AddCompetitorCandidateNotFound) addCompetitorCandidateRes() {}
+
+type AddCompetitorCandidateUnauthorized ProblemStatusCode
+
+func (*AddCompetitorCandidateUnauthorized) addCompetitorCandidateRes() {}
+
+type AddCompetitorCandidateUnprocessableEntity ProblemStatusCode
+
+func (*AddCompetitorCandidateUnprocessableEntity) addCompetitorCandidateRes() {}
+
 type AddCompetitorConflict ProblemStatusCode
 
 func (*AddCompetitorConflict) addCompetitorRes() {}
@@ -1225,6 +1249,281 @@ func (s *Competitor) SetHomepageTitle(val string) {
 func (*Competitor) addCompetitorRes()    {}
 func (*Competitor) updateCompetitorRes() {}
 
+// A company the answers name that is not on the company list.
+// Ref: #/components/schemas/CompetitorCandidate
+type CompetitorCandidate struct {
+	ID CompetitorCandidateId `json:"id"`
+	// How the answers spell it most often.
+	Name   string                    `json:"name"`
+	Status CompetitorCandidateStatus `json:"status"`
+	// How many answers name it.
+	Answers int32 `json:"answers"`
+	// The providers whose models named it.
+	Providers []string `json:"providers"`
+	// The addresses the answers gave for it.
+	Addresses []string `json:"addresses"`
+	// When an answer last named it.
+	LastSeenAt time.Time                      `json:"lastSeenAt"`
+	Decision   OptCompetitorCandidateDecision `json:"decision"`
+}
+
+// GetID returns the value of ID.
+func (s *CompetitorCandidate) GetID() CompetitorCandidateId {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *CompetitorCandidate) GetName() string {
+	return s.Name
+}
+
+// GetStatus returns the value of Status.
+func (s *CompetitorCandidate) GetStatus() CompetitorCandidateStatus {
+	return s.Status
+}
+
+// GetAnswers returns the value of Answers.
+func (s *CompetitorCandidate) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetProviders returns the value of Providers.
+func (s *CompetitorCandidate) GetProviders() []string {
+	return s.Providers
+}
+
+// GetAddresses returns the value of Addresses.
+func (s *CompetitorCandidate) GetAddresses() []string {
+	return s.Addresses
+}
+
+// GetLastSeenAt returns the value of LastSeenAt.
+func (s *CompetitorCandidate) GetLastSeenAt() time.Time {
+	return s.LastSeenAt
+}
+
+// GetDecision returns the value of Decision.
+func (s *CompetitorCandidate) GetDecision() OptCompetitorCandidateDecision {
+	return s.Decision
+}
+
+// SetID sets the value of ID.
+func (s *CompetitorCandidate) SetID(val CompetitorCandidateId) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *CompetitorCandidate) SetName(val string) {
+	s.Name = val
+}
+
+// SetStatus sets the value of Status.
+func (s *CompetitorCandidate) SetStatus(val CompetitorCandidateStatus) {
+	s.Status = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *CompetitorCandidate) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetProviders sets the value of Providers.
+func (s *CompetitorCandidate) SetProviders(val []string) {
+	s.Providers = val
+}
+
+// SetAddresses sets the value of Addresses.
+func (s *CompetitorCandidate) SetAddresses(val []string) {
+	s.Addresses = val
+}
+
+// SetLastSeenAt sets the value of LastSeenAt.
+func (s *CompetitorCandidate) SetLastSeenAt(val time.Time) {
+	s.LastSeenAt = val
+}
+
+// SetDecision sets the value of Decision.
+func (s *CompetitorCandidate) SetDecision(val OptCompetitorCandidateDecision) {
+	s.Decision = val
+}
+
+func (*CompetitorCandidate) addCompetitorCandidateRes()     {}
+func (*CompetitorCandidate) dismissCompetitorCandidateRes() {}
+
+// How many candidates have each status.
+// Ref: #/components/schemas/CompetitorCandidateCounts
+type CompetitorCandidateCounts struct {
+	// Pending candidates.
+	Pending int32 `json:"pending"`
+	// Added ones.
+	Added int32 `json:"added"`
+	// Dismissed ones.
+	Dismissed int32 `json:"dismissed"`
+}
+
+// GetPending returns the value of Pending.
+func (s *CompetitorCandidateCounts) GetPending() int32 {
+	return s.Pending
+}
+
+// GetAdded returns the value of Added.
+func (s *CompetitorCandidateCounts) GetAdded() int32 {
+	return s.Added
+}
+
+// GetDismissed returns the value of Dismissed.
+func (s *CompetitorCandidateCounts) GetDismissed() int32 {
+	return s.Dismissed
+}
+
+// SetPending sets the value of Pending.
+func (s *CompetitorCandidateCounts) SetPending(val int32) {
+	s.Pending = val
+}
+
+// SetAdded sets the value of Added.
+func (s *CompetitorCandidateCounts) SetAdded(val int32) {
+	s.Added = val
+}
+
+// SetDismissed sets the value of Dismissed.
+func (s *CompetitorCandidateCounts) SetDismissed(val int32) {
+	s.Dismissed = val
+}
+
+// An administrator's decision on a competitor candidate.
+// Ref: #/components/schemas/CompetitorCandidateDecision
+type CompetitorCandidateDecision struct {
+	Status       CompetitorCandidateStatus `json:"status"`
+	CompetitorId OptCompetitorId           `json:"competitorId"`
+	// Who decided.
+	By string `json:"by"`
+	// When.
+	At time.Time `json:"at"`
+}
+
+// GetStatus returns the value of Status.
+func (s *CompetitorCandidateDecision) GetStatus() CompetitorCandidateStatus {
+	return s.Status
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CompetitorCandidateDecision) GetCompetitorId() OptCompetitorId {
+	return s.CompetitorId
+}
+
+// GetBy returns the value of By.
+func (s *CompetitorCandidateDecision) GetBy() string {
+	return s.By
+}
+
+// GetAt returns the value of At.
+func (s *CompetitorCandidateDecision) GetAt() time.Time {
+	return s.At
+}
+
+// SetStatus sets the value of Status.
+func (s *CompetitorCandidateDecision) SetStatus(val CompetitorCandidateStatus) {
+	s.Status = val
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CompetitorCandidateDecision) SetCompetitorId(val OptCompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetBy sets the value of By.
+func (s *CompetitorCandidateDecision) SetBy(val string) {
+	s.By = val
+}
+
+// SetAt sets the value of At.
+func (s *CompetitorCandidateDecision) SetAt(val time.Time) {
+	s.At = val
+}
+
+type CompetitorCandidateId string
+
+// The competitor candidates with one status.
+// Ref: #/components/schemas/CompetitorCandidateList
+type CompetitorCandidateList struct {
+	// The candidates, most answers first.
+	Items  []CompetitorCandidate     `json:"items"`
+	Counts CompetitorCandidateCounts `json:"counts"`
+}
+
+// GetItems returns the value of Items.
+func (s *CompetitorCandidateList) GetItems() []CompetitorCandidate {
+	return s.Items
+}
+
+// GetCounts returns the value of Counts.
+func (s *CompetitorCandidateList) GetCounts() CompetitorCandidateCounts {
+	return s.Counts
+}
+
+// SetItems sets the value of Items.
+func (s *CompetitorCandidateList) SetItems(val []CompetitorCandidate) {
+	s.Items = val
+}
+
+// SetCounts sets the value of Counts.
+func (s *CompetitorCandidateList) SetCounts(val CompetitorCandidateCounts) {
+	s.Counts = val
+}
+
+func (*CompetitorCandidateList) listCompetitorCandidatesRes() {}
+
+// Where a competitor candidate is in the review.
+// Ref: #/components/schemas/CompetitorCandidateStatus
+type CompetitorCandidateStatus string
+
+const (
+	CompetitorCandidateStatusPending   CompetitorCandidateStatus = "pending"
+	CompetitorCandidateStatusAdded     CompetitorCandidateStatus = "added"
+	CompetitorCandidateStatusDismissed CompetitorCandidateStatus = "dismissed"
+)
+
+// AllValues returns all CompetitorCandidateStatus values.
+func (CompetitorCandidateStatus) AllValues() []CompetitorCandidateStatus {
+	return []CompetitorCandidateStatus{
+		CompetitorCandidateStatusPending,
+		CompetitorCandidateStatusAdded,
+		CompetitorCandidateStatusDismissed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CompetitorCandidateStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case CompetitorCandidateStatusPending:
+		return []byte(s), nil
+	case CompetitorCandidateStatusAdded:
+		return []byte(s), nil
+	case CompetitorCandidateStatusDismissed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CompetitorCandidateStatus) UnmarshalText(data []byte) error {
+	switch CompetitorCandidateStatus(data) {
+	case CompetitorCandidateStatusPending:
+		*s = CompetitorCandidateStatusPending
+		return nil
+	case CompetitorCandidateStatusAdded:
+		*s = CompetitorCandidateStatusAdded
+		return nil
+	case CompetitorCandidateStatusDismissed:
+		*s = CompetitorCandidateStatusDismissed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // A company with its most recent scans.
 // Ref: #/components/schemas/CompetitorDetail
 type CompetitorDetail struct {
@@ -1603,6 +1902,26 @@ type DeleteLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*DeleteLlmCredentialUnprocessableEntity) deleteLlmCredentialRes() {}
 
+type DismissCompetitorCandidateBadRequest ProblemStatusCode
+
+func (*DismissCompetitorCandidateBadRequest) dismissCompetitorCandidateRes() {}
+
+type DismissCompetitorCandidateConflict ProblemStatusCode
+
+func (*DismissCompetitorCandidateConflict) dismissCompetitorCandidateRes() {}
+
+type DismissCompetitorCandidateForbidden ProblemStatusCode
+
+func (*DismissCompetitorCandidateForbidden) dismissCompetitorCandidateRes() {}
+
+type DismissCompetitorCandidateNotFound ProblemStatusCode
+
+func (*DismissCompetitorCandidateNotFound) dismissCompetitorCandidateRes() {}
+
+type DismissCompetitorCandidateUnauthorized ProblemStatusCode
+
+func (*DismissCompetitorCandidateUnauthorized) dismissCompetitorCandidateRes() {}
+
 // A product on the site matched to a Tribelt belt family by the language model.
 // Ref: #/components/schemas/Equivalent
 type Equivalent struct {
@@ -1756,6 +2075,14 @@ func (*GetLlmSettingsForbidden) getLlmSettingsRes() {}
 type GetLlmSettingsUnauthorized ProblemStatusCode
 
 func (*GetLlmSettingsUnauthorized) getLlmSettingsRes() {}
+
+type GetPromptTestSettingsForbidden ProblemStatusCode
+
+func (*GetPromptTestSettingsForbidden) getPromptTestSettingsRes() {}
+
+type GetPromptTestSettingsUnauthorized ProblemStatusCode
+
+func (*GetPromptTestSettingsUnauthorized) getPromptTestSettingsRes() {}
 
 type GetReadinessFilesBadRequest ProblemStatusCode
 
@@ -2113,6 +2440,18 @@ func (s *Language) UnmarshalText(data []byte) error {
 	}
 }
 
+type ListCompetitorCandidatesBadRequest ProblemStatusCode
+
+func (*ListCompetitorCandidatesBadRequest) listCompetitorCandidatesRes() {}
+
+type ListCompetitorCandidatesForbidden ProblemStatusCode
+
+func (*ListCompetitorCandidatesForbidden) listCompetitorCandidatesRes() {}
+
+type ListCompetitorCandidatesUnauthorized ProblemStatusCode
+
+func (*ListCompetitorCandidatesUnauthorized) listCompetitorCandidatesRes() {}
+
 type ListLlmModelsBadGateway ProblemStatusCode
 
 func (*ListLlmModelsBadGateway) listLlmModelsRes() {}
@@ -2136,6 +2475,18 @@ func (*ListLlmModelsUnauthorized) listLlmModelsRes() {}
 type ListLlmModelsUnprocessableEntity ProblemStatusCode
 
 func (*ListLlmModelsUnprocessableEntity) listLlmModelsRes() {}
+
+type ListPromptAnswersBadRequest ProblemStatusCode
+
+func (*ListPromptAnswersBadRequest) listPromptAnswersRes() {}
+
+type ListPromptAnswersNotFound ProblemStatusCode
+
+func (*ListPromptAnswersNotFound) listPromptAnswersRes() {}
+
+type ListPromptAnswersUnauthorized ProblemStatusCode
+
+func (*ListPromptAnswersUnauthorized) listPromptAnswersRes() {}
 
 type ListTermCandidatesBadRequest ProblemStatusCode
 
@@ -3342,6 +3693,98 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptCompetitorCandidateDecision returns new OptCompetitorCandidateDecision with value set to v.
+func NewOptCompetitorCandidateDecision(v CompetitorCandidateDecision) OptCompetitorCandidateDecision {
+	return OptCompetitorCandidateDecision{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCompetitorCandidateDecision is optional CompetitorCandidateDecision.
+type OptCompetitorCandidateDecision struct {
+	Value CompetitorCandidateDecision
+	Set   bool
+}
+
+// IsSet returns true if OptCompetitorCandidateDecision was set.
+func (o OptCompetitorCandidateDecision) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCompetitorCandidateDecision) Reset() {
+	var v CompetitorCandidateDecision
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCompetitorCandidateDecision) SetTo(v CompetitorCandidateDecision) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCompetitorCandidateDecision) Get() (v CompetitorCandidateDecision, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCompetitorCandidateDecision) Or(d CompetitorCandidateDecision) CompetitorCandidateDecision {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCompetitorCandidateStatus returns new OptCompetitorCandidateStatus with value set to v.
+func NewOptCompetitorCandidateStatus(v CompetitorCandidateStatus) OptCompetitorCandidateStatus {
+	return OptCompetitorCandidateStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCompetitorCandidateStatus is optional CompetitorCandidateStatus.
+type OptCompetitorCandidateStatus struct {
+	Value CompetitorCandidateStatus
+	Set   bool
+}
+
+// IsSet returns true if OptCompetitorCandidateStatus was set.
+func (o OptCompetitorCandidateStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCompetitorCandidateStatus) Reset() {
+	var v CompetitorCandidateStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCompetitorCandidateStatus) SetTo(v CompetitorCandidateStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCompetitorCandidateStatus) Get() (v CompetitorCandidateStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCompetitorCandidateStatus) Or(d CompetitorCandidateStatus) CompetitorCandidateStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptCompetitorId returns new OptCompetitorId with value set to v.
 func NewOptCompetitorId(v CompetitorId) OptCompetitorId {
 	return OptCompetitorId{
@@ -3756,6 +4199,282 @@ func (o OptLlmTest) Or(d LlmTest) LlmTest {
 	return d
 }
 
+// NewOptPromptCadence returns new OptPromptCadence with value set to v.
+func NewOptPromptCadence(v PromptCadence) OptPromptCadence {
+	return OptPromptCadence{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPromptCadence is optional PromptCadence.
+type OptPromptCadence struct {
+	Value PromptCadence
+	Set   bool
+}
+
+// IsSet returns true if OptPromptCadence was set.
+func (o OptPromptCadence) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPromptCadence) Reset() {
+	var v PromptCadence
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPromptCadence) SetTo(v PromptCadence) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPromptCadence) Get() (v PromptCadence, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPromptCadence) Or(d PromptCadence) PromptCadence {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPromptCorrectness returns new OptPromptCorrectness with value set to v.
+func NewOptPromptCorrectness(v PromptCorrectness) OptPromptCorrectness {
+	return OptPromptCorrectness{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPromptCorrectness is optional PromptCorrectness.
+type OptPromptCorrectness struct {
+	Value PromptCorrectness
+	Set   bool
+}
+
+// IsSet returns true if OptPromptCorrectness was set.
+func (o OptPromptCorrectness) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPromptCorrectness) Reset() {
+	var v PromptCorrectness
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPromptCorrectness) SetTo(v PromptCorrectness) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPromptCorrectness) Get() (v PromptCorrectness, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPromptCorrectness) Or(d PromptCorrectness) PromptCorrectness {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPromptExtraction returns new OptPromptExtraction with value set to v.
+func NewOptPromptExtraction(v PromptExtraction) OptPromptExtraction {
+	return OptPromptExtraction{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPromptExtraction is optional PromptExtraction.
+type OptPromptExtraction struct {
+	Value PromptExtraction
+	Set   bool
+}
+
+// IsSet returns true if OptPromptExtraction was set.
+func (o OptPromptExtraction) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPromptExtraction) Reset() {
+	var v PromptExtraction
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPromptExtraction) SetTo(v PromptExtraction) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPromptExtraction) Get() (v PromptExtraction, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPromptExtraction) Or(d PromptExtraction) PromptExtraction {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPromptFamily returns new OptPromptFamily with value set to v.
+func NewOptPromptFamily(v PromptFamily) OptPromptFamily {
+	return OptPromptFamily{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPromptFamily is optional PromptFamily.
+type OptPromptFamily struct {
+	Value PromptFamily
+	Set   bool
+}
+
+// IsSet returns true if OptPromptFamily was set.
+func (o OptPromptFamily) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPromptFamily) Reset() {
+	var v PromptFamily
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPromptFamily) SetTo(v PromptFamily) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPromptFamily) Get() (v PromptFamily, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPromptFamily) Or(d PromptFamily) PromptFamily {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPromptMode returns new OptPromptMode with value set to v.
+func NewOptPromptMode(v PromptMode) OptPromptMode {
+	return OptPromptMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPromptMode is optional PromptMode.
+type OptPromptMode struct {
+	Value PromptMode
+	Set   bool
+}
+
+// IsSet returns true if OptPromptMode was set.
+func (o OptPromptMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPromptMode) Reset() {
+	var v PromptMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPromptMode) SetTo(v PromptMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPromptMode) Get() (v PromptMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPromptMode) Or(d PromptMode) PromptMode {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPromptScope returns new OptPromptScope with value set to v.
+func NewOptPromptScope(v PromptScope) OptPromptScope {
+	return OptPromptScope{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPromptScope is optional PromptScope.
+type OptPromptScope struct {
+	Value PromptScope
+	Set   bool
+}
+
+// IsSet returns true if OptPromptScope was set.
+func (o OptPromptScope) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPromptScope) Reset() {
+	var v PromptScope
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPromptScope) SetTo(v PromptScope) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPromptScope) Get() (v PromptScope, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPromptScope) Or(d PromptScope) PromptScope {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -4111,11 +4830,12 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 	s.Response = val
 }
 
-func (*ProblemStatusCode) getAiReadinessRes()  {}
-func (*ProblemStatusCode) getMeRes()           {}
-func (*ProblemStatusCode) listAnalysesRes()    {}
-func (*ProblemStatusCode) listCompetitorsRes() {}
-func (*ProblemStatusCode) searchTermsRes()     {}
+func (*ProblemStatusCode) getAiReadinessRes()       {}
+func (*ProblemStatusCode) getMeRes()                {}
+func (*ProblemStatusCode) getPromptTestResultsRes() {}
+func (*ProblemStatusCode) listAnalysesRes()         {}
+func (*ProblemStatusCode) listCompetitorsRes()      {}
+func (*ProblemStatusCode) searchTermsRes()          {}
 
 // How a company's search terms are grouped - one of Tribelt's belt families, other metal belts, broad
 // terms that name no family, or material and specification terms.
@@ -4333,6 +5053,1807 @@ func (s *ProfileTerm) SetInMap(val bool) {
 // SetFirstScan sets the value of FirstScan.
 func (s *ProfileTerm) SetFirstScan(val int32) {
 	s.FirstScan = val
+}
+
+// One model's answer to one prompt, with how it was read.
+// Ref: #/components/schemas/PromptAnswer
+type PromptAnswer struct {
+	// The answer's id.
+	ID uuid.UUID `json:"id"`
+	// The prompt's id.
+	PromptId string       `json:"promptId"`
+	Family   PromptFamily `json:"family"`
+	Kind     PromptKind   `json:"kind"`
+	Scope    PromptScope  `json:"scope"`
+	// The prompt's language.
+	Language string `json:"language"`
+	// The prompt, as asked.
+	Prompt string `json:"prompt"`
+	// The version of the prompt set it answered.
+	PromptSetVersion int32 `json:"promptSetVersion"`
+	// The provider.
+	Provider string `json:"provider"`
+	// The exact model that answered.
+	Model string     `json:"model"`
+	Mode  PromptMode `json:"mode"`
+	// The answer, as a buyer would see it.
+	Text string `json:"text"`
+	// The sources web search cited.
+	Citations []string `json:"citations"`
+	// Why the model gave no answer.
+	Failure OptString `json:"failure"`
+	// When it answered.
+	At         time.Time           `json:"at"`
+	CostUsd    Usd                 `json:"costUsd"`
+	Extraction OptPromptExtraction `json:"extraction"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptAnswer) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetPromptId returns the value of PromptId.
+func (s *PromptAnswer) GetPromptId() string {
+	return s.PromptId
+}
+
+// GetFamily returns the value of Family.
+func (s *PromptAnswer) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetKind returns the value of Kind.
+func (s *PromptAnswer) GetKind() PromptKind {
+	return s.Kind
+}
+
+// GetScope returns the value of Scope.
+func (s *PromptAnswer) GetScope() PromptScope {
+	return s.Scope
+}
+
+// GetLanguage returns the value of Language.
+func (s *PromptAnswer) GetLanguage() string {
+	return s.Language
+}
+
+// GetPrompt returns the value of Prompt.
+func (s *PromptAnswer) GetPrompt() string {
+	return s.Prompt
+}
+
+// GetPromptSetVersion returns the value of PromptSetVersion.
+func (s *PromptAnswer) GetPromptSetVersion() int32 {
+	return s.PromptSetVersion
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptAnswer) GetProvider() string {
+	return s.Provider
+}
+
+// GetModel returns the value of Model.
+func (s *PromptAnswer) GetModel() string {
+	return s.Model
+}
+
+// GetMode returns the value of Mode.
+func (s *PromptAnswer) GetMode() PromptMode {
+	return s.Mode
+}
+
+// GetText returns the value of Text.
+func (s *PromptAnswer) GetText() string {
+	return s.Text
+}
+
+// GetCitations returns the value of Citations.
+func (s *PromptAnswer) GetCitations() []string {
+	return s.Citations
+}
+
+// GetFailure returns the value of Failure.
+func (s *PromptAnswer) GetFailure() OptString {
+	return s.Failure
+}
+
+// GetAt returns the value of At.
+func (s *PromptAnswer) GetAt() time.Time {
+	return s.At
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *PromptAnswer) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// GetExtraction returns the value of Extraction.
+func (s *PromptAnswer) GetExtraction() OptPromptExtraction {
+	return s.Extraction
+}
+
+// SetID sets the value of ID.
+func (s *PromptAnswer) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetPromptId sets the value of PromptId.
+func (s *PromptAnswer) SetPromptId(val string) {
+	s.PromptId = val
+}
+
+// SetFamily sets the value of Family.
+func (s *PromptAnswer) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetKind sets the value of Kind.
+func (s *PromptAnswer) SetKind(val PromptKind) {
+	s.Kind = val
+}
+
+// SetScope sets the value of Scope.
+func (s *PromptAnswer) SetScope(val PromptScope) {
+	s.Scope = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *PromptAnswer) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetPrompt sets the value of Prompt.
+func (s *PromptAnswer) SetPrompt(val string) {
+	s.Prompt = val
+}
+
+// SetPromptSetVersion sets the value of PromptSetVersion.
+func (s *PromptAnswer) SetPromptSetVersion(val int32) {
+	s.PromptSetVersion = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptAnswer) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetModel sets the value of Model.
+func (s *PromptAnswer) SetModel(val string) {
+	s.Model = val
+}
+
+// SetMode sets the value of Mode.
+func (s *PromptAnswer) SetMode(val PromptMode) {
+	s.Mode = val
+}
+
+// SetText sets the value of Text.
+func (s *PromptAnswer) SetText(val string) {
+	s.Text = val
+}
+
+// SetCitations sets the value of Citations.
+func (s *PromptAnswer) SetCitations(val []string) {
+	s.Citations = val
+}
+
+// SetFailure sets the value of Failure.
+func (s *PromptAnswer) SetFailure(val OptString) {
+	s.Failure = val
+}
+
+// SetAt sets the value of At.
+func (s *PromptAnswer) SetAt(val time.Time) {
+	s.At = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *PromptAnswer) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// SetExtraction sets the value of Extraction.
+func (s *PromptAnswer) SetExtraction(val OptPromptExtraction) {
+	s.Extraction = val
+}
+
+// A run's answers.
+// Ref: #/components/schemas/PromptAnswerList
+type PromptAnswerList struct {
+	Run PromptRun `json:"run"`
+	// The answers, in the order they came.
+	Items []PromptAnswer `json:"items"`
+}
+
+// GetRun returns the value of Run.
+func (s *PromptAnswerList) GetRun() PromptRun {
+	return s.Run
+}
+
+// GetItems returns the value of Items.
+func (s *PromptAnswerList) GetItems() []PromptAnswer {
+	return s.Items
+}
+
+// SetRun sets the value of Run.
+func (s *PromptAnswerList) SetRun(val PromptRun) {
+	s.Run = val
+}
+
+// SetItems sets the value of Items.
+func (s *PromptAnswerList) SetItems(val []PromptAnswer) {
+	s.Items = val
+}
+
+func (*PromptAnswerList) listPromptAnswersRes() {}
+
+// How often scheduled runs start - monthly, on the first at 06:00 UTC, or weekly, on Mondays.
+// Ref: #/components/schemas/PromptCadence
+type PromptCadence string
+
+const (
+	PromptCadenceMonthly PromptCadence = "monthly"
+	PromptCadenceWeekly  PromptCadence = "weekly"
+)
+
+// AllValues returns all PromptCadence values.
+func (PromptCadence) AllValues() []PromptCadence {
+	return []PromptCadence{
+		PromptCadenceMonthly,
+		PromptCadenceWeekly,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptCadence) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptCadenceMonthly:
+		return []byte(s), nil
+	case PromptCadenceWeekly:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptCadence) UnmarshalText(data []byte) error {
+	switch PromptCadence(data) {
+	case PromptCadenceMonthly:
+		*s = PromptCadenceMonthly
+		return nil
+	case PromptCadenceWeekly:
+		*s = PromptCadenceWeekly
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The answers of one provider, scope, belt family and mode that were read, and how many name and cite
+// Tribelt.
+// Ref: #/components/schemas/PromptCell
+type PromptCell struct {
+	// The provider.
+	Provider string       `json:"provider"`
+	Scope    PromptScope  `json:"scope"`
+	Family   PromptFamily `json:"family"`
+	Mode     PromptMode   `json:"mode"`
+	// The answers read.
+	Answers int32 `json:"answers"`
+	// Those that name Tribelt.
+	Named int32 `json:"named"`
+	// Those that cite a Tribelt address.
+	Cited int32 `json:"cited"`
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptCell) GetProvider() string {
+	return s.Provider
+}
+
+// GetScope returns the value of Scope.
+func (s *PromptCell) GetScope() PromptScope {
+	return s.Scope
+}
+
+// GetFamily returns the value of Family.
+func (s *PromptCell) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetMode returns the value of Mode.
+func (s *PromptCell) GetMode() PromptMode {
+	return s.Mode
+}
+
+// GetAnswers returns the value of Answers.
+func (s *PromptCell) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetNamed returns the value of Named.
+func (s *PromptCell) GetNamed() int32 {
+	return s.Named
+}
+
+// GetCited returns the value of Cited.
+func (s *PromptCell) GetCited() int32 {
+	return s.Cited
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptCell) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetScope sets the value of Scope.
+func (s *PromptCell) SetScope(val PromptScope) {
+	s.Scope = val
+}
+
+// SetFamily sets the value of Family.
+func (s *PromptCell) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetMode sets the value of Mode.
+func (s *PromptCell) SetMode(val PromptMode) {
+	s.Mode = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *PromptCell) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetNamed sets the value of Named.
+func (s *PromptCell) SetNamed(val int32) {
+	s.Named = val
+}
+
+// SetCited sets the value of Cited.
+func (s *PromptCell) SetCited(val int32) {
+	s.Cited = val
+}
+
+// How what an answer says about Tribelt holds against the fact sheet.
+// Ref: #/components/schemas/PromptCorrectness
+type PromptCorrectness string
+
+const (
+	PromptCorrectnessCorrect PromptCorrectness = "correct"
+	PromptCorrectnessPartly  PromptCorrectness = "partly"
+	PromptCorrectnessWrong   PromptCorrectness = "wrong"
+)
+
+// AllValues returns all PromptCorrectness values.
+func (PromptCorrectness) AllValues() []PromptCorrectness {
+	return []PromptCorrectness{
+		PromptCorrectnessCorrect,
+		PromptCorrectnessPartly,
+		PromptCorrectnessWrong,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptCorrectness) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptCorrectnessCorrect:
+		return []byte(s), nil
+	case PromptCorrectnessPartly:
+		return []byte(s), nil
+	case PromptCorrectnessWrong:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptCorrectness) UnmarshalText(data []byte) error {
+	switch PromptCorrectness(data) {
+	case PromptCorrectnessCorrect:
+		*s = PromptCorrectnessCorrect
+		return nil
+	case PromptCorrectnessPartly:
+		*s = PromptCorrectnessPartly
+		return nil
+	case PromptCorrectnessWrong:
+		*s = PromptCorrectnessWrong
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// How the extractor read an answer; failed when it could not, after a retry.
+// Ref: #/components/schemas/PromptExtraction
+type PromptExtraction struct {
+	// True when the extractor could not read it.
+	Failed bool `json:"failed"`
+	// The companies named, in order.
+	Companies []PromptNamedCompany `json:"companies"`
+	// The addresses cited.
+	Addresses []string `json:"addresses"`
+	// True when it names Tribelt.
+	NamesTribelt bool `json:"namesTribelt"`
+	// True when it cites a Tribelt address.
+	CitesTribelt bool                 `json:"citesTribelt"`
+	Correctness  OptPromptCorrectness `json:"correctness"`
+	// Each claim about Tribelt the fact sheet contradicts, quoted.
+	WrongClaims []string `json:"wrongClaims"`
+	CostUsd     Usd      `json:"costUsd"`
+}
+
+// GetFailed returns the value of Failed.
+func (s *PromptExtraction) GetFailed() bool {
+	return s.Failed
+}
+
+// GetCompanies returns the value of Companies.
+func (s *PromptExtraction) GetCompanies() []PromptNamedCompany {
+	return s.Companies
+}
+
+// GetAddresses returns the value of Addresses.
+func (s *PromptExtraction) GetAddresses() []string {
+	return s.Addresses
+}
+
+// GetNamesTribelt returns the value of NamesTribelt.
+func (s *PromptExtraction) GetNamesTribelt() bool {
+	return s.NamesTribelt
+}
+
+// GetCitesTribelt returns the value of CitesTribelt.
+func (s *PromptExtraction) GetCitesTribelt() bool {
+	return s.CitesTribelt
+}
+
+// GetCorrectness returns the value of Correctness.
+func (s *PromptExtraction) GetCorrectness() OptPromptCorrectness {
+	return s.Correctness
+}
+
+// GetWrongClaims returns the value of WrongClaims.
+func (s *PromptExtraction) GetWrongClaims() []string {
+	return s.WrongClaims
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *PromptExtraction) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// SetFailed sets the value of Failed.
+func (s *PromptExtraction) SetFailed(val bool) {
+	s.Failed = val
+}
+
+// SetCompanies sets the value of Companies.
+func (s *PromptExtraction) SetCompanies(val []PromptNamedCompany) {
+	s.Companies = val
+}
+
+// SetAddresses sets the value of Addresses.
+func (s *PromptExtraction) SetAddresses(val []string) {
+	s.Addresses = val
+}
+
+// SetNamesTribelt sets the value of NamesTribelt.
+func (s *PromptExtraction) SetNamesTribelt(val bool) {
+	s.NamesTribelt = val
+}
+
+// SetCitesTribelt sets the value of CitesTribelt.
+func (s *PromptExtraction) SetCitesTribelt(val bool) {
+	s.CitesTribelt = val
+}
+
+// SetCorrectness sets the value of Correctness.
+func (s *PromptExtraction) SetCorrectness(val OptPromptCorrectness) {
+	s.Correctness = val
+}
+
+// SetWrongClaims sets the value of WrongClaims.
+func (s *PromptExtraction) SetWrongClaims(val []string) {
+	s.WrongClaims = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *PromptExtraction) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// What is true about Tribelt, which answers about Tribelt are judged against.
+// Ref: #/components/schemas/PromptFactSheet
+type PromptFactSheet struct {
+	// The fact sheet.
+	Text string `json:"text"`
+	// Its version; each change is a new one.
+	Version int32 `json:"version"`
+	// Who last changed it.
+	UpdatedBy OptString `json:"updatedBy"`
+	// When.
+	UpdatedAt OptDateTime `json:"updatedAt"`
+}
+
+// GetText returns the value of Text.
+func (s *PromptFactSheet) GetText() string {
+	return s.Text
+}
+
+// GetVersion returns the value of Version.
+func (s *PromptFactSheet) GetVersion() int32 {
+	return s.Version
+}
+
+// GetUpdatedBy returns the value of UpdatedBy.
+func (s *PromptFactSheet) GetUpdatedBy() OptString {
+	return s.UpdatedBy
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *PromptFactSheet) GetUpdatedAt() OptDateTime {
+	return s.UpdatedAt
+}
+
+// SetText sets the value of Text.
+func (s *PromptFactSheet) SetText(val string) {
+	s.Text = val
+}
+
+// SetVersion sets the value of Version.
+func (s *PromptFactSheet) SetVersion(val int32) {
+	s.Version = val
+}
+
+// SetUpdatedBy sets the value of UpdatedBy.
+func (s *PromptFactSheet) SetUpdatedBy(val OptString) {
+	s.UpdatedBy = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *PromptFactSheet) SetUpdatedAt(val OptDateTime) {
+	s.UpdatedAt = val
+}
+
+// One of Tribelt's five belt families a prompt asks about.
+// Ref: #/components/schemas/PromptFamily
+type PromptFamily string
+
+const (
+	PromptFamilyEyelink          PromptFamily = "eyelink"
+	PromptFamilyOpenSpiral       PromptFamily = "open_spiral"
+	PromptFamilyClosedSpiral     PromptFamily = "closed_spiral"
+	PromptFamilyTriFlexTurnCurve PromptFamily = "tri_flex_turn_curve"
+	PromptFamilyOther            PromptFamily = "other"
+)
+
+// AllValues returns all PromptFamily values.
+func (PromptFamily) AllValues() []PromptFamily {
+	return []PromptFamily{
+		PromptFamilyEyelink,
+		PromptFamilyOpenSpiral,
+		PromptFamilyClosedSpiral,
+		PromptFamilyTriFlexTurnCurve,
+		PromptFamilyOther,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptFamily) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptFamilyEyelink:
+		return []byte(s), nil
+	case PromptFamilyOpenSpiral:
+		return []byte(s), nil
+	case PromptFamilyClosedSpiral:
+		return []byte(s), nil
+	case PromptFamilyTriFlexTurnCurve:
+		return []byte(s), nil
+	case PromptFamilyOther:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptFamily) UnmarshalText(data []byte) error {
+	switch PromptFamily(data) {
+	case PromptFamilyEyelink:
+		*s = PromptFamilyEyelink
+		return nil
+	case PromptFamilyOpenSpiral:
+		*s = PromptFamilyOpenSpiral
+		return nil
+	case PromptFamilyClosedSpiral:
+		*s = PromptFamilyClosedSpiral
+		return nil
+	case PromptFamilyTriFlexTurnCurve:
+		*s = PromptFamilyTriFlexTurnCurve
+		return nil
+	case PromptFamilyOther:
+		*s = PromptFamilyOther
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The kind of question - for a supplier, for a belt for an application, or about a problem.
+// Ref: #/components/schemas/PromptKind
+type PromptKind string
+
+const (
+	PromptKindSupplier    PromptKind = "supplier"
+	PromptKindApplication PromptKind = "application"
+	PromptKindProblem     PromptKind = "problem"
+)
+
+// AllValues returns all PromptKind values.
+func (PromptKind) AllValues() []PromptKind {
+	return []PromptKind{
+		PromptKindSupplier,
+		PromptKindApplication,
+		PromptKindProblem,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptKind) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptKindSupplier:
+		return []byte(s), nil
+	case PromptKindApplication:
+		return []byte(s), nil
+	case PromptKindProblem:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptKind) UnmarshalText(data []byte) error {
+	switch PromptKind(data) {
+	case PromptKindSupplier:
+		*s = PromptKindSupplier
+		return nil
+	case PromptKindApplication:
+		*s = PromptKindApplication
+		return nil
+	case PromptKindProblem:
+		*s = PromptKindProblem
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// How often the newest run's answers name one company on the list.
+// Ref: #/components/schemas/PromptMention
+type PromptMention struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string      `json:"name"`
+	Role CompanyRole `json:"role"`
+	// The answers that name it.
+	Answers int32 `json:"answers"`
+	// The answers that name it first.
+	First int32 `json:"first"`
+	// Its average place in the answers that name it, from 1.
+	AveragePosition float64 `json:"averagePosition"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *PromptMention) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *PromptMention) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *PromptMention) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetAnswers returns the value of Answers.
+func (s *PromptMention) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetFirst returns the value of First.
+func (s *PromptMention) GetFirst() int32 {
+	return s.First
+}
+
+// GetAveragePosition returns the value of AveragePosition.
+func (s *PromptMention) GetAveragePosition() float64 {
+	return s.AveragePosition
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *PromptMention) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *PromptMention) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *PromptMention) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *PromptMention) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetFirst sets the value of First.
+func (s *PromptMention) SetFirst(val int32) {
+	s.First = val
+}
+
+// SetAveragePosition sets the value of AveragePosition.
+func (s *PromptMention) SetAveragePosition(val float64) {
+	s.AveragePosition = val
+}
+
+// How a prompt is asked - from the model's own knowledge, or with live web search.
+// Ref: #/components/schemas/PromptMode
+type PromptMode string
+
+const (
+	PromptModeKnowledge PromptMode = "knowledge"
+	PromptModeWeb       PromptMode = "web"
+)
+
+// AllValues returns all PromptMode values.
+func (PromptMode) AllValues() []PromptMode {
+	return []PromptMode{
+		PromptModeKnowledge,
+		PromptModeWeb,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptMode) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptModeKnowledge:
+		return []byte(s), nil
+	case PromptModeWeb:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptMode) UnmarshalText(data []byte) error {
+	switch PromptMode(data) {
+	case PromptModeKnowledge:
+		*s = PromptModeKnowledge
+		return nil
+	case PromptModeWeb:
+		*s = PromptModeWeb
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The model a run asks for one provider, and the paid fallback of a free one.
+// Ref: #/components/schemas/PromptModelChoice
+type PromptModelChoice struct {
+	// The provider's OpenRouter id.
+	Provider string `json:"provider"`
+	// The provider's cheapest text model.
+	Model string `json:"model"`
+	// True when the model costs nothing.
+	Free bool `json:"free"`
+	// The cheapest paid model, which answers what the free one cannot finish.
+	Fallback OptString `json:"fallback"`
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptModelChoice) GetProvider() string {
+	return s.Provider
+}
+
+// GetModel returns the value of Model.
+func (s *PromptModelChoice) GetModel() string {
+	return s.Model
+}
+
+// GetFree returns the value of Free.
+func (s *PromptModelChoice) GetFree() bool {
+	return s.Free
+}
+
+// GetFallback returns the value of Fallback.
+func (s *PromptModelChoice) GetFallback() OptString {
+	return s.Fallback
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptModelChoice) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetModel sets the value of Model.
+func (s *PromptModelChoice) SetModel(val string) {
+	s.Model = val
+}
+
+// SetFree sets the value of Free.
+func (s *PromptModelChoice) SetFree(val bool) {
+	s.Free = val
+}
+
+// SetFallback sets the value of Fallback.
+func (s *PromptModelChoice) SetFallback(val OptString) {
+	s.Fallback = val
+}
+
+// A company an answer names, matched to the company list when it is on it.
+// Ref: #/components/schemas/PromptNamedCompany
+type PromptNamedCompany struct {
+	// The name, as the answer writes it.
+	Name string `json:"name"`
+	// The address the answer gives for it.
+	URL          OptString       `json:"url"`
+	CompetitorId OptCompetitorId `json:"competitorId"`
+	// Its place in the answer.
+	Position int32 `json:"position"`
+}
+
+// GetName returns the value of Name.
+func (s *PromptNamedCompany) GetName() string {
+	return s.Name
+}
+
+// GetURL returns the value of URL.
+func (s *PromptNamedCompany) GetURL() OptString {
+	return s.URL
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *PromptNamedCompany) GetCompetitorId() OptCompetitorId {
+	return s.CompetitorId
+}
+
+// GetPosition returns the value of Position.
+func (s *PromptNamedCompany) GetPosition() int32 {
+	return s.Position
+}
+
+// SetName sets the value of Name.
+func (s *PromptNamedCompany) SetName(val string) {
+	s.Name = val
+}
+
+// SetURL sets the value of URL.
+func (s *PromptNamedCompany) SetURL(val OptString) {
+	s.URL = val
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *PromptNamedCompany) SetCompetitorId(val OptCompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetPosition sets the value of Position.
+func (s *PromptNamedCompany) SetPosition(val int32) {
+	s.Position = val
+}
+
+// One provider's part of a run.
+// Ref: #/components/schemas/PromptProviderProgress
+type PromptProviderProgress struct {
+	// The provider.
+	Provider string `json:"provider"`
+	// Its answers so far.
+	Answered int32 `json:"answered"`
+	// The prompts it gave no answer to.
+	Failed  int32 `json:"failed"`
+	CostUsd Usd   `json:"costUsd"`
+	// The models that answered; two when the free one handed over to the paid one.
+	Models []string `json:"models"`
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptProviderProgress) GetProvider() string {
+	return s.Provider
+}
+
+// GetAnswered returns the value of Answered.
+func (s *PromptProviderProgress) GetAnswered() int32 {
+	return s.Answered
+}
+
+// GetFailed returns the value of Failed.
+func (s *PromptProviderProgress) GetFailed() int32 {
+	return s.Failed
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *PromptProviderProgress) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// GetModels returns the value of Models.
+func (s *PromptProviderProgress) GetModels() []string {
+	return s.Models
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptProviderProgress) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetAnswered sets the value of Answered.
+func (s *PromptProviderProgress) SetAnswered(val int32) {
+	s.Answered = val
+}
+
+// SetFailed sets the value of Failed.
+func (s *PromptProviderProgress) SetFailed(val int32) {
+	s.Failed = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *PromptProviderProgress) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptProviderProgress) SetModels(val []string) {
+	s.Models = val
+}
+
+// One prompt of the prompt set.
+// Ref: #/components/schemas/PromptQuestion
+type PromptQuestion struct {
+	// Its id.
+	ID     string       `json:"id"`
+	Family PromptFamily `json:"family"`
+	Kind   PromptKind   `json:"kind"`
+	Scope  PromptScope  `json:"scope"`
+	// Its language.
+	Language string `json:"language"`
+	// The question.
+	Text string `json:"text"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptQuestion) GetID() string {
+	return s.ID
+}
+
+// GetFamily returns the value of Family.
+func (s *PromptQuestion) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetKind returns the value of Kind.
+func (s *PromptQuestion) GetKind() PromptKind {
+	return s.Kind
+}
+
+// GetScope returns the value of Scope.
+func (s *PromptQuestion) GetScope() PromptScope {
+	return s.Scope
+}
+
+// GetLanguage returns the value of Language.
+func (s *PromptQuestion) GetLanguage() string {
+	return s.Language
+}
+
+// GetText returns the value of Text.
+func (s *PromptQuestion) GetText() string {
+	return s.Text
+}
+
+// SetID sets the value of ID.
+func (s *PromptQuestion) SetID(val string) {
+	s.ID = val
+}
+
+// SetFamily sets the value of Family.
+func (s *PromptQuestion) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetKind sets the value of Kind.
+func (s *PromptQuestion) SetKind(val PromptKind) {
+	s.Kind = val
+}
+
+// SetScope sets the value of Scope.
+func (s *PromptQuestion) SetScope(val PromptScope) {
+	s.Scope = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *PromptQuestion) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetText sets the value of Text.
+func (s *PromptQuestion) SetText(val string) {
+	s.Text = val
+}
+
+// One Prompt run, with how far it got and what it cost.
+// Ref: #/components/schemas/PromptRun
+type PromptRun struct {
+	// The run's id.
+	ID uuid.UUID `json:"id"`
+	// The version of the prompt set it asked.
+	PromptSetVersion int32 `json:"promptSetVersion"`
+	// The version of the fact sheet its answers were judged against.
+	FactSheetVersion int32         `json:"factSheetVersion"`
+	Trigger          PromptTrigger `json:"trigger"`
+	// Who started it, or "schedule".
+	StartedBy string `json:"startedBy"`
+	// When it started.
+	StartedAt time.Time `json:"startedAt"`
+	// When it ended; absent while it runs.
+	FinishedAt OptDateTime     `json:"finishedAt"`
+	Status     PromptRunStatus `json:"status"`
+	// Why it stopped or failed.
+	Failure OptString `json:"failure"`
+	// The model asked for each provider.
+	Models []PromptModelChoice `json:"models"`
+	// How many answers it asks for.
+	Tasks int32 `json:"tasks"`
+	// Its answers so far.
+	Answered int32 `json:"answered"`
+	// The prompts a model gave no answer to.
+	Failed int32 `json:"failed"`
+	// The tokens its prompts and readings sent, extraction included.
+	InputTokens int64 `json:"inputTokens"`
+	// The tokens its answers and readings returned.
+	OutputTokens int64 `json:"outputTokens"`
+	CostUsd      Usd   `json:"costUsd"`
+	// Each provider's part.
+	ByProvider []PromptProviderProgress `json:"byProvider"`
+	// Its answers counted per provider, scope, belt family and mode.
+	Cells []PromptCell `json:"cells"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptRun) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetPromptSetVersion returns the value of PromptSetVersion.
+func (s *PromptRun) GetPromptSetVersion() int32 {
+	return s.PromptSetVersion
+}
+
+// GetFactSheetVersion returns the value of FactSheetVersion.
+func (s *PromptRun) GetFactSheetVersion() int32 {
+	return s.FactSheetVersion
+}
+
+// GetTrigger returns the value of Trigger.
+func (s *PromptRun) GetTrigger() PromptTrigger {
+	return s.Trigger
+}
+
+// GetStartedBy returns the value of StartedBy.
+func (s *PromptRun) GetStartedBy() string {
+	return s.StartedBy
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *PromptRun) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetFinishedAt returns the value of FinishedAt.
+func (s *PromptRun) GetFinishedAt() OptDateTime {
+	return s.FinishedAt
+}
+
+// GetStatus returns the value of Status.
+func (s *PromptRun) GetStatus() PromptRunStatus {
+	return s.Status
+}
+
+// GetFailure returns the value of Failure.
+func (s *PromptRun) GetFailure() OptString {
+	return s.Failure
+}
+
+// GetModels returns the value of Models.
+func (s *PromptRun) GetModels() []PromptModelChoice {
+	return s.Models
+}
+
+// GetTasks returns the value of Tasks.
+func (s *PromptRun) GetTasks() int32 {
+	return s.Tasks
+}
+
+// GetAnswered returns the value of Answered.
+func (s *PromptRun) GetAnswered() int32 {
+	return s.Answered
+}
+
+// GetFailed returns the value of Failed.
+func (s *PromptRun) GetFailed() int32 {
+	return s.Failed
+}
+
+// GetInputTokens returns the value of InputTokens.
+func (s *PromptRun) GetInputTokens() int64 {
+	return s.InputTokens
+}
+
+// GetOutputTokens returns the value of OutputTokens.
+func (s *PromptRun) GetOutputTokens() int64 {
+	return s.OutputTokens
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *PromptRun) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// GetByProvider returns the value of ByProvider.
+func (s *PromptRun) GetByProvider() []PromptProviderProgress {
+	return s.ByProvider
+}
+
+// GetCells returns the value of Cells.
+func (s *PromptRun) GetCells() []PromptCell {
+	return s.Cells
+}
+
+// SetID sets the value of ID.
+func (s *PromptRun) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetPromptSetVersion sets the value of PromptSetVersion.
+func (s *PromptRun) SetPromptSetVersion(val int32) {
+	s.PromptSetVersion = val
+}
+
+// SetFactSheetVersion sets the value of FactSheetVersion.
+func (s *PromptRun) SetFactSheetVersion(val int32) {
+	s.FactSheetVersion = val
+}
+
+// SetTrigger sets the value of Trigger.
+func (s *PromptRun) SetTrigger(val PromptTrigger) {
+	s.Trigger = val
+}
+
+// SetStartedBy sets the value of StartedBy.
+func (s *PromptRun) SetStartedBy(val string) {
+	s.StartedBy = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *PromptRun) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetFinishedAt sets the value of FinishedAt.
+func (s *PromptRun) SetFinishedAt(val OptDateTime) {
+	s.FinishedAt = val
+}
+
+// SetStatus sets the value of Status.
+func (s *PromptRun) SetStatus(val PromptRunStatus) {
+	s.Status = val
+}
+
+// SetFailure sets the value of Failure.
+func (s *PromptRun) SetFailure(val OptString) {
+	s.Failure = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptRun) SetModels(val []PromptModelChoice) {
+	s.Models = val
+}
+
+// SetTasks sets the value of Tasks.
+func (s *PromptRun) SetTasks(val int32) {
+	s.Tasks = val
+}
+
+// SetAnswered sets the value of Answered.
+func (s *PromptRun) SetAnswered(val int32) {
+	s.Answered = val
+}
+
+// SetFailed sets the value of Failed.
+func (s *PromptRun) SetFailed(val int32) {
+	s.Failed = val
+}
+
+// SetInputTokens sets the value of InputTokens.
+func (s *PromptRun) SetInputTokens(val int64) {
+	s.InputTokens = val
+}
+
+// SetOutputTokens sets the value of OutputTokens.
+func (s *PromptRun) SetOutputTokens(val int64) {
+	s.OutputTokens = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *PromptRun) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// SetByProvider sets the value of ByProvider.
+func (s *PromptRun) SetByProvider(val []PromptProviderProgress) {
+	s.ByProvider = val
+}
+
+// SetCells sets the value of Cells.
+func (s *PromptRun) SetCells(val []PromptCell) {
+	s.Cells = val
+}
+
+func (*PromptRun) startPromptRunRes() {}
+
+// Where a Prompt run is - running, done, stopped (the month's budget was reached; its answers are
+// kept) or failed.
+// Ref: #/components/schemas/PromptRunStatus
+type PromptRunStatus string
+
+const (
+	PromptRunStatusRunning PromptRunStatus = "running"
+	PromptRunStatusDone    PromptRunStatus = "done"
+	PromptRunStatusStopped PromptRunStatus = "stopped"
+	PromptRunStatusFailed  PromptRunStatus = "failed"
+)
+
+// AllValues returns all PromptRunStatus values.
+func (PromptRunStatus) AllValues() []PromptRunStatus {
+	return []PromptRunStatus{
+		PromptRunStatusRunning,
+		PromptRunStatusDone,
+		PromptRunStatusStopped,
+		PromptRunStatusFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptRunStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptRunStatusRunning:
+		return []byte(s), nil
+	case PromptRunStatusDone:
+		return []byte(s), nil
+	case PromptRunStatusStopped:
+		return []byte(s), nil
+	case PromptRunStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptRunStatus) UnmarshalText(data []byte) error {
+	switch PromptRunStatus(data) {
+	case PromptRunStatusRunning:
+		*s = PromptRunStatusRunning
+		return nil
+	case PromptRunStatusDone:
+		*s = PromptRunStatusDone
+		return nil
+	case PromptRunStatusStopped:
+		*s = PromptRunStatusStopped
+		return nil
+	case PromptRunStatusFailed:
+		*s = PromptRunStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's
+// language, or Dutch, German or English with no region.
+// Ref: #/components/schemas/PromptScope
+type PromptScope string
+
+const (
+	PromptScopeTwente      PromptScope = "twente"
+	PromptScopeNetherlands PromptScope = "netherlands"
+	PromptScopeGermany     PromptScope = "germany"
+	PromptScopeDutch       PromptScope = "dutch"
+	PromptScopeGerman      PromptScope = "german"
+	PromptScopeEnglish     PromptScope = "english"
+)
+
+// AllValues returns all PromptScope values.
+func (PromptScope) AllValues() []PromptScope {
+	return []PromptScope{
+		PromptScopeTwente,
+		PromptScopeNetherlands,
+		PromptScopeGermany,
+		PromptScopeDutch,
+		PromptScopeGerman,
+		PromptScopeEnglish,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptScope) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptScopeTwente:
+		return []byte(s), nil
+	case PromptScopeNetherlands:
+		return []byte(s), nil
+	case PromptScopeGermany:
+		return []byte(s), nil
+	case PromptScopeDutch:
+		return []byte(s), nil
+	case PromptScopeGerman:
+		return []byte(s), nil
+	case PromptScopeEnglish:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptScope) UnmarshalText(data []byte) error {
+	switch PromptScope(data) {
+	case PromptScopeTwente:
+		*s = PromptScopeTwente
+		return nil
+	case PromptScopeNetherlands:
+		*s = PromptScopeNetherlands
+		return nil
+	case PromptScopeGermany:
+		*s = PromptScopeGermany
+		return nil
+	case PromptScopeDutch:
+		*s = PromptScopeDutch
+		return nil
+	case PromptScopeGerman:
+		*s = PromptScopeGerman
+		return nil
+	case PromptScopeEnglish:
+		*s = PromptScopeEnglish
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The fixed, versioned prompt set runs ask.
+// Ref: #/components/schemas/PromptSet
+type PromptSet struct {
+	// Its version.
+	Version int32 `json:"version"`
+	// The prompts.
+	Prompts []PromptQuestion `json:"prompts"`
+}
+
+// GetVersion returns the value of Version.
+func (s *PromptSet) GetVersion() int32 {
+	return s.Version
+}
+
+// GetPrompts returns the value of Prompts.
+func (s *PromptSet) GetPrompts() []PromptQuestion {
+	return s.Prompts
+}
+
+// SetVersion sets the value of Version.
+func (s *PromptSet) SetVersion(val int32) {
+	s.Version = val
+}
+
+// SetPrompts sets the value of Prompts.
+func (s *PromptSet) SetPrompts(val []PromptQuestion) {
+	s.Prompts = val
+}
+
+// The Prompt test's results.
+// Ref: #/components/schemas/PromptTestResults
+type PromptTestResults struct {
+	// The version of the prompt set runs ask now.
+	PromptSetVersion int32 `json:"promptSetVersion"`
+	// The latest runs, newest first.
+	Runs []PromptRun `json:"runs"`
+	// The companies the newest run's answers name, most answers first.
+	Mentions []PromptMention `json:"mentions"`
+	// The claims about Tribelt the answers got wrong, newest first.
+	WrongClaims []PromptWrongClaim `json:"wrongClaims"`
+}
+
+// GetPromptSetVersion returns the value of PromptSetVersion.
+func (s *PromptTestResults) GetPromptSetVersion() int32 {
+	return s.PromptSetVersion
+}
+
+// GetRuns returns the value of Runs.
+func (s *PromptTestResults) GetRuns() []PromptRun {
+	return s.Runs
+}
+
+// GetMentions returns the value of Mentions.
+func (s *PromptTestResults) GetMentions() []PromptMention {
+	return s.Mentions
+}
+
+// GetWrongClaims returns the value of WrongClaims.
+func (s *PromptTestResults) GetWrongClaims() []PromptWrongClaim {
+	return s.WrongClaims
+}
+
+// SetPromptSetVersion sets the value of PromptSetVersion.
+func (s *PromptTestResults) SetPromptSetVersion(val int32) {
+	s.PromptSetVersion = val
+}
+
+// SetRuns sets the value of Runs.
+func (s *PromptTestResults) SetRuns(val []PromptRun) {
+	s.Runs = val
+}
+
+// SetMentions sets the value of Mentions.
+func (s *PromptTestResults) SetMentions(val []PromptMention) {
+	s.Mentions = val
+}
+
+// SetWrongClaims sets the value of WrongClaims.
+func (s *PromptTestResults) SetWrongClaims(val []PromptWrongClaim) {
+	s.WrongClaims = val
+}
+
+func (*PromptTestResults) getPromptTestResultsRes() {}
+
+// The Prompt test's settings.
+// Ref: #/components/schemas/PromptTestSettings
+type PromptTestSettings struct {
+	CredentialId OptLlmCredentialId `json:"credentialId"`
+	// The providers whose cheapest model runs ask, by OpenRouter id.
+	Providers         []string      `json:"providers"`
+	MonthlyBudgetUsd  Usd           `json:"monthlyBudgetUsd"`
+	SpentThisMonthUsd Usd           `json:"spentThisMonthUsd"`
+	Cadence           PromptCadence `json:"cadence"`
+	// When the next scheduled run starts.
+	NextDueAt time.Time       `json:"nextDueAt"`
+	FactSheet PromptFactSheet `json:"factSheet"`
+	PromptSet PromptSet       `json:"promptSet"`
+	// The one model that reads every answer, fixed in this release.
+	ExtractorModel string `json:"extractorModel"`
+}
+
+// GetCredentialId returns the value of CredentialId.
+func (s *PromptTestSettings) GetCredentialId() OptLlmCredentialId {
+	return s.CredentialId
+}
+
+// GetProviders returns the value of Providers.
+func (s *PromptTestSettings) GetProviders() []string {
+	return s.Providers
+}
+
+// GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
+func (s *PromptTestSettings) GetMonthlyBudgetUsd() Usd {
+	return s.MonthlyBudgetUsd
+}
+
+// GetSpentThisMonthUsd returns the value of SpentThisMonthUsd.
+func (s *PromptTestSettings) GetSpentThisMonthUsd() Usd {
+	return s.SpentThisMonthUsd
+}
+
+// GetCadence returns the value of Cadence.
+func (s *PromptTestSettings) GetCadence() PromptCadence {
+	return s.Cadence
+}
+
+// GetNextDueAt returns the value of NextDueAt.
+func (s *PromptTestSettings) GetNextDueAt() time.Time {
+	return s.NextDueAt
+}
+
+// GetFactSheet returns the value of FactSheet.
+func (s *PromptTestSettings) GetFactSheet() PromptFactSheet {
+	return s.FactSheet
+}
+
+// GetPromptSet returns the value of PromptSet.
+func (s *PromptTestSettings) GetPromptSet() PromptSet {
+	return s.PromptSet
+}
+
+// GetExtractorModel returns the value of ExtractorModel.
+func (s *PromptTestSettings) GetExtractorModel() string {
+	return s.ExtractorModel
+}
+
+// SetCredentialId sets the value of CredentialId.
+func (s *PromptTestSettings) SetCredentialId(val OptLlmCredentialId) {
+	s.CredentialId = val
+}
+
+// SetProviders sets the value of Providers.
+func (s *PromptTestSettings) SetProviders(val []string) {
+	s.Providers = val
+}
+
+// SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
+func (s *PromptTestSettings) SetMonthlyBudgetUsd(val Usd) {
+	s.MonthlyBudgetUsd = val
+}
+
+// SetSpentThisMonthUsd sets the value of SpentThisMonthUsd.
+func (s *PromptTestSettings) SetSpentThisMonthUsd(val Usd) {
+	s.SpentThisMonthUsd = val
+}
+
+// SetCadence sets the value of Cadence.
+func (s *PromptTestSettings) SetCadence(val PromptCadence) {
+	s.Cadence = val
+}
+
+// SetNextDueAt sets the value of NextDueAt.
+func (s *PromptTestSettings) SetNextDueAt(val time.Time) {
+	s.NextDueAt = val
+}
+
+// SetFactSheet sets the value of FactSheet.
+func (s *PromptTestSettings) SetFactSheet(val PromptFactSheet) {
+	s.FactSheet = val
+}
+
+// SetPromptSet sets the value of PromptSet.
+func (s *PromptTestSettings) SetPromptSet(val PromptSet) {
+	s.PromptSet = val
+}
+
+// SetExtractorModel sets the value of ExtractorModel.
+func (s *PromptTestSettings) SetExtractorModel(val string) {
+	s.ExtractorModel = val
+}
+
+func (*PromptTestSettings) getPromptTestSettingsRes()    {}
+func (*PromptTestSettings) updatePromptTestSettingsRes() {}
+
+// The settings to change; at least one.
+// Ref: #/components/schemas/PromptTestSettingsChange
+type PromptTestSettingsChange struct {
+	CredentialId OptLlmCredentialId `json:"credentialId"`
+	// The providers whose cheapest model runs ask.
+	Providers []string `json:"providers"`
+	// The month's budget in dollars.
+	MonthlyBudgetUsd OptFloat64       `json:"monthlyBudgetUsd"`
+	Cadence          OptPromptCadence `json:"cadence"`
+	// The fact sheet.
+	FactSheet OptString `json:"factSheet"`
+}
+
+// GetCredentialId returns the value of CredentialId.
+func (s *PromptTestSettingsChange) GetCredentialId() OptLlmCredentialId {
+	return s.CredentialId
+}
+
+// GetProviders returns the value of Providers.
+func (s *PromptTestSettingsChange) GetProviders() []string {
+	return s.Providers
+}
+
+// GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
+func (s *PromptTestSettingsChange) GetMonthlyBudgetUsd() OptFloat64 {
+	return s.MonthlyBudgetUsd
+}
+
+// GetCadence returns the value of Cadence.
+func (s *PromptTestSettingsChange) GetCadence() OptPromptCadence {
+	return s.Cadence
+}
+
+// GetFactSheet returns the value of FactSheet.
+func (s *PromptTestSettingsChange) GetFactSheet() OptString {
+	return s.FactSheet
+}
+
+// SetCredentialId sets the value of CredentialId.
+func (s *PromptTestSettingsChange) SetCredentialId(val OptLlmCredentialId) {
+	s.CredentialId = val
+}
+
+// SetProviders sets the value of Providers.
+func (s *PromptTestSettingsChange) SetProviders(val []string) {
+	s.Providers = val
+}
+
+// SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
+func (s *PromptTestSettingsChange) SetMonthlyBudgetUsd(val OptFloat64) {
+	s.MonthlyBudgetUsd = val
+}
+
+// SetCadence sets the value of Cadence.
+func (s *PromptTestSettingsChange) SetCadence(val OptPromptCadence) {
+	s.Cadence = val
+}
+
+// SetFactSheet sets the value of FactSheet.
+func (s *PromptTestSettingsChange) SetFactSheet(val OptString) {
+	s.FactSheet = val
+}
+
+// What started a run - an administrator, or the schedule.
+// Ref: #/components/schemas/PromptTrigger
+type PromptTrigger string
+
+const (
+	PromptTriggerManual   PromptTrigger = "manual"
+	PromptTriggerSchedule PromptTrigger = "schedule"
+)
+
+// AllValues returns all PromptTrigger values.
+func (PromptTrigger) AllValues() []PromptTrigger {
+	return []PromptTrigger{
+		PromptTriggerManual,
+		PromptTriggerSchedule,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptTrigger) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptTriggerManual:
+		return []byte(s), nil
+	case PromptTriggerSchedule:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptTrigger) UnmarshalText(data []byte) error {
+	switch PromptTrigger(data) {
+	case PromptTriggerManual:
+		*s = PromptTriggerManual
+		return nil
+	case PromptTriggerSchedule:
+		*s = PromptTriggerSchedule
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A claim about Tribelt an answer made that the fact sheet contradicts.
+// Ref: #/components/schemas/PromptWrongClaim
+type PromptWrongClaim struct {
+	// The answer's id.
+	AnswerId uuid.UUID `json:"answerId"`
+	// The run's id.
+	RunId uuid.UUID `json:"runId"`
+	// When the answer was given.
+	At time.Time `json:"at"`
+	// The provider.
+	Provider string `json:"provider"`
+	// The model.
+	Model string `json:"model"`
+	// The prompt's id.
+	PromptId    string               `json:"promptId"`
+	Mode        PromptMode           `json:"mode"`
+	Correctness OptPromptCorrectness `json:"correctness"`
+	// The claim, quoted.
+	Claim string `json:"claim"`
+}
+
+// GetAnswerId returns the value of AnswerId.
+func (s *PromptWrongClaim) GetAnswerId() uuid.UUID {
+	return s.AnswerId
+}
+
+// GetRunId returns the value of RunId.
+func (s *PromptWrongClaim) GetRunId() uuid.UUID {
+	return s.RunId
+}
+
+// GetAt returns the value of At.
+func (s *PromptWrongClaim) GetAt() time.Time {
+	return s.At
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptWrongClaim) GetProvider() string {
+	return s.Provider
+}
+
+// GetModel returns the value of Model.
+func (s *PromptWrongClaim) GetModel() string {
+	return s.Model
+}
+
+// GetPromptId returns the value of PromptId.
+func (s *PromptWrongClaim) GetPromptId() string {
+	return s.PromptId
+}
+
+// GetMode returns the value of Mode.
+func (s *PromptWrongClaim) GetMode() PromptMode {
+	return s.Mode
+}
+
+// GetCorrectness returns the value of Correctness.
+func (s *PromptWrongClaim) GetCorrectness() OptPromptCorrectness {
+	return s.Correctness
+}
+
+// GetClaim returns the value of Claim.
+func (s *PromptWrongClaim) GetClaim() string {
+	return s.Claim
+}
+
+// SetAnswerId sets the value of AnswerId.
+func (s *PromptWrongClaim) SetAnswerId(val uuid.UUID) {
+	s.AnswerId = val
+}
+
+// SetRunId sets the value of RunId.
+func (s *PromptWrongClaim) SetRunId(val uuid.UUID) {
+	s.RunId = val
+}
+
+// SetAt sets the value of At.
+func (s *PromptWrongClaim) SetAt(val time.Time) {
+	s.At = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptWrongClaim) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetModel sets the value of Model.
+func (s *PromptWrongClaim) SetModel(val string) {
+	s.Model = val
+}
+
+// SetPromptId sets the value of PromptId.
+func (s *PromptWrongClaim) SetPromptId(val string) {
+	s.PromptId = val
+}
+
+// SetMode sets the value of Mode.
+func (s *PromptWrongClaim) SetMode(val PromptMode) {
+	s.Mode = val
+}
+
+// SetCorrectness sets the value of Correctness.
+func (s *PromptWrongClaim) SetCorrectness(val OptPromptCorrectness) {
+	s.Correctness = val
+}
+
+// SetClaim sets the value of Claim.
+func (s *PromptWrongClaim) SetClaim(val string) {
+	s.Claim = val
 }
 
 // Whether a site follows one recommendation.
@@ -5002,6 +7523,22 @@ func (*StartAnalysisUnauthorized) startAnalysisRes() {}
 type StartAnalysisUnprocessableEntity ProblemStatusCode
 
 func (*StartAnalysisUnprocessableEntity) startAnalysisRes() {}
+
+type StartPromptRunConflict ProblemStatusCode
+
+func (*StartPromptRunConflict) startPromptRunRes() {}
+
+type StartPromptRunForbidden ProblemStatusCode
+
+func (*StartPromptRunForbidden) startPromptRunRes() {}
+
+type StartPromptRunUnauthorized ProblemStatusCode
+
+func (*StartPromptRunUnauthorized) startPromptRunRes() {}
+
+type StartPromptRunUnprocessableEntity ProblemStatusCode
+
+func (*StartPromptRunUnprocessableEntity) startPromptRunRes() {}
 
 type StartRescansBadRequest ProblemStatusCode
 
@@ -5732,6 +8269,31 @@ type TestLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*TestLlmCredentialUnprocessableEntity) testLlmCredentialRes() {}
 
+type UndoCompetitorCandidateBadRequest ProblemStatusCode
+
+func (*UndoCompetitorCandidateBadRequest) undoCompetitorCandidateRes() {}
+
+type UndoCompetitorCandidateConflict ProblemStatusCode
+
+func (*UndoCompetitorCandidateConflict) undoCompetitorCandidateRes() {}
+
+type UndoCompetitorCandidateForbidden ProblemStatusCode
+
+func (*UndoCompetitorCandidateForbidden) undoCompetitorCandidateRes() {}
+
+// UndoCompetitorCandidateNoContent is response for UndoCompetitorCandidate operation.
+type UndoCompetitorCandidateNoContent struct{}
+
+func (*UndoCompetitorCandidateNoContent) undoCompetitorCandidateRes() {}
+
+type UndoCompetitorCandidateNotFound ProblemStatusCode
+
+func (*UndoCompetitorCandidateNotFound) undoCompetitorCandidateRes() {}
+
+type UndoCompetitorCandidateUnauthorized ProblemStatusCode
+
+func (*UndoCompetitorCandidateUnauthorized) undoCompetitorCandidateRes() {}
+
 type UndoTermDecisionBadRequest ProblemStatusCode
 
 func (*UndoTermDecisionBadRequest) undoTermDecisionRes() {}
@@ -5775,3 +8337,21 @@ func (*UpdateCompetitorUnauthorized) updateCompetitorRes() {}
 type UpdateCompetitorUnprocessableEntity ProblemStatusCode
 
 func (*UpdateCompetitorUnprocessableEntity) updateCompetitorRes() {}
+
+type UpdatePromptTestSettingsBadRequest ProblemStatusCode
+
+func (*UpdatePromptTestSettingsBadRequest) updatePromptTestSettingsRes() {}
+
+type UpdatePromptTestSettingsForbidden ProblemStatusCode
+
+func (*UpdatePromptTestSettingsForbidden) updatePromptTestSettingsRes() {}
+
+type UpdatePromptTestSettingsUnauthorized ProblemStatusCode
+
+func (*UpdatePromptTestSettingsUnauthorized) updatePromptTestSettingsRes() {}
+
+type UpdatePromptTestSettingsUnprocessableEntity ProblemStatusCode
+
+func (*UpdatePromptTestSettingsUnprocessableEntity) updatePromptTestSettingsRes() {}
+
+type Usd float64

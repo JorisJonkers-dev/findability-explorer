@@ -295,6 +295,22 @@ func (s *Service) Current(ctx context.Context) (domain.Client, domain.Provider, 
 	return s.connector.Connect(provider, key), provider, active.Model, nil
 }
 
+// ErrNotOpenRouter is returned when a credential other than an OpenRouter key is asked for one.
+var ErrNotOpenRouter = errors.New("the credential is no OpenRouter key")
+
+// OpenRouterKey returns the secret of a stored OpenRouter key, for the Prompt test, which reaches
+// OpenRouter itself; domain.ErrNotFound, domain.ErrUnreadable or ErrNotOpenRouter otherwise.
+func (s *Service) OpenRouterKey(ctx context.Context, id string) (string, error) {
+	provider, key, err := s.secret(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	if provider != domain.OpenRouter {
+		return "", ErrNotOpenRouter
+	}
+	return key, nil
+}
+
 func (s *Service) secret(ctx context.Context, id string) (domain.Provider, string, error) {
 	if id == domain.VaultID {
 		if s.cfg.VaultKey == "" {

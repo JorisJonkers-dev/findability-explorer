@@ -61,6 +61,10 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpapi"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/webui"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/openrouter"
+	prompttestpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
+	prompttestapp "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
+	prompttestdomain "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/server"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/seal"
 	terminologypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/persistence"
@@ -151,12 +155,18 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		logger.ErrorContext(ctx, "analysis could not be recorded", "analysis", id, "error", err)
 	})
 
+	promptTest := prompttestapp.New(prompttestpersistence.New(store), gateways{llm: llm}, promptDirectory{companies: companies}, now,
+		prompttestapp.Config{}, func(id uuid.UUID, err error) {
+			logger.ErrorContext(ctx, "prompt run could not be recorded", "run", id, "error", err)
+		})
+	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
+
 	gate, err := newGate(ctx, logger, getenv, store, secret, now)
 	if err != nil {
 		return err
 	}
 	api, err := httpapi.New(logger, httpapi.Contexts{
-		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, Auth: gate.auth,
+		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Auth: gate.auth,
 	})
 	if err != nil {
 		return err
@@ -379,6 +389,82 @@ func (d directory) Companies(ctx context.Context) ([]analysisdomain.Company, err
 		})
 	}
 	return out, nil
+}
+
+// gateways hands the prompt-test context OpenRouter, reached with a stored OpenRouter key of the
+// language-model settings.
+type gateways struct {
+	llm *llmapp.Service
+}
+
+func (g gateways) Check(ctx context.Context, id string) error {
+	_, err := g.key(ctx, id)
+	return err
+}
+
+func (g gateways) Gateway(ctx context.Context, id string) (prompttestapp.Gateway, error) {
+	key, err := g.key(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return openrouter.New(openrouter.URL, key, nil), nil
+}
+
+func (g gateways) key(ctx context.Context, id string) (string, error) {
+	if id == "" {
+		return "", prompttestdomain.ErrNoKey
+	}
+	key, err := g.llm.OpenRouterKey(ctx, id)
+	switch {
+	case errors.Is(err, llmdomain.ErrNotFound), errors.Is(err, llmdomain.ErrUnreadable), errors.Is(err, llmapp.ErrNotOpenRouter):
+		return "", fmt.Errorf("%w (%w)", prompttestdomain.ErrNoKey, err)
+	case err != nil:
+		return "", err
+	}
+	return key, nil
+}
+
+// promptDirectory hands the prompt-test context the companies to match names to, and adds or
+// removes a competitor candidate's company, by value.
+type promptDirectory struct {
+	companies *companiesapp.Service
+}
+
+func (d promptDirectory) Companies(ctx context.Context) ([]prompttestdomain.DirectoryCompany, error) {
+	listed, err := d.companies.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]prompttestdomain.DirectoryCompany, 0, len(listed))
+	for _, l := range listed {
+		out = append(out, prompttestdomain.DirectoryCompany{ID: l.ID, Name: l.Name, Host: l.Host, Role: prompttestdomain.Role(l.Role())})
+	}
+	return out, nil
+}
+
+func (d promptDirectory) Add(ctx context.Context, user, name, website string) (string, error) {
+	c, err := d.companies.Add(ctx, user, name, website)
+	var known companiesdomain.AlreadyKnownError
+	switch {
+	case errors.As(err, &known):
+		return "", fmt.Errorf("%w: %s", prompttestdomain.ErrCompanyKnown, known.Name)
+	case errors.Is(err, companiesdomain.ErrInvalidName), errors.Is(err, companiesdomain.ErrInvalidWebsite):
+		return "", fmt.Errorf("%w: %w", prompttestdomain.ErrInvalid, err)
+	case err != nil:
+		return "", err
+	}
+	return c.ID, nil
+}
+
+func (d promptDirectory) Remove(ctx context.Context, user, id string) error {
+	err := d.companies.Delete(ctx, user, id)
+	if errors.Is(err, companiesdomain.ErrNotFound) {
+		return nil // removed already
+	}
+	if errors.Is(err, companiesapp.ErrScanActive) {
+		return fmt.Errorf("%w: %w", prompttestdomain.ErrInvalid, err)
+	}
+	return err
 }
 
 // observations hands the review queue the phrases finished scans found outside the map, with the

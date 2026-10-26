@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, ref, toRef, watch } from 'vue'
 import type { AnalysisSummary } from '../../../infrastructure/api/types.gen'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
@@ -70,7 +71,7 @@ const PHRASE: Record<ChangeKind, string> = { added: 'font-semibold', removed: 't
           </span>
         </p>
         <p v-if="groups.length === 0" class="m-0 text-ink-2 stage:text-[28px]">The two scans found the same terms.</p>
-        <div class="flex flex-col gap-5 stage:min-h-0 stage:flex-1 stage:gap-8 stage:overflow-y-auto">
+        <div v-scroll-hint class="scroll-hint flex flex-col gap-5 stage:min-h-0 stage:flex-1 stage:gap-8 stage:overflow-y-auto">
           <section v-for="g in groups" :key="g.group" :aria-label="groupLabel(g.group)" class="flex flex-col gap-2 stage:gap-3">
             <h3 class="m-0 text-base font-semibold stage:text-[32px]">{{ groupLabel(g.group) }}</h3>
             <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm stage:gap-2 stage:text-[26px]">

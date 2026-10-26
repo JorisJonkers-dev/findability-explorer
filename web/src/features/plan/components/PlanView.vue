@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, ref } from 'vue'
 import bakery from '../../../assets/bakery.webp'
 import { percent } from '../../../shared/percent'
@@ -71,7 +72,7 @@ const TONE: Record<PhaseTone, string> = {
 
       <section aria-labelledby="mv-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
         <SectionHeading id="mv-title">Five moves</SectionHeading>
-        <ol class="m-0 flex list-none flex-col p-0 stage:min-h-0 stage:overflow-y-auto">
+        <ol v-scroll-hint class="scroll-hint m-0 flex list-none flex-col p-0 stage:min-h-0 stage:overflow-y-auto">
           <li v-for="(move, index) in MOVES" :key="move.number" class="border-t-2 border-grey">
             <button
               type="button"

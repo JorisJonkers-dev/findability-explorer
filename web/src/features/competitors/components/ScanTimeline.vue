@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { RouterLink } from 'vue-router'
 import type { AnalysisSummary } from '../../../infrastructure/api/types.gen'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
@@ -11,7 +12,7 @@ defineProps<{ scans: readonly AnalysisSummary[]; companyId: string }>()
   <section aria-labelledby="timeline-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-7">
     <SectionHeading id="timeline-title">Scan history</SectionHeading>
     <p v-if="scans.length === 0" class="m-0 text-ink-2 stage:text-[30px]">Not scanned yet.</p>
-    <ol v-else aria-label="Scans, newest first" class="m-0 flex list-none flex-col p-0 stage:min-h-0 stage:overflow-y-auto">
+    <ol v-else v-scroll-hint aria-label="Scans, newest first" class="scroll-hint m-0 flex list-none flex-col p-0 stage:min-h-0 stage:overflow-y-auto">
       <li v-for="scan in scans" :key="scan.id" class="relative flex gap-4 pb-5 stage:gap-7 stage:pb-9">
         <span aria-hidden="true" class="mt-1.5 size-3.5 flex-none rounded-full stage:mt-3 stage:size-[26px]" :class="scan.status === 'done' ? 'bg-orange' : 'bg-silver'"></span>
         <div class="flex flex-col gap-0.5 stage:gap-1.5">

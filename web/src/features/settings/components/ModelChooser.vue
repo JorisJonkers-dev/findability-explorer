@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, ref, watch } from 'vue'
 import type { LlmSettings } from '../../../infrastructure/api/types.gen'
 import { useActiveModel, useLlmModels } from '../composables/useLlmSettings'
@@ -95,7 +96,7 @@ function submit(): void {
               </template>
               <template v-else>{{ matches.total }} {{ matches.total === 1 ? 'model' : 'models' }}.</template>
             </p>
-            <fieldset v-if="matches.shown.length > 0" class="m-0 max-h-96 overflow-y-auto rounded-2xl border-2 border-grey p-2">
+            <fieldset v-if="matches.shown.length > 0" v-scroll-hint class="scroll-hint m-0 max-h-96 overflow-y-auto rounded-2xl border-2 border-grey p-2">
               <legend class="sr-only">Models</legend>
               <label
                 v-for="option in matches.shown"

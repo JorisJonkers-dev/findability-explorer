@@ -38,7 +38,7 @@ function submitAdd(): void {
     <template #lead>
       <p class="m-0 max-w-[62ch] text-lg text-ink-2">
         Companies the Prompt runs' answers name that are not on the company list. Add one to scan it like any competitor,
-        or dismiss it, as a distributor or no maker; a dismissed name stays dismissed in later runs. Both can be undone.
+        or dismiss it, as a distributor or no competitor; a dismissed name stays dismissed in later runs. Both can be undone.
       </p>
     </template>
 

@@ -84,7 +84,7 @@ const mentioned = computed(() => mentionLine(prompts.value, props.company.id))
       <p v-else-if="company.scans === 0" class="m-0 text-ink-2 stage:text-[28px]">No scan of its website has run yet.</p>
       <p v-if="newest?.blocked" class="m-0 text-sm text-ink-2 stage:text-[26px]" data-testid="blocked-note">
         Its site lets people in but turns automated readers away with bot protection, so the scan could not read it.
-        Only the site's owner can let scanners in. Re-scanning all companies leaves it out; Re-scan still tries.
+        Only the site's owner can let scanners in. Each scan still records its AI readiness.
       </p>
       <ProgressBar
         v-if="running"

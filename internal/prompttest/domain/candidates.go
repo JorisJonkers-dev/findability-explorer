@@ -12,6 +12,7 @@ type Sighting struct {
 	Name     string
 	URL      string
 	Provider string
+	Model    string
 	At       time.Time
 }
 
@@ -43,6 +44,8 @@ type Candidate struct {
 	Name      string
 	Answers   int
 	Providers []string
+	// Models are the exact models that named it.
+	Models    []string
 	Addresses []string
 	LastSeen  time.Time
 	Decision  *CandidateDecision
@@ -79,6 +82,7 @@ func Candidates(sightings []Sighting, decisions []CandidateDecision, directory [
 			c.Decision = &d
 		}
 		slices.Sort(c.Providers)
+		slices.Sort(c.Models)
 		out = append(out, *c)
 	}
 	slices.SortFunc(out, func(a, b Candidate) int {
@@ -97,7 +101,7 @@ type gathering struct {
 func (g gathering) add(id string, s Sighting) {
 	c := g.byID[id]
 	if c == nil {
-		c = &Candidate{ID: id, Providers: []string{}, Addresses: []string{}}
+		c = &Candidate{ID: id, Providers: []string{}, Models: []string{}, Addresses: []string{}}
 		g.byID[id] = c
 		g.spellings[id] = map[string]int{}
 	}
@@ -105,6 +109,9 @@ func (g gathering) add(id string, s Sighting) {
 	g.spellings[id][s.Name]++
 	if !slices.Contains(c.Providers, s.Provider) {
 		c.Providers = append(c.Providers, s.Provider)
+	}
+	if s.Model != "" && !slices.Contains(c.Models, s.Model) {
+		c.Models = append(c.Models, s.Model)
 	}
 	if s.URL != "" && !slices.Contains(c.Addresses, s.URL) {
 		c.Addresses = append(c.Addresses, s.URL)

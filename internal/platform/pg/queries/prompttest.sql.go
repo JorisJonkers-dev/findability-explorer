@@ -728,7 +728,7 @@ func (q *Queries) MovePromptSchedule(ctx context.Context, nextDue time.Time) err
 }
 
 const promptSightings = `-- name: PromptSightings :many
-SELECT c.name, c.url, a.provider, a.answered_at
+SELECT c.name, c.url, a.provider, a.model, a.answered_at
 FROM prompt_answer_companies AS c
 JOIN prompt_answers AS a ON a.id = c.answer_id
 WHERE c.competitor_id IS NULL
@@ -739,6 +739,7 @@ type PromptSightingsRow struct {
 	Name       string
 	Url        string
 	Provider   string
+	Model      string
 	AnsweredAt time.Time
 }
 
@@ -756,6 +757,7 @@ func (q *Queries) PromptSightings(ctx context.Context) ([]PromptSightingsRow, er
 			&i.Name,
 			&i.Url,
 			&i.Provider,
+			&i.Model,
 			&i.AnsweredAt,
 		); err != nil {
 			return nil, err

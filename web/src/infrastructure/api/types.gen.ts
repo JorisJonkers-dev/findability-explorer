@@ -270,7 +270,7 @@ export type AnalysisSummary = {
      */
     failure?: string;
     /**
-     * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. Re-scanning all companies leaves such a company out.
+     * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. The scan still records the site's AI readiness.
      */
     blocked?: boolean;
     aiReadiness?: AiReadinessBrief;
@@ -1861,6 +1861,10 @@ export type CompetitorCandidate = {
      * The providers whose models named it.
      */
     providers: Array<string>;
+    /**
+     * The exact models that named it.
+     */
+    models: Array<string>;
     /**
      * The addresses the answers gave for it.
      */

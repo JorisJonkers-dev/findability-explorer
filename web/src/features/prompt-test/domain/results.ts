@@ -1,5 +1,6 @@
 import type {
   PromptCell,
+  PromptCorrectness,
   PromptFamily,
   PromptMention,
   PromptMode,
@@ -181,6 +182,13 @@ export function mentionLine(results: PromptTestResults | undefined, companyId: s
   if (!m) return `Named in none of the ${NUMBER.format(answers)} answers of the Prompt run of ${runDate(run)}.`
   const first = m.first > 0 ? `, first in ${NUMBER.format(m.first)}` : ''
   return `Named in ${NUMBER.format(m.answers)} of ${NUMBER.format(answers)} answers of the Prompt run of ${runDate(run)}${first}.`
+}
+
+/** How what an answer says of Tribelt holds against the fact sheet, in words. */
+export const CORRECTNESS: Record<PromptCorrectness, string> = {
+  correct: 'Correct about Tribelt',
+  partly: 'Partly correct about Tribelt',
+  wrong: 'Wrong about Tribelt',
 }
 
 /** A Tally's two shares in words: "17% name Tribelt · 8% cite it". */

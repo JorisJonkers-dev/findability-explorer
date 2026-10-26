@@ -27,9 +27,31 @@ type RunResult struct {
 // claims about Tribelt the answers got wrong, newest first.
 type Results struct {
 	Runs        []RunResult
-	Mentions    []domain.Mention
-	Companies   []domain.DirectoryCompany
+	Mentions    []NamedMention
 	WrongClaims []domain.WrongClaim
+}
+
+// NamedMention is a mention with the name and role of the company it counts; a company no
+// longer on the list goes by its id, as a competitor.
+type NamedMention struct {
+	domain.Mention
+	Name string
+	Role domain.Role
+}
+
+// named gives each mention its company's name and role.
+func named(mentions []domain.Mention, companies []domain.DirectoryCompany) []NamedMention {
+	out := make([]NamedMention, 0, len(mentions))
+	for _, m := range mentions {
+		n := NamedMention{Mention: m, Name: m.CompetitorID, Role: domain.RoleCompetitor}
+		for _, c := range companies {
+			if c.ID == m.CompetitorID {
+				n.Name, n.Role = c.Name, c.Role
+			}
+		}
+		out = append(out, n)
+	}
+	return out
 }
 
 // Results reads the latest runs and their answers.
@@ -42,7 +64,7 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 	if err != nil {
 		return Results{}, fmt.Errorf("list the companies: %w", err)
 	}
-	out := Results{Runs: make([]RunResult, 0, len(runs)), Mentions: []domain.Mention{}, Companies: companies, WrongClaims: []domain.WrongClaim{}}
+	out := Results{Runs: make([]RunResult, 0, len(runs)), Mentions: []NamedMention{}, WrongClaims: []domain.WrongClaim{}}
 	mentioned := false
 	for _, r := range runs {
 		answers, err := s.repo.Answers(ctx, r.ID, false)
@@ -52,7 +74,7 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 		cells := domain.Cells(answers)
 		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells})
 		if !mentioned && len(cells) > 0 {
-			out.Mentions, mentioned = domain.Mentions(answers), true
+			out.Mentions, mentioned = named(domain.Mentions(answers), companies), true
 		}
 		out.WrongClaims = append(out.WrongClaims, domain.WrongClaims(answers)...)
 	}
@@ -60,15 +82,35 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 	return out, nil
 }
 
-// Answers returns a run's answers with their text and how they were read, or domain.ErrNotFound.
-func (s *Service) Answers(ctx context.Context, runID uuid.UUID) (domain.Run, []domain.Answer, error) {
+// AnswerFilter picks a run's answers; an empty field keeps every value.
+type AnswerFilter struct {
+	Provider string
+	Scope    domain.Scope
+	Family   domain.Family
+	Mode     domain.Mode
+}
+
+func (f AnswerFilter) keeps(a domain.Answer) bool {
+	return (f.Provider == "" || a.Provider == f.Provider) && (f.Scope == "" || a.Prompt.Scope == f.Scope) &&
+		(f.Family == "" || a.Prompt.Family == f.Family) && (f.Mode == "" || a.Mode == f.Mode)
+}
+
+// Answers returns a run, with its progress and measures, and the answers the filter keeps, with
+// their text and how they were read; domain.ErrNotFound for a run nobody knows.
+func (s *Service) Answers(ctx context.Context, runID uuid.UUID, filter AnswerFilter) (RunResult, []domain.Answer, error) {
 	run, err := s.repo.Run(ctx, runID)
 	if err != nil {
-		return domain.Run{}, nil, err
+		return RunResult{}, nil, err
 	}
 	answers, err := s.repo.Answers(ctx, runID, true)
 	if err != nil {
-		return domain.Run{}, nil, fmt.Errorf("the run's answers: %w", err)
+		return RunResult{}, nil, fmt.Errorf("the run's answers: %w", err)
 	}
-	return run, answers, nil
+	kept := make([]domain.Answer, 0, len(answers))
+	for _, a := range answers {
+		if filter.keeps(a) {
+			kept = append(kept, a)
+		}
+	}
+	return RunResult{Run: run, Progress: domain.Progressed(answers, run.Models), Cells: domain.Cells(answers)}, kept, nil
 }

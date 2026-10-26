@@ -219,7 +219,7 @@ func (h *Handler) GetReadinessFiles(ctx context.Context, params oas.GetReadiness
 	}
 	return &oas.ReadinessFiles{
 		RobotsTxt: raw.Robots, RobotsTruncated: raw.RobotsTruncated, LlmsTxt: raw.LLMs, LlmsTruncated: raw.LLMsTruncated,
-		LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTrunc,
+		LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTruncated,
 	}, nil
 }
 

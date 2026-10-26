@@ -342,10 +342,10 @@ paths:
       description: >-
         Administrators only. Queues one scan for each named company with a website, or with
         `all`, for every company that is not archived, has a website and has data: the desk
-        research studied it, or it was scanned before; a company whose site turned its last scan
-        away (`blocked`) is left out. A
-        company whose scan is still queued or running is skipped, and so is one without a
-        website. The scans run a few at a time, each site politely.
+        research studied it, or it was scanned before. A company whose site turned its last scan
+        away (`blocked`) is scanned too: its pages stay closed, but the scan records its AI
+        readiness. A company whose scan is still queued or running is skipped, and so is one
+        without a website. The scans run a few at a time, each site politely.
       tags: [admin]
       requestBody:
         required: true
@@ -1595,8 +1595,8 @@ components:
           type: boolean
           description: >-
             True when the analysis failed because its site turned automated readers away (bot
-            protection) although people can open it; only then is it present. Re-scanning all
-            companies leaves such a company out.
+            protection) although people can open it; only then is it present. The scan still
+            records the site's AI readiness.
         aiReadiness:
           $ref: "#/components/schemas/AiReadinessBrief"
         maxPages:
@@ -3732,7 +3732,7 @@ components:
       description: A company the answers name that is not on the company list.
       type: object
       additionalProperties: false
-      required: [id, name, status, answers, providers, addresses, lastSeenAt]
+      required: [id, name, status, answers, providers, models, addresses, lastSeenAt]
       properties:
         id:
           $ref: "#/components/schemas/CompetitorCandidateId"
@@ -3758,6 +3758,14 @@ components:
             type: string
             maxLength: 40
             example: openai
+        models:
+          type: array
+          maxItems: 50
+          description: The exact models that named it.
+          items:
+            type: string
+            maxLength: 200
+            example: openai/gpt-oss-20b
         addresses:
           type: array
           maxItems: 50

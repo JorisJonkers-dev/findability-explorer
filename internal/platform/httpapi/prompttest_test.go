@@ -21,6 +21,7 @@ type promptTests struct {
 	decideErr error
 	change    app.Change
 	actor     string
+	filter    app.AnswerFilter
 }
 
 func (a *analyses) prompts() *promptTests {
@@ -64,17 +65,18 @@ func (p *promptTests) Results(context.Context) (app.Results, error) {
 	answers := promptAnswers()
 	return app.Results{
 		Runs:        []app.RunResult{{Run: promptRun(), Progress: domain.Progressed(answers, promptRun().Models), Cells: domain.Cells(answers)}},
-		Mentions:    domain.Mentions(answers),
-		Companies:   []domain.DirectoryCompany{{ID: "tribelt", Name: "Tribelt B.V.", Role: domain.RoleTribelt}},
+		Mentions:    []app.NamedMention{{Mention: domain.Mentions(answers)[0], Name: "Tribelt B.V.", Role: domain.RoleTribelt}},
 		WrongClaims: domain.WrongClaims(answers),
 	}, p.err
 }
 
-func (p *promptTests) Answers(_ context.Context, id uuid.UUID) (domain.Run, []domain.Answer, error) {
+func (p *promptTests) Answers(_ context.Context, id uuid.UUID, filter app.AnswerFilter) (app.RunResult, []domain.Answer, error) {
 	if id != runID {
-		return domain.Run{}, nil, domain.ErrNotFound
+		return app.RunResult{}, nil, domain.ErrNotFound
 	}
-	return promptRun(), promptAnswers(), p.err
+	p.filter = filter
+	answers := promptAnswers()
+	return app.RunResult{Run: promptRun(), Progress: domain.Progressed(answers, promptRun().Models), Cells: domain.Cells(answers)}, answers, p.err
 }
 
 func (p *promptTests) Start(_ context.Context, actor string) (domain.Run, error) {
@@ -164,10 +166,9 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	if second := items[1].(map[string]any); second["failure"] != "Rate limited." || second["extraction"] != nil {
 		t.Errorf("failed answer = %v", second)
 	}
-	for query, want := range map[string]int{"?provider=google": 1, "?mode=knowledge": 1, "?scope=english": 0, "?family=eyelink&scope=twente": 1, "?family=eyelink": 2} {
-		if r := callAs(t, srv, http.MethodGet, "/api/v1/prompt-runs/"+runID.String()+"/answers"+query, "", "tester"); len(r.body["items"].([]any)) != want {
-			t.Errorf("%s: %d answers", query, len(r.body["items"].([]any)))
-		}
+	callAs(t, srv, http.MethodGet, "/api/v1/prompt-runs/"+runID.String()+"/answers?provider=google&scope=twente&family=eyelink&mode=knowledge", "", "tester")
+	if f := a.prompts().filter; f != (app.AnswerFilter{Provider: "google", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeKnowledge}) {
+		t.Errorf("filter = %+v", f)
 	}
 	if r := callAs(t, srv, http.MethodGet, "/api/v1/prompt-runs/"+uuid.NewString()+"/answers", "", "tester"); r.code != http.StatusNotFound {
 		t.Errorf("no run: %d", r.code)

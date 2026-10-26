@@ -20,7 +20,7 @@ import (
 // UseCases is what the adapter needs from the application layer.
 type UseCases interface {
 	Results(ctx context.Context) (app.Results, error)
-	Answers(ctx context.Context, runID uuid.UUID) (domain.Run, []domain.Answer, error)
+	Answers(ctx context.Context, runID uuid.UUID, filter app.AnswerFilter) (app.RunResult, []domain.Answer, error)
 	Start(ctx context.Context, actor string) (domain.Run, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
@@ -41,6 +41,13 @@ func New(uc UseCases, actor func(context.Context) string) *Handler {
 	return &Handler{uc: uc, actor: actor}
 }
 
+// The most mentions, answers and candidates one response lists, as the contract allows.
+const (
+	maxMentions   = 1000
+	maxAnswers    = 5000
+	maxCandidates = 1000
+)
+
 // GetPromptTestResults implements getPromptTestResults.
 func (h *Handler) GetPromptTestResults(ctx context.Context) (oas.GetPromptTestResultsRes, error) {
 	res, err := h.uc.Results(ctx)
@@ -54,22 +61,9 @@ func (h *Handler) GetPromptTestResults(ctx context.Context) (oas.GetPromptTestRe
 	for _, r := range res.Runs {
 		out.Runs = append(out.Runs, toRun(r.Run, r.Progress, r.Cells))
 	}
-	names := map[string]domain.DirectoryCompany{}
-	for _, c := range res.Companies {
-		names[c.ID] = c
-	}
-	for _, m := range res.Mentions[:min(len(res.Mentions), 1000)] {
-		c := names[m.CompetitorID]
-		role := c.Role
-		if role == "" {
-			role = domain.RoleCompetitor
-		}
-		name := c.Name
-		if name == "" {
-			name = m.CompetitorID
-		}
+	for _, m := range res.Mentions[:min(len(res.Mentions), maxMentions)] {
 		out.Mentions = append(out.Mentions, oas.PromptMention{
-			CompetitorId: oas.CompetitorId(m.CompetitorID), Name: name, Role: oas.CompanyRole(role),
+			CompetitorId: oas.CompetitorId(m.CompetitorID), Name: m.Name, Role: oas.CompanyRole(m.Role),
 			Answers: int32(m.Answers), First: int32(m.First), AveragePosition: m.AveragePosition(), //nolint:gosec // answers of one run
 		})
 	}
@@ -88,24 +82,20 @@ func (h *Handler) GetPromptTestResults(ctx context.Context) (oas.GetPromptTestRe
 
 // ListPromptAnswers implements listPromptAnswers.
 func (h *Handler) ListPromptAnswers(ctx context.Context, params oas.ListPromptAnswersParams) (oas.ListPromptAnswersRes, error) {
-	run, answers, err := h.uc.Answers(ctx, params.RunId)
+	filter := app.AnswerFilter{
+		Provider: params.Provider.Or(""), Scope: domain.Scope(params.Scope.Or("")), Family: domain.Family(params.Family.Or("")),
+		Mode: domain.Mode(params.Mode.Or("")),
+	}
+	run, answers, err := h.uc.Answers(ctx, params.RunId, filter)
 	if errors.Is(err, domain.ErrNotFound) {
 		return &oas.ListPromptAnswersNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No Prompt run has this id.")}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	keep := func(a domain.Answer) bool {
-		return (!params.Provider.Set || a.Provider == params.Provider.Value) &&
-			(!params.Scope.Set || string(a.Prompt.Scope) == string(params.Scope.Value)) &&
-			(!params.Family.Set || string(a.Prompt.Family) == string(params.Family.Value)) &&
-			(!params.Mode.Set || string(a.Mode) == string(params.Mode.Value))
-	}
-	out := &oas.PromptAnswerList{Run: toRun(run, domain.Progressed(answers, run.Models), domain.Cells(answers)), Items: []oas.PromptAnswer{}}
-	for _, a := range answers {
-		if keep(a) && len(out.Items) < 5000 {
-			out.Items = append(out.Items, toAnswer(a))
-		}
+	out := &oas.PromptAnswerList{Run: toRun(run.Run, run.Progress, run.Cells), Items: make([]oas.PromptAnswer, 0, min(len(answers), maxAnswers))}
+	for _, a := range answers[:min(len(answers), maxAnswers)] {
+		out.Items = append(out.Items, toAnswer(a))
 	}
 	return out, nil
 }
@@ -123,7 +113,7 @@ func (h *Handler) StartPromptRun(ctx context.Context) (oas.StartPromptRunRes, er
 	case err != nil:
 		return nil, err
 	}
-	out := toRun(run, domain.Progressed(nil, run.Models), nil)
+	out := toRun(run, domain.Progress{}, nil)
 	return &out, nil
 }
 
@@ -178,8 +168,8 @@ func (h *Handler) ListCompetitorCandidates(ctx context.Context, params oas.ListC
 	if err != nil {
 		return nil, err
 	}
-	items := make([]oas.CompetitorCandidate, 0, min(len(list), 1000))
-	for _, c := range list[:min(len(list), 1000)] {
+	items := make([]oas.CompetitorCandidate, 0, min(len(list), maxCandidates))
+	for _, c := range list[:min(len(list), maxCandidates)] {
 		items = append(items, toCandidate(c))
 	}
 	return &oas.CompetitorCandidateList{Items: items, Counts: oas.CompetitorCandidateCounts{
@@ -336,7 +326,8 @@ func toSettings(v app.View) oas.PromptTestSettings {
 func toCandidate(c domain.Candidate) oas.CompetitorCandidate {
 	out := oas.CompetitorCandidate{
 		ID: oas.CompetitorCandidateId(c.ID), Name: c.Name, Status: oas.CompetitorCandidateStatus(c.Status()),
-		Answers: int32(c.Answers), Providers: c.Providers, Addresses: c.Addresses[:min(len(c.Addresses), 50)], //nolint:gosec // answers
+		Answers: int32(c.Answers), Providers: c.Providers, Models: c.Models[:min(len(c.Models), 50)], //nolint:gosec // answers
+		Addresses:  c.Addresses[:min(len(c.Addresses), 50)],
 		LastSeenAt: c.LastSeen,
 	}
 	if d := c.Decision; d != nil {

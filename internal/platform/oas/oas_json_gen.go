@@ -2590,6 +2590,14 @@ func (s *CompetitorCandidate) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
+		e.FieldStart("models")
+		e.ArrStart()
+		for _, elem := range s.Models {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("addresses")
 		e.ArrStart()
 		for _, elem := range s.Addresses {
@@ -2609,15 +2617,16 @@ func (s *CompetitorCandidate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCompetitorCandidate = [8]string{
+var jsonFieldsNameOfCompetitorCandidate = [9]string{
 	0: "id",
 	1: "name",
 	2: "status",
 	3: "answers",
 	4: "providers",
-	5: "addresses",
-	6: "lastSeenAt",
-	7: "decision",
+	5: "models",
+	6: "addresses",
+	7: "lastSeenAt",
+	8: "decision",
 }
 
 // Decode decodes CompetitorCandidate from json.
@@ -2625,7 +2634,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode CompetitorCandidate to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -2693,8 +2702,28 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"providers\"")
 			}
-		case "addresses":
+		case "models":
 			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				s.Models = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Models = append(s.Models, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"models\"")
+			}
+		case "addresses":
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				s.Addresses = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -2714,7 +2743,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"addresses\"")
 			}
 		case "lastSeenAt":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.LastSeenAt = v
@@ -2744,8 +2773,9 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b01111111,
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

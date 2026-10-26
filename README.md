@@ -88,9 +88,10 @@ review terms, and open the admin settings
 - **Re-scans** (`POST /api/v1/admin/rescans`, administrators, on demand only): one scan per named
   company; with `all` of every company that is not archived, has a website and has data (the desk
   research studied it, or it was scanned before); or with `unscanned` of every company that is not
-  archived and has a website no scan reached yet. A company without a website is never taken, nor
-  by `all` one whose site turned its last scan away (`blocked`: bot protection that lets people in
-  but not the crawler, which says what it is and does not pose as a browser). A company with a scan
+  archived and has a website no scan reached yet. A company without a website is never taken. One
+  whose site turned its last scan away (`blocked`: bot protection that lets people in but not the
+  crawler, which says what it is and does not pose as a browser) is taken by `all` too: its pages
+  stay closed, but each scan records its AI readiness. A company with a scan
   still queued or running is skipped. Three scans run at a time, each on another company's site; the rest wait their turn.
   Administrators may start as many scans and re-scans as they like: there is no hourly limit and
   no cap on the queue.

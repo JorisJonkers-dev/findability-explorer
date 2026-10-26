@@ -106,9 +106,9 @@ func TestRescanTheUnscanned(t *testing.T) {
 	}
 }
 
-// A company whose site turned the last scan away is left out of re-scanning all: it would only
-// be turned away again. Naming it still scans it.
-func TestRescanAllLeavesOutABlockedSite(t *testing.T) {
+// A company whose site turned the last scan away is re-scanned with all the others: its pages
+// stay closed, but each scan records its AI readiness, which changes over time.
+func TestRescanAllTakesABlockedSiteForItsReadiness(t *testing.T) {
 	r := newRepo()
 	scanned(r, "x", "y")
 	for _, a := range r.analyses {
@@ -118,12 +118,8 @@ func TestRescanAllLeavesOutABlockedSite(t *testing.T) {
 	}
 	svc := rescanService(r, &directory{companies: companies()}, app.Limits{})
 	queued, _, err := svc.Rescan(t.Context(), "admin", app.Pick{All: true}, 0)
-	if err != nil || slices.ContainsFunc(queued, func(a domain.Analysis) bool { return a.CompetitorID == "y" }) {
+	if err != nil || !slices.ContainsFunc(queued, func(a domain.Analysis) bool { return a.CompetitorID == "y" }) {
 		t.Fatalf("Rescan all = %+v, %v", queued, err)
-	}
-	named, _, err := svc.Rescan(t.Context(), "admin", app.Pick{IDs: []string{"y"}}, 0)
-	if err != nil || len(named) != 1 {
-		t.Fatalf("Rescan y = %+v, %v", named, err)
 	}
 }
 

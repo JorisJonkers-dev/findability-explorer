@@ -202,7 +202,7 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 		t.Errorf("spent later = %d", spent)
 	}
 	sightings, err := repo.Sightings(ctx)
-	if err != nil || len(sightings) != 1 || sightings[0] != (domain.Sighting{Name: "Ashworth", URL: "https://ashworth.com", Provider: "openai", At: at}) {
+	if err != nil || len(sightings) != 1 || sightings[0] != (domain.Sighting{Name: "Ashworth", URL: "https://ashworth.com", Provider: "openai", Model: "openai/gpt-oss-20b", At: at}) {
 		t.Errorf("sightings = %+v, %v", sightings, err)
 	}
 

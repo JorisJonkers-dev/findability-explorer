@@ -159,7 +159,7 @@ func (s *Service) Rescan(ctx context.Context, user string, pick Pick, maxPages i
 	switch {
 	case pick.All:
 		companies, err = s.withStats(ctx, companies, func(c domain.Company, st domain.CompetitorStats) bool {
-			return (c.Researched || st.Count > 0) && !st.Last.Blocked()
+			return c.Researched || st.Count > 0
 		})
 	case pick.Unscanned:
 		companies, err = s.withStats(ctx, companies, func(_ domain.Company, st domain.CompetitorStats) bool { return st.Count == 0 })

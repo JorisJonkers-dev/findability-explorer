@@ -28,6 +28,7 @@ type repo struct {
 	// heartbeatsLeft, when not negative, is how many heartbeats succeed before the run is
 	// taken over by another instance.
 	heartbeatsLeft int
+	beats          int
 }
 
 type storedRun struct {
@@ -127,6 +128,7 @@ func (r *repo) Heartbeat(_ context.Context, id uuid.UUID, owner string, at time.
 	if err := r.err("Heartbeat"); err != nil {
 		return false, err
 	}
+	r.beats++
 	if r.heartbeatsLeft == 0 {
 		return false, nil
 	}
@@ -242,7 +244,7 @@ func (r *repo) Sightings(context.Context) ([]domain.Sighting, error) {
 		}
 		for _, c := range a.Extraction.Companies {
 			if c.CompetitorID == "" {
-				out = append(out, domain.Sighting{Name: c.Name, URL: c.URL, Provider: a.Provider, At: a.At})
+				out = append(out, domain.Sighting{Name: c.Name, URL: c.URL, Provider: a.Provider, Model: a.Model, At: a.At})
 			}
 		}
 	}
@@ -286,6 +288,8 @@ type gateway struct {
 	failExtract int
 	asked       map[string]int
 	extracted   int
+	// slow is how long each call to Ask takes.
+	slow time.Duration
 }
 
 func newGateway() *gateway {
@@ -304,6 +308,7 @@ func (g *gateway) Models(context.Context) ([]domain.CatalogueModel, error) {
 }
 
 func (g *gateway) Ask(_ context.Context, model, prompt string, web bool) (domain.Reply, error) {
+	time.Sleep(g.slow)
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.asked[model]++

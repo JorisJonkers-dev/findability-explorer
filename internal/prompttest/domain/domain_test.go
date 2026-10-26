@@ -232,8 +232,8 @@ func TestCellsMentionsAndWrongClaims(t *testing.T) {
 func TestCandidatesGatherUnmatchedNamesAcrossRuns(t *testing.T) {
 	day := time.Date(2026, 10, 26, 0, 0, 0, 0, time.UTC)
 	sightings := []domain.Sighting{
-		{Name: "Ashworth Bros", URL: "https://ashworth.com", Provider: "openai", At: day},
-		{Name: "Ashworth Bros.", Provider: "google", At: day.Add(time.Hour)},
+		{Name: "Ashworth Bros", URL: "https://ashworth.com", Provider: "openai", Model: "openai/gpt-oss-20b", At: day},
+		{Name: "Ashworth Bros.", Provider: "google", Model: "google/gemma:free", At: day.Add(time.Hour)},
 		{Name: "Ashworth Bros", Provider: "openai", At: day},
 		{Name: "ESFO", Provider: "openai", At: day},          // on the list
 		{Name: "Distributor X", Provider: "openai", At: day}, // dismissed
@@ -251,6 +251,7 @@ func TestCandidatesGatherUnmatchedNamesAcrossRuns(t *testing.T) {
 	}
 	ash := got[0]
 	if ash.Name != "Ashworth Bros" || ash.Answers != 3 || !slices.Equal(ash.Providers, []string{"google", "openai"}) ||
+		!slices.Equal(ash.Models, []string{"google/gemma:free", "openai/gpt-oss-20b"}) ||
 		!slices.Equal(ash.Addresses, []string{"https://ashworth.com"}) || !ash.LastSeen.Equal(day.Add(time.Hour)) || ash.Status() != domain.CandidatePending {
 		t.Errorf("ashworth = %+v", ash)
 	}

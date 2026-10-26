@@ -3,7 +3,7 @@ import { computed, ref, toRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { PromptFamily, PromptMode, PromptRun, PromptScope } from '../../../infrastructure/api/types.gen'
 import { usePromptAnswers } from '../composables/usePromptTest'
-import { FAMILIES, MODES, modeName, providerName, SCOPES, scopeName } from '../domain/results'
+import { CORRECTNESS, FAMILIES, MODES, modeName, providerName, SCOPES, scopeName } from '../domain/results'
 
 /** A run's answers in full, each beside how the extractor read it, one provider, scope, family and mode at a time. */
 const props = defineProps<{ run: PromptRun }>()
@@ -19,7 +19,6 @@ const filter = computed(() => ({
   ...(mode.value === '' ? {} : { mode: mode.value }),
 }))
 const { answers, isLoading, error } = usePromptAnswers(toRef(() => props.run.id), filter)
-const CORRECTNESS = { correct: 'Correct about Tribelt', partly: 'Partly correct about Tribelt', wrong: 'Wrong about Tribelt' } as const
 </script>
 
 <template>

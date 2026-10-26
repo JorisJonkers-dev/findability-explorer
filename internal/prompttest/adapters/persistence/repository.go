@@ -309,7 +309,7 @@ func (r *Repository) Sightings(ctx context.Context) ([]domain.Sighting, error) {
 	}
 	out := make([]domain.Sighting, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, domain.Sighting{Name: row.Name, URL: row.Url, Provider: row.Provider, At: row.AnsweredAt.UTC()})
+		out = append(out, domain.Sighting{Name: row.Name, URL: row.Url, Provider: row.Provider, Model: row.Model, At: row.AnsweredAt.UTC()})
 	}
 	return out, nil
 }

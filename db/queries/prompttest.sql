@@ -134,7 +134,7 @@ SELECT (
 
 -- name: PromptSightings :many
 -- Every name an answer gave that was not matched to a company.
-SELECT c.name, c.url, a.provider, a.answered_at
+SELECT c.name, c.url, a.provider, a.model, a.answered_at
 FROM prompt_answer_companies AS c
 JOIN prompt_answers AS a ON a.id = c.answer_id
 WHERE c.competitor_id IS NULL

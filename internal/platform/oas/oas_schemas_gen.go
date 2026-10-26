@@ -576,8 +576,8 @@ type AnalysisSummary struct {
 	// Why the analysis failed; only when status is failed.
 	Failure OptString `json:"failure"`
 	// True when the analysis failed because its site turned automated readers away (bot protection)
-	// although people can open it; only then is it present. Re-scanning all companies leaves such a
-	// company out.
+	// although people can open it; only then is it present. The scan still records the site's AI
+	// readiness.
 	Blocked     OptBool             `json:"blocked"`
 	AiReadiness OptAiReadinessBrief `json:"aiReadiness"`
 	// The most pages the crawl fetches.
@@ -1260,6 +1260,8 @@ type CompetitorCandidate struct {
 	Answers int32 `json:"answers"`
 	// The providers whose models named it.
 	Providers []string `json:"providers"`
+	// The exact models that named it.
+	Models []string `json:"models"`
 	// The addresses the answers gave for it.
 	Addresses []string `json:"addresses"`
 	// When an answer last named it.
@@ -1290,6 +1292,11 @@ func (s *CompetitorCandidate) GetAnswers() int32 {
 // GetProviders returns the value of Providers.
 func (s *CompetitorCandidate) GetProviders() []string {
 	return s.Providers
+}
+
+// GetModels returns the value of Models.
+func (s *CompetitorCandidate) GetModels() []string {
+	return s.Models
 }
 
 // GetAddresses returns the value of Addresses.
@@ -1330,6 +1337,11 @@ func (s *CompetitorCandidate) SetAnswers(val int32) {
 // SetProviders sets the value of Providers.
 func (s *CompetitorCandidate) SetProviders(val []string) {
 	s.Providers = val
+}
+
+// SetModels sets the value of Models.
+func (s *CompetitorCandidate) SetModels(val []string) {
+	s.Models = val
 }
 
 // SetAddresses sets the value of Addresses.

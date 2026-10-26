@@ -7,7 +7,7 @@ const ID = '3a7bd3e2360a9f01'
 
 function candidate(overrides: Partial<CompetitorCandidate> = {}): CompetitorCandidate {
   return {
-    id: ID, name: 'Ashworth', status: 'pending', answers: 12, providers: ['openai', 'meta-llama'],
+    id: ID, name: 'Ashworth', status: 'pending', answers: 12, providers: ['openai', 'meta-llama'], models: ['meta-llama/llama-3.1-8b', 'openai/gpt-oss-20b'],
     addresses: ['https://www.ashworth.com/belts'], lastSeenAt: '2026-11-01T06:10:00Z', ...overrides,
   }
 }
@@ -20,7 +20,7 @@ function server(extra: Record<string, Handler> = {}) {
     'GET /api/v1/admin/competitor-candidates': (r) => {
       const status = new URL(r.url).searchParams.get('status')
       const items = status === 'added'
-        ? [candidate({ id: 'b'.repeat(16), name: 'Wire Belt', answers: 1, status: 'added', decision: { status: 'added', competitorId: 'wire-belt', by: 'joris', at: '2026-11-02T09:00:00Z' } })]
+        ? [candidate({ id: 'b'.repeat(16), name: 'Wire Belt', answers: 1, models: [], status: 'added', decision: { status: 'added', competitorId: 'wire-belt', by: 'joris', at: '2026-11-02T09:00:00Z' } })]
         : status === 'dismissed' ? [] : [candidate()]
       return json({ items, counts })
     },
@@ -55,6 +55,7 @@ describe('the competitor candidates', () => {
     const item = wrapper.get('ul[aria-label="Candidates"] li')
     expect(item.text()).toContain('AshworthNamed in 12 answers')
     expect(item.text()).toContain('By OpenAI, Meta · last on 1 Nov 2026, 06:10 UTC')
+    expect(item.text()).toContain('Models: meta-llama/llama-3.1-8b, openai/gpt-oss-20b')
     expect(item.text()).toContain('Addresses given: https://www.ashworth.com/belts')
   })
 

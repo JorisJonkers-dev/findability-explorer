@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,9 @@ type execution struct {
 	directory []domain.DirectoryCompany
 	budget    domain.Micros
 
+	// answered are the answers stored before this execution, as after a restart.
+	answered []domain.Answer
+
 	mu      sync.Mutex
 	spent   domain.Micros
 	stopped domain.RunStatus // set when the budget is reached; empty otherwise
@@ -40,6 +44,10 @@ func (s *Service) Execute(ctx context.Context, run domain.Run) error {
 	if err != nil {
 		return s.fail(ctx, run.ID, err)
 	}
+	// The run is held while a model is slow too: one call may take longer than the stale window.
+	beating, stop := context.WithCancel(ctx)
+	defer stop()
+	go e.heartbeat(beating, s.cfg.Stale/4)
 	for _, a := range unread {
 		if e.halted() {
 			break
@@ -53,6 +61,10 @@ func (s *Service) Execute(ctx context.Context, run domain.Run) error {
 			if t.Provider == m.Provider {
 				mine = append(mine, t)
 			}
+		}
+		// A provider that handed over to its paid model before a restart keeps to it.
+		if slices.ContainsFunc(e.answered, func(a domain.Answer) bool { return a.Provider == m.Provider && a.Model == m.Fallback }) {
+			m.Model, m.Free = m.Fallback, false
 		}
 		wg.Go(func() { e.provider(ctx, m, mine) })
 	}
@@ -101,7 +113,7 @@ func (s *Service) resume(ctx context.Context, run domain.Run) (*execution, []dom
 			tasks = append(tasks, t)
 		}
 	}
-	e := &execution{s: s, run: run, gw: gw, directory: directory, budget: settings.MonthlyBudget, spent: spent}
+	e := &execution{s: s, run: run, gw: gw, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
 	return e, tasks, unread, nil
 }
 
@@ -220,11 +232,32 @@ func (e *execution) count(ctx context.Context, a domain.Answer) {
 		e.stopped = domain.RunStopped
 	}
 	e.mu.Unlock()
+	e.beat(ctx)
+}
+
+// heartbeat tells the repository every interval, until ctx ends, that this instance still runs
+// the run, so no other instance takes it over while a call is slow.
+func (e *execution) heartbeat(ctx context.Context, interval time.Duration) {
+	tick := time.NewTicker(interval)
+	defer tick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+			e.beat(ctx)
+		}
+	}
+}
+
+// beat records that this instance still runs the run; it marks the run lost when another
+// instance took it, and halts it when the record fails.
+func (e *execution) beat(ctx context.Context) {
 	held, err := e.s.repo.Heartbeat(ctx, e.run.ID, e.s.cfg.Owner, e.s.now())
 	switch {
-	case err != nil:
+	case err != nil && ctx.Err() == nil:
 		e.halt(fmt.Errorf("record the run's progress: %w", err))
-	case !held:
+	case err == nil && !held:
 		e.mu.Lock()
 		e.lost = true
 		e.mu.Unlock()

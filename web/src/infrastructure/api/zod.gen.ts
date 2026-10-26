@@ -1125,6 +1125,7 @@ export const zCompetitorCandidate = z.object({
     status: zCompetitorCandidateStatus,
     answers: z.int().gte(1).lte(1000000),
     providers: z.array(z.string().max(40)).max(20),
+    models: z.array(z.string().max(200)).max(50),
     addresses: z.array(z.string().max(500)).max(50),
     lastSeenAt: z.iso.datetime({ offset: true }).max(64),
     decision: zCompetitorCandidateDecision.optional()

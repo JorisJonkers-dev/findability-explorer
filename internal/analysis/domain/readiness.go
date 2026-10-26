@@ -195,12 +195,12 @@ const MaxRawFile = 100_000
 // RawFiles are the readiness files a scan keeps as the site served them, for administrators to
 // check the classification against; each at most MaxRawFile bytes, empty when not served.
 type RawFiles struct {
-	Robots          string
-	RobotsTruncated bool
-	LLMs            string
-	LLMsTruncated   bool
-	LLMsFull        string
-	LLMsFullTrunc   bool
+	Robots            string
+	RobotsTruncated   bool
+	LLMs              string
+	LLMsTruncated     bool
+	LLMsFull          string
+	LLMsFullTruncated bool
 }
 
 // RawFilesOf keeps the robots.txt, llms.txt and llms-full.txt the site served.
@@ -208,7 +208,7 @@ func RawFilesOf(f ReadinessFiles) RawFiles {
 	var r RawFiles
 	r.Robots, r.RobotsTruncated = rawOf(f.Robots)
 	r.LLMs, r.LLMsTruncated = rawOf(f.LLMs)
-	r.LLMsFull, r.LLMsFullTrunc = rawOf(f.LLMsFull)
+	r.LLMsFull, r.LLMsFullTruncated = rawOf(f.LLMsFull)
 	return r
 }
 
@@ -320,14 +320,14 @@ func (r Readiness) fields() []field {
 		out = append(out, field{"bot:" + b.Bot, string(b.Access)})
 	}
 	return append(out,
-		field{"sitemapDeclared", yesNo(r.Sitemap.Declared)},
-		field{"sitemapLanguages", list(r.Sitemap.Languages)},
-		field{"llmsTxt", yesNo(r.LLMs.Present)},
+		field{string(CheckSitemapDeclared), yesNo(r.Sitemap.Declared)},
+		field{string(CheckSitemapLanguages), list(r.Sitemap.Languages)},
+		field{string(CheckLLMs), yesNo(r.LLMs.Present)},
 		field{"llmsFullTxt", yesNo(r.LLMsFull)},
-		field{"markdown", yesNo(r.Markdown)},
-		field{"organization", yesNo(slices.ContainsFunc(r.StructuredData, isOrganization))},
-		field{"product", yesNo(slices.ContainsFunc(r.StructuredData, isProduct))},
-		field{"languages", list(r.Languages)},
+		field{string(CheckMarkdown), yesNo(r.Markdown)},
+		field{string(CheckOrganization), yesNo(slices.ContainsFunc(r.StructuredData, isOrganization))},
+		field{string(CheckProduct), yesNo(slices.ContainsFunc(r.StructuredData, isProduct))},
+		field{string(CheckLanguages), list(r.Languages)},
 		field{"cms", orNone(r.Stack.CMS)},
 		field{"seoPlugin", orNone(r.Stack.SEOPlugin)},
 		field{"botProtection", orNone(r.Stack.BotProtection)},

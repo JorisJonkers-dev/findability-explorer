@@ -63,7 +63,7 @@ describe('the Prompt test view', () => {
     await provider?.setValue('openai')
     await scope?.setValue('twente')
     expect(trend.findAll('tbody tr')).toHaveLength(1)
-    expect(trend.get('tbody tr').text()).toContain('50%')
+    expect(trend.get('tbody tr').findAll('td').map((td) => td.text().replace(/ \(.*\)/, ''))).toEqual(['50%', '33%', '67%', '17%', '0%', '33%'])
   })
 
   it('ranks the competitors named and lists the wrong claims', async () => {

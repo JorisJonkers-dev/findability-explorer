@@ -349,7 +349,7 @@ func (r *Repository) SaveReadiness(ctx context.Context, id uuid.UUID, rd domain.
 		}
 		if err := q.AddAnalysisReadinessFiles(ctx, queries.AddAnalysisReadinessFilesParams{
 			AnalysisID: id, RobotsTxt: raw.Robots, RobotsTruncated: raw.RobotsTruncated, LlmsTxt: raw.LLMs,
-			LlmsTruncated: raw.LLMsTruncated, LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTrunc,
+			LlmsTruncated: raw.LLMsTruncated, LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTruncated,
 		}); err != nil {
 			return fmt.Errorf("insert readiness files: %w", err)
 		}
@@ -368,7 +368,7 @@ func (r *Repository) ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.R
 	}
 	return domain.RawFiles{
 		Robots: row.RobotsTxt, RobotsTruncated: row.RobotsTruncated, LLMs: row.LlmsTxt, LLMsTruncated: row.LlmsTruncated,
-		LLMsFull: row.LlmsFullTxt, LLMsFullTrunc: row.LlmsFullTruncated,
+		LLMsFull: row.LlmsFullTxt, LLMsFullTruncated: row.LlmsFullTruncated,
 	}, nil
 }
 

@@ -98,17 +98,22 @@ func TestARunAsksEveryPromptOfEveryModelInBothModesAndReadsEveryAnswer(t *testin
 	if answers != 360 || named != 120 || cited != 180 {
 		t.Errorf("answers %d, named %d, cited %d", answers, named, cited)
 	}
-	if len(res.Mentions) != 2 || res.Mentions[0].CompetitorID != "twentebelt" || res.Mentions[0].Answers != 360 {
+	if len(res.Mentions) != 2 || res.Mentions[0].CompetitorID != "twentebelt" || res.Mentions[0].Answers != 360 ||
+		res.Mentions[0].Name != "Twentebelt" || res.Mentions[1].Role != domain.RoleTribelt {
 		t.Errorf("mentions = %+v", res.Mentions)
 	}
 	if len(res.WrongClaims) != 120 || res.WrongClaims[0].Claim != "Tribelt is in Hengelo." {
 		t.Errorf("%d wrong claims", len(res.WrongClaims))
 	}
-	run2, answers2, err := e.svc.Answers(t.Context(), run.ID)
-	if err != nil || run2.ID != run.ID || len(answers2) != 360 || answers2[0].Text == "" {
+	run2, answers2, err := e.svc.Answers(t.Context(), run.ID, app.AnswerFilter{})
+	if err != nil || run2.Run.ID != run.ID || run2.Progress.Answered != 360 || len(answers2) != 360 || answers2[0].Text == "" {
 		t.Errorf("answers = %d, %v", len(answers2), err)
 	}
-	if _, _, err := e.svc.Answers(t.Context(), uuid.New()); !errors.Is(err, domain.ErrNotFound) {
+	filter := app.AnswerFilter{Provider: "google", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeWeb}
+	if _, kept, err := e.svc.Answers(t.Context(), run.ID, filter); err != nil || len(kept) != 3 {
+		t.Errorf("filtered answers = %d, %v", len(kept), err)
+	}
+	if _, _, err := e.svc.Answers(t.Context(), uuid.New(), app.AnswerFilter{}); !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("answers of no run = %v", err)
 	}
 }
@@ -492,5 +497,45 @@ func TestMentionsComeFromTheNewestRunWithAnswers(t *testing.T) {
 	res, err := e.svc.Results(t.Context())
 	if err != nil || len(res.Runs) != 2 || len(res.Runs[0].Cells) != 0 || len(res.Mentions) == 0 {
 		t.Errorf("results = %d runs, %d mentions, %v", len(res.Runs), len(res.Mentions), err)
+	}
+}
+
+func TestASlowRunStaysHeldWhileItWaitsOnAModel(t *testing.T) {
+	r := newRepo()
+	e := newEnv(t, r, "a")
+	r.settings.Providers = []string{"openai"}
+	e.gw.slow = 30 * time.Millisecond
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 1, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
+	r.answers = nil
+	// Only two prompts are left to ask, each slower than the stale window.
+	set := domain.CurrentPromptSet()
+	for _, task := range domain.Tasks(set, run.Models)[2:] {
+		r.answers = append(r.answers, domain.Answer{ID: uuid.New(), RunID: run.ID, Prompt: task.Prompt, Provider: task.Provider, Mode: task.Mode, Failure: "x"})
+	}
+	svc := app.New(r, gateways{gw: e.gw}, e.dir, time.Now, app.Config{Owner: "a", Stale: 20 * time.Millisecond}, func(uuid.UUID, error) {},
+		app.WithSleep(e.sleeps.Sleep))
+	if err := svc.Execute(t.Context(), run); err != nil {
+		t.Fatal(err)
+	}
+	// Two heartbeats come with the two answers; the rest kept the run held while the model was slow.
+	if r.beats < 4 || e.run(t).Status != domain.RunDone {
+		t.Errorf("%d heartbeats, status %s", r.beats, e.run(t).Status)
+	}
+}
+
+func TestAResumedProviderKeepsToItsPaidFallback(t *testing.T) {
+	r := newRepo()
+	e := newEnv(t, r, "a")
+	choice := domain.ModelChoice{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini-flash-lite"}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 1, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{choice}}
+	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
+	first := domain.Tasks(domain.CurrentPromptSet(), run.Models)[0]
+	r.answers = []domain.Answer{{ID: uuid.New(), RunID: run.ID, Prompt: first.Prompt, Provider: "google", Model: choice.Fallback, Mode: first.Mode, Failure: "x"}}
+	if err := e.svc.Execute(t.Context(), run); err != nil {
+		t.Fatal(err)
+	}
+	if e.gw.asked["google/gemma:free"] != 0 || e.gw.asked[choice.Fallback] != 179 {
+		t.Errorf("asked %v: the free model gave up before the restart, so the paid one answers the rest", e.gw.asked)
 	}
 }

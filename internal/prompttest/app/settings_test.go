@@ -98,7 +98,7 @@ func TestResultsFailures(t *testing.T) {
 			t.Errorf("results with %s failing: %v", op, err)
 		}
 		if op == "Answers" {
-			if _, _, err := e.svc.Answers(t.Context(), e.run(t).ID); !errors.Is(err, errBoom) {
+			if _, _, err := e.svc.Answers(t.Context(), e.run(t).ID, app.AnswerFilter{}); !errors.Is(err, errBoom) {
 				t.Errorf("answers failing: %v", err)
 			}
 		}

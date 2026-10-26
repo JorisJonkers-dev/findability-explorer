@@ -73,6 +73,7 @@ function submitAdd(): void {
           <p class="m-0 text-sm text-ink-2">
             By {{ c.providers.map(providerName).join(', ') }} · last on {{ atLabel(c.lastSeenAt) }}
           </p>
+          <p v-if="c.models.length > 0" class="m-0 text-sm"><span class="text-muted">Models: </span>{{ c.models.join(', ') }}</p>
           <p v-if="c.addresses.length > 0" class="m-0 text-sm break-all"><span class="text-muted">Addresses given: </span>{{ c.addresses.join(', ') }}</p>
           <p v-if="c.decision" class="m-0 text-sm font-medium">
             {{ c.decision.status === 'added' ? 'Added' : 'Dismissed' }} by {{ c.decision.by }} on {{ atLabel(c.decision.at) }}.

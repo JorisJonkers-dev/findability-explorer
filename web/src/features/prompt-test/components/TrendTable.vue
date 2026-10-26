@@ -37,12 +37,17 @@ const rows = computed(() =>
       <table class="w-full border-collapse text-sm stage:text-[26px]">
         <caption class="sr-only">AI share of voice and citation share across Prompt runs, oldest first</caption>
         <thead>
-          <tr class="border-b-2 border-black text-left text-muted stage:border-b-[3px]">
-            <th scope="col" class="py-1.5 pr-3 font-medium">Run</th>
-            <th scope="col" class="px-2 py-1.5 font-medium">Names Tribelt</th>
-            <th scope="col" class="px-2 py-1.5 font-medium">Own knowledge</th>
-            <th scope="col" class="px-2 py-1.5 font-medium">Web search</th>
-            <th scope="col" class="px-2 py-1.5 font-medium">Cites Tribelt</th>
+          <tr class="text-left text-muted">
+            <th scope="col" rowspan="2" class="py-1.5 pr-3 align-bottom font-medium">Run</th>
+            <th scope="colgroup" colspan="3" class="px-2 py-1.5 font-medium">Names Tribelt</th>
+            <th scope="colgroup" colspan="3" class="px-2 py-1.5 font-medium">Cites Tribelt</th>
+          </tr>
+          <tr class="border-b-2 border-black text-left text-xs text-muted stage:border-b-[3px] stage:text-[22px]">
+            <template v-for="measure in ['names', 'cites']" :key="measure">
+              <th scope="col" class="px-2 pb-1.5 font-medium">In all</th>
+              <th scope="col" class="px-2 pb-1.5 font-medium">Own knowledge</th>
+              <th scope="col" class="px-2 pb-1.5 font-medium">Web search</th>
+            </template>
           </tr>
         </thead>
         <tbody>
@@ -50,10 +55,11 @@ const rows = computed(() =>
             <th scope="row" class="py-2 pr-3 text-left font-medium">
               {{ row.label }}<span class="block text-xs font-normal text-muted stage:text-[20px]">{{ row.note }}</span>
             </th>
-            <td class="px-2 py-2"><ShareCell :part="row.overall.named" :whole="row.overall.answers" /></td>
-            <td class="px-2 py-2"><ShareCell v-if="row.knowledge" :part="row.knowledge.named" :whole="row.knowledge.answers" /><span v-else class="text-muted">–</span></td>
-            <td class="px-2 py-2"><ShareCell v-if="row.web" :part="row.web.named" :whole="row.web.answers" /><span v-else class="text-muted">–</span></td>
-            <td class="px-2 py-2"><ShareCell :part="row.overall.cited" :whole="row.overall.answers" /></td>
+            <template v-for="measure in (['named', 'cited'] as const)" :key="measure">
+              <td class="px-2 py-2"><ShareCell :part="row.overall[measure]" :whole="row.overall.answers" /></td>
+              <td class="px-2 py-2"><ShareCell v-if="row.knowledge" :part="row.knowledge[measure]" :whole="row.knowledge.answers" /><span v-else class="text-muted">–</span></td>
+              <td class="px-2 py-2"><ShareCell v-if="row.web" :part="row.web[measure]" :whole="row.web.answers" /><span v-else class="text-muted">–</span></td>
+            </template>
           </tr>
         </tbody>
       </table>

@@ -7,7 +7,7 @@ import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { companyPath } from '../../shell/domain/sections'
 import { usePlan } from '../composables/usePlan'
-import { eyeOnText, MONTHS, ROUTINE, TARGETS, watchedRow, YEAR } from '../domain/routine'
+import { eyeOnText, foundLine, MONTHS, ROUTINE, standingLine, TARGETS, watchedRow, YEAR } from '../domain/routine'
 
 const { isAdmin } = useMe()
 const { plan, isLoading, error, isSaving, saveError, tick, setTargets } = usePlan()
@@ -80,12 +80,13 @@ const TONE = { orange: 'bg-orange text-black', black: 'bg-black text-white', 'bl
 
       <section aria-labelledby="fix-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-7">
         <div class="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 id="fix-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">What to improve, in order</h2>
+          <h2 id="fix-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Improvement checklist</h2>
           <span v-if="plan" class="stage:text-[28px]"><strong class="text-orange-ink">{{ done }}</strong> of {{ plan.improvements.length }} done</span>
         </div>
+        <p class="m-0 text-ink-2 stage:text-[28px]">Work through them from the top. Each one is a change to tribelt.nl.</p>
         <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
         <p v-else-if="isLoading" class="m-0 text-muted">Loading the plan…</p>
-        <ol v-else-if="plan" aria-label="Improvements" class="m-0 flex list-none flex-col p-0 stage:min-h-0 stage:overflow-y-auto">
+        <ol v-else-if="plan" aria-label="Improvement checklist" class="m-0 flex list-none flex-col p-0 stage:min-h-0 stage:overflow-y-auto">
           <li
             v-for="(it, i) in plan.improvements"
             :key="it.id"
@@ -99,15 +100,30 @@ const TONE = { orange: 'bg-orange text-black', black: 'bg-black text-white', 'bl
               class="mt-1 size-5 accent-orange-ink stage:size-10"
               @change="tick(it.id, ($event.target as HTMLInputElement).checked)"
             />
-            <span class="flex flex-col gap-1">
+            <div class="flex min-w-0 flex-col gap-1.5 stage:gap-3">
               <label :for="`imp-${it.id}`" class="font-semibold stage:text-[32px]" :class="it.done ? 'text-muted line-through' : ''">
                 <span class="text-orange-ink">{{ i + 1 }}.</span> {{ it.title }}
               </label>
-              <span class="text-sm text-ink-2 stage:text-[24px]">Moves {{ it.moves }}.</span>
+              <p class="m-0 text-sm stage:text-[26px]">{{ it.why }}</p>
+              <p class="m-0 text-sm text-ink-2 stage:text-[24px]">
+                {{ [`Moves ${it.moves}.`, standingLine(it)].filter(Boolean).join(' ') }}
+              </p>
+              <p v-if="foundLine(it.parts)" class="m-0 text-sm font-medium stage:text-[24px]">{{ foundLine(it.parts) }}</p>
+              <details class="group text-sm stage:text-[24px]">
+                <summary class="w-fit cursor-pointer font-medium text-orange-ink underline underline-offset-4">How to do it</summary>
+                <div class="mt-2 flex flex-col gap-3 rounded-xl bg-mist p-3 stage:mt-4 stage:gap-4 stage:rounded-[20px] stage:p-6">
+                  <ol class="m-0 flex flex-col gap-1.5 pl-5 stage:gap-3 stage:pl-8">
+                    <li v-for="s in it.steps" :key="s">{{ s }}</li>
+                  </ol>
+                  <p class="m-0 flex flex-col">
+                    <span class="text-xs font-semibold tracking-[0.04em] text-orange-ink uppercase stage:text-[20px]">Done when</span>{{ it.doneWhen }}
+                  </p>
+                </div>
+              </details>
               <span class="text-xs text-muted stage:text-[20px]">
                 {{ it.auto ? 'The latest scan of tribelt.nl checks this.' : it.tickedBy ? `Ticked off by ${it.tickedBy}.` : 'An administrator ticks this off.' }}
               </span>
-            </span>
+            </div>
             <RouterLink v-if="it.leader" :to="companyPath(it.leader.competitorId)" class="flex flex-col text-right no-underline">
               <span class="text-xs text-muted stage:text-[20px]">Look at</span>
               <span class="font-semibold stage:text-[28px]">{{ it.leader.name }}</span>

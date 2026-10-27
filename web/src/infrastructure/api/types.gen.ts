@@ -1467,7 +1467,41 @@ export type PlanImprovement = {
      * When.
      */
     tickedAt?: string;
+    /**
+     * Why it matters.
+     */
+    why: string;
+    /**
+     * How to do it, step by step.
+     */
+    steps: Array<string>;
+    /**
+     * When it counts as done.
+     */
+    doneWhen: string;
+    /**
+     * What the latest scan of tribelt.nl found of an improvement a scan checks; empty for one ticked by hand, or before any scan.
+     */
+    parts: Array<PlanPart>;
+    /**
+     * Tribelt's value on the measure it moves; absent without data.
+     */
+    tribelt?: number;
     leader?: MeasureLeader;
+};
+
+/**
+ * One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
+ */
+export type PlanPart = {
+    /**
+     * What it looks for.
+     */
+    name: string;
+    /**
+     * Whether the latest scan found it.
+     */
+    present: boolean;
 };
 
 /**

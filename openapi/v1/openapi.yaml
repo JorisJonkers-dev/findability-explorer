@@ -3437,7 +3437,7 @@ components:
       description: One improvement of the plan.
       type: object
       additionalProperties: false
-      required: [id, title, moves, measure, auto, done]
+      required: [id, title, moves, measure, auto, done, why, steps, doneWhen, parts]
       properties:
         id:
           type: string
@@ -3476,8 +3476,55 @@ components:
           maxLength: 64
           description: When.
           example: "2026-11-02T09:00:00Z"
+        why:
+          type: string
+          maxLength: 500
+          description: Why it matters.
+          example: llms.txt gives AI tools a short map of the site in plain text.
+        steps:
+          type: array
+          maxItems: 10
+          description: How to do it, step by step.
+          items:
+            type: string
+            maxLength: 300
+            example: Publish both at the root of tribelt.nl, next to robots.txt.
+        doneWhen:
+          type: string
+          maxLength: 300
+          description: When it counts as done.
+          example: tribelt.nl/llms.txt and tribelt.nl/llms-full.txt both open.
+        parts:
+          type: array
+          maxItems: 10
+          description: >-
+            What the latest scan of tribelt.nl found of an improvement a scan checks; empty for one
+            ticked by hand, or before any scan.
+          items:
+            $ref: "#/components/schemas/PlanPart"
+        tribelt:
+          type: number
+          format: double
+          minimum: 0
+          description: Tribelt's value on the measure it moves; absent without data.
+          example: 2.5
         leader:
           $ref: "#/components/schemas/MeasureLeader"
+    PlanPart:
+      description: One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
+      type: object
+      additionalProperties: false
+      required: [name, present]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: What it looks for.
+          example: llms-full.txt
+        present:
+          type: boolean
+          description: Whether the latest scan found it.
+          example: false
     PlanTarget:
       description: >-
         A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming

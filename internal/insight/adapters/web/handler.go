@@ -227,6 +227,13 @@ func toImprovements(items []domain.PlanItem) []oas.PlanImprovement {
 	for _, it := range items {
 		o := oas.PlanImprovement{
 			ID: it.ID, Title: it.Title, Moves: it.Moves, Measure: oas.StandingMeasure(it.Measure), Auto: it.Auto, Done: it.Done,
+			Why: it.Why, Steps: it.Steps, DoneWhen: it.DoneWhen, Parts: make([]oas.PlanPart, 0, len(it.Parts)),
+		}
+		for _, p := range it.Parts {
+			o.Parts = append(o.Parts, oas.PlanPart{Name: p.Name, Present: p.Present})
+		}
+		if it.Tribelt != nil {
+			o.Tribelt = oas.NewOptFloat64(*it.Tribelt)
 		}
 		if it.Tick != nil {
 			o.TickedBy, o.TickedAt = oas.NewOptString(it.Tick.By), oas.NewOptDateTime(it.Tick.At)

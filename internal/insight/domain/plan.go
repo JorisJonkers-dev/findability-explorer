@@ -23,48 +23,144 @@ const (
 	CheckStructuredData AutoCheck = "structuredData"
 )
 
-// Improvement is one item of the plan's ordered list: what to do, the measure it moves, and how
-// a scan checks it, if one can.
+// Improvement is one item of the plan's ordered list: what to do, why, how, when it is done, the
+// measure it moves, and how a scan checks it, if one can.
 type Improvement struct {
-	ID      string
-	Title   string
-	Moves   string
-	Measure Measure
-	Check   AutoCheck
+	ID       string
+	Title    string
+	Moves    string
+	Measure  Measure
+	Check    AutoCheck
+	Why      string
+	Steps    []string
+	DoneWhen string
 }
 
 // Improvements is the catalogue, in the order to work through it.
 func Improvements() []Improvement {
 	return []Improvement{
-		{"submit-search-engines", "Submit tribelt.nl to Google and Bing", "AI answers in Gemini and Copilot", MeasureShareOfVoice, CheckNone},
-		{"sitemap-per-language", "A sitemap for each language", "the pages search engines know of, in Dutch, German and English", MeasureSitemapPages, CheckSitemaps},
-		{"llms-files", "Add llms.txt and llms-full.txt", "AI readiness", MeasureReadiness, CheckLLMsFiles},
-		{"markdown-pages", "Offer each belt page as Markdown", "AI readiness", MeasureReadiness, CheckMarkdown},
-		{"structured-data", "Mark up products and FAQs", "AI readiness and how answers describe Tribelt", MeasureReadiness, CheckStructuredData},
-		{"buyer-words", "Use the words buyers search for", "the search terms used on the site", MeasureTermsUsed, CheckNone},
-		{"family-pages", "One page per belt family in each language", "answers to German and English questions", MeasureShareOfVoice, CheckNone},
-		{"listings", "Get listed where answers find sources", "how often web answers cite tribelt.nl", MeasureCitationShare, CheckNone},
+		{
+			ID: "submit-search-engines", Title: "Submit tribelt.nl to Google and Bing", Moves: "AI answers in Gemini and Copilot",
+			Measure: MeasureShareOfVoice, Check: CheckNone,
+			Why: "Gemini answers from Google's index and Copilot from Bing's. A page these search engines don't know cannot turn up in their answers.",
+			Steps: []string{
+				"Add tribelt.nl to Google Search Console and to Bing Webmaster Tools, and confirm you own the domain.",
+				"Submit the sitemap in both.",
+				"A week later, check that the belt pages are indexed, and fix any page they leave out.",
+			},
+			DoneWhen: "Both search engines show tribelt.nl as confirmed and have read its sitemap.",
+		},
+		{
+			ID: "sitemap-per-language", Title: "A sitemap for each language", Moves: "the pages search engines know of, in Dutch, German and English",
+			Measure: MeasureSitemapPages, Check: CheckSitemaps,
+			Why: "Search engines and AI crawlers find pages through the sitemap. German and English pages that no sitemap lists are found late, or not at all.",
+			Steps: []string{
+				"List every Dutch, German and English page in a sitemap, each with its versions in the other languages.",
+				"Name the sitemaps in robots.txt.",
+				"Submit them to Google and Bing.",
+			},
+			DoneWhen: "The sitemaps of tribelt.nl list pages in Dutch, German and English.",
+		},
+		{
+			ID: "llms-files", Title: "Add llms.txt and llms-full.txt", Moves: "AI readiness",
+			Measure: MeasureReadiness, Check: CheckLLMsFiles,
+			Why: "llms.txt gives AI tools a short map of the site in plain text, and llms-full.txt gives them the content itself. Both help an assistant describe Tribelt's belts correctly.",
+			Steps: []string{
+				"Write llms.txt with a line about Tribelt, then a link and one sentence for each belt family and each main page.",
+				"Put the text of those pages together in llms-full.txt.",
+				"Publish both at the root of tribelt.nl, next to robots.txt.",
+			},
+			DoneWhen: "tribelt.nl/llms.txt and tribelt.nl/llms-full.txt both open.",
+		},
+		{
+			ID: "markdown-pages", Title: "Offer each belt page as Markdown", Moves: "AI readiness",
+			Measure: MeasureReadiness, Check: CheckMarkdown,
+			Why: "AI tools read plain text more reliably than a page full of menus and scripts. A Markdown version of a belt page gives them the facts without the clutter.",
+			Steps: []string{
+				"Publish a Markdown version of each belt page at the same address ending in .md, and of the home page at tribelt.nl/index.md.",
+				"Link to the Markdown versions from llms.txt.",
+			},
+			DoneWhen: "tribelt.nl/index.md opens, or llms.txt links to Markdown pages.",
+		},
+		{
+			ID: "structured-data", Title: "Mark up products and FAQs", Moves: "AI readiness and how answers describe Tribelt",
+			Measure: MeasureReadiness, Check: CheckStructuredData,
+			Why: "Markup tells search engines and AI tools what a page is about: the product, its specifications and the questions it answers. They use it to describe a company in their answers.",
+			Steps: []string{
+				"Add Product markup to each belt page, with the name, a description and the main specifications.",
+				"Add FAQPage markup to a page with buyers' common questions and their answers.",
+				"Test the pages with Google's Rich Results Test.",
+			},
+			DoneWhen: "The pages of tribelt.nl carry both Product and FAQ markup.",
+		},
+		{
+			ID: "buyer-words", Title: "Use the words buyers search for", Moves: "the search terms used on the site",
+			Measure: MeasureTermsUsed, Check: CheckNone,
+			Why: "Buyers search in their own words, which are often not Tribelt's product names. A page that uses their words turns up in their searches and in AI answers to them.",
+			Steps: []string{
+				"Open Search terms and pick the most used terms for each belt family that tribelt.nl does not use yet.",
+				"Work them into the belt pages' headings and text, in each language.",
+				"Scan tribelt.nl again and check the number of terms used goes up.",
+			},
+			DoneWhen: "Each belt family's page uses the terms buyers search for most.",
+		},
+		{
+			ID: "family-pages", Title: "One page per belt family in each language", Moves: "answers to German and English questions",
+			Measure: MeasureShareOfVoice, Check: CheckNone,
+			Why: "Answers to German and English questions draw on pages in those languages. Without a page per belt family in each language, those answers name competitors instead.",
+			Steps: []string{
+				"Write a page for each belt family in Dutch, German and English, rather than one translated overview.",
+				"Use the terms buyers in each language search for.",
+				"Link each page to its versions in the other languages.",
+			},
+			DoneWhen: "Each of the five belt families has its own page in all three languages.",
+		},
+		{
+			ID: "listings", Title: "Get listed where answers find sources", Moves: "how often web answers cite tribelt.nl",
+			Measure: MeasureCitationShare, Check: CheckNone,
+			Why: "Web answers cite sources they trust, such as trade directories, industry associations and articles. A listing there gives answers a reason to cite tribelt.nl.",
+			Steps: []string{
+				"Open the Prompt test and note the sites the web answers cite for belt questions.",
+				"Get Tribelt listed on those sites, with a link to the right belt page.",
+				"Ask partners and customers who mention Tribelt to link to tribelt.nl.",
+			},
+			DoneWhen: "Tribelt is listed on the sites the web answers cite most.",
+		},
 	}
 }
 
 // Manual reports whether only an administrator can tick the improvement off: no scan checks it.
 func (imp Improvement) Manual() bool { return imp.Check == CheckNone }
 
-// Passes reports whether Tribelt's readiness shows the check done.
-func (c AutoCheck) Passes(r Readiness) bool {
+// Part is one thing a scan check looks for on tribelt.nl, and whether the scan found it.
+type Part struct {
+	Name    string
+	Present bool
+}
+
+// Parts are what the check looks for in Tribelt's readiness, each found or missing; nil for an
+// improvement no scan checks.
+func (c AutoCheck) Parts(r Readiness) []Part {
 	switch c {
 	case CheckSitemaps:
-		return r.Sitemap && slices.Contains(r.SitemapLanguages, "nl") && slices.Contains(r.SitemapLanguages, "de") && slices.Contains(r.SitemapLanguages, "en")
+		has := func(lang string) bool { return r.Sitemap && slices.Contains(r.SitemapLanguages, lang) }
+		return []Part{{"a Dutch sitemap", has("nl")}, {"a German sitemap", has("de")}, {"an English sitemap", has("en")}}
 	case CheckLLMsFiles:
-		return r.LLMs && r.LLMsFull
+		return []Part{{"llms.txt", r.LLMs}, {"llms-full.txt", r.LLMsFull}}
 	case CheckMarkdown:
-		return r.Markdown
+		return []Part{{"Markdown pages", r.Markdown}}
 	case CheckStructuredData:
-		return slices.ContainsFunc(r.StructuredData, func(t string) bool { return slices.Contains([]string{"Product", "ProductGroup", "ProductModel"}, t) }) &&
-			slices.Contains(r.StructuredData, "FAQPage")
+		product := slices.ContainsFunc(r.StructuredData, func(t string) bool { return slices.Contains([]string{"Product", "ProductGroup", "ProductModel"}, t) })
+		return []Part{{"Product markup", product}, {"FAQ markup", slices.Contains(r.StructuredData, "FAQPage")}}
 	case CheckNone:
 	}
-	return false
+	return nil
+}
+
+// Passes reports whether Tribelt's readiness shows the check done: every part found.
+func (c AutoCheck) Passes(r Readiness) bool {
+	parts := c.Parts(r)
+	return len(parts) > 0 && !slices.ContainsFunc(parts, func(p Part) bool { return !p.Present })
 }
 
 // Tick is an administrator's mark that an improvement is done.
@@ -75,15 +171,18 @@ type Tick struct {
 	At            time.Time
 }
 
-// PlanItem is an improvement with whether it is done, how that is known, and the competitor to
-// look at: the leader of its measure.
+// PlanItem is an improvement with whether it is done, how that is known, Tribelt's value on its
+// measure, and the competitor to look at: the leader of that measure.
 type PlanItem struct {
 	Improvement
 	Done bool
 	// Auto is true when the latest scan of tribelt.nl decides Done, false when a tick does.
-	Auto   bool
-	Tick   *Tick
-	Leader *Leader
+	Auto bool
+	// Parts are what the latest scan of tribelt.nl found of a scanned improvement; nil otherwise.
+	Parts   []Part
+	Tick    *Tick
+	Tribelt *float64
+	Leader  *Leader
 }
 
 // PlanItems are the improvements in order, each done by the latest scan of tribelt.nl when a scan
@@ -91,16 +190,27 @@ type PlanItem struct {
 func PlanItems(ticks []Tick, tribelt *Readiness, standings []Standing) []PlanItem {
 	out := make([]PlanItem, 0, len(Improvements()))
 	for _, imp := range Improvements() {
-		item := PlanItem{Improvement: imp, Leader: LeaderOf(standings, imp.Measure)}
+		item := PlanItem{Improvement: imp, Leader: LeaderOf(standings, imp.Measure), Tribelt: tribeltOn(standings, imp.Measure)}
 		if !imp.Manual() {
 			item.Auto = true
-			item.Done = tribelt != nil && imp.Check.Passes(*tribelt)
+			if tribelt != nil {
+				item.Parts, item.Done = imp.Check.Parts(*tribelt), imp.Check.Passes(*tribelt)
+			}
 		} else if i := slices.IndexFunc(ticks, func(t Tick) bool { return t.ImprovementID == imp.ID }); i >= 0 {
 			item.Done, item.Tick = true, &ticks[i]
 		}
 		out = append(out, item)
 	}
 	return out
+}
+
+// tribeltOn is Tribelt's value on a measure, nil without data.
+func tribeltOn(standings []Standing, m Measure) *float64 {
+	i := slices.IndexFunc(standings, func(s Standing) bool { return s.Measure == m })
+	if i < 0 {
+		return nil
+	}
+	return standings[i].Tribelt
 }
 
 // Open are the items not done yet, in order, at most n.

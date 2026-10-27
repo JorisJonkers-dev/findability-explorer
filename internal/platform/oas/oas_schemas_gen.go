@@ -5947,8 +5947,19 @@ type PlanImprovement struct {
 	// Who ticked it off; only for one ticked by hand.
 	TickedBy OptString `json:"tickedBy"`
 	// When.
-	TickedAt OptDateTime      `json:"tickedAt"`
-	Leader   OptMeasureLeader `json:"leader"`
+	TickedAt OptDateTime `json:"tickedAt"`
+	// Why it matters.
+	Why string `json:"why"`
+	// How to do it, step by step.
+	Steps []string `json:"steps"`
+	// When it counts as done.
+	DoneWhen string `json:"doneWhen"`
+	// What the latest scan of tribelt.nl found of an improvement a scan checks; empty for one ticked by
+	// hand, or before any scan.
+	Parts []PlanPart `json:"parts"`
+	// Tribelt's value on the measure it moves; absent without data.
+	Tribelt OptFloat64       `json:"tribelt"`
+	Leader  OptMeasureLeader `json:"leader"`
 }
 
 // GetID returns the value of ID.
@@ -5989,6 +6000,31 @@ func (s *PlanImprovement) GetTickedBy() OptString {
 // GetTickedAt returns the value of TickedAt.
 func (s *PlanImprovement) GetTickedAt() OptDateTime {
 	return s.TickedAt
+}
+
+// GetWhy returns the value of Why.
+func (s *PlanImprovement) GetWhy() string {
+	return s.Why
+}
+
+// GetSteps returns the value of Steps.
+func (s *PlanImprovement) GetSteps() []string {
+	return s.Steps
+}
+
+// GetDoneWhen returns the value of DoneWhen.
+func (s *PlanImprovement) GetDoneWhen() string {
+	return s.DoneWhen
+}
+
+// GetParts returns the value of Parts.
+func (s *PlanImprovement) GetParts() []PlanPart {
+	return s.Parts
+}
+
+// GetTribelt returns the value of Tribelt.
+func (s *PlanImprovement) GetTribelt() OptFloat64 {
+	return s.Tribelt
 }
 
 // GetLeader returns the value of Leader.
@@ -6036,9 +6072,63 @@ func (s *PlanImprovement) SetTickedAt(val OptDateTime) {
 	s.TickedAt = val
 }
 
+// SetWhy sets the value of Why.
+func (s *PlanImprovement) SetWhy(val string) {
+	s.Why = val
+}
+
+// SetSteps sets the value of Steps.
+func (s *PlanImprovement) SetSteps(val []string) {
+	s.Steps = val
+}
+
+// SetDoneWhen sets the value of DoneWhen.
+func (s *PlanImprovement) SetDoneWhen(val string) {
+	s.DoneWhen = val
+}
+
+// SetParts sets the value of Parts.
+func (s *PlanImprovement) SetParts(val []PlanPart) {
+	s.Parts = val
+}
+
+// SetTribelt sets the value of Tribelt.
+func (s *PlanImprovement) SetTribelt(val OptFloat64) {
+	s.Tribelt = val
+}
+
 // SetLeader sets the value of Leader.
 func (s *PlanImprovement) SetLeader(val OptMeasureLeader) {
 	s.Leader = val
+}
+
+// One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
+// Ref: #/components/schemas/PlanPart
+type PlanPart struct {
+	// What it looks for.
+	Name string `json:"name"`
+	// Whether the latest scan found it.
+	Present bool `json:"present"`
+}
+
+// GetName returns the value of Name.
+func (s *PlanPart) GetName() string {
+	return s.Name
+}
+
+// GetPresent returns the value of Present.
+func (s *PlanPart) GetPresent() bool {
+	return s.Present
+}
+
+// SetName sets the value of Name.
+func (s *PlanPart) SetName(val string) {
+	s.Name = val
+}
+
+// SetPresent sets the value of Present.
+func (s *PlanPart) SetPresent(val bool) {
+	s.Present = val
 }
 
 // A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt),

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { Plan } from '../../../infrastructure/api/types.gen'
-import { me } from '../../../testing/fixtures'
+import { details, me } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, routes, settle } from '../../../testing/mountApp'
 
 function plan(done = false): Plan {
   return {
     catalogueVersion: 1,
     improvements: [
-      { id: 'submit-search-engines', title: 'Submit tribelt.nl to Google and Bing', moves: 'AI answers in Gemini and Copilot', measure: 'aiShareOfVoice', auto: false, done, ...(done ? { tickedBy: 'joris', tickedAt: '2026-11-02T09:00:00Z' } : {}), leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.57 } },
-      { id: 'llms-files', title: 'Add llms.txt and llms-full.txt', moves: 'AI readiness', measure: 'readinessChecks', auto: true, done: true, leader: { competitorId: 'martens', name: 'Märtens', value: 5 } },
+      { id: 'submit-search-engines', title: 'Submit tribelt.nl to Google and Bing', moves: 'AI answers in Gemini and Copilot', measure: 'aiShareOfVoice', auto: false, done, ...details, why: 'Gemini answers from Google’s index.', tribelt: 0.24, ...(done ? { tickedBy: 'joris', tickedAt: '2026-11-02T09:00:00Z' } : {}), leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.57 } },
+      { id: 'llms-files', title: 'Add llms.txt and llms-full.txt', moves: 'AI readiness', measure: 'readinessChecks', auto: true, done: true, ...details, parts: [{ name: 'llms.txt', present: true }, { name: 'llms-full.txt', present: false }], tribelt: 3, leader: { competitorId: 'martens', name: 'Märtens', value: 5 } },
     ],
     watched: [
       { target: 'aiShareOfVoice', now: 0.24, goal: 0.4 },
@@ -40,8 +40,17 @@ describe('the plan', () => {
 
   it('lists the improvements in order, with what is done and who to look at', async () => {
     const { wrapper } = await mountApp(api(), '/plan')
-    const items = wrapper.findAll('ol[aria-label="Improvements"] li')
+    expect(wrapper.get('#fix-title').text()).toBe('Improvement checklist')
+    const items = wrapper.findAll('ol[aria-label="Improvement checklist"] > li')
+    expect(items).toHaveLength(2)
     expect(items[0]?.text()).toContain('1. Submit tribelt.nl to Google and Bing')
+    expect(items[0]?.text()).toContain('Gemini answers from Google’s index.')
+    expect(items[0]?.text()).toContain('Moves AI answers in Gemini and Copilot. Tribelt is at 24%. Ashworth leads with 57%.')
+    expect(items[0]?.get('details summary').text()).toBe('How to do it')
+    expect(items[0]?.findAll('details ol li').map((li) => li.text())).toEqual(['Do the first thing.', 'Do the second thing.'])
+    expect(items[0]?.get('details').text()).toContain('Done whenIt is in place.')
+    expect(items[1]?.text()).toContain('The latest scan found llms.txt, but not llms-full.txt.')
+    expect(items[1]?.text()).toContain('Tribelt is at 3. Märtens leads with 5.')
     expect(items[0]?.text()).toContain('An administrator ticks this off.')
     expect(items[0]?.get('a').attributes('href')).toBe('/competitors/ashworth')
     expect(items[1]?.text()).toContain('The latest scan of tribelt.nl checks this.')

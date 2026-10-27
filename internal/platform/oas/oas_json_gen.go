@@ -10459,6 +10459,36 @@ func (s *PlanImprovement) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		e.FieldStart("why")
+		e.Str(s.Why)
+	}
+	{
+		e.FieldStart("steps")
+		e.ArrStart()
+		for _, elem := range s.Steps {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("doneWhen")
+		e.Str(s.DoneWhen)
+	}
+	{
+		e.FieldStart("parts")
+		e.ArrStart()
+		for _, elem := range s.Parts {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		if s.Tribelt.Set {
+			e.FieldStart("tribelt")
+			s.Tribelt.Encode(e)
+		}
+	}
+	{
 		if s.Leader.Set {
 			e.FieldStart("leader")
 			s.Leader.Encode(e)
@@ -10466,16 +10496,21 @@ func (s *PlanImprovement) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPlanImprovement = [9]string{
-	0: "id",
-	1: "title",
-	2: "moves",
-	3: "measure",
-	4: "auto",
-	5: "done",
-	6: "tickedBy",
-	7: "tickedAt",
-	8: "leader",
+var jsonFieldsNameOfPlanImprovement = [14]string{
+	0:  "id",
+	1:  "title",
+	2:  "moves",
+	3:  "measure",
+	4:  "auto",
+	5:  "done",
+	6:  "tickedBy",
+	7:  "tickedAt",
+	8:  "why",
+	9:  "steps",
+	10: "doneWhen",
+	11: "parts",
+	12: "tribelt",
+	13: "leader",
 }
 
 // Decode decodes PlanImprovement from json.
@@ -10577,6 +10612,78 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tickedAt\"")
 			}
+		case "why":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Why = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"why\"")
+			}
+		case "steps":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				s.Steps = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Steps = append(s.Steps, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"steps\"")
+			}
+		case "doneWhen":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.DoneWhen = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"doneWhen\"")
+			}
+		case "parts":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				s.Parts = make([]PlanPart, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem PlanPart
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Parts = append(s.Parts, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"parts\"")
+			}
+		case "tribelt":
+			if err := func() error {
+				s.Tribelt.Reset()
+				if err := s.Tribelt.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tribelt\"")
+			}
 		case "leader":
 			if err := func() error {
 				s.Leader.Reset()
@@ -10598,7 +10705,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b00111111,
-		0b00000000,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -10640,6 +10747,119 @@ func (s *PlanImprovement) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PlanImprovement) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PlanPart) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PlanPart) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("present")
+		e.Bool(s.Present)
+	}
+}
+
+var jsonFieldsNameOfPlanPart = [2]string{
+	0: "name",
+	1: "present",
+}
+
+// Decode decodes PlanPart from json.
+func (s *PlanPart) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PlanPart to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "name":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "present":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Bool()
+				s.Present = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"present\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PlanPart")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPlanPart) {
+					name = jsonFieldsNameOfPlanPart[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PlanPart) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PlanPart) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

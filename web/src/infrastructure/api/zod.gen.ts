@@ -757,6 +757,14 @@ export const zAiSearchSummary = z.object({
 });
 
 /**
+ * One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
+ */
+export const zPlanPart = z.object({
+    name: z.string().max(100),
+    present: z.boolean()
+});
+
+/**
  * A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt), readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a run citing tribelt.nl).
  */
 export const zPlanTarget = z.enum([
@@ -879,6 +887,11 @@ export const zPlanImprovement = z.object({
     done: z.boolean(),
     tickedBy: z.string().max(200).optional(),
     tickedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    why: z.string().max(500),
+    steps: z.array(z.string().max(300)).max(10),
+    doneWhen: z.string().max(300),
+    parts: z.array(zPlanPart).max(10),
+    tribelt: z.number().gte(0).optional(),
     leader: zMeasureLeader.optional()
 });
 

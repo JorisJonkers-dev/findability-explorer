@@ -4,12 +4,15 @@ test('the plan ticks an improvement off and back, and keeps the tick', async ({ 
   // The projects share one database, so each ticks an improvement of its own.
   const title = info.project.name === 'phone' ? /One page per belt family/ : /Get listed where answers find sources/
   await page.goto('/plan')
-  const improvements = page.getByRole('list', { name: 'Improvements' })
-  await expect(improvements.getByRole('listitem')).toHaveCount(8)
+  const improvements = page.getByRole('list', { name: 'Improvement checklist' })
+  await expect(improvements.locator(':scope > li')).toHaveCount(8)
+  // Each one says how to do it.
+  await improvements.locator(':scope > li').first().getByText('How to do it').click()
+  await expect(improvements.locator(':scope > li').first().locator('details ol li')).toHaveCount(3)
   await expectAccessible(page)
   const box = page.getByRole('checkbox', { name: title })
   await box.check()
-  await expect(improvements.getByRole('listitem').filter({ hasText: title })).toContainText('Ticked off by e2e.')
+  await expect(improvements.locator(':scope > li').filter({ hasText: title })).toContainText('Ticked off by e2e.')
   await page.reload()
   await expect(box).toBeChecked()
   await box.uncheck()

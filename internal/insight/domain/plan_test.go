@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -101,5 +102,68 @@ func TestImprovementsAreFoundByID(t *testing.T) {
 	}
 	if _, ok := domain.ImprovementByID("nothing"); ok {
 		t.Error("an unknown id was found")
+	}
+}
+
+func TestTheAutomaticChecksSayWhatIsInPlaceAndWhatIsMissing(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		check domain.AutoCheck
+		r     domain.Readiness
+		want  []domain.Part
+	}{
+		{
+			"a sitemap missing German", domain.CheckSitemaps,
+			domain.Readiness{Sitemap: true, SitemapLanguages: []string{"nl", "en"}},
+			[]domain.Part{{Name: "a Dutch sitemap", Present: true}, {Name: "a German sitemap"}, {Name: "an English sitemap", Present: true}},
+		},
+		{
+			"llms.txt alone", domain.CheckLLMsFiles,
+			domain.Readiness{LLMs: true},
+			[]domain.Part{{Name: "llms.txt", Present: true}, {Name: "llms-full.txt"}},
+		},
+		{
+			"Markdown pages", domain.CheckMarkdown,
+			domain.Readiness{Markdown: true},
+			[]domain.Part{{Name: "Markdown pages", Present: true}},
+		},
+		{
+			"products alone", domain.CheckStructuredData,
+			domain.Readiness{StructuredData: []string{"ProductModel"}},
+			[]domain.Part{{Name: "Product markup", Present: true}, {Name: "FAQ markup"}},
+		},
+		{"a manual improvement", domain.CheckNone, domain.Readiness{Markdown: true}, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.check.Parts(tc.r); !slices.Equal(got, tc.want) {
+				t.Errorf("Parts = %+v", got)
+			}
+		})
+	}
+}
+
+func TestEveryImprovementSaysWhyHowAndWhenItIsDone(t *testing.T) {
+	for _, imp := range domain.Improvements() {
+		if imp.Why == "" || len(imp.Steps) == 0 || imp.DoneWhen == "" {
+			t.Errorf("%s lacks its details: %+v", imp.ID, imp)
+		}
+	}
+}
+
+func TestPlanItemsCarryTribeltsValueAndWhatTheScanFound(t *testing.T) {
+	tribelt := &domain.Readiness{LLMs: true}
+	standings := domain.Standings(companies(), facts())
+	byID := map[string]domain.PlanItem{}
+	for _, it := range domain.PlanItems(nil, tribelt, standings) {
+		byID[it.ID] = it
+	}
+	if it := byID["llms-files"]; it.Tribelt == nil || len(it.Parts) != 2 || !it.Parts[0].Present || it.Parts[1].Present {
+		t.Errorf("a scanned improvement = %+v", it)
+	}
+	if it := byID["listings"]; it.Parts != nil {
+		t.Errorf("a manual improvement has parts: %+v", it.Parts)
+	}
+	if none := domain.PlanItems(nil, nil, nil); none[2].Parts != nil || none[2].Tribelt != nil {
+		t.Errorf("before any scan = %+v", none[2])
 	}
 }

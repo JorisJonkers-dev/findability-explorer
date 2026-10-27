@@ -282,3 +282,11 @@ export function product(overrides: Partial<Product> = {}): Product {
     ...overrides,
   }
 }
+
+/** An improvement's details: why, how and when it is done, and no scan parts. */
+export const details = {
+  why: 'It helps.',
+  steps: ['Do the first thing.', 'Do the second thing.'],
+  doneWhen: 'It is in place.',
+  parts: [] as { name: string; present: boolean }[],
+}

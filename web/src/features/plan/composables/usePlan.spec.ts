@@ -1,13 +1,14 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { Plan } from '../../../infrastructure/api/types.gen'
+import { details } from '../../../testing/fixtures'
 import { json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { usePlan } from './usePlan'
 
 const plan = (done: boolean): Plan => ({
   catalogueVersion: 1,
-  improvements: [{ id: 'listings', title: 'Get listed', moves: 'citations', measure: 'citationShare', auto: false, done }],
+  improvements: [{ id: 'listings', title: 'Get listed', moves: 'citations', measure: 'citationShare', auto: false, done, ...details }],
   watched: [],
   eyeOn: [],
 })

@@ -1,4 +1,4 @@
-import type { EyeOn, PlanTarget, WatchedNumber } from '../../../infrastructure/api/types.gen'
+import type { EyeOn, PlanImprovement, PlanPart, PlanTarget, WatchedNumber } from '../../../infrastructure/api/types.gen'
 import { formatValue } from '../../catching-up/domain/standings'
 
 /** One step of the weekly routine: what to do, when, what to look for, and the page to open. */
@@ -81,4 +81,28 @@ export function eyeOnText(e: Pick<EyeOn, 'why'>): string {
     case 'twente':
       return 'is named most when buyers ask for Twente.'
   }
+}
+
+/** Where Tribelt stands on the measure an improvement moves, and who leads it, in sentences. */
+export function standingLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>): string {
+  const out: string[] = []
+  if (it.tribelt !== undefined) out.push(`Tribelt is at ${formatValue(it.measure, it.tribelt)}.`)
+  if (it.leader) out.push(`${it.leader.name} leads with ${formatValue(it.measure, it.leader.value)}.`)
+  return out.join(' ')
+}
+
+/** "a", "a and b", "a, b and c". */
+function listOf(names: readonly string[], word: 'and' | 'or'): string {
+  const last = names.slice(-1).join('')
+  return names.length < 2 ? last : `${names.slice(0, -1).join(', ')} ${word} ${last}`
+}
+
+/** What the latest scan of tribelt.nl found of an improvement it checks, and what it did not. */
+export function foundLine(parts: readonly PlanPart[]): string {
+  const found = parts.filter((p) => p.present).map((p) => p.name)
+  const missing = parts.filter((p) => !p.present).map((p) => p.name)
+  if (found.length === 0 && missing.length === 0) return ''
+  if (found.length === 0) return `The latest scan did not find ${listOf(missing, 'or')}.`
+  if (missing.length === 0) return `The latest scan found ${listOf(found, 'and')}.`
+  return `The latest scan found ${listOf(found, 'and')}, but not ${listOf(missing, 'or')}.`
 }

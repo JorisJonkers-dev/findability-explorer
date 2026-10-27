@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { details } from '../../../testing/fixtures'
 import { json, mountApp, problem, routes } from '../../../testing/mountApp'
 
 const standings = {
@@ -9,8 +10,8 @@ const standings = {
   ],
   trailing: 1,
   open: [
-    { id: 'sitemap-per-language', title: 'A sitemap for each language', moves: 'the pages search engines know of', measure: 'sitemapPages', auto: true, done: false, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 2140 } },
-    { id: 'listings', title: 'Get listed where answers find sources', moves: 'how often web answers cite tribelt.nl', measure: 'citationShare', auto: false, done: false },
+    { id: 'sitemap-per-language', title: 'A sitemap for each language', moves: 'the pages search engines know of', measure: 'sitemapPages', auto: true, done: false, ...details, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 2140 } },
+    { id: 'listings', title: 'Get listed where answers find sources', moves: 'how often web answers cite tribelt.nl', measure: 'citationShare', auto: false, done: false, ...details },
   ],
 }
 

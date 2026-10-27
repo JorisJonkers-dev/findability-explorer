@@ -233,6 +233,9 @@ func toSettings(s app.Settings) oas.LlmSettings {
 	if s.Active != nil {
 		out.Active = oas.NewOptActiveLlm(oas.ActiveLlm{CredentialId: oas.LlmCredentialId(s.Active.CredentialID), Model: s.Active.Model})
 	}
+	if s.Haiku != nil {
+		out.Haiku = oas.NewOptActiveLlm(oas.ActiveLlm{CredentialId: oas.LlmCredentialId(s.Haiku.CredentialID), Model: s.Haiku.Model})
+	}
 	return out
 }
 

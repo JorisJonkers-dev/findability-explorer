@@ -2709,11 +2709,17 @@ components:
           $ref: "#/components/schemas/LlmChoice"
         active:
           $ref: "#/components/schemas/ActiveLlm"
+        haiku:
+          $ref: "#/components/schemas/ActiveLlm"
+          description: >-
+            The Anthropic key and Claude Haiku model that match products and read Prompt test
+            answers, instead of the active model, while an Anthropic key works - the Vault key, else
+            a stored Anthropic key whose latest test did not fail. Absent when no Anthropic key works.
         matchingEnabled:
           type: boolean
           description: >-
-            True when the next analysis will match products: a credential and model are active and
-            the credential is readable.
+            True when the next analysis will match products: on Haiku, or on the active model when
+            its credential is readable.
         budget:
           $ref: "#/components/schemas/LlmBudget"
         events:
@@ -5034,7 +5040,9 @@ components:
         extractorModel:
           type: string
           maxLength: 200
-          description: The one model that reads every answer, fixed in this release.
+          description: >-
+            The one model that reads every answer - Claude Haiku on an Anthropic key while one
+            works, else the OpenRouter model fixed in this release.
           example: google/gemini-2.5-flash-lite
         models:
           type: array

@@ -151,7 +151,14 @@ export function useActiveModel() {
     save: (body: ActiveLlm) => {
       last.value = 'save'
       notice.value = null
-      set.mutate({ body }, { onSuccess: (settings) => { store(settings, `Product matching now uses ${body.model}.`) } })
+      set.mutate({ body }, {
+        onSuccess: (settings) => {
+          const message = settings.haiku
+            ? `Saved. Scans use ${body.model} when no Anthropic key works.`
+            : `Product matching now uses ${body.model}.`
+          store(settings, message)
+        },
+      })
     },
     turnOff: () => {
       last.value = 'turnOff'

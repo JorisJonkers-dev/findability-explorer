@@ -9048,6 +9048,12 @@ func (s *LlmSettings) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Haiku.Set {
+			e.FieldStart("haiku")
+			s.Haiku.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("matchingEnabled")
 		e.Bool(s.MatchingEnabled)
 	}
@@ -9065,13 +9071,14 @@ func (s *LlmSettings) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLlmSettings = [6]string{
+var jsonFieldsNameOfLlmSettings = [7]string{
 	0: "credentials",
 	1: "choice",
 	2: "active",
-	3: "matchingEnabled",
-	4: "budget",
-	5: "events",
+	3: "haiku",
+	4: "matchingEnabled",
+	5: "budget",
+	6: "events",
 }
 
 // Decode decodes LlmSettings from json.
@@ -9121,8 +9128,18 @@ func (s *LlmSettings) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"active\"")
 			}
+		case "haiku":
+			if err := func() error {
+				s.Haiku.Reset()
+				if err := s.Haiku.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"haiku\"")
+			}
 		case "matchingEnabled":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Bool()
 				s.MatchingEnabled = bool(v)
@@ -9134,7 +9151,7 @@ func (s *LlmSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"matchingEnabled\"")
 			}
 		case "budget":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Budget.Decode(d); err != nil {
 					return err
@@ -9144,7 +9161,7 @@ func (s *LlmSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"budget\"")
 			}
 		case "events":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				s.Events = make([]LlmEvent, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -9171,7 +9188,7 @@ func (s *LlmSettings) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00111011,
+		0b01110011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

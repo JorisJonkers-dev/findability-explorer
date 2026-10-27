@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"strings"
 	"testing"
@@ -128,11 +129,16 @@ func TestSessionKeyOnALocalRun(t *testing.T) {
 	}
 }
 
-// settings is an in-memory llm Repository with one decision about the active model.
-type settings struct{ setting llmdomain.Setting }
+// settings is an in-memory llm Repository with one decision about the active model, whose list
+// of keys fails with listErr.
+type settings struct {
+	setting llmdomain.Setting
+	listErr error
+}
 
 func (s *settings) Add(context.Context, llmdomain.Credential, string) error { return nil }
-func (s *settings) List(context.Context) ([]llmdomain.Credential, error)    { return nil, nil }
+func (s *settings) List(context.Context) ([]llmdomain.Credential, error)    { return nil, s.listErr }
+
 func (s *settings) Get(context.Context, string) (llmdomain.Credential, error) {
 	return llmdomain.Credential{}, llmdomain.ErrNotFound
 }
@@ -152,21 +158,47 @@ func (s *settings) LastTests(context.Context) (map[string]llmdomain.Test, error)
 	return map[string]llmdomain.Test{}, nil
 }
 
-func TestMatchersFollowTheSettings(t *testing.T) {
+func TestMatchersPreferHaikuThenFollowTheSettings(t *testing.T) {
 	repo := &settings{}
 	svc := func(vault string) matchers {
-		return matchers{llm: llmapp.New(repo, nil, nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
+		return matchers{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
 	}
 	if m, label, err := svc("").Current(t.Context()); m != nil || label != "" || err != nil {
 		t.Fatalf("without a key: %v %q %v", m, label, err)
 	}
-	m, label, err := matchers{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: "sk-ant"}, time.Now, uuid.NewString)}.Current(t.Context())
-	if m == nil || label != "anthropic: claude-haiku-5-5" || err != nil {
+	if m, label, err := svc("sk-ant").Current(t.Context()); m == nil || label != "anthropic: claude-haiku-5-5" || err != nil {
 		t.Fatalf("by default: %v %q %v", m, label, err)
 	}
+	// Another model chosen, or matching turned off: Haiku on the Anthropic key still matches.
 	repo.setting = llmdomain.Setting{Mode: llmdomain.ModeChosen, Active: llmdomain.Active{CredentialID: "gone", Model: "m"}}
-	if m, _, err := svc("sk-ant").Current(t.Context()); m != nil || err == nil {
+	if m, label, err := svc("sk-ant").Current(t.Context()); m == nil || label != "anthropic: claude-haiku-5-5" || err != nil {
+		t.Fatalf("with another model chosen: %v %q %v", m, label, err)
+	}
+	repo.setting = llmdomain.Setting{Mode: llmdomain.ModeOff}
+	if m, _, err := svc("sk-ant").Current(t.Context()); m == nil || err != nil {
+		t.Fatalf("with matching off: %v %v", m, err)
+	}
+	// Without an Anthropic key, the chosen model matches as before.
+	repo.setting = llmdomain.Setting{Mode: llmdomain.ModeChosen, Active: llmdomain.Active{CredentialID: "gone", Model: "m"}}
+	if m, _, err := svc("").Current(t.Context()); m != nil || err == nil {
 		t.Fatalf("an unreadable key: %v %v", m, err)
+	}
+	repo.listErr = errors.New("boom")
+	if m, _, err := svc("sk-ant").Current(t.Context()); m != nil || err == nil {
+		t.Fatalf("keys that cannot be listed: %v %v", m, err)
+	}
+}
+
+func TestExtractorsAreHaikuOnAnAnthropicKey(t *testing.T) {
+	repo := &settings{}
+	svc := func(vault string) extractors {
+		return extractors{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
+	}
+	if x, model, err := svc("").Current(t.Context()); x != nil || model != "" || err != nil {
+		t.Fatalf("without a key: %v %q %v", x, model, err)
+	}
+	if x, model, err := svc("sk-ant").Current(t.Context()); x == nil || model != "anthropic: claude-haiku-5-5" || err != nil {
+		t.Fatalf("with the Vault key: %v %q %v", x, model, err)
 	}
 }
 

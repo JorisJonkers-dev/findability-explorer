@@ -4369,7 +4369,11 @@ type LlmSettings struct {
 	Credentials []LlmCredential `json:"credentials"`
 	Choice      LlmChoice       `json:"choice"`
 	Active      OptActiveLlm    `json:"active"`
-	// True when the next analysis will match products: a credential and model are active and the
+	// The Anthropic key and Claude Haiku model that match products and read Prompt test answers, instead
+	// of the active model, while an Anthropic key works - the Vault key, else a stored Anthropic key whose
+	// latest test did not fail. Absent when no Anthropic key works.
+	Haiku OptActiveLlm `json:"haiku"`
+	// True when the next analysis will match products: on Haiku, or on the active model when its
 	// credential is readable.
 	MatchingEnabled bool      `json:"matchingEnabled"`
 	Budget          LlmBudget `json:"budget"`
@@ -4390,6 +4394,11 @@ func (s *LlmSettings) GetChoice() LlmChoice {
 // GetActive returns the value of Active.
 func (s *LlmSettings) GetActive() OptActiveLlm {
 	return s.Active
+}
+
+// GetHaiku returns the value of Haiku.
+func (s *LlmSettings) GetHaiku() OptActiveLlm {
+	return s.Haiku
 }
 
 // GetMatchingEnabled returns the value of MatchingEnabled.
@@ -4420,6 +4429,11 @@ func (s *LlmSettings) SetChoice(val LlmChoice) {
 // SetActive sets the value of Active.
 func (s *LlmSettings) SetActive(val OptActiveLlm) {
 	s.Active = val
+}
+
+// SetHaiku sets the value of Haiku.
+func (s *LlmSettings) SetHaiku(val OptActiveLlm) {
+	s.Haiku = val
 }
 
 // SetMatchingEnabled sets the value of MatchingEnabled.
@@ -9555,7 +9569,8 @@ type PromptTestSettings struct {
 	NextDueAt time.Time       `json:"nextDueAt"`
 	FactSheet PromptFactSheet `json:"factSheet"`
 	PromptSet PromptSet       `json:"promptSet"`
-	// The one model that reads every answer, fixed in this release.
+	// The one model that reads every answer - Claude Haiku on an Anthropic key while one works, else the
+	// OpenRouter model fixed in this release.
 	ExtractorModel string `json:"extractorModel"`
 	// The models the latest run asked, each provider's with its fallback; empty before any run.
 	Models []PromptModelChoice `json:"models"`

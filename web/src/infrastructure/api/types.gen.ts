@@ -812,7 +812,11 @@ export type LlmSettings = {
     choice: LlmChoice;
     active?: ActiveLlm;
     /**
-     * True when the next analysis will match products: a credential and model are active and the credential is readable.
+     * The Anthropic key and Claude Haiku model that match products and read Prompt test answers, instead of the active model, while an Anthropic key works - the Vault key, else a stored Anthropic key whose latest test did not fail. Absent when no Anthropic key works.
+     */
+    haiku?: ActiveLlm;
+    /**
+     * True when the next analysis will match products: on Haiku, or on the active model when its credential is readable.
      */
     matchingEnabled: boolean;
     budget: LlmBudget;
@@ -2516,7 +2520,7 @@ export type PromptTestSettings = {
     factSheet: PromptFactSheet;
     promptSet: PromptSet;
     /**
-     * The one model that reads every answer, fixed in this release.
+     * The one model that reads every answer - Claude Haiku on an Anthropic key while one works, else the OpenRouter model fixed in this release.
      */
     extractorModel: string;
     /**

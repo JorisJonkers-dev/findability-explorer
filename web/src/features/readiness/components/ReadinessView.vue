@@ -10,13 +10,17 @@ import { hostOf } from '../../prompt-test/domain/grid'
 import SectionView from '../../shell/components/SectionView.vue'
 import { AI_SEARCH_TABS, companyPath } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
-import { useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
-import { accessMark, checkSummary, readinessHeadline, scanned, scanRange } from '../domain/overview'
+import { useMe } from '../../shell/composables/useMe'
+import { useReadinessCheck, useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
+import { accessMark, checkedAgain, checkSummary, readinessCheckLine, readinessHeadline, scanned, scanRange } from '../domain/overview'
 import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary, type ReadinessColumn, tableRows } from '../domain/readiness'
 
 const route = useRoute()
 const router = useRouter()
-const { rows, isLoading, error } = useReadinessTable()
+const { rows, check, isLoading, error } = useReadinessTable()
+const { isAdmin } = useMe()
+const { isStarting, error: checkError, start: startCheck } = useReadinessCheck()
+const checkLine = computed(() => readinessCheckLine(check.value))
 const { summary: aiSearch } = useAiSearchSummary()
 
 // Sorted by a column while one is picked; Tribelt and the mirror stay on top whatever the sort.
@@ -63,9 +67,23 @@ function pick(r: AiReadinessRow): void {
 <template>
   <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(aiSearch?.ranking ?? [])" :tabs="AI_SEARCH_TABS">
     <template v-if="!isLoading && !error" #aside>
-      <p class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">
-        {{ sites }} sites.<template v-if="scanRange(rows)"> {{ scanRange(rows) }}.</template>
-      </p>
+      <div class="flex flex-col gap-2 stage:items-end">
+        <p class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">
+          {{ sites }} sites.<template v-if="scanRange(rows)"> {{ scanRange(rows) }}.</template><template v-if="checkedAgain(rows)"> {{ checkedAgain(rows) }}.</template>
+        </p>
+        <div v-if="isAdmin" class="flex flex-wrap items-center gap-3 stage:justify-end">
+          <p v-if="checkLine" class="m-0 text-sm font-medium stage:text-[24px]" aria-live="polite">{{ checkLine }}</p>
+          <button
+            type="button"
+            class="inline-flex min-h-11 items-center rounded-full border-2 border-black bg-white px-4 text-sm font-semibold hover:bg-mist disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
+            :disabled="isStarting || check?.running"
+            @click="startCheck"
+          >
+            Check AI readiness again
+          </button>
+          <p v-if="checkError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ checkError }}</p>
+        </div>
+      </div>
     </template>
 
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>

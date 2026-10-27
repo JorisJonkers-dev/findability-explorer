@@ -708,6 +708,7 @@ export const zSiteStack = z.object({
  * What a site tells search engines and AI assistants about itself, read by a scan before its page crawl, held against the report's recommendations.
  */
 export const zAiReadiness = z.object({
+    checkedAt: z.iso.datetime({ offset: true }).max(40).optional(),
     robots: zRobotsStatus,
     bots: z.array(zBotRule).max(20),
     sitemap: zSitemapSummary,
@@ -1085,10 +1086,21 @@ export const zAiReadinessRow = z.object({
 });
 
 /**
+ * How far checking every scanned company's AI readiness again has come, or how the last check ended; all zero when none ran since the server started.
+ */
+export const zReadinessCheckState = z.object({
+    running: z.boolean(),
+    checked: z.int().gte(0).lte(1000),
+    failed: z.int().gte(0).lte(1000),
+    total: z.int().gte(0).lte(1000)
+});
+
+/**
  * Every company's AI readiness, Tribelt and the mirror first.
  */
 export const zAiReadinessTable = z.object({
-    items: z.array(zAiReadinessRow).max(10000)
+    items: z.array(zAiReadinessRow).max(10000),
+    check: zReadinessCheckState
 });
 
 /**
@@ -1811,6 +1823,11 @@ export const zCompareScansResponse = zScanComparison;
  * The table.
  */
 export const zGetAiReadinessResponse = zAiReadinessTable;
+
+/**
+ * The check is under way.
+ */
+export const zStartReadinessCheckResponse = zReadinessCheckState;
 
 /**
  * Which companies to scan again.

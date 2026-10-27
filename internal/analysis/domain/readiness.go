@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
@@ -102,6 +103,9 @@ type Readiness struct {
 	// English first.
 	Languages []string
 	Stack     Stack
+	// CheckedAt is when an administrator checked the readiness again after its scan, without a
+	// crawl; zero when the scan itself read it.
+	CheckedAt time.Time
 }
 
 // AssessReadiness reads a site's readiness files.

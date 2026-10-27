@@ -26,7 +26,7 @@ var (
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn68AllowedHeaders = map[string]string{
+	rn70AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
 	rn59AllowedHeaders = map[string]string{
@@ -38,7 +38,7 @@ var (
 	rn39AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
-	rn63AllowedHeaders = map[string]string{
+	rn65AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
@@ -687,7 +687,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn68AllowedHeaders,
+											allowedHeaders: rn70AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -842,29 +842,68 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						}
 
-					case 'r': // Prefix: "rescans"
+					case 'r': // Prefix: "re"
 
-						if l := len("rescans"); len(elem) >= l && elem[0:l] == "rescans" {
+						if l := len("re"); len(elem) >= l && elem[0:l] == "re" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "POST":
-								s.handleStartRescansRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "POST",
-									allowedHeaders: rn63AllowedHeaders,
-									acceptPost:     "application/json",
-									acceptPatch:    "",
-								})
+							break
+						}
+						switch elem[0] {
+						case 'a': // Prefix: "adiness-checks"
+
+							if l := len("adiness-checks"); len(elem) >= l && elem[0:l] == "adiness-checks" {
+								elem = elem[l:]
+							} else {
+								break
 							}
 
-							return
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleStartReadinessCheckRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						case 's': // Prefix: "scans"
+
+							if l := len("scans"); len(elem) >= l && elem[0:l] == "scans" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleStartRescansRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn65AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
 						}
 
 					case 't': // Prefix: "term-candidates"
@@ -2415,29 +2454,68 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 						}
 
-					case 'r': // Prefix: "rescans"
+					case 'r': // Prefix: "re"
 
-						if l := len("rescans"); len(elem) >= l && elem[0:l] == "rescans" {
+						if l := len("re"); len(elem) >= l && elem[0:l] == "re" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "POST":
-								r.name = StartRescansOperation
-								r.summary = "Re-scan companies"
-								r.operationID = "startRescans"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/admin/rescans"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
+							break
+						}
+						switch elem[0] {
+						case 'a': // Prefix: "adiness-checks"
+
+							if l := len("adiness-checks"); len(elem) >= l && elem[0:l] == "adiness-checks" {
+								elem = elem[l:]
+							} else {
+								break
 							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = StartReadinessCheckOperation
+									r.summary = "Check every scanned company's AI readiness again"
+									r.operationID = "startReadinessCheck"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/admin/readiness-checks"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
+						case 's': // Prefix: "scans"
+
+							if l := len("scans"); len(elem) >= l && elem[0:l] == "scans" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = StartRescansOperation
+									r.summary = "Re-scan companies"
+									r.operationID = "startRescans"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/admin/rescans"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
 						}
 
 					case 't': // Prefix: "term-candidates"

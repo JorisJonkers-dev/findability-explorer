@@ -26,6 +26,8 @@ type UseCases interface {
 	Compare(ctx context.Context, competitorID string, from, to uuid.UUID) (domain.Comparison, error)
 	ReadinessTable(ctx context.Context) ([]domain.ReadinessRow, error)
 	ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.RawFiles, error)
+	StartReadinessCheck(ctx context.Context) (app.ReadinessCheck, error)
+	ReadinessCheckState() app.ReadinessCheck
 }
 
 // Handler implements the analysis operations. Business rules stay in the use cases.
@@ -192,7 +194,7 @@ func (h *Handler) GetAiReadiness(ctx context.Context) (oas.GetAiReadinessRes, er
 	if err != nil {
 		return nil, err
 	}
-	out := &oas.AiReadinessTable{Items: make([]oas.AiReadinessRow, 0, len(rows))}
+	out := &oas.AiReadinessTable{Items: make([]oas.AiReadinessRow, 0, len(rows)), Check: toCheck(h.uc.ReadinessCheckState())}
 	for _, r := range rows {
 		row := oas.AiReadinessRow{CompetitorId: oas.CompetitorId(r.Company.ID), Name: r.Company.Name, Role: oas.CompanyRole(r.Company.Role)}
 		if r.Scan != nil {
@@ -204,6 +206,23 @@ func (h *Handler) GetAiReadiness(ctx context.Context) (oas.GetAiReadinessRes, er
 		out.Items = append(out.Items, row)
 	}
 	return out, nil
+}
+
+// StartReadinessCheck implements startReadinessCheck.
+func (h *Handler) StartReadinessCheck(ctx context.Context) (oas.StartReadinessCheckRes, error) {
+	c, err := h.uc.StartReadinessCheck(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := toCheck(c)
+	return &out, nil
+}
+
+func toCheck(c app.ReadinessCheck) oas.ReadinessCheckState {
+	return oas.ReadinessCheckState{
+		Running: c.Running, Checked: int32(min(c.Checked, 1000)), Failed: int32(min(c.Failed, 1000)), //nolint:gosec // capped
+		Total: int32(min(c.Total, 1000)), //nolint:gosec // capped
+	}
 }
 
 // GetReadinessFiles implements getReadinessFiles.
@@ -242,8 +261,12 @@ func toReadiness(r domain.Readiness) oas.AiReadiness {
 	if r.Stack.BotProtection != "" {
 		stack.BotProtection = oas.NewOptString(r.Stack.BotProtection)
 	}
+	var checked oas.OptDateTime
+	if !r.CheckedAt.IsZero() {
+		checked = oas.NewOptDateTime(r.CheckedAt)
+	}
 	return oas.AiReadiness{
-		Robots: oas.RobotsStatus(r.Robots), Bots: bots,
+		CheckedAt: checked, Robots: oas.RobotsStatus(r.Robots), Bots: bots,
 		Sitemap: oas.SitemapSummary{
 			Declared: r.Sitemap.Declared, Files: int32(r.Sitemap.Files), //nolint:gosec // at most 10
 			Addresses: int32(min(r.Sitemap.Addresses, 1_000_000)), Languages: orEmpty(r.Sitemap.Languages), //nolint:gosec // capped

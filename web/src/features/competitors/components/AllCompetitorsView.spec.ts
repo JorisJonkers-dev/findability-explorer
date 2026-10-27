@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { competitor, me, promptResults, readiness, readinessRow, summary } from '../../../testing/fixtures'
+import { competitor, me, promptResults, readiness, readinessRow, summary, readinessTable } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 function api(admin = false, extra: Record<string, Handler> = {}) {
@@ -17,7 +17,7 @@ function api(admin = false, extra: Record<string, Handler> = {}) {
           competitor('Gone', { archived: true }),
         ],
       }),
-    'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { readiness: readiness({ markdown: false }) })] }),
+    'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Twentebelt', { readiness: readiness({ markdown: false }) })])),
     'GET /api/v1/prompt-test': () => json(promptResults()),
     'GET /api/v1/terms': () => json({ items: [], total: 0, facets: { languages: [], families: [], tiers: [] } }),
     ...extra,

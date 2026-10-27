@@ -1,16 +1,16 @@
 import { flushPromises } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { readinessRow } from '../../../testing/fixtures'
+import { readinessRow, readinessTable } from '../../../testing/fixtures'
 import { json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
-import { useReadinessFiles, useReadinessTable } from './useReadiness'
+import { CHECK_POLL_MS, useReadinessCheck, useReadinessFiles, useReadinessTable } from './useReadiness'
 
 const SCAN = '5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c'
 
 describe('useReadinessTable', () => {
   it('loads every row once, and finds one company in it', async () => {
-    const { state, sent } = mountComposable(useReadinessTable, routes({ 'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt')] }) }))
+    const { state, sent } = mountComposable(useReadinessTable, routes({ 'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Twentebelt')])) }))
     expect(state.rows.value).toEqual([])
     expect(state.rowOf('twentebelt')).toBeUndefined()
     await flushPromises()
@@ -67,5 +67,54 @@ describe('useReadinessFiles', () => {
     await flushPromises()
     expect(failed.state.missing.value).toBe(false)
     expect(failed.state.error.value).toContain('Down.')
+  })
+})
+
+describe('useReadinessCheck', () => {
+  it('starts a check, then reads the table again', async () => {
+    const { state, sent } = mountComposable(
+      () => ({ table: useReadinessTable(), check: useReadinessCheck() }),
+      routes({
+        'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Twentebelt')])),
+        'POST /api/v1/admin/readiness-checks': () => json({ running: true, checked: 0, failed: 0, total: 1 }, 202),
+      }),
+    )
+    await flushPromises()
+    expect(state.table.check.value).toEqual({ running: false, checked: 0, failed: 0, total: 0 })
+    state.check.start()
+    await flushPromises()
+    expect(sent).toEqual(['GET /api/v1/ai-readiness', 'POST /api/v1/admin/readiness-checks', 'GET /api/v1/ai-readiness'])
+    expect(state.check.error.value).toBeNull()
+  })
+
+  it('reads the table again and again while a check runs', async () => {
+    vi.useFakeTimers()
+    try {
+      let reads = 0
+      const { state } = mountComposable(
+        useReadinessTable,
+        routes({
+          'GET /api/v1/ai-readiness': () => {
+            reads++
+            return json(readinessTable([], { running: reads < 2, checked: reads, total: 2 }))
+          },
+        }),
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      expect(state.check.value?.running).toBe(true)
+      await vi.advanceTimersByTimeAsync(CHECK_POLL_MS)
+      expect(state.check.value?.running).toBe(false)
+      await vi.advanceTimersByTimeAsync(CHECK_POLL_MS * 2)
+      expect(reads).toBe(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a check that cannot start', async () => {
+    const { state } = mountComposable(useReadinessCheck, routes({ 'POST /api/v1/admin/readiness-checks': () => problem(403, 'Forbidden') }))
+    state.start()
+    await flushPromises()
+    expect(state.error.value).not.toBeNull()
   })
 })

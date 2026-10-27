@@ -78,6 +78,7 @@ var operationRolesSessionCookie = map[string][]string{
 	StartAnalysisOperation:              []string{},
 	StartCandidateReviewOperation:       []string{},
 	StartPromptRunOperation:             []string{},
+	StartReadinessCheckOperation:        []string{},
 	StartRescansOperation:               []string{},
 	StartTermReviewOperation:            []string{},
 	TestLlmCredentialOperation:          []string{},

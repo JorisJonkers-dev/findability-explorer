@@ -45,6 +45,9 @@ type analyses struct {
 	readinessRows    []domain.ReadinessRow
 	readinessErr     error
 	rawFiles         map[uuid.UUID]domain.RawFiles
+	// check is the readiness check's state; checkErr fails starting one.
+	check    analysisapp.ReadinessCheck
+	checkErr error
 	// promptTest stands in for the prompt-test use cases; a fresh one when nil.
 	promptTest *promptTests
 	// insight stands in for the insight use cases; a fresh one when nil.

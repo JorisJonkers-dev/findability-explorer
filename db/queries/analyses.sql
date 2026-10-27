@@ -201,9 +201,14 @@ ORDER BY a.created_at, a.id, k.position;
 INSERT INTO analysis_readiness (
     analysis_id, robots, sitemap_declared, sitemap_files, sitemap_addresses, sitemap_languages, llms_present,
     llms_bytes, llms_links, llms_full_present, markdown, home_read, structured_data, languages, cms, seo_plugin,
-    bot_protection
+    bot_protection, checked_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18);
+
+-- name: DeleteAnalysisReadiness :exec
+-- Drops an analysis's readiness, its crawler rules and raw files, so a new check can replace it.
+DELETE FROM analysis_readiness
+WHERE analysis_id = $1;
 
 -- name: AddAnalysisBotRule :exec
 INSERT INTO analysis_bot_rules (analysis_id, position, bot, access, named)
@@ -219,7 +224,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7);
 -- An analysis's readiness, or no row when it has none.
 SELECT analysis_id, robots, sitemap_declared, sitemap_files, sitemap_addresses, sitemap_languages, llms_present,
     llms_bytes, llms_links, llms_full_present, markdown, home_read, structured_data, languages, cms, seo_plugin,
-    bot_protection
+    bot_protection, checked_at
 FROM analysis_readiness
 WHERE analysis_id = $1;
 
@@ -242,7 +247,7 @@ SELECT DISTINCT ON (a.competitor_id) a.competitor_id::text AS competitor_id, a.i
     coalesce(a.scan_number, 0)::bigint AS scan_number,
     r.robots, r.sitemap_declared, r.sitemap_files, r.sitemap_addresses, r.sitemap_languages, r.llms_present,
     r.llms_bytes, r.llms_links, r.llms_full_present, r.markdown, r.home_read, r.structured_data, r.languages, r.cms,
-    r.seo_plugin, r.bot_protection
+    r.seo_plugin, r.bot_protection, r.checked_at
 FROM analyses AS a
 JOIN analysis_readiness AS r ON r.analysis_id = a.id
 WHERE a.competitor_id IS NOT NULL

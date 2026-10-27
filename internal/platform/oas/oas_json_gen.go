@@ -134,6 +134,12 @@ func (s *AiReadiness) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *AiReadiness) encodeFields(e *jx.Encoder) {
 	{
+		if s.CheckedAt.Set {
+			e.FieldStart("checkedAt")
+			s.CheckedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
 		e.FieldStart("robots")
 		s.Robots.Encode(e)
 	}
@@ -199,19 +205,20 @@ func (s *AiReadiness) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfAiReadiness = [12]string{
-	0:  "robots",
-	1:  "bots",
-	2:  "sitemap",
-	3:  "llmsTxt",
-	4:  "llmsFullTxt",
-	5:  "markdown",
-	6:  "homeRead",
-	7:  "structuredData",
-	8:  "languages",
-	9:  "stack",
-	10: "advice",
-	11: "gaps",
+var jsonFieldsNameOfAiReadiness = [13]string{
+	0:  "checkedAt",
+	1:  "robots",
+	2:  "bots",
+	3:  "sitemap",
+	4:  "llmsTxt",
+	5:  "llmsFullTxt",
+	6:  "markdown",
+	7:  "homeRead",
+	8:  "structuredData",
+	9:  "languages",
+	10: "stack",
+	11: "advice",
+	12: "gaps",
 }
 
 // Decode decodes AiReadiness from json.
@@ -223,8 +230,18 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "checkedAt":
+			if err := func() error {
+				s.CheckedAt.Reset()
+				if err := s.CheckedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"checkedAt\"")
+			}
 		case "robots":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				if err := s.Robots.Decode(d); err != nil {
 					return err
@@ -234,7 +251,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"robots\"")
 			}
 		case "bots":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				s.Bots = make([]BotRule, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -252,7 +269,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"bots\"")
 			}
 		case "sitemap":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.Sitemap.Decode(d); err != nil {
 					return err
@@ -262,7 +279,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"sitemap\"")
 			}
 		case "llmsTxt":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.LlmsTxt.Decode(d); err != nil {
 					return err
@@ -272,7 +289,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"llmsTxt\"")
 			}
 		case "llmsFullTxt":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Bool()
 				s.LlmsFullTxt = bool(v)
@@ -284,7 +301,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"llmsFullTxt\"")
 			}
 		case "markdown":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Bool()
 				s.Markdown = bool(v)
@@ -296,7 +313,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"markdown\"")
 			}
 		case "homeRead":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Bool()
 				s.HomeRead = bool(v)
@@ -308,7 +325,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"homeRead\"")
 			}
 		case "structuredData":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				s.StructuredData = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -328,7 +345,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"structuredData\"")
 			}
 		case "languages":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				s.Languages = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -348,7 +365,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"languages\"")
 			}
 		case "stack":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.Stack.Decode(d); err != nil {
 					return err
@@ -358,7 +375,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"stack\"")
 			}
 		case "advice":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				s.Advice = make([]ReadinessAdvice, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -376,7 +393,7 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"advice\"")
 			}
 		case "gaps":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int32()
 				s.Gaps = int32(v)
@@ -397,8 +414,8 @@ func (s *AiReadiness) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b11111111,
-		0b00001111,
+		0b11111110,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -746,10 +763,15 @@ func (s *AiReadinessTable) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		e.FieldStart("check")
+		s.Check.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfAiReadinessTable = [1]string{
+var jsonFieldsNameOfAiReadinessTable = [2]string{
 	0: "items",
+	1: "check",
 }
 
 // Decode decodes AiReadinessTable from json.
@@ -779,6 +801,16 @@ func (s *AiReadinessTable) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"items\"")
 			}
+		case "check":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Check.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"check\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -789,7 +821,7 @@ func (s *AiReadinessTable) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -18682,6 +18714,153 @@ func (s ReadinessCheck) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ReadinessCheck) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *ReadinessCheckState) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ReadinessCheckState) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("running")
+		e.Bool(s.Running)
+	}
+	{
+		e.FieldStart("checked")
+		e.Int32(s.Checked)
+	}
+	{
+		e.FieldStart("failed")
+		e.Int32(s.Failed)
+	}
+	{
+		e.FieldStart("total")
+		e.Int32(s.Total)
+	}
+}
+
+var jsonFieldsNameOfReadinessCheckState = [4]string{
+	0: "running",
+	1: "checked",
+	2: "failed",
+	3: "total",
+}
+
+// Decode decodes ReadinessCheckState from json.
+func (s *ReadinessCheckState) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ReadinessCheckState to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "running":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.Running = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"running\"")
+			}
+		case "checked":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int32()
+				s.Checked = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"checked\"")
+			}
+		case "failed":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int32()
+				s.Failed = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"failed\"")
+			}
+		case "total":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Int32()
+				s.Total = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ReadinessCheckState")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfReadinessCheckState) {
+					name = jsonFieldsNameOfReadinessCheckState[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ReadinessCheckState) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ReadinessCheckState) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

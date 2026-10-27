@@ -61,6 +61,7 @@ type Service struct {
 	now       func() time.Time
 	limits    Limits
 	queue     *queue
+	check     readinessCheck
 }
 
 // New returns a Service. matchers names the matcher each analysis uses when it runs.

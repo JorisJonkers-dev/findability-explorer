@@ -1,6 +1,7 @@
 import type {
   AiReadiness,
   AiReadinessRow,
+  AiReadinessTable,
   Analysis,
   AnalysisSummary,
   BotRule,
@@ -165,6 +166,11 @@ export function readiness(overrides: Partial<AiReadiness> = {}): AiReadiness {
 /** A row of the AI readiness table. */
 export function readinessRow(name: string, overrides: Partial<AiReadinessRow> = {}): AiReadinessRow {
   return { competitorId: slug(name), name, role: 'competitor', scan: summary({ competitorId: slug(name) }), readiness: readiness(), ...overrides }
+}
+
+/** The AI readiness table of rows, with no readiness check run since the server started. */
+export function readinessTable(items: AiReadinessRow[], check: Partial<AiReadinessTable['check']> = {}): AiReadinessTable {
+  return { items, check: { running: false, checked: 0, failed: 0, total: 0, ...check } }
 }
 
 export const RUN_ID = '9d8e7f6a-5b4c-4d3e-8f2a-1b0c9d8e7f6a'

@@ -5,6 +5,7 @@ import {
   averageCost,
   retryPlan,
   byKey,
+  cellLabel,
   columnsOf,
   counts,
   excerpt,
@@ -13,41 +14,92 @@ import {
   hostOf,
   isTribeltSite,
   keyOf,
+  LEGEND,
+  markOf,
+  MODE_COLUMNS,
   MODE_FILTERS,
   mostNamed,
+  ordinal,
   parseFilter,
   PLACE_ORDER,
   PLACES,
   placeOf,
   rowsOf,
   SCOPE_FILTERS,
+  saysOf,
+  type Square,
+  squareOf,
   toCsv,
   tribeltPosition,
 } from './grid'
 
+/** An answer that puts Tribelt at a place in its list, from 1. */
+const at = (position: number) => promptAnswer({}, [...Array.from({ length: position - 1 }, (_, i) => `C${String(i)}`), 'Tribelt:tribelt'])
+
 describe("Tribelt's place in an answer", () => {
-  it('is first, second or third, later, not named, or there is no answer', () => {
-    expect(placeOf(promptAnswer({}, ['Tribelt:tribelt']))).toBe('first')
-    expect(placeOf(promptAnswer({}, ['A:a', 'Tribelt:tribelt']))).toBe('top3')
-    expect(placeOf(promptAnswer({}, ['A:a', 'B', 'C', 'Tribelt:tribelt']))).toBe('later')
+  it('is first, second or third, later, named without a place, not named, or there is no answer', () => {
+    expect(placeOf(at(1))).toBe('first')
+    expect(placeOf(at(2))).toBe('top3')
+    expect(placeOf(at(4))).toBe('later')
+    expect(placeOf(promptAnswer({}, ['A:a'], { namesTribelt: true }))).toBe('unplaced')
     expect(placeOf(promptAnswer({}, ['A:a']))).toBe('none')
     expect(placeOf(promptAnswer({ failure: 'Rate limited.', extraction: undefined }))).toBe('missing')
     expect(placeOf(undefined)).toBe('missing')
     expect(placeOf(promptAnswer({}, [], { failed: true }))).toBe('missing')
+    expect(counts(undefined)).toBe(false)
   })
 
-  it('counts an answer that names Tribelt without a place as later', () => {
+  it('marks a named square with its place in the list, and the others with a symbol', () => {
+    expect([1, 2, 3, 4, 7, 30].map((p) => markOf(squareOf(at(p))))).toEqual(['1', '2', '3', '4', '7', '30'])
     const named = promptAnswer({}, ['A:a'], { namesTribelt: true })
     expect(tribeltPosition(named)).toBeUndefined()
-    expect(placeOf(named)).toBe('later')
-    expect(PLACES.later.mark(undefined)).toBe('+')
-    expect(PLACES.later.mark(5)).toBe('5')
-    expect(PLACES.top3.mark(undefined)).toBe('')
+    expect(markOf(squareOf(named))).toBe('?')
+    expect(markOf({ place: 'none' })).toBe('–')
+    expect(markOf({ place: 'missing' })).toBe('✕')
   })
 
-  it('marks every place differently, in the legend order', () => {
-    expect(PLACE_ORDER.map((p) => PLACES[p].mark(2))).toEqual(['1', '2', '2', '–', '✕'])
-    expect(counts(undefined)).toBe(false)
+  it('says each square in words', () => {
+    const squares: Square[] = [{ place: 'first', position: 1 }, { place: 'top3', position: 2 }, { place: 'later', position: 11 }, { place: 'unplaced' }, { place: 'none' }, { place: 'missing' }]
+    expect(squares.map(saysOf)).toEqual([
+      'Tribelt named first',
+      'Tribelt named 2nd',
+      'Tribelt named 11th',
+      'Tribelt named, place unknown',
+      'Tribelt not named',
+      'No answer, the model gave none or it could not be read',
+    ])
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 30].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '30th'])
+    const row = { family: 'eyelink' as const, scope: 'twente' as const }
+    expect(cellLabel(row, { name: 'OpenAI', mode: 'knowledge' }, squareOf(at(4)))).toBe('OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 4th')
+    expect(cellLabel(row, { name: 'Google', mode: 'web' }, { place: 'none' })).toBe('Google, with web search, Eyelink, Twente (Dutch): Tribelt not named')
+  })
+
+  it('has a legend entry for every mark a square can show, with the same text and look', () => {
+    const answers = [
+      ...Array.from({ length: 30 }, (_, i) => at(i + 1)),
+      promptAnswer({}, ['A:a'], { namesTribelt: true }),
+      promptAnswer({}, ['A:a']),
+      promptAnswer({ failure: 'Rate limited.', extraction: undefined }),
+      promptAnswer({}, [], { failed: true }),
+      undefined,
+    ]
+    expect(new Set(answers.map(placeOf))).toEqual(new Set(PLACE_ORDER))
+    for (const a of answers) {
+      const square = squareOf(a)
+      const entry = LEGEND.find((s) => s.place === square.place) as Square
+      expect(PLACES[entry.place].cell).toBe(PLACES[square.place].cell)
+      if ('position' in square) expect(markOf(entry)).toMatch(/^\d+$/)
+      else expect(markOf(entry)).toBe(markOf(square))
+    }
+    // Each numbered example sits in its own tier: the legend's "4" is a real 4th place.
+    for (const s of LEGEND) if ('position' in s) expect(squareOf(at(s.position))).toEqual(s)
+    expect(PLACE_ORDER).toEqual(['first', 'top3', 'later', 'unplaced', 'none', 'missing'])
+    expect(LEGEND.map(markOf)).toEqual(['1', '2', '4', '?', '–', '✕'])
+    expect(new Set(PLACE_ORDER.map((p) => PLACES[p].cell)).size).toBe(PLACE_ORDER.length)
+  })
+
+  it('names both columns of a provider in full', () => {
+    expect(MODE_COLUMNS).toEqual({ knowledge: { short: 'Own', long: 'Own knowledge' }, web: { short: 'Web', long: 'With web search' } })
   })
 })
 

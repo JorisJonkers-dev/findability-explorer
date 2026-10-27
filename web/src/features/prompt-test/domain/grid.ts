@@ -1,23 +1,46 @@
 import type { PromptAnswer, PromptFamily, PromptMode, PromptRun, PromptScope } from '../../../infrastructure/api/types.gen'
-import { FAMILIES, providerName, SCOPES } from './results'
+import { FAMILIES, familyName, providerName, SCOPES, scopeName } from './results'
 
 /** Tribelt's id among the companies. */
 export const TRIBELT_ID = 'tribelt'
 
-/** Where an answer puts Tribelt: first, second or third, later, not at all, or there is no answer to read. */
-export type Place = 'first' | 'top3' | 'later' | 'none' | 'missing'
+/** Where an answer puts Tribelt: first, second or third, fourth or later, named without a place, not at all, or there is no answer to read. */
+export type Place = 'first' | 'top3' | 'later' | 'unplaced' | 'none' | 'missing'
 
-/** How each place looks in the grid and its legend: a fill, and a mark that tells it apart without colour. */
-export const PLACES: Record<Place, { label: string; cell: string; mark: (position: number | undefined) => string }> = {
-  first: { label: 'Tribelt named first', cell: 'border-orange bg-orange text-black', mark: () => '1' },
-  top3: { label: '2nd or 3rd', cell: 'border-orange-soft bg-orange-soft text-black', mark: (p) => String(p ?? '') },
-  later: { label: '4th or later', cell: 'border-orange-soft bg-orange-pale text-ink-2', mark: (p) => (p === undefined ? '+' : String(p)) },
-  none: { label: 'Not named', cell: 'border-grey bg-grey text-muted', mark: () => '–' },
-  missing: { label: 'No answer', cell: 'border-dashed border-silver bg-white text-orange-ink', mark: () => '✕' },
+/** The places that come with Tribelt's place in the answer's list of companies. */
+type Ranked = 'first' | 'top3' | 'later'
+
+/** What one square in the grid shows: where the answer puts Tribelt, and its place in the list when it has one. */
+export type Square = { place: Ranked; position: number } | { place: Exclude<Place, Ranked> }
+
+/** The size and shape of every square, in the grid and in its legend alike. */
+export const SQUARE = 'mx-auto flex size-9 shrink-0 items-center justify-center rounded border-2 font-semibold stage:size-16 stage:rounded-lg stage:text-[24px]'
+
+/** How each place looks and what the legend says about it. */
+export const PLACES: Record<Place, { label: string; cell: string }> = {
+  first: { label: 'Tribelt named first', cell: 'border-orange bg-orange text-black' },
+  top3: { label: 'Named 2nd or 3rd', cell: 'border-orange-soft bg-orange-soft text-black' },
+  later: { label: 'Named 4th or later', cell: 'border-orange-soft bg-orange-pale text-ink-2' },
+  unplaced: { label: 'Named, place unknown', cell: 'border-orange-soft bg-white text-ink-2' },
+  none: { label: 'Not named', cell: 'border-grey bg-grey text-muted' },
+  missing: { label: 'No answer. The model gave none, or it could not be read.', cell: 'border-dashed border-silver bg-white text-orange-ink' },
 }
 
+/** The mark of each place that has no number in it. */
+const SYMBOLS: Record<Exclude<Place, Ranked>, string> = { unplaced: '?', none: '–', missing: '✕' }
+
+/** The legend: one example square per place, in the legend's order. */
+export const LEGEND: readonly Square[] = [
+  { place: 'first', position: 1 },
+  { place: 'top3', position: 2 },
+  { place: 'later', position: 4 },
+  { place: 'unplaced' },
+  { place: 'none' },
+  { place: 'missing' },
+]
+
 /** The legend's order. */
-export const PLACE_ORDER: readonly Place[] = ['first', 'top3', 'later', 'none', 'missing']
+export const PLACE_ORDER: readonly Place[] = LEGEND.map((s) => s.place)
 
 /** Whether an answer counts: it was answered and read. */
 export function counts(a: PromptAnswer | undefined): a is PromptAnswer & { extraction: NonNullable<PromptAnswer['extraction']> } {
@@ -29,13 +52,53 @@ export function tribeltPosition(a: PromptAnswer): number | undefined {
   return a.extraction?.companies.find((c) => c.competitorId === TRIBELT_ID)?.position
 }
 
+/** The square of an answer: where it puts Tribelt, with its place in the list. */
+export function squareOf(a: PromptAnswer | undefined): Square {
+  if (!counts(a)) return { place: 'missing' }
+  const position = tribeltPosition(a)
+  if (position === undefined) return { place: a.extraction.namesTribelt ? 'unplaced' : 'none' }
+  if (position === 1) return { place: 'first', position }
+  return { place: position <= 3 ? 'top3' : 'later', position }
+}
+
 /** Where an answer puts Tribelt. */
 export function placeOf(a: PromptAnswer | undefined): Place {
-  if (!counts(a)) return 'missing'
-  const position = tribeltPosition(a)
-  if (position === undefined) return a.extraction.namesTribelt ? 'later' : 'none'
-  if (position === 1) return 'first'
-  return position <= 3 ? 'top3' : 'later'
+  return squareOf(a).place
+}
+
+/** The mark in a square: Tribelt's place in the list, or a symbol when it has none. */
+export function markOf(s: Square): string {
+  return 'position' in s ? String(s.position) : SYMBOLS[s.place]
+}
+
+/** A place in words: "1st", "2nd", "3rd", "4th", "11th", "22nd". */
+export function ordinal(n: number): string {
+  const teen = n % 100 >= 11 && n % 100 <= 13
+  const suffix = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'
+  return `${String(n)}${suffix}`
+}
+
+/** What a square says in words: "Tribelt named 4th", "Tribelt not named". */
+export function saysOf(s: Square): string {
+  switch (s.place) {
+    case 'first':
+      return 'Tribelt named first'
+    case 'top3':
+    case 'later':
+      return `Tribelt named ${ordinal(s.position)}`
+    case 'unplaced':
+      return 'Tribelt named, place unknown'
+    case 'none':
+      return 'Tribelt not named'
+    case 'missing':
+      return 'No answer, the model gave none or it could not be read'
+  }
+}
+
+/** Each search mode's column, as its header shows it and in full. */
+export const MODE_COLUMNS: Record<PromptMode, { short: string; long: string }> = {
+  knowledge: { short: 'Own', long: 'Own knowledge' },
+  web: { short: 'Web', long: 'With web search' },
 }
 
 /** A grid column: one provider in one mode. */
@@ -60,6 +123,11 @@ export function rowsOf(answers: readonly PromptAnswer[], scope: PromptScope | 'a
   }
   const order = (family: PromptFamily, s: PromptScope) => FAMILIES.findIndex((f) => f.value === family) * 10 + SCOPES.findIndex((x) => x.value === s)
   return [...rows.values()].sort((a, b) => order(a.family, a.scope) - order(b.family, b.scope))
+}
+
+/** A square's full description, for hover and screen readers: "OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 4th". */
+export function cellLabel(row: Pick<Row, 'family' | 'scope'>, column: Pick<Column, 'name' | 'mode'>, square: Square): string {
+  return `${column.name}, ${MODE_COLUMNS[column.mode].long.toLowerCase()}, ${familyName(row.family)}, ${scopeName(row.scope)}: ${saysOf(square)}`
 }
 
 /** The key of one answer in a run: its question, provider and mode. */
@@ -171,7 +239,7 @@ export function isTribeltSite(address: string): boolean {
   return host === 'tribelt.nl' || host.endsWith('.tribelt.nl')
 }
 
-const PLACE_CSV: Record<Place, string> = { first: 'first', top3: 'second or third', later: 'later', none: 'not named', missing: 'no answer' }
+const PLACE_CSV: Record<Place, string> = { first: 'first', top3: 'second or third', later: 'later', unplaced: 'named, place unknown', none: 'not named', missing: 'no answer' }
 
 function csvCell(value: string | number): string {
   const text = String(value)

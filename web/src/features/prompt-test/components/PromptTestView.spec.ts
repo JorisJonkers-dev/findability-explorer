@@ -46,8 +46,8 @@ describe('the Prompt test grid', () => {
     expect(wrapper.get('h1').text()).toBe('Twente buyers hear of Tribelt. Everyone else hears of Twentebelt.')
     expect(wrapper.findAll('tbody th').map((th) => th.text())).toEqual(['EyelinkTwente (Dutch)', 'EyelinkGerman, no region'])
     expect(squares(wrapper).map((b) => b.text())).toEqual(['1', '3', '✕', '✕', '✕', '✕', '✕', '–'])
-    expect(squares(wrapper)[1]?.attributes('aria-label')).toBe('Eyelink, Twente (Dutch), OpenAI with web search: Tribelt named 3')
-    expect(squares(wrapper)[2]?.attributes('aria-label')).toBe('Eyelink, Twente (Dutch), Google from its own knowledge: No answer')
+    expect(squares(wrapper)[1]?.attributes('aria-label')).toBe('OpenAI, with web search, Eyelink, Twente (Dutch): Tribelt named 3rd')
+    expect(squares(wrapper)[2]?.attributes('aria-label')).toBe('Google, own knowledge, Eyelink, Twente (Dutch): No answer, the model gave none or it could not be read')
     expect(wrapper.get('ul[aria-label="Legend"]').text()).toContain('Tribelt named first')
     expect(wrapper.findAll('dl > div').map((d) => `${d.get('dd').text()} ${d.get('dt').text()}`)).toEqual([
       '67% of answers name Tribelt',

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PromptAnswer, PromptMode, PromptRun, PromptScope } from '../../../infrastructure/api/types.gen'
-import { byKey, type Column, columnsOf, keyOf, MODE_FILTERS, PLACE_ORDER, PLACES, placeOf, type Row, rowsOf, SCOPE_FILTERS, tribeltPosition } from '../domain/grid'
-import { familyName, modeName, scopeName } from '../domain/results'
+import { byKey, cellLabel, type Column, columnsOf, keyOf, LEGEND, markOf, MODE_COLUMNS, MODE_FILTERS, PLACES, type Row, rowsOf, SCOPE_FILTERS, SQUARE, squareOf } from '../domain/grid'
+import { familyName, scopeName } from '../domain/results'
 
 const props = defineProps<{
   run: PromptRun
@@ -15,18 +15,14 @@ const emit = defineEmits<{ mode: [PromptMode | 'all']; scope: [PromptScope | 'al
 
 const columns = computed(() => columnsOf(props.run, props.mode))
 const providers = computed(() => columnsOf(props.run, 'knowledge'))
+const modes = computed(() => (props.mode === 'all' ? (['knowledge', 'web'] as const) : [props.mode]))
 const found = computed(() => byKey(props.answers))
 const grid = computed(() => rowsOf(props.answers, props.scope).map((row) => ({ row, cells: columns.value.map((c) => cellOf(row, c)) })))
-const SHORT_MODE: Record<PromptMode, string> = { knowledge: 'Own', web: 'Web' }
 
 function cellOf(row: Row, column: Column) {
   const key = keyOf({ promptId: row.promptId, provider: column.provider, mode: column.mode })
-  const answer = found.value.get(key)
-  const place = placeOf(answer)
-  const position = answer ? tribeltPosition(answer) : undefined
-  const where = `${familyName(row.family)}, ${scopeName(row.scope)}, ${column.name} ${modeName(column.mode).toLowerCase()}`
-  const what = place === 'top3' || (place === 'later' && position !== undefined) ? `Tribelt named ${String(position)}` : PLACES[place].label
-  return { key, place, mark: PLACES[place].mark(position), label: `${where}: ${what}` }
+  const square = squareOf(found.value.get(key))
+  return { key, place: square.place, mark: markOf(square), label: cellLabel(row, column, square) }
 }
 </script>
 
@@ -60,12 +56,14 @@ function cellOf(row: Row, column: Column) {
         </button>
       </div>
     </div>
-    <ul aria-label="Legend" class="m-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0 text-sm text-ink-2 stage:gap-x-8 stage:text-[24px]">
-      <li v-for="p in PLACE_ORDER" :key="p" class="inline-flex items-center gap-2">
-        <span aria-hidden="true" class="inline-flex size-6 items-center justify-center rounded border-2 text-xs font-semibold stage:size-9 stage:text-[20px]" :class="PLACES[p].cell">{{
-          PLACES[p].mark(2)
-        }}</span>
-        {{ PLACES[p].label }}
+    <ul aria-label="Legend" class="m-0 flex list-none flex-wrap items-center gap-x-5 gap-y-2 p-0 text-sm text-ink-2 stage:gap-x-8 stage:text-[24px]">
+      <li v-for="s in LEGEND" :key="s.place" class="inline-flex items-center gap-2">
+        <span aria-hidden="true" :class="[SQUARE, PLACES[s.place].cell]">{{ markOf(s) }}</span>
+        {{ PLACES[s.place].label }}
+      </li>
+      <li v-for="m in modes" :key="m" class="inline-flex items-center gap-2">
+        <span aria-hidden="true" class="text-xs font-medium text-muted stage:text-[20px]">{{ MODE_COLUMNS[m].short }}</span>
+        {{ MODE_COLUMNS[m].long }}
       </li>
     </ul>
     <div class="overflow-x-auto stage:min-h-0 stage:overflow-y-auto">
@@ -92,8 +90,8 @@ function cellOf(row: Row, column: Column) {
           </tr>
           <tr>
             <td></td>
-            <th v-for="c in columns" :key="`${c.provider}-${c.mode}`" scope="col" class="text-center text-xs font-medium text-muted stage:text-[20px]">
-              {{ SHORT_MODE[c.mode] }}
+            <th v-for="c in columns" :key="`${c.provider}-${c.mode}`" scope="col" class="text-center text-xs font-medium text-muted stage:text-[20px]" :title="MODE_COLUMNS[c.mode].long">
+              <span aria-hidden="true">{{ MODE_COLUMNS[c.mode].short }}</span><span class="sr-only">{{ MODE_COLUMNS[c.mode].long }}</span>
             </th>
           </tr>
         </thead>
@@ -106,9 +104,9 @@ function cellOf(row: Row, column: Column) {
               <button
                 type="button"
                 :aria-label="cell.label"
+                :title="cell.label"
                 :aria-pressed="selected === cell.key"
-                class="mx-auto flex size-9 items-center justify-center rounded border-2 font-semibold stage:size-16 stage:rounded-lg stage:text-[24px]"
-                :class="[PLACES[cell.place].cell, selected === cell.key ? 'outline-3 outline-offset-2 outline-black' : '']"
+                :class="[SQUARE, PLACES[cell.place].cell, selected === cell.key ? 'outline-3 outline-offset-2 outline-black' : '']"
                 @click="emit('select', cell.key)"
               >
                 <span aria-hidden="true">{{ cell.mark }}</span>

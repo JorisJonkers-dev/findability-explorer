@@ -89,16 +89,27 @@ describe('the AI readiness view', () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     expect(wrapper.get('h1').text()).toBe('ESFO leads with 5 of five checks. Tribelt passes 3½.')
     expect(wrapper.text()).toMatch(/5 sites\.\s*Scanned on 22 October 2026\./)
-    const sum = wrapper.findAll('section[aria-labelledby="sum-title"] tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
-    expect(sum[0]).toEqual(['Lets every AI crawler in', '2', '✕ No'])
-    expect(sum[3]).toEqual(['Has llms.txt', '2', '✕ No'])
-    expect(sum[1]).toEqual(['Has a sitemap', '5', '● Yes'])
+    const part = (label: string) =>
+      wrapper.findAll(`section[aria-labelledby="sum-title"] tbody[aria-label="${label}"] tr`).map((r) => r.findAll('th, td').map((c) => c.text()))
+    const counted = part('The five checks the ranking counts')
+    expect(counted.map((r) => r[0])).toEqual([
+      'The five checks the ranking counts',
+      'Lets every AI crawler in',
+      'Has a sitemap',
+      'Has llms.txt',
+      'Has llms-full.txt',
+      'Has Markdown pages',
+    ])
+    expect(counted[1]).toEqual(['Lets every AI crawler in', '2', '✕ No'])
+    expect(counted[2]).toEqual(['Has a sitemap', '5', '✓ Yes'])
+    expect(counted[3]).toEqual(['Has llms.txt', '2', '✕ No'])
+    expect(part('Also checked').map((r) => r[0])).toEqual(['Also checked', 'Sitemap in Dutch, German and English', 'Organization structured data', 'Product structured data'])
   })
 
   it('marks each crawler by shape, and opens the site in a new tab', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     const row = wrapper.findAll('section[aria-labelledby="sites-title"] tbody tr').find((r) => r.text().startsWith('Twentebelt'))
-    expect(row?.findAll('td').map((c) => c.text()).slice(0, 6)).toEqual(['●Let in', '●Let in', '●Let in', '●Let in', '●Let in', '✕Blocked'])
+    expect(row?.findAll('td').map((c) => c.text()).slice(0, 6)).toEqual(['AllowedGooglebot may read every page.', 'AllowedGoogle-Extended may read every page.', 'AllowedBingbot may read every page.', 'AllowedOAI-SearchBot may read every page.', 'AllowedChatGPT-User may read every page.', 'BlockedGPTBot may not read any page.'])
     expect(row?.get('a[target="_blank"]').attributes('href')).toBe('https://www.twentebelt.com')
     expect(wrapper.text()).toContain('Not scanned yet')
   })

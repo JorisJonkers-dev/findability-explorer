@@ -57,7 +57,7 @@ const terms = computed(() => ofLanguage(product.value?.terms ?? [], language.val
                 </th>
                 <td class="py-2 pl-3 stage:py-3">{{ languageLabel(t.language) }}</td>
                 <td class="py-2 pl-3 text-right stage:py-3">{{ t.usedBy }}</td>
-                <td class="py-2 pl-3 text-right font-semibold stage:py-3" :class="t.usedByTribelt ? 'text-orange-ink' : 'text-muted'">{{ t.usedByTribelt ? '● Yes' : '– No' }}</td>
+                <td class="py-2 pl-3 text-right font-semibold stage:py-3" :class="t.usedByTribelt ? 'text-orange-ink' : 'text-muted'">{{ t.usedByTribelt ? '✓ Yes' : '✕ No' }}</td>
               </tr>
             </tbody>
           </table>

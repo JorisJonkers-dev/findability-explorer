@@ -1,11 +1,11 @@
 import type { AiReadiness, Competitor, PromptTestResults } from '../../../infrastructure/api/types.gen'
 import { latestRun, tally } from '../../prompt-test/domain/results'
 
-/** One readiness check as a chip: a mark that differs in shape, and what it says. */
+/** One readiness check as a chip: a tick, a cross or "Some" before its name, and what it says. */
 export type Chip = { label: string; state: 'yes' | 'partly' | 'no'; mark: string; tip: string }
 
 function chip(label: string, state: Chip['state'], yes: string, no: string, partly = ''): Chip {
-  return { label, state, mark: state === 'yes' ? '●' : state === 'partly' ? '◐' : '–', tip: state === 'yes' ? yes : state === 'partly' ? partly : no }
+  return { label, state, mark: state === 'yes' ? '✓' : state === 'partly' ? 'Some' : '✕', tip: state === 'yes' ? yes : state === 'partly' ? partly : no }
 }
 
 /** A site's five readiness chips: crawlers, sitemap, llms.txt, llms-full.txt and Markdown; none before a scan read it. */

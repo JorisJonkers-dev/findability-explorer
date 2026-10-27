@@ -89,12 +89,12 @@ export function chartLabel(summary: Pick<AiSearchSummary, 'followed' | 'trend' |
   return [`Share of answers naming each company over ${String(summary.trend.length)} Prompt runs.`, ...parts, `The goal is ${pct(summary.goal)}.`].join(' ')
 }
 
-/** How a crawler's access reads, with a mark that differs in shape as well as colour. */
-export const ACCESS: Record<CrawlerAccess | 'unknown', { text: string; mark: string; ok: boolean | null }> = {
-  allowed: { text: 'Let in', mark: '●', ok: true },
-  partly: { text: 'Partly', mark: '◐', ok: true },
-  blocked: { text: 'Kept out', mark: '✕', ok: false },
-  unknown: { text: 'Not checked', mark: '–', ok: null },
+/** How a crawler's access reads, in the same words as the AI readiness table. */
+export const ACCESS: Record<CrawlerAccess | 'unknown', { text: string; ok: boolean | null }> = {
+  allowed: { text: 'Allowed', ok: true },
+  partly: { text: 'Partly', ok: true },
+  blocked: { text: 'Blocked', ok: false },
+  unknown: { text: 'Not checked', ok: null },
 }
 
 /** Names as a sentence: "A", "A and B", "A, B and 3 more". */

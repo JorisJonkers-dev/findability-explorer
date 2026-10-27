@@ -42,8 +42,8 @@ describe('the AI search summary', () => {
     const { wrapper } = await mountApp(routes({ 'GET /api/v1/ai-search': () => json(summary) }), '/ai-search')
     const rows = wrapper.findAll('section[aria-labelledby="labs-title"] tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
     expect(rows).toEqual([
-      ['OAI-SearchBotOpenAI', 'Links in ChatGPT search answers, shows up in answers today', '●Let in'],
-      ['GPTBotOpenAI', 'What future ChatGPT models know, known to future models', '✕Kept out'],
+      ['OAI-SearchBotOpenAI', 'Links in ChatGPT search answers, shows up in answers today', 'Allowed'],
+      ['GPTBotOpenAI', 'What future ChatGPT models know, known to future models', 'Blocked'],
     ])
     const labs = wrapper.get('section[aria-labelledby="labs-title"]').text()
     expect(labs).toContain('tribelt.nl keeps GPTBot out.')
@@ -64,7 +64,7 @@ describe('the AI search summary', () => {
     expect(wrapper.text()).toContain('No Prompt run has finished yet.')
     expect(wrapper.text()).toContain('No site has been scanned yet.')
     expect(wrapper.text()).toContain('once the first Prompt run is in.')
-    expect(wrapper.text()).toContain('–Not checked')
+    expect(wrapper.text()).toContain('Not checked')
   })
 
   it('says when the summary cannot be loaded', async () => {

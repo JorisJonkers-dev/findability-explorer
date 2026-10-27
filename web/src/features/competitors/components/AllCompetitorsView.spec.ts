@@ -35,11 +35,11 @@ describe('All competitors', () => {
     expect(twente?.get('td a').attributes('target')).toBe('_blank')
     expect(twente?.get('td a').text()).toBe('twentebelt.com')
     expect(twente?.findAll('li').map((l) => l.text())).toEqual([
-      '●crawlers: Lets every AI crawler in',
-      '●sitemap: Has a sitemap',
-      '●llms.txt: Has llms.txt',
-      '●llms-full: Has llms-full.txt',
-      '–Markdown: No Markdown pages',
+      '✓crawlers: Lets every AI crawler in',
+      '✓sitemap: Has a sitemap',
+      '✓llms.txt: Has llms.txt',
+      '✓llms-full: Has llms-full.txt',
+      '✕Markdown: No Markdown pages',
     ])
     expect(twente?.text()).toContain('75%')
     expect(twente?.text()).toContain('Competitor. Netherlands')

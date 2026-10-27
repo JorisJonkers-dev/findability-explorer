@@ -27,7 +27,7 @@ type Repository interface {
 	List(ctx context.Context) ([]domain.Company, error)
 	// Add stores c, or fails when its id or host is taken meanwhile.
 	Add(ctx context.Context, c domain.Company) error
-	// Update stores an added company's new name and website.
+	// Update stores an added company's name and website, whether it is archived, and who kept it.
 	Update(ctx context.Context, c domain.Company) error
 	// Delete deletes an added company.
 	Delete(ctx context.Context, id string) error
@@ -82,8 +82,8 @@ func (s *Service) directory(ctx context.Context) (domain.Directory, error) {
 	return domain.NewDirectory(domain.ApplyOverrides(s.research(), overrides), added), nil
 }
 
-// Update changes a company's name or website, or archives or restores a researched one. A
-// researched company's change is stored beside the research's record.
+// Update changes a company's name or website, archives or restores it, or records that user keeps
+// it on the list. A researched company's change is stored beside the research's record.
 func (s *Service) Update(ctx context.Context, user, id string, ch domain.Change) (domain.Listed, error) {
 	d, err := s.directory(ctx)
 	if err != nil {
@@ -123,7 +123,8 @@ func (s *Service) store(ctx context.Context, c domain.Company, user string) erro
 }
 
 // Delete removes a company: an added one with every scan of it, a researched one by archiving
-// it. It refuses while a scan of the company is queued or running.
+// it, since the research's record stays. It refuses while a scan of the company is queued or
+// running. Update archives an added company without deleting its scans.
 func (s *Service) Delete(ctx context.Context, user, id string) error {
 	d, err := s.directory(ctx)
 	if err != nil {
@@ -151,6 +152,29 @@ func (s *Service) Delete(ctx context.Context, user, id string) error {
 		return fmt.Errorf("delete company: %w", err)
 	}
 	return nil
+}
+
+// ArchiveUnlessKept archives the company by user, as a language model does with a company it is
+// sure does not compete (ADR-0010), and reports whether it did. It leaves Tribelt, the mirror, a
+// group company, an archived one and one a person kept as they are, read just before, so what a
+// person decided meanwhile stands. domain.ErrNotFound for an unknown id.
+func (s *Service) ArchiveUnlessKept(ctx context.Context, user, id string) (bool, error) {
+	d, err := s.directory(ctx)
+	if err != nil {
+		return false, err
+	}
+	c, ok := d.ByID(id)
+	if !ok {
+		return false, domain.ErrNotFound
+	}
+	archived, ok := c.ArchiveUnlessKept(user, s.now())
+	if !ok {
+		return false, nil
+	}
+	if err := s.store(ctx, archived, user); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // List returns every known company with its scan statistics.

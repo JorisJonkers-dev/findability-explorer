@@ -435,6 +435,50 @@ func (r *Repository) SaveCompanyVerdicts(ctx context.Context, verdicts []domain.
 	})
 }
 
+// ListChecks returns every check of a company on the list by the language model.
+func (r *Repository) ListChecks(ctx context.Context) ([]domain.ListCheck, error) {
+	rows, err := r.store.Queries().ListPromptCompanyChecks(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select company checks: %w", err)
+	}
+	out := make([]domain.ListCheck, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.ListCheck{
+			CompanyID: row.CompanyID, Competitor: row.Competitor, Sure: row.Sure, Reason: row.Reason, Model: row.Model,
+			Version: int(row.CheckVersion), At: row.CheckedAt.UTC(),
+		})
+	}
+	return out, nil
+}
+
+// SaveListChecks stores checks in one transaction, each replacing the one on its company.
+func (r *Repository) SaveListChecks(ctx context.Context, checks []domain.ListCheck) error {
+	return r.store.InTx(ctx, func(q *queries.Queries) error {
+		for _, c := range checks {
+			if err := q.SavePromptCompanyCheck(ctx, queries.SavePromptCompanyCheckParams{
+				CompanyID: c.CompanyID, Competitor: c.Competitor, Sure: c.Sure, Reason: clip(c.Reason, 500),
+				Model: clip(c.Model, 200), CheckVersion: int64(max(c.Version, 1)), CheckedAt: c.At,
+			}); err != nil {
+				return fmt.Errorf("store company check: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
+// Namings returns every name an answer gave, matched or not, the newest answer first.
+func (r *Repository) Namings(ctx context.Context) ([]domain.Naming, error) {
+	rows, err := r.store.Queries().PromptNamings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select the names answers gave: %w", err)
+	}
+	out := make([]domain.Naming, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Naming{AnswerID: row.AnswerID, Name: row.Name, URL: row.Url, CompetitorID: row.CompetitorID})
+	}
+	return out, nil
+}
+
 // AnswerTexts returns the text of each answer of ids there is, by id.
 func (r *Repository) AnswerTexts(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
 	out := map[uuid.UUID]string{}

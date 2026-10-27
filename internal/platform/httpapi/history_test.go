@@ -137,8 +137,22 @@ func TestUpdateAndDeleteCompetitor(t *testing.T) {
 	if added.code != http.StatusCreated {
 		t.Fatalf("add = %d", added.code)
 	}
+	// An added company is archived and keeps its scans; restoring it keeps it on the list.
+	r = callAs(t, srv, http.MethodPatch, "/api/v1/competitors/example", `{"archived":true}`, "admin")
+	if r.code != http.StatusOK || r.body["archived"] != true || r.body["archivedBy"] != "admin-1" || r.body["archivedAt"] == nil || r.body["keptBy"] != nil {
+		t.Fatalf("archive an added company = %d %v", r.code, r.body)
+	}
+	r = callAs(t, srv, http.MethodPatch, "/api/v1/competitors/example", `{"archived":false}`, "admin")
+	if r.code != http.StatusOK || r.body["archived"] != false || r.body["archivedBy"] != nil || r.body["keptBy"] != "admin-1" {
+		t.Fatalf("restore an added company = %d %v", r.code, r.body)
+	}
+	if r := callAs(t, srv, http.MethodPatch, "/api/v1/competitors/example", `{"kept":false}`, "admin"); r.code != http.StatusOK || r.body["keptBy"] != nil {
+		t.Fatalf("unkeep = %d %v", r.code, r.body)
+	}
+	if r := callAs(t, srv, http.MethodPatch, "/api/v1/competitors/example", `{"kept":true}`, "admin"); r.code != http.StatusOK || r.body["keptBy"] != "admin-1" {
+		t.Fatalf("keep = %d %v", r.code, r.body)
+	}
 	for body, want := range map[string]int{
-		`{"archived":true}`:                   http.StatusUnprocessableEntity,
 		`{"url":"https://www.twentebelt.nl"}`: http.StatusConflict,
 		`{"name":" "}`:                        http.StatusUnprocessableEntity,
 		`{}`:                                  http.StatusBadRequest,

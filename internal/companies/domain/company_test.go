@@ -155,12 +155,13 @@ func TestOverrides(t *testing.T) {
 	changed := original
 	changed.Name, changed.URL, changed.Host = "X Belts", other, "y.example"
 	changed.Archived, changed.ArchivedBy, changed.ArchivedAt = true, "a", at
+	changed.KeptBy, changed.KeptAt = "k", at
 	o := domain.NewOverride(original, changed, "a", at)
-	if o.Name != "X Belts" || o.Host != "y.example" || o.ArchivedBy != "a" {
+	if o.Name != "X Belts" || o.Host != "y.example" || o.ArchivedBy != "a" || o.KeptBy != "k" || !o.KeptAt.Equal(at) {
 		t.Fatalf("override %+v", o)
 	}
 	applied := domain.ApplyOverrides([]domain.Company{original, {ID: "z", Name: "Z"}}, []domain.Override{o})
-	if got := applied[0]; got.Name != "X Belts" || got.Website != "https://www.y.example/" || !got.Archived || applied[1].Name != "Z" {
+	if got := applied[0]; got.Name != "X Belts" || got.Website != "https://www.y.example/" || !got.Archived || got.KeptBy != "k" || applied[1].Name != "Z" {
 		t.Fatalf("applied %+v", applied)
 	}
 	noURL := domain.Company{ID: "n", Source: domain.SourceResearch}
@@ -182,8 +183,18 @@ func TestApply(t *testing.T) {
 	if err != nil || got.Name != "New" || got.Host != "x.example" || !got.Archived || got.ArchivedBy != "a" || !got.ArchivedAt.Equal(at) {
 		t.Fatalf("Apply = %+v, %v", got, err)
 	}
-	if got, err = d.Apply(got, domain.Change{Archived: &restored}, "a", at); err != nil || got.Archived || got.ArchivedBy != "" {
+	if got, err = d.Apply(got, domain.Change{Archived: &restored}, "b", at); err != nil || got.Archived || got.ArchivedBy != "" || got.KeptBy != "b" || !got.KeptAt.Equal(at) {
 		t.Fatalf("restore = %+v, %v", got, err)
+	}
+	if again, _ := d.Apply(x, domain.Change{Archived: &restored}, "b", at); again.KeptBy != "" {
+		t.Fatalf("restoring a company on the list keeps it: %+v", again)
+	}
+	keep, unkeep := true, false
+	if got, err = d.Apply(got, domain.Change{Kept: &unkeep}, "c", at); err != nil || got.KeptBy != "" || !got.KeptAt.IsZero() {
+		t.Fatalf("unkeep = %+v, %v", got, err)
+	}
+	if got, err = d.Apply(got, domain.Change{Kept: &keep}, "c", at); err != nil || got.KeptBy != "c" {
+		t.Fatalf("keep = %+v, %v", got, err)
 	}
 	taken := "https://y.example/"
 	var known domain.AlreadyKnownError
@@ -191,8 +202,8 @@ func TestApply(t *testing.T) {
 		t.Fatalf("taken host = %v", err)
 	}
 	y, _ := d.ByID("y")
-	if _, err := d.Apply(y, domain.Change{Archived: &archived}, "a", at); !errors.Is(err, domain.ErrNotArchivable) {
-		t.Fatalf("archiving an added company = %v", err)
+	if got, err := d.Apply(y, domain.Change{Archived: &archived}, "a", at); err != nil || !got.Archived || got.ArchivedBy != "a" {
+		t.Fatalf("archiving an added company = %+v, %v", got, err)
 	}
 	bad, empty := "ftp://x", " "
 	if _, err := d.Apply(x, domain.Change{URL: &bad}, "a", at); !errors.Is(err, domain.ErrInvalidWebsite) {
@@ -290,5 +301,26 @@ func TestDuplicatesAreMatchedByHostAndNameKey(t *testing.T) {
 	}
 	if _, ok := d.Duplicate("Intralox", ""); ok {
 		t.Error("With changed the directory it was called on")
+	}
+}
+
+// The language model archives a competitor it is sure does not compete, but never Tribelt, the
+// mirror, a group company, an archived one or one a person kept.
+func TestArchiveUnlessKept(t *testing.T) {
+	at := time.Date(2026, 10, 27, 0, 0, 0, 0, time.UTC)
+	got, ok := domain.Company{ID: "x", Source: domain.SourceAdded}.ArchiveUnlessKept("language model", at)
+	if !ok || !got.Archived || got.ArchivedBy != "language model" || !got.ArchivedAt.Equal(at) {
+		t.Fatalf("ArchiveUnlessKept = %+v, %v", got, ok)
+	}
+	for _, c := range []domain.Company{
+		{ID: domain.TribeltID},
+		domain.Mirror(),
+		{ID: "lesjofors", GroupCompany: true},
+		{ID: "x", Archived: true, ArchivedBy: "a"},
+		{ID: "x", KeptBy: "a"},
+	} {
+		if got, ok := c.ArchiveUnlessKept("language model", at); ok || got.ArchivedBy == "language model" {
+			t.Fatalf("%s archived: %+v", c.ID, got)
+		}
 	}
 }

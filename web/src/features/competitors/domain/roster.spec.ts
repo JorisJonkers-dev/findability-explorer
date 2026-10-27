@@ -42,6 +42,16 @@ describe('the list', () => {
     expect(parseRosterFilter('nonsense')).toBe('all')
   })
 
+  it('lets only an administrator show what Haiku is unsure of, or archived', () => {
+    expect(parseRosterFilter('unsure')).toBe('all')
+    expect(parseRosterFilter('unsure', true)).toBe('unsure')
+    expect(parseRosterFilter('archived', true)).toBe('archived')
+    const c = competitor('Intralox')
+    expect(keeps(c, 'unsure', true)).toBe(true)
+    expect(keeps(c, 'unsure')).toBe(false)
+    expect(keeps(c, 'archived', true)).toBe(false)
+  })
+
   it('puts Tribelt first, then the most named competitors, then the group', () => {
     const list = [competitor('D'), competitor('B'), competitor('De Spiraal', { role: 'group' }), competitor('A'), competitor('C'), competitor('Tribelt', { role: 'tribelt' })]
     const share = (c: { name: string }) => ({ A: 0.1, C: 0.5 })[c.name as 'A' | 'C']

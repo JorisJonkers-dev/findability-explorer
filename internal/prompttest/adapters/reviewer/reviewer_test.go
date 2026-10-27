@@ -85,7 +85,7 @@ func TestTheModelChecksEachCompany(t *testing.T) {
 		"What the answers say:\n- …Taiwan Metiz Alliance makes wire mesh belts for ovens…\n",
 		"Home page:\n  Title: Metiz\n  Description: Wire mesh conveyor belts\n  Headings: Belts | Ovens\n  Text: Since 1983.\n</company>",
 		`<company id="00000000000000bb">` + "\nNames: \"Metiz Alliance Co\"\nNo website.\nNamed in 1 answers.\n</company>",
-		"Names: \"Gone Co\"\nWebsite: https://gone.example/\nNamed in 0 answers.\nHome page: could not be read (the website did not answer).\n",
+		"Names: \"Gone Co\"\nWebsite: https://gone.example/\nNot named in the answers.\nHome page: could not be read (the website did not answer).\n",
 	} {
 		if !strings.Contains(c.prompt.User, want) {
 			t.Errorf("the prompt lacks %q:\n%s", want, c.prompt.User)

@@ -100,9 +100,10 @@ func (UnimplementedHandler) DecideCompetitorCandidates(ctx context.Context, req 
 
 // DeleteCompetitor implements deleteCompetitor operation.
 //
-// Administrators only. An added company is deleted with every scan of it. A researched company is the
-// desk research's record and is archived instead: it leaves the list and the re-scans, its scans stay,
-// and updateCompetitor restores it. Refused with 409 while a scan of the company is queued or running.
+// Administrators only. An added company is deleted with every scan of it; updateCompetitor archives
+// one and keeps its scans instead. A researched company is the desk research's record and is archived:
+// it leaves the list and the re-scans, its scans stay, and updateCompetitor restores it. Refused with
+// 409 while a scan of the company is queued or running.
 //
 // DELETE /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) DeleteCompetitor(ctx context.Context, params DeleteCompetitorParams) (r DeleteCompetitorRes, _ error) {
@@ -316,6 +317,18 @@ func (UnimplementedHandler) ListCompetitorCandidates(ctx context.Context, params
 	return r, ht.ErrNotImplemented
 }
 
+// ListCompetitorChecks implements listCompetitorChecks operation.
+//
+// Administrators only. Claude Haiku's check of each competitor on the list against Tribelt's target
+// market, as for a candidate. A check made before the current version of the check is left out for a
+// company still on the list and not kept, since the next check makes it again. With how many companies
+// wait for a check, and whether a check runs.
+//
+// GET /api/v1/admin/competitor-checks
+func (UnimplementedHandler) ListCompetitorChecks(ctx context.Context) (r ListCompetitorChecksRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListCompetitors implements listCompetitors operation.
 //
 // Returns every company the research studied and every company added since, with its names for each
@@ -451,6 +464,20 @@ func (UnimplementedHandler) StartCandidateReview(ctx context.Context) (r StartCa
 	return r, ht.ErrNotImplemented
 }
 
+// StartCompetitorCheck implements startCompetitorCheck operation.
+//
+// Administrators only. In the background, Claude Haiku on an Anthropic key checks each competitor on
+// the list that is not archived, that no administrator kept, and that it has not checked with the
+// current version of the check, against Tribelt's target market, from its names, its website, its home
+// page and what the answers say of it. A company it is sure does not compete is archived by
+// `language model`; an unsure one stays on the list for an administrator; Tribelt, the mirror and
+// group companies are never checked. Returns the check's state; running already is no error.
+//
+// POST /api/v1/admin/competitor-checks
+func (UnimplementedHandler) StartCompetitorCheck(ctx context.Context) (r StartCompetitorCheckRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StartPromptRun implements startPromptRun operation.
 //
 // Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
@@ -544,9 +571,11 @@ func (UnimplementedHandler) UndoTermDecision(ctx context.Context, params UndoTer
 
 // UpdateCompetitor implements updateCompetitor operation.
 //
-// Administrators only. Changes the name or website of a company, or archives or restores a researched
-// one. A researched company keeps the research's record; the change is stored beside it. A website
-// whose host another company has is refused with 409.
+// Administrators only. Changes the name or website of a company, archives or restores it, or records
+// that an administrator keeps it on the list. An archived company leaves the list and the re-scans and
+// keeps its scans. A restored or kept company is never archived by Claude Haiku. A researched company
+// keeps the research's record; the change is stored beside it. A website whose host another company
+// has is refused with 409.
 //
 // PATCH /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (r UpdateCompetitorRes, _ error) {

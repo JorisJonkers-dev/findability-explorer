@@ -20,6 +20,7 @@ function api(admin = false, extra: Record<string, Handler> = {}) {
     'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Twentebelt', { readiness: readiness({ markdown: false }) })])),
     'GET /api/v1/prompt-test': () => json(promptResults()),
     'GET /api/v1/terms': () => json({ items: [], total: 0, facets: { languages: [], families: [], tiers: [] } }),
+    'GET /api/v1/admin/competitor-checks': () => json({ items: [], unchecked: 0, review: { running: false } }),
     ...extra,
   })
 }
@@ -79,6 +80,134 @@ describe('All competitors', () => {
     await settle()
     expect(sent).toEqual([{ unscanned: true }, { all: true }, { competitorIds: ['unibelt'] }])
     expect(wrapper.text()).toContain('Queued 0 scans.')
+  })
+})
+
+describe("Haiku's check of the list", () => {
+  const rubber = competitor('Rubber Co', { id: 'rubber-co', archived: true, archivedBy: 'language model', archivedAt: '2026-10-27T09:00:00Z' })
+  const checks = {
+    items: [
+      { competitorId: 'twentebelt', competitor: true, sure: true, reason: 'Makes eyelink belts for ovens.', model: 'haiku', at: '2026-10-27T09:00:00Z' },
+      { competitorId: 'unibelt', competitor: false, sure: false, reason: 'Makes plastic modular belts.', model: 'haiku', at: '2026-10-27T09:00:00Z' },
+      { competitorId: 'rubber-co', competitor: false, sure: true, reason: 'Makes rubber belting for quarries.', model: 'haiku', at: '2026-10-27T09:00:00Z' },
+    ],
+    unchecked: 2,
+    review: { running: false },
+  }
+
+  function admin(extra: Record<string, Handler> = {}) {
+    return api(true, {
+      'GET /api/v1/competitors': () =>
+        json({
+          items: [
+            competitor('Twentebelt', { scans: 2, lastScan: summary() }),
+            competitor('Unibelt', { scans: 0, websiteUrl: 'https://unibelt.nl/' }),
+            competitor('Kept Belts', { scans: 1, keptBy: 'admin-1' }),
+            competitor('Fresh Belts', { scans: 1 }),
+            competitor('Tribelt B.V.', { id: 'tribelt', role: 'tribelt', scans: 1 }),
+            rubber,
+            competitor('Gone', { archived: true, archivedBy: 'admin-1' }),
+          ],
+        }),
+      'GET /api/v1/admin/competitor-checks': () => json(checks),
+      ...extra,
+    })
+  }
+
+  const filterButton = (wrapper: VueWrapper, text: string) => wrapper.findAll('[aria-label="Show"] button').find((b) => b.text() === text)
+
+  it("shows an administrator each company's verdict and reason, and flags the unsure ones", async () => {
+    const { wrapper } = await mountApp(admin(), '/competitors/all')
+    const section = wrapper.get('section[aria-label="Haiku\'s check of the list"]')
+    expect(section.text()).toContain('Haiku has not checked 2 companies on the list yet.')
+    const row = (name: string) => wrapper.findAll('tbody tr').find((r) => r.get('th a').text() === name)
+    expect(row('Twentebelt')?.text()).toContain('Haiku says competitorMakes eyelink belts for ovens.')
+    expect(row('Unibelt')?.text()).toContain('Haiku is unsureMakes plastic modular belts.')
+    expect(row('Unibelt')?.find('[role="group"][aria-label="Decide on Unibelt"]').exists()).toBe(true)
+    expect(row('Twentebelt')?.find('[role="group"]').exists()).toBe(false)
+    expect(row('Kept Belts')?.text()).toContain('Kept on the list')
+    expect(row('Fresh Belts')?.findAll('td')[4]?.text()).toBe('Not checked')
+    // The fifth cell is Haiku's: empty for Tribelt, which it never checks.
+    expect(row('Tribelt B.V.')?.findAll('td')[4]?.text()).toBe('')
+    expect(row('Twentebelt')?.findAll('td')[4]?.text()).toContain('Haiku says competitor')
+    expect(filterButton(wrapper, 'Haiku is unsure (1)')).toBeDefined()
+    await filterButton(wrapper, 'Haiku is unsure (1)')?.trigger('click')
+    await settle()
+    expect(names(wrapper)).toEqual(['Unibelt'])
+  })
+
+  it('keeps or archives a company Haiku is unsure of', async () => {
+    const sent: unknown[] = []
+    const { wrapper } = await mountApp(
+      admin({
+        'PATCH /api/v1/competitors/unibelt': async (r) => {
+          sent.push(await r.json())
+          return json(competitor('Unibelt'))
+        },
+      }),
+      '/competitors/all',
+    )
+    const decide = wrapper.get('[aria-label="Decide on Unibelt"]')
+    await decide.findAll('button')[0]?.trigger('click')
+    await settle()
+    expect(wrapper.text()).toContain('Unibelt stays on the list, and Haiku will not archive it.')
+    await wrapper.get('[aria-label="Decide on Unibelt"]').findAll('button')[1]?.trigger('click')
+    await settle()
+    expect(sent).toEqual([{ kept: true }, { archived: true }])
+  })
+
+  it('lists what Haiku archived and why, each to restore', async () => {
+    const sent: unknown[] = []
+    const { wrapper, router } = await mountApp(
+      admin({
+        'PATCH /api/v1/competitors/rubber-co': async (r) => {
+          sent.push(await r.json())
+          return json({ ...rubber, archived: false, keptBy: 'admin-1' })
+        },
+      }),
+      '/competitors/all',
+    )
+    await filterButton(wrapper, 'Archived by Haiku (1)')?.trigger('click')
+    await settle()
+    expect(router.currentRoute.value.query).toEqual({ show: 'archived' })
+    expect(wrapper.find('table').exists()).toBe(false)
+    const list = wrapper.get('ul[aria-label="Archived by Haiku"]')
+    expect(list.findAll('li').map((l) => l.find('span').text())).toEqual(['Rubber CoMakes rubber belting for quarries.'])
+    await list.get('button').trigger('click')
+    await settle()
+    expect(sent).toEqual([{ archived: false }])
+    expect(wrapper.text()).toContain('Rubber Co is back on the list, and Haiku will not archive it again.')
+  })
+
+  it('says when Haiku archived nothing', async () => {
+    const { wrapper } = await mountApp(admin({ 'GET /api/v1/competitors': () => json({ items: [competitor('Twentebelt')] }) }), '/competitors/all?show=archived')
+    expect(wrapper.text()).toContain('Haiku has archived no company.')
+  })
+
+  it('starts a check of the list', async () => {
+    let started = false
+    const { wrapper } = await mountApp(
+      admin({ 'POST /api/v1/admin/competitor-checks': () => ((started = true), json({ running: true }, 202)) }),
+      '/competitors/all',
+    )
+    await wrapper.findAll('button').find((b) => b.text() === 'Check the list with Haiku')?.trigger('click')
+    await settle()
+    expect(started).toBe(true)
+  })
+
+  it('sends an administrator without a key to the settings, and says when the check is refused', async () => {
+    const { wrapper } = await mountApp(admin({ 'GET /api/v1/admin/competitor-checks': () => json({ ...checks, review: { running: false, problem: 'noKey' } }) }), '/competitors/all')
+    expect(wrapper.get('section[aria-label="Haiku\'s check of the list"] a').attributes('href')).toBe('/settings')
+    wrapper.unmount()
+    const refused = await mountApp(admin({ 'GET /api/v1/admin/competitor-checks': () => problem(500, 'Internal Server Error') }), '/competitors/all')
+    expect(refused.wrapper.text()).toContain('Internal Server Error')
+  })
+
+  it('is not there for a viewer, nor its filters', async () => {
+    const { wrapper } = await mountApp(api(), '/competitors/all?show=archived')
+    expect(wrapper.find('section[aria-label="Haiku\'s check of the list"]').exists()).toBe(false)
+    expect(wrapper.find('table').exists()).toBe(true)
+    expect(filterButton(wrapper, 'Archived by Haiku (0)')).toBeUndefined()
   })
 })
 

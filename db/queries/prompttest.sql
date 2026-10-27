@@ -208,3 +208,23 @@ VALUES (@input_tokens, @output_tokens, @used_at);
 SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
 FROM prompt_review_usage
 WHERE used_at >= @since;
+
+-- name: ListPromptCompanyChecks :many
+SELECT company_id, competitor, sure, reason, model, check_version, checked_at
+FROM prompt_company_checks
+ORDER BY checked_at, company_id;
+
+-- name: SavePromptCompanyCheck :exec
+INSERT INTO prompt_company_checks (company_id, competitor, sure, reason, model, check_version, checked_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (company_id) DO UPDATE SET
+    competitor = excluded.competitor, sure = excluded.sure, reason = excluded.reason,
+    model = excluded.model, check_version = excluded.check_version, checked_at = excluded.checked_at;
+
+-- name: PromptNamings :many
+-- Every name an answer gave, matched or not, the newest answer first: what the answers say of a
+-- company on the list.
+SELECT c.answer_id, c.name, c.url, coalesce(c.competitor_id, '')::text AS competitor_id
+FROM prompt_answer_companies AS c
+JOIN prompt_answers AS a ON a.id = c.answer_id
+ORDER BY a.answered_at DESC, c.answer_id, c.position;

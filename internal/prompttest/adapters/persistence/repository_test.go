@@ -205,6 +205,12 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if err != nil || len(sightings) != 1 || sightings[0] != (domain.Sighting{AnswerID: read.ID, Name: "Ashworth", URL: "https://ashworth.com", Provider: "openai", Model: "openai/gpt-oss-20b", At: at}) {
 		t.Errorf("sightings = %+v, %v", sightings, err)
 	}
+	namings, err := repo.Namings(ctx)
+	if err != nil || !slices.Equal(namings, []domain.Naming{
+		{AnswerID: read.ID, Name: "Twentebelt", CompetitorID: "twentebelt"}, {AnswerID: read.ID, Name: "Ashworth", URL: "https://ashworth.com"},
+	}) {
+		t.Errorf("namings = %+v, %v", namings, err)
+	}
 	texts, err := repo.AnswerTexts(ctx, []uuid.UUID{read.ID, unread.ID, uuid.New()})
 	if err != nil || len(texts) != 2 || texts[read.ID] != "Twentebelt and Ashworth." || texts[unread.ID] != "No idea." {
 		t.Errorf("texts = %+v, %v", texts, err)
@@ -328,6 +334,26 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 	}
 	if err := r.SaveCompanyVerdicts(ctx, []domain.CompanyVerdict{{CandidateID: "not-an-id", Model: "m", At: at}}); err == nil {
 		t.Error("a check on a bad id was stored")
+	}
+
+	// The checks of the companies on the list.
+	list := []domain.ListCheck{
+		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting.", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: at},
+		{CompanyID: "wire-belt", Competitor: true, Model: "anthropic: claude-haiku-5-5", Version: 1, At: at.Add(time.Minute)},
+	}
+	if err := r.SaveListChecks(ctx, list); err != nil {
+		t.Fatal(err)
+	}
+	redone := list[1]
+	redone.Sure, redone.Version, redone.At = true, domain.CheckVersion, at.Add(time.Hour)
+	if err := r.SaveListChecks(ctx, []domain.ListCheck{redone}); err != nil {
+		t.Fatal(err)
+	}
+	if stored, err := r.ListChecks(ctx); err != nil || len(stored) != 2 || stored[0] != list[0] || stored[1] != redone {
+		t.Fatalf("list checks = %+v, %v", stored, err)
+	}
+	if err := r.SaveListChecks(ctx, []domain.ListCheck{{CompanyID: "Not An Id", Model: "m", At: at}}); err == nil {
+		t.Error("a check on a bad company id was stored")
 	}
 
 	// What the review used counts towards the month.

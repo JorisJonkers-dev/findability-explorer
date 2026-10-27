@@ -69,6 +69,23 @@ func TestUpdateDeleteAndOverrides(t *testing.T) {
 	if err != nil || len(got) != 1 || got[0].Name != "Changed" || got[0].Host != "moved.example" {
 		t.Fatalf("after Update = %+v, %v", got, err)
 	}
+	// An added company is archived in its row, and a person keeps it when restoring it.
+	c.Archived, c.ArchivedBy, c.ArchivedAt = true, "language model", at
+	if err := repo.Update(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	got, err = repo.List(ctx)
+	if err != nil || !got[0].Archived || got[0].ArchivedBy != "language model" || !got[0].ArchivedAt.Equal(at) || got[0].KeptBy != "" {
+		t.Fatalf("after archiving = %+v, %v", got, err)
+	}
+	c.Archived, c.ArchivedBy, c.KeptBy, c.KeptAt = false, "language model", "joris", at.Add(time.Hour)
+	if err := repo.Update(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	got, err = repo.List(ctx)
+	if err != nil || got[0].Archived || got[0].ArchivedBy != "" || !got[0].ArchivedAt.IsZero() || got[0].KeptBy != "joris" || !got[0].KeptAt.Equal(at.Add(time.Hour)) {
+		t.Fatalf("after restoring = %+v, %v", got, err)
+	}
 	if err := repo.Update(ctx, domain.Company{ID: "nobody", URL: moved}); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("Update(nobody) = %v", err)
 	}
@@ -84,7 +101,7 @@ func TestUpdateDeleteAndOverrides(t *testing.T) {
 	if err := repo.SaveOverride(ctx, o); err != nil {
 		t.Fatal(err)
 	}
-	restored := domain.Override{ID: "twentebelt", UpdatedBy: "joris", UpdatedAt: at.Add(time.Hour)}
+	restored := domain.Override{ID: "twentebelt", KeptBy: "joris", KeptAt: at.Add(time.Hour), UpdatedBy: "joris", UpdatedAt: at.Add(time.Hour)}
 	if err := repo.SaveOverride(ctx, domain.Override{ID: "martens", Name: "Märtens", UpdatedBy: "j", UpdatedAt: at}); err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +114,8 @@ func TestUpdateDeleteAndOverrides(t *testing.T) {
 		t.Fatal(err)
 	}
 	overrides, err = repo.Overrides(ctx)
-	if err != nil || overrides[1].Name != "" || !overrides[1].ArchivedAt.IsZero() || !overrides[1].UpdatedAt.Equal(at.Add(time.Hour)) {
+	if err != nil || overrides[1].Name != "" || !overrides[1].ArchivedAt.IsZero() || !overrides[1].UpdatedAt.Equal(at.Add(time.Hour)) ||
+		overrides[1].KeptBy != "joris" || !overrides[1].KeptAt.Equal(at.Add(time.Hour)) || overrides[0].KeptBy != "" {
 		t.Fatalf("after restore = %+v, %v", overrides, err)
 	}
 }

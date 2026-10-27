@@ -1,7 +1,7 @@
 // Package reviewer implements the prompt-test Reviewer port with a language model (ADR-0006,
 // ADR-0009): it finds which of the companies AI answers name are one company, or a company on the
 // list, and checks which are competitors of Tribelt by its target market, from what the answers
-// say of each company and its home page. Which model answers is the composition root's choice:
+// say of each company and its home page; the companies on the list are checked the same way. Which model answers is the composition root's choice:
 // Claude Haiku on an Anthropic key.
 package reviewer
 
@@ -138,7 +138,11 @@ func dossier(d domain.Dossier) string {
 	} else {
 		fmt.Fprintf(&b, "Website: %s\n", c.Website)
 	}
-	fmt.Fprintf(&b, "Named in %d answers.\n", c.Answers)
+	if c.Answers == 0 {
+		b.WriteString("Not named in the answers.\n") // a company on the list the research found
+	} else {
+		fmt.Fprintf(&b, "Named in %d answers.\n", c.Answers)
+	}
 	if len(d.Snippets) > 0 {
 		b.WriteString("What the answers say:\n")
 		for _, s := range d.Snippets {

@@ -465,8 +465,17 @@ describe('for an account that is no administrator', () => {
     await settle()
     const card = admin.wrapper.get('section[aria-labelledby="company-name"]')
     expect(card.get('h2').text()).toBe('Old Belts')
-    expect(card.text()).toContain('Archived: hidden from the list and the re-scans.')
+    expect(card.text()).toContain('Archived. It is hidden from the list and the re-scans.')
     expect(card.findAll('button').map((b) => b.text())).toContain('Restore')
+  })
+
+  it('says when Claude Haiku archived a company', async () => {
+    const archived = competitor('Rubber Co', { id: 'rubber-co', archived: true, archivedBy: 'language model', host: 'rubber.example', websiteUrl: 'https://rubber.example/' })
+    const { wrapper } = await mountApp(
+      api({ 'GET /api/v1/competitors': () => json({ items: [twentebelt, archived] }), 'GET /api/v1/competitors/rubber-co': () => json({ competitor: archived, scans: [] }) }),
+      '/competitors?company=rubber-co',
+    )
+    expect(wrapper.get('section[aria-labelledby="company-name"]').text()).toContain('Claude Haiku archived it as no competitor. It is hidden from the list and the re-scans.')
   })
 })
 

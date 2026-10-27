@@ -15,6 +15,7 @@ import CompanyReadiness from '../../readiness/components/CompanyReadiness.vue'
 import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
 import { mentionLine } from '../../prompt-test/domain/results'
 import { type Company, companyTerms, lastScanLabel, scanCountLabel, scanLinkLabel } from '../domain/company'
+import { archivedByHaiku } from '../domain/checks'
 import { beltRows, companyKind, termsTitle, whereLine } from '../domain/list'
 
 const props = defineProps<{ company: Company; terms: readonly Term[]; isAdmin: boolean }>()
@@ -95,7 +96,9 @@ const mentioned = computed(() => mentionLine(prompts.value, props.company.id))
         :text="progress(running).label"
       />
     </div>
-    <p v-if="company.archived" class="m-0 font-medium text-orange-ink stage:text-[28px]">Archived: hidden from the list and the re-scans.</p>
+    <p v-if="company.archived" class="m-0 font-medium text-orange-ink stage:text-[28px]">
+      {{ archivedByHaiku(company) ? 'Claude Haiku archived it as no competitor.' : 'Archived.' }} It is hidden from the list and the re-scans.
+    </p>
     <CompanyAdmin v-if="isAdmin" :company="company" @removed="emit('removed')" />
 
     <CompanyReadiness :company-id="company.id" />

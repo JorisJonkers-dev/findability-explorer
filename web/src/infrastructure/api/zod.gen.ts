@@ -433,7 +433,8 @@ export const zTermSearch = z.object({
 export const zCompetitorUpdate = z.object({
     name: z.string().min(1).max(200).optional(),
     url: z.url().min(8).max(500).optional(),
-    archived: z.boolean().optional()
+    archived: z.boolean().optional(),
+    kept: z.boolean().optional()
 });
 
 /**
@@ -1040,6 +1041,9 @@ export const zAnalysisSummary = z.object({
 export const zCompetitor = z.object({
     role: zCompanyRole,
     archived: z.boolean(),
+    archivedBy: z.string().max(200).optional(),
+    archivedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    keptBy: z.string().max(200).optional(),
     id: zCompetitorId,
     source: zCompetitorSource,
     websiteUrl: z.url().max(500).optional(),
@@ -1657,7 +1661,7 @@ export const zCompetitorCandidate = z.object({
 });
 
 /**
- * Whether Claude Haiku is reviewing the candidates, and why its last review stopped short.
+ * Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last run stopped short.
  */
 export const zCandidateReviewState = z.object({
     running: z.boolean(),
@@ -1697,6 +1701,27 @@ export const zCompetitorCandidateCounts = z.object({
     pending: z.int().gte(0).lte(1000000),
     added: z.int().gte(0).lte(1000000),
     dismissed: z.int().gte(0).lte(1000000)
+});
+
+/**
+ * Claude Haiku's check of a company on the competitor list against Tribelt's target market. A sure "not a competitor" archives the company unless an administrator kept it.
+ */
+export const zCompetitorCheck = z.object({
+    competitorId: zCompetitorId,
+    competitor: z.boolean(),
+    sure: z.boolean(),
+    reason: z.string().max(500),
+    model: z.string().max(200),
+    at: z.iso.datetime({ offset: true }).max(64)
+});
+
+/**
+ * Claude Haiku's checks of the companies on the competitor list, and the state of its check.
+ */
+export const zCompetitorCheckList = z.object({
+    items: z.array(zCompetitorCheck).max(10000),
+    unchecked: z.int().gte(0).lte(100000),
+    review: zCandidateReviewState
 });
 
 /**
@@ -2057,6 +2082,16 @@ export const zListCompetitorCandidatesResponse = zCompetitorCandidateList;
  * The review is under way.
  */
 export const zStartCandidateReviewResponse = zCandidateReviewState;
+
+/**
+ * The checks.
+ */
+export const zListCompetitorChecksResponse = zCompetitorCheckList;
+
+/**
+ * The check is under way.
+ */
+export const zStartCompetitorCheckResponse = zCandidateReviewState;
 
 /**
  * What to do, and to which candidates.

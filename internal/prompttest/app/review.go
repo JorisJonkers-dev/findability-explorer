@@ -53,33 +53,47 @@ type review struct {
 	reviewers Reviewers
 	pages     HomePages
 	onError   func(error)
-	running   atomic.Bool
-	problem   atomic.Value // ReviewProblem
+	// candidates is the review of the candidates, list the check of the companies on the list.
+	candidates, list runState
+}
+
+// runState is whether a review runs in the background, and why its last run stopped short.
+type runState struct {
+	running atomic.Bool
+	problem atomic.Value // ReviewProblem
+}
+
+func (r *runState) state() ReviewState {
+	problem, _ := r.problem.Load().(ReviewProblem)
+	return ReviewState{Running: r.running.Load(), Problem: problem}
 }
 
 // ReviewState says whether the model is reviewing the candidates, and why its last review stopped short.
-func (s *Service) ReviewState() ReviewState {
-	problem, _ := s.review.problem.Load().(ReviewProblem)
-	return ReviewState{Running: s.review.running.Load(), Problem: problem}
-}
+func (s *Service) ReviewState() ReviewState { return s.review.candidates.state() }
 
 // StartReview starts a review in the background, unless one is running; it reports whether it started.
 func (s *Service) StartReview(ctx context.Context) bool {
-	if !s.review.running.CompareAndSwap(false, true) {
+	return s.startIn(ctx, &s.review.candidates, s.Review)
+}
+
+// startIn runs work in the background on st, unless it runs already, within reviewTimeout; it
+// reports whether it started.
+func (s *Service) startIn(ctx context.Context, st *runState, work func(context.Context) error) bool {
+	if !st.running.CompareAndSwap(false, true) {
 		return false
 	}
 	s.spawn(func() {
-		defer s.review.running.Store(false)
+		defer st.running.Store(false)
 		bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), reviewTimeout)
 		defer cancel()
-		err := s.Review(bg)
+		err := work(bg)
 		switch {
 		case err == nil:
-			s.review.problem.Store(ReviewProblemNone)
+			st.problem.Store(ReviewProblemNone)
 		case errors.Is(err, ErrNoReviewer):
-			s.review.problem.Store(ReviewProblemNoKey)
+			st.problem.Store(ReviewProblemNoKey)
 		default:
-			s.review.problem.Store(ReviewProblemFails)
+			st.problem.Store(ReviewProblemFails)
 			s.review.onError(err)
 		}
 	})
@@ -90,15 +104,9 @@ func (s *Service) StartReview(ctx context.Context) bool {
 // it has not checked, and records the decisions its sure verdicts make. ErrNoReviewer when no
 // Anthropic key is set up.
 func (s *Service) Review(ctx context.Context) error {
-	if s.review.reviewers == nil {
-		return ErrNoReviewer
-	}
-	r, model, err := s.review.reviewers.Current(ctx)
+	r, model, err := s.reviewer(ctx)
 	if err != nil {
-		return fmt.Errorf("the language model: %w", err)
-	}
-	if r == nil {
-		return ErrNoReviewer
+		return err
 	}
 	directory, err := s.directory.Companies(ctx)
 	if err != nil {
@@ -120,6 +128,21 @@ func (s *Service) Review(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// reviewer is the language model and its name, or ErrNoReviewer when no Anthropic key is set up.
+func (s *Service) reviewer(ctx context.Context) (Reviewer, string, error) {
+	if s.review.reviewers == nil {
+		return nil, "", ErrNoReviewer
+	}
+	r, model, err := s.review.reviewers.Current(ctx)
+	if err != nil {
+		return nil, "", fmt.Errorf("the language model: %w", err)
+	}
+	if r == nil {
+		return nil, "", ErrNoReviewer
+	}
+	return r, model, nil
 }
 
 // check has the model check batch, stores its verdicts and what asking used, and records the

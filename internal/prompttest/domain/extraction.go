@@ -75,8 +75,8 @@ const (
 	RoleCompetitor Role = "competitor"
 )
 
-// DirectoryCompany is what the prompt test knows of a company on the list: the names it goes by
-// and its website's host.
+// DirectoryCompany is what the prompt test knows of a company on the list: the names it goes by,
+// its website and the website's host, and whether it is archived or a person kept it.
 type DirectoryCompany struct {
 	ID   string
 	Name string
@@ -84,6 +84,13 @@ type DirectoryCompany struct {
 	OtherNames []string
 	Host       string
 	Role       Role
+	// Website is the home page to read; "" without one.
+	Website string
+	// Archived is true for a company taken off the list, by a person or the language model.
+	Archived bool
+	// Kept is true once a person restored the company or kept it on the list: the language model
+	// never archives it.
+	Kept bool
 }
 
 // legal are the words of a legal form an answer may add or leave out.

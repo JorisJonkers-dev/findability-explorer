@@ -9,18 +9,23 @@ import { checkScanUrl, describeScanUrlCheck } from "../../scan/domain/newScan";
 
 export const MAX_NAME_LENGTH = 200;
 
-/** What removing a company does, in the words its confirm button uses. */
-export function removeAction(company: Pick<Competitor, "source" | "scans">): {
+/** What archiving a company does, in the words its confirm button uses. */
+export const ARCHIVE_ACTION = {
+  button: "Archive",
+  question:
+    "Archive this company? It leaves the list and the re-scans. Its scans stay, and it can be restored.",
+} as const;
+
+/** Whether a company can also be deleted for good: only an added one; the research's record stays. */
+export function canRemove(company: Pick<Competitor, "source">): boolean {
+  return company.source === "added";
+}
+
+/** What deleting an added company does, in the words its confirm button uses. */
+export function removeAction(company: Pick<Competitor, "scans">): {
   button: string;
   question: string;
 } {
-  if (company.source === "research") {
-    return {
-      button: "Archive",
-      question:
-        "Archive this researched company? It leaves the list and the re-scans; its scans stay, and it can be restored.",
-    };
-  }
   const scans =
     company.scans === 1 ? "1 scan" : `${String(company.scans)} scans`;
   return {
@@ -78,7 +83,7 @@ export function rescanSummary(batch: RescanBatch): string {
   return `${queued} Skipped ${String(batch.skipped.length)}: ${skipped}.`;
 }
 
-/** Archived researched companies apart from the rest, so only administrators see them. */
+/** Archived companies apart from the rest, so only administrators see them. */
 export function splitArchived<T extends Pick<Competitor, "archived">>(
   companies: readonly T[],
 ): { active: T[]; archived: T[] } {

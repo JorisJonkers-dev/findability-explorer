@@ -113,6 +113,10 @@ type ListCompetitorCandidatesRes interface {
 	listCompetitorCandidatesRes()
 }
 
+type ListCompetitorChecksRes interface {
+	listCompetitorChecksRes()
+}
+
 type ListCompetitorsRes interface {
 	listCompetitorsRes()
 }
@@ -159,6 +163,10 @@ type StartAnalysisRes interface {
 
 type StartCandidateReviewRes interface {
 	startCandidateReviewRes()
+}
+
+type StartCompetitorCheckRes interface {
+	startCompetitorCheckRes()
 }
 
 type StartPromptRunRes interface {

@@ -55,8 +55,9 @@ describe('the search terms tile', () => {
     expect(languageBars(undefined)).toEqual([])
   })
 
-  it('counts the terms and the languages, and says how many terms Tribelt uses', () => {
-    expect(termsFigure(terms)).toEqual({ big: '4', text: "search terms in 3 languages. Tribelt's own website uses 2 of them." })
+  it('counts the terms and the languages, and says how many terms tribelt.nl uses and how that is known', () => {
+    expect(termsFigure(terms)).toEqual({ big: '4', text: 'search terms in 3 languages. The newest scan of tribelt.nl found 2 of them.' })
+    expect(termsFigure({ ...terms, from: 'research' }).text).toBe('search terms in 3 languages. The desk research credits Tribelt with 2 of them.')
     expect(termsFigure(undefined)).toEqual({ big: '…', text: 'search terms in the terminology map.' })
     expect(termsFigure({ total: 0, tribelt: 0, languages: [] }).big).toBe('…')
   })
@@ -72,10 +73,11 @@ describe('the AI search tile', () => {
     const ai: OverviewAiSearch = {
       answers: 12,
       companies: [
-        { competitorId: 'a', name: 'Ashworth', role: 'competitor', answers: 6 },
-        { competitorId: 'b', name: 'B', role: 'competitor', answers: 5 },
-        { competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 3 },
-        { competitorId: 'c', name: 'C', role: 'competitor', answers: 2 },
+        // The server's shares; the tile only writes them.
+        { competitorId: 'a', name: 'Ashworth', role: 'competitor', answers: 6, share: 0.5 },
+        { competitorId: 'b', name: 'B', role: 'competitor', answers: 5, share: 5 / 12 },
+        { competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 3, share: 0.25 },
+        { competitorId: 'c', name: 'C', role: 'competitor', answers: 2, share: 2 / 12 },
         { competitorId: 'd', name: 'D', role: 'competitor', answers: 1 },
       ],
     }
@@ -84,15 +86,15 @@ describe('the AI search tile', () => {
       ['B', '42%', 5 / 6],
       ['Tribelt', '25%', 0.5],
       ['C', '17%', 2 / 6],
-      ['D', '8%', 1 / 6],
+      ['D', '0%', 1 / 6],
     ])
-    expect(aiFigure(ai)).toEqual({ big: '25%', text: 'of AI answers name Tribelt. Ashworth is named in 50%.' })
+    expect(aiFigure(ai)).toEqual({ big: '25%', text: 'of the AI answers in the newest Prompt run name Tribelt. Ashworth is named in 50%.' })
   })
 
   it('counts Tribelt as not named when no answer names it, and waits for the first run', () => {
     const none: OverviewAiSearch = { answers: 4, companies: [{ competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 0 }] }
     expect(voiceBars(none)).toEqual([{ label: 'Tribelt', value: '0%', first: 0, second: 0, zero: false }])
-    expect(aiFigure(none)).toEqual({ big: '0%', text: 'of AI answers name Tribelt.' })
+    expect(aiFigure(none)).toEqual({ big: '0%', text: 'of the AI answers in the newest Prompt run name Tribelt.' })
     expect(aiFigure({ answers: 0, companies: [] })).toEqual({ big: '…', text: 'of AI answers name Tribelt, once the first Prompt run is in.' })
     expect(voiceBars(undefined)).toEqual([])
   })

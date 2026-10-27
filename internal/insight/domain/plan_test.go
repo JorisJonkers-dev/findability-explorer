@@ -83,8 +83,16 @@ func TestNumbersToWatchAndWhoToKeepAnEyeOn(t *testing.T) {
 		now[domain.TargetReadiness] != 2 || now[domain.TargetTermsUsed] != 38 || now[domain.TargetCitations] != 1 || watched[0].Goal != 0.40 {
 		t.Errorf("watched = %v", now)
 	}
-	if empty := domain.Watch(domain.DefaultTargets(), domain.Facts{}); empty[0].Now != nil || empty[1].Now != nil || empty[4].Now != nil {
+	if empty := domain.Watch(domain.DefaultTargets(), domain.Facts{}); empty[0].Now != nil || empty[1].Now != nil || empty[4].Now != nil || empty[0].Met {
 		t.Errorf("without data = %+v", empty)
+	}
+	// A target the value has reached is met: 38 terms against a target of 35, and exactly 1 citation.
+	low := domain.DefaultTargets()
+	low[domain.TargetTermsUsed], low[domain.TargetCitations] = 35, 1
+	for _, w := range domain.Watch(low, f) {
+		if met := w.Target == domain.TargetTermsUsed || w.Target == domain.TargetCitations; w.Met != met {
+			t.Errorf("%s met = %v", w.Target, w.Met)
+		}
 	}
 	eyes := domain.KeepAnEyeOn(companies(), f, domain.Standings(companies(), f))
 	if len(eyes) != 3 || eyes[0].Why != domain.WatchMostNamed || eyes[0].Leader.CompanyID != "ashworth" ||

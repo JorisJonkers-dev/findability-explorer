@@ -97,13 +97,35 @@ func ShareOfVoice(answers []Answer, id string) (float64, bool) {
 
 // CitationShare is the share of web answers that cite the company's site; ok is false without web answers.
 func CitationShare(answers []Answer, id string) (float64, bool) {
+	return share(webAnswers(answers), func(a Answer) bool { return slices.Contains(a.Cited, id) })
+}
+
+// Citations counts the web answers that cite the company's site: the count CitationShare is a
+// share of.
+func Citations(answers []Answer, id string) int {
+	n := 0
+	for _, a := range webAnswers(answers) {
+		if slices.Contains(a.Cited, id) {
+			n++
+		}
+	}
+	return n
+}
+
+func webAnswers(answers []Answer) []Answer {
 	var web []Answer
 	for _, a := range answers {
 		if a.Mode == ModeWeb {
 			web = append(web, a)
 		}
 	}
-	return share(web, func(a Answer) bool { return slices.Contains(a.Cited, id) })
+	return web
+}
+
+// TwenteShare is the share of a run's answers to the questions about Twente that name the
+// company; ok is false without such answers.
+func TwenteShare(r Run, id string) (float64, bool) {
+	return ShareOfVoice(r.Keep(func(a Answer) bool { return a.Scope == ScopeTwente }), id)
 }
 
 func share(answers []Answer, hit func(Answer) bool) (float64, bool) {
@@ -211,12 +233,14 @@ func Measures() []Measure {
 }
 
 // Facts are what the other contexts know of the companies now: the newest Prompt run with answers
-// that count, each company's newest readiness, and the map terms each company's newest scan found.
+// that count, each company's newest readiness, and the map terms each company's site uses.
 type Facts struct {
 	Run       *Run
 	Readiness map[string]Readiness
-	// TermsUsed is set for every company a scan read; a company never scanned is absent.
+	// TermsUsed is TermMap.TermsUsed: set for Tribelt and every company a scan read.
 	TermsUsed map[string]int
+	// TermsFrom says where Tribelt's terms come from: its newest scan, or the research before one.
+	TermsFrom TermsSource
 }
 
 // Value is a company's value on a measure; ok is false when there is no data for it.

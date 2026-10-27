@@ -6,9 +6,9 @@ import SectionView from '../../shell/components/SectionView.vue'
 import { statusLine } from '../../plan/domain/routine'
 import { companyPath } from '../../shell/domain/sections'
 import { useStandings } from '../composables/useStandings'
-import { barsOf, headline, MEASURES, noteOf } from '../domain/standings'
+import { barsOf, headline, MEASURES, noteOf, termsSourceLine } from '../domain/standings'
 
-const { measures, trailing, open, isLoading, error } = useStandings()
+const { measures, trailing, open, termsFrom, isLoading, error } = useStandings()
 const title = computed(() => (isLoading.value || error.value ? 'Where Tribelt trails the leaders.' : headline(measures.value, trailing.value)))
 
 const FILL = { tribelt: 'bg-orange', typical: 'bg-blue-grey', leader: 'bg-black' } as const
@@ -59,6 +59,7 @@ const LEGEND = [
             </span>
             <span class="text-right text-sm font-semibold stage:text-[28px]" :class="b.tone === 'tribelt' ? 'text-orange-ink' : ''">{{ b.value }}</span>
           </div>
+          <p v-if="m.measure === 'termsUsed' && termsSourceLine(termsFrom)" class="m-0 text-sm text-muted stage:text-[24px]">{{ termsSourceLine(termsFrom) }}</p>
         </figure>
       </section>
 
@@ -75,7 +76,7 @@ const LEGEND = [
             <span class="flex flex-col gap-1">
               <strong class="font-semibold stage:text-[36px]">{{ it.title }}</strong>
               <span class="text-sm text-ink-2 stage:text-[28px]">Moves {{ it.moves }}.</span>
-              <span class="text-sm font-medium stage:text-[28px]">{{ statusLine(it) }}</span>
+              <span class="text-sm font-medium stage:text-[28px]">{{ statusLine(it, termsFrom) }}</span>
             </span>
             <RouterLink v-if="it.leader" :to="companyPath(it.leader.competitorId)" class="flex flex-col text-right no-underline">
               <span class="text-xs text-muted stage:text-[22px]">Look at</span>

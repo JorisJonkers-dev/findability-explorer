@@ -140,6 +140,18 @@ func TestAnswersAreMatchedToTheListAsItIsNow(t *testing.T) {
 	}
 }
 
+// A name the list holds as Tribelt's now names Tribelt, so the answer counts as naming it.
+func TestARematchToTribeltNamesTribelt(t *testing.T) {
+	x := domain.Extraction{Companies: []domain.Company{{Name: "Tribelt", Position: 1}}}
+	got := domain.NewMatcher(directory(), nil, nil).Rematch(x)
+	if !got.NamesTribelt || x.NamesTribelt {
+		t.Errorf("names Tribelt = %v; stored changed = %v", got.NamesTribelt, x.NamesTribelt)
+	}
+	if domain.NewMatcher(directory(), nil, nil).Rematch(domain.Extraction{Companies: []domain.Company{{Name: "ESFO", Position: 1}}}).NamesTribelt {
+		t.Error("a competitor's name named Tribelt")
+	}
+}
+
 func TestTheModelsClustersBecomeMerges(t *testing.T) {
 	at := time.Date(2026, 10, 27, 9, 0, 0, 0, time.UTC)
 	asked := []domain.Candidate{{ID: "a"}, {ID: "b"}, {ID: "c"}, {ID: "d"}, {ID: "e"}}

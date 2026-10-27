@@ -79,13 +79,23 @@ func (p promptRuns) Runs(ctx context.Context, limit int) ([]insightdomain.Run, e
 		for _, a := range r.Answers {
 			run.Answers = append(run.Answers, insightdomain.Answer{
 				PromptID: a.Prompt.ID, Provider: a.Provider, Mode: insightdomain.Mode(a.Mode), Scope: string(a.Prompt.Scope), Family: string(a.Prompt.Family),
-				Named: a.Extraction.NamedCompanies(), First: namedFirst(a.Extraction.Companies),
-				Cited: prompttestdomain.CitedCompanies(a.Extraction.Addresses, directory),
+				Named: withTribelt(a.Extraction.NamedCompanies(), a.Extraction.NamesTribelt), First: namedFirst(a.Extraction.Companies),
+				Cited: withTribelt(prompttestdomain.CitedCompanies(a.Extraction.Addresses, directory), a.Extraction.CitesTribelt),
 			})
 		}
 		out = append(out, run)
 	}
 	return out, nil
+}
+
+// withTribelt adds Tribelt to the companies an answer names or cites when its reading says it
+// names or cites Tribelt, as ADR-0004 counts it: also when the extractor saw Tribelt without a
+// name or an address the list matches. The Prompt test counts its share the same way.
+func withTribelt(ids []string, tribelt bool) []string {
+	if tribelt && !slices.Contains(ids, insightdomain.TribeltID) {
+		return append(ids, insightdomain.TribeltID)
+	}
+	return ids
 }
 
 // namedFirst is the company on the list an answer names at its first place, as the Prompt test's
@@ -140,48 +150,33 @@ func readinessOf(r analysisdomain.Readiness, at time.Time) insightdomain.Readine
 	return out
 }
 
-// termsUsed hands the insight context how many map terms each company's newest scan found: none
-// for a company a scan read without finding one.
+// termsUsed hands the insight context the terminology map: each term with whether tribelt.nl
+// uses it (terminology's SiteUse.TribeltUses) and the companies whose newest scan found it, and
+// the companies a finished scan read.
 type termsUsed struct {
 	terminology *terminologyapp.Service
 	analysis    *analysisapp.Service
 }
 
-func (t termsUsed) TermsUsed(ctx context.Context) (map[string]int, error) {
-	found, err := t.terminology.FoundBy(ctx)
+func (t termsUsed) TermMap(ctx context.Context) (insightdomain.TermMap, error) {
+	use, err := t.terminology.SiteUse(ctx)
 	if err != nil {
-		return nil, err
+		return insightdomain.TermMap{}, err
 	}
 	rows, err := t.analysis.ReadinessTable(ctx)
 	if err != nil {
-		return nil, err
+		return insightdomain.TermMap{}, err
 	}
-	out := map[string]int{}
+	out := insightdomain.TermMap{TribeltFrom: insightdomain.TermsSource(use.Source())}
 	for _, row := range rows {
 		if row.Scan != nil {
-			out[row.Company.ID] = 0
+			out.Scanned = append(out.Scanned, row.Company.ID)
 		}
 	}
-	for _, ids := range found {
-		for _, id := range slices.Compact(slices.Clone(ids)) {
-			out[id]++
-		}
-	}
-	return out, nil
-}
-
-func (t termsUsed) MapTerms(ctx context.Context) ([]insightdomain.MapTerm, error) {
-	found, err := t.terminology.FoundBy(ctx)
-	if err != nil {
-		return nil, err
-	}
-	terms := t.terminology.Terms()
-	out := make([]insightdomain.MapTerm, 0, len(terms))
-	for _, term := range terms {
-		tribelt := slices.Contains(found[term.Key()], insightdomain.TribeltID) || insightdomain.CreditsTribelt(term.UsedBy)
-		out = append(out, insightdomain.MapTerm{
+	for _, term := range t.terminology.Terms() {
+		out.Terms = append(out.Terms, insightdomain.MapTerm{
 			Text: term.Text, Language: string(term.Language), Family: string(term.Family), Tier: string(term.Tier),
-			UsedBy: len(term.UsedBy), UsedByTribelt: tribelt,
+			UsedBy: len(term.UsedBy), UsedByTribelt: use.TribeltUses(term), FoundBy: use.FoundBy[term.Key()],
 		})
 	}
 	return out, nil

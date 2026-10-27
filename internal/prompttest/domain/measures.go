@@ -62,14 +62,17 @@ type Mention struct {
 	Answers      int
 	First        int
 	positions    int
+	// placed counts the answers that name it at a place; one that names Tribelt only by the
+	// reading's verdict has none.
+	placed int
 }
 
-// AveragePosition is the company's average place in the answers that name it, from 1.
+// AveragePosition is the company's average place in the answers that name it at a place, from 1.
 func (m Mention) AveragePosition() float64 {
-	if m.Answers == 0 {
+	if m.placed == 0 {
 		return 0
 	}
-	return float64(m.positions) / float64(m.Answers)
+	return float64(m.positions) / float64(m.placed)
 }
 
 // Mentions counts, for every company on the list a run's answers name, the answers that name it
@@ -91,6 +94,38 @@ func Mentions(answers []Answer) []Mention {
 	return out
 }
 
+// WithTribelt counts Tribelt's mentions as ADR-0004 and the cells count Tribelt named: every
+// answer that counts and whose reading names Tribelt, also one whose names the list does not match
+// to Tribelt, Tribelt being the directory's company with its role; the mentions keep Mentions'
+// order. Without Tribelt on the list they are left as they are.
+func WithTribelt(mentions []Mention, answers []Answer, directory []DirectoryCompany) []Mention {
+	t := slices.IndexFunc(directory, func(c DirectoryCompany) bool { return c.Role == RoleTribelt })
+	if t < 0 {
+		return mentions
+	}
+	tribelt := directory[t].ID
+	named := 0
+	for _, a := range answers {
+		if a.Counts() && a.Extraction.NamesTribelt {
+			named++
+		}
+	}
+	out := slices.Clone(mentions)
+	i := slices.IndexFunc(out, func(m Mention) bool { return m.CompetitorID == tribelt })
+	switch {
+	case i >= 0:
+		out[i].Answers = max(out[i].Answers, named)
+	case named > 0:
+		out = append(out, Mention{CompetitorID: tribelt, Answers: named})
+	default:
+		return out
+	}
+	slices.SortStableFunc(out, func(a, b Mention) int {
+		return cmp.Or(cmp.Compare(b.Answers, a.Answers), cmp.Compare(b.First, a.First), strings.Compare(a.CompetitorID, b.CompetitorID))
+	})
+	return out
+}
+
 // mention counts one answer's companies on the list, each once, at its first place.
 func mention(byID map[string]*Mention, companies []Company) {
 	seen := map[string]bool{}
@@ -105,6 +140,7 @@ func mention(byID map[string]*Mention, companies []Company) {
 			byID[c.CompetitorID] = m
 		}
 		m.Answers++
+		m.placed++
 		m.positions += c.Position
 		if c.Position == 1 {
 			m.First++

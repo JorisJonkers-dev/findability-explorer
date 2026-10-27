@@ -46,6 +46,9 @@ type Evidence func(ctx context.Context) ([]domain.Observation, error)
 // analysis context provides it.
 type Sightings func(ctx context.Context) ([]domain.Sighting, error)
 
+// TribeltScanned reports whether tribelt.nl has a finished scan; the analysis context provides it.
+type TribeltScanned func(ctx context.Context) (bool, error)
+
 // Service runs the terminology use cases against the catalogue and the accepted terms.
 type Service struct {
 	catalogue Catalogue
@@ -53,6 +56,9 @@ type Service struct {
 	evidence  Evidence
 	sightings Sightings
 	now       func() time.Time
+
+	// tribeltScanned is nil until WithTribeltScans: tribelt.nl counts as never scanned.
+	tribeltScanned TribeltScanned
 
 	mu       sync.RWMutex
 	accepted []domain.Term
@@ -77,6 +83,29 @@ func (s *Service) FoundBy(ctx context.Context) (map[domain.TermKey][]string, err
 		return nil, fmt.Errorf("read the scans' sightings: %w", err)
 	}
 	return domain.FoundBy(seen), nil
+}
+
+// WithTribeltScans tells the service whether tribelt.nl has a finished scan, so SiteUse knows
+// whether the scan or the desk research says which terms tribelt.nl uses.
+func (s *Service) WithTribeltScans(scanned TribeltScanned) *Service {
+	s.tribeltScanned = scanned
+	return s
+}
+
+// SiteUse is which of the map's terms the companies' sites use: the companies whose newest finished
+// scan found each term, and whether tribelt.nl has a finished scan (domain.SiteUse.TribeltUses).
+func (s *Service) SiteUse(ctx context.Context) (domain.SiteUse, error) {
+	found, err := s.FoundBy(ctx)
+	if err != nil {
+		return domain.SiteUse{}, err
+	}
+	u := domain.SiteUse{FoundBy: found}
+	if s.tribeltScanned != nil {
+		if u.TribeltScanned, err = s.tribeltScanned(ctx); err != nil {
+			return domain.SiteUse{}, fmt.Errorf("whether tribelt.nl was scanned: %w", err)
+		}
+	}
+	return u, nil
 }
 
 // Load reads the accepted terms into the map.

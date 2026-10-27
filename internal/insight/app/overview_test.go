@@ -11,7 +11,7 @@ import (
 func TestTheOverviewCountsTheMapTheResearchAndTheNewestRun(t *testing.T) {
 	w := newWorld()
 	w.companies[1].Researched = true
-	w.mapTerms = []domain.MapTerm{{Text: "spiral belt", Language: "en", UsedByTribelt: true}, {Text: "Spiralband", Language: "de"}}
+	w.terms = domain.TermMap{Terms: []domain.MapTerm{{Text: "spiral belt", Language: "en", UsedByTribelt: true}, {Text: "Spiralband", Language: "de"}}}
 	got, err := service(w).Overview(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -31,7 +31,7 @@ func TestTheOverviewCountsTheMapTheResearchAndTheNewestRun(t *testing.T) {
 func TestTheOverviewSaysWhichSourceFailed(t *testing.T) {
 	for _, breaks := range []func(*world){
 		func(w *world) { w.companiesErr = errDown },
-		func(w *world) { w.mapErr = errDown },
+		func(w *world) { w.termsErr = errDown },
 		func(w *world) { w.runsErr = errDown },
 	} {
 		w := newWorld()

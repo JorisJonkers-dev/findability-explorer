@@ -10,7 +10,8 @@ import { useTermMap } from '../../terminology/composables/useTermSearch'
 import { useMe } from '../../shell/composables/useMe'
 import { useCompanies } from '../composables/useCompanies'
 import { splitArchived } from '../domain/admin'
-import { researchedCompetitors, selectedCompany } from '../domain/list'
+import { selectedCompany } from '../domain/list'
+import { useOverview } from '../../home/composables/useOverview'
 import AdminTools from './AdminTools.vue'
 import CompanyCard from './CompanyCard.vue'
 import CompanyList from './CompanyList.vue'
@@ -38,9 +39,11 @@ function columnProps(i: number) {
 const selected = computed(() =>
   selectedCompany([...companies.value, ...archived.value], typeof route.query.company === 'string' ? route.query.company : undefined),
 )
+// The server counts the competitors the desk research found, as the home page shows them.
+const { overview } = useOverview()
 const title = computed(() => {
-  const count = researchedCompetitors(companies.value).length
-  return count > 0 ? `${String(count)} competitors, the same belts, other names.` : 'The same belts, other names.'
+  const count = overview.value?.competitors.makers ?? 0
+  return count > 0 ? `The desk research found ${String(count)} competitors. The same belts, other names.` : 'The same belts, other names.'
 })
 
 /** Shows a company: the address keeps it, so a link or a reload shows the same one. */
@@ -68,7 +71,7 @@ function scan(url: string): void {
       </StageColumn>
       <StageColumn v-bind="columnProps(1)" @widen="columns.widen(1)" @minimise="columns.minimise(1)" @restore="columns.restore(1)">
         <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
-        <CompanyCard v-else-if="selected" :company="selected" :terms="map.terms.value" :is-admin="isAdmin" @scan="scan" @removed="removed" />
+        <CompanyCard v-else-if="selected" :company="selected" :terms="map.terms.value" :terms-from="map.tribeltFrom.value" :is-admin="isAdmin" @scan="scan" @removed="removed" />
         <p v-else class="m-0 text-muted">Loading the companies…</p>
       </StageColumn>
       <StageColumn v-bind="columnProps(2)" @widen="columns.widen(2)" @minimise="columns.minimise(2)" @restore="columns.restore(2)">

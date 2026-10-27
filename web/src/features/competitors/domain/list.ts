@@ -1,4 +1,4 @@
-import type { BeltFamily, Competitor } from '../../../infrastructure/api/types.gen'
+import type { BeltFamily, Competitor, TermsSource } from '../../../infrastructure/api/types.gen'
 import { familyLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
 import { fold } from '../../terminology/domain/fold'
 import { type Company, listScanLabel } from './company'
@@ -80,9 +80,16 @@ export function beltRows(company: Pick<Competitor, 'beltNames'>): BeltRow[] {
   })
 }
 
-/** "12 terms in the terminology map". */
-export function termsTitle(count: number): string {
-  return `${String(count)} ${count === 1 ? 'term' : 'terms'} in the terminology map`
+/**
+ * How many of the map's terms a company uses, and how that is known: "45 terms from the map, found
+ * by the newest scan of tribelt.nl" for Tribelt, "12 terms from the map, credited by the desk
+ * research or found by its newest scan" for another company.
+ */
+export function termsTitle(count: number, tribelt?: TermsSource): string {
+  const terms = `${String(count)} ${count === 1 ? 'term' : 'terms'} from the map`
+  if (tribelt === 'scan') return `${terms}, found by the newest scan of tribelt.nl`
+  if (tribelt === 'research') return `${terms}, credited by the desk research until tribelt.nl is scanned`
+  return `${terms}, credited by the desk research or found by its newest scan`
 }
 
 /** The company the view opens on: Twentebelt, the Dutch maker closest to Tribelt. */
@@ -91,11 +98,6 @@ export const DEFAULT_COMPANY = 'twentebelt'
 /** The company the view shows: the one in the address, else the default, else the first in the list. */
 export function selectedCompany<T extends { id: string }>(companies: readonly T[], id: string | undefined): T | undefined {
   return companies.find((c) => c.id === id) ?? companies.find((c) => c.id === DEFAULT_COMPANY) ?? companies[0]
-}
-
-/** The competitors the desk research studied: neither added since, nor Tribelt, its group or the mirror. */
-export function researchedCompetitors<T extends Pick<Competitor, 'source' | 'groupCompany' | 'role'>>(companies: readonly T[]): T[] {
-  return companies.filter((c) => c.source === 'research' && !c.groupCompany && c.role === 'competitor')
 }
 
 /** A column of the company list to sort by: the name, a belt family, or the country. */

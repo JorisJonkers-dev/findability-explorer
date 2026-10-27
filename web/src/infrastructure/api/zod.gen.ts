@@ -415,16 +415,8 @@ export const zTerm = z.object({
     tier: zIntentTier,
     usedBy: z.array(z.string().max(200)).max(20),
     foundBy: z.array(zCompetitorId).max(10000).optional(),
+    tribeltUses: z.boolean().optional(),
     source: z.string().max(500)
-});
-
-/**
- * A page of matching terms.
- */
-export const zTermSearch = z.object({
-    items: z.array(zTerm).max(10000),
-    total: z.int().gte(0).lte(100000),
-    facets: zFacets
 });
 
 /**
@@ -821,7 +813,8 @@ export const zPlanTarget = z.enum([
 export const zWatchedNumber = z.object({
     target: zPlanTarget,
     now: z.number().gte(0).optional(),
-    goal: z.number().gte(0)
+    goal: z.number().gte(0),
+    met: z.boolean().optional()
 });
 
 /**
@@ -944,16 +937,6 @@ export const zEyeOn = z.object({
 });
 
 /**
- * The plan as it stands.
- */
-export const zPlan = z.object({
-    catalogueVersion: z.int().gte(1).lte(1000),
-    improvements: z.array(zPlanImprovement).max(50),
-    watched: z.array(zWatchedNumber).max(20),
-    eyeOn: z.array(zEyeOn).max(10)
-});
-
-/**
  * Tribelt against its competitors on one measure.
  */
 export const zStanding = z.object({
@@ -967,20 +950,75 @@ export const zStanding = z.object({
 });
 
 /**
+ * The terms of one language, and how many of them Tribelt's own site uses.
+ */
+export const zOverviewLanguage = z.object({
+    language: zLanguage,
+    terms: z.int().gte(1).lte(1000000),
+    tribelt: z.int().gte(0).lte(1000000)
+});
+
+/**
+ * How many of the run's answers name one company.
+ */
+export const zOverviewMention = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    answers: z.int().gte(0).lte(1000000),
+    share: z.number().gte(0).lte(1).optional()
+});
+
+/**
+ * The newest Prompt run with answers that count, in figures. Before any such run there are no answers and no companies.
+ */
+export const zOverviewAiSearch = z.object({
+    answers: z.int().gte(0).lte(1000000),
+    companies: z.array(zOverviewMention).max(10)
+});
+
+/**
+ * What says which of the map's terms tribelt.nl uses - scan (its newest finished scan) or research (the desk research's credits, before any finished scan of tribelt.nl).
+ */
+export const zTermsSource = z.enum(['scan', 'research']);
+
+/**
+ * A page of matching terms.
+ */
+export const zTermSearch = z.object({
+    items: z.array(zTerm).max(10000),
+    total: z.int().gte(0).lte(100000),
+    facets: zFacets,
+    tribeltFrom: zTermsSource.optional()
+});
+
+/**
+ * The plan as it stands.
+ */
+export const zPlan = z.object({
+    catalogueVersion: z.int().gte(1).lte(1000),
+    improvements: z.array(zPlanImprovement).max(50),
+    watched: z.array(zWatchedNumber).max(20),
+    eyeOn: z.array(zEyeOn).max(10),
+    tribeltTermsFrom: zTermsSource.optional()
+});
+
+/**
  * How Tribelt stands against its competitors now.
  */
 export const zStandings = z.object({
     measures: z.array(zStanding).max(20),
     trailing: z.int().gte(0).lte(20),
     open: z.array(zPlanImprovement).max(10),
-    runStartedAt: z.iso.datetime({ offset: true }).max(64).optional()
+    runStartedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    tribeltTermsFrom: zTermsSource.optional()
 });
 
 /**
- * The terms of one language, and how many of them Tribelt's own site uses.
+ * The terms of one kind of search, and how many of them tribelt.nl uses.
  */
-export const zOverviewLanguage = z.object({
-    language: zLanguage,
+export const zOverviewTier = z.object({
+    tier: zIntentTier,
     terms: z.int().gte(1).lte(1000000),
     tribelt: z.int().gte(0).lte(1000000)
 });
@@ -991,25 +1029,9 @@ export const zOverviewLanguage = z.object({
 export const zOverviewTerms = z.object({
     total: z.int().gte(0).lte(1000000),
     tribelt: z.int().gte(0).lte(1000000),
-    languages: z.array(zOverviewLanguage).max(200)
-});
-
-/**
- * How many of the run's answers name one company.
- */
-export const zOverviewMention = z.object({
-    competitorId: zCompetitorId,
-    name: z.string().max(200),
-    role: zCompanyRole,
-    answers: z.int().gte(0).lte(1000000)
-});
-
-/**
- * The newest Prompt run with answers that count, in figures. Before any such run there are no answers and no companies.
- */
-export const zOverviewAiSearch = z.object({
-    answers: z.int().gte(0).lte(1000000),
-    companies: z.array(zOverviewMention).max(10)
+    languages: z.array(zOverviewLanguage).max(200),
+    from: zTermsSource.optional(),
+    tiers: z.array(zOverviewTier).max(20).optional()
 });
 
 /**
@@ -1211,7 +1233,8 @@ export const zOverviewFamily = z.object({
  */
 export const zOverviewCompetitors = z.object({
     makers: z.int().gte(0).lte(100000),
-    families: z.array(zOverviewFamily).max(20)
+    families: z.array(zOverviewFamily).max(20),
+    listed: z.int().gte(0).lte(100000).optional()
 });
 
 /**
@@ -1273,7 +1296,8 @@ export const zProduct = z.object({
  */
 export const zProductsOverview = z.object({
     items: z.array(zProduct).max(10),
-    standouts: z.array(zProductStandout).max(10)
+    standouts: z.array(zProductStandout).max(10),
+    tribeltTermsFrom: zTermsSource.optional()
 });
 
 /**

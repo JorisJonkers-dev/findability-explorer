@@ -33,11 +33,11 @@ const mostSellers = computed(() => Math.max(1, ...products.value.map((p) => p.se
             <span class="text-sm text-ink-2 stage:text-[26px]">of AI answers about it name Tribelt</span>
           </span>
           <span class="flex flex-col gap-1.5">
-            <span class="flex justify-between gap-2 text-sm stage:text-[26px]"><span>Competitors selling it</span><strong>{{ p.sellers.length }}</strong></span>
+            <span class="flex justify-between gap-2 text-sm stage:text-[26px]"><span>Competitors on the list selling it</span><strong>{{ p.sellers.length }}</strong></span>
             <span aria-hidden="true" class="block h-2 bg-white stage:h-3"><span class="block h-full bg-blue-grey" :style="{ width: percent(p.sellers.length / mostSellers) }"></span></span>
           </span>
           <span class="flex flex-col gap-1.5">
-            <span class="flex justify-between gap-2 text-sm stage:text-[26px]"><span>Search terms Tribelt uses</span><strong>{{ p.termsUsed }} of {{ p.terms.length }}</strong></span>
+            <span class="flex justify-between gap-2 text-sm stage:text-[26px]"><span>Search terms tribelt.nl uses</span><strong>{{ p.termsUsed }} of {{ p.terms.length }}</strong></span>
             <span aria-hidden="true" class="block h-2 bg-white stage:h-3"><span class="block h-full bg-orange" :style="{ width: percent(p.terms.length === 0 ? 0 : p.termsUsed / p.terms.length) }"></span></span>
           </span>
           <span v-if="topTerm(p)" class="flex flex-col">

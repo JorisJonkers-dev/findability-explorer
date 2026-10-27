@@ -156,6 +156,13 @@ describe('the numbers', () => {
     expect(mostNamed([])).toEqual([{ id: 'tribelt', share: 0, tribelt: true }])
   })
 
+  it("count Tribelt in its bar as the headline does: by the reading, also with no name matched to it", () => {
+    const read = [promptAnswer({}, ['Twentebelt:twentebelt', 'Tribelt B.V.'], { namesTribelt: true }), promptAnswer({}, ['Twentebelt:twentebelt'], { namesTribelt: false })]
+    const tribelt = mostNamed(read).find((n) => n.tribelt)
+    expect(tribelt?.share).toBe(headlineNumbers(read).named / headlineNumbers(read).counted)
+    expect(tribelt?.share).toBe(0.5)
+  })
+
   it('head the page with who the answers name most', () => {
     const name = (id: string) => id.toUpperCase()
     expect(gridHeadline([], name)).toBe('Do AI assistants name Tribelt?')

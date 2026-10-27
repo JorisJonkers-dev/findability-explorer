@@ -11,7 +11,6 @@ import {
   familyDots,
   filterCompanies,
   inRegion,
-  researchedCompetitors,
   rowLabel,
   selectedCompany,
   termsTitle,
@@ -96,8 +95,9 @@ describe('the company card', () => {
   })
 
   it('counts its terms', () => {
-    expect(termsTitle(1)).toBe('1 term in the terminology map')
-    expect(termsTitle(12)).toBe('12 terms in the terminology map')
+    expect(termsTitle(1)).toBe('1 term from the map, credited by the desk research or found by its newest scan')
+    expect(termsTitle(45, 'scan')).toBe('45 terms from the map, found by the newest scan of tribelt.nl')
+    expect(termsTitle(12, 'research')).toBe('12 terms from the map, credited by the desk research until tribelt.nl is scanned')
   })
 
   it('shows the company in the address, else the first', () => {
@@ -107,13 +107,6 @@ describe('the company card', () => {
     expect(selectedCompany([ashworth], undefined)).toBe(ashworth)
     expect(selectedCompany(all, undefined)).toBe(twentebelt)
     expect(selectedCompany<Company>([], undefined)).toBeUndefined()
-  })
-})
-
-describe('the researched competitors', () => {
-  it('leaves out the group and the companies added since', () => {
-    const added = company('Example Belts', { source: 'added' })
-    expect(researchedCompetitors([...all, added])).toEqual([twentebelt, martens, ashworth])
   })
 })
 

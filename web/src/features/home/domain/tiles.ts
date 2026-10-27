@@ -44,13 +44,14 @@ export function languageBars(terms: OverviewTerms | undefined): TileBar[] {
   }))
 }
 
-/** The search terms tile's figure: "387 search terms in 3 languages. Tribelt's own website uses 30 of them." */
+/** The search terms tile's figure: "387 search terms in 3 languages. The newest scan of tribelt.nl found 45 of them." */
 export function termsFigure(terms: OverviewTerms | undefined): { big: string; text: string } {
   if (!terms || terms.total === 0) return { big: '…', text: 'search terms in the terminology map.' }
-  return {
-    big: String(terms.total),
-    text: `search terms in ${String(terms.languages.length)} languages. Tribelt's own website uses ${String(terms.tribelt)} of them.`,
-  }
+  const used =
+    terms.from === 'research'
+      ? `The desk research credits Tribelt with ${String(terms.tribelt)} of them.`
+      : `The newest scan of tribelt.nl found ${String(terms.tribelt)} of them.`
+  return { big: String(terms.total), text: `search terms in ${String(terms.languages.length)} languages. ${used}` }
 }
 
 /** Per measure, Tribelt's value against the leader's: Tribelt's part, then the gap to the leader. */
@@ -74,13 +75,13 @@ export function catchUpFigure(measures: readonly Standing[], trailing: number): 
   return { big: String(trailing), text: trailing === 1 ? 'measure where Tribelt trails the leader.' : 'measures where Tribelt trails the leaders.' }
 }
 
-/** The shares of the newest run's answers naming Tribelt and the four competitors named most, against the largest. */
+/** The shares of the newest run's answers naming Tribelt and the four competitors named most, as the server counts them, against the largest. */
 export function voiceBars(ai: OverviewAiSearch | undefined): TileBar[] {
   if (!ai || ai.answers === 0) return []
   const most = Math.max(1, ...ai.companies.map((c) => c.answers))
   return ai.companies.map((c) => ({
     label: c.name,
-    value: `${String(Math.round((c.answers / ai.answers) * 100))}%`,
+    value: formatValue('aiShareOfVoice', c.share ?? 0),
     first: c.answers / most,
     second: 0,
     zero: false,
@@ -93,7 +94,8 @@ export function aiFigure(ai: OverviewAiSearch | undefined): { big: string; text:
   const us = bars.find((b) => b.label === 'Tribelt')
   if (!us) return { big: '…', text: 'of AI answers name Tribelt, once the first Prompt run is in.' }
   const top = bars.find((b) => b.label !== 'Tribelt')
-  return { big: us.value, text: top ? `of AI answers name Tribelt. ${top.label} is named in ${top.value}.` : 'of AI answers name Tribelt.' }
+  const named = 'of the AI answers in the newest Prompt run name Tribelt.'
+  return { big: us.value, text: top ? `${named} ${top.label} is named in ${top.value}.` : named }
 }
 
 /** The point a zoom grows from: the centre of a box, in the poster's own pixels. */

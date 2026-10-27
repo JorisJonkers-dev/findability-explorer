@@ -264,7 +264,7 @@ func limits() app.Limits {
 	return app.Limits{MonthlyTokens: 1000, SiteTextChars: 10_000}
 }
 
-func glossary() []domain.GlossaryTerm {
+func glossary(context.Context) []domain.GlossaryTerm {
 	return []domain.GlossaryTerm{
 		{Text: "spiral belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product"},
 		{Text: "eyelink belt", Language: "en", Family: "eyelink", Tier: "product"},

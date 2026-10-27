@@ -11,9 +11,11 @@ function plan(done = false): Plan {
       { id: 'llms-files', title: 'Add llms.txt and llms-full.txt', moves: 'AI readiness', measure: 'readinessChecks', auto: true, done: true, ...details, parts: [{ name: 'llms.txt', present: true }, { name: 'llms-full.txt', present: false }], tribelt: 3, leader: { competitorId: 'martens', name: 'Märtens', value: 5 } },
     ],
     watched: [
-      { target: 'aiShareOfVoice', now: 0.24, goal: 0.4 },
+      { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, met: false },
       { target: 'citations', goal: 20 },
+      { target: 'termsUsed', now: 45, goal: 35, met: true },
     ],
+    tribeltTermsFrom: 'scan',
     eyeOn: [
       { why: 'mostNamed', leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.57 } },
       { why: 'twente', leader: { competitorId: 'twentebelt', name: 'Twentebelt', value: 0.6 } },
@@ -45,7 +47,7 @@ describe('the plan', () => {
     expect(items).toHaveLength(2)
     expect(items[0]?.text()).toContain('1. Submit tribelt.nl to Google and Bing')
     expect(items[0]?.text()).toContain('Gemini answers from Google’s index.')
-    expect(items[0]?.text()).toContain('Moves AI answers in Gemini and Copilot. AI answers name Tribelt 24% of the time. Ashworth leads with 57%.')
+    expect(items[0]?.text()).toContain('Moves AI answers in Gemini and Copilot. 24% of the AI answers in the newest Prompt run name Tribelt. Ashworth leads with 57%.')
     expect(items[0]?.get('details summary').text()).toBe('How to do it')
     expect(items[0]?.findAll('details ol li').map((li) => li.text())).toEqual(['Do the first thing.', 'Do the second thing.'])
     expect(items[0]?.get('details').text()).toContain('Done whenIt is in place.')
@@ -63,8 +65,12 @@ describe('the plan', () => {
   it('shows the numbers to watch against their targets, and who to keep an eye on', async () => {
     const { wrapper } = await mountApp(api(), '/plan')
     const watch = wrapper.get('aside[aria-labelledby="watch-title"]')
-    expect(watch.text()).toContain('AI answers that name Tribelt24% to 40%')
-    expect(watch.text()).toContain('Web answers in a run that cite tribelt.nlNo data yet to 20')
+    expect(watch.text()).toContain('AI answers in the newest Prompt run that name Tribelt24% to 40%')
+    expect(watch.text()).toContain('Web answers in the newest Prompt run that cite tribelt.nlNo data yet to 20')
+    // A met target says so, draws no target behind its bar, and asks to be raised.
+    expect(watch.text()).toContain("Search terms from the map found on tribelt.nl's newest scanMet: 45, target was 35")
+    expect(watch.findAll('span.border-r-4')).toHaveLength(2)
+    expect(watch.text()).toContain('A met target is no goal any more. An administrator can raise it.')
     expect(watch.text()).toContain('Ashworth is named most in AI answers.')
     expect(watch.text()).toContain('Twentebelt is named most when buyers ask for Twente.')
     expect(watch.find('button').exists()).toBe(false)
@@ -102,6 +108,7 @@ describe('the plan', () => {
         targets: [
           { target: 'aiShareOfVoice', value: 0.4 },
           { target: 'citations', value: 25 },
+          { target: 'termsUsed', value: 35 },
         ],
       },
     ])

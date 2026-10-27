@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"slices"
 	"strings"
-	"unicode"
 )
 
 // Overview is what the home page shows, in figures: the terminology map, the competitors the desk
@@ -15,26 +14,45 @@ type Overview struct {
 	AiSearch    AiSearchOverview
 }
 
-// TermsOverview is the terminology map in figures: its terms, how many of them Tribelt's own site
-// uses, and both per language.
+// TermsOverview is the terminology map in figures: its terms, how many of them tribelt.nl uses
+// (the count TermMap.TermsUsed gives Tribelt), and both per language and per kind of search.
 type TermsOverview struct {
 	Total   int
 	Tribelt int
+	// From says what Tribelt's count comes from: tribelt.nl's newest scan, or the research before one.
+	From TermsSource
 	// Languages are every language with a term, the most terms first; American English counts as English.
 	Languages []LanguageTerms
+	// Tiers are every kind of search with a term, in the map's order.
+	Tiers []TierTerms
 }
 
-// LanguageTerms are the terms of one language, and how many of them Tribelt's own site uses.
+// LanguageTerms are the terms of one language, and how many of them tribelt.nl uses.
 type LanguageTerms struct {
 	Language string
 	Terms    int
 	Tribelt  int
 }
 
+// TierTerms are the terms of one kind of search, and how many of them tribelt.nl uses.
+type TierTerms struct {
+	Tier    string
+	Terms   int
+	Tribelt int
+}
+
+// Tiers are the kinds of search, from the most specific to the broadest, as the map orders them.
+func Tiers() []string {
+	return []string{"spec", "product", "application", "problem", "broad"}
+}
+
 // CompetitorsOverview is how many competitors the desk research found, and how many of them offer
-// each of Tribelt's belt families.
+// each of Tribelt's belt families; and how many competitors the list holds now, those added since
+// the research included.
 type CompetitorsOverview struct {
 	Makers int
+	// Listed are the competitors on the list that are not archived, researched or added since.
+	Listed int
 	// Families are Tribelt's belt families, in order.
 	Families []FamilyMakers
 }
@@ -53,12 +71,14 @@ type AiSearchOverview struct {
 	Companies []Mentioned
 }
 
-// Mentioned is how many answers name one company.
+// Mentioned is how many answers name one company, and their share of the run's answers.
 type Mentioned struct {
 	CompanyID string
 	Name      string
 	Role      Role
 	Answers   int
+	// Share is ShareOfVoice: the same share the standings and the plan show.
+	Share float64
 }
 
 // VoicesShown is how many competitors the home page lists beside Tribelt.
@@ -66,14 +86,15 @@ const VoicesShown = 4
 
 // OverviewOf counts the home page's figures from the companies, the terminology map and the newest
 // Prompt run with answers that count, nil before any.
-func OverviewOf(companies []Company, terms []MapTerm, run *Run) Overview {
+func OverviewOf(companies []Company, terms TermMap, run *Run) Overview {
 	return Overview{Terms: TermsOf(terms), Competitors: CompetitorsOf(companies), AiSearch: AiSearchOf(run, companies)}
 }
 
-// TermsOf counts the map's terms, in total and per language.
-func TermsOf(terms []MapTerm) TermsOverview {
-	out := TermsOverview{Total: len(terms), Languages: []LanguageTerms{}}
-	for _, t := range terms {
+// TermsOf counts the map's terms, in total, per language and per kind of search, and those
+// tribelt.nl uses: the same count as TermMap.TermsUsed gives Tribelt.
+func TermsOf(m TermMap) TermsOverview {
+	out := TermsOverview{Total: len(m.Terms), Tribelt: m.TermsUsed()[TribeltID], From: m.TribeltFrom, Languages: []LanguageTerms{}, Tiers: []TierTerms{}}
+	for _, t := range m.Terms {
 		language := t.Language
 		if language == "en-US" {
 			language = "en"
@@ -84,22 +105,38 @@ func TermsOf(terms []MapTerm) TermsOverview {
 			i = len(out.Languages) - 1
 		}
 		out.Languages[i].Terms++
+		j := slices.IndexFunc(out.Tiers, func(k TierTerms) bool { return k.Tier == t.Tier })
+		if j < 0 {
+			out.Tiers = append(out.Tiers, TierTerms{Tier: t.Tier})
+			j = len(out.Tiers) - 1
+		}
+		out.Tiers[j].Terms++
 		if t.UsedByTribelt {
 			out.Languages[i].Tribelt++
-			out.Tribelt++
+			out.Tiers[j].Tribelt++
 		}
 	}
 	slices.SortFunc(out.Languages, func(a, b LanguageTerms) int {
 		return cmp.Or(cmp.Compare(b.Terms, a.Terms), strings.Compare(a.Language, b.Language))
 	})
+	slices.SortStableFunc(out.Tiers, func(a, b TierTerms) int { return cmp.Compare(tierOrder(a.Tier), tierOrder(b.Tier)) })
 	return out
+}
+
+// tierOrder is a kind of search's place in Tiers; one the map does not know goes last.
+func tierOrder(tier string) int {
+	if i := slices.Index(Tiers(), tier); i >= 0 {
+		return i
+	}
+	return len(Tiers())
 }
 
 // CompetitorsOf counts the competitors the desk research found, not one added since, a group
 // company or the mirror, and how many of them offer each of Tribelt's families.
 func CompetitorsOf(companies []Company) CompetitorsOverview {
 	makers := slices.DeleteFunc(slices.Clone(companies), func(c Company) bool { return !c.Researched || c.Role != RoleCompetitor })
-	out := CompetitorsOverview{Makers: len(makers), Families: make([]FamilyMakers, 0, len(Families()))}
+	listed := slices.DeleteFunc(slices.Clone(companies), func(c Company) bool { return c.Role != RoleCompetitor })
+	out := CompetitorsOverview{Makers: len(makers), Listed: len(listed), Families: make([]FamilyMakers, 0, len(Families()))}
 	for _, f := range Families() {
 		n := 0
 		for _, c := range makers {
@@ -126,11 +163,15 @@ func AiSearchOf(run *Run, companies []Company) AiSearchOverview {
 		return out
 	}
 	answers, first := namings(run.Answers)
+	shareOf := func(id string) float64 {
+		v, _ := ShareOfVoice(run.Answers, id)
+		return v
+	}
 	var competitors []Mentioned
-	tribelt := Mentioned{CompanyID: TribeltID, Name: "Tribelt", Role: RoleTribelt, Answers: answers[TribeltID]}
+	tribelt := Mentioned{CompanyID: TribeltID, Name: "Tribelt", Role: RoleTribelt, Answers: answers[TribeltID], Share: shareOf(TribeltID)}
 	for _, c := range companies {
 		if c.Role == RoleCompetitor && answers[c.ID] > 0 {
-			competitors = append(competitors, Mentioned{CompanyID: c.ID, Name: c.Name, Role: c.Role, Answers: answers[c.ID]})
+			competitors = append(competitors, Mentioned{CompanyID: c.ID, Name: c.Name, Role: c.Role, Answers: answers[c.ID], Share: shareOf(c.ID)})
 		}
 	}
 	slices.SortFunc(competitors, func(a, b Mentioned) int {
@@ -143,11 +184,12 @@ func AiSearchOf(run *Run, companies []Company) AiSearchOverview {
 	return out
 }
 
-// namings counts, per company, the answers that name it and those that name it first of all.
+// namings counts, per company, the answers that name it (once each, as ShareOfVoice does) and
+// those that name it first of all.
 func namings(answers []Answer) (named, first map[string]int) {
 	named, first = map[string]int{}, map[string]int{}
 	for _, a := range answers {
-		for _, id := range a.Named {
+		for _, id := range slices.Compact(slices.Sorted(slices.Values(a.Named))) {
 			named[id]++
 		}
 		if a.First != "" {
@@ -155,22 +197,4 @@ func namings(answers []Answer) (named, first map[string]int) {
 		}
 	}
 	return named, first
-}
-
-// CreditsTribelt is whether one of the map's credits for a term names Tribelt: "Tribelt", or one
-// of its product lines, "Tribelt (Tri-Flex)".
-func CreditsTribelt(usedBy []string) bool {
-	return slices.ContainsFunc(usedBy, func(u string) bool { return creditedName(u) == "Tribelt" })
-}
-
-// creditedName is the company a credit names, without the product line in brackets after it.
-func creditedName(credit string) string {
-	name := strings.TrimRightFunc(credit, unicode.IsSpace)
-	if open := strings.LastIndex(name, "("); open >= 0 && strings.HasSuffix(name, ")") && !strings.Contains(name[open+1:len(name)-1], ")") {
-		name = name[:open]
-	}
-	if name = strings.TrimSpace(name); name == "" {
-		return strings.TrimSpace(credit)
-	}
-	return name
 }

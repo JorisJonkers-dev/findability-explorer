@@ -220,6 +220,23 @@ func TestCellsMentionsAndWrongClaims(t *testing.T) {
 	if mentions[1].CompetitorID != "tribelt" || (domain.Mention{}).AveragePosition() != 0 {
 		t.Errorf("mentions[1] = %+v", mentions[1])
 	}
+	// The reading names Tribelt in an answer whose names the list did not match to it: Tribelt's
+	// mentions count it, as the cells do.
+	unmatched := answer("google", domain.ScopeGermany, domain.ModeKnowledge, &domain.Extraction{NamesTribelt: true, Companies: []domain.Company{{CompetitorID: "esfo", Position: 1}}})
+	withTribelt := domain.WithTribelt(domain.Mentions(append(slices.Clone(answers), unmatched)), append(slices.Clone(answers), unmatched), directory())
+	if withTribelt[0].CompetitorID != "esfo" || withTribelt[1].CompetitorID != "tribelt" || withTribelt[1].Answers != 3 || withTribelt[1].AveragePosition() != 1 {
+		t.Errorf("with Tribelt = %+v", withTribelt)
+	}
+	onlyRead := domain.WithTribelt(nil, []domain.Answer{unmatched}, directory())
+	if len(onlyRead) != 1 || onlyRead[0].Answers != 1 || onlyRead[0].AveragePosition() != 0 {
+		t.Errorf("named by the reading alone = %+v", onlyRead)
+	}
+	if got := domain.WithTribelt(mentions[:1], answers[1:3], directory()); len(got) != 1 {
+		t.Errorf("no answer names Tribelt, yet %+v", got)
+	}
+	if got := domain.WithTribelt(nil, []domain.Answer{unmatched}, directory()[1:]); len(got) != 0 {
+		t.Errorf("no Tribelt on the list, yet %+v", got)
+	}
 	claims := domain.WrongClaims(answers)
 	if len(claims) != 2 || !claims[0].At.Equal(late.At) || claims[0].Claim != "Tribelt is in Belgium." || claims[0].Correctness != domain.CorrectnessWrong {
 		t.Errorf("claims = %+v", claims)

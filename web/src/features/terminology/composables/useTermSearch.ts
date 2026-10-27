@@ -20,6 +20,8 @@ export function useTermMap() {
     // The makers include the companies the scans found a term at (withScanMakers).
     terms: computed<MapTerm[]>(() => withScanMakers(map.data.value ? map.data.value.items : [], competitors.value)),
     total: computed(() => (map.data.value ? map.data.value.total : 0)),
+    /** What says which terms tribelt.nl uses: its newest scan, or the research before one. */
+    tribeltFrom: computed(() => map.data.value?.tribeltFrom),
     isLoading: map.isPending,
     error: computed(() => (map.error.value ? describeError(map.error.value) : null)),
   }

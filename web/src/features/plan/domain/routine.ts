@@ -1,4 +1,4 @@
-import type { EyeOn, PlanImprovement, PlanPart, PlanTarget, StandingMeasure, WatchedNumber } from '../../../infrastructure/api/types.gen'
+import type { EyeOn, PlanImprovement, PlanPart, PlanTarget, StandingMeasure, TermsSource, WatchedNumber } from '../../../infrastructure/api/types.gen'
 import { formatValue } from '../../catching-up/domain/standings'
 import { joinWords } from '../../../shared/words'
 
@@ -52,24 +52,64 @@ export const MONTHS = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', '
 
 /** What each number to watch is called, and how its values read. */
 export const TARGETS: Record<PlanTarget, { label: string; format: (v: number) => string; step: number; max?: number }> = {
-  aiShareOfVoice: { label: 'AI answers that name Tribelt', format: (v) => formatValue('aiShareOfVoice', v), step: 0.01, max: 1 },
-  twenteShareOfVoice: { label: 'Answers about Twente that name Tribelt', format: (v) => formatValue('aiShareOfVoice', v), step: 0.01, max: 1 },
-  readinessChecks: { label: 'AI readiness checks passed out of five', format: (v) => formatValue('readinessChecks', v), step: 0.5, max: 5 },
-  termsUsed: { label: 'Search terms used on tribelt.nl', format: (v) => formatValue('termsUsed', v), step: 1 },
-  citations: { label: 'Web answers in a run that cite tribelt.nl', format: (v) => formatValue('termsUsed', v), step: 1 },
+  aiShareOfVoice: { label: 'AI answers in the newest Prompt run that name Tribelt', format: (v) => formatValue('aiShareOfVoice', v), step: 0.01, max: 1 },
+  twenteShareOfVoice: {
+    label: 'Answers about Twente in the newest Prompt run that name Tribelt',
+    format: (v) => formatValue('aiShareOfVoice', v),
+    step: 0.01,
+    max: 1,
+  },
+  readinessChecks: { label: "AI readiness checks tribelt.nl's newest scan passed, out of five", format: (v) => formatValue('readinessChecks', v), step: 0.5, max: 5 },
+  termsUsed: { label: "Search terms from the map found on tribelt.nl's newest scan", format: (v) => formatValue('termsUsed', v), step: 1 },
+  citations: { label: 'Web answers in the newest Prompt run that cite tribelt.nl', format: (v) => formatValue('termsUsed', v), step: 1 },
 }
 
-/** A number to watch as the page draws it: now and the goal as text, and as lengths from 0 to 1. */
-export function watchedRow(w: WatchedNumber): { label: string; now: string; goal: string; nowLength: number; goalLength: number } {
+/** The label of a number to watch; the search terms say so when the desk research counts them, before a scan of tribelt.nl. */
+export function targetLabel(target: PlanTarget, termsFrom?: TermsSource): string {
+  if (target === 'termsUsed' && termsFrom === 'research') return 'Search terms from the map the desk research credits Tribelt with'
+  return TARGETS[target].label
+}
+
+/** A number to watch as the page draws it: a met target says so and asks to be raised, and has no target mark behind the bar. */
+export type WatchedRow = {
+  label: string
+  now: string
+  goal: string
+  /** The line beside the label: "24% to 40%", or "Met: 45, target was 35". */
+  status: string
+  met: boolean
+  nowLength: number
+  /** Where the target mark sits, from 0 to 1; undefined when the target is met. */
+  goalLength: number | undefined
+}
+
+/**
+ * A number to watch, now against its target. The bar's scale reaches the target, or past the value
+ * when the value has passed it, so a met target fills the bar rather than drawing a target behind it.
+ */
+export function watchedRow(w: WatchedNumber, termsFrom?: TermsSource): WatchedRow {
   const t = TARGETS[w.target]
+  const met = w.met === true && w.now !== undefined
   const max = t.max ?? Math.max(w.goal, w.now ?? 0) * 1.15
+  const now = w.now === undefined ? 'No data yet' : t.format(w.now)
+  const goal = t.format(w.goal)
   return {
-    label: t.label,
-    now: w.now === undefined ? 'No data yet' : t.format(w.now),
-    goal: t.format(w.goal),
+    label: targetLabel(w.target, termsFrom),
+    now,
+    goal,
+    status: met ? `Met: ${now}, target was ${goal}` : `${now} to ${goal}`,
+    met,
     nowLength: Math.min(1, (w.now ?? 0) / max),
-    goalLength: Math.min(1, w.goal / max),
+    goalLength: met ? undefined : Math.min(1, w.goal / max),
   }
+}
+
+/** The line under the numbers when a target is met: what to do about it, for those who can. */
+export function metLine(watched: readonly WatchedNumber[], isAdmin: boolean): string {
+  if (!watched.some((w) => w.met === true && w.now !== undefined)) return ''
+  return isAdmin
+    ? 'A met target is no goal any more. Raise it under Change the targets.'
+    : 'A met target is no goal any more. An administrator can raise it.'
 }
 
 /** Why to keep an eye on a competitor, in a sentence after its name. */
@@ -86,23 +126,25 @@ export function eyeOnText(e: Pick<EyeOn, 'why'>): string {
 
 /** Tribelt's value on each measure in a sentence, and what is missing without one. */
 const NOW: Record<StandingMeasure, { says: (value: string) => string; missing: string }> = {
-  aiShareOfVoice: { says: (v) => `AI answers name Tribelt ${v} of the time.`, missing: 'No Prompt run has finished yet.' },
-  citationShare: { says: (v) => `Web answers cite tribelt.nl ${v} of the time.`, missing: 'No Prompt run has finished yet.' },
+  aiShareOfVoice: { says: (v) => `${v} of the AI answers in the newest Prompt run name Tribelt.`, missing: 'No Prompt run has finished yet.' },
+  citationShare: { says: (v) => `${v} of the web answers in the newest Prompt run cite tribelt.nl.`, missing: 'No Prompt run has finished yet.' },
   readinessChecks: { says: (v) => `tribelt.nl passes ${v} of five AI readiness checks.`, missing: 'No scan of tribelt.nl yet.' },
   sitemapPages: { says: (v) => `The sitemaps of tribelt.nl list ${v} pages.`, missing: 'No scan of tribelt.nl yet.' },
-  termsUsed: { says: (v) => `tribelt.nl uses ${v} search terms from the map.`, missing: 'No scan of tribelt.nl yet.' },
+  termsUsed: { says: (v) => `The newest scan of tribelt.nl found ${v} search terms from the map.`, missing: 'No scan of tribelt.nl yet.' },
 }
 
 /** Where Tribelt stands on the measure an improvement moves, and who leads, in sentences. */
-export function standingLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>): string {
+export function standingLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>, termsFrom?: TermsSource): string {
   const now = NOW[it.measure]
-  const tribelt = it.tribelt === undefined ? now.missing : now.says(formatValue(it.measure, it.tribelt))
+  const credited = it.measure === 'termsUsed' && termsFrom === 'research'
+  const says = (v: string) => (credited ? `The desk research credits Tribelt with ${v} search terms from the map.` : now.says(v))
+  const tribelt = it.tribelt === undefined ? now.missing : says(formatValue(it.measure, it.tribelt))
   return it.leader ? `${tribelt} ${it.leader.name} leads with ${formatValue(it.measure, it.leader.value)}.` : tribelt
 }
 
 /** An improvement's status now: what the latest scan found when a scan checks it, else where Tribelt stands. */
-export function statusLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader' | 'parts'>): string {
-  return foundLine(it.parts) || standingLine(it)
+export function statusLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader' | 'parts'>, termsFrom?: TermsSource): string {
+  return foundLine(it.parts) || standingLine(it, termsFrom)
 }
 
 /** What the latest scan of tribelt.nl found of an improvement it checks, and what it did not. */

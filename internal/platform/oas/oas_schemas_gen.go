@@ -6768,6 +6768,52 @@ func (o OptTermVerdict) Or(d TermVerdict) TermVerdict {
 	return d
 }
 
+// NewOptTermsSource returns new OptTermsSource with value set to v.
+func NewOptTermsSource(v TermsSource) OptTermsSource {
+	return OptTermsSource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermsSource is optional TermsSource.
+type OptTermsSource struct {
+	Value TermsSource
+	Set   bool
+}
+
+// IsSet returns true if OptTermsSource was set.
+func (o OptTermsSource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermsSource) Reset() {
+	var v TermsSource
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermsSource) SetTo(v TermsSource) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermsSource) Get() (v TermsSource, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermsSource) Or(d TermsSource) TermsSource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptURI returns new OptURI with value set to v.
 func NewOptURI(v url.URL) OptURI {
 	return OptURI{
@@ -6939,6 +6985,9 @@ type OverviewCompetitors struct {
 	Makers int32 `json:"makers"`
 	// Each of Tribelt's belt families, in order, with how many of those competitors offer it.
 	Families []OverviewFamily `json:"families"`
+	// How many competitors the list holds now, not archived, those added since the desk research included;
+	// a group company and the mirror do not count.
+	Listed OptInt32 `json:"listed"`
 }
 
 // GetMakers returns the value of Makers.
@@ -6951,6 +7000,11 @@ func (s *OverviewCompetitors) GetFamilies() []OverviewFamily {
 	return s.Families
 }
 
+// GetListed returns the value of Listed.
+func (s *OverviewCompetitors) GetListed() OptInt32 {
+	return s.Listed
+}
+
 // SetMakers sets the value of Makers.
 func (s *OverviewCompetitors) SetMakers(val int32) {
 	s.Makers = val
@@ -6959,6 +7013,11 @@ func (s *OverviewCompetitors) SetMakers(val int32) {
 // SetFamilies sets the value of Families.
 func (s *OverviewCompetitors) SetFamilies(val []OverviewFamily) {
 	s.Families = val
+}
+
+// SetListed sets the value of Listed.
+func (s *OverviewCompetitors) SetListed(val OptInt32) {
+	s.Listed = val
 }
 
 // How many of the competitors the desk research found offer one of Tribelt's belt families.
@@ -7038,6 +7097,9 @@ type OverviewMention struct {
 	Role CompanyRole `json:"role"`
 	// How many answers name it.
 	Answers int32 `json:"answers"`
+	// The share of the run's answers that name it, from 0 to 1; the same share the standings and the plan
+	// show.
+	Share OptFloat64 `json:"share"`
 }
 
 // GetCompetitorId returns the value of CompetitorId.
@@ -7060,6 +7122,11 @@ func (s *OverviewMention) GetAnswers() int32 {
 	return s.Answers
 }
 
+// GetShare returns the value of Share.
+func (s *OverviewMention) GetShare() OptFloat64 {
+	return s.Share
+}
+
 // SetCompetitorId sets the value of CompetitorId.
 func (s *OverviewMention) SetCompetitorId(val CompetitorId) {
 	s.CompetitorId = val
@@ -7080,6 +7147,11 @@ func (s *OverviewMention) SetAnswers(val int32) {
 	s.Answers = val
 }
 
+// SetShare sets the value of Share.
+func (s *OverviewMention) SetShare(val OptFloat64) {
+	s.Share = val
+}
+
 // The terminology map in figures.
 // Ref: #/components/schemas/OverviewTerms
 type OverviewTerms struct {
@@ -7089,6 +7161,9 @@ type OverviewTerms struct {
 	Tribelt int32 `json:"tribelt"`
 	// Every language with a term, the most terms first; American English counts as English.
 	Languages []OverviewLanguage `json:"languages"`
+	From      OptTermsSource     `json:"from"`
+	// Every kind of search with a term, from the most specific to the broadest.
+	Tiers []OverviewTier `json:"tiers"`
 }
 
 // GetTotal returns the value of Total.
@@ -7106,6 +7181,16 @@ func (s *OverviewTerms) GetLanguages() []OverviewLanguage {
 	return s.Languages
 }
 
+// GetFrom returns the value of From.
+func (s *OverviewTerms) GetFrom() OptTermsSource {
+	return s.From
+}
+
+// GetTiers returns the value of Tiers.
+func (s *OverviewTerms) GetTiers() []OverviewTier {
+	return s.Tiers
+}
+
 // SetTotal sets the value of Total.
 func (s *OverviewTerms) SetTotal(val int32) {
 	s.Total = val
@@ -7121,6 +7206,56 @@ func (s *OverviewTerms) SetLanguages(val []OverviewLanguage) {
 	s.Languages = val
 }
 
+// SetFrom sets the value of From.
+func (s *OverviewTerms) SetFrom(val OptTermsSource) {
+	s.From = val
+}
+
+// SetTiers sets the value of Tiers.
+func (s *OverviewTerms) SetTiers(val []OverviewTier) {
+	s.Tiers = val
+}
+
+// The terms of one kind of search, and how many of them tribelt.nl uses.
+// Ref: #/components/schemas/OverviewTier
+type OverviewTier struct {
+	Tier IntentTier `json:"tier"`
+	// How many terms are of this kind.
+	Terms int32 `json:"terms"`
+	// How many of them tribelt.nl uses.
+	Tribelt int32 `json:"tribelt"`
+}
+
+// GetTier returns the value of Tier.
+func (s *OverviewTier) GetTier() IntentTier {
+	return s.Tier
+}
+
+// GetTerms returns the value of Terms.
+func (s *OverviewTier) GetTerms() int32 {
+	return s.Terms
+}
+
+// GetTribelt returns the value of Tribelt.
+func (s *OverviewTier) GetTribelt() int32 {
+	return s.Tribelt
+}
+
+// SetTier sets the value of Tier.
+func (s *OverviewTier) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// SetTerms sets the value of Terms.
+func (s *OverviewTier) SetTerms(val int32) {
+	s.Terms = val
+}
+
+// SetTribelt sets the value of Tribelt.
+func (s *OverviewTier) SetTribelt(val int32) {
+	s.Tribelt = val
+}
+
 // The plan as it stands.
 // Ref: #/components/schemas/Plan
 type Plan struct {
@@ -7131,7 +7266,8 @@ type Plan struct {
 	// The numbers to watch.
 	Watched []WatchedNumber `json:"watched"`
 	// The competitors to keep an eye on.
-	EyeOn []EyeOn `json:"eyeOn"`
+	EyeOn            []EyeOn        `json:"eyeOn"`
+	TribeltTermsFrom OptTermsSource `json:"tribeltTermsFrom"`
 }
 
 // GetCatalogueVersion returns the value of CatalogueVersion.
@@ -7154,6 +7290,11 @@ func (s *Plan) GetEyeOn() []EyeOn {
 	return s.EyeOn
 }
 
+// GetTribeltTermsFrom returns the value of TribeltTermsFrom.
+func (s *Plan) GetTribeltTermsFrom() OptTermsSource {
+	return s.TribeltTermsFrom
+}
+
 // SetCatalogueVersion sets the value of CatalogueVersion.
 func (s *Plan) SetCatalogueVersion(val int32) {
 	s.CatalogueVersion = val
@@ -7172,6 +7313,11 @@ func (s *Plan) SetWatched(val []WatchedNumber) {
 // SetEyeOn sets the value of EyeOn.
 func (s *Plan) SetEyeOn(val []EyeOn) {
 	s.EyeOn = val
+}
+
+// SetTribeltTermsFrom sets the value of TribeltTermsFrom.
+func (s *Plan) SetTribeltTermsFrom(val OptTermsSource) {
+	s.TribeltTermsFrom = val
 }
 
 func (*Plan) getPlanRes()         {}
@@ -7984,7 +8130,8 @@ type ProductsOverview struct {
 	// Every family, in order.
 	Items []Product `json:"items"`
 	// What stands out among them.
-	Standouts []ProductStandout `json:"standouts"`
+	Standouts        []ProductStandout `json:"standouts"`
+	TribeltTermsFrom OptTermsSource    `json:"tribeltTermsFrom"`
 }
 
 // GetItems returns the value of Items.
@@ -7997,6 +8144,11 @@ func (s *ProductsOverview) GetStandouts() []ProductStandout {
 	return s.Standouts
 }
 
+// GetTribeltTermsFrom returns the value of TribeltTermsFrom.
+func (s *ProductsOverview) GetTribeltTermsFrom() OptTermsSource {
+	return s.TribeltTermsFrom
+}
+
 // SetItems sets the value of Items.
 func (s *ProductsOverview) SetItems(val []Product) {
 	s.Items = val
@@ -8005,6 +8157,11 @@ func (s *ProductsOverview) SetItems(val []Product) {
 // SetStandouts sets the value of Standouts.
 func (s *ProductsOverview) SetStandouts(val []ProductStandout) {
 	s.Standouts = val
+}
+
+// SetTribeltTermsFrom sets the value of TribeltTermsFrom.
+func (s *ProductsOverview) SetTribeltTermsFrom(val OptTermsSource) {
+	s.TribeltTermsFrom = val
 }
 
 func (*ProductsOverview) getProductsRes() {}
@@ -11559,7 +11716,8 @@ type Standings struct {
 	// The first improvements of the plan not done yet, in order.
 	Open []PlanImprovement `json:"open"`
 	// When the Prompt run the AI measures come from started; absent before any.
-	RunStartedAt OptDateTime `json:"runStartedAt"`
+	RunStartedAt     OptDateTime    `json:"runStartedAt"`
+	TribeltTermsFrom OptTermsSource `json:"tribeltTermsFrom"`
 }
 
 // GetMeasures returns the value of Measures.
@@ -11582,6 +11740,11 @@ func (s *Standings) GetRunStartedAt() OptDateTime {
 	return s.RunStartedAt
 }
 
+// GetTribeltTermsFrom returns the value of TribeltTermsFrom.
+func (s *Standings) GetTribeltTermsFrom() OptTermsSource {
+	return s.TribeltTermsFrom
+}
+
 // SetMeasures sets the value of Measures.
 func (s *Standings) SetMeasures(val []Standing) {
 	s.Measures = val
@@ -11600,6 +11763,11 @@ func (s *Standings) SetOpen(val []PlanImprovement) {
 // SetRunStartedAt sets the value of RunStartedAt.
 func (s *Standings) SetRunStartedAt(val OptDateTime) {
 	s.RunStartedAt = val
+}
+
+// SetTribeltTermsFrom sets the value of TribeltTermsFrom.
+func (s *Standings) SetTribeltTermsFrom(val OptTermsSource) {
+	s.TribeltTermsFrom = val
 }
 
 func (*Standings) getStandingsRes() {}
@@ -11702,6 +11870,10 @@ type Term struct {
 	// The companies whose newest finished scan found the term on their site, by id. They use it too,
 	// though the desk research or the review did not name them; absent when no scan found it.
 	FoundBy []CompetitorId `json:"foundBy"`
+	// Whether tribelt.nl uses the term - its newest finished scan found it in the term's language, or,
+	// before any finished scan of tribelt.nl, the desk research credits Tribelt with it. The search sets
+	// it; every count of the terms tribelt.nl uses counts this.
+	TribeltUses OptBool `json:"tribeltUses"`
 	// The page the term was taken from.
 	Source string `json:"source"`
 }
@@ -11739,6 +11911,11 @@ func (s *Term) GetUsedBy() []string {
 // GetFoundBy returns the value of FoundBy.
 func (s *Term) GetFoundBy() []CompetitorId {
 	return s.FoundBy
+}
+
+// GetTribeltUses returns the value of TribeltUses.
+func (s *Term) GetTribeltUses() OptBool {
+	return s.TribeltUses
 }
 
 // GetSource returns the value of Source.
@@ -11779,6 +11956,11 @@ func (s *Term) SetUsedBy(val []string) {
 // SetFoundBy sets the value of FoundBy.
 func (s *Term) SetFoundBy(val []CompetitorId) {
 	s.FoundBy = val
+}
+
+// SetTribeltUses sets the value of TribeltUses.
+func (s *Term) SetTribeltUses(val OptBool) {
+	s.TribeltUses = val
 }
 
 // SetSource sets the value of Source.
@@ -12465,8 +12647,9 @@ type TermSearch struct {
 	// The matching terms, best match first.
 	Items []Term `json:"items"`
 	// How many terms match, before the limit.
-	Total  int32  `json:"total"`
-	Facets Facets `json:"facets"`
+	Total       int32          `json:"total"`
+	Facets      Facets         `json:"facets"`
+	TribeltFrom OptTermsSource `json:"tribeltFrom"`
 }
 
 // GetItems returns the value of Items.
@@ -12484,6 +12667,11 @@ func (s *TermSearch) GetFacets() Facets {
 	return s.Facets
 }
 
+// GetTribeltFrom returns the value of TribeltFrom.
+func (s *TermSearch) GetTribeltFrom() OptTermsSource {
+	return s.TribeltFrom
+}
+
 // SetItems sets the value of Items.
 func (s *TermSearch) SetItems(val []Term) {
 	s.Items = val
@@ -12497,6 +12685,11 @@ func (s *TermSearch) SetTotal(val int32) {
 // SetFacets sets the value of Facets.
 func (s *TermSearch) SetFacets(val Facets) {
 	s.Facets = val
+}
+
+// SetTribeltFrom sets the value of TribeltFrom.
+func (s *TermSearch) SetTribeltFrom(val OptTermsSource) {
+	s.TribeltFrom = val
 }
 
 func (*TermSearch) searchTermsRes() {}
@@ -12626,6 +12819,50 @@ func (s *TermVerdict) SetModel(val string) {
 // SetAt sets the value of At.
 func (s *TermVerdict) SetAt(val time.Time) {
 	s.At = val
+}
+
+// What says which of the map's terms tribelt.nl uses - scan (its newest finished scan) or research
+// (the desk research's credits, before any finished scan of tribelt.nl).
+// Ref: #/components/schemas/TermsSource
+type TermsSource string
+
+const (
+	TermsSourceScan     TermsSource = "scan"
+	TermsSourceResearch TermsSource = "research"
+)
+
+// AllValues returns all TermsSource values.
+func (TermsSource) AllValues() []TermsSource {
+	return []TermsSource{
+		TermsSourceScan,
+		TermsSourceResearch,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TermsSource) MarshalText() ([]byte, error) {
+	switch s {
+	case TermsSourceScan:
+		return []byte(s), nil
+	case TermsSourceResearch:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TermsSource) UnmarshalText(data []byte) error {
+	switch TermsSource(data) {
+	case TermsSourceScan:
+		*s = TermsSourceScan
+		return nil
+	case TermsSourceResearch:
+		*s = TermsSourceResearch
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type TestLlmCredentialBadRequest ProblemStatusCode
@@ -12826,6 +13063,9 @@ type WatchedNumber struct {
 	Now OptFloat64 `json:"now"`
 	// Its target.
 	Goal float64 `json:"goal"`
+	// Whether the value now has reached the target. A met target is no goal any more until an
+	// administrator raises it.
+	Met OptBool `json:"met"`
 }
 
 // GetTarget returns the value of Target.
@@ -12843,6 +13083,11 @@ func (s *WatchedNumber) GetGoal() float64 {
 	return s.Goal
 }
 
+// GetMet returns the value of Met.
+func (s *WatchedNumber) GetMet() OptBool {
+	return s.Met
+}
+
 // SetTarget sets the value of Target.
 func (s *WatchedNumber) SetTarget(val PlanTarget) {
 	s.Target = val
@@ -12856,4 +13101,9 @@ func (s *WatchedNumber) SetNow(val OptFloat64) {
 // SetGoal sets the value of Goal.
 func (s *WatchedNumber) SetGoal(val float64) {
 	s.Goal = val
+}
+
+// SetMet sets the value of Met.
+func (s *WatchedNumber) SetMet(val OptBool) {
+	s.Met = val
 }

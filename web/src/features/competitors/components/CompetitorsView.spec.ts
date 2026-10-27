@@ -1,7 +1,7 @@
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Analysis, AnalysisStatus } from '../../../infrastructure/api/types.gen'
-import { ANALYSIS_ID, analysis, bots, competitor, me, promptResults, readiness, readinessRow, summary, term, termSearch, readinessTable } from '../../../testing/fixtures'
+import { ANALYSIS_ID, analysis, bots, competitor, me, overview, promptResults, readiness, readinessRow, summary, term, termSearch, readinessTable } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 
@@ -35,9 +35,10 @@ function api(extra: Record<string, Handler> = {}, statuses: AnalysisStatus[] = [
       json(
         termSearch([
           term({ term: 'TwenteFlex', tier: 'product', usedBy: ['Twentebelt (TwenteFlex)'] }),
-          term({ term: 'Drahtösengliederband', language: 'de', tier: 'product', usedBy: ['Märtens', 'Tribelt'] }),
-        ]),
+          term({ term: 'Drahtösengliederband', language: 'de', tier: 'product', usedBy: ['Märtens', 'Tribelt'], tribeltUses: true }),
+        ], { tribeltFrom: 'scan' }),
       ),
+    'GET /api/v1/overview': () => json(overview()),
     'GET /api/v1/competitors/twentebelt': () => json({ competitor: twentebelt, scans: [summary()] }),
     'GET /api/v1/competitors/martens': () => json({ competitor: martens, scans: [] }),
     'GET /api/v1/competitors/ashworth': () => json({ competitor: ashworth, scans: [] }),
@@ -103,7 +104,8 @@ describe('the columns', () => {
 describe('the company list', () => {
   it('lists every company with the families it offers, counting what is shown', async () => {
     const { wrapper } = await mountApp(api(), '/competitors')
-    expect(wrapper.get('h1').text()).toBe('3 competitors, the same belts, other names.')
+    // The server counts the competitors the desk research found.
+    expect(wrapper.get('h1').text()).toBe('The desk research found 3 competitors. The same belts, other names.')
     expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual([
       'Twentebelt, Netherlands: Tri-Flex; 2 scans',
       'Märtens, Germany: Eyelink; No scans',
@@ -149,7 +151,8 @@ describe('the company list', () => {
   it('says when the companies cannot be loaded', async () => {
     const { wrapper } = await mountApp(api({ 'GET /api/v1/competitors': () => problem(500, 'Internal Server Error') }), '/competitors')
     expect(wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
-    expect(wrapper.get('h1').text()).toBe('The same belts, other names.')
+    // The count is the server's, so it stays when the list fails.
+    expect(wrapper.get('h1').text()).toBe('The desk research found 3 competitors. The same belts, other names.')
   })
 })
 
@@ -168,7 +171,7 @@ describe('the company card', () => {
       'Tri-FlexTwenteFlex spiral belts (and 1 more)',
       'Other beltsNot offered',
     ])
-    expect(card.text()).toContain('1 term in the terminology map')
+    expect(card.text()).toContain('1 term from the map, credited by the desk research or found by its newest scan')
     expect(card.text()).toContain('TwenteFlex, Product')
     const stats = card.get('[data-testid="scan-stats"]').text()
     expect(stats).toContain('Scanned 2 times')
@@ -237,6 +240,7 @@ describe('the company card', () => {
     const card = wrapper.get('section[aria-labelledby="company-name"]')
     expect(card.text()).toContain("Tribelt's own group")
     expect(card.text()).toContain('Drahtösengliederband')
+    expect(card.text()).toContain('1 term from the map, found by the newest scan of tribelt.nl')
   })
 })
 

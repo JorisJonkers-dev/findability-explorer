@@ -36,13 +36,13 @@ export function productHeadline(p: Pick<Product, 'family' | 'sellers' | 'terms'>
 export function standoutText(s: ProductStandout, products: readonly Product[]): { lead: string; rest: string } {
   const p = products.find((x) => x.family === s.family)
   const name = familyLabel(s.family)
-  const terms = p ? `Tribelt uses ${p.termsUsed === 0 ? 'none' : String(p.termsUsed)} of its ${String(p.terms.length)} search terms.` : ''
+  const terms = p ? `tribelt.nl uses ${p.termsUsed === 0 ? 'none' : String(p.termsUsed)} of its ${String(p.terms.length)} search terms.` : ''
   const sellers = p?.sellers.length ?? 0
   switch (s.finding) {
     case 'crowded':
       return { lead: `Most competitors sell ${name}.`, rest: `${String(sellers)} ${sellers === 1 ? 'competitor sells' : 'competitors sell'} it. ${terms}`.trim() }
     case 'fewestTerms':
-      return { lead: `Tribelt uses the fewest search terms for ${name}.`, rest: terms }
+      return { lead: `tribelt.nl uses the fewest search terms for ${name}.`, rest: terms }
     case 'bestInAI':
       return { lead: `AI answers name Tribelt most for ${name}.`, rest: `${shareText(p ? aiShare(p) : undefined)} of the answers about it name Tribelt.` }
   }

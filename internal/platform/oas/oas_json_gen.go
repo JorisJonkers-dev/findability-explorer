@@ -11879,6 +11879,39 @@ func (s *OptTermVerdict) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes TermsSource as json.
+func (o OptTermsSource) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes TermsSource from json.
+func (o *OptTermsSource) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptTermsSource to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptTermsSource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptTermsSource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes url.URL as json.
 func (o OptURI) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -12182,11 +12215,18 @@ func (s *OverviewCompetitors) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		if s.Listed.Set {
+			e.FieldStart("listed")
+			s.Listed.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfOverviewCompetitors = [2]string{
+var jsonFieldsNameOfOverviewCompetitors = [3]string{
 	0: "makers",
 	1: "families",
+	2: "listed",
 }
 
 // Decode decodes OverviewCompetitors from json.
@@ -12227,6 +12267,16 @@ func (s *OverviewCompetitors) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"families\"")
+			}
+		case "listed":
+			if err := func() error {
+				s.Listed.Reset()
+				if err := s.Listed.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"listed\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -12548,13 +12598,20 @@ func (s *OverviewMention) encodeFields(e *jx.Encoder) {
 		e.FieldStart("answers")
 		e.Int32(s.Answers)
 	}
+	{
+		if s.Share.Set {
+			e.FieldStart("share")
+			s.Share.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfOverviewMention = [4]string{
+var jsonFieldsNameOfOverviewMention = [5]string{
 	0: "competitorId",
 	1: "name",
 	2: "role",
 	3: "answers",
+	4: "share",
 }
 
 // Decode decodes OverviewMention from json.
@@ -12609,6 +12666,16 @@ func (s *OverviewMention) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"answers\"")
+			}
+		case "share":
+			if err := func() error {
+				s.Share.Reset()
+				if err := s.Share.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"share\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -12691,12 +12758,30 @@ func (s *OverviewTerms) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		if s.From.Set {
+			e.FieldStart("from")
+			s.From.Encode(e)
+		}
+	}
+	{
+		if s.Tiers != nil {
+			e.FieldStart("tiers")
+			e.ArrStart()
+			for _, elem := range s.Tiers {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
 }
 
-var jsonFieldsNameOfOverviewTerms = [3]string{
+var jsonFieldsNameOfOverviewTerms = [5]string{
 	0: "total",
 	1: "tribelt",
 	2: "languages",
+	3: "from",
+	4: "tiers",
 }
 
 // Decode decodes OverviewTerms from json.
@@ -12749,6 +12834,33 @@ func (s *OverviewTerms) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"languages\"")
+			}
+		case "from":
+			if err := func() error {
+				s.From.Reset()
+				if err := s.From.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"from\"")
+			}
+		case "tiers":
+			if err := func() error {
+				s.Tiers = make([]OverviewTier, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem OverviewTier
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Tiers = append(s.Tiers, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tiers\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -12807,6 +12919,134 @@ func (s *OverviewTerms) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *OverviewTier) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *OverviewTier) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("tier")
+		s.Tier.Encode(e)
+	}
+	{
+		e.FieldStart("terms")
+		e.Int32(s.Terms)
+	}
+	{
+		e.FieldStart("tribelt")
+		e.Int32(s.Tribelt)
+	}
+}
+
+var jsonFieldsNameOfOverviewTier = [3]string{
+	0: "tier",
+	1: "terms",
+	2: "tribelt",
+}
+
+// Decode decodes OverviewTier from json.
+func (s *OverviewTier) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode OverviewTier to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "tier":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Tier.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tier\"")
+			}
+		case "terms":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int32()
+				s.Terms = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"terms\"")
+			}
+		case "tribelt":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int32()
+				s.Tribelt = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tribelt\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode OverviewTier")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfOverviewTier) {
+					name = jsonFieldsNameOfOverviewTier[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *OverviewTier) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OverviewTier) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *Plan) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -12843,13 +13083,20 @@ func (s *Plan) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		if s.TribeltTermsFrom.Set {
+			e.FieldStart("tribeltTermsFrom")
+			s.TribeltTermsFrom.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfPlan = [4]string{
+var jsonFieldsNameOfPlan = [5]string{
 	0: "catalogueVersion",
 	1: "improvements",
 	2: "watched",
 	3: "eyeOn",
+	4: "tribeltTermsFrom",
 }
 
 // Decode decodes Plan from json.
@@ -12926,6 +13173,16 @@ func (s *Plan) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"eyeOn\"")
+			}
+		case "tribeltTermsFrom":
+			if err := func() error {
+				s.TribeltTermsFrom.Reset()
+				if err := s.TribeltTermsFrom.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tribeltTermsFrom\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -14893,11 +15150,18 @@ func (s *ProductsOverview) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		if s.TribeltTermsFrom.Set {
+			e.FieldStart("tribeltTermsFrom")
+			s.TribeltTermsFrom.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfProductsOverview = [2]string{
+var jsonFieldsNameOfProductsOverview = [3]string{
 	0: "items",
 	1: "standouts",
+	2: "tribeltTermsFrom",
 }
 
 // Decode decodes ProductsOverview from json.
@@ -14944,6 +15208,16 @@ func (s *ProductsOverview) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"standouts\"")
+			}
+		case "tribeltTermsFrom":
+			if err := func() error {
+				s.TribeltTermsFrom.Reset()
+				if err := s.TribeltTermsFrom.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tribeltTermsFrom\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -22178,13 +22452,20 @@ func (s *Standings) encodeFields(e *jx.Encoder) {
 			s.RunStartedAt.Encode(e, json.EncodeDateTime)
 		}
 	}
+	{
+		if s.TribeltTermsFrom.Set {
+			e.FieldStart("tribeltTermsFrom")
+			s.TribeltTermsFrom.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfStandings = [4]string{
+var jsonFieldsNameOfStandings = [5]string{
 	0: "measures",
 	1: "trailing",
 	2: "open",
 	3: "runStartedAt",
+	4: "tribeltTermsFrom",
 }
 
 // Decode decodes Standings from json.
@@ -22253,6 +22534,16 @@ func (s *Standings) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"runStartedAt\"")
+			}
+		case "tribeltTermsFrom":
+			if err := func() error {
+				s.TribeltTermsFrom.Reset()
+				if err := s.TribeltTermsFrom.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tribeltTermsFrom\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -22358,12 +22649,18 @@ func (s *Term) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.TribeltUses.Set {
+			e.FieldStart("tribeltUses")
+			s.TribeltUses.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("source")
 		e.Str(s.Source)
 	}
 }
 
-var jsonFieldsNameOfTerm = [8]string{
+var jsonFieldsNameOfTerm = [9]string{
 	0: "origin",
 	1: "term",
 	2: "language",
@@ -22371,7 +22668,8 @@ var jsonFieldsNameOfTerm = [8]string{
 	4: "tier",
 	5: "usedBy",
 	6: "foundBy",
-	7: "source",
+	7: "tribeltUses",
+	8: "source",
 }
 
 // Decode decodes Term from json.
@@ -22379,7 +22677,7 @@ func (s *Term) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode Term to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -22472,8 +22770,18 @@ func (s *Term) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"foundBy\"")
 			}
+		case "tribeltUses":
+			if err := func() error {
+				s.TribeltUses.Reset()
+				if err := s.TribeltUses.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tribeltUses\"")
+			}
 		case "source":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Source = string(v)
@@ -22493,8 +22801,9 @@ func (s *Term) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b10111111,
+	for i, mask := range [2]uint8{
+		0b00111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -24005,12 +24314,19 @@ func (s *TermSearch) encodeFields(e *jx.Encoder) {
 		e.FieldStart("facets")
 		s.Facets.Encode(e)
 	}
+	{
+		if s.TribeltFrom.Set {
+			e.FieldStart("tribeltFrom")
+			s.TribeltFrom.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfTermSearch = [3]string{
+var jsonFieldsNameOfTermSearch = [4]string{
 	0: "items",
 	1: "total",
 	2: "facets",
+	3: "tribeltFrom",
 }
 
 // Decode decodes TermSearch from json.
@@ -24061,6 +24377,16 @@ func (s *TermSearch) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"facets\"")
+			}
+		case "tribeltFrom":
+			if err := func() error {
+				s.TribeltFrom.Reset()
+				if err := s.TribeltFrom.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tribeltFrom\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -24440,6 +24766,46 @@ func (s *TermVerdict) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes TermsSource as json.
+func (s TermsSource) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes TermsSource from json.
+func (s *TermsSource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TermsSource to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch TermsSource(v) {
+	case TermsSourceScan:
+		*s = TermsSourceScan
+	case TermsSourceResearch:
+		*s = TermsSourceResearch
+	default:
+		*s = TermsSource(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s TermsSource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TermsSource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *TribeltCrawler) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -24665,12 +25031,19 @@ func (s *WatchedNumber) encodeFields(e *jx.Encoder) {
 		e.FieldStart("goal")
 		e.Float64(s.Goal)
 	}
+	{
+		if s.Met.Set {
+			e.FieldStart("met")
+			s.Met.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfWatchedNumber = [3]string{
+var jsonFieldsNameOfWatchedNumber = [4]string{
 	0: "target",
 	1: "now",
 	2: "goal",
+	3: "met",
 }
 
 // Decode decodes WatchedNumber from json.
@@ -24713,6 +25086,16 @@ func (s *WatchedNumber) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"goal\"")
+			}
+		case "met":
+			if err := func() error {
+				s.Met.Reset()
+				if err := s.Met.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"met\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

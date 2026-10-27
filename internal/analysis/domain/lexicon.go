@@ -28,6 +28,15 @@ type lexiconTerm struct {
 	alts  [][]string // each spelling the term stands for, folded
 }
 
+// term is the glossary's term with this text in this language.
+func (l Lexicon) term(text, language string) (GlossaryTerm, bool) {
+	i := slices.IndexFunc(l.terms, func(t lexiconTerm) bool { return t.term.Text == text && t.term.Language == language })
+	if i < 0 {
+		return GlossaryTerm{}, false
+	}
+	return l.terms[i].term, true
+}
+
 // applicationWords are the processes and places metal belts run in, per language, folded. The
 // map holds few application terms, so these keep a phrase like "spiral freezer" relevant.
 func applicationWords() []string {

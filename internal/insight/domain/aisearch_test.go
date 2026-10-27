@@ -99,8 +99,17 @@ func TestRankingKeepsTribeltInView(t *testing.T) {
 
 func TestTargetsHaveDefaultsAndRules(t *testing.T) {
 	d := domain.DefaultTargets()
-	if len(d) != len(domain.Targets()) || d[domain.TargetShareOfVoice] != 0.40 || d[domain.TargetTermsUsed] != 35 {
+	if len(d) != len(domain.Targets()) || d[domain.TargetShareOfVoice] != 0.40 || d[domain.TargetTermsUsed] != 90 || d[domain.TargetCitations] != 50 {
 		t.Errorf("defaults = %v", d)
+	}
+	// Every default is above where Tribelt stood when they were set (October 2026): a target
+	// already reached is no goal.
+	for target, then := range map[domain.Target]float64{
+		domain.TargetShareOfVoice: 0.05, domain.TargetTwenteShareOfVoice: 0.16, domain.TargetReadiness: 3, domain.TargetTermsUsed: 45, domain.TargetCitations: 28,
+	} {
+		if d[target] <= then {
+			t.Errorf("the default for %s, %v, is not above %v", target, d[target], then)
+		}
 	}
 	for _, tc := range []struct {
 		target domain.Target

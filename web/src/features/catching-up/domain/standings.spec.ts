@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Standing } from '../../../infrastructure/api/types.gen'
-import { barsOf, formatValue, headline, inWords, noteOf } from './standings'
+import { barsOf, formatValue, headline, inWords, noteOf, termsSourceLine } from './standings'
 
 const voice: Standing = {
   measure: 'aiShareOfVoice',
@@ -65,5 +65,13 @@ describe('the headline', () => {
     expect(headline(measures, 2)).toBe('Tribelt trails the leaders on two of two measures.')
     expect(headline(measures, 0)).toBe('Tribelt leads the field on every measure.')
     expect(headline([], 0)).toBe('Not measured yet. The first scans and Prompt run fill this page.')
+  })
+})
+
+describe('where the search terms come from', () => {
+  it('says so only while the desk research counts Tribelt\'s terms', () => {
+    expect(termsSourceLine('research')).toBe("tribelt.nl has not been scanned yet. Tribelt's bar counts the terms the desk research credits it with.")
+    expect(termsSourceLine('scan')).toBe('')
+    expect(termsSourceLine(undefined)).toBe('')
   })
 })

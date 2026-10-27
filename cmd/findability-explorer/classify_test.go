@@ -7,6 +7,7 @@ import (
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/seed"
+	terminologydomain "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
 // TestPhrasesSortIntoTheRightGroup classifies phrases a scan of ashworth.com found on 26 October
@@ -18,7 +19,7 @@ func TestPhrasesSortIntoTheRightGroup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lex := analysisdomain.NewLexicon(glossary(catalogue.Terms()))
+	lex := analysisdomain.NewLexicon(glossary(catalogue.Terms(), terminologydomain.SiteUse{}.TribeltUses))
 	cases := map[string]analysisdomain.Group{
 		// Generic: no family.
 		"conveyor belts":         analysisdomain.GroupBroad,

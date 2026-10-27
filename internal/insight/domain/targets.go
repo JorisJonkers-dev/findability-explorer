@@ -23,12 +23,15 @@ func Targets() []Target {
 }
 
 // DefaultTargets are the targets until an administrator sets them: named in 40% of answers and
-// 75% of answers about Twente, five of five readiness checks, 35 terms from the map used on the
-// site, and tribelt.nl cited in 20 web answers of a run.
+// 75% of answers about Twente, five of five readiness checks, 90 terms from the map found on
+// tribelt.nl, and tribelt.nl cited in 50 web answers of a run. Each is above where Tribelt stood
+// in October 2026 (5%, 16%, 3, 45 and 28): a target already reached is no goal. 90 terms is twice
+// the 45 of tribelt.nl's scan then, about three more terms per belt family in each of the three
+// languages; 50 web answers is half the 100 web answers of a run.
 func DefaultTargets() map[Target]float64 {
 	return map[Target]float64{
-		TargetShareOfVoice: 0.40, TargetTwenteShareOfVoice: 0.75, TargetReadiness: 5, TargetTermsUsed: 35,
-		TargetCitations: 20,
+		TargetShareOfVoice: 0.40, TargetTwenteShareOfVoice: 0.75, TargetReadiness: 5, TargetTermsUsed: 90,
+		TargetCitations: 50,
 	}
 }
 

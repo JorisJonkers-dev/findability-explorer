@@ -43,7 +43,10 @@ func (h *Handler) GetStandings(ctx context.Context) (oas.GetStandingsRes, error)
 	if err != nil {
 		return nil, err
 	}
-	out := &oas.Standings{Measures: toStandings(s.Standings), Trailing: int32(s.Trailing), Open: toImprovements(s.Open)} //nolint:gosec // at most five measures
+	out := &oas.Standings{
+		Measures: toStandings(s.Standings), Trailing: int32(s.Trailing), Open: toImprovements(s.Open), //nolint:gosec // at most five measures
+		TribeltTermsFrom: toSource(s.TermsFrom),
+	}
 	if s.Run != nil {
 		out.RunStartedAt = oas.NewOptDateTime(s.Run.StartedAt)
 	}
@@ -118,7 +121,9 @@ func (h *Handler) GetProducts(ctx context.Context) (oas.GetProductsRes, error) {
 	for _, c := range p.Companies {
 		companies[c.ID] = c
 	}
-	out := &oas.ProductsOverview{Items: make([]oas.Product, 0, len(p.Products)), Standouts: make([]oas.ProductStandout, 0, len(p.Standouts))}
+	out := &oas.ProductsOverview{
+		Items: make([]oas.Product, 0, len(p.Products)), Standouts: make([]oas.ProductStandout, 0, len(p.Standouts)), TribeltTermsFrom: toSource(p.TermsFrom),
+	}
 	for _, pr := range p.Products {
 		out.Items = append(out.Items, toProduct(pr, companies))
 	}
@@ -164,12 +169,21 @@ func (h *Handler) GetOverview(ctx context.Context) (oas.GetOverviewRes, error) {
 		return nil, err
 	}
 	out := &oas.Overview{
-		Terms:       oas.OverviewTerms{Total: int32(o.Terms.Total), Tribelt: int32(o.Terms.Tribelt), Languages: make([]oas.OverviewLanguage, 0, len(o.Terms.Languages))},
-		Competitors: oas.OverviewCompetitors{Makers: int32(o.Competitors.Makers), Families: make([]oas.OverviewFamily, 0, len(o.Competitors.Families))},
-		AiSearch:    oas.OverviewAiSearch{Answers: int32(o.AiSearch.Answers), Companies: make([]oas.OverviewMention, 0, len(o.AiSearch.Companies))},
+		Terms: oas.OverviewTerms{
+			Total: int32(o.Terms.Total), Tribelt: int32(o.Terms.Tribelt), Languages: make([]oas.OverviewLanguage, 0, len(o.Terms.Languages)),
+			From: toSource(o.Terms.From), Tiers: make([]oas.OverviewTier, 0, len(o.Terms.Tiers)),
+		},
+		Competitors: oas.OverviewCompetitors{
+			Makers: int32(o.Competitors.Makers), Families: make([]oas.OverviewFamily, 0, len(o.Competitors.Families)),
+			Listed: oas.NewOptInt32(int32(o.Competitors.Listed)),
+		},
+		AiSearch: oas.OverviewAiSearch{Answers: int32(o.AiSearch.Answers), Companies: make([]oas.OverviewMention, 0, len(o.AiSearch.Companies))},
 	}
 	for _, l := range o.Terms.Languages {
 		out.Terms.Languages = append(out.Terms.Languages, oas.OverviewLanguage{Language: oas.Language(l.Language), Terms: int32(l.Terms), Tribelt: int32(l.Tribelt)})
+	}
+	for _, t := range o.Terms.Tiers {
+		out.Terms.Tiers = append(out.Terms.Tiers, oas.OverviewTier{Tier: oas.IntentTier(t.Tier), Terms: int32(t.Terms), Tribelt: int32(t.Tribelt)})
 	}
 	for _, f := range o.Competitors.Families {
 		out.Competitors.Families = append(out.Competitors.Families, oas.OverviewFamily{Family: oas.PromptFamily(f.Family), Makers: int32(f.Makers)})
@@ -177,6 +191,7 @@ func (h *Handler) GetOverview(ctx context.Context) (oas.GetOverviewRes, error) {
 	for _, m := range o.AiSearch.Companies {
 		out.AiSearch.Companies = append(out.AiSearch.Companies, oas.OverviewMention{
 			CompetitorId: oas.CompetitorId(m.CompanyID), Name: m.Name, Role: oas.CompanyRole(m.Role), Answers: int32(m.Answers),
+			Share: oas.NewOptFloat64(m.Share),
 		})
 	}
 	return out, nil
@@ -236,9 +251,10 @@ func toPlan(p app.Plan) *oas.Plan {
 	out := &oas.Plan{
 		CatalogueVersion: domain.ImprovementsVersion, Improvements: toImprovements(p.Items),
 		Watched: make([]oas.WatchedNumber, 0, len(p.Watched)), EyeOn: make([]oas.EyeOn, 0, len(p.EyeOn)),
+		TribeltTermsFrom: toSource(p.TermsFrom),
 	}
 	for _, w := range p.Watched {
-		n := oas.WatchedNumber{Target: oas.PlanTarget(w.Target), Goal: w.Goal}
+		n := oas.WatchedNumber{Target: oas.PlanTarget(w.Target), Goal: w.Goal, Met: oas.NewOptBool(w.Met)}
 		if w.Now != nil {
 			n.Now = oas.NewOptFloat64(*w.Now)
 		}
@@ -272,6 +288,14 @@ func toImprovements(items []domain.PlanItem) []oas.PlanImprovement {
 		out = append(out, o)
 	}
 	return out
+}
+
+// toSource is where Tribelt's search terms come from, as the contract writes it.
+func toSource(s domain.TermsSource) oas.OptTermsSource {
+	if s == "" {
+		return oas.OptTermsSource{}
+	}
+	return oas.NewOptTermsSource(oas.TermsSource(s))
 }
 
 func toLeader(l domain.Leader) oas.MeasureLeader {

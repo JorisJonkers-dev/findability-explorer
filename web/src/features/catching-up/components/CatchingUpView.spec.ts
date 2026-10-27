@@ -21,9 +21,9 @@ describe('Catching up', () => {
     expect(wrapper.get('h1').text()).toBe('Tribelt trails the leaders on one of two measures.')
     const figures = wrapper.findAll('figure')
     expect(figures.map((f) => f.get('figcaption').text())).toEqual([
-      'How often AI answers name the company Ashworth is ahead.',
-      'Search terms from the map used on the site Tribelt leads here.',
-      'Pages in the sitemap Tribelt has no data here yet.',
+      'Share of AI answers in the newest Prompt run that name the company Ashworth is ahead.',
+      'Search terms from the map found on the site by its newest scan Tribelt leads here.',
+      'Pages in the sitemap, on the newest scan Tribelt has no data here yet.',
     ])
     expect(figures[0]?.findAll('figcaption ~ div').map((d) => d.text())).toEqual(['Tribelt24%', 'Typical competitor17%', 'Ashworth57%'])
     expect(figures[1]?.text()).toContain('Märtens30')

@@ -11,15 +11,60 @@ func Families() []string {
 	return []string{"eyelink", "open_spiral", "closed_spiral", "tri_flex_turn_curve", "other"}
 }
 
-// MapTerm is a term of the terminology map: its family and intent tier, how many companies use
-// it, and whether Tribelt's own site does.
+// MapTerm is a term of the terminology map: its family and intent tier, how many companies the
+// map credits with it, whether tribelt.nl uses it, and the companies whose newest finished scan
+// found it.
 type MapTerm struct {
-	Text          string
-	Language      string
-	Family        string
-	Tier          string
-	UsedBy        int
+	Text     string
+	Language string
+	Family   string
+	Tier     string
+	UsedBy   int
+	// UsedByTribelt is whether tribelt.nl uses the term, as the terminology context decides it:
+	// its newest scan found it, or, before any scan of tribelt.nl, the research credits Tribelt.
 	UsedByTribelt bool
+	FoundBy       []string
+}
+
+// TermsSource is what says which of the map's terms tribelt.nl uses.
+type TermsSource string
+
+const (
+	// TermsFromScan is tribelt.nl's newest finished scan.
+	TermsFromScan TermsSource = "scan"
+	// TermsFromResearch is the desk research, before tribelt.nl has a finished scan.
+	TermsFromResearch TermsSource = "research"
+)
+
+// TermMap is the terminology map as the insight context reads it: its terms, what says which of
+// them tribelt.nl uses, and the companies a finished scan read.
+type TermMap struct {
+	Terms       []MapTerm
+	TribeltFrom TermsSource
+	Scanned     []string
+}
+
+// TermsUsed is how many of the map's terms each company's site uses: for every company a scan
+// read, the terms its newest scan found, in their own language; for Tribelt always, the terms UsedByTribelt marks, so
+// before a scan of tribelt.nl the ones the research credits it with. It is the one count of
+// "search terms used" every page shows.
+func (m TermMap) TermsUsed() map[string]int {
+	out := map[string]int{TribeltID: 0}
+	for _, id := range m.Scanned {
+		out[id] = 0
+	}
+	for _, t := range m.Terms {
+		if t.UsedByTribelt {
+			out[TribeltID]++
+		}
+		// A company a scan found the term at was read by that scan, listed or not.
+		for _, id := range slices.Compact(slices.Sorted(slices.Values(t.FoundBy))) {
+			if id != TribeltID {
+				out[id]++
+			}
+		}
+	}
+	return out
 }
 
 // Seller is a company that sells a family, with its own names for it.

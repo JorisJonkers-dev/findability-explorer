@@ -37,9 +37,10 @@ func (c *insightCases) Standings(context.Context) (app.Standings, error) {
 			{Measure: domain.MeasureShareOfVoice, Tribelt: &share, Median: new(0.17), Leader: &domain.Leader{CompanyID: "ashworth", Name: "Ashworth", Value: 0.57}, Competitors: 38},
 			{Measure: domain.MeasureSitemapPages},
 		},
-		Trailing: 1,
-		Run:      c.run,
-		Open:     plan().Items[:1],
+		Trailing:  1,
+		Run:       c.run,
+		Open:      plan().Items[:1],
+		TermsFrom: domain.TermsFromScan,
 	}, c.err
 }
 
@@ -112,7 +113,8 @@ func TestProductsAreForEveryoneSignedIn(t *testing.T) {
 	srv := serve(t, a)
 	r := callAs(t, srv, http.MethodGet, "/api/v1/products", "", "tester")
 	items, _ := r.body["items"].([]any)
-	if r.code != http.StatusOK || len(items) != 1 || r.body["standouts"].([]any)[0].(map[string]any)["finding"] != "crowded" {
+	// The products stub says nothing of where the terms come from, so the field is left out.
+	if _, said := r.body["tribeltTermsFrom"]; r.code != http.StatusOK || len(items) != 1 || said || r.body["standouts"].([]any)[0].(map[string]any)["finding"] != "crowded" {
 		t.Fatalf("products = %d %v", r.code, r.body)
 	}
 	eye := items[0].(map[string]any)
@@ -130,10 +132,14 @@ func TestProductsAreForEveryoneSignedIn(t *testing.T) {
 
 func (c *insightCases) Overview(context.Context) (domain.Overview, error) {
 	return domain.Overview{
-		Terms:       domain.TermsOverview{Total: 387, Tribelt: 30, Languages: []domain.LanguageTerms{{Language: "en", Terms: 200, Tribelt: 20}, {Language: "de", Terms: 187, Tribelt: 10}}},
-		Competitors: domain.CompetitorsOverview{Makers: 24, Families: []domain.FamilyMakers{{Family: "eyelink", Makers: 9}, {Family: "other"}}},
+		Terms: domain.TermsOverview{
+			Total: 387, Tribelt: 30, From: domain.TermsFromScan,
+			Languages: []domain.LanguageTerms{{Language: "en", Terms: 200, Tribelt: 20}, {Language: "de", Terms: 187, Tribelt: 10}},
+			Tiers:     []domain.TierTerms{{Tier: "product", Terms: 387, Tribelt: 30}},
+		},
+		Competitors: domain.CompetitorsOverview{Makers: 24, Listed: 61, Families: []domain.FamilyMakers{{Family: "eyelink", Makers: 9}, {Family: "other"}}},
 		AiSearch: domain.AiSearchOverview{Answers: 1260, Companies: []domain.Mentioned{
-			{CompanyID: "twentebelt", Name: "Twentebelt", Role: domain.RoleCompetitor, Answers: 412},
+			{CompanyID: "twentebelt", Name: "Twentebelt", Role: domain.RoleCompetitor, Answers: 412, Share: 412.0 / 1260},
 			{CompanyID: "tribelt", Name: "Tribelt", Role: domain.RoleTribelt},
 		}},
 	}, c.err
@@ -149,18 +155,19 @@ func TestTheOverviewIsForEveryoneSignedIn(t *testing.T) {
 	terms := r.body["terms"].(map[string]any)
 	languages := terms["languages"].([]any)
 	if terms["total"].(float64) != 387 || terms["tribelt"].(float64) != 30 || len(languages) != 2 ||
-		languages[1].(map[string]any)["language"] != "de" || languages[1].(map[string]any)["tribelt"].(float64) != 10 {
+		languages[1].(map[string]any)["language"] != "de" || languages[1].(map[string]any)["tribelt"].(float64) != 10 ||
+		terms["from"] != "scan" || terms["tiers"].([]any)[0].(map[string]any)["tribelt"].(float64) != 30 {
 		t.Errorf("terms = %v", terms)
 	}
 	competitors := r.body["competitors"].(map[string]any)
 	families := competitors["families"].([]any)
-	if competitors["makers"].(float64) != 24 || len(families) != 2 || families[0].(map[string]any)["family"] != "eyelink" || families[1].(map[string]any)["makers"].(float64) != 0 {
+	if competitors["makers"].(float64) != 24 || competitors["listed"].(float64) != 61 || len(families) != 2 || families[0].(map[string]any)["family"] != "eyelink" || families[1].(map[string]any)["makers"].(float64) != 0 {
 		t.Errorf("competitors = %v", competitors)
 	}
 	ai := r.body["aiSearch"].(map[string]any)
 	named := ai["companies"].([]any)
 	if ai["answers"].(float64) != 1260 || len(named) != 2 || named[0].(map[string]any)["competitorId"] != "twentebelt" ||
-		named[0].(map[string]any)["answers"].(float64) != 412 || named[1].(map[string]any)["role"] != "tribelt" || named[1].(map[string]any)["name"] != "Tribelt" {
+		named[0].(map[string]any)["answers"].(float64) != 412 || named[0].(map[string]any)["share"].(float64) != 412.0/1260 || named[1].(map[string]any)["role"] != "tribelt" || named[1].(map[string]any)["name"] != "Tribelt" {
 		t.Errorf("ai search = %v", ai)
 	}
 	a.insights().err = errors.New("down")
@@ -180,8 +187,13 @@ func plan() app.Plan {
 			{Improvement: domain.Improvements()[0], Done: true, Tick: &domain.Tick{By: "joris", At: at}, Leader: &domain.Leader{CompanyID: "ashworth", Name: "Ashworth", Value: 0.57}},
 			{Improvement: domain.Improvements()[2], Auto: true},
 		},
-		Watched: []domain.Watched{{Target: domain.TargetShareOfVoice, Now: &share, Goal: 0.4}, {Target: domain.TargetCitations, Goal: 20}},
-		EyeOn:   []domain.EyeOn{{Why: domain.WatchTwente, Leader: domain.Leader{CompanyID: "twentebelt", Name: "Twentebelt", Value: 0.6}}},
+		Watched: []domain.Watched{
+			{Target: domain.TargetShareOfVoice, Now: &share, Goal: 0.4},
+			{Target: domain.TargetCitations, Goal: 20},
+			{Target: domain.TargetTermsUsed, Now: new(45.0), Goal: 35, Met: true},
+		},
+		EyeOn:     []domain.EyeOn{{Why: domain.WatchTwente, Leader: domain.Leader{CompanyID: "twentebelt", Name: "Twentebelt", Value: 0.6}}},
+		TermsFrom: domain.TermsFromScan,
 	}
 }
 
@@ -213,7 +225,8 @@ func TestThePlanIsForEveryoneAndTickedByAdministrators(t *testing.T) {
 		t.Errorf("second = %v", second)
 	}
 	watched := r.body["watched"].([]any)
-	if watched[0].(map[string]any)["now"].(float64) != 0.24 || watched[1].(map[string]any)["now"] != nil {
+	if watched[0].(map[string]any)["now"].(float64) != 0.24 || watched[1].(map[string]any)["now"] != nil || watched[0].(map[string]any)["met"] != false ||
+		watched[2].(map[string]any)["met"] != true || r.body["tribeltTermsFrom"] != "scan" {
 		t.Errorf("watched = %v", watched)
 	}
 	if eye := r.body["eyeOn"].([]any)[0].(map[string]any); eye["why"] != "twente" || eye["leader"].(map[string]any)["competitorId"] != "twentebelt" {
@@ -267,7 +280,7 @@ func TestStandingsAreForEveryoneSignedIn(t *testing.T) {
 	srv := serve(t, a)
 	r := callAs(t, srv, http.MethodGet, "/api/v1/standings", "", "tester")
 	measures, _ := r.body["measures"].([]any)
-	if r.code != http.StatusOK || len(measures) != 2 || r.body["trailing"].(float64) != 1 || r.body["runStartedAt"] != nil {
+	if r.code != http.StatusOK || len(measures) != 2 || r.body["trailing"].(float64) != 1 || r.body["runStartedAt"] != nil || r.body["tribeltTermsFrom"] != "scan" {
 		t.Fatalf("standings = %d %v", r.code, r.body)
 	}
 	voice := measures[0].(map[string]any)

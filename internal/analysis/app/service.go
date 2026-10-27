@@ -53,7 +53,7 @@ type Limits struct {
 }
 
 // Glossary returns the terminology map's terms; the terminology context provides it.
-type Glossary func() []domain.GlossaryTerm
+type Glossary func(ctx context.Context) []domain.GlossaryTerm
 
 // Service runs the analysis use cases.
 type Service struct {
@@ -335,7 +335,7 @@ func (s *Service) load(ctx context.Context, id uuid.UUID) (domain.Analysis, erro
 	if err != nil {
 		return domain.Analysis{}, err
 	}
-	return a.InFocus().ByTheMap(domain.NewLexicon(s.glossary())), nil
+	return a.InFocus().ByTheMap(domain.NewLexicon(s.glossary(ctx))), nil
 }
 
 // List returns up to limit analyses, newest first. A limit below 1 means DefaultListLimit.
@@ -412,7 +412,7 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 			return s.abort(ctx, id, fmt.Errorf("save readiness: %w", err))
 		}
 	}
-	glossary := s.glossary()
+	glossary := s.glossary(ctx)
 	lexicon := domain.NewLexicon(glossary)
 	var pages []domain.Page
 	var recordErr error

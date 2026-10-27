@@ -14,7 +14,7 @@ func (s *Service) Overview(ctx context.Context) (domain.Overview, error) {
 	if err != nil {
 		return domain.Overview{}, fmt.Errorf("list the companies: %w", err)
 	}
-	terms, err := s.ports.Terms.MapTerms(ctx)
+	terms, err := s.ports.Terms.TermMap(ctx)
 	if err != nil {
 		return domain.Overview{}, fmt.Errorf("the terminology map: %w", err)
 	}

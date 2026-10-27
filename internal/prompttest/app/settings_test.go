@@ -224,3 +224,37 @@ func TestCandidateFailures(t *testing.T) {
 	}
 	_ = uuid.Nil
 }
+
+func TestCountedRunsKeepOnlyAnswersThatCount(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	// The first run gets no answers at all; the second has them.
+	e.gw.askErr = errors.New("down")
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	e.gw.askErr = nil
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	newest := e.run(t).ID
+	got, err := e.svc.Counted(t.Context(), 5)
+	if err != nil || len(got) != 1 || got[0].Run.ID != newest || len(got[0].Answers) != 40 {
+		t.Fatalf("counted = %d runs, %v", len(got), err)
+	}
+	for _, a := range got[0].Answers {
+		if !a.Counts() {
+			t.Fatalf("an answer that does not count: %+v", a)
+		}
+	}
+	if got, _ := e.svc.Counted(t.Context(), 0); len(got) != 0 {
+		t.Errorf("a limit of 0 = %d runs", len(got))
+	}
+	for _, op := range []string{"Runs", "Answers"} {
+		e.repo.failOn[op] = true
+		if _, err := e.svc.Counted(t.Context(), 1); !errors.Is(err, errBoom) {
+			t.Errorf("%s failing: %v", op, err)
+		}
+		e.repo.failOn[op] = false
+	}
+}

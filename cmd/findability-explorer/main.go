@@ -160,13 +160,14 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 			logger.ErrorContext(ctx, "prompt run could not be recorded", "run", id, "error", err)
 		})
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
+	insight := newInsight(companies, promptTest, analysis, terminology, now)
 
 	gate, err := newGate(ctx, logger, getenv, store, secret, now)
 	if err != nil {
 		return err
 	}
 	api, err := httpapi.New(logger, httpapi.Contexts{
-		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Auth: gate.auth,
+		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Insight: insight, Auth: gate.auth,
 	})
 	if err != nil {
 		return err

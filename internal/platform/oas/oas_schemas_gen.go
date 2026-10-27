@@ -3656,6 +3656,46 @@ func (s *Me) SetIsAdmin(val bool) {
 
 func (*Me) getMeRes() {}
 
+// The competitor with the best value on a measure.
+// Ref: #/components/schemas/MeasureLeader
+type MeasureLeader struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The competitor's name.
+	Name string `json:"name"`
+	// Its value.
+	Value float64 `json:"value"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *MeasureLeader) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *MeasureLeader) GetName() string {
+	return s.Name
+}
+
+// GetValue returns the value of Value.
+func (s *MeasureLeader) GetValue() float64 {
+	return s.Value
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *MeasureLeader) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *MeasureLeader) SetName(val string) {
+	s.Name = val
+}
+
+// SetValue sets the value of Value.
+func (s *MeasureLeader) SetValue(val float64) {
+	s.Value = val
+}
+
 // A website to analyse.
 // Ref: #/components/schemas/NewAnalysis
 type NewAnalysis struct {
@@ -4595,6 +4635,52 @@ func (o OptLlmTest) Or(d LlmTest) LlmTest {
 	return d
 }
 
+// NewOptMeasureLeader returns new OptMeasureLeader with value set to v.
+func NewOptMeasureLeader(v MeasureLeader) OptMeasureLeader {
+	return OptMeasureLeader{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMeasureLeader is optional MeasureLeader.
+type OptMeasureLeader struct {
+	Value MeasureLeader
+	Set   bool
+}
+
+// IsSet returns true if OptMeasureLeader was set.
+func (o OptMeasureLeader) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMeasureLeader) Reset() {
+	var v MeasureLeader
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMeasureLeader) SetTo(v MeasureLeader) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMeasureLeader) Get() (v MeasureLeader, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMeasureLeader) Or(d MeasureLeader) MeasureLeader {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptPromptCadence returns new OptPromptCadence with value set to v.
 func NewOptPromptCadence(v PromptCadence) OptPromptCadence {
 	return OptPromptCadence{
@@ -5229,6 +5315,7 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 func (*ProblemStatusCode) getAiReadinessRes()       {}
 func (*ProblemStatusCode) getMeRes()                {}
 func (*ProblemStatusCode) getPromptTestResultsRes() {}
+func (*ProblemStatusCode) getStandingsRes()         {}
 func (*ProblemStatusCode) listAnalysesRes()         {}
 func (*ProblemStatusCode) listCompetitorsRes()      {}
 func (*ProblemStatusCode) searchTermsRes()          {}
@@ -7899,6 +7986,203 @@ func (s *SitemapSummary) SetAddresses(val int32) {
 func (s *SitemapSummary) SetLanguages(val []string) {
 	s.Languages = val
 }
+
+// Tribelt against its competitors on one measure.
+// Ref: #/components/schemas/Standing
+type Standing struct {
+	Measure StandingMeasure `json:"measure"`
+	// Tribelt's value; absent without data.
+	Tribelt OptFloat64 `json:"tribelt"`
+	// The median over the competitors with data, the typical competitor; absent when none has data.
+	Median OptFloat64       `json:"median"`
+	Leader OptMeasureLeader `json:"leader"`
+	// How many competitors have data on the measure.
+	Competitors int32 `json:"competitors"`
+	// Whether the leader is ahead of Tribelt; false when either has no value.
+	Trails bool `json:"trails"`
+	// Whether Tribelt is level with or ahead of the leader.
+	Leads bool `json:"leads"`
+}
+
+// GetMeasure returns the value of Measure.
+func (s *Standing) GetMeasure() StandingMeasure {
+	return s.Measure
+}
+
+// GetTribelt returns the value of Tribelt.
+func (s *Standing) GetTribelt() OptFloat64 {
+	return s.Tribelt
+}
+
+// GetMedian returns the value of Median.
+func (s *Standing) GetMedian() OptFloat64 {
+	return s.Median
+}
+
+// GetLeader returns the value of Leader.
+func (s *Standing) GetLeader() OptMeasureLeader {
+	return s.Leader
+}
+
+// GetCompetitors returns the value of Competitors.
+func (s *Standing) GetCompetitors() int32 {
+	return s.Competitors
+}
+
+// GetTrails returns the value of Trails.
+func (s *Standing) GetTrails() bool {
+	return s.Trails
+}
+
+// GetLeads returns the value of Leads.
+func (s *Standing) GetLeads() bool {
+	return s.Leads
+}
+
+// SetMeasure sets the value of Measure.
+func (s *Standing) SetMeasure(val StandingMeasure) {
+	s.Measure = val
+}
+
+// SetTribelt sets the value of Tribelt.
+func (s *Standing) SetTribelt(val OptFloat64) {
+	s.Tribelt = val
+}
+
+// SetMedian sets the value of Median.
+func (s *Standing) SetMedian(val OptFloat64) {
+	s.Median = val
+}
+
+// SetLeader sets the value of Leader.
+func (s *Standing) SetLeader(val OptMeasureLeader) {
+	s.Leader = val
+}
+
+// SetCompetitors sets the value of Competitors.
+func (s *Standing) SetCompetitors(val int32) {
+	s.Competitors = val
+}
+
+// SetTrails sets the value of Trails.
+func (s *Standing) SetTrails(val bool) {
+	s.Trails = val
+}
+
+// SetLeads sets the value of Leads.
+func (s *Standing) SetLeads(val bool) {
+	s.Leads = val
+}
+
+// A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of
+// answers naming the company, citationShare the share of web answers citing its site, readinessChecks
+// the AI readiness checks its site passes out of five (half for crawlers when some are kept out),
+// sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+// Ref: #/components/schemas/StandingMeasure
+type StandingMeasure string
+
+const (
+	StandingMeasureAiShareOfVoice  StandingMeasure = "aiShareOfVoice"
+	StandingMeasureCitationShare   StandingMeasure = "citationShare"
+	StandingMeasureReadinessChecks StandingMeasure = "readinessChecks"
+	StandingMeasureSitemapPages    StandingMeasure = "sitemapPages"
+	StandingMeasureTermsUsed       StandingMeasure = "termsUsed"
+)
+
+// AllValues returns all StandingMeasure values.
+func (StandingMeasure) AllValues() []StandingMeasure {
+	return []StandingMeasure{
+		StandingMeasureAiShareOfVoice,
+		StandingMeasureCitationShare,
+		StandingMeasureReadinessChecks,
+		StandingMeasureSitemapPages,
+		StandingMeasureTermsUsed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StandingMeasure) MarshalText() ([]byte, error) {
+	switch s {
+	case StandingMeasureAiShareOfVoice:
+		return []byte(s), nil
+	case StandingMeasureCitationShare:
+		return []byte(s), nil
+	case StandingMeasureReadinessChecks:
+		return []byte(s), nil
+	case StandingMeasureSitemapPages:
+		return []byte(s), nil
+	case StandingMeasureTermsUsed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StandingMeasure) UnmarshalText(data []byte) error {
+	switch StandingMeasure(data) {
+	case StandingMeasureAiShareOfVoice:
+		*s = StandingMeasureAiShareOfVoice
+		return nil
+	case StandingMeasureCitationShare:
+		*s = StandingMeasureCitationShare
+		return nil
+	case StandingMeasureReadinessChecks:
+		*s = StandingMeasureReadinessChecks
+		return nil
+	case StandingMeasureSitemapPages:
+		*s = StandingMeasureSitemapPages
+		return nil
+	case StandingMeasureTermsUsed:
+		*s = StandingMeasureTermsUsed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// How Tribelt stands against its competitors now.
+// Ref: #/components/schemas/Standings
+type Standings struct {
+	// Every measure, in order.
+	Measures []Standing `json:"measures"`
+	// How many measures Tribelt trails the leader on.
+	Trailing int32 `json:"trailing"`
+	// When the Prompt run the AI measures come from started; absent before any.
+	RunStartedAt OptDateTime `json:"runStartedAt"`
+}
+
+// GetMeasures returns the value of Measures.
+func (s *Standings) GetMeasures() []Standing {
+	return s.Measures
+}
+
+// GetTrailing returns the value of Trailing.
+func (s *Standings) GetTrailing() int32 {
+	return s.Trailing
+}
+
+// GetRunStartedAt returns the value of RunStartedAt.
+func (s *Standings) GetRunStartedAt() OptDateTime {
+	return s.RunStartedAt
+}
+
+// SetMeasures sets the value of Measures.
+func (s *Standings) SetMeasures(val []Standing) {
+	s.Measures = val
+}
+
+// SetTrailing sets the value of Trailing.
+func (s *Standings) SetTrailing(val int32) {
+	s.Trailing = val
+}
+
+// SetRunStartedAt sets the value of RunStartedAt.
+func (s *Standings) SetRunStartedAt(val OptDateTime) {
+	s.RunStartedAt = val
+}
+
+func (*Standings) getStandingsRes() {}
 
 type StartAnalysisBadRequest ProblemStatusCode
 

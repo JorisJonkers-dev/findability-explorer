@@ -77,6 +77,10 @@ type GetReadinessFilesRes interface {
 	getReadinessFilesRes()
 }
 
+type GetStandingsRes interface {
+	getStandingsRes()
+}
+
 type ListAnalysesRes interface {
 	listAnalysesRes()
 }

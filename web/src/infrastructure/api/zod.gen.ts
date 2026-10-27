@@ -663,6 +663,48 @@ export const zAiReadiness = z.object({
 });
 
 /**
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+ */
+export const zStandingMeasure = z.enum([
+    'aiShareOfVoice',
+    'citationShare',
+    'readinessChecks',
+    'sitemapPages',
+    'termsUsed'
+]);
+
+/**
+ * The competitor with the best value on a measure.
+ */
+export const zMeasureLeader = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    value: z.number().gte(0)
+});
+
+/**
+ * Tribelt against its competitors on one measure.
+ */
+export const zStanding = z.object({
+    measure: zStandingMeasure,
+    tribelt: z.number().gte(0).optional(),
+    median: z.number().gte(0).optional(),
+    leader: zMeasureLeader.optional(),
+    competitors: z.int().gte(0).lte(1000),
+    trails: z.boolean(),
+    leads: z.boolean()
+});
+
+/**
+ * How Tribelt stands against its competitors now.
+ */
+export const zStandings = z.object({
+    measures: z.array(zStanding).max(20),
+    trailing: z.int().gte(0).lte(20),
+    runStartedAt: z.iso.datetime({ offset: true }).max(64).optional()
+});
+
+/**
  * A scan's AI readiness in brief.
  */
 export const zAiReadinessBrief = z.object({
@@ -1182,6 +1224,11 @@ export const zCompetitorCandidateIdPath = zCompetitorCandidateId;
  * The credential's id.
  */
 export const zCredentialId = zLlmCredentialId;
+
+/**
+ * The standings.
+ */
+export const zGetStandingsResponse = zStandings;
 
 export const zSearchTermsQuery = z.object({
     q: z.string().max(100).optional(),

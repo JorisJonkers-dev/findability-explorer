@@ -57,6 +57,7 @@ var operationRolesSessionCookie = map[string][]string{
 	GetPromptTestResultsOperation:       []string{},
 	GetPromptTestSettingsOperation:      []string{},
 	GetReadinessFilesOperation:          []string{},
+	GetStandingsOperation:               []string{},
 	ListAnalysesOperation:               []string{},
 	ListCompetitorCandidatesOperation:   []string{},
 	ListCompetitorsOperation:            []string{},

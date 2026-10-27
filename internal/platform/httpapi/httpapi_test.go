@@ -47,6 +47,8 @@ type analyses struct {
 	rawFiles         map[uuid.UUID]domain.RawFiles
 	// promptTest stands in for the prompt-test use cases; a fresh one when nil.
 	promptTest *promptTests
+	// insight stands in for the insight use cases; a fresh one when nil.
+	insight *insightCases
 }
 
 // companyRepo is an in-memory store of added companies.
@@ -146,7 +148,7 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 		&companyRepo{}, companyScans{}, time.Now,
 	)
 	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{
-		Terminology: terminology, Analysis: a, Companies: companies, LLM: l, PromptTest: a.prompts(), Auth: auth{},
+		Terminology: terminology, Analysis: a, Companies: companies, LLM: l, PromptTest: a.prompts(), Insight: a.insights(), Auth: auth{},
 	})
 	if err != nil {
 		t.Fatal(err)

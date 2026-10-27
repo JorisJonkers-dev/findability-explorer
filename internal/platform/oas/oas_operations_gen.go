@@ -25,6 +25,7 @@ const (
 	GetPromptTestResultsOperation       OperationName = "GetPromptTestResults"
 	GetPromptTestSettingsOperation      OperationName = "GetPromptTestSettings"
 	GetReadinessFilesOperation          OperationName = "GetReadinessFiles"
+	GetStandingsOperation               OperationName = "GetStandings"
 	ListAnalysesOperation               OperationName = "ListAnalyses"
 	ListCompetitorCandidatesOperation   OperationName = "ListCompetitorCandidates"
 	ListCompetitorsOperation            OperationName = "ListCompetitors"

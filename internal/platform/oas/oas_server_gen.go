@@ -149,6 +149,15 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/analyses/{analysisId}/readiness-files
 	GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (GetReadinessFilesRes, error)
+	// GetStandings implements getStandings operation.
+	//
+	// Compares Tribelt with its competitors on each measure, from the newest Prompt run and each company's
+	// newest scan: Tribelt's value, the median over the competitors with data, and the leader, the
+	// competitor with the best value (a tie goes to the name first alphabetically). Tribelt, its group
+	// companies and the mirror are never the median or the leader. Shares are fractions from 0 to 1.
+	//
+	// GET /api/v1/standings
+	GetStandings(ctx context.Context) (GetStandingsRes, error)
 	// ListAnalyses implements listAnalyses operation.
 	//
 	// Returns at most `limit` analyses, newest first, without their results.

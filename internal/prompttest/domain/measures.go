@@ -22,14 +22,14 @@ type Cell struct {
 	Cited    int
 }
 
-// counted reports whether an answer counts in the measures: it was answered and read.
-func counted(a Answer) bool { return a.Failure == "" && a.Extraction != nil && !a.Extraction.Failed }
+// Counts reports whether an answer counts in the measures: it was answered and read.
+func (a Answer) Counts() bool { return a.Failure == "" && a.Extraction != nil && !a.Extraction.Failed }
 
 // Cells counts a run's answers per provider, scope, family and mode, in that order.
 func Cells(answers []Answer) []Cell {
 	var out []Cell
 	for _, a := range answers {
-		if !counted(a) {
+		if !a.Counts() {
 			continue
 		}
 		i := slices.IndexFunc(out, func(c Cell) bool {
@@ -77,7 +77,7 @@ func (m Mention) AveragePosition() float64 {
 func Mentions(answers []Answer) []Mention {
 	byID := map[string]*Mention{}
 	for _, a := range answers {
-		if counted(a) {
+		if a.Counts() {
 			mention(byID, a.Extraction.Companies)
 		}
 	}
@@ -129,7 +129,7 @@ type WrongClaim struct {
 func WrongClaims(answers []Answer) []WrongClaim {
 	var out []WrongClaim
 	for _, a := range answers {
-		if !counted(a) {
+		if !a.Counts() {
 			continue
 		}
 		for _, claim := range a.Extraction.WrongClaims {

@@ -319,3 +319,14 @@ func TestSettingsRulesAndTheSchedule(t *testing.T) {
 		}
 	}
 }
+
+func TestCitedAndNamedCompaniesAreOnTheListEachOnce(t *testing.T) {
+	cited := domain.CitedCompanies([]string{"https://shop.tribelt.nl/en", "https://www.martens-belts.com/", "tribelt.nl", "https://example.org"}, directory())
+	if strings.Join(cited, ",") != "tribelt,martens" {
+		t.Errorf("cited = %v", cited)
+	}
+	x := domain.Extraction{Companies: []domain.Company{{CompetitorID: "esfo"}, {Name: "Unknown"}, {CompetitorID: "tribelt"}, {CompetitorID: "esfo"}}}
+	if named := x.NamedCompanies(); strings.Join(named, ",") != "esfo,tribelt" {
+		t.Errorf("named = %v", named)
+	}
+}

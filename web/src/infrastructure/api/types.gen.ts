@@ -1247,6 +1247,72 @@ export type AiReadiness = {
 };
 
 /**
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+ */
+export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapPages' | 'termsUsed';
+
+/**
+ * The competitor with the best value on a measure.
+ */
+export type MeasureLeader = {
+    competitorId: CompetitorId;
+    /**
+     * The competitor's name.
+     */
+    name: string;
+    /**
+     * Its value.
+     */
+    value: number;
+};
+
+/**
+ * Tribelt against its competitors on one measure.
+ */
+export type Standing = {
+    measure: StandingMeasure;
+    /**
+     * Tribelt's value; absent without data.
+     */
+    tribelt?: number;
+    /**
+     * The median over the competitors with data, the typical competitor; absent when none has data.
+     */
+    median?: number;
+    leader?: MeasureLeader;
+    /**
+     * How many competitors have data on the measure.
+     */
+    competitors: number;
+    /**
+     * Whether the leader is ahead of Tribelt; false when either has no value.
+     */
+    trails: boolean;
+    /**
+     * Whether Tribelt is level with or ahead of the leader.
+     */
+    leads: boolean;
+};
+
+/**
+ * How Tribelt stands against its competitors now.
+ */
+export type Standings = {
+    /**
+     * Every measure, in order.
+     */
+    measures: Array<Standing>;
+    /**
+     * How many measures Tribelt trails the leader on.
+     */
+    trailing: number;
+    /**
+     * When the Prompt run the AI measures come from started; absent before any.
+     */
+    runStartedAt?: string;
+};
+
+/**
  * A scan's AI readiness in brief.
  */
 export type AiReadinessBrief = {
@@ -1951,6 +2017,35 @@ export type CompetitorCandidateIdPath = CompetitorCandidateId;
  * The credential's id.
  */
 export type CredentialId = LlmCredentialId;
+
+export type GetStandingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/standings';
+};
+
+export type GetStandingsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetStandingsError = GetStandingsErrors[keyof GetStandingsErrors];
+
+export type GetStandingsResponses = {
+    /**
+     * The standings.
+     */
+    200: Standings;
+};
+
+export type GetStandingsResponse = GetStandingsResponses[keyof GetStandingsResponses];
 
 export type SearchTermsData = {
     body?: never;

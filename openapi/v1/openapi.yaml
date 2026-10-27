@@ -38,7 +38,33 @@ tags:
     description: >-
       The Prompt test: whether AI assistants name Tribelt when a buyer asks, measured by Prompt
       runs of a fixed, versioned prompt set on the cheapest model of each large provider.
+  - name: insight
+    description: >-
+      How Tribelt stands against its competitors, its belt families against the field, and the
+      plan, all computed from the newest Prompt runs, scans and research.
 paths:
+  /api/v1/standings:
+    get:
+      operationId: getStandings
+      summary: Get how Tribelt stands against its competitors
+      description: >-
+        Compares Tribelt with its competitors on each measure, from the newest Prompt run and each
+        company's newest scan: Tribelt's value, the median over the competitors with data, and the
+        leader, the competitor with the best value (a tie goes to the name first alphabetically).
+        Tribelt, its group companies and the mirror are never the median or the leader. Shares
+        are fractions from 0 to 1.
+      tags: [insight]
+      responses:
+        "200":
+          description: The standings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Standings"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/terms:
     get:
       operationId: searchTerms
@@ -2922,6 +2948,97 @@ components:
           maximum: 100
           description: How many recommendations the site does not follow, each blocked crawler included.
           example: 3
+    StandingMeasure:
+      description: >-
+        A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the
+        share of answers naming the company, citationShare the share of web answers citing its
+        site, readinessChecks the AI readiness checks its site passes out of five (half for
+        crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and
+        termsUsed the map terms its newest scan found.
+      type: string
+      enum: [aiShareOfVoice, citationShare, readinessChecks, sitemapPages, termsUsed]
+      example: aiShareOfVoice
+    MeasureLeader:
+      description: The competitor with the best value on a measure.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, value]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The competitor's name.
+          example: Ashworth
+        value:
+          type: number
+          format: double
+          minimum: 0
+          description: Its value.
+          example: 0.57
+    Standing:
+      description: Tribelt against its competitors on one measure.
+      type: object
+      additionalProperties: false
+      required: [measure, competitors, trails, leads]
+      properties:
+        measure:
+          $ref: "#/components/schemas/StandingMeasure"
+        tribelt:
+          type: number
+          format: double
+          minimum: 0
+          description: Tribelt's value; absent without data.
+          example: 0.24
+        median:
+          type: number
+          format: double
+          minimum: 0
+          description: The median over the competitors with data, the typical competitor; absent when none has data.
+          example: 0.17
+        leader:
+          $ref: "#/components/schemas/MeasureLeader"
+        competitors:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many competitors have data on the measure.
+          example: 38
+        trails:
+          type: boolean
+          description: Whether the leader is ahead of Tribelt; false when either has no value.
+          example: true
+        leads:
+          type: boolean
+          description: Whether Tribelt is level with or ahead of the leader.
+          example: false
+    Standings:
+      description: How Tribelt stands against its competitors now.
+      type: object
+      additionalProperties: false
+      required: [measures, trailing]
+      properties:
+        measures:
+          type: array
+          maxItems: 20
+          description: Every measure, in order.
+          items:
+            $ref: "#/components/schemas/Standing"
+        trailing:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 20
+          description: How many measures Tribelt trails the leader on.
+          example: 4
+        runStartedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the Prompt run the AI measures come from started; absent before any.
+          example: "2026-11-02T06:00:00Z"
     AiReadinessBrief:
       description: A scan's AI readiness in brief.
       type: object

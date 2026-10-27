@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.6.0...v1.7.0) (2026-10-27)
+
+
+### Features
+
+* ask 200 Prompt test answers a run instead of about 1,300 ([#45](https://github.com/JorisJonkers-dev/findability-explorer/issues/45)) ([a5a484c](https://github.com/JorisJonkers-dev/findability-explorer/commit/a5a484c7f974379fe57545097973f89164310660))
+
 ## [1.6.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.5.0...v1.6.0) (2026-10-26)
 
 

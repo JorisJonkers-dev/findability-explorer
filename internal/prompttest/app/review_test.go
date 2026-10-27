@@ -296,18 +296,26 @@ func TestHaikuMergesAndChecksTheCandidates(t *testing.T) {
 		t.Errorf("state = %+v", st)
 	}
 	pending, counts, _ := svc.Candidates(t.Context(), domain.CandidatePending)
-	// Kienzle is one company now; Twente Belt Works is Twentebelt, on the list.
-	if counts.Pending != app.CheckBatch+4 || counts.Unchecked != 0 || m.merged != app.CheckBatch+6 || len(m.checked) != 2 {
+	// Kienzle is one company now; Twente Belt Works is Twentebelt, on the list. The model said
+	// nothing about the last company of each batch, so those two wait to be checked again.
+	if counts.Pending != app.CheckBatch+4 || counts.Unchecked != 2 || m.merged != app.CheckBatch+6 || len(m.checked) != 2 {
 		t.Fatalf("pending %d, unchecked %d; merged %d, checked %d times", counts.Pending, counts.Unchecked, m.merged, len(m.checked))
 	}
+	silent := 0
 	for _, c := range pending {
-		if c.Verdict == nil || c.Verdict.Model != "anthropic: claude-haiku-5-5" {
-			t.Fatalf("%s has no check: %+v", c.Name, c.Verdict)
+		switch {
+		case c.Verdict == nil:
+			silent++
+		case c.Verdict.Model != "anthropic: claude-haiku-5-5":
+			t.Fatalf("%s has a check by %q", c.Name, c.Verdict.Model)
 		}
 	}
-	// A second review has nothing left to check.
-	if err := svc.Review(t.Context()); err != nil || len(m.checked) != 2 {
-		t.Errorf("a second review = %v, checked %d times", err, len(m.checked))
+	if silent != 2 {
+		t.Errorf("%d companies without a check, want 2", silent)
+	}
+	// A second review asks only about the two it said nothing about.
+	if err := svc.Review(t.Context()); err != nil || len(m.checked) != 3 || len(m.checked[2]) != 2 {
+		t.Errorf("a second review = %v, checked %v", err, m.checked)
 	}
 }
 

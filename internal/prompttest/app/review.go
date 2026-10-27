@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -171,7 +172,11 @@ func (s *Service) decideByModel(ctx context.Context, batch []domain.Candidate, v
 	if err != nil {
 		return err
 	}
-	for i, asked := range batch {
+	for _, asked := range batch {
+		i := slices.IndexFunc(verdicts, func(v domain.CompanyVerdict) bool { return v.CandidateID == asked.ID })
+		if i < 0 {
+			continue // the model said nothing about it: it is asked about again
+		}
 		status, ok := verdicts[i].Decides(asked)
 		if !ok {
 			continue

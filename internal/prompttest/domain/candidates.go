@@ -488,7 +488,9 @@ func WithVerdicts(candidates []Candidate, verdicts []CompanyVerdict) []Candidate
 	for i, c := range candidates {
 		for _, id := range c.MemberIDs() {
 			v, ok := byID[id]
-			if !ok || (c.Decision == nil && v.Version < CheckVersion) {
+			// A check without a reason is the model having said nothing about the company: it
+			// counts as no check, so the company is asked about again.
+			if !ok || v.Reason == "" || (c.Decision == nil && v.Version < CheckVersion) {
 				continue
 			}
 			if candidates[i].Verdict == nil || v.At.After(candidates[i].Verdict.At) {
@@ -510,16 +512,18 @@ func Unchecked(candidates []Candidate) []Candidate {
 	return out
 }
 
-// CompleteVerdicts keeps the model's verdicts on the candidates it was asked about, one each, in
-// their order, stamped with the model, the CheckVersion and the time. A candidate it gave none on gets an unsure
-// one without a reason, so it is not asked about again.
+// CompleteVerdicts keeps the model's verdicts on the candidates it was asked about, at most one
+// each, in their order, stamped with the model, the CheckVersion and the time. A candidate it gave
+// no verdict on, or one without a reason, gets none, so it is asked about again; a verdict on a
+// candidate it was not asked about is dropped.
 func CompleteVerdicts(asked []Candidate, answered []CompanyVerdict, model string, at time.Time) []CompanyVerdict {
 	out := make([]CompanyVerdict, 0, len(asked))
 	for _, c := range asked {
-		v := CompanyVerdict{CandidateID: c.ID}
-		if i := slices.IndexFunc(answered, func(a CompanyVerdict) bool { return a.CandidateID == c.ID }); i >= 0 {
-			v = answered[i]
+		i := slices.IndexFunc(answered, func(a CompanyVerdict) bool { return a.CandidateID == c.ID })
+		if i < 0 || strings.TrimSpace(answered[i].Reason) == "" {
+			continue
 		}
+		v := answered[i]
 		v.Model, v.Version, v.At = model, CheckVersion, at
 		out = append(out, v)
 	}

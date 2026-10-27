@@ -71,20 +71,22 @@ func dossiers() []domain.Dossier {
 }
 
 func TestTheModelChecksEachCompany(t *testing.T) {
-	c := &client{text: `{"verdicts":[{"id":"00000000000000aa","competitor":true,"sure":true,"reason":"  Makes wire mesh belts. "},{"id":"00000000000000bb","competitor":false,"sure":false,"reason":"` + strings.Repeat("x", 400) + `"}]}`}
+	// Companies go by their number: one the model does not name, or names wrongly, gets no verdict.
+	c := &client{text: `{"verdicts":[{"id":" 1","competitor":true,"sure":true,"reason":"  Makes wire mesh belts. "},{"id":"2","competitor":false,"sure":false,"reason":"` + strings.Repeat("x", 400) + `"},{"id":"9","sure":true,"reason":"Out of range."},{"id":"00000000000000cc","sure":true,"reason":"Not a number."}]}`}
 	got, used, err := reviewer.New(c, "m").Check(t.Context(), dossiers())
-	if err != nil || len(got) != 2 || !got[0].Competitor || !got[0].Sure || got[0].Reason != "Makes wire mesh belts." || len([]rune(got[1].Reason)) != 300 || used.InputTokens != 120 {
+	if err != nil || len(got) != 2 || got[0].CandidateID != "00000000000000aa" || got[1].CandidateID != "00000000000000bb" || !got[0].Competitor || !got[0].Sure ||
+		got[0].Reason != "Makes wire mesh belts." || len([]rune(got[1].Reason)) != 300 || used.InputTokens != 120 {
 		t.Fatalf("Check = %+v, %+v, %v", got, used, err)
 	}
-	if c.prompt.SchemaName != "candidate_checks" || !strings.Contains(c.prompt.User, "Give one verdict for every company") ||
+	if c.prompt.SchemaName != "candidate_checks" || !strings.Contains(c.prompt.User, "Give one verdict for every company, by its number") ||
 		!strings.Contains(c.prompt.System, domain.TargetMarket) {
 		t.Errorf("prompt = %+v", c.prompt)
 	}
 	for _, want := range []string{
-		`<company id="00000000000000aa">` + "\nNames: \"Taiwan Metiz Alliance\", \"Metiz\"\nWebsite: https://metiz.tw/\nNamed in 8 answers.\n",
+		`<company id="1">` + "\nNames: \"Taiwan Metiz Alliance\", \"Metiz\"\nWebsite: https://metiz.tw/\nNamed in 8 answers.\n",
 		"What the answers say:\n- …Taiwan Metiz Alliance makes wire mesh belts for ovens…\n",
 		"Home page:\n  Title: Metiz\n  Description: Wire mesh conveyor belts\n  Headings: Belts | Ovens\n  Text: Since 1983.\n</company>",
-		`<company id="00000000000000bb">` + "\nNames: \"Metiz Alliance Co\"\nNo website.\nNamed in 1 answers.\n</company>",
+		`<company id="2">` + "\nNames: \"Metiz Alliance Co\"\nNo website.\nNamed in 1 answers.\n</company>",
 		"Names: \"Gone Co\"\nWebsite: https://gone.example/\nNot named in the answers.\nHome page: could not be read (the website did not answer).\n",
 	} {
 		if !strings.Contains(c.prompt.User, want) {

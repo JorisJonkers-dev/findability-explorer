@@ -181,12 +181,14 @@ func TestTheModelsCheckAttachesToTheWholeCompany(t *testing.T) {
 	}
 }
 
-func TestEveryCheckedCandidateGetsAVerdict(t *testing.T) {
+func TestOnlyWhatTheModelSaidIsKept(t *testing.T) {
 	at := time.Date(2026, 10, 27, 9, 0, 0, 0, time.UTC)
-	got := domain.CompleteVerdicts([]domain.Candidate{{ID: "a"}, {ID: "b"}},
-		[]domain.CompanyVerdict{{CandidateID: "b", Competitor: true, Sure: true, Reason: "Makes mesh belts."}, {CandidateID: "zz", Sure: true}}, "m", at)
-	if len(got) != 2 || got[0].CandidateID != "a" || got[0].Sure || got[0].Reason != "" || !got[1].Competitor || got[1].Model != "m" ||
-		!got[0].At.Equal(at) || got[0].Version != domain.CheckVersion || got[1].Version != domain.CheckVersion {
+	// a gets no verdict, c one without a reason, zz was not asked about: only b's is kept, so a
+	// and c are asked about again.
+	got := domain.CompleteVerdicts([]domain.Candidate{{ID: "a"}, {ID: "b"}, {ID: "c"}}, []domain.CompanyVerdict{
+		{CandidateID: "b", Competitor: true, Sure: true, Reason: "Makes mesh belts."}, {CandidateID: "c", Sure: true, Reason: "  "}, {CandidateID: "zz", Sure: true, Reason: "x"},
+	}, "m", at)
+	if len(got) != 1 || got[0].CandidateID != "b" || !got[0].Competitor || got[0].Model != "m" || !got[0].At.Equal(at) || got[0].Version != domain.CheckVersion {
 		t.Errorf("verdicts = %+v", got)
 	}
 }

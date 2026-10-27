@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
@@ -95,11 +96,13 @@ func (r *Reviewer) Merge(ctx context.Context, candidates []domain.Candidate, dir
 
 // Check has the model say of each company, from its dossier, whether it is a competitor of Tribelt.
 func (r *Reviewer) Check(ctx context.Context, dossiers []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error) {
+	// Each company is numbered from 1: a model copies a short number back reliably, where it
+	// garbles a 16-character id, and a verdict it cannot be matched to is lost.
 	var b strings.Builder
-	for _, d := range dossiers {
-		b.WriteString(dossier(d))
+	for i, d := range dossiers {
+		b.WriteString(dossier(strconv.Itoa(i+1), d))
 	}
-	b.WriteString("\nGive one verdict for every company, by its id.\n")
+	b.WriteString("\nGive one verdict for every company, by its number as the id.\n")
 	var a struct {
 		Verdicts []struct {
 			ID         string `json:"id"`
@@ -114,17 +117,23 @@ func (r *Reviewer) Check(ctx context.Context, dossiers []domain.Dossier) ([]doma
 	}
 	out := make([]domain.CompanyVerdict, 0, len(a.Verdicts))
 	for _, v := range a.Verdicts {
-		out = append(out, domain.CompanyVerdict{CandidateID: v.ID, Competitor: v.Competitor, Sure: v.Sure, Reason: clip(v.Reason, maxReason)})
+		n, err := strconv.Atoi(strings.TrimSpace(v.ID))
+		if err != nil || n < 1 || n > len(dossiers) {
+			continue
+		}
+		out = append(out, domain.CompanyVerdict{
+			CandidateID: dossiers[n-1].Candidate.ID, Competitor: v.Competitor, Sure: v.Sure, Reason: clip(v.Reason, maxReason),
+		})
 	}
 	return out, usage, nil
 }
 
 // dossier is a company as the model checks it: its names and website, what the answers say
 // around its name, and its home page.
-func dossier(d domain.Dossier) string {
+func dossier(ref string, d domain.Dossier) string {
 	c := d.Candidate
 	var b strings.Builder
-	fmt.Fprintf(&b, "<company id=%q>\n", c.ID)
+	fmt.Fprintf(&b, "<company id=%q>\n", ref)
 	names := make([]string, 0, len(c.Members)+1)
 	for _, m := range c.Members {
 		names = append(names, fmt.Sprintf("%q", m.Name))

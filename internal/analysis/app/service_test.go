@@ -407,7 +407,7 @@ func TestGetAndListClampTheLimit(t *testing.T) {
 	if _, err := svc.Get(t.Context(), uuid.New()); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("Get(unknown) = %v", err)
 	}
-	for limit, want := range map[int]int{0: app.DefaultListLimit, 7: 7, 500: app.MaxListLimit} {
+	for limit, want := range map[int]int{0: app.DefaultListLimit, 7: 7, 50_000: app.MaxListLimit} {
 		if got, err := svc.List(t.Context(), limit); err != nil || len(got) != want {
 			t.Errorf("List(%d) = %d, %v; want %d", limit, len(got), err, want)
 		}

@@ -5,40 +5,35 @@ import worker from '../../../assets/worker.webp'
 import tribeltLogo from '../../../assets/tribelt-logo-on-dark.svg'
 import utLogo from '../../../assets/ut-logo-white.png'
 import { useStandings } from '../../catching-up/composables/useStandings'
-import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
-import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import AccountBar from '../../shell/components/AccountBar.vue'
 import StageFrame from '../../shell/components/StageFrame.vue'
 import { usePreviousPath } from '../../shell/composables/navigation'
 import { type SectionId, SECTIONS, sectionOfPath } from '../../shell/domain/sections'
-import { useTermMap } from '../../terminology/composables/useTermSearch'
+import { useOverview } from '../composables/useOverview'
 import { useZoom } from '../composables/useZoom'
 import { COURSE_LINE, EYEBROW, LEAD, TEAM_LINE, TILE_TEXT } from '../domain/content'
-import { aiFigure, catchUpFigure, familyBars, gapBars, languageBars, makerCount, originOf, termsText, voiceBars } from '../domain/tiles'
+import { aiFigure, catchUpFigure, familyBars, gapBars, languageBars, originOf, termsFigure, voiceBars } from '../domain/tiles'
 import TileBars from './TileBars.vue'
 import TilePlan from './TilePlan.vue'
 
 const router = useRouter()
 const root = useTemplateRef<HTMLElement>('root')
 const tiles = useTemplateRef<HTMLElement[]>('tiles')
-const { competitors } = useCompetitors()
-const map = useTermMap()
 const { measures, trailing } = useStandings()
-const { results } = usePromptResults()
+const { overview } = useOverview()
 
 const { zoomClass, origin, zoomIn, zoomOut, finished } = useZoom((index) => {
   void router.push(SECTIONS[index]?.path ?? '/')
 })
 
-/** Each tile's big figure and line, by section; the competitors and terms tiles count the live data. */
+/** Each tile's big figure and line, by section; the server counts the live figures. */
 const figures = computed<Partial<Record<SectionId, { big: string; text: string }>>>(() => {
-  const makers = makerCount(competitors.value)
-  const terms = map.terms.value
+  const makers = overview.value?.competitors.makers ?? 0
   return {
     'catching-up': catchUpFigure(measures.value, trailing.value),
-    'ai-search': aiFigure(results.value),
+    'ai-search': aiFigure(overview.value?.aiSearch),
     competitors: { big: makers > 0 ? String(makers) : '…', text: TILE_TEXT.competitors },
-    terms: { big: terms.length > 0 ? String(map.total.value) : '…', text: terms.length > 0 ? termsText(terms, map.languages.value) : 'search terms in the terminology map.' },
+    terms: termsFigure(overview.value?.terms),
     plan: TILE_TEXT.plan,
   }
 })
@@ -116,20 +111,20 @@ onMounted(() => {
               />
               <TileBars
                 v-else-if="section.id === 'ai-search'"
-                :bars="voiceBars(results)"
+                :bars="voiceBars(overview?.aiSearch)"
                 fill="blue-grey"
                 strong="Tribelt"
                 :legend="[{ label: 'AI answers that name each company', fill: 'blue-grey' }]"
               />
               <TileBars
                 v-else-if="section.id === 'competitors'"
-                :bars="familyBars(competitors)"
+                :bars="familyBars(overview?.competitors)"
                 fill="orange"
                 :legend="[{ label: `Competitors offering each Tribelt family, of ${figures.competitors?.big ?? ''}`, fill: 'orange' }]"
               />
               <TileBars
                 v-else-if="section.id === 'terms'"
-                :bars="languageBars(map.terms.value, map.languages.value)"
+                :bars="languageBars(overview?.terms)"
                 fill="orange"
                 :legend="[
                   { label: 'Tribelt uses', fill: 'orange' },

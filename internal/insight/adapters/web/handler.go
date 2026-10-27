@@ -20,6 +20,7 @@ type UseCases interface {
 	Standings(ctx context.Context) (app.Standings, error)
 	AiSearch(ctx context.Context) (app.AiSearch, error)
 	Products(ctx context.Context) (app.Products, error)
+	Overview(ctx context.Context) (domain.Overview, error)
 	Plan(ctx context.Context) (app.Plan, error)
 	Tick(ctx context.Context, actor, id string, done bool) error
 	SetTargets(ctx context.Context, actor string, targets map[domain.Target]float64) error
@@ -152,6 +153,33 @@ func toProduct(p domain.Product, companies map[string]domain.Company) oas.Produc
 		o.MostNamed = append(o.MostNamed, oas.ProductMention{CompetitorId: oas.CompetitorId(m.CompanyID), Name: c.Name, Role: oas.CompanyRole(c.Role), Share: m.Share})
 	}
 	return o
+}
+
+// GetOverview implements getOverview.
+//
+//nolint:gosec // the counts are of the map's terms, the companies and a run's answers, far below int32
+func (h *Handler) GetOverview(ctx context.Context) (oas.GetOverviewRes, error) {
+	o, err := h.uc.Overview(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.Overview{
+		Terms:       oas.OverviewTerms{Total: int32(o.Terms.Total), Tribelt: int32(o.Terms.Tribelt), Languages: make([]oas.OverviewLanguage, 0, len(o.Terms.Languages))},
+		Competitors: oas.OverviewCompetitors{Makers: int32(o.Competitors.Makers), Families: make([]oas.OverviewFamily, 0, len(o.Competitors.Families))},
+		AiSearch:    oas.OverviewAiSearch{Answers: int32(o.AiSearch.Answers), Companies: make([]oas.OverviewMention, 0, len(o.AiSearch.Companies))},
+	}
+	for _, l := range o.Terms.Languages {
+		out.Terms.Languages = append(out.Terms.Languages, oas.OverviewLanguage{Language: oas.Language(l.Language), Terms: int32(l.Terms), Tribelt: int32(l.Tribelt)})
+	}
+	for _, f := range o.Competitors.Families {
+		out.Competitors.Families = append(out.Competitors.Families, oas.OverviewFamily{Family: oas.PromptFamily(f.Family), Makers: int32(f.Makers)})
+	}
+	for _, m := range o.AiSearch.Companies {
+		out.AiSearch.Companies = append(out.AiSearch.Companies, oas.OverviewMention{
+			CompetitorId: oas.CompetitorId(m.CompanyID), Name: m.Name, Role: oas.CompanyRole(m.Role), Answers: int32(m.Answers),
+		})
+	}
+	return out, nil
 }
 
 // GetPlan implements getPlan.

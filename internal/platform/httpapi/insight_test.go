@@ -128,6 +128,50 @@ func TestProductsAreForEveryoneSignedIn(t *testing.T) {
 	}
 }
 
+func (c *insightCases) Overview(context.Context) (domain.Overview, error) {
+	return domain.Overview{
+		Terms:       domain.TermsOverview{Total: 387, Tribelt: 30, Languages: []domain.LanguageTerms{{Language: "en", Terms: 200, Tribelt: 20}, {Language: "de", Terms: 187, Tribelt: 10}}},
+		Competitors: domain.CompetitorsOverview{Makers: 24, Families: []domain.FamilyMakers{{Family: "eyelink", Makers: 9}, {Family: "other"}}},
+		AiSearch: domain.AiSearchOverview{Answers: 1260, Companies: []domain.Mentioned{
+			{CompanyID: "twentebelt", Name: "Twentebelt", Role: domain.RoleCompetitor, Answers: 412},
+			{CompanyID: "tribelt", Name: "Tribelt", Role: domain.RoleTribelt},
+		}},
+	}, c.err
+}
+
+func TestTheOverviewIsForEveryoneSignedIn(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	r := callAs(t, srv, http.MethodGet, "/api/v1/overview", "", "tester")
+	if r.code != http.StatusOK {
+		t.Fatalf("overview = %d %v", r.code, r.body)
+	}
+	terms := r.body["terms"].(map[string]any)
+	languages := terms["languages"].([]any)
+	if terms["total"].(float64) != 387 || terms["tribelt"].(float64) != 30 || len(languages) != 2 ||
+		languages[1].(map[string]any)["language"] != "de" || languages[1].(map[string]any)["tribelt"].(float64) != 10 {
+		t.Errorf("terms = %v", terms)
+	}
+	competitors := r.body["competitors"].(map[string]any)
+	families := competitors["families"].([]any)
+	if competitors["makers"].(float64) != 24 || len(families) != 2 || families[0].(map[string]any)["family"] != "eyelink" || families[1].(map[string]any)["makers"].(float64) != 0 {
+		t.Errorf("competitors = %v", competitors)
+	}
+	ai := r.body["aiSearch"].(map[string]any)
+	named := ai["companies"].([]any)
+	if ai["answers"].(float64) != 1260 || len(named) != 2 || named[0].(map[string]any)["competitorId"] != "twentebelt" ||
+		named[0].(map[string]any)["answers"].(float64) != 412 || named[1].(map[string]any)["role"] != "tribelt" || named[1].(map[string]any)["name"] != "Tribelt" {
+		t.Errorf("ai search = %v", ai)
+	}
+	a.insights().err = errors.New("down")
+	if r := callAs(t, srv, http.MethodGet, "/api/v1/overview", "", "tester"); r.code != http.StatusInternalServerError {
+		t.Errorf("a failure = %d", r.code)
+	}
+	if r := call(t, srv, http.MethodGet, "/api/v1/overview", "", false); r.code != http.StatusUnauthorized {
+		t.Errorf("signed out = %d", r.code)
+	}
+}
+
 func plan() app.Plan {
 	at := time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC)
 	share := 0.24

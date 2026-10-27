@@ -1,109 +1,99 @@
 import { describe, expect, it } from 'vitest'
-import type { Standing } from '../../../infrastructure/api/types.gen'
-import { competitor, promptResults, term } from '../../../testing/fixtures'
-import { aiFigure, catchUpFigure, gapBars, languageCount, termsText, familyBars, languageBars, makerCount, originOf, tribeltTermCount, usedByTribelt, voiceBars } from './tiles'
+import type { OverviewAiSearch, OverviewCompetitors, OverviewTerms, Standing } from '../../../infrastructure/api/types.gen'
+import { aiFigure, catchUpFigure, familyBars, gapBars, LANGUAGES_SHOWN, languageBars, originOf, termsFigure, voiceBars } from './tiles'
 
 describe('the competitors tile', () => {
-  const makers = [
-    competitor('Twentebelt', { beltNames: [{ name: 'TwenteFlex', family: 'tri_flex_turn_curve' }, { name: 'Eyelink belts', family: 'eyelink' }] }),
-    competitor('Märtens', { beltNames: [{ name: 'Drahtösengliederband', family: 'eyelink' }] }),
-    competitor('Tribelt B.V.', { groupCompany: true }),
-    competitor('Example Belts', { source: 'added' }),
-    competitor('Mirror of tribelt.nl', { role: 'mirror' }),
-  ]
-
-  it('counts the makers the research found, not the group, the mirror or companies added since', () => {
-    expect(makerCount(makers)).toBe(2)
-  })
-
   it('counts the makers offering each family, of all of them', () => {
-    expect(familyBars(makers).map((b) => [b.label, b.value, b.first, b.zero])).toEqual([
+    const competitors: OverviewCompetitors = {
+      makers: 2,
+      families: [
+        { family: 'eyelink', makers: 2 },
+        { family: 'open_spiral', makers: 0 },
+        { family: 'closed_spiral', makers: 0 },
+        { family: 'tri_flex_turn_curve', makers: 1 },
+        { family: 'other', makers: 0 },
+      ],
+    }
+    expect(familyBars(competitors).map((b) => [b.label, b.value, b.first, b.zero])).toEqual([
       ['Eyelink', '2', 1, false],
       ['Open spiral', '0', 0, true],
       ['Closed spiral', '0', 0, true],
       ['Tri-Flex', '1', 0.5, false],
       ['Other belts', '0', 0, true],
     ])
-    expect(familyBars([]).every((b) => b.first === 0)).toBe(true)
+  })
+
+  it('shows every family at none until the figures load, or when the research found no makers', () => {
+    expect(familyBars(undefined).map((b) => [b.label, b.value, b.first, b.zero])).toEqual([
+      ['Eyelink', '0', 0, true],
+      ['Open spiral', '0', 0, true],
+      ['Closed spiral', '0', 0, true],
+      ['Tri-Flex', '0', 0, true],
+      ['Other belts', '0', 0, true],
+    ])
+    expect(familyBars({ makers: 0, families: [{ family: 'eyelink', makers: 0 }] }).map((b) => b.first)).toEqual([0])
   })
 })
 
 describe('the search terms tile', () => {
-  const terms = [
-    term({ language: 'en', usedBy: ['Tribelt (Tri-Flex)', 'Twentebelt'] }),
-    term({ language: 'en-US', usedBy: ['Ashworth'] }),
-    term({ language: 'de', usedBy: ['Tribelt'] }),
-    term({ language: 'nl', usedBy: ['Märtens'] }),
-  ]
+  const terms: OverviewTerms = {
+    total: 4,
+    tribelt: 2,
+    languages: [
+      { language: 'en', terms: 2, tribelt: 1 },
+      { language: 'de', terms: 1, tribelt: 1 },
+      { language: 'nl', terms: 1, tribelt: 0 },
+    ],
+  }
 
-  it("knows Tribelt's own terms, also those it credits to a product line", () => {
-    expect(usedByTribelt(terms[0] as (typeof terms)[0])).toBe(true)
-    expect(usedByTribelt({ usedBy: ['Tribeltish'] })).toBe(false)
-    expect(tribeltTermCount(terms)).toBe(2)
-  })
-
-  it('charts the terms per language, American English as English, against the largest', () => {
+  it('charts the terms per language against the largest, the part Tribelt uses first', () => {
     expect(languageBars(terms).map((b) => [b.label, b.value, b.first, b.second])).toEqual([
       ['English', '2', 0.5, 0.5],
       ['German', '1', 0.5, 0],
       ['Dutch', '1', 0, 0.5],
     ])
-    expect(languageBars([])).toEqual([])
-    // The server's counts cover terms that were not loaded, so a language past the limit still shows.
-    const counted = languageBars(terms, [
-      { value: 'de', count: 120 },
-      { value: 'en', count: 70 },
-      { value: 'en-US', count: 10 },
-      { value: 'nl', count: 187 },
-      { value: 'fr', count: 0 },
-    ])
-    expect(counted.map((b) => [b.label, b.value])).toEqual([
-      ['Dutch', '187'],
-      ['German', '120'],
-      ['English', '80'],
-    ])
-    expect(languageCount(terms, [{ value: 'de', count: 1 }, { value: 'nl', count: 2 }, { value: 'fr', count: 0 }])).toBe(2)
-    expect(termsText(terms, [{ value: 'nl', count: 2 }])).toMatch(/^search terms in 1 languages\./)
+    expect(languageBars(undefined)).toEqual([])
   })
 
-  it('counts the languages, and says how many terms Tribelt uses', () => {
-    expect(languageCount(terms)).toBe(3)
-    expect(termsText(terms)).toBe("search terms in 3 languages. Tribelt's own website uses 2 of them.")
+  it('counts the terms and the languages, and says how many terms Tribelt uses', () => {
+    expect(termsFigure(terms)).toEqual({ big: '4', text: "search terms in 3 languages. Tribelt's own website uses 2 of them." })
+    expect(termsFigure(undefined)).toEqual({ big: '…', text: 'search terms in the terminology map.' })
+    expect(termsFigure({ total: 0, tribelt: 0, languages: [] }).big).toBe('…')
   })
 
-  it('shows every language with a term, none cut off', () => {
-    const many = ['de', 'en', 'nl', 'fr', 'pl', 'it', 'es', 'sv', 'da'].map((language) => term({ language: language as 'de' }))
-    expect(languageBars(many)).toHaveLength(9)
+  it('shows the eight largest languages only', () => {
+    const languages = (['de', 'en', 'nl', 'fr', 'pl', 'it', 'es', 'sv', 'da'] as const).map((language) => ({ language, terms: 1, tribelt: 0 }))
+    expect(languageBars({ total: 9, tribelt: 0, languages })).toHaveLength(LANGUAGES_SHOWN)
   })
 })
 
 describe('the AI search tile', () => {
   it("charts Tribelt's share of the newest run's answers against the four competitors named most", () => {
-    const results = promptResults({
-      mentions: [
-        { competitorId: 'a', name: 'Ashworth', role: 'competitor', answers: 6, first: 1, averagePosition: 1 },
-        { competitorId: 'b', name: 'B', role: 'competitor', answers: 5, first: 0, averagePosition: 2 },
-        { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', answers: 3, first: 1, averagePosition: 2 },
-        { competitorId: 'c', name: 'C', role: 'competitor', answers: 2, first: 0, averagePosition: 2 },
-        { competitorId: 'd', name: 'D', role: 'competitor', answers: 1, first: 0, averagePosition: 2 },
-        { competitorId: 'e', name: 'E', role: 'competitor', answers: 1, first: 0, averagePosition: 2 },
+    const ai: OverviewAiSearch = {
+      answers: 12,
+      companies: [
+        { competitorId: 'a', name: 'Ashworth', role: 'competitor', answers: 6 },
+        { competitorId: 'b', name: 'B', role: 'competitor', answers: 5 },
+        { competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 3 },
+        { competitorId: 'c', name: 'C', role: 'competitor', answers: 2 },
+        { competitorId: 'd', name: 'D', role: 'competitor', answers: 1 },
       ],
-    })
-    expect(voiceBars(results).map((b) => [b.label, b.value, b.first])).toEqual([
+    }
+    expect(voiceBars(ai).map((b) => [b.label, b.value, b.first])).toEqual([
       ['Ashworth', '50%', 1],
       ['B', '42%', 5 / 6],
       ['Tribelt', '25%', 0.5],
       ['C', '17%', 2 / 6],
       ['D', '8%', 1 / 6],
     ])
-    expect(aiFigure(results)).toEqual({ big: '25%', text: 'of AI answers name Tribelt. Ashworth is named in 50%.' })
+    expect(aiFigure(ai)).toEqual({ big: '25%', text: 'of AI answers name Tribelt. Ashworth is named in 50%.' })
   })
 
   it('counts Tribelt as not named when no answer names it, and waits for the first run', () => {
-    const none = promptResults({ mentions: [] })
+    const none: OverviewAiSearch = { answers: 4, companies: [{ competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 0 }] }
     expect(voiceBars(none)).toEqual([{ label: 'Tribelt', value: '0%', first: 0, second: 0, zero: false }])
     expect(aiFigure(none)).toEqual({ big: '0%', text: 'of AI answers name Tribelt.' })
-    expect(aiFigure(promptResults({ runs: [] }))).toEqual({ big: '…', text: 'of AI answers name Tribelt, once the first Prompt run is in.' })
+    expect(aiFigure({ answers: 0, companies: [] })).toEqual({ big: '…', text: 'of AI answers name Tribelt, once the first Prompt run is in.' })
     expect(voiceBars(undefined)).toEqual([])
   })
 })

@@ -77,6 +77,10 @@ type GetMeRes interface {
 	getMeRes()
 }
 
+type GetOverviewRes interface {
+	getOverviewRes()
+}
+
 type GetPlanRes interface {
 	getPlanRes()
 }

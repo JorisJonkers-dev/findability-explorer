@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"slices"
-	"strings"
 	"time"
 
 	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
+	companiesdomain "github.com/JorisJonkers-dev/findability-explorer/internal/companies/domain"
 	insightapp "github.com/JorisJonkers-dev/findability-explorer/internal/insight/app"
 	insightdomain "github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
 	prompttestapp "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
@@ -45,7 +45,7 @@ func (d insightDirectory) Companies(ctx context.Context) ([]insightdomain.Compan
 		if l.Archived {
 			continue
 		}
-		c := insightdomain.Company{ID: l.ID, Name: l.Name, Role: insightdomain.Role(l.Role())}
+		c := insightdomain.Company{ID: l.ID, Name: l.Name, Role: insightdomain.Role(l.Role()), Researched: l.Source == companiesdomain.SourceResearch}
 		if l.URL != nil {
 			c.Website = l.URL.String()
 		}
@@ -79,12 +79,29 @@ func (p promptRuns) Runs(ctx context.Context, limit int) ([]insightdomain.Run, e
 		for _, a := range r.Answers {
 			run.Answers = append(run.Answers, insightdomain.Answer{
 				PromptID: a.Prompt.ID, Provider: a.Provider, Mode: insightdomain.Mode(a.Mode), Scope: string(a.Prompt.Scope), Family: string(a.Prompt.Family),
-				Named: a.Extraction.NamedCompanies(), Cited: prompttestdomain.CitedCompanies(a.Extraction.Addresses, directory),
+				Named: a.Extraction.NamedCompanies(), First: namedFirst(a.Extraction.Companies),
+				Cited: prompttestdomain.CitedCompanies(a.Extraction.Addresses, directory),
 			})
 		}
 		out = append(out, run)
 	}
 	return out, nil
+}
+
+// namedFirst is the company on the list an answer names at its first place, as the Prompt test's
+// mentions count it: each company once, where the answer first names it.
+func namedFirst(companies []prompttestdomain.Company) string {
+	seen := map[string]bool{}
+	for _, c := range companies {
+		if c.CompetitorID == "" || seen[c.CompetitorID] {
+			continue
+		}
+		seen[c.CompetitorID] = true
+		if c.Position == 1 {
+			return c.CompetitorID
+		}
+	}
+	return ""
 }
 
 // readiness hands the insight context each company's newest AI readiness.
@@ -161,8 +178,7 @@ func (t termsUsed) MapTerms(ctx context.Context) ([]insightdomain.MapTerm, error
 	terms := t.terminology.Terms()
 	out := make([]insightdomain.MapTerm, 0, len(terms))
 	for _, term := range terms {
-		tribelt := slices.Contains(found[term.Key()], insightdomain.TribeltID) ||
-			slices.ContainsFunc(term.UsedBy, func(u string) bool { return strings.HasPrefix(u, "Tribelt") })
+		tribelt := slices.Contains(found[term.Key()], insightdomain.TribeltID) || insightdomain.CreditsTribelt(term.UsedBy)
 		out = append(out, insightdomain.MapTerm{
 			Text: term.Text, Language: string(term.Language), Family: string(term.Family), Tier: string(term.Tier),
 			UsedBy: len(term.UsedBy), UsedByTribelt: tribelt,

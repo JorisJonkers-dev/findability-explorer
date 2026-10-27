@@ -972,6 +972,42 @@ export const zStandings = z.object({
 });
 
 /**
+ * The terms of one language, and how many of them Tribelt's own site uses.
+ */
+export const zOverviewLanguage = z.object({
+    language: zLanguage,
+    terms: z.int().gte(1).lte(1000000),
+    tribelt: z.int().gte(0).lte(1000000)
+});
+
+/**
+ * The terminology map in figures.
+ */
+export const zOverviewTerms = z.object({
+    total: z.int().gte(0).lte(1000000),
+    tribelt: z.int().gte(0).lte(1000000),
+    languages: z.array(zOverviewLanguage).max(200)
+});
+
+/**
+ * How many of the run's answers name one company.
+ */
+export const zOverviewMention = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    answers: z.int().gte(0).lte(1000000)
+});
+
+/**
+ * The newest Prompt run with answers that count, in figures. Before any such run there are no answers and no companies.
+ */
+export const zOverviewAiSearch = z.object({
+    answers: z.int().gte(0).lte(1000000),
+    companies: z.array(zOverviewMention).max(10)
+});
+
+/**
  * A scan's AI readiness in brief.
  */
 export const zAiReadinessBrief = z.object({
@@ -1152,6 +1188,31 @@ export const zPromptFamily = z.enum([
 export const zProductStandout = z.object({
     finding: zProductFinding,
     family: zPromptFamily
+});
+
+/**
+ * How many of the competitors the desk research found offer one of Tribelt's belt families.
+ */
+export const zOverviewFamily = z.object({
+    family: zPromptFamily,
+    makers: z.int().gte(0).lte(100000)
+});
+
+/**
+ * The competitors the desk research found, and which of Tribelt's belt families they offer.
+ */
+export const zOverviewCompetitors = z.object({
+    makers: z.int().gte(0).lte(100000),
+    families: z.array(zOverviewFamily).max(20)
+});
+
+/**
+ * The figures of the home page.
+ */
+export const zOverview = z.object({
+    terms: zOverviewTerms,
+    competitors: zOverviewCompetitors,
+    aiSearch: zOverviewAiSearch
 });
 
 /**
@@ -1725,6 +1786,11 @@ export const zGetProductsResponse = zProductsOverview;
  * The standings.
  */
 export const zGetStandingsResponse = zStandings;
+
+/**
+ * The figures.
+ */
+export const zGetOverviewResponse = zOverview;
 
 export const zSearchTermsQuery = z.object({
     q: z.string().max(100).optional(),

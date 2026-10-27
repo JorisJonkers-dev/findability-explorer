@@ -13,6 +13,19 @@ const api = routes({
       trailing: 1,
       open: [],
     }),
+  'GET /api/v1/overview': () =>
+    json({
+      terms: { total: 3, tribelt: 1, languages: [{ language: 'en', terms: 2, tribelt: 1 }, { language: 'de', terms: 1, tribelt: 0 }] },
+      competitors: { makers: 2, families: [{ family: 'eyelink', makers: 1 }, { family: 'open_spiral', makers: 0 }] },
+      aiSearch: {
+        answers: 4,
+        companies: [
+          { competitorId: 'twentebelt', name: 'Twentebelt', role: 'competitor', answers: 3 },
+          { competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 1 },
+        ],
+      },
+    }),
+  // The sections the zoom opens load their own data.
   'GET /api/v1/prompt-test': () => json(promptResults()),
   'GET /api/v1/competitors': () =>
     json({
@@ -68,6 +81,12 @@ describe('the poster', () => {
     expect(competitors?.text()).toContain('Eyelink1')
     expect(tiles(wrapper)[3]?.text()).toContain('English2')
     expect(tiles(wrapper)[4]?.text()).toContain('Read the Monday report')
+  })
+
+  it('asks the server for its figures, not for the whole map, the companies or the Prompt runs', async () => {
+    const { requests } = await mountApp(api, '/')
+    expect(requests()).toContain('GET /api/v1/overview')
+    expect(requests().filter((r) => /^GET \/api\/v1\/(terms|competitors|prompt-test)\b/.test(r))).toEqual([])
   })
 
   it('shows a placeholder until the live figures load', async () => {

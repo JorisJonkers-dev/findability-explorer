@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { eyeOnText, foundLine, MONTHS, ROUTINE, standingLine, TARGETS, watchedRow, YEAR } from './routine'
+import { eyeOnText, foundLine, MONTHS, ROUTINE, standingLine, statusLine, TARGETS, watchedRow, YEAR } from './routine'
 
 describe('the routine and the year', () => {
   it('has four weekly steps, each linking to its page, and a year of twelve months in three phases', () => {
@@ -31,10 +31,22 @@ describe('an improvement in words', () => {
   const leader = { competitorId: 'martens', name: 'Märtens', value: 5 }
 
   it('says where Tribelt stands on the measure it moves, and who leads', () => {
-    expect(standingLine({ measure: 'aiShareOfVoice', tribelt: 0.24, leader: { ...leader, value: 0.57 } })).toBe('Tribelt is at 24%. Märtens leads with 57%.')
-    expect(standingLine({ measure: 'readinessChecks', leader })).toBe('Märtens leads with 5.')
-    expect(standingLine({ measure: 'sitemapPages', tribelt: 2140 })).toBe('Tribelt is at 2,140.')
-    expect(standingLine({ measure: 'termsUsed' })).toBe('')
+    expect(standingLine({ measure: 'aiShareOfVoice', tribelt: 0.24, leader: { ...leader, value: 0.57 } })).toBe(
+      'AI answers name Tribelt 24% of the time. Märtens leads with 57%.',
+    )
+    expect(standingLine({ measure: 'citationShare', tribelt: 0.05 })).toBe('Web answers cite tribelt.nl 5% of the time.')
+    expect(standingLine({ measure: 'readinessChecks', tribelt: 2.5, leader })).toBe('tribelt.nl passes 2½ of five AI readiness checks. Märtens leads with 5.')
+    expect(standingLine({ measure: 'sitemapPages', tribelt: 2140 })).toBe('The sitemaps of tribelt.nl list 2,140 pages.')
+    expect(standingLine({ measure: 'termsUsed', tribelt: 12 })).toBe('tribelt.nl uses 12 search terms from the map.')
+    // Without data, it says what is missing.
+    expect(standingLine({ measure: 'termsUsed', leader })).toBe('No scan of tribelt.nl yet. Märtens leads with 5.')
+    expect(standingLine({ measure: 'citationShare' })).toBe('No Prompt run has finished yet.')
+  })
+
+  it('gives each improvement one status, what the scan found when it checks it', () => {
+    const parts = [{ name: 'llms.txt', present: true }]
+    expect(statusLine({ measure: 'readinessChecks', tribelt: 3, parts })).toBe('The latest scan found llms.txt.')
+    expect(statusLine({ measure: 'readinessChecks', tribelt: 3, parts: [] })).toBe('tribelt.nl passes 3 of five AI readiness checks.')
   })
 
   it('says what the latest scan of tribelt.nl found, and what it did not', () => {

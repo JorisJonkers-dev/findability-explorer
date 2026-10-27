@@ -30,12 +30,12 @@ describe('Catching up', () => {
     expect(wrapper.get('ul[aria-label="Legend"]').text()).toBe('TribeltTypical competitorThe leader')
   })
 
-  it('ends with the open improvements in order, each with the competitor to look at', async () => {
+  it('ends with the open improvements in order, each with its status and the competitor to look at', async () => {
     const { wrapper } = await mountApp(routes({ 'GET /api/v1/standings': () => json(standings) }), '/catching-up')
     const todo = wrapper.get('section[aria-labelledby="todo-title"]')
     expect(todo.findAll('li').map((l) => l.text())).toEqual([
-      '1A sitemap for each languageMoves the pages search engines know of.Look atAshworth',
-      '2Get listed where answers find sourcesMoves how often web answers cite tribelt.nl.',
+      '1A sitemap for each languageMoves the pages search engines know of.No scan of tribelt.nl yet. Ashworth leads with 2,140.Look atAshworth',
+      '2Get listed where answers find sourcesMoves how often web answers cite tribelt.nl.No Prompt run has finished yet.',
     ])
     expect(todo.get('li a').attributes('href')).toBe('/competitors/ashworth')
     wrapper.unmount()

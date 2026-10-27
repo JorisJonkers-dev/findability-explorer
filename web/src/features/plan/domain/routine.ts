@@ -1,4 +1,4 @@
-import type { EyeOn, PlanImprovement, PlanPart, PlanTarget, WatchedNumber } from '../../../infrastructure/api/types.gen'
+import type { EyeOn, PlanImprovement, PlanPart, PlanTarget, StandingMeasure, WatchedNumber } from '../../../infrastructure/api/types.gen'
 import { formatValue } from '../../catching-up/domain/standings'
 
 /** One step of the weekly routine: what to do, when, what to look for, and the page to open. */
@@ -83,12 +83,25 @@ export function eyeOnText(e: Pick<EyeOn, 'why'>): string {
   }
 }
 
-/** Where Tribelt stands on the measure an improvement moves, and who leads it, in sentences. */
+/** Tribelt's value on each measure in a sentence, and what is missing without one. */
+const NOW: Record<StandingMeasure, { says: (value: string) => string; missing: string }> = {
+  aiShareOfVoice: { says: (v) => `AI answers name Tribelt ${v} of the time.`, missing: 'No Prompt run has finished yet.' },
+  citationShare: { says: (v) => `Web answers cite tribelt.nl ${v} of the time.`, missing: 'No Prompt run has finished yet.' },
+  readinessChecks: { says: (v) => `tribelt.nl passes ${v} of five AI readiness checks.`, missing: 'No scan of tribelt.nl yet.' },
+  sitemapPages: { says: (v) => `The sitemaps of tribelt.nl list ${v} pages.`, missing: 'No scan of tribelt.nl yet.' },
+  termsUsed: { says: (v) => `tribelt.nl uses ${v} search terms from the map.`, missing: 'No scan of tribelt.nl yet.' },
+}
+
+/** Where Tribelt stands on the measure an improvement moves, and who leads, in sentences. */
 export function standingLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>): string {
-  const out: string[] = []
-  if (it.tribelt !== undefined) out.push(`Tribelt is at ${formatValue(it.measure, it.tribelt)}.`)
-  if (it.leader) out.push(`${it.leader.name} leads with ${formatValue(it.measure, it.leader.value)}.`)
-  return out.join(' ')
+  const now = NOW[it.measure]
+  const tribelt = it.tribelt === undefined ? now.missing : now.says(formatValue(it.measure, it.tribelt))
+  return it.leader ? `${tribelt} ${it.leader.name} leads with ${formatValue(it.measure, it.leader.value)}.` : tribelt
+}
+
+/** An improvement's status now: what the latest scan found when a scan checks it, else where Tribelt stands. */
+export function statusLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader' | 'parts'>): string {
+  return foundLine(it.parts) || standingLine(it)
 }
 
 /** "a", "a and b", "a, b and c". */

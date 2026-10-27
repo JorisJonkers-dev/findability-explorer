@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { percent } from '../../../shared/percent'
 import { RouterLink } from 'vue-router'
 import SectionView from '../../shell/components/SectionView.vue'
+import { statusLine } from '../../plan/domain/routine'
 import { companyPath } from '../../shell/domain/sections'
 import { useStandings } from '../composables/useStandings'
 import { barsOf, headline, MEASURES, noteOf } from '../domain/standings'
@@ -74,6 +75,7 @@ const LEGEND = [
             <span class="flex flex-col gap-1">
               <strong class="font-semibold stage:text-[36px]">{{ it.title }}</strong>
               <span class="text-sm text-ink-2 stage:text-[28px]">Moves {{ it.moves }}.</span>
+              <span class="text-sm font-medium stage:text-[28px]">{{ statusLine(it) }}</span>
             </span>
             <RouterLink v-if="it.leader" :to="companyPath(it.leader.competitorId)" class="flex flex-col text-right no-underline">
               <span class="text-xs text-muted stage:text-[22px]">Look at</span>

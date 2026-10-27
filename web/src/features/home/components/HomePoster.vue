@@ -4,7 +4,8 @@ import { RouterLink, useRouter } from 'vue-router'
 import worker from '../../../assets/worker.webp'
 import tribeltLogo from '../../../assets/tribelt-logo-on-dark.svg'
 import utLogo from '../../../assets/ut-logo-white.png'
-import { CRAWLER_PAGES } from '../../ai-search/domain/content'
+import { useStandings } from '../../catching-up/composables/useStandings'
+import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
 import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import AccountBar from '../../shell/components/AccountBar.vue'
 import StageFrame from '../../shell/components/StageFrame.vue'
@@ -13,7 +14,7 @@ import { type SectionId, SECTIONS, sectionOfPath } from '../../shell/domain/sect
 import { useTermMap } from '../../terminology/composables/useTermSearch'
 import { useZoom } from '../composables/useZoom'
 import { COURSE_LINE, EYEBROW, LEAD, TEAM_LINE, TILE_TEXT } from '../domain/content'
-import { crawlerBars, familyBars, languageBars, makerCount, originOf, termsText } from '../domain/tiles'
+import { aiFigure, catchUpFigure, familyBars, gapBars, languageBars, makerCount, originOf, termsText, voiceBars } from '../domain/tiles'
 import TileBars from './TileBars.vue'
 import TilePlan from './TilePlan.vue'
 
@@ -22,23 +23,23 @@ const root = useTemplateRef<HTMLElement>('root')
 const tiles = useTemplateRef<HTMLElement[]>('tiles')
 const { competitors } = useCompetitors()
 const map = useTermMap()
+const { measures, trailing } = useStandings()
+const { results } = usePromptResults()
 
 const { zoomClass, origin, zoomIn, zoomOut, finished } = useZoom((index) => {
   void router.push(SECTIONS[index]?.path ?? '/')
 })
 
 /** Each tile's big figure and line, by section; the competitors and terms tiles count the live data. */
-const figures = computed<Record<SectionId, { big: string; text: string }>>(() => {
+const figures = computed<Partial<Record<SectionId, { big: string; text: string }>>>(() => {
   const makers = makerCount(competitors.value)
   const terms = map.terms.value
   return {
-    'catching-up': { big: '…', text: 'measures where Tribelt trails the leaders.' },
-    'ai-search': TILE_TEXT.aiSearch,
+    'catching-up': catchUpFigure(measures.value, trailing.value),
+    'ai-search': aiFigure(results.value),
     competitors: { big: makers > 0 ? String(makers) : '…', text: TILE_TEXT.competitors },
-    products: { big: '', text: '' },
     terms: { big: terms.length > 0 ? String(map.total.value) : '…', text: terms.length > 0 ? termsText(terms) : 'search terms in the terminology map.' },
     plan: TILE_TEXT.plan,
-    buyers: TILE_TEXT.buyers,
   }
 })
 
@@ -58,11 +59,10 @@ function open(index: number, event: MouseEvent): void {
 // Back from a section, the poster shrinks back out of that section's tile.
 const previous = usePreviousPath().value
 onMounted(() => {
+  // Only a section the poster shows has a tile to shrink out of; Buyers and Products do not.
   const from = previous === null ? undefined : sectionOfPath(previous)
-  if (from) {
-    const index = SECTIONS.indexOf(from)
-    zoomOut(index, centreOf(index))
-  }
+  const index = from ? SECTIONS.indexOf(from) : -1
+  if (index >= 0) zoomOut(index, centreOf(index))
 })
 </script>
 
@@ -95,29 +95,37 @@ onMounted(() => {
           <a
             ref="tiles"
             :href="href"
-            :aria-label="`${section.label}: ${figures[section.id].big} ${figures[section.id].text} Zoom in.`"
+            :aria-label="`${section.label}: ${figures[section.id]?.big} ${figures[section.id]?.text} Zoom in.`"
             class="flex cursor-zoom-in flex-col gap-4 overflow-hidden rounded-2xl bg-mist p-5 text-black no-underline transition-colors duration-200 hover:bg-grey hover:text-black stage:min-h-0 stage:gap-6 stage:rounded-[28px] stage:px-[52px] stage:pt-[52px] stage:pb-11"
             @click="open(index, $event)"
           >
             <span class="flex items-baseline gap-3 text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase stage:gap-[18px] stage:text-[28px]">
               <span>{{ section.number }}</span><span class="text-ink-2">{{ section.label }}</span>
             </span>
-            <span class="font-display text-6xl leading-[0.9] font-semibold tracking-[-0.03em] stage:text-[168px]">{{ figures[section.id].big }}</span>
-            <span class="leading-snug text-ink-2 stage:min-h-[132px] stage:text-[34px] stage:leading-[1.3]">{{ figures[section.id].text }}</span>
+            <span class="font-display text-6xl leading-[0.9] font-semibold tracking-[-0.03em] stage:text-[168px]">{{ figures[section.id]?.big }}</span>
+            <span class="leading-snug text-ink-2 stage:min-h-[132px] stage:text-[34px] stage:leading-[1.3]">{{ figures[section.id]?.text }}</span>
             <span aria-hidden="true" class="flex flex-col justify-end gap-3 stage:min-h-0 stage:flex-1 stage:gap-[18px]">
               <TileBars
-                v-if="section.id === 'ai-search'"
-                :bars="crawlerBars(CRAWLER_PAGES)"
+                v-if="section.id === 'catching-up'"
+                :bars="gapBars(measures)"
+                fill="orange"
+                :legend="[
+                  { label: 'Tribelt', fill: 'orange' },
+                  { label: 'Gap to the leader', fill: 'blue-grey' },
+                ]"
+              />
+              <TileBars
+                v-else-if="section.id === 'ai-search'"
+                :bars="voiceBars(results)"
                 fill="blue-grey"
-                strong="Googlebot"
-                mark-zeros
-                :legend="[{ label: 'Pages fetched, of 248', fill: 'blue-grey' }]"
+                strong="Tribelt"
+                :legend="[{ label: 'AI answers that name each company', fill: 'blue-grey' }]"
               />
               <TileBars
                 v-else-if="section.id === 'competitors'"
                 :bars="familyBars(competitors)"
                 fill="orange"
-                :legend="[{ label: `Competitors offering each Tribelt family, of ${figures.competitors.big}`, fill: 'orange' }]"
+                :legend="[{ label: `Competitors offering each Tribelt family, of ${figures.competitors?.big ?? ''}`, fill: 'orange' }]"
               />
               <TileBars
                 v-else-if="section.id === 'terms'"

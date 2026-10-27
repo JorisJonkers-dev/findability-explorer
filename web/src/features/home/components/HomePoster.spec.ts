@@ -1,9 +1,19 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { competitor, term, termSearch } from '../../../testing/fixtures'
+import { competitor, promptResults, term, termSearch } from '../../../testing/fixtures'
 import { json, mountApp, routes, settle } from '../../../testing/mountApp'
 
 const api = routes({
+  'GET /api/v1/standings': () =>
+    json({
+      measures: [
+        { measure: 'aiShareOfVoice', tribelt: 0.24, median: 0.1, leader: { competitorId: 'a', name: 'Ashworth', value: 0.57 }, competitors: 3, trails: true, leads: false },
+        { measure: 'termsUsed', tribelt: 38, median: 10, leader: { competitorId: 'b', name: 'B', value: 30 }, competitors: 3, trails: false, leads: true },
+      ],
+      trailing: 1,
+      open: [],
+    }),
+  'GET /api/v1/prompt-test': () => json(promptResults()),
   'GET /api/v1/competitors': () =>
     json({
       items: [
@@ -40,12 +50,15 @@ describe('the poster', () => {
   it('links to the five sections, each with its figure and line', async () => {
     const { wrapper } = await mountApp(api, '/')
     expect(tiles(wrapper).map((a) => [a.attributes('href'), a.attributes('aria-label')])).toEqual([
-      ['/catching-up', 'Catching up: … measures where Tribelt trails the leaders. Zoom in.'],
-      ['/ai-search', 'AI search: 0 Googlebot visits to our mirror in more than three weeks. AI crawlers read every page. Zoom in.'],
+      ['/catching-up', 'Catching up: 1 measure where Tribelt trails the leader. Zoom in.'],
+      ['/ai-search', 'AI search: 25% of AI answers name Tribelt. Twentebelt is named in 75%. Zoom in.'],
       ['/competitors', 'Competitors: 2 competitors sell the same belts in Europe, each under its own names. Zoom in.'],
       ['/terms', "Search terms: 3 search terms in 2 languages. Tribelt's own website uses 1 of them. Zoom in."],
       ['/plan', 'The plan: 52 weekly checks a year. Every fix shows up in the numbers the week after. Zoom in.'],
     ])
+    expect(tiles(wrapper)[0]?.text()).toContain('AI answers24%')
+    expect(tiles(wrapper)[0]?.text()).toContain('Gap to the leader')
+    expect(tiles(wrapper)[1]?.text()).toContain('Tribelt25%')
     const competitors = tiles(wrapper)[2]
     expect(competitors?.text()).toContain('Competitors offering each Tribelt family, of 2')
     expect(competitors?.text()).toContain('Eyelink1')
@@ -55,6 +68,8 @@ describe('the poster', () => {
 
   it('shows a placeholder until the live figures load', async () => {
     const { wrapper } = await mountApp(routes({}), '/')
+    expect(tiles(wrapper)[0]?.attributes('aria-label')).toContain('Catching up: … measures')
+    expect(tiles(wrapper)[1]?.attributes('aria-label')).toContain('AI search: … of AI answers name Tribelt, once the first Prompt run is in.')
     expect(tiles(wrapper)[2]?.attributes('aria-label')).toContain('Competitors: …')
     expect(tiles(wrapper)[3]?.attributes('aria-label')).toContain('Search terms: … search terms in the terminology map.')
   })
@@ -108,5 +123,12 @@ describe('the zoom', () => {
     expect(router.currentRoute.value.fullPath).toBe('/')
     // Back from the search terms section, the poster shrinks out of its tile.
     expect(poster(wrapper).classes()).toContain('zoom-out')
+  })
+
+  it('shows the poster without a zoom back from a section it has no tile for', async () => {
+    const { wrapper, router } = await mountApp(api, '/buyers')
+    await router.push('/')
+    await settle()
+    expect(poster(wrapper).classes()).not.toContain('zoom-out')
   })
 })

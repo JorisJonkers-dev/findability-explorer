@@ -146,3 +146,93 @@ func TestVerdictsKeepToTheCandidatesLanguage(t *testing.T) {
 		t.Errorf("a suggestion in another language = %+v", got[0])
 	}
 }
+
+// A phrase a scan stored in no language takes the one its own words tell when the review reads
+// it; one they do not tell stays in no language, a candidate all the same, never in the map.
+func TestAPhraseInNoLanguageTakesTheOneItsWordsTell(t *testing.T) {
+	terms := []domain.Term{{Text: "metalen transportband", Language: domain.LanguageNl}}
+	observed := []domain.Observation{
+		obs("s1", "alpha", "draadogenbanden", "und", 9, 1, "product", "eyelink", "", at),
+		obs("s2", "beta", "draadogenbanden", "nl", 8, 1, "product", "eyelink", "", at),
+		obs("s1", "alpha", "transportbänder", "", 7, 1, "broad", "all", "", at),
+		obs("s1", "alpha", "1.4301", "und", 6, 1, "spec", "spec_all", "", at),
+		obs("s1", "alpha", "metalen transportband", "und", 5, 1, "broad", "all", "", at), // in the map in Dutch
+	}
+	got := domain.Candidates(observed, nil, terms)
+	byPhrase := map[string]domain.Candidate{}
+	for _, c := range got {
+		byPhrase[c.Phrase] = c
+	}
+	if len(got) != 3 {
+		t.Fatalf("candidates %+v", got)
+	}
+	if c := byPhrase["draadogenbanden"]; c.Language != "nl" || len(c.Companies) != 2 || c.ID != domain.CandidateID("draadogenbanden", "nl") {
+		t.Errorf("draadogenbanden = %+v, want one Dutch candidate of both companies", c)
+	}
+	if c := byPhrase["transportbänder"]; c.Language != "de" {
+		t.Errorf("transportbänder = %+v, want German", c)
+	}
+	if c := byPhrase["1.4301"]; c.Language != "und" || c.Languages[0] != "und" || c.ID != domain.CandidateID("1.4301", "und") {
+		t.Errorf("1.4301 = %+v, want a candidate in no language", c)
+	}
+}
+
+// A candidate in no language joins the map in the language a person sets, any focus one; the
+// language model's acceptance of it waits for that person, its rejection does not.
+func TestAPersonSetsTheLanguageOfACandidateInNoLanguage(t *testing.T) {
+	c := domain.Candidate{
+		ID: domain.CandidateID("1.4301", "und"), Phrase: "1.4301", Language: "und", Source: "https://a.test/",
+		Companies: []domain.CandidateCompany{{ID: "a", Name: "A"}},
+	}
+	a := domain.Acceptance{Text: "1.4301", Language: "de", Family: "spec_all", Tier: "spec"}
+	term, err := c.NewTerm(a, nil)
+	if err != nil || term.Language != domain.LanguageDe {
+		t.Fatalf("NewTerm = %+v, %v", term, err)
+	}
+	if _, err := c.NewTerm(domain.Acceptance{Text: "1.4301", Language: "fr", Family: "spec_all", Tier: "spec"}, nil); !errors.Is(err, domain.ErrUnknownValue) {
+		t.Errorf("a French term = %v, want ErrUnknownValue", err)
+	}
+	accept := domain.Verdict{CandidateID: c.ID, Accept: true, Sure: true, Term: a, At: at}
+	if d, ok := accept.Decision(c, nil); ok {
+		t.Errorf("the model accepted a candidate in no language: %+v", d)
+	}
+	reject := domain.Verdict{CandidateID: c.ID, Sure: true, At: at}
+	if d, ok := reject.Decision(c, nil); !ok || d.Status != domain.StatusRejected {
+		t.Errorf("rejection = %+v, %v", d, ok)
+	}
+	// The model's acceptance still suggests the term to the person.
+	got := domain.WithVerdicts([]domain.Candidate{{ID: c.ID, Phrase: c.Phrase, Language: "und", Status: domain.StatusPending}}, []domain.Verdict{accept}, nil)
+	if got[0].Suggestion == nil || got[0].Suggestion.Language != "de" {
+		t.Errorf("suggestion = %+v", got[0].Suggestion)
+	}
+}
+
+// A decision or verdict made while a phrase was in no language holds once its words tell one,
+// where it applies: a rejection in any language, an acceptance in its term's.
+func TestADecisionInNoLanguageHoldsOnceTheLanguageIsTold(t *testing.T) {
+	undID := domain.CandidateID("draadogenbanden", "und")
+	observed := []domain.Observation{
+		obs("s1", "alpha", "draadogenbanden", "nl", 9, 1, "product", "eyelink", "", at),
+		obs("s1", "alpha", "conveyor belts", "en", 9, 1, "broad", "all", "", at),
+	}
+	decisions := []domain.Decision{
+		{CandidateID: undID, Phrase: "draadogenbanden", Status: domain.StatusAccepted, By: "j", At: at, Term: &domain.Term{Text: "draadogenband", Language: domain.LanguageNl}},
+		{CandidateID: domain.CandidateID("conveyor belts", "und"), Phrase: "conveyor belts", Status: domain.StatusAccepted, By: "j", At: at, Term: &domain.Term{Text: "conveyor belts", Language: domain.LanguageDe}},
+	}
+	got := domain.Candidates(observed, decisions, nil)
+	byPhrase := map[string]domain.Candidate{}
+	for _, c := range got {
+		byPhrase[c.Phrase] = c
+	}
+	if c := byPhrase["draadogenbanden"]; c.Status != domain.StatusAccepted || c.Decision.CandidateID != undID {
+		t.Errorf("draadogenbanden = %+v, want accepted by the decision made in no language", c)
+	}
+	if c := byPhrase["conveyor belts"]; c.Status != domain.StatusPending {
+		t.Errorf("conveyor belts = %+v, want waiting: its acceptance made a German term", c)
+	}
+	verdicts := []domain.Verdict{{CandidateID: undID, Phrase: "draadogenbanden", Sure: true, Reason: "no"}}
+	with := domain.WithVerdicts([]domain.Candidate{{ID: domain.CandidateID("draadogenbanden", "nl"), Phrase: "draadogenbanden", Language: "nl"}}, verdicts, nil)
+	if with[0].Verdict == nil || with[0].Verdict.Reason != "no" {
+		t.Errorf("verdict = %+v, want the one given in no language", with[0].Verdict)
+	}
+}

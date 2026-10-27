@@ -33,13 +33,16 @@ export function parseStatus(raw: unknown): TermCandidateStatus {
 export const MAX_TERM_LENGTH = 200
 export const MAX_USED_BY = 20
 
-/** The fields an administrator edits before a candidate joins the map. */
-export type AcceptDraft = { term: string; language: Language; family: BeltFamily; tier: IntentTier; usedBy: string }
+/**
+ * The fields an administrator edits before a candidate joins the map. The language is empty until
+ * someone chooses it, for a phrase found in no language that could be told.
+ */
+export type AcceptDraft = { term: string; language: Language | ''; family: BeltFamily; tier: IntentTier; usedBy: string }
 
 /**
- * The draft a candidate starts from: the language model's suggestion, else its phrase, its first
- * language the map knows (else English), the classifier's family (else other belts) and tier; and
- * the companies that use it.
+ * The draft a candidate starts from: the language model's suggestion, else its phrase, its
+ * language (none chosen yet when it was found in no language that could be told), the
+ * classifier's family (else other belts) and tier; and the companies that use it.
  */
 export function draftOf(candidate: TermCandidate): AcceptDraft {
   // The map names at most MAX_USED_BY companies per term.
@@ -47,7 +50,7 @@ export function draftOf(candidate: TermCandidate): AcceptDraft {
   // The language model's suggestion, when it made one, is the better start.
   const suggested = candidate.verdict?.term
   if (suggested) return { ...suggested, usedBy }
-  const language = candidate.languages.find(isLanguage) ?? 'en'
+  const language = candidate.languages.find(isLanguage) ?? ''
   return {
     term: candidate.phrase,
     language,
@@ -77,15 +80,20 @@ export function checkDraft(draft: AcceptDraft): { kind: 'ok'; body: TermAcceptan
   const term = draft.term.trim()
   if (term === '') return { kind: 'invalid', message: 'Enter the term as the map should show it.' }
   if (term.length > MAX_TERM_LENGTH) return { kind: 'invalid', message: `A term has at most ${String(MAX_TERM_LENGTH)} characters.` }
+  if (draft.language === '') return { kind: 'invalid', message: 'Choose the language the phrase is in.' }
   const usedBy = [...new Set(draft.usedBy.split(',').map((u) => u.trim()).filter((u) => u !== ''))]
   if (usedBy.length > MAX_USED_BY) return { kind: 'invalid', message: `Name at most ${String(MAX_USED_BY)} companies.` }
   return { kind: 'ok', body: { term, language: draft.language, family: draft.family, tier: draft.tier, usedBy } }
 }
 
-/** The evidence for a candidate, in one line: "3 companies, 4 scans, in English and German". */
+/**
+ * The evidence for a candidate, in one line: "3 companies, 4 scans, in English and German", or
+ * "…, language not told" for a phrase found in no language that could be told.
+ */
 export function evidenceLine(candidate: TermCandidate): string {
   const companies = candidate.companies.length === 1 ? '1 company' : `${String(candidate.companies.length)} companies`
   const scans = candidate.scans === 1 ? '1 scan' : `${String(candidate.scans)} scans`
+  if (candidate.languages.includes('und')) return `${companies}, ${scans}, language not told`
   const languages = candidate.languages.map(languageLabel)
   const where = languages.length === 0 ? '' : `, in ${languages.length === 1 ? String(languages[0]) : `${languages.slice(0, -1).join(', ')} and ${String(languages.at(-1))}`}`
   return `${companies}, ${scans}${where}`

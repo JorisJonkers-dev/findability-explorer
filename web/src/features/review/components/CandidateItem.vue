@@ -92,6 +92,7 @@ function submit(): void {
         <label class="flex flex-col gap-1.5 text-sm font-medium">
           Language
           <select v-model="draft.language" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base font-normal">
+            <option v-if="draft.language === ''" value="" disabled>Choose a language</option>
             <option v-for="l in languages" :key="l" :value="l">{{ languageLabel(l) }}</option>
           </select>
         </label>

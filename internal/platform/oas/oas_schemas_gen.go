@@ -11675,7 +11675,8 @@ type TermCandidate struct {
 	Phrase string              `json:"phrase"`
 	Status TermCandidateStatus `json:"status"`
 	// The language it was found in, its only one: the same phrase in another language is another
-	// candidate, and it joins the map only in this language.
+	// candidate, and it joins the map only in this language. `und` when neither its pages nor its own
+	// words told the language; it then joins the map in the language the reviewer sets.
 	Languages []string `json:"languages"`
 	// The companies whose scans found it, by name.
 	Companies []CandidateCompany `json:"companies"`

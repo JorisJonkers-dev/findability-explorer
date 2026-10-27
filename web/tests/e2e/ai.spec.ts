@@ -76,7 +76,7 @@ test('the Prompt test grid opens an answer and keeps its filters in the address'
   )
   await page.goto('/ai-search/prompt-test')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('AI answers name Tribelt more than any competitor.')
-  await page.getByRole('button', { name: /OpenAI with web search: Tribelt named first/ }).click()
+  await page.getByRole('button', { name: /OpenAI, with web search, .*: Tribelt named first/ }).click()
   await expect(page).toHaveURL(/answer=/)
   await expect(page.getByRole('list', { name: 'Sources cited' })).toContainText('tribelt.nl')
   await expectAccessible(page)
@@ -84,7 +84,7 @@ test('the Prompt test grid opens an answer and keeps its filters in the address'
   await expect(page).toHaveURL(/mode=knowledge/)
   await page.reload()
   await expect(page.getByRole('group', { name: 'Search mode' }).getByRole('button', { name: 'Own knowledge' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('button', { name: /OpenAI from its own knowledge: No answer/ }).click()
+  await page.getByRole('button', { name: /OpenAI, own knowledge, .*: No answer/ }).click()
   let asked: unknown = null
   await page.route(`**/api/v1/admin/prompt-runs/${RUN}/retry`, async (route) => {
     asked = route.request().postDataJSON()

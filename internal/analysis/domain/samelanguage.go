@@ -12,15 +12,26 @@ import (
 // with known terms counted on pages in another language. They are not rewritten; they are read
 // by the rule instead.
 
-// ByTheMap is the analysis as the map lex was built from judges it now: each keyword classified
-// again from its stored phrase and language (Lexicon.Classify), so it is in the map, and closest
-// to a term, only in its own language; and only the known terms in a language of a page the scan
-// read. Which page a known term was counted on is not stored, so one in a language the scan read
+// ByTheMap is the analysis as the map lex was built from judges it now: each keyword stored in no
+// language takes the one its own words tell (lang.Vocabulary.Phrase; ADR-0010), and is left out
+// when the scan has the phrase in that language already; each is classified again from its phrase
+// and language (Lexicon.Classify), so it is in the map, and closest to a term, only in its own
+// language; and only the known terms in a language of a page the scan read. Which page a known term was counted on is not stored, so one in a language the scan read
 // a page in stays, even when it was counted on a page in another language as well.
 func (a Analysis) ByTheMap(lex Lexicon) Analysis {
 	if a.Keywords != nil {
 		keywords := make([]Keyword, 0, len(a.Keywords))
+		told := map[[2]string]bool{}
 		for _, k := range a.Keywords {
+			told[[2]string{k.Phrase, k.Language}] = lang.Told(k.Language)
+		}
+		for _, k := range a.Keywords {
+			if !lang.Told(k.Language) {
+				k.Language = lex.vocabulary.Phrase(k.Phrase)
+				if told[[2]string{k.Phrase, k.Language}] {
+					continue
+				}
+			}
 			k.Classification = lex.Classify(spelling.Words(k.Phrase), k.Language)
 			keywords = append(keywords, k)
 		}

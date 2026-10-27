@@ -30,8 +30,13 @@ const Unknown = "und"
 // rule for pairing a phrase with a term; a phrase never matches, is never closest to and is never
 // merged with a term in another language.
 func Same(a, b string) bool {
-	p := Primary(a)
-	return p != "" && p != Unknown && p == Primary(b)
+	return Told(a) && Primary(a) == Primary(b)
+}
+
+// Told reports whether tag names a language: it is neither empty nor Unknown.
+func Told(tag string) bool {
+	p := Primary(tag)
+	return p != "" && p != Unknown
 }
 
 // others are language codes a site's address may start with (/fr/, /es-es/) that are not in

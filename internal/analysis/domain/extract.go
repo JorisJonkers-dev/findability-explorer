@@ -100,7 +100,8 @@ func PageLanguage(p Page) string {
 	return DetectLanguage(p.Title + " " + p.Description + " " + p.Text)
 }
 
-// DetectLanguage returns the language with the most stopwords in text, if at least three are found.
+// DetectLanguage returns the language with the most stopwords in text, if at least three are found
+// and no other language has as many: a tie is no language, not the first in some order.
 func DetectLanguage(text string) string {
 	counts := map[string]int{}
 	for _, tok := range spelling.Tokens(text) {
@@ -112,8 +113,11 @@ func DetectLanguage(text string) string {
 	}
 	best, bestCount := UnknownLanguage, 2
 	for _, lang := range stopwordLanguages {
-		if counts[lang] > bestCount {
+		switch {
+		case counts[lang] > bestCount:
 			best, bestCount = lang, counts[lang]
+		case counts[lang] == bestCount:
+			best = UnknownLanguage
 		}
 	}
 	return best
@@ -253,15 +257,65 @@ type keywordTally struct {
 	languages map[string]int // pages per language the phrase is on
 }
 
-// language is the language of most of the phrase's pages, the first in order on a tie.
-func (t *keywordTally) language() string {
-	best, n := "", 0
-	for lang, c := range t.languages {
-		if c > n || (c == n && lang < best) {
-			best, n = lang, c
+// language is the language of phrase, found on these pages of a site whose start page declares
+// site (see phraseLanguage). A phrase without a letter, a bare model number, takes no language
+// from the site.
+func (t *keywordTally) language(phrase string, lex Lexicon, site string) string {
+	if !strings.ContainsFunc(phrase, unicode.IsLetter) {
+		site = ""
+	}
+	return phraseLanguage(t.languages, lex.vocabulary.Possible(phrase), site)
+}
+
+// phraseLanguage is the language of a phrase found on pages in these languages (pages per
+// language), which its own words say it could be in (possible; see lang.Vocabulary.Possible), on a
+// site whose start page declares site:
+//
+//   - the language of its pages, when they are all in one;
+//   - else, its pages in no language or in several, the language its words tell;
+//   - else the language of most of its pages, among those its words leave open;
+//   - else, on a tie, the site's language when it is one of the tied ones and the words allow it;
+//   - else none (UnknownLanguage). No language wins a tie for coming first in some order.
+func phraseLanguage(pages map[string]int, possible []string, site string) string {
+	told := len(possible) < len(lang.Focus())
+	if _, unknown := pages[UnknownLanguage]; len(pages) == 1 && !unknown {
+		for language := range pages {
+			return language
 		}
 	}
-	return best
+	switch {
+	case len(possible) == 1:
+		return possible[0]
+	case len(possible) == 0:
+		return UnknownLanguage // in a language out of focus, by its words
+	}
+	tied := mostPages(pages, func(language string) bool { return !told || slices.Contains(possible, language) })
+	if len(tied) == 1 {
+		return tied[0]
+	}
+	allowed := !told || slices.Contains(possible, site)
+	if site != "" && allowed && (len(tied) == 0 || slices.Contains(tied, site)) {
+		return site
+	}
+	return UnknownLanguage
+}
+
+// mostPages are the told languages allowed that the most of pages (pages per language) are in.
+func mostPages(pages map[string]int, allowed func(string) bool) []string {
+	var tied []string
+	most := 0
+	for language, n := range pages {
+		if language == UnknownLanguage || !allowed(language) {
+			continue
+		}
+		switch {
+		case n > most:
+			tied, most = []string{language}, n
+		case n == most:
+			tied = append(tied, language)
+		}
+	}
+	return tied
 }
 
 // Boilerplate thresholds: a phrase in body text only, on at least this share of at least this many
@@ -282,12 +336,16 @@ func Keywords(pages []Page, lex Lexicon, brand []string) []Keyword {
 	for _, p := range pages {
 		perLanguage[PageLanguage(p)]++
 	}
+	site := ""
+	if len(pages) > 0 {
+		site = lang.Primary(pages[0].Language)
+	}
 	brandOnly := slices.DeleteFunc(slices.Clone(brand), func(w string) bool { return lex.Relevant([]string{w}) })
 	out := make([]Keyword, 0, len(tally))
 	for phrase, t := range tally {
 		words := strings.Fields(fold.Fold(phrase))
-		lang := t.language()
-		if !inFocus(lang) || !keepPhrase(words, lex, brandOnly) || t.boilerplate(perLanguage[lang], lang) {
+		lang := t.language(phrase, lex, site)
+		if !inFocus(lang) || !keepPhrase(words, lex, brandOnly) || t.boilerplate(perLanguage) {
 			continue
 		}
 		n := float64(len(words))
@@ -347,11 +405,16 @@ func keepPhrase(words []string, lex Lexicon, brandOnly []string) bool {
 }
 
 // boilerplate says whether a phrase is menu or footer text: only in body text, on most of the
-// site's pages in its language lang (sitePages of them), once there are enough pages to tell. A
-// site in four languages has a menu per language, each on a quarter of the site.
-func (t *keywordTally) boilerplate(sitePages int, lang string) bool {
+// site's pages in the languages of its pages (perLanguage counts the site's pages per language),
+// once there are enough pages to tell. A site in four languages has a menu per language, each on
+// a quarter of the site.
+func (t *keywordTally) boilerplate(perLanguage map[string]int) bool {
+	sitePages := 0
+	for language := range t.languages {
+		sitePages += perLanguage[language]
+	}
 	return sitePages >= boilerplateMinPages && t.bodyOnly == t.pages &&
-		float64(t.languages[lang]) >= boilerplateShare*float64(sitePages)
+		float64(t.pages) >= boilerplateShare*float64(sitePages)
 }
 
 // withoutFragments drops a phrase that is mostly a part of a longer one: "metal conveyor" when

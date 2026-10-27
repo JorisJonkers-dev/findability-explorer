@@ -13,11 +13,24 @@ export function candidateEvidence(c: CompetitorCandidate): string {
 
 const DECIDED = { added: 'Added', dismissed: 'Dismissed' } as const
 
-/** Who decided and when: "Added by joris, 2 Nov 2026, 09:00 UTC", or null while it waits. */
+/** Who a decision by Claude Haiku names. */
+export const MODEL_DECIDER = 'language model'
+
+/** Whether Claude Haiku added or dismissed the company, rather than a person. */
+export function decidedByHaiku(c: CompetitorCandidate): boolean {
+  return c.decision?.by === MODEL_DECIDER && c.decision.status !== 'pending'
+}
+
+/**
+ * Who decided and when: "Added by joris, 2 Nov 2026, 09:00 UTC", or, for Claude Haiku, why:
+ * "Added by Claude Haiku: Makes eyelink belts for bakery ovens." Null while it waits.
+ */
 export function candidateDecisionLine(c: CompetitorCandidate): string | null {
   const d = c.decision
   if (!d || d.status === 'pending') return null
-  return `${DECIDED[d.status]} by ${d.by}, ${atLabel(d.at)}`
+  if (d.by !== MODEL_DECIDER) return `${DECIDED[d.status]} by ${d.by}, ${atLabel(d.at)}`
+  const reason = c.check?.reason ?? ''
+  return reason === '' ? `${DECIDED[d.status]} by Claude Haiku, ${atLabel(d.at)}` : `${DECIDED[d.status]} by Claude Haiku: ${reason}`
 }
 
 /** The fields an administrator checks before a named company joins the competitors. */
@@ -50,7 +63,7 @@ export function matchesSearch(c: CompetitorCandidate, query: string): boolean {
 }
 
 /** What Haiku made of the companies, to show only some. */
-export type CheckFilter = 'all' | 'competitor' | 'not' | 'unsure' | 'unchecked'
+export type CheckFilter = 'all' | 'competitor' | 'not' | 'unsure' | 'unchecked' | 'haiku'
 
 export const CHECK_FILTERS: readonly { value: CheckFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -58,6 +71,7 @@ export const CHECK_FILTERS: readonly { value: CheckFilter; label: string }[] = [
   { value: 'not', label: 'Haiku says not' },
   { value: 'unsure', label: 'Haiku is unsure' },
   { value: 'unchecked', label: 'Not checked yet' },
+  { value: 'haiku', label: 'Decided by Haiku' },
 ]
 
 /** Whether a company is one the filter shows. */
@@ -74,13 +88,15 @@ export function keptBy(c: CompetitorCandidate, filter: CheckFilter): boolean {
       return !!v && v.sure && v.competitor
     case 'not':
       return !!v && v.sure && !v.competitor
+    case 'haiku':
+      return decidedByHaiku(c)
   }
 }
 
-/** Haiku's check in words, or null before it checked the company. */
+/** Haiku's check in words, or null before it checked the company or when its decision says it already. */
 export function checkLine(c: CompetitorCandidate): string | null {
   const v = c.check
-  if (!v) return null
+  if (!v || decidedByHaiku(c)) return null
   if (v.reason === '') return 'Haiku gave no answer for it.'
   if (!v.sure) return `Haiku is unsure. ${v.reason}`
   return `Haiku says ${v.competitor ? 'a competitor' : 'not a competitor'}. ${v.reason}`

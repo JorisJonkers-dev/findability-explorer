@@ -1047,7 +1047,8 @@ func (s *BotRule) SetFollowsAdvice(val bool) {
 	s.FollowsAdvice = val
 }
 
-// Claude Haiku's check of a candidate. A suggestion; a person decides.
+// Claude Haiku's check of a candidate against Tribelt's target market. A sure one decides the
+// candidate; an unsure one is a suggestion for a person.
 // Ref: #/components/schemas/CandidateCheck
 type CandidateCheck struct {
 	// Whether it takes the company for a competitor of Tribelt.
@@ -2205,7 +2206,7 @@ func (s *CompetitorCandidateCounts) SetDismissed(val int32) {
 	s.Dismissed = val
 }
 
-// An administrator's decision on a competitor candidate.
+// A decision on a competitor candidate, by an administrator or by Claude Haiku.
 // Ref: #/components/schemas/CompetitorCandidateDecision
 type CompetitorCandidateDecision struct {
 	Status       CompetitorCandidateStatus `json:"status"`
@@ -11899,7 +11900,7 @@ func (s *TermChange) SetToPages(val OptInt32) {
 // Ref: #/components/schemas/TermDecision
 type TermDecision struct {
 	Status TermCandidateStatus `json:"status"`
-	// Who decided.
+	// Who decided; `language model` for Claude Haiku.
 	By string `json:"by"`
 	// When.
 	At   time.Time `json:"at"`

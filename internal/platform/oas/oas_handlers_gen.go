@@ -7818,9 +7818,11 @@ func (s *Server) handleStartAnalysisRequest(args [0]string, argsEscaped bool, w 
 // handleStartCandidateReviewRequest handles startCandidateReview operation.
 //
 // Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
-// candidates that are one company, or a company on the list, and then checks each company it has not
-// checked for whether it is a competitor of Tribelt. Its check is a suggestion; a person adds or
-// dismisses. Returns the review's state; running already is no error.
+// candidates that are one company, or a company on the list, and then checks each waiting company
+// against Tribelt's target market, from what the answers say of it and its home page. A company it is
+// sure competes, with a website, joins the competitor list; one it is sure does not is dismissed; the
+// rest wait for a person. Its decisions are by `language model` and can be undone. Returns the
+// review's state; running already is no error.
 //
 // POST /api/v1/admin/competitor-candidates/review
 func (s *Server) handleStartCandidateReviewRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

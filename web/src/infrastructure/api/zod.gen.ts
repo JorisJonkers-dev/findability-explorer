@@ -1603,7 +1603,7 @@ export const zCompetitorCandidateStatus = z.enum([
 ]);
 
 /**
- * An administrator's decision on a competitor candidate.
+ * A decision on a competitor candidate, by an administrator or by Claude Haiku.
  */
 export const zCompetitorCandidateDecision = z.object({
     status: zCompetitorCandidateStatus,
@@ -1627,7 +1627,7 @@ export const zCandidateName = z.object({
 });
 
 /**
- * Claude Haiku's check of a candidate. A suggestion; a person decides.
+ * Claude Haiku's check of a candidate against Tribelt's target market. A sure one decides the candidate; an unsure one is a suggestion for a person.
  */
 export const zCandidateCheck = z.object({
     competitor: z.boolean(),

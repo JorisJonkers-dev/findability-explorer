@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CompetitorCandidate } from '../../../infrastructure/api/types.gen'
-import { CHECK_FILTERS, type CheckFilter, candidateDecisionLine, candidateDraft, candidateEvidence, checkCandidateDraft, checkLine, decidedLine, idsOf, keptBy, matchesSearch, otherNames, reviewLine } from './candidates'
+import { CHECK_FILTERS, type CheckFilter, MODEL_DECIDER, candidateDecisionLine, decidedByHaiku, candidateDraft, candidateEvidence, checkCandidateDraft, checkLine, decidedLine, idsOf, keptBy, matchesSearch, otherNames, reviewLine } from './candidates'
 
 const candidate = (overrides: Partial<CompetitorCandidate> = {}): CompetitorCandidate => ({
   id: '3a7bd3e2360a9f01',
@@ -12,6 +12,10 @@ const candidate = (overrides: Partial<CompetitorCandidate> = {}): CompetitorCand
   addresses: ['https://www.ashworth.com/products', 'ashworth.com'],
   lastSeenAt: '2026-11-01T06:10:00Z',
   ...overrides,
+})
+
+const check = (over: Partial<NonNullable<CompetitorCandidate['check']>> = {}) => ({
+  competitor: true, sure: true, reason: 'Makes wire mesh belts.', model: 'anthropic: claude-haiku-5-5', at: '2026-10-27T09:00:00Z', ...over,
 })
 
 describe('a company named in AI answers', () => {
@@ -29,6 +33,18 @@ describe('a company named in AI answers', () => {
     expect(candidateDecisionLine(candidate({ status: 'dismissed', decision: { status: 'dismissed', by: 'joris', at: '2026-11-02T09:00:00Z' } }))).toBe(
       'Dismissed by joris, 2 Nov 2026, 09:00 UTC',
     )
+  })
+
+  it('says why Claude Haiku added or dismissed it', () => {
+    const byHaiku = { by: MODEL_DECIDER, at: '2026-11-02T09:00:00Z' }
+    const added = candidate({ status: 'added', decision: { status: 'added', competitorId: 'ashworth', ...byHaiku }, check: check({ reason: 'Makes eyelink belts for bakery ovens.' }) })
+    expect(candidateDecisionLine(added)).toBe('Added by Claude Haiku: Makes eyelink belts for bakery ovens.')
+    expect(checkLine(added)).toBeNull()
+    expect(decidedByHaiku(added)).toBe(true)
+    const dismissed = candidate({ status: 'dismissed', decision: { status: 'dismissed', ...byHaiku } })
+    expect(candidateDecisionLine(dismissed)).toBe('Dismissed by Claude Haiku, 2 Nov 2026, 09:00 UTC')
+    expect(decidedByHaiku(candidate({ decision: { status: 'pending', ...byHaiku } }))).toBe(false)
+    expect(decidedByHaiku(candidate())).toBe(false)
   })
 
   it('starts an addition from its name and the first website the answers gave, and checks it', () => {
@@ -51,9 +67,6 @@ describe('finding and acting on many companies', () => {
       { id: '3a7bd3e2360a9f02', name: 'Metiz', answers: 1, joined: 'site' },
     ],
   })
-  const check = (over: Partial<NonNullable<CompetitorCandidate['check']>> = {}) => ({
-    competitor: true, sure: true, reason: 'Makes wire mesh belts.', model: 'anthropic: claude-haiku-5-5', at: '2026-10-27T09:00:00Z', ...over,
-  })
 
   it('searches every name and website, and lists the other names', () => {
     expect(matchesSearch(metiz, '  ')).toBe(true)
@@ -73,8 +86,9 @@ describe('finding and acting on many companies', () => {
     const unsure = candidate({ check: check({ sure: false, reason: 'Could be either.' }) })
     const silent = candidate({ check: check({ sure: false, reason: '' }) })
     const none = candidate()
-    const kept = (f: CheckFilter) => [yes, no, unsure, none].filter((c) => keptBy(c, f)).length
-    expect(CHECK_FILTERS.map((f) => [f.value, kept(f.value)])).toEqual([['all', 4], ['competitor', 1], ['not', 1], ['unsure', 1], ['unchecked', 1]])
+    const haiku = candidate({ status: 'added', decision: { status: 'added', competitorId: 'ashworth', by: MODEL_DECIDER, at: '2026-11-02T09:00:00Z' }, check: check() })
+    const kept = (f: CheckFilter) => [yes, no, unsure, none, haiku].filter((c) => keptBy(c, f)).length
+    expect(CHECK_FILTERS.map((f) => [f.value, kept(f.value)])).toEqual([['all', 5], ['competitor', 2], ['not', 1], ['unsure', 1], ['unchecked', 1], ['haiku', 1]])
     expect(checkLine(none)).toBeNull()
     expect(checkLine(yes)).toBe('Haiku says a competitor. Makes wire mesh belts.')
     expect(checkLine(no)).toBe('Haiku says not a competitor. Makes plastic belts.')

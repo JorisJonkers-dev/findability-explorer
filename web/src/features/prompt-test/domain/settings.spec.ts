@@ -72,7 +72,7 @@ describe('the providers and prices', () => {
     const models = [{ provider: 'google', model: 'google/gemma:free', free: true, fallback: 'google/gemini' }, { provider: 'openai', model: 'openai/gpt-oss-20b', free: false }]
     expect(modelLine(models, 'google')).toBe('google/gemma:free, then google/gemini')
     expect(modelLine(models, 'openai')).toBe('openai/gpt-oss-20b')
-    expect(modelLine(models, 'deepseek')).toBe('Chosen at the next run')
+    expect(modelLine(models, 'deepseek')).toBe('Cheapest model chosen at the next run')
   })
 
   it('say where the prices come from', () => {

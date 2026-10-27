@@ -88,7 +88,7 @@ export function addProvider(list: readonly string[], raw: string): { list: strin
 /** The model a provider asked in the latest run, and its fallback, in words. */
 export function modelLine(models: readonly PromptModelChoice[], provider: string): string {
   const m = models.find((x) => x.provider === provider)
-  if (!m) return 'Chosen at the next run'
+  if (!m) return 'Cheapest model chosen at the next run'
   return m.fallback ? `${m.model}, then ${m.fallback}` : m.model
 }
 

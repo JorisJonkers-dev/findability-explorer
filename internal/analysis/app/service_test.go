@@ -484,14 +484,19 @@ func TestRunMatching(t *testing.T) {
 		pages  []domain.Page
 		want   domain.Matching
 		model  string
+		shared func(context.Context) (bool, error)
 	}{
-		"no model":        {source{}, 0, "", pages(), domain.MatchingDisabled, ""},
-		"settings fail":   {source{err: errBoom}, 0, "", pages(), domain.MatchingFailed, ""},
-		"budget spent":    {source{matcher: &matcher{}}, 1000, "", pages(), domain.MatchingSkipped, ""},
-		"budget unknown":  {source{matcher: &matcher{}}, 0, "TokensSince", pages(), domain.MatchingSkipped, ""},
-		"model fails":     {source{matcher: &matcher{err: errBoom}}, 0, "", pages(), domain.MatchingFailed, model},
-		"nothing to read": {source{matcher: &matcher{}}, 0, "", []domain.Page{{}}, domain.MatchingSkipped, ""},
-		"nothing found":   {source{matcher: &matcher{}}, 0, "", pages(), domain.MatchingDone, model},
+		"no model": {source{}, 0, "", pages(), domain.MatchingDisabled, "", nil},
+		// The month's tokens of every job together decide, not the analyses' own.
+		"shared budget spent":   {source{matcher: &matcher{}}, 0, "", pages(), domain.MatchingSkipped, "", func(context.Context) (bool, error) { return true, nil }},
+		"shared budget unknown": {source{matcher: &matcher{}}, 0, "", pages(), domain.MatchingSkipped, "", func(context.Context) (bool, error) { return false, errBoom }},
+		"shared budget left":    {source{matcher: &matcher{}}, 1000, "", pages(), domain.MatchingDone, model, func(context.Context) (bool, error) { return false, nil }},
+		"settings fail":         {source{err: errBoom}, 0, "", pages(), domain.MatchingFailed, "", nil},
+		"budget spent":          {source{matcher: &matcher{}}, 1000, "", pages(), domain.MatchingSkipped, "", nil},
+		"budget unknown":        {source{matcher: &matcher{}}, 0, "TokensSince", pages(), domain.MatchingSkipped, "", nil},
+		"model fails":           {source{matcher: &matcher{err: errBoom}}, 0, "", pages(), domain.MatchingFailed, model, nil},
+		"nothing to read":       {source{matcher: &matcher{}}, 0, "", []domain.Page{{}}, domain.MatchingSkipped, "", nil},
+		"nothing found":         {source{matcher: &matcher{}}, 0, "", pages(), domain.MatchingDone, model, nil},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -501,6 +506,7 @@ func TestRunMatching(t *testing.T) {
 			}
 			r.tokens = c.tokens
 			l := limits()
+			l.BudgetSpent = c.shared
 			if name == "nothing to read" {
 				l.SiteTextChars = 0
 			}

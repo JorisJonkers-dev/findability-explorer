@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"strings"
@@ -185,5 +186,16 @@ func TestOneListCheckAtATime(t *testing.T) {
 	started[0]()
 	if svc.ListCheckState().Running {
 		t.Error("still running")
+	}
+}
+
+func TestTheListCheckStopsWhenTheMonthsTokensAreSpent(t *testing.T) {
+	m := &model{verdicts: rubber}
+	svc := app.New(newRepo(), gateways{gw: newGateway()}, onTheList(), func() time.Time { return start }, app.Config{Owner: "a"}, func(uuid.UUID, error) {},
+		app.WithSpawn(func(f func()) { f() }), app.WithReviewers(models{m: m}, &pages{}, func(err error) { t.Errorf("reported %v", err) }),
+		app.WithBudget(func(context.Context) (bool, error) { return true, nil }))
+	svc.StartListCheck(t.Context())
+	if st := svc.ListCheckState(); st.Problem != app.ReviewProblemBudget || len(m.checked) != 0 {
+		t.Errorf("state %+v, checked %d times", st, len(m.checked))
 	}
 }

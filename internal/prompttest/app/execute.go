@@ -22,14 +22,16 @@ type execution struct {
 	s         *Service
 	run       domain.Run
 	gw        Gateway
-	extractor Extractor
 	directory []domain.DirectoryCompany
 	budget    domain.Micros
 
 	// answered are the answers stored before this execution, as after a restart.
 	answered []domain.Answer
 
-	mu      sync.Mutex
+	mu sync.Mutex
+	// reader reads the answers: Claude Haiku until the month's language-model tokens are spent,
+	// OpenRouter from then on.
+	reader  reader
 	spent   domain.Micros
 	stopped domain.RunStatus // set when the budget is reached; empty otherwise
 	lost    bool             // set when another instance took the run over
@@ -44,9 +46,29 @@ func (s *Service) Execute(ctx context.Context, run domain.Run) error {
 	return s.execute(ctx, run, nil)
 }
 
-// execute carries out a run as Execute does; with only, it asks those tasks and no other.
-func (s *Service) execute(ctx context.Context, run domain.Run, only map[domain.TaskKey]bool) error {
-	e, tasks, unread, err := s.resume(ctx, run, only)
+// redo is what running a finished run again does: ask the tasks of ask and no other, and read
+// the answers of read again besides the ones not read yet.
+type redo struct {
+	ask  map[domain.TaskKey]bool
+	read map[uuid.UUID]bool
+}
+
+// asks reports whether the run asks a task: one not answered yet, or, with r, one r names.
+func (r *redo) asks(t domain.TaskKey, answered bool) bool {
+	if r == nil {
+		return !answered
+	}
+	return r.ask[t]
+}
+
+// reads reports whether the run reads an answer: one given but not read yet, or one r names.
+func (r *redo) reads(a domain.Answer) bool {
+	return a.Failure == "" && (a.Extraction == nil || (r != nil && r.read[a.ID]))
+}
+
+// execute carries out a run as Execute does; with r, it does only what r names.
+func (s *Service) execute(ctx context.Context, run domain.Run, r *redo) error {
+	e, tasks, unread, err := s.resume(ctx, run, r)
 	if err != nil {
 		return s.fail(ctx, run.ID, err)
 	}
@@ -83,14 +105,15 @@ func (s *Service) execute(ctx context.Context, run domain.Run, only map[domain.T
 	return e.finish(ctx)
 }
 
-// resume loads what a run has done: the tasks still to ask, or the ones only names, and the
-// answers stored without being read, as when a restart came between the two.
-func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.TaskKey]bool) (*execution, []domain.Task, []domain.Answer, error) {
+// resume loads what a run has done: the tasks still to ask of the questions it asked, or the ones
+// r names, and the answers stored without being read, as when a restart came between the two, with
+// the ones r names to read again.
+func (s *Service) resume(ctx context.Context, run domain.Run, r *redo) (*execution, []domain.Task, []domain.Answer, error) {
 	settings, err := s.settings(ctx)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	gw, extractor, err := s.models(ctx, settings.CredentialID)
+	gw, rd, err := s.models(ctx, settings.CredentialID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -102,41 +125,39 @@ func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.Ta
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("this month's spend: %w", err)
 	}
-	set := domain.CurrentPromptSet()
-	if run.PromptSetVersion != set.Version {
-		return nil, nil, nil, fmt.Errorf("the run asked prompt set %d, which this release no longer has", run.PromptSetVersion)
-	}
 	done, err := s.repo.Answers(ctx, run.ID, true)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("the run's answers: %w", err)
 	}
+	// A run of an earlier prompt set asks the questions its answers kept.
+	set := domain.QuestionsOf(run, done)
 	answered := map[domain.TaskKey]bool{}
 	var unread []domain.Answer
 	for _, a := range done {
 		answered[a.Key()] = true
-		if a.Failure == "" && a.Extraction == nil {
+		if r.reads(a) {
 			unread = append(unread, a)
 		}
 	}
 	var tasks []domain.Task
 	for _, t := range domain.Tasks(set, run.Models) {
-		if (only == nil && !answered[t.Key()]) || only[t.Key()] {
+		if r.asks(t.Key(), answered[t.Key()]) {
 			tasks = append(tasks, t)
 		}
 	}
-	e := &execution{s: s, run: run, gw: gw, extractor: extractor, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
+	e := &execution{s: s, run: run, gw: gw, reader: rd, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
 	return e, tasks, unread, nil
 }
 
 // models is what a run asks through: OpenRouter, reached with the credential, for the providers'
 // answers, and the extractor that reads them.
-func (s *Service) models(ctx context.Context, credentialID string) (Gateway, Extractor, error) {
+func (s *Service) models(ctx context.Context, credentialID string) (Gateway, reader, error) {
 	gw, err := s.gateways.Gateway(ctx, credentialID)
 	if err != nil {
-		return nil, nil, err
+		return nil, reader{}, err
 	}
-	extractor, _, err := s.extractor(ctx, gw)
-	return gw, extractor, err
+	r, err := s.extractor(ctx, gw)
+	return gw, r, err
 }
 
 // fail finishes a run that cannot go on as failed, with why.
@@ -223,22 +244,55 @@ func (e *execution) read(ctx context.Context, a domain.Answer) {
 }
 
 // extract has the extractor read an answer, trying twice; an answer it cannot read is marked
-// failed, never dropped. What every try used is counted.
+// failed, never dropped. What every try used is counted, and what Claude Haiku used counts towards
+// the month's language-model tokens.
 func (e *execution) extract(ctx context.Context, a domain.Answer) domain.Extraction {
 	in := ExtractInput{Prompt: a.Prompt.Text, Answer: a.Text, Citations: a.Citations, FactSheet: e.run.FactSheet}
+	r := e.currentReader(ctx)
 	var used domain.Reply
 	for range 2 {
-		x, usage, err := e.extractor.Extract(ctx, in)
+		x, usage, err := r.extractor.Extract(ctx, in)
 		used.InputTokens += usage.InputTokens
 		used.OutputTokens += usage.OutputTokens
 		used.Cost += usage.Cost
 		if err == nil {
 			read := domain.Read(x, a.Citations, e.directory)
 			read.InputTokens, read.OutputTokens, read.Cost = used.InputTokens, used.OutputTokens, used.Cost
+			read.HaikuTokens = haikuTokens(r, used)
 			return read
 		}
 	}
-	return domain.Extraction{Failed: true, InputTokens: used.InputTokens, OutputTokens: used.OutputTokens, Cost: used.Cost}
+	return domain.Extraction{
+		Failed: true, InputTokens: used.InputTokens, OutputTokens: used.OutputTokens, Cost: used.Cost, HaikuTokens: haikuTokens(r, used),
+	}
+}
+
+// currentReader is the reader for the next answer: Claude Haiku hands over to OpenRouter for the
+// rest of the run once the month's language-model tokens are spent. A budget that cannot be read
+// leaves the reader as it is.
+func (e *execution) currentReader(ctx context.Context) reader {
+	e.mu.Lock()
+	r := e.reader
+	e.mu.Unlock()
+	if !r.haiku {
+		return r
+	}
+	if spent, err := e.s.tokensSpent(ctx); err != nil || !spent {
+		return r
+	}
+	r = reader{extractor: openRouterExtractor{gw: e.gw}, model: domain.ExtractorModel}
+	e.mu.Lock()
+	e.reader = r
+	e.mu.Unlock()
+	return r
+}
+
+// haikuTokens is what a reading used that counts towards the month's language-model tokens.
+func haikuTokens(r reader, used domain.Reply) int64 {
+	if !r.haiku {
+		return 0
+	}
+	return used.InputTokens + used.OutputTokens
 }
 
 // count adds an answer's cost to the month's spend, stops the run at the budget, and tells the

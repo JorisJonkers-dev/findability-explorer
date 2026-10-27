@@ -99,10 +99,19 @@ describe('the settings page', () => {
     const now = wrapper.get('section[aria-labelledby="model-title"]').text()
     expect(now).toContain('claude-haiku-5-5 with Vault key (Anthropic (Claude)), as long as an Anthropic key works.')
     expect(now).toContain('When no Anthropic key works, scans use mistralai/mistral-small with Course budget key (OpenRouter).')
-    expect(wrapper.findAll('button').some((b) => b.text() === 'Turn matching off')).toBe(false)
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Turn matching off')).toBe(true)
 
-    const off = await mountApp(server(llmSettings({ haiku, choice: 'off', active: undefined })).handle, '/settings')
-    expect(off.wrapper.text()).toContain('When no Anthropic key works, scans run without product matching.')
+    const none = await mountApp(server(llmSettings({ haiku, choice: 'chosen', active: undefined })).handle, '/settings')
+    expect(none.wrapper.text()).toContain('When no Anthropic key works, scans run without product matching.')
+  })
+
+  it('says matching is off when an administrator turned it off, Haiku or not', async () => {
+    const haiku = { credentialId: 'vault-anthropic', model: 'claude-haiku-5-5' }
+    const { wrapper } = await mountApp(server(llmSettings({ haiku, choice: 'off', active: undefined, matchingEnabled: false })).handle, '/settings')
+    const now = wrapper.get('section[aria-labelledby="model-title"]').text()
+    expect(now).toContain('Product matching is off. Scans run without it until a model is chosen below.')
+    expect(now).not.toContain('as long as an Anthropic key works')
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Turn matching off')).toBe(false)
   })
 
   it('says when there is no key and nothing in use', async () => {
@@ -266,7 +275,7 @@ describe('choosing the model', () => {
     await button(chooser(wrapper), 'Turn matching off').trigger('click')
     await settle()
     expect(requests()).toContain('DELETE /api/v1/admin/llm/active')
-    expect(chooser(wrapper).text()).toContain('Product matching is off. Scans run without it.')
+    expect(chooser(wrapper).text()).toContain('Product matching is off. Scans run without it until a model is chosen below.')
     expect(chooser(wrapper).text()).toContain('Product matching is off.')
   })
 

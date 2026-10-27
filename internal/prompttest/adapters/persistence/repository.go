@@ -247,18 +247,24 @@ func (r *Repository) AddAnswer(ctx context.Context, a domain.Answer) error {
 	})
 }
 
-// SetExtraction stores the extraction of an answer stored without one.
+// SetExtraction stores the extraction of an answer stored without one, or replaces a failed one,
+// adding to what it used; an answer read already is domain.ErrRead.
 func (r *Repository) SetExtraction(ctx context.Context, answerID uuid.UUID, x domain.Extraction, at time.Time) error {
 	return r.store.InTx(ctx, func(q *queries.Queries) error { return addExtraction(ctx, q, answerID, x, at) })
 }
 
 func addExtraction(ctx context.Context, q *queries.Queries, id uuid.UUID, x domain.Extraction, at time.Time) error {
-	if err := q.AddPromptExtraction(ctx, queries.AddPromptExtractionParams{
+	n, err := q.AddPromptExtraction(ctx, queries.AddPromptExtractionParams{
 		AnswerID: id, Failed: x.Failed, Addresses: clipAll(x.Addresses, 200, 500), NamesTribelt: x.NamesTribelt,
 		CitesTribelt: x.CitesTribelt, Correctness: string(x.Correctness), WrongClaims: clipAll(x.WrongClaims, 10, 500),
-		InputTokens: x.InputTokens, OutputTokens: x.OutputTokens, CostMicros: max(int64(x.Cost), 0), ExtractedAt: at,
-	}); err != nil {
+		InputTokens: x.InputTokens, OutputTokens: x.OutputTokens, CostMicros: max(int64(x.Cost), 0),
+		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at,
+	})
+	if err != nil {
 		return fmt.Errorf("insert prompt extraction: %w", err)
+	}
+	if n == 0 {
+		return domain.ErrRead
 	}
 	for _, c := range x.Companies[:min(len(x.Companies), 30)] {
 		if err := q.AddPromptAnswerCompany(ctx, queries.AddPromptAnswerCompanyParams{
@@ -514,6 +520,15 @@ func (r *Repository) ReviewTokensSince(ctx context.Context, t time.Time) (int64,
 	n, err := r.store.Queries().PromptReviewTokensSince(ctx, t)
 	if err != nil {
 		return 0, fmt.Errorf("sum review tokens: %w", err)
+	}
+	return n, nil
+}
+
+// ReadingTokensSince is how many tokens Claude Haiku on an Anthropic key used reading answers since t.
+func (r *Repository) ReadingTokensSince(ctx context.Context, t time.Time) (int64, error) {
+	n, err := r.store.Queries().PromptReadingTokensSince(ctx, t)
+	if err != nil {
+		return 0, fmt.Errorf("sum reading tokens: %w", err)
 	}
 	return n, nil
 }

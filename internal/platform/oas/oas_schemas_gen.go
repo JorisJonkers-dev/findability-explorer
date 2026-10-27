@@ -1434,8 +1434,9 @@ func (s *CandidateNameJoined) UnmarshalText(data []byte) error {
 type CandidateReviewState struct {
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
-	// Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its
-	// provider failed). Absent when it went well.
+	// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
+	// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
+	// well.
 	Problem OptCandidateReviewStateProblem `json:"problem"`
 }
 
@@ -1462,12 +1463,14 @@ func (s *CandidateReviewState) SetProblem(val OptCandidateReviewStateProblem) {
 func (*CandidateReviewState) startCandidateReviewRes() {}
 func (*CandidateReviewState) startCompetitorCheckRes() {}
 
-// Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its
-// provider failed). Absent when it went well.
+// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
+// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
+// well.
 type CandidateReviewStateProblem string
 
 const (
 	CandidateReviewStateProblemNoKey  CandidateReviewStateProblem = "noKey"
+	CandidateReviewStateProblemBudget CandidateReviewStateProblem = "budget"
 	CandidateReviewStateProblemFailed CandidateReviewStateProblem = "failed"
 )
 
@@ -1475,6 +1478,7 @@ const (
 func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
 	return []CandidateReviewStateProblem{
 		CandidateReviewStateProblemNoKey,
+		CandidateReviewStateProblemBudget,
 		CandidateReviewStateProblemFailed,
 	}
 }
@@ -1483,6 +1487,8 @@ func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
 func (s CandidateReviewStateProblem) MarshalText() ([]byte, error) {
 	switch s {
 	case CandidateReviewStateProblemNoKey:
+		return []byte(s), nil
+	case CandidateReviewStateProblemBudget:
 		return []byte(s), nil
 	case CandidateReviewStateProblemFailed:
 		return []byte(s), nil
@@ -1496,6 +1502,9 @@ func (s *CandidateReviewStateProblem) UnmarshalText(data []byte) error {
 	switch CandidateReviewStateProblem(data) {
 	case CandidateReviewStateProblemNoKey:
 		*s = CandidateReviewStateProblemNoKey
+		return nil
+	case CandidateReviewStateProblemBudget:
+		*s = CandidateReviewStateProblemBudget
 		return nil
 	case CandidateReviewStateProblemFailed:
 		*s = CandidateReviewStateProblemFailed
@@ -3270,6 +3279,22 @@ type GetLlmSettingsUnauthorized ProblemStatusCode
 
 func (*GetLlmSettingsUnauthorized) getLlmSettingsRes() {}
 
+type GetPromptRetryPlanBadRequest ProblemStatusCode
+
+func (*GetPromptRetryPlanBadRequest) getPromptRetryPlanRes() {}
+
+type GetPromptRetryPlanForbidden ProblemStatusCode
+
+func (*GetPromptRetryPlanForbidden) getPromptRetryPlanRes() {}
+
+type GetPromptRetryPlanNotFound ProblemStatusCode
+
+func (*GetPromptRetryPlanNotFound) getPromptRetryPlanRes() {}
+
+type GetPromptRetryPlanUnauthorized ProblemStatusCode
+
+func (*GetPromptRetryPlanUnauthorized) getPromptRetryPlanRes() {}
+
 type GetPromptTestSettingsForbidden ProblemStatusCode
 
 func (*GetPromptTestSettingsForbidden) getPromptTestSettingsRes() {}
@@ -3759,12 +3784,14 @@ type ListTermCandidatesUnauthorized ProblemStatusCode
 
 func (*ListTermCandidatesUnauthorized) listTermCandidatesRes() {}
 
-// What analyses may spend on the language model.
+// What every job on the language model may spend in a month together - the scans' product matching,
+// the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when
+// the month's tokens are spent.
 // Ref: #/components/schemas/LlmBudget
 type LlmBudget struct {
-	// The tokens all analyses of a calendar month (UTC) may use.
+	// The tokens every job together may use in a calendar month (UTC).
 	MonthlyTokens int64 `json:"monthlyTokens"`
-	// The tokens analyses created this month used so far.
+	// The tokens every job used this month so far.
 	UsedThisMonth int64 `json:"usedThisMonth"`
 	// The tokens one scan's product matching used on average, over every scan the language model answered
 	// for; 0 before the first.
@@ -4553,10 +4580,11 @@ type LlmSettings struct {
 	Active      OptActiveLlm    `json:"active"`
 	// The Anthropic key and Claude Haiku model that match products and read Prompt test answers, instead
 	// of the active model, while an Anthropic key works - the Vault key, else a stored Anthropic key whose
-	// latest test did not fail. Absent when no Anthropic key works.
+	// latest test did not fail. Product matching turned off stays off on it. Absent when no Anthropic key
+	// works.
 	Haiku OptActiveLlm `json:"haiku"`
-	// True when the next analysis will match products: on Haiku, or on the active model when its
-	// credential is readable.
+	// True when the next analysis will match products: matching is not turned off, and Haiku works or the
+	// active model's credential is readable.
 	MatchingEnabled bool      `json:"matchingEnabled"`
 	Budget          LlmBudget `json:"budget"`
 	// The latest changes and tests, newest first.
@@ -8426,6 +8454,45 @@ func (s *PromptAnswer) SetExtraction(val OptPromptExtraction) {
 	s.Extraction = val
 }
 
+// What asking one provider's answer again in one mode should cost, reading included.
+// Ref: #/components/schemas/PromptAnswerCost
+type PromptAnswerCost struct {
+	// The provider, by its OpenRouter id prefix.
+	Provider string     `json:"provider"`
+	Mode     PromptMode `json:"mode"`
+	CostUsd  Usd        `json:"costUsd"`
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptAnswerCost) GetProvider() string {
+	return s.Provider
+}
+
+// GetMode returns the value of Mode.
+func (s *PromptAnswerCost) GetMode() PromptMode {
+	return s.Mode
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *PromptAnswerCost) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptAnswerCost) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetMode sets the value of Mode.
+func (s *PromptAnswerCost) SetMode(val PromptMode) {
+	s.Mode = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *PromptAnswerCost) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
 // A run's answers.
 // Ref: #/components/schemas/PromptAnswerList
 type PromptAnswerList struct {
@@ -9523,7 +9590,98 @@ func (s *PromptRetry) SetEstimatedCostUsd(val Usd) {
 	s.EstimatedCostUsd = val
 }
 
-func (*PromptRetry) retryPromptRunRes() {}
+func (*PromptRetry) rereadPromptRunRes() {}
+func (*PromptRetry) retryPromptRunRes()  {}
+
+// What asking a run again would ask and read, and what it should cost, with reading priced at the
+// model that reads the answers now.
+// Ref: #/components/schemas/PromptRetryPlan
+type PromptRetryPlan struct {
+	// How many failed and missing answers asking again would ask.
+	AskTasks   int32 `json:"askTasks"`
+	AskCostUsd Usd   `json:"askCostUsd"`
+	// How many missing answers of a run of an earlier prompt set cannot be asked again, because no answer
+	// kept their question.
+	UnknownTasks int32 `json:"unknownTasks"`
+	// How many answers whose reading failed could be read again, without asking again.
+	ReadTasks      int32 `json:"readTasks"`
+	ReadCostUsd    Usd   `json:"readCostUsd"`
+	ReadingCostUsd Usd   `json:"readingCostUsd"`
+	// What asking one answer again should cost, per provider of the run and mode, reading included.
+	AnswerCosts []PromptAnswerCost `json:"answerCosts"`
+}
+
+// GetAskTasks returns the value of AskTasks.
+func (s *PromptRetryPlan) GetAskTasks() int32 {
+	return s.AskTasks
+}
+
+// GetAskCostUsd returns the value of AskCostUsd.
+func (s *PromptRetryPlan) GetAskCostUsd() Usd {
+	return s.AskCostUsd
+}
+
+// GetUnknownTasks returns the value of UnknownTasks.
+func (s *PromptRetryPlan) GetUnknownTasks() int32 {
+	return s.UnknownTasks
+}
+
+// GetReadTasks returns the value of ReadTasks.
+func (s *PromptRetryPlan) GetReadTasks() int32 {
+	return s.ReadTasks
+}
+
+// GetReadCostUsd returns the value of ReadCostUsd.
+func (s *PromptRetryPlan) GetReadCostUsd() Usd {
+	return s.ReadCostUsd
+}
+
+// GetReadingCostUsd returns the value of ReadingCostUsd.
+func (s *PromptRetryPlan) GetReadingCostUsd() Usd {
+	return s.ReadingCostUsd
+}
+
+// GetAnswerCosts returns the value of AnswerCosts.
+func (s *PromptRetryPlan) GetAnswerCosts() []PromptAnswerCost {
+	return s.AnswerCosts
+}
+
+// SetAskTasks sets the value of AskTasks.
+func (s *PromptRetryPlan) SetAskTasks(val int32) {
+	s.AskTasks = val
+}
+
+// SetAskCostUsd sets the value of AskCostUsd.
+func (s *PromptRetryPlan) SetAskCostUsd(val Usd) {
+	s.AskCostUsd = val
+}
+
+// SetUnknownTasks sets the value of UnknownTasks.
+func (s *PromptRetryPlan) SetUnknownTasks(val int32) {
+	s.UnknownTasks = val
+}
+
+// SetReadTasks sets the value of ReadTasks.
+func (s *PromptRetryPlan) SetReadTasks(val int32) {
+	s.ReadTasks = val
+}
+
+// SetReadCostUsd sets the value of ReadCostUsd.
+func (s *PromptRetryPlan) SetReadCostUsd(val Usd) {
+	s.ReadCostUsd = val
+}
+
+// SetReadingCostUsd sets the value of ReadingCostUsd.
+func (s *PromptRetryPlan) SetReadingCostUsd(val Usd) {
+	s.ReadingCostUsd = val
+}
+
+// SetAnswerCosts sets the value of AnswerCosts.
+func (s *PromptRetryPlan) SetAnswerCosts(val []PromptAnswerCost) {
+	s.AnswerCosts = val
+}
+
+func (*PromptRetryPlan) getPromptRetryPlanRes() {}
 
 // What to ask again - every failed answer of the run when empty, or the one question of one provider
 // and mode when all three are given.
@@ -10717,6 +10875,30 @@ func (*RejectTermCandidateNotFound) rejectTermCandidateRes() {}
 type RejectTermCandidateUnauthorized ProblemStatusCode
 
 func (*RejectTermCandidateUnauthorized) rejectTermCandidateRes() {}
+
+type RereadPromptRunBadRequest ProblemStatusCode
+
+func (*RereadPromptRunBadRequest) rereadPromptRunRes() {}
+
+type RereadPromptRunConflict ProblemStatusCode
+
+func (*RereadPromptRunConflict) rereadPromptRunRes() {}
+
+type RereadPromptRunForbidden ProblemStatusCode
+
+func (*RereadPromptRunForbidden) rereadPromptRunRes() {}
+
+type RereadPromptRunNotFound ProblemStatusCode
+
+func (*RereadPromptRunNotFound) rereadPromptRunRes() {}
+
+type RereadPromptRunUnauthorized ProblemStatusCode
+
+func (*RereadPromptRunUnauthorized) rereadPromptRunRes() {}
+
+type RereadPromptRunUnprocessableEntity ProblemStatusCode
+
+func (*RereadPromptRunUnprocessableEntity) rereadPromptRunRes() {}
 
 // The scans a re-scan queued, and the companies it left out.
 // Ref: #/components/schemas/RescanBatch
@@ -12188,8 +12370,9 @@ type TermReviewState struct {
 	Running bool `json:"running"`
 	// How many waiting candidates it has not reviewed yet.
 	Waiting int32 `json:"waiting"`
-	// Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its
-	// provider failed). Absent when it went well.
+	// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
+	// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
+	// well.
 	Problem OptTermReviewStateProblem `json:"problem"`
 }
 
@@ -12225,12 +12408,14 @@ func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
 
 func (*TermReviewState) startTermReviewRes() {}
 
-// Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its
-// provider failed). Absent when it went well.
+// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
+// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
+// well.
 type TermReviewStateProblem string
 
 const (
 	TermReviewStateProblemNoModel TermReviewStateProblem = "noModel"
+	TermReviewStateProblemBudget  TermReviewStateProblem = "budget"
 	TermReviewStateProblemFailed  TermReviewStateProblem = "failed"
 )
 
@@ -12238,6 +12423,7 @@ const (
 func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
 	return []TermReviewStateProblem{
 		TermReviewStateProblemNoModel,
+		TermReviewStateProblemBudget,
 		TermReviewStateProblemFailed,
 	}
 }
@@ -12246,6 +12432,8 @@ func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
 func (s TermReviewStateProblem) MarshalText() ([]byte, error) {
 	switch s {
 	case TermReviewStateProblemNoModel:
+		return []byte(s), nil
+	case TermReviewStateProblemBudget:
 		return []byte(s), nil
 	case TermReviewStateProblemFailed:
 		return []byte(s), nil
@@ -12259,6 +12447,9 @@ func (s *TermReviewStateProblem) UnmarshalText(data []byte) error {
 	switch TermReviewStateProblem(data) {
 	case TermReviewStateProblemNoModel:
 		*s = TermReviewStateProblemNoModel
+		return nil
+	case TermReviewStateProblemBudget:
+		*s = TermReviewStateProblemBudget
 		return nil
 	case TermReviewStateProblemFailed:
 		*s = TermReviewStateProblemFailed

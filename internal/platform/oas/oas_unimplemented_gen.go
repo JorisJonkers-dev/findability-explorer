@@ -252,6 +252,19 @@ func (UnimplementedHandler) GetProducts(ctx context.Context) (r GetProductsRes, 
 	return r, ht.ErrNotImplemented
 }
 
+// GetPromptRetryPlan implements getPromptRetryPlan operation.
+//
+// Administrators only. Says how many of a run's failed and missing answers asking again would ask, how
+// many it cannot ask because no answer of a run of an earlier prompt set kept their question, how many
+// answers whose reading failed could be read again, and what each should cost - each provider's
+// answers by their own cost, a web search's fee included, and reading at the price of the model that
+// reads the answers now. 404 for a run nobody knows.
+//
+// GET /api/v1/admin/prompt-runs/{runId}/retry-plan
+func (UnimplementedHandler) GetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (r GetPromptRetryPlanRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetPromptTestResults implements getPromptTestResults operation.
 //
 // Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
@@ -381,14 +394,29 @@ func (UnimplementedHandler) RejectTermCandidate(ctx context.Context, params Reje
 	return r, ht.ErrNotImplemented
 }
 
+// RereadPromptRun implements rereadPromptRun operation.
+//
+// Administrators only. Reads a finished run's answers whose reading failed again, or only the one
+// answer of one question, provider and mode named, in the same run: the stored answer is read again by
+// the model that reads the answers now, and the provider is not asked again. Each new reading replaces
+// the failed one, what the failed reading cost still counted. It runs in the background and stops at
+// the month's budget like any run. 404 for a run nobody knows; 409 while a run is running or once the
+// month's budget is spent; 422 when no reading failed or no OpenRouter key is chosen.
+//
+// POST /api/v1/admin/prompt-runs/{runId}/reread
+func (UnimplementedHandler) RereadPromptRun(ctx context.Context, req *PromptRetryRequest, params RereadPromptRunParams) (r RereadPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RetryPromptRun implements retryPromptRun operation.
 //
 // Administrators only. Asks a finished run's failed and missing answers again, or only the one
-// question of one provider and mode named, in the same run: with the run's prompt set and models, each
-// new answer replacing the failed one, what the failed try cost still counted. It runs in the
-// background and stops at the month's budget like any run. 404 for a run nobody knows; 409 while a run
-// is running or once the month's budget is spent; 422 when nothing is left to ask, the run asked an
-// earlier set of questions, or no OpenRouter key is chosen.
+// question of one provider and mode named, in the same run: with the run's questions and models, each
+// new answer replacing the failed one, what the failed try cost still counted. A run of an earlier
+// prompt set asks the questions its answers kept; a question no answer kept cannot be asked again. It
+// runs in the background and stops at the month's budget like any run. 404 for a run nobody knows; 409
+// while a run is running or once the month's budget is spent; 422 when nothing is left to ask or no
+// OpenRouter key is chosen.
 //
 // POST /api/v1/admin/prompt-runs/{runId}/retry
 func (UnimplementedHandler) RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (r RetryPromptRunRes, _ error) {

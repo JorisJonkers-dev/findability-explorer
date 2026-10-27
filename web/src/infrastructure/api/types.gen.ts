@@ -792,15 +792,15 @@ export type LlmEvent = {
 };
 
 /**
- * What analyses may spend on the language model.
+ * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
  */
 export type LlmBudget = {
     /**
-     * The tokens all analyses of a calendar month (UTC) may use.
+     * The tokens every job together may use in a calendar month (UTC).
      */
     monthlyTokens: number;
     /**
-     * The tokens analyses created this month used so far.
+     * The tokens every job used this month so far.
      */
     usedThisMonth: number;
     /**
@@ -824,11 +824,11 @@ export type LlmSettings = {
     choice: LlmChoice;
     active?: ActiveLlm;
     /**
-     * The Anthropic key and Claude Haiku model that match products and read Prompt test answers, instead of the active model, while an Anthropic key works - the Vault key, else a stored Anthropic key whose latest test did not fail. Absent when no Anthropic key works.
+     * The Anthropic key and Claude Haiku model that match products and read Prompt test answers, instead of the active model, while an Anthropic key works - the Vault key, else a stored Anthropic key whose latest test did not fail. Product matching turned off stays off on it. Absent when no Anthropic key works.
      */
     haiku?: ActiveLlm;
     /**
-     * True when the next analysis will match products: on Haiku, or on the active model when its credential is readable.
+     * True when the next analysis will match products: matching is not turned off, and Haiku works or the active model's credential is readable.
      */
     matchingEnabled: boolean;
     budget: LlmBudget;
@@ -1193,9 +1193,9 @@ export type TermReviewState = {
      */
     waiting: number;
     /**
-     * Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's language-model tokens are spent) or failed (the model or its provider failed). Absent when it went well.
      */
-    problem?: 'noModel' | 'failed';
+    problem?: 'noModel' | 'budget' | 'failed';
 };
 
 /**
@@ -2132,6 +2132,43 @@ export type PromptRetry = {
 };
 
 /**
+ * What asking a run again would ask and read, and what it should cost, with reading priced at the model that reads the answers now.
+ */
+export type PromptRetryPlan = {
+    /**
+     * How many failed and missing answers asking again would ask.
+     */
+    askTasks: number;
+    askCostUsd: Usd;
+    /**
+     * How many missing answers of a run of an earlier prompt set cannot be asked again, because no answer kept their question.
+     */
+    unknownTasks: number;
+    /**
+     * How many answers whose reading failed could be read again, without asking again.
+     */
+    readTasks: number;
+    readCostUsd: Usd;
+    readingCostUsd: Usd;
+    /**
+     * What asking one answer again should cost, per provider of the run and mode, reading included.
+     */
+    answerCosts: Array<PromptAnswerCost>;
+};
+
+/**
+ * What asking one provider's answer again in one mode should cost, reading included.
+ */
+export type PromptAnswerCost = {
+    /**
+     * The provider, by its OpenRouter id prefix.
+     */
+    provider: string;
+    mode: PromptMode;
+    costUsd: Usd;
+};
+
+/**
  * How a prompt is asked - from the model's own knowledge, or with live web search.
  */
 export type PromptMode = 'knowledge' | 'web';
@@ -2793,9 +2830,9 @@ export type CandidateReviewState = {
      */
     running: boolean;
     /**
-     * Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's language-model tokens are spent) or failed (the model or its provider failed). Absent when it went well.
      */
-    problem?: 'noKey' | 'failed';
+    problem?: 'noKey' | 'budget' | 'failed';
 };
 
 /**
@@ -4304,6 +4341,109 @@ export type RetryPromptRunResponses = {
 };
 
 export type RetryPromptRunResponse = RetryPromptRunResponses[keyof RetryPromptRunResponses];
+
+export type GetPromptRetryPlanData = {
+    body?: never;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/prompt-runs/{runId}/retry-plan';
+};
+
+export type GetPromptRetryPlanErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptRetryPlanError = GetPromptRetryPlanErrors[keyof GetPromptRetryPlanErrors];
+
+export type GetPromptRetryPlanResponses = {
+    /**
+     * What asking the run again would ask, read and cost.
+     */
+    200: PromptRetryPlan;
+};
+
+export type GetPromptRetryPlanResponse = GetPromptRetryPlanResponses[keyof GetPromptRetryPlanResponses];
+
+export type RereadPromptRunData = {
+    /**
+     * Every failed reading when empty, or the one answer to read again.
+     */
+    body: PromptRetryRequest;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/prompt-runs/{runId}/reread';
+};
+
+export type RereadPromptRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RereadPromptRunError = RereadPromptRunErrors[keyof RereadPromptRunErrors];
+
+export type RereadPromptRunResponses = {
+    /**
+     * The run, running again, with how many answers it reads and what reading them should cost.
+     */
+    202: PromptRetry;
+};
+
+export type RereadPromptRunResponse = RereadPromptRunResponses[keyof RereadPromptRunResponses];
 
 export type GetPromptTestSettingsData = {
     body?: never;

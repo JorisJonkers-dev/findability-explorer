@@ -23,6 +23,8 @@ type UseCases interface {
 	Answers(ctx context.Context, runID uuid.UUID, filter app.AnswerFilter) (app.RunResult, []domain.Answer, error)
 	Start(ctx context.Context, actor string) (domain.Run, error)
 	Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
+	Reread(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
+	RetryPlan(ctx context.Context, runID uuid.UUID) (app.Plan, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error)
@@ -127,23 +129,14 @@ func (h *Handler) StartPromptRun(ctx context.Context) (oas.StartPromptRunRes, er
 
 // RetryPromptRun implements retryPromptRun.
 func (h *Handler) RetryPromptRun(ctx context.Context, req *oas.PromptRetryRequest, params oas.RetryPromptRunParams) (oas.RetryPromptRunRes, error) {
-	prompt, hasPrompt := req.PromptId.Get()
-	provider, hasProvider := req.Provider.Get()
-	mode, hasMode := req.Mode.Get()
-	var task *domain.TaskKey
-	switch {
-	case hasPrompt && hasProvider && hasMode:
-		task = &domain.TaskKey{PromptID: prompt, Provider: provider, Mode: domain.Mode(mode)}
-	case hasPrompt || hasProvider || hasMode:
-		return &oas.RetryPromptRunUnprocessableEntity{
-			StatusCode: http.StatusUnprocessableEntity,
-			Response:   httpx.Problem(http.StatusUnprocessableEntity, "Name the question, the provider and the mode, or none of them."),
-		}, nil
+	task, ok := taskOf(req)
+	if !ok {
+		return &oas.RetryPromptRunUnprocessableEntity{StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, nameAll)}, nil
 	}
 	r, err := h.uc.Retry(ctx, params.RunId, task)
 	switch {
 	case errors.Is(err, domain.ErrNotFound):
-		return &oas.RetryPromptRunNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No Prompt run has this id.")}, nil
+		return &oas.RetryPromptRunNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, noRun)}, nil
 	case errors.Is(err, domain.ErrRunActive), errors.Is(err, domain.ErrBudgetReached):
 		return &oas.RetryPromptRunConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, sentence(err))}, nil
 	case app.IsInputError(err):
@@ -153,9 +146,78 @@ func (h *Handler) RetryPromptRun(ctx context.Context, req *oas.PromptRetryReques
 	case err != nil:
 		return nil, err
 	}
-	return &oas.PromptRetry{
+	out := toRetry(r)
+	return &out, nil
+}
+
+// RereadPromptRun implements rereadPromptRun.
+func (h *Handler) RereadPromptRun(ctx context.Context, req *oas.PromptRetryRequest, params oas.RereadPromptRunParams) (oas.RereadPromptRunRes, error) {
+	task, ok := taskOf(req)
+	if !ok {
+		return &oas.RereadPromptRunUnprocessableEntity{StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, nameAll)}, nil
+	}
+	r, err := h.uc.Reread(ctx, params.RunId, task)
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.RereadPromptRunNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, noRun)}, nil
+	case errors.Is(err, domain.ErrRunActive), errors.Is(err, domain.ErrBudgetReached):
+		return &oas.RereadPromptRunConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, sentence(err))}, nil
+	case app.IsInputError(err):
+		return &oas.RereadPromptRunUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, sentence(err)),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := toRetry(r)
+	return &out, nil
+}
+
+// GetPromptRetryPlan implements getPromptRetryPlan.
+func (h *Handler) GetPromptRetryPlan(ctx context.Context, params oas.GetPromptRetryPlanParams) (oas.GetPromptRetryPlanRes, error) {
+	p, err := h.uc.RetryPlan(ctx, params.RunId)
+	if errors.Is(err, domain.ErrNotFound) {
+		return &oas.GetPromptRetryPlanNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, noRun)}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.PromptRetryPlan{
+		AskTasks: int32(p.Ask), AskCostUsd: oas.Usd(p.AskCost.Dollars()), UnknownTasks: int32(p.Unknown), //nolint:gosec // at most a run's tasks
+		ReadTasks: int32(p.Read), ReadCostUsd: oas.Usd(p.ReadCost.Dollars()), ReadingCostUsd: oas.Usd(p.Reading.Dollars()), //nolint:gosec // at most a run's tasks
+		AnswerCosts: make([]oas.PromptAnswerCost, 0, len(p.Costs)),
+	}
+	for _, c := range p.Costs[:min(len(p.Costs), maxAnswerCosts)] {
+		out.AnswerCosts = append(out.AnswerCosts, oas.PromptAnswerCost{Provider: c.Provider, Mode: oas.PromptMode(c.Mode), CostUsd: oas.Usd(c.Cost.Dollars())})
+	}
+	return out, nil
+}
+
+const (
+	noRun   = "No Prompt run has this id."
+	nameAll = "Name the question, the provider and the mode, or none of them."
+	// maxAnswerCosts is the most costs per provider and mode the contract allows.
+	maxAnswerCosts = 40
+)
+
+// taskOf is the one task a request names, nil for every one; false when it names only some of the three.
+func taskOf(req *oas.PromptRetryRequest) (*domain.TaskKey, bool) {
+	prompt, hasPrompt := req.PromptId.Get()
+	provider, hasProvider := req.Provider.Get()
+	mode, hasMode := req.Mode.Get()
+	switch {
+	case hasPrompt && hasProvider && hasMode:
+		return &domain.TaskKey{PromptID: prompt, Provider: provider, Mode: domain.Mode(mode)}, true
+	case hasPrompt || hasProvider || hasMode:
+		return nil, false
+	}
+	return nil, true
+}
+
+func toRetry(r app.Retry) oas.PromptRetry {
+	return oas.PromptRetry{
 		Run: toRun(r.Run, domain.Progress{}, nil), Tasks: int32(r.Tasks), EstimatedCostUsd: oas.Usd(r.Estimate.Dollars()), //nolint:gosec // at most a run's tasks
-	}, nil
+	}
 }
 
 // GetPromptTestSettings implements getPromptTestSettings.

@@ -1033,12 +1033,12 @@ paths:
       summary: Ask a Prompt run's failed answers again
       description: >-
         Administrators only. Asks a finished run's failed and missing answers again, or only the
-        one question of one provider and mode named, in the same run: with the run's prompt set
+        one question of one provider and mode named, in the same run: with the run's questions
         and models, each new answer replacing the failed one, what the failed try cost still
-        counted. It runs in the background and stops at the month's budget like any run. 404 for
-        a run nobody knows; 409 while a run is running or once the month's budget is spent; 422
-        when nothing is left to ask, the run asked an earlier set of questions, or no OpenRouter
-        key is chosen.
+        counted. A run of an earlier prompt set asks the questions its answers kept; a question
+        no answer kept cannot be asked again. It runs in the background and stops at the month's
+        budget like any run. 404 for a run nobody knows; 409 while a run is running or once the
+        month's budget is spent; 422 when nothing is left to ask or no OpenRouter key is chosen.
       tags: [admin]
       parameters:
         - $ref: "#/components/parameters/RunId"
@@ -1056,6 +1056,83 @@ paths:
       responses:
         "202":
           description: The run, running again, with how many answers it asks and what they should cost.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptRetry"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-runs/{runId}/retry-plan:
+    get:
+      operationId: getPromptRetryPlan
+      summary: What asking a Prompt run again would cost
+      description: >-
+        Administrators only. Says how many of a run's failed and missing answers asking again
+        would ask, how many it cannot ask because no answer of a run of an earlier prompt set kept
+        their question, how many answers whose reading failed could be read again, and what each
+        should cost - each provider's answers by their own cost, a web search's fee included, and
+        reading at the price of the model that reads the answers now. 404 for a run nobody knows.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: What asking the run again would ask, read and cost.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptRetryPlan"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-runs/{runId}/reread:
+    post:
+      operationId: rereadPromptRun
+      summary: Read a Prompt run's answers again whose reading failed
+      description: >-
+        Administrators only. Reads a finished run's answers whose reading failed again, or only
+        the one answer of one question, provider and mode named, in the same run: the stored
+        answer is read again by the model that reads the answers now, and the provider is not
+        asked again. Each new reading replaces the failed one, what the failed reading cost still
+        counted. It runs in the background and stops at the month's budget like any run. 404 for
+        a run nobody knows; 409 while a run is running or once the month's budget is spent; 422
+        when no reading failed or no OpenRouter key is chosen.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        description: Every failed reading when empty, or the one answer to read again.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptRetryRequest"
+            example:
+              promptId: eyelink-application-twente
+              provider: openai
+              mode: web
+      responses:
+        "202":
+          description: The run, running again, with how many answers it reads and what reading them should cost.
           content:
             application/json:
               schema:
@@ -2755,7 +2832,10 @@ components:
           description: A sentence describing the event.
           example: Added openrouter key "Course budget key" (3a7bd3e2360a).
     LlmBudget:
-      description: What analyses may spend on the language model.
+      description: >-
+        What every job on the language model may spend in a month together - the scans' product
+        matching, the term review, the competitor review and Claude Haiku's reading of Prompt
+        answers. Each stops when the month's tokens are spent.
       type: object
       additionalProperties: false
       required: [monthlyTokens, usedThisMonth, averageTokensPerScan, scansMatched]
@@ -2765,14 +2845,14 @@ components:
           format: int64
           minimum: 0
           maximum: 1000000000000
-          description: The tokens all analyses of a calendar month (UTC) may use.
+          description: The tokens every job together may use in a calendar month (UTC).
           example: 10000000
         usedThisMonth:
           type: integer
           format: int64
           minimum: 0
           maximum: 1000000000000
-          description: The tokens analyses created this month used so far.
+          description: The tokens every job used this month so far.
           example: 48211
         averageTokensPerScan:
           type: integer
@@ -2811,12 +2891,13 @@ components:
           description: >-
             The Anthropic key and Claude Haiku model that match products and read Prompt test
             answers, instead of the active model, while an Anthropic key works - the Vault key, else
-            a stored Anthropic key whose latest test did not fail. Absent when no Anthropic key works.
+            a stored Anthropic key whose latest test did not fail. Product matching turned off stays
+            off on it. Absent when no Anthropic key works.
         matchingEnabled:
           type: boolean
           description: >-
-            True when the next analysis will match products: on Haiku, or on the active model when
-            its credential is readable.
+            True when the next analysis will match products: matching is not turned off, and Haiku
+            works or the active model's credential is readable.
         budget:
           $ref: "#/components/schemas/LlmBudget"
         events:
@@ -3323,10 +3404,11 @@ components:
           example: 663
         problem:
           description: >-
-            Why its last review stopped short - noModel (no Anthropic key is set up) or failed
-            (the model or its provider failed). Absent when it went well.
+            Why its last review stopped short - noModel (no Anthropic key is set up), budget (the
+            month's language-model tokens are spent) or failed (the model or its provider failed).
+            Absent when it went well.
           type: string
-          enum: [noModel, failed]
+          enum: [noModel, budget, failed]
     TermCandidateCounts:
       description: How many candidates have each status.
       type: object
@@ -4591,6 +4673,65 @@ components:
           example: 7
         estimatedCostUsd:
           $ref: "#/components/schemas/Usd"
+    PromptRetryPlan:
+      description: >-
+        What asking a run again would ask and read, and what it should cost, with reading priced
+        at the model that reads the answers now.
+      type: object
+      additionalProperties: false
+      required: [askTasks, askCostUsd, unknownTasks, readTasks, readCostUsd, readingCostUsd, answerCosts]
+      properties:
+        askTasks:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: How many failed and missing answers asking again would ask.
+          example: 7
+        askCostUsd:
+          $ref: "#/components/schemas/Usd"
+        unknownTasks:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: >-
+            How many missing answers of a run of an earlier prompt set cannot be asked again,
+            because no answer kept their question.
+          example: 0
+        readTasks:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: How many answers whose reading failed could be read again, without asking again.
+          example: 2
+        readCostUsd:
+          $ref: "#/components/schemas/Usd"
+        readingCostUsd:
+          $ref: "#/components/schemas/Usd"
+        answerCosts:
+          type: array
+          maxItems: 40
+          description: What asking one answer again should cost, per provider of the run and mode, reading included.
+          items:
+            $ref: "#/components/schemas/PromptAnswerCost"
+    PromptAnswerCost:
+      description: What asking one provider's answer again in one mode should cost, reading included.
+      type: object
+      additionalProperties: false
+      required: [provider, mode, costUsd]
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+          pattern: "^[a-z0-9][a-z0-9-]*$"
+          description: The provider, by its OpenRouter id prefix.
+          example: openai
+        mode:
+          $ref: "#/components/schemas/PromptMode"
+        costUsd:
+          $ref: "#/components/schemas/Usd"
     PromptMode:
       description: How a prompt is asked - from the model's own knowledge, or with live web search.
       type: string
@@ -5518,10 +5659,11 @@ components:
           example: false
         problem:
           description: >-
-            Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the
-            model or its provider failed). Absent when it went well.
+            Why its last review stopped short - noKey (no Anthropic key is set up), budget (the
+            month's language-model tokens are spent) or failed (the model or its provider failed).
+            Absent when it went well.
           type: string
-          enum: [noKey, failed]
+          enum: [noKey, budget, failed]
     CandidateDecisions:
       description: Add or dismiss several competitor candidates.
       type: object

@@ -46,11 +46,14 @@ export type ActiveState = ChosenState | { kind: 'haiku'; model: string; credenti
 
 type ActiveSettings = Pick<LlmSettings, 'choice' | 'active' | 'haiku' | 'credentials'>
 
-/** What product matching uses now, from the settings: Haiku on an Anthropic key while one works, else the chosen model. */
+/**
+ * What product matching uses now, from the settings: nothing when an administrator turned it off,
+ * else Haiku on an Anthropic key while one works, else the chosen model.
+ */
 export function activeState(settings: ActiveSettings): ActiveState {
   const otherwise = chosenState(settings)
   const haiku = settings.haiku
-  if (!haiku) return otherwise
+  if (!haiku || otherwise.kind === 'off') return otherwise
   return { kind: 'haiku', model: haiku.model, credential: keyName(settings.credentials, haiku), otherwise }
 }
 

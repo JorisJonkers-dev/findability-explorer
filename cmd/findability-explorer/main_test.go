@@ -158,7 +158,7 @@ func (s *settings) LastTests(context.Context) (map[string]llmdomain.Test, error)
 	return map[string]llmdomain.Test{}, nil
 }
 
-func TestMatchersPreferHaikuThenFollowTheSettings(t *testing.T) {
+func TestMatchersPreferHaikuUnlessMatchingIsOff(t *testing.T) {
 	repo := &settings{}
 	svc := func(vault string) matchers {
 		return matchers{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
@@ -169,14 +169,15 @@ func TestMatchersPreferHaikuThenFollowTheSettings(t *testing.T) {
 	if m, label, err := svc("sk-ant").Current(t.Context()); m == nil || label != "anthropic: claude-haiku-5-5" || err != nil {
 		t.Fatalf("by default: %v %q %v", m, label, err)
 	}
-	// Another model chosen, or matching turned off: Haiku on the Anthropic key still matches.
+	// Another model chosen: Haiku on the Anthropic key still matches.
 	repo.setting = llmdomain.Setting{Mode: llmdomain.ModeChosen, Active: llmdomain.Active{CredentialID: "gone", Model: "m"}}
 	if m, label, err := svc("sk-ant").Current(t.Context()); m == nil || label != "anthropic: claude-haiku-5-5" || err != nil {
 		t.Fatalf("with another model chosen: %v %q %v", m, label, err)
 	}
+	// Matching turned off stays off, Haiku or not.
 	repo.setting = llmdomain.Setting{Mode: llmdomain.ModeOff}
-	if m, _, err := svc("sk-ant").Current(t.Context()); m == nil || err != nil {
-		t.Fatalf("with matching off: %v %v", m, err)
+	if m, label, err := svc("sk-ant").Current(t.Context()); m != nil || label != "" || err != nil {
+		t.Fatalf("with matching off: %v %q %v", m, label, err)
 	}
 	// Without an Anthropic key, the chosen model matches as before.
 	repo.setting = llmdomain.Setting{Mode: llmdomain.ModeChosen, Active: llmdomain.Active{CredentialID: "gone", Model: "m"}}

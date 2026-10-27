@@ -39,7 +39,9 @@ type Repository interface {
 	LastTests(ctx context.Context) (map[string]domain.Test, error)
 }
 
-// Budget is what analyses may spend on the language model, and what one scan uses on average.
+// Budget is what every job on the language model may spend in a month (the scans' product matching,
+// the term review, the competitor review and Haiku's reading of Prompt answers), and what one scan
+// uses on average.
 type Budget struct {
 	MonthlyTokens int64
 	UsedThisMonth int64
@@ -49,14 +51,14 @@ type Budget struct {
 	ScansMatched   int
 }
 
-// Spending is what the analyses used: this month's tokens, and the average of a scan.
+// Spending is what the jobs used: this month's tokens, all together, and the average of a scan.
 type Spending struct {
 	ThisMonth      int64
 	AveragePerScan int64
 	ScansMatched   int
 }
 
-// Spent returns what analyses used; the analysis context provides it.
+// Spent returns what the jobs used; the composition root sums it from their contexts.
 type Spent func(ctx context.Context) (Spending, error)
 
 // Config is the service's fixed settings.
@@ -72,10 +74,11 @@ type Settings struct {
 	Choice      domain.Choice
 	Active      *domain.Active
 	// Haiku is the Anthropic key and model product matching and the reading of Prompt test answers
-	// use instead of Active while one works; nil when no Anthropic key does.
+	// use instead of Active while one works; nil when no Anthropic key does. Matching turned off
+	// stays off on it.
 	Haiku *domain.Active
-	// MatchingEnabled is true when the next analysis will match products: on Haiku, or on the
-	// active model when its key is readable.
+	// MatchingEnabled is true when the next analysis will match products: matching is not turned
+	// off, and Haiku works or the active model's key is readable.
 	MatchingEnabled bool
 	Budget          Budget
 	Events          []domain.Event
@@ -127,12 +130,23 @@ func (s *Service) Settings(ctx context.Context) (Settings, error) {
 		haiku = &domain.Active{CredentialID: c.ID, Model: domain.DefaultModel}
 	}
 	return Settings{
-		Credentials: creds, Choice: choice, Active: active, Haiku: haiku, MatchingEnabled: enabled || haiku != nil, Events: events,
+		Credentials: creds, Choice: choice, Active: active, Haiku: haiku, Events: events,
+		MatchingEnabled: choice != domain.ChoiceOff && (enabled || haiku != nil),
 		Budget: Budget{
 			MonthlyTokens: s.cfg.MonthlyTokens, UsedThisMonth: spent.ThisMonth,
 			AveragePerScan: spent.AveragePerScan, ScansMatched: spent.ScansMatched,
 		},
 	}, nil
+}
+
+// BudgetSpent reports whether this month's tokens, of every job together, reached the monthly
+// budget, as the settings show them. Every job on the language model stops when it has.
+func (s *Service) BudgetSpent(ctx context.Context) (bool, error) {
+	spent, err := s.spent(ctx)
+	if err != nil {
+		return false, fmt.Errorf("sum this month's tokens: %w", err)
+	}
+	return spent.ThisMonth >= s.cfg.MonthlyTokens, nil
 }
 
 // credentials is the Vault credential, when there is one, then the stored ones oldest first,
@@ -309,6 +323,27 @@ func (s *Service) Current(ctx context.Context) (domain.Client, domain.Provider, 
 		return nil, "", "", fmt.Errorf("the active credential: %w", err)
 	}
 	return s.connector.Connect(provider, key), provider, active.Model, nil
+}
+
+// Matcher returns the client and model product matching uses now, and the provider; a nil Client
+// means matching is off. Turned off, it stays off, Haiku or not; else it is Haiku while an
+// Anthropic key works (ADR-0007), and the active model without one.
+func (s *Service) Matcher(ctx context.Context) (domain.Client, domain.Provider, string, error) {
+	setting, err := s.repo.Setting(ctx)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("read the active model: %w", err)
+	}
+	if setting.Mode == domain.ModeOff {
+		return nil, "", "", nil
+	}
+	haiku, model, err := s.Haiku(ctx)
+	if err != nil {
+		return nil, "", "", err
+	}
+	if haiku != nil {
+		return haiku, domain.Anthropic, model, nil
+	}
+	return s.Current(ctx)
 }
 
 // ErrNotOpenRouter is returned when a credential other than an OpenRouter key is asked for one.

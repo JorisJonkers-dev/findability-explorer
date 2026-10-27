@@ -76,8 +76,8 @@ describe('the providers and prices', () => {
   })
 
   it('say where the prices come from', () => {
-    expect(basisLine({ basis: 'run' })).toBe('From what the latest run cost.')
-    expect(basisLine({ basis: 'catalogue' })).toContain('estimate')
+    expect(basisLine({ basis: 'run' })).toBe('From what the latest run cost. Reading is priced at the model that reads the answers now.')
+    expect(basisLine({ basis: 'catalogue' })).toContain('includes the search fee')
     expect(basisLine({ basis: 'none' })).toContain('No prices yet.')
   })
 })

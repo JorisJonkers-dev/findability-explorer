@@ -369,12 +369,11 @@ func TestARunThatCannotBeRecordedFails(t *testing.T) {
 
 func TestARunThatCannotStartIsFailed(t *testing.T) {
 	cases := map[string]func(*env, *domain.Run){
-		"no key":             func(e *env, _ *domain.Run) { e.repo.settings.CredentialID = "" },
-		"no companies":       func(e *env, _ *domain.Run) { e.dir.err = errBoom },
-		"no spend":           func(e *env, _ *domain.Run) { e.repo.failOn["SpentSince"] = true },
-		"no answers":         func(e *env, _ *domain.Run) { e.repo.failOn["Answers"] = true },
-		"no settings":        func(e *env, _ *domain.Run) { e.repo.failOn["Settings"] = true },
-		"another prompt set": func(_ *env, r *domain.Run) { r.PromptSetVersion = 99 },
+		"no key":       func(e *env, _ *domain.Run) { e.repo.settings.CredentialID = "" },
+		"no companies": func(e *env, _ *domain.Run) { e.dir.err = errBoom },
+		"no spend":     func(e *env, _ *domain.Run) { e.repo.failOn["SpentSince"] = true },
+		"no answers":   func(e *env, _ *domain.Run) { e.repo.failOn["Answers"] = true },
+		"no settings":  func(e *env, _ *domain.Run) { e.repo.failOn["Settings"] = true },
 	}
 	for name, change := range cases {
 		t.Run(name, func(t *testing.T) {

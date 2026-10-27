@@ -24,6 +24,9 @@ type CatalogueModel struct {
 	Name            string
 	PromptPrice     float64
 	CompletionPrice float64
+	// WebSearchPrice is what one search of the model's own costs, in dollars, for a model that
+	// searches the web itself; 0 when it does not, and OpenRouter searches for it.
+	WebSearchPrice float64
 	// InputModalities and OutputModalities are what the model reads and writes: "text", "image".
 	InputModalities  []string
 	OutputModalities []string

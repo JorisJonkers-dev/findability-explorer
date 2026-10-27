@@ -10,8 +10,22 @@ import { batchSummary } from '../../competitors/domain/tray'
 import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { AI_SEARCH_TABS } from '../../shell/domain/sections'
-import { usePromptAnswers, usePromptResults, useRetryRun, useStartRun } from '../composables/usePromptTest'
-import { answerCost, averageCost, byKey, counts, gridHeadline, headlineNumbers, MODE_FILTERS, mostNamed, parseFilter, retryPlan, SCOPE_FILTERS, toCsv } from '../domain/grid'
+import { usePromptAnswers, usePromptResults, useRetryPlan, useRetryRun, useStartRun } from '../composables/usePromptTest'
+import {
+  answerCost,
+  byKey,
+  counts,
+  gridHeadline,
+  headlineNumbers,
+  MODE_FILTERS,
+  modeCost,
+  mostNamed,
+  parseFilter,
+  SCOPE_FILTERS,
+  toCsv,
+  unknownLine,
+  unread,
+} from '../domain/grid'
 import { costLabel, latestRun, progressLabel, providerName, runDate, shareLabel, statusName } from '../domain/results'
 import AnswerDetail from './AnswerDetail.vue'
 import PromptGrid from './PromptGrid.vue'
@@ -22,7 +36,7 @@ const { isAdmin } = useMe()
 const { results, isLoading, error } = usePromptResults()
 const { competitors } = useCompetitors()
 const { isStarting, notice: startNotice, error: startError, start } = useStartRun()
-const { isRetrying, notice: retryNotice, error: retryError, retry } = useRetryRun()
+const { isRetrying, notice: retryNotice, error: retryError, retry, reread } = useRetryRun()
 const { batch: added, error: addError, add: addCompanies } = useAddCompanies()
 
 /** Adds a company an answer named as a competitor, without scanning it yet. */
@@ -52,12 +66,16 @@ const named = computed(() => mostNamed(answers.value))
 const most = computed(() => Math.max(...named.value.map((n) => n.share), 0.01))
 
 const anyRunning = computed(() => results.value?.runs.some((r) => r.status === 'running') ?? false)
-const plan = computed(() => (run.value ? retryPlan(run.value, answers.value) : { count: 0, estimate: 0 }))
+const { plan } = useRetryPlan(
+  computed(() => run.value?.id),
+  computed(() => isAdmin.value && run.value?.status !== 'running'),
+)
+const unknown = computed(() => unknownLine(plan.value?.unknownTasks ?? 0))
 const canRetry = computed(() => isAdmin.value && !anyRunning.value && !isRetrying.value)
 
-function retryOne(): void {
+function again(how: typeof retry): void {
   const a = picked.value
-  if (run.value && a) retry(run.value.id, { promptId: a.promptId, provider: a.provider, mode: a.mode })
+  if (run.value && a) how(run.value.id, { promptId: a.promptId, provider: a.provider, mode: a.mode })
 }
 
 function setQuery(change: Record<string, string | undefined>): void {
@@ -103,15 +121,25 @@ function download(): void {
           Run now
         </button>
         <button
-          v-if="isAdmin && plan.count > 0"
+          v-if="isAdmin && plan && plan.askTasks > 0"
           type="button"
           class="inline-flex min-h-11 items-center rounded-full border-2 border-black bg-white px-4 text-sm font-semibold hover:bg-mist disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
           :disabled="!canRetry || run.status === 'running'"
           @click="retry(run.id)"
         >
-          Ask the {{ plan.count }} missing answers again, about {{ answerCost(plan.estimate) }}
+          Ask the {{ plan.askTasks }} missing answers again, about {{ answerCost(plan.askCostUsd) }}
+        </button>
+        <button
+          v-if="isAdmin && plan && plan.readTasks > 0"
+          type="button"
+          class="inline-flex min-h-11 items-center rounded-full border-2 border-black bg-white px-4 text-sm font-semibold hover:bg-mist disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
+          :disabled="!canRetry || run.status === 'running'"
+          @click="reread(run.id)"
+        >
+          Read the {{ plan.readTasks }} unread answers again, about {{ answerCost(plan.readCostUsd) }}
         </button>
       </div>
+      <p v-if="isAdmin && unknown" class="m-0 text-sm text-muted stage:text-[24px]">{{ unknown }}</p>
       <p class="m-0 text-sm text-muted stage:text-right stage:text-[24px]">
         {{ progressLabel(run) }}. {{ statusName(run.status) }}. Cost {{ costLabel(run.costUsd) }}.
       </p>
@@ -193,9 +221,18 @@ function download(): void {
             type="button"
             class="inline-flex min-h-11 items-center self-start rounded-full border-0 bg-orange px-4 text-sm font-semibold text-black hover:bg-orange-soft disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
             :disabled="!canRetry || run.status === 'running'"
-            @click="retryOne"
+            @click="again(retry)"
           >
-            Ask {{ providerName(picked.provider) }} again, about {{ answerCost(averageCost(answers, picked.provider)) }}
+            Ask {{ providerName(picked.provider) }} again, about {{ answerCost(modeCost(plan, picked.provider, picked.mode)) }}
+          </button>
+          <button
+            v-if="isAdmin && unread(picked) && plan"
+            type="button"
+            class="inline-flex min-h-11 items-center self-start rounded-full border-0 bg-orange px-4 text-sm font-semibold text-black hover:bg-orange-soft disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
+            :disabled="!canRetry || run.status === 'running'"
+            @click="again(reread)"
+          >
+            Read this answer again, about {{ answerCost(plan.readingCostUsd) }}
           </button>
         </AnswerDetail>
       </aside>

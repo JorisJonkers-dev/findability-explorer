@@ -202,6 +202,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/products
 	GetProducts(ctx context.Context) (GetProductsRes, error)
+	// GetPromptRetryPlan invokes getPromptRetryPlan operation.
+	//
+	// Administrators only. Says how many of a run's failed and missing answers asking again would ask, how
+	// many it cannot ask because no answer of a run of an earlier prompt set kept their question, how many
+	// answers whose reading failed could be read again, and what each should cost - each provider's
+	// answers by their own cost, a web search's fee included, and reading at the price of the model that
+	// reads the answers now. 404 for a run nobody knows.
+	//
+	// GET /api/v1/admin/prompt-runs/{runId}/retry-plan
+	GetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (GetPromptRetryPlanRes, error)
 	// GetPromptTestResults invokes getPromptTestResults operation.
 	//
 	// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
@@ -295,14 +305,26 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/term-candidates/{candidateId}/reject
 	RejectTermCandidate(ctx context.Context, params RejectTermCandidateParams) (RejectTermCandidateRes, error)
+	// RereadPromptRun invokes rereadPromptRun operation.
+	//
+	// Administrators only. Reads a finished run's answers whose reading failed again, or only the one
+	// answer of one question, provider and mode named, in the same run: the stored answer is read again by
+	// the model that reads the answers now, and the provider is not asked again. Each new reading replaces
+	// the failed one, what the failed reading cost still counted. It runs in the background and stops at
+	// the month's budget like any run. 404 for a run nobody knows; 409 while a run is running or once the
+	// month's budget is spent; 422 when no reading failed or no OpenRouter key is chosen.
+	//
+	// POST /api/v1/admin/prompt-runs/{runId}/reread
+	RereadPromptRun(ctx context.Context, request *PromptRetryRequest, params RereadPromptRunParams) (RereadPromptRunRes, error)
 	// RetryPromptRun invokes retryPromptRun operation.
 	//
 	// Administrators only. Asks a finished run's failed and missing answers again, or only the one
-	// question of one provider and mode named, in the same run: with the run's prompt set and models, each
-	// new answer replacing the failed one, what the failed try cost still counted. It runs in the
-	// background and stops at the month's budget like any run. 404 for a run nobody knows; 409 while a run
-	// is running or once the month's budget is spent; 422 when nothing is left to ask, the run asked an
-	// earlier set of questions, or no OpenRouter key is chosen.
+	// question of one provider and mode named, in the same run: with the run's questions and models, each
+	// new answer replacing the failed one, what the failed try cost still counted. A run of an earlier
+	// prompt set asks the questions its answers kept; a question no answer kept cannot be asked again. It
+	// runs in the background and stops at the month's budget like any run. 404 for a run nobody knows; 409
+	// while a run is running or once the month's budget is spent; 422 when nothing is left to ask or no
+	// OpenRouter key is chosen.
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/retry
 	RetryPromptRun(ctx context.Context, request *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error)
@@ -3292,6 +3314,142 @@ func (c *Client) sendGetProducts(ctx context.Context) (res GetProductsRes, err e
 	return result, nil
 }
 
+// GetPromptRetryPlan invokes getPromptRetryPlan operation.
+//
+// Administrators only. Says how many of a run's failed and missing answers asking again would ask, how
+// many it cannot ask because no answer of a run of an earlier prompt set kept their question, how many
+// answers whose reading failed could be read again, and what each should cost - each provider's
+// answers by their own cost, a web search's fee included, and reading at the price of the model that
+// reads the answers now. 404 for a run nobody knows.
+//
+// GET /api/v1/admin/prompt-runs/{runId}/retry-plan
+func (c *Client) GetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (GetPromptRetryPlanRes, error) {
+	res, err := c.sendGetPromptRetryPlan(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (res GetPromptRetryPlanRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getPromptRetryPlan"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/prompt-runs/{runId}/retry-plan"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPromptRetryPlanOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/prompt-runs/"
+	{
+		// Encode "runId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "runId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RunId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/retry-plan"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetPromptRetryPlanOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPromptRetryPlanResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetPromptTestResults invokes getPromptTestResults operation.
 //
 // Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
@@ -4886,14 +5044,155 @@ func (c *Client) sendRejectTermCandidate(ctx context.Context, params RejectTermC
 	return result, nil
 }
 
+// RereadPromptRun invokes rereadPromptRun operation.
+//
+// Administrators only. Reads a finished run's answers whose reading failed again, or only the one
+// answer of one question, provider and mode named, in the same run: the stored answer is read again by
+// the model that reads the answers now, and the provider is not asked again. Each new reading replaces
+// the failed one, what the failed reading cost still counted. It runs in the background and stops at
+// the month's budget like any run. 404 for a run nobody knows; 409 while a run is running or once the
+// month's budget is spent; 422 when no reading failed or no OpenRouter key is chosen.
+//
+// POST /api/v1/admin/prompt-runs/{runId}/reread
+func (c *Client) RereadPromptRun(ctx context.Context, request *PromptRetryRequest, params RereadPromptRunParams) (RereadPromptRunRes, error) {
+	res, err := c.sendRereadPromptRun(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRereadPromptRun(ctx context.Context, request *PromptRetryRequest, params RereadPromptRunParams) (res RereadPromptRunRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("rereadPromptRun"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/prompt-runs/{runId}/reread"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RereadPromptRunOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/prompt-runs/"
+	{
+		// Encode "runId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "runId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RunId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/reread"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRereadPromptRunRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, RereadPromptRunOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRereadPromptRunResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RetryPromptRun invokes retryPromptRun operation.
 //
 // Administrators only. Asks a finished run's failed and missing answers again, or only the one
-// question of one provider and mode named, in the same run: with the run's prompt set and models, each
-// new answer replacing the failed one, what the failed try cost still counted. It runs in the
-// background and stops at the month's budget like any run. 404 for a run nobody knows; 409 while a run
-// is running or once the month's budget is spent; 422 when nothing is left to ask, the run asked an
-// earlier set of questions, or no OpenRouter key is chosen.
+// question of one provider and mode named, in the same run: with the run's questions and models, each
+// new answer replacing the failed one, what the failed try cost still counted. A run of an earlier
+// prompt set asks the questions its answers kept; a question no answer kept cannot be asked again. It
+// runs in the background and stops at the month's budget like any run. 404 for a run nobody knows; 409
+// while a run is running or once the month's budget is spent; 422 when nothing is left to ask or no
+// OpenRouter key is chosen.
 //
 // POST /api/v1/admin/prompt-runs/{runId}/retry
 func (c *Client) RetryPromptRun(ctx context.Context, request *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error) {

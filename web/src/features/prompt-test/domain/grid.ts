@@ -1,4 +1,4 @@
-import type { PromptAnswer, PromptFamily, PromptMode, PromptRun, PromptScope } from '../../../infrastructure/api/types.gen'
+import type { PromptAnswer, PromptFamily, PromptMode, PromptRetryPlan, PromptRun, PromptScope } from '../../../infrastructure/api/types.gen'
 import { FAMILIES, familyName, providerName, SCOPES, scopeName } from './results'
 
 /** Tribelt's id among the companies. */
@@ -295,22 +295,19 @@ export function answerCost(usd: number): string {
   return `$${usd.toPrecision(2).replace(/0+$/, '').replace(/\.$/, '')}`
 }
 
-/** The average cost of a given answer of the provider, or of any provider when it has none; 0 without answers. */
-export function averageCost(answers: readonly PromptAnswer[], provider: string): number {
-  const given = answers.filter((a) => a.failure === undefined)
-  const mine = given.filter((a) => a.provider === provider)
-  const list = mine.length > 0 ? mine : given
-  return list.length === 0 ? 0 : list.reduce((sum, a) => sum + a.costUsd, 0) / list.length
+/** What asking one provider's answer again in one mode should cost, reading included, by the server's plan; 0 when it has none. */
+export function modeCost(plan: Pick<PromptRetryPlan, 'answerCosts'> | undefined, provider: string, mode: PromptMode): number {
+  return plan?.answerCosts.find((c) => c.provider === provider && c.mode === mode)?.costUsd ?? 0
 }
 
-/** How many of a run's answers are failed or missing, and what asking them again should cost. */
-export function retryPlan(run: Pick<PromptRun, 'models' | 'tasks'>, answers: readonly PromptAnswer[]): { count: number; estimate: number } {
-  const perProvider = run.models.length === 0 ? 0 : run.tasks / run.models.length
-  return run.models.reduce(
-    (plan, m) => {
-      const missing = Math.max(0, perProvider - answers.filter((a) => a.provider === m.provider && a.failure === undefined).length)
-      return { count: plan.count + missing, estimate: plan.estimate + missing * averageCost(answers, m.provider) }
-    },
-    { count: 0, estimate: 0 },
-  )
+/** Why some missing answers of a run cannot be asked again, or null when every one can. */
+export function unknownLine(unknown: number): string | null {
+  if (unknown === 0) return null
+  const answers = unknown === 1 ? '1 missing answer' : `${String(unknown)} missing answers`
+  return `${answers} cannot be asked again. This run asked an earlier set of questions, and no answer kept them.`
+}
+
+/** Whether the answer was given but could not be read, so it can be read again without asking again. */
+export function unread(a: PromptAnswer | undefined): boolean {
+  return a !== undefined && a.failure === undefined && a.extraction?.failed === true
 }

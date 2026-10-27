@@ -62,12 +62,17 @@ describe('the active model', () => {
       credential: 'Vault key (Anthropic (Claude))',
       otherwise: { kind: 'active', model: 'mistralai/mistral-small', credential: 'Course budget key (OpenRouter)', isDefault: false, working: false },
     })
-    expect(activeState(llmSettings({ haiku: { credentialId: 'gone', model: 'claude-haiku-5-5' }, choice: 'off', active: undefined }))).toEqual({
+    expect(activeState(llmSettings({ haiku: { credentialId: 'gone', model: 'claude-haiku-5-5' }, choice: 'chosen', active: undefined }))).toEqual({
       kind: 'haiku',
       model: 'claude-haiku-5-5',
       credential: 'a key that no longer exists',
-      otherwise: { kind: 'off' },
+      otherwise: { kind: 'none' },
     })
+  })
+
+  it('is off when an administrator turned matching off, Haiku or not', () => {
+    const haiku = { credentialId: 'vault-anthropic', model: 'claude-haiku-5-5' }
+    expect(activeState(llmSettings({ haiku, choice: 'off', active: undefined }))).toEqual({ kind: 'off' })
   })
 })
 

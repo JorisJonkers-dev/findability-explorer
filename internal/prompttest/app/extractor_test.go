@@ -48,14 +48,15 @@ func (e extractors) Current(context.Context) (app.Extractor, string, error) {
 	return e.x, "anthropic: claude-haiku-5-5", nil
 }
 
-func (e *env) withExtractors(x app.Extractors) *app.Service {
+func (e *env) withExtractors(x app.Extractors, opts ...app.Option) *app.Service {
+	opts = append([]app.Option{app.WithSleep(e.sleeps.Sleep), app.WithSpawn(func(f func()) { f() }), app.WithExtractors(x)}, opts...)
 	return app.New(e.repo, gateways{gw: e.gw}, e.dir, e.clock.Now, app.Config{Owner: "a", Pace: time.Second, RetryWait: 10 * time.Second, Retries: 2},
 		func(_ uuid.UUID, err error) {
 			e.mu.Lock()
 			defer e.mu.Unlock()
 			e.failures = append(e.failures, err)
 		},
-		app.WithSleep(e.sleeps.Sleep), app.WithSpawn(func(f func()) { f() }), app.WithExtractors(x))
+		opts...)
 }
 
 func TestHaikuReadsTheAnswersWhileAnAnthropicKeyWorks(t *testing.T) {
@@ -116,5 +117,80 @@ func TestARunFailsWhenTheExtractorCannotBeHad(t *testing.T) {
 	}
 	if _, err := e.svc.Settings(t.Context()); !errors.Is(err, errBoom) {
 		t.Errorf("settings = %v", err)
+	}
+}
+
+func (h *haiku) reads() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.read
+}
+
+func TestHaikuHandsTheReadingToOpenRouterOnceTheMonthsTokensAreSpent(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	h := &haiku{}
+	// The month's tokens are spent after Haiku's tenth reading.
+	e.svc = e.withExtractors(extractors{x: h}, app.WithBudget(func(context.Context) (bool, error) { return h.reads() >= 10, nil }))
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.run(t); got.Status != domain.RunDone || h.read < 10 || h.read+e.gw.extracted != 80 || e.gw.extracted == 0 {
+		t.Fatalf("status %s, %d read by Haiku, %d by OpenRouter", got.Status, h.read, e.gw.extracted)
+	}
+	var tokens int64
+	for _, a := range e.repo.answers {
+		tokens += a.Extraction.HaikuTokens
+	}
+	if tokens != int64(h.read)*(60+25) {
+		t.Errorf("Haiku's tokens = %d for %d readings", tokens, h.read)
+	}
+	view, err := e.svc.Settings(t.Context())
+	if err != nil || view.ExtractorModel != domain.ExtractorModel {
+		t.Errorf("extractor shown once the tokens are spent = %q, %v", view.ExtractorModel, err)
+	}
+}
+
+func TestHaikuKeepsReadingWhenTheBudgetCannotBeReadDuringARun(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	h := &haiku{fail: 2} // the first answer cannot be read: its tokens still count
+	var mu sync.Mutex
+	calls := 0
+	e.svc = e.withExtractors(extractors{x: h}, app.WithBudget(func(context.Context) (bool, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		calls++
+		if calls > 1 {
+			return false, errBoom
+		}
+		return false, nil
+	}))
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.run(t); got.Status != domain.RunDone || h.read != 79 || e.gw.extracted != 0 {
+		t.Fatalf("status %s, %d read by Haiku, %d by OpenRouter", got.Status, h.read, e.gw.extracted)
+	}
+	failed := 0
+	for _, a := range e.repo.answers {
+		if a.Extraction.Failed {
+			failed++
+			if a.Extraction.HaikuTokens != 2*(7+1) {
+				t.Errorf("a failed reading's Haiku tokens = %d", a.Extraction.HaikuTokens)
+			}
+		}
+	}
+	if failed != 1 {
+		t.Errorf("%d readings failed", failed)
+	}
+}
+
+func TestARunFailsWhenTheBudgetCannotBeReadAtItsStart(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.svc = e.withExtractors(extractors{x: &haiku{}}, app.WithBudget(func(context.Context) (bool, error) { return false, errBoom }))
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.run(t); got.Status != domain.RunFailed || len(e.repo.answers) != 0 {
+		t.Fatalf("status %s, %d answers", got.Status, len(e.repo.answers))
 	}
 }

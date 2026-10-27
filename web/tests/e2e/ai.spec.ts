@@ -70,6 +70,23 @@ const answer = (mode: 'knowledge' | 'web', id: string, failed: boolean) => ({
 })
 
 test('the Prompt test grid opens an answer and keeps its filters in the address', async ({ page }) => {
+  // What asking again would cost comes from the server, per provider and mode.
+  await page.route(`**/api/v1/admin/prompt-runs/${RUN}/retry-plan`, (route) =>
+    route.fulfill({
+      json: {
+        askTasks: 1,
+        askCostUsd: 0.0014,
+        unknownTasks: 0,
+        readTasks: 0,
+        readCostUsd: 0,
+        readingCostUsd: 0.0003,
+        answerCosts: [
+          { provider: 'openai', mode: 'knowledge', costUsd: 0.0014 },
+          { provider: 'openai', mode: 'web', costUsd: 0.0214 },
+        ],
+      },
+    }),
+  )
   await page.route('**/api/v1/prompt-test', (route) => route.fulfill({ json: { promptSetVersion: 2, runs: [run], mentions: [], wrongClaims: [] } }))
   await page.route(`**/api/v1/prompt-runs/${RUN}/answers**`, (route) =>
     route.fulfill({ json: { run, items: [answer('web', '00000000-0000-4000-8000-000000000001', false), answer('knowledge', '00000000-0000-4000-8000-000000000002', true)] } }),

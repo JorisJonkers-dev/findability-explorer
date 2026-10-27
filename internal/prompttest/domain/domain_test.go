@@ -354,15 +354,71 @@ func TestUnansweredAndWhatAskingAgainCosts(t *testing.T) {
 	}
 	google := []domain.Task{{Prompt: p, Provider: "google", Mode: domain.ModeKnowledge}}
 	openai := []domain.Task{{Prompt: p, Provider: "openai", Mode: domain.ModeWeb}}
-	// Google has no answer to go by: the average of every answer, (120 + 300) / 2.
-	if got := domain.Estimate(answers, google); got != 210 {
+	// Google has no answer to go by: OpenAI's in the same mode, 100, and reading it, 7.
+	if got := domain.Estimate(answers, google, 7); got != 107 {
 		t.Errorf("google estimate = %d", got)
 	}
-	if got := domain.Estimate(answers, append(openai, google...)); got != 420 {
+	// OpenAI's own web answer, its search included: 300.
+	if got := domain.Estimate(answers, append(openai, google...), 7); got != 300+7+107 {
 		t.Errorf("both = %d", got)
 	}
-	if got := domain.Estimate(nil, google); got != 0 {
+	if got := domain.Estimate(nil, google, 7); got != 7 {
 		t.Errorf("no answers = %d", got)
+	}
+	costs := domain.AnswerCosts(answers, models, 7)
+	if len(costs) != 4 || costs[0] != (domain.ModeCost{Provider: "openai", Mode: domain.ModeKnowledge, Cost: 107}) ||
+		costs[1] != (domain.ModeCost{Provider: "openai", Mode: domain.ModeWeb, Cost: 307}) || costs[3].Cost != 307 {
+		t.Errorf("costs = %+v", costs)
+	}
+}
+
+func TestUnreadAreTheAnswersWhoseReadingFailed(t *testing.T) {
+	answers := []domain.Answer{
+		{Provider: "openai", Extraction: &domain.Extraction{Failed: true}},
+		{Provider: "openai", Extraction: &domain.Extraction{}},
+		{Provider: "google"},
+		{Provider: "google", Failure: "Rate limited.", Extraction: &domain.Extraction{Failed: true}},
+	}
+	if got := domain.Unread(answers); len(got) != 1 || got[0].Provider != "openai" {
+		t.Errorf("unread = %+v", got)
+	}
+}
+
+func TestReadingIsPricedAtTheReaderThatReads(t *testing.T) {
+	answers := []domain.Answer{
+		{Extraction: &domain.Extraction{InputTokens: 1000, OutputTokens: 200, Cost: 90}},
+		{Extraction: &domain.Extraction{InputTokens: 3000, OutputTokens: 400, Cost: 110}},
+		{Failure: "Rate limited."},
+	}
+	haiku := domain.HaikuPrice()
+	// 2,000 in at $0.10 and 300 out at $0.50 per million: 200 + 150 µ$.
+	if got := domain.ReadingCost(answers, &haiku); got != 350 {
+		t.Errorf("Haiku's reading = %d", got)
+	}
+	// Before any reading: typical tokens, 1,500 in and 250 out.
+	if got := domain.ReadingCost(nil, &haiku); got != 150+125 {
+		t.Errorf("Haiku's reading before any = %d", got)
+	}
+	// Without a price: what the readings cost on average.
+	if got, none := domain.ReadingCost(answers, nil), domain.ReadingCost(nil, nil); got != 100 || none != 0 {
+		t.Errorf("readings by their own cost = %d, without any = %d", got, none)
+	}
+	catalogue := []domain.CatalogueModel{{ID: domain.ExtractorModel, PromptPrice: 0.0000001, CompletionPrice: 0.0000004}}
+	if p, ok := domain.CataloguePrice(catalogue, domain.ExtractorModel); !ok || p != (domain.TokenPrice{Input: 0.0000001, Output: 0.0000004}) {
+		t.Errorf("the extractor's price = %+v, %v", p, ok)
+	}
+	if _, ok := domain.CataloguePrice(catalogue, "x/unknown"); ok {
+		t.Error("an unknown model has a price")
+	}
+}
+
+func TestAWebSearchCostsItsFee(t *testing.T) {
+	if got := domain.WebSearchFee(domain.CatalogueModel{ID: "openai/gpt-5-mini", WebSearchPrice: 0.01}); got != 10_000 {
+		t.Errorf("a model's own search = %d", got)
+	}
+	// OpenRouter searches for a model that does not: five results at $4 per 1,000.
+	if got := domain.WebSearchFee(domain.CatalogueModel{ID: "deepseek/deepseek-chat"}); got != 20_000 {
+		t.Errorf("OpenRouter's search = %d", got)
 	}
 }
 
@@ -375,7 +431,7 @@ func TestPricesFromARun(t *testing.T) {
 		{Prompt: p, Provider: "google", Mode: domain.ModeWeb, Failure: "Rate limited.", Reply: domain.Reply{Cost: 5}},
 	}
 	models := []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}, {Provider: "google", Model: "google/gemma:free", Fallback: "google/gemini"}}
-	got := domain.PricesFromRun(answers, models, 20, domain.CadenceWeekly, 10_000_000)
+	got := domain.PricesFromRun(answers, models, 20, domain.CadenceWeekly, 10_000_000, nil)
 	if got.Basis != domain.BasisRun || got.Reading != 20 || len(got.Providers) != 2 {
 		t.Fatalf("prices = %+v", got)
 	}
@@ -387,8 +443,13 @@ func TestPricesFromARun(t *testing.T) {
 	if got.Run != 24_000+1600 || got.RunsPerMonth != 52.0/12.0 || got.Month != domain.MicrosOf(25_600.0/1e6*52/12) || got.OverBudget() {
 		t.Errorf("run %d, month %d, over %v", got.Run, got.Month, got.OverBudget())
 	}
-	if domain.PricesFromRun(nil, models, 20, domain.CadenceMonthly, 1).Reading != 0 {
+	if domain.PricesFromRun(nil, models, 20, domain.CadenceMonthly, 1, nil).Reading != 0 {
 		t.Error("no answers, no reading cost")
+	}
+	// Haiku reads the next run: its price, not what the run's readings cost.
+	haiku := domain.HaikuPrice()
+	if got := domain.PricesFromRun(answers, models, 20, domain.CadenceWeekly, 10_000_000, &haiku); got.Reading != 0 {
+		t.Errorf("reading by Haiku without tokens = %d", got.Reading)
 	}
 }
 
@@ -398,10 +459,21 @@ func TestPricesBeforeAnyRun(t *testing.T) {
 		{ID: domain.ExtractorModel, PromptPrice: 0.0000001, CompletionPrice: 0.0000004},
 	}
 	models := []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}, {Provider: "x", Model: "x/unknown"}}
-	got := domain.PricesFromCatalogue(catalogue, models, 20, domain.CadenceMonthly, 1)
-	// 300 × 0.1 µ$ + 900 × 0.4 µ$ = 390 µ$ an answer; reading 1500 × 0.1 + 250 × 0.4 = 250 µ$.
-	if got.Basis != domain.BasisCatalogue || got.Providers[0].Knowledge != 390 || got.Providers[0].Web != 390 || got.Providers[1].Knowledge != 0 || got.Reading != 250 {
+	reader, _ := domain.CataloguePrice(catalogue, domain.ExtractorModel)
+	got := domain.PricesFromCatalogue(catalogue, models, 20, domain.CadenceMonthly, 1, &reader)
+	// 300 × 0.1 µ$ + 900 × 0.4 µ$ = 390 µ$ an answer, and OpenRouter's search with the web;
+	// reading 1500 × 0.1 + 250 × 0.4 = 250 µ$.
+	if got.Basis != domain.BasisCatalogue || got.Providers[0].Knowledge != 390 || got.Providers[0].Web != 390+20_000 ||
+		got.Providers[1].Knowledge != 0 || got.Providers[1].Web != 0 || got.Reading != 250 {
 		t.Errorf("estimate = %+v", got)
+	}
+	// Haiku reads: 1500 × 0.1 + 250 × 0.5 = 275 µ$. Without a reader's price, reading is not priced.
+	haiku := domain.HaikuPrice()
+	if r := domain.PricesFromCatalogue(catalogue, models, 20, domain.CadenceMonthly, 1, &haiku).Reading; r != 275 {
+		t.Errorf("reading by Haiku = %d", r)
+	}
+	if r := domain.PricesFromCatalogue(catalogue, models, 20, domain.CadenceMonthly, 1, nil).Reading; r != 0 {
+		t.Errorf("reading without a price = %d", r)
 	}
 	if got.RunsPerMonth != 1 || got.Month != got.Run || !got.OverBudget() {
 		t.Errorf("month = %+v", got)
@@ -425,9 +497,39 @@ func TestPricesFollowTheProvidersSetNow(t *testing.T) {
 	if len(kept) != 1 || kept[0].Provider != "openai" || len(missing) != 1 || missing[0] != "deepseek" {
 		t.Fatalf("kept %+v, missing %v", kept, missing)
 	}
-	p := domain.PricesFromRun([]domain.Answer{{Provider: "openai", Mode: domain.ModeWeb, Reply: domain.Reply{Cost: 100}}}, kept, 20, domain.CadenceMonthly, 10_000_000)
+	p := domain.PricesFromRun([]domain.Answer{{Provider: "openai", Mode: domain.ModeWeb, Reply: domain.Reply{Cost: 100}}}, kept, 20, domain.CadenceMonthly, 10_000_000, nil)
 	more := p.With([]domain.ProviderPrice{{Provider: "deepseek", Knowledge: 50, Web: 50}}, 20, domain.CadenceMonthly)
 	if len(more.Providers) != 2 || more.Run != p.Run+2000 || more.Basis != domain.BasisRun || len(p.Providers) != 1 {
 		t.Errorf("with deepseek = %+v", more)
+	}
+}
+
+func TestQuestionsOfARunAreItsSetOrWhatItsAnswersKept(t *testing.T) {
+	current := domain.Run{PromptSetVersion: domain.PromptSetVersion}
+	if set := domain.QuestionsOf(current, nil); set.Version != domain.PromptSetVersion || len(set.Prompts) != 20 {
+		t.Fatalf("the current set = %+v", set)
+	}
+	supplier := domain.Prompt{ID: "eyelink-supplier-twente", Family: domain.FamilyEyelink, Kind: domain.KindSupplier, Scope: domain.ScopeTwente, Language: "nl", Text: "Wie levert oogjesbanden?"}
+	problem := domain.Prompt{ID: "eyelink-problem-germany", Family: domain.FamilyEyelink, Kind: domain.KindProblem, Scope: domain.ScopeGermany, Language: "de", Text: "Unser Band reißt."}
+	models := []domain.ModelChoice{{Provider: "openai"}, {Provider: "google"}}
+	earlier := domain.Run{PromptSetVersion: 1, Models: models, Tasks: 3 * 2 * 2}
+	answers := []domain.Answer{
+		{Prompt: supplier, Provider: "openai", Mode: domain.ModeWeb},
+		{Prompt: problem, Provider: "google", Mode: domain.ModeKnowledge, Failure: "Rate limited."},
+		{Prompt: supplier, Provider: "google", Mode: domain.ModeWeb},
+	}
+	set := domain.QuestionsOf(earlier, answers)
+	if set.Version != 1 || len(set.Prompts) != 2 || set.Prompts[0] != supplier || set.Prompts[1] != problem {
+		t.Fatalf("an earlier set = %+v", set)
+	}
+	// Three questions were asked; one of them no answer kept.
+	if n := domain.Unknown(earlier, set); n != 4 {
+		t.Errorf("unknown = %d", n)
+	}
+	if n := domain.Unknown(domain.Run{Models: models}, set); n != 0 {
+		t.Errorf("unknown of a run asked as a whole = %d", n)
+	}
+	if missing := domain.Unanswered(set, models, answers); len(missing) != 6 {
+		t.Errorf("unanswered = %d", len(missing))
 	}
 }

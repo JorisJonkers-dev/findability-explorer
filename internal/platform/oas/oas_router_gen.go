@@ -26,25 +26,28 @@ var (
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn73AllowedHeaders = map[string]string{
+	rn76AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn62AllowedHeaders = map[string]string{
+	rn65AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn59AllowedHeaders = map[string]string{
+	rn61AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn40AllowedHeaders = map[string]string{
+	rn62AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
+	}
+	rn44AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
-	rn68AllowedHeaders = map[string]string{
+	rn71AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn43AllowedHeaders = map[string]string{
+	rn47AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn5AllowedHeaders = map[string]string{
@@ -728,7 +731,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn73AllowedHeaders,
+											allowedHeaders: rn76AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -753,7 +756,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn62AllowedHeaders,
+											allowedHeaders: rn65AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -821,31 +824,100 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										break
 									}
 									switch elem[0] {
-									case '/': // Prefix: "/retry"
+									case '/': // Prefix: "/re"
 
-										if l := len("/retry"); len(elem) >= l && elem[0:l] == "/retry" {
+										if l := len("/re"); len(elem) >= l && elem[0:l] == "/re" {
 											elem = elem[l:]
 										} else {
 											break
 										}
 
 										if len(elem) == 0 {
-											// Leaf node.
-											switch r.Method {
-											case "POST":
-												s.handleRetryPromptRunRequest([1]string{
-													args[0],
-												}, elemIsEscaped, w, r)
-											default:
-												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "POST",
-													allowedHeaders: rn59AllowedHeaders,
-													acceptPost:     "application/json",
-													acceptPatch:    "",
-												})
+											break
+										}
+										switch elem[0] {
+										case 'r': // Prefix: "read"
+
+											if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
+												elem = elem[l:]
+											} else {
+												break
 											}
 
-											return
+											if len(elem) == 0 {
+												// Leaf node.
+												switch r.Method {
+												case "POST":
+													s.handleRereadPromptRunRequest([1]string{
+														args[0],
+													}, elemIsEscaped, w, r)
+												default:
+													s.notAllowed(w, r, notAllowedParams{
+														allowedMethods: "POST",
+														allowedHeaders: rn61AllowedHeaders,
+														acceptPost:     "application/json",
+														acceptPatch:    "",
+													})
+												}
+
+												return
+											}
+
+										case 't': // Prefix: "try"
+
+											if l := len("try"); len(elem) >= l && elem[0:l] == "try" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												switch r.Method {
+												case "POST":
+													s.handleRetryPromptRunRequest([1]string{
+														args[0],
+													}, elemIsEscaped, w, r)
+												default:
+													s.notAllowed(w, r, notAllowedParams{
+														allowedMethods: "POST",
+														allowedHeaders: rn62AllowedHeaders,
+														acceptPost:     "application/json",
+														acceptPatch:    "",
+													})
+												}
+
+												return
+											}
+											switch elem[0] {
+											case '-': // Prefix: "-plan"
+
+												if l := len("-plan"); len(elem) >= l && elem[0:l] == "-plan" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch r.Method {
+													case "GET":
+														s.handleGetPromptRetryPlanRequest([1]string{
+															args[0],
+														}, elemIsEscaped, w, r)
+													default:
+														s.notAllowed(w, r, notAllowedParams{
+															allowedMethods: "GET",
+															allowedHeaders: nil,
+															acceptPost:     "",
+															acceptPatch:    "",
+														})
+													}
+
+													return
+												}
+
+											}
+
 										}
 
 									}
@@ -870,7 +942,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET,PATCH",
-											allowedHeaders: rn40AllowedHeaders,
+											allowedHeaders: rn44AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "application/json",
 										})
@@ -936,7 +1008,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn68AllowedHeaders,
+										allowedHeaders: rn71AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -1205,7 +1277,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn43AllowedHeaders,
+								allowedHeaders: rn47AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -2501,29 +2573,94 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										break
 									}
 									switch elem[0] {
-									case '/': // Prefix: "/retry"
+									case '/': // Prefix: "/re"
 
-										if l := len("/retry"); len(elem) >= l && elem[0:l] == "/retry" {
+										if l := len("/re"); len(elem) >= l && elem[0:l] == "/re" {
 											elem = elem[l:]
 										} else {
 											break
 										}
 
 										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "POST":
-												r.name = RetryPromptRunOperation
-												r.summary = "Ask a Prompt run's failed answers again"
-												r.operationID = "retryPromptRun"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/retry"
-												r.args = args
-												r.count = 1
-												return r, true
-											default:
-												return
+											break
+										}
+										switch elem[0] {
+										case 'r': // Prefix: "read"
+
+											if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
+												elem = elem[l:]
+											} else {
+												break
 											}
+
+											if len(elem) == 0 {
+												// Leaf node.
+												switch method {
+												case "POST":
+													r.name = RereadPromptRunOperation
+													r.summary = "Read a Prompt run's answers again whose reading failed"
+													r.operationID = "rereadPromptRun"
+													r.operationGroup = ""
+													r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/reread"
+													r.args = args
+													r.count = 1
+													return r, true
+												default:
+													return
+												}
+											}
+
+										case 't': // Prefix: "try"
+
+											if l := len("try"); len(elem) >= l && elem[0:l] == "try" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												switch method {
+												case "POST":
+													r.name = RetryPromptRunOperation
+													r.summary = "Ask a Prompt run's failed answers again"
+													r.operationID = "retryPromptRun"
+													r.operationGroup = ""
+													r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/retry"
+													r.args = args
+													r.count = 1
+													return r, true
+												default:
+													return
+												}
+											}
+											switch elem[0] {
+											case '-': // Prefix: "-plan"
+
+												if l := len("-plan"); len(elem) >= l && elem[0:l] == "-plan" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch method {
+													case "GET":
+														r.name = GetPromptRetryPlanOperation
+														r.summary = "What asking a Prompt run again would cost"
+														r.operationID = "getPromptRetryPlan"
+														r.operationGroup = ""
+														r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/retry-plan"
+														r.args = args
+														r.count = 1
+														return r, true
+													default:
+														return
+													}
+												}
+
+											}
+
 										}
 
 									}

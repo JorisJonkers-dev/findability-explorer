@@ -20,6 +20,66 @@ const (
 	typicalReadOut   = 250
 )
 
+// TokenPrice is what a model charges, in dollars per input token and per output token.
+type TokenPrice struct {
+	Input  float64
+	Output float64
+}
+
+// Of is what in input and out output tokens cost.
+func (p TokenPrice) Of(in, out int64) Micros {
+	return MicrosOf(p.Input*float64(in) + p.Output*float64(out))
+}
+
+// HaikuPrice is Claude Haiku 5.5's list price on Anthropic's API, for prompts up to 100,000
+// tokens, which its readings are priced at whatever the subsidy (ADR-0007).
+func HaikuPrice() TokenPrice { return TokenPrice{Input: 0.10 / 1e6, Output: 0.50 / 1e6} }
+
+// CataloguePrice is a model's price on OpenRouter's price list; false when the list does not have it.
+func CataloguePrice(catalogue []CatalogueModel, id string) (TokenPrice, bool) {
+	for _, m := range catalogue {
+		if m.ID == id {
+			return TokenPrice{Input: m.PromptPrice, Output: m.CompletionPrice}, true
+		}
+	}
+	return TokenPrice{}, false
+}
+
+// exaSearchFee is what OpenRouter charges for its own web search, for a model that does not search
+// itself: five results at $4 per 1,000.
+const exaSearchFee Micros = 5 * 4_000
+
+// WebSearchFee is what searching the web for one answer costs on top of its tokens: the model's own
+// search at its price, or OpenRouter's.
+func WebSearchFee(m CatalogueModel) Micros {
+	if m.WebSearchPrice > 0 {
+		return MicrosOf(m.WebSearchPrice)
+	}
+	return exaSearchFee
+}
+
+// ReadingCost is what reading one answer costs at the reader's price: the tokens a reading of
+// answers used on average, or typical ones before any, times the price. Without a price to go by
+// (nil), it is what reading answers cost on average.
+func ReadingCost(answers []Answer, reader *TokenPrice) Micros {
+	var in, out int64
+	var cost, reads Micros
+	for _, a := range answers {
+		if a.Extraction != nil {
+			in, out, cost, reads = in+a.Extraction.InputTokens, out+a.Extraction.OutputTokens, cost+a.Extraction.Cost, reads+1
+		}
+	}
+	switch {
+	case reader != nil && reads > 0:
+		return reader.Of(in/int64(reads), out/int64(reads))
+	case reader != nil:
+		return reader.Of(typicalReadIn, typicalReadOut)
+	case reads > 0:
+		return cost / reads
+	}
+	return 0
+}
+
 // ProviderPrice is what one provider's answers cost: one answer from its own knowledge, one with
 // web search, and all of them in a run.
 type ProviderPrice struct {
@@ -54,20 +114,11 @@ func RunsPerMonth(c Cadence) float64 {
 	return 1
 }
 
-// PricesFromRun prices runs by a run's own answers: each provider's average answer per mode,
-// and the average cost of reading one, for questions questions.
-func PricesFromRun(answers []Answer, models []ModelChoice, questions int, cadence Cadence, budget Micros) Prices {
-	p := Prices{Basis: BasisRun}
-	var read, reads Micros
-	for _, a := range answers {
-		if a.Extraction != nil {
-			read += a.Extraction.Cost
-			reads++
-		}
-	}
-	if reads > 0 {
-		p.Reading = read / reads
-	}
+// PricesFromRun prices runs by a run's own answers: each provider's average answer per mode, its
+// web search included, and reading one at the price of the reader that will read the next run
+// (ReadingCost), for questions questions.
+func PricesFromRun(answers []Answer, models []ModelChoice, questions int, cadence Cadence, budget Micros, reader *TokenPrice) Prices {
+	p := Prices{Basis: BasisRun, Reading: ReadingCost(answers, reader)}
 	for _, m := range models {
 		pp := ProviderPrice{Provider: m.Provider, Model: m.Model, Fallback: m.Fallback}
 		pp.Knowledge = averageAnswer(answers, m.Provider, ModeKnowledge)
@@ -91,21 +142,22 @@ func averageAnswer(answers []Answer, provider string, mode Mode) Micros {
 	return sum / n
 }
 
-// PricesFromCatalogue estimates runs before any has run: each chosen model's price, and the
-// extractor's, times typical tokens.
-func PricesFromCatalogue(catalogue []CatalogueModel, models []ModelChoice, questions int, cadence Cadence, budget Micros) Prices {
-	price := func(id string, in, out int) Micros {
-		for _, m := range catalogue {
-			if m.ID == id {
-				return MicrosOf(m.PromptPrice*float64(in) + m.CompletionPrice*float64(out))
-			}
-		}
-		return 0
+// PricesFromCatalogue estimates runs before any has run: each chosen model's price times typical
+// tokens, with the web search's fee on an answer with web search, and reading one at the price of
+// the reader that will read them (nothing without a price to go by).
+func PricesFromCatalogue(catalogue []CatalogueModel, models []ModelChoice, questions int, cadence Cadence, budget Micros, reader *TokenPrice) Prices {
+	p := Prices{Basis: BasisCatalogue}
+	if reader != nil {
+		p.Reading = reader.Of(typicalReadIn, typicalReadOut)
 	}
-	p := Prices{Basis: BasisCatalogue, Reading: price(ExtractorModel, typicalReadIn, typicalReadOut)}
 	for _, m := range models {
-		one := price(m.Model, typicalAnswerIn, typicalAnswerOut)
-		p.Providers = append(p.Providers, ProviderPrice{Provider: m.Provider, Model: m.Model, Fallback: m.Fallback, Knowledge: one, Web: one})
+		pp := ProviderPrice{Provider: m.Provider, Model: m.Model, Fallback: m.Fallback}
+		if i := slices.IndexFunc(catalogue, func(c CatalogueModel) bool { return c.ID == m.Model }); i >= 0 {
+			c := catalogue[i]
+			pp.Knowledge = TokenPrice{Input: c.PromptPrice, Output: c.CompletionPrice}.Of(typicalAnswerIn, typicalAnswerOut)
+			pp.Web = pp.Knowledge + WebSearchFee(c)
+		}
+		p.Providers = append(p.Providers, pp)
 	}
 	return p.total(questions, cadence, budget)
 }

@@ -63,6 +63,7 @@ func (c *Client) Models(ctx context.Context) ([]domain.CatalogueModel, error) {
 			Pricing struct {
 				Prompt     string `json:"prompt"`
 				Completion string `json:"completion"`
+				WebSearch  string `json:"web_search"`
 			} `json:"pricing"`
 		} `json:"data"`
 	}
@@ -76,8 +77,10 @@ func (c *Client) Models(ctx context.Context) ([]domain.CatalogueModel, error) {
 		if m.ID == "" || err1 != nil || err2 != nil {
 			continue
 		}
+		// A model that does not search the web itself has no price for it, or 0.
+		search, _ := strconv.ParseFloat(m.Pricing.WebSearch, 64)
 		out = append(out, domain.CatalogueModel{
-			ID: m.ID, Name: m.Name, PromptPrice: prompt, CompletionPrice: completion,
+			ID: m.ID, Name: m.Name, PromptPrice: prompt, CompletionPrice: completion, WebSearchPrice: max(search, 0),
 			InputModalities: m.Architecture.InputModalities, OutputModalities: m.Architecture.OutputModalities,
 		})
 	}

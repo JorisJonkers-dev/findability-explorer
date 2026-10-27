@@ -4,11 +4,13 @@ import {
   addCompetitorCandidateMutation,
   decideCompetitorCandidatesMutation,
   dismissCompetitorCandidateMutation,
+  getPromptRetryPlanOptions,
   getPromptTestResultsOptions,
   getPromptTestSettingsOptions,
   getPromptTestSettingsQueryKey,
   listCompetitorCandidatesOptions,
   listPromptAnswersOptions,
+  rereadPromptRunMutation,
   retryPromptRunMutation,
   splitCompetitorCandidateMutation,
   startCandidateReviewMutation,
@@ -25,6 +27,7 @@ import type {
   ListPromptAnswersData,
   PromptAnswerList,
   PromptMode,
+  PromptRetryPlan,
   PromptTestResults,
   PromptTestSettings,
   PromptTestSettingsChange,
@@ -128,28 +131,52 @@ export function useStartRun() {
   }
 }
 
-/** Asks a run's failed answers again, or one; the results and the run's answers follow it. */
+/**
+ * What asking a run again would ask, read and cost, for administrators; nothing is asked until
+ * enabled, so a viewer never asks and a running run is not priced.
+ */
+export function useRetryPlan(runId: Ref<string | undefined>, enabled: Ref<boolean>) {
+  const query = useQuery(
+    computed(() => ({
+      ...getPromptRetryPlanOptions({ path: { runId: runId.value ?? '' } }),
+      enabled: runId.value !== undefined && enabled.value,
+    })),
+  )
+  return { plan: computed<PromptRetryPlan | undefined>(() => query.data.value) }
+}
+
+type Task = { promptId: string; provider: string; mode: PromptMode }
+
+/** Asks a run's failed answers again, or one, or reads the ones that could not be read again; the results, the answers and the plan follow it. */
 export function useRetryRun() {
   const queryClient = useQueryClient()
   const retry = useMutation(retryPromptRunMutation())
+  const reread = useMutation(rereadPromptRunMutation())
   const notice = ref<string | null>(null)
+  const last = ref<'retry' | 'reread'>('retry')
+  const done = (verb: string) => (r: { tasks: number; estimatedCostUsd: number }) => {
+    const answers = r.tasks === 1 ? 'one answer' : `${String(r.tasks)} answers`
+    notice.value = `${verb} ${answers} again, for about ${costLabel(r.estimatedCostUsd)}.`
+    void queryClient.invalidateQueries({ queryKey: [{ _id: 'getPromptTestResults' }] })
+    void queryClient.invalidateQueries({ queryKey: [{ _id: 'listPromptAnswers' }] })
+    void queryClient.invalidateQueries({ queryKey: [{ _id: 'getPromptRetryPlan' }] })
+  }
   return {
-    isRetrying: retry.isPending,
+    isRetrying: computed(() => retry.isPending.value || reread.isPending.value),
     notice,
-    error: computed(() => (retry.error.value ? promptProblem(retry.error.value) : null)),
-    retry: (runId: string, task?: { promptId: string; provider: string; mode: PromptMode }) => {
+    error: computed(() => {
+      const error = last.value === 'retry' ? retry.error.value : reread.error.value
+      return error ? promptProblem(error) : null
+    }),
+    retry: (runId: string, task?: Task) => {
       notice.value = null
-      retry.mutate(
-        { path: { runId }, body: task ?? {} },
-        {
-          onSuccess: (r) => {
-            const answers = r.tasks === 1 ? 'one answer' : `${String(r.tasks)} answers`
-            notice.value = `Asking ${answers} again, for about ${costLabel(r.estimatedCostUsd)}.`
-            void queryClient.invalidateQueries({ queryKey: [{ _id: 'getPromptTestResults' }] })
-            void queryClient.invalidateQueries({ queryKey: [{ _id: 'listPromptAnswers' }] })
-          },
-        },
-      )
+      last.value = 'retry'
+      retry.mutate({ path: { runId }, body: task ?? {} }, { onSuccess: done('Asking') })
+    },
+    reread: (runId: string, task?: Task) => {
+      notice.value = null
+      last.value = 'reread'
+      reread.mutate({ path: { runId }, body: task ?? {} }, { onSuccess: done('Reading') })
     },
   }
 }

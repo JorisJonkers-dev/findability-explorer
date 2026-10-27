@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -67,6 +68,8 @@ type Service struct {
 	review review
 	// extractors read the answers instead of OpenRouter when they hand one out; nil until WithExtractors.
 	extractors Extractors
+	// budget stops Claude Haiku once the month's language-model tokens are spent; nil until WithBudget.
+	budget BudgetSpent
 }
 
 // Option changes how a Service waits and runs work in the background; tests use them.
@@ -87,6 +90,12 @@ func WithReviewers(r Reviewers, pages HomePages, onError func(error)) Option {
 // one, OpenRouter reads them with domain.ExtractorModel.
 func WithExtractors(e Extractors) Option {
 	return func(s *Service) { s.extractors = e }
+}
+
+// WithBudget stops Claude Haiku once the month's language-model tokens are spent: the review of the
+// candidates stops, and OpenRouter reads the answers instead. Without it, Haiku does not stop.
+func WithBudget(spent BudgetSpent) Option {
+	return func(s *Service) { s.budget = spent }
 }
 
 // WithSpawn replaces how a run is started in the background.
@@ -142,15 +151,15 @@ func (s *Service) Settings(ctx context.Context) (View, error) {
 	if err != nil {
 		return View{}, fmt.Errorf("this month's spend: %w", err)
 	}
-	reader, err := s.extractorModel(ctx)
+	r, err := s.extractor(ctx, nil) // the gateway is not asked
 	if err != nil {
 		return View{}, err
 	}
 	v := View{
-		Settings: settings, PromptSet: domain.CurrentPromptSet(), ExtractorModel: reader, SpentThisMonth: spent,
+		Settings: settings, PromptSet: domain.CurrentPromptSet(), ExtractorModel: r.model, SpentThisMonth: spent,
 		Models: []domain.ModelChoice{}, KeyWorks: settings.CredentialID != "" && s.gateways.Check(ctx, settings.CredentialID) == nil,
 	}
-	if err := s.price(ctx, &v); err != nil {
+	if err := s.price(ctx, &v, r); err != nil {
 		return View{}, err
 	}
 	return v, nil
@@ -158,14 +167,21 @@ func (s *Service) Settings(ctx context.Context) (View, error) {
 
 // price fills in the latest run's models and the price overview for the providers set now: each
 // one the latest run asked by what its answers cost, and the others, before any run or added
-// since, by OpenRouter's price list when the key works.
-func (s *Service) price(ctx context.Context, v *View) error {
+// since, by OpenRouter's price list when the key works. Reading is priced at the reader r that
+// will read the next run.
+func (s *Service) price(ctx context.Context, v *View, r reader) error {
 	questions := len(v.PromptSet.Prompts)
 	cadence, budget, providers := v.Settings.Cadence, v.Settings.MonthlyBudget, v.Settings.Providers
 	runs, err := s.repo.Runs(ctx, 1)
 	if err != nil {
 		return fmt.Errorf("the latest run: %w", err)
 	}
+	catalogue := sync.OnceValue(func() []domain.CatalogueModel {
+		if !v.KeyWorks {
+			return nil
+		}
+		return s.catalogue(ctx, v.Settings.CredentialID)
+	})
 	v.Prices = domain.NoPrices(cadence, budget)
 	missing := providers
 	if len(runs) > 0 {
@@ -177,17 +193,13 @@ func (s *Service) price(ctx context.Context, v *View) error {
 		if len(answers) > 0 {
 			var kept []domain.ModelChoice
 			kept, missing = domain.Asked(runs[0].Models, providers)
-			v.Prices = domain.PricesFromRun(answers, kept, questions, cadence, budget)
+			v.Prices = domain.PricesFromRun(answers, kept, questions, cadence, budget, readerPrice(r, catalogue))
 		}
 	}
-	if len(missing) == 0 || !v.KeyWorks {
+	if len(missing) == 0 || catalogue() == nil {
 		return nil
 	}
-	catalogue := s.catalogue(ctx, v.Settings.CredentialID)
-	if catalogue == nil {
-		return nil
-	}
-	estimate := domain.PricesFromCatalogue(catalogue, domain.ChooseModels(catalogue, missing), questions, cadence, budget)
+	estimate := domain.PricesFromCatalogue(catalogue(), domain.ChooseModels(catalogue(), missing), questions, cadence, budget, readerPrice(r, catalogue))
 	if v.Prices.Basis == domain.BasisRun {
 		v.Prices = v.Prices.With(estimate.Providers, questions, cadence)
 		return nil
@@ -210,25 +222,69 @@ func (s *Service) catalogue(ctx context.Context, credentialID string) []domain.C
 	return models
 }
 
-// extractor is what reads the answers, and its model: Claude Haiku while an Anthropic key works,
-// else OpenRouter through gw with domain.ExtractorModel.
-func (s *Service) extractor(ctx context.Context, gw Gateway) (Extractor, string, error) {
+// reader is what reads the answers: the extractor, its model, and whether it is Claude Haiku,
+// whose tokens count towards the month's language-model tokens.
+type reader struct {
+	extractor Extractor
+	model     string
+	haiku     bool
+}
+
+// extractor is what reads the answers: Claude Haiku while an Anthropic key works and the month's
+// language-model tokens are not spent, else OpenRouter through gw with domain.ExtractorModel.
+func (s *Service) extractor(ctx context.Context, gw Gateway) (reader, error) {
 	if s.extractors != nil {
 		x, model, err := s.extractors.Current(ctx)
 		if err != nil {
-			return nil, "", fmt.Errorf("the extractor: %w", err)
+			return reader{}, fmt.Errorf("the extractor: %w", err)
 		}
 		if x != nil {
-			return x, model, nil
+			spent, err := s.tokensSpent(ctx)
+			if err != nil {
+				return reader{}, err
+			}
+			if !spent {
+				return reader{extractor: x, model: model, haiku: true}, nil
+			}
 		}
 	}
-	return openRouterExtractor{gw: gw}, domain.ExtractorModel, nil
+	return reader{extractor: openRouterExtractor{gw: gw}, model: domain.ExtractorModel}, nil
 }
 
-// extractorModel is the model that reads the answers now, as the settings show it.
-func (s *Service) extractorModel(ctx context.Context) (string, error) {
-	_, model, err := s.extractor(ctx, nil) // the gateway is not asked
-	return model, err
+// tokensSpent reports whether the month's language-model tokens are spent; never without a budget.
+func (s *Service) tokensSpent(ctx context.Context) (bool, error) {
+	if s.budget == nil {
+		return false, nil
+	}
+	spent, err := s.budget(ctx)
+	if err != nil {
+		return false, fmt.Errorf("this month's language-model tokens: %w", err)
+	}
+	return spent, nil
+}
+
+// readerPrice is what a token costs the reader r: Claude Haiku at its list price, else OpenRouter's
+// extractor at its price on the catalogue; nil when there is none to be had.
+func readerPrice(r reader, catalogue func() []domain.CatalogueModel) *domain.TokenPrice {
+	if r.haiku {
+		p := domain.HaikuPrice()
+		return &p
+	}
+	if p, ok := domain.CataloguePrice(catalogue(), domain.ExtractorModel); ok {
+		return &p
+	}
+	return nil
+}
+
+// readingCost is what reading one of a run's answers again costs, at the price of the reader that
+// reads now.
+func (s *Service) readingCost(ctx context.Context, answers []domain.Answer, credentialID string) (domain.Micros, error) {
+	r, err := s.extractor(ctx, nil) // the gateway is not asked
+	if err != nil {
+		return 0, err
+	}
+	catalogue := sync.OnceValue(func() []domain.CatalogueModel { return s.catalogue(ctx, credentialID) })
+	return domain.ReadingCost(answers, readerPrice(r, catalogue)), nil
 }
 
 // openRouterExtractor reads the answers on OpenRouter with domain.ExtractorModel.

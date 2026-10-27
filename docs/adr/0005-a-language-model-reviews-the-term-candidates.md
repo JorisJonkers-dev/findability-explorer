@@ -36,6 +36,14 @@ as before.
   describes.
 - What each request used is kept in `term_review_usage` and counts towards the month's tokens on
   the language-model settings page. A review of the whole first queue takes about 70,000 tokens.
-  The review does not stop at the monthly budget.
+  The review stops at the monthly budget (amended below).
 - A wrong decision by the model reaches the map until someone undoes it. The Accepted and Rejected
   tabs name the model as who decided, so its decisions can be checked.
+
+## Amended: the review stops at the month's budget
+
+At first the review did not stop at the monthly budget. It now does, like every job on the language
+model: before each batch it checks the month's tokens of every job together, as the language-model
+settings page shows them, and stops once they reach `LLM_MONTHLY_TOKENS`. What it reviewed before
+is kept, the Term review page says the budget is used up, and the review goes on in the next month.
+The competitor review (ADR-0009) and Haiku's reading of Prompt answers (ADR-0007) stop the same way.

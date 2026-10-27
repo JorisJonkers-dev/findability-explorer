@@ -34,6 +34,8 @@ type Judges interface {
 var (
 	// ErrNoModel is returned by Review when there is no model to ask: no Anthropic key is set up.
 	ErrNoModel = errors.New("no Anthropic key is set up")
+	// ErrBudgetSpent is returned by Review when the month's language-model tokens are spent.
+	ErrBudgetSpent = errors.New("this month's language-model budget is spent")
 	// ErrBadAnswer is what a Judge returns when the model answered but not usably: it declined, its
 	// answer was cut off, or it could not be read. Asking again the same way gets the same.
 	ErrBadAnswer = errors.New("the language model gave no usable answer")
@@ -45,8 +47,12 @@ type Problem string
 const (
 	ProblemNone    Problem = ""
 	ProblemNoModel Problem = "noModel"
+	ProblemBudget  Problem = "budget"
 	ProblemFailed  Problem = "failed"
 )
+
+// BudgetSpent reports whether the month's language-model tokens, of every job together, are spent.
+type BudgetSpent func(ctx context.Context) (bool, error)
 
 // ReviewState is how far the language model is with the waiting candidates.
 type ReviewState struct {
@@ -75,6 +81,25 @@ func (s *Service) WithReviewer(verdicts Verdicts, judges Judges) {
 	s.review.problem.Store(ProblemNone)
 }
 
+// WithBudget stops the review once the month's language-model tokens are spent; without it, the
+// review does not stop.
+func (s *Service) WithBudget(spent BudgetSpent) { s.budget = spent }
+
+// affordable is ErrBudgetSpent once the month's tokens are spent.
+func (s *Service) affordable(ctx context.Context) error {
+	if s.budget == nil {
+		return nil
+	}
+	spent, err := s.budget(ctx)
+	if err != nil {
+		return fmt.Errorf("this month's tokens: %w", err)
+	}
+	if spent {
+		return ErrBudgetSpent
+	}
+	return nil
+}
+
 // verdicts are the model's verdicts; none without a reviewer.
 func (s *Service) verdicts(ctx context.Context) ([]domain.Verdict, error) {
 	if s.review == nil {
@@ -89,7 +114,7 @@ func (s *Service) verdicts(ctx context.Context) ([]domain.Verdict, error) {
 
 // Review asks the language model about every waiting candidate it has not reviewed, a batch at a
 // time, and records its sure verdicts as its decisions. It returns how many it reviewed;
-// ErrNoModel when no model is set up.
+// ErrNoModel when no model is set up, ErrBudgetSpent when the month's tokens are spent before a batch.
 func (s *Service) Review(ctx context.Context) (int, error) {
 	n, err := s.reviewAll(ctx)
 	if n > 0 { // the accepted terms join the map
@@ -119,6 +144,9 @@ func (s *Service) reviewAll(ctx context.Context) (int, error) {
 	terms := s.Terms()
 	reviewed := 0
 	for len(waiting) > 0 {
+		if err := s.affordable(ctx); err != nil {
+			return reviewed, err
+		}
 		batch := waiting[:min(domain.ReviewBatch, len(waiting))]
 		waiting = waiting[len(batch):]
 		var usage []domain.Usage
@@ -180,17 +208,23 @@ func (s *Service) ask(ctx context.Context, judge Judge, model string, batch []do
 }
 
 // ReviewState says whether the model is reviewing, how many candidates wait for it (from counts),
-// and why its last review stopped short. That no model was set up is checked again, so a key added
-// since shows at once.
+// and why its last review stopped short. That no model was set up, or the budget was spent, is
+// checked again, so a key added since, or a new month, shows at once.
 func (s *Service) ReviewState(ctx context.Context, counts domain.Counts) ReviewState {
 	if s.review == nil {
 		return ReviewState{Waiting: counts.Unreviewed, Problem: ProblemNoModel}
 	}
 	problem, _ := s.review.problem.Load().(Problem)
-	if problem == ProblemNoModel {
+	switch problem {
+	case ProblemNoModel:
 		if judge, _, err := s.review.judges.Current(ctx); err == nil && judge != nil {
 			problem = ProblemNone
 		}
+	case ProblemBudget:
+		if s.affordable(ctx) == nil {
+			problem = ProblemNone
+		}
+	case ProblemNone, ProblemFailed:
 	}
 	return ReviewState{Running: s.review.running.Load() || len(s.review.kick) > 0, Waiting: counts.Unreviewed, Problem: problem}
 }
@@ -207,7 +241,8 @@ func (s *Service) StartReview() {
 }
 
 // ReviewLoop reviews the waiting candidates now, every interval, and whenever StartReview asks,
-// until ctx ends. onError hears why a review stopped short, except that no model is set up.
+// until ctx ends. onError hears why a review stopped short, except that no model is set up or the
+// month's budget is spent.
 func (s *Service) ReviewLoop(ctx context.Context, every time.Duration, onError func(error)) {
 	if s.review == nil {
 		return
@@ -234,6 +269,8 @@ func (s *Service) reviewOnce(ctx context.Context, onError func(error)) {
 		s.review.problem.Store(ProblemNone)
 	case errors.Is(err, ErrNoModel):
 		s.review.problem.Store(ProblemNoModel)
+	case errors.Is(err, ErrBudgetSpent):
+		s.review.problem.Store(ProblemBudget)
 	case ctx.Err() != nil:
 	default:
 		s.review.problem.Store(ProblemFailed)

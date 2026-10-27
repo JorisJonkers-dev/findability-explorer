@@ -133,15 +133,23 @@ func (q *Queries) AddPromptCandidateDecision(ctx context.Context, arg AddPromptC
 	return err
 }
 
-const addPromptExtraction = `-- name: AddPromptExtraction :exec
+const addPromptExtraction = `-- name: AddPromptExtraction :execrows
 INSERT INTO prompt_extractions (
     answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, input_tokens, output_tokens,
-    cost_micros, extracted_at
+    cost_micros, haiku_tokens, extracted_at
 )
 VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8,
-    $9, $10, $11
+    $9, $10, $11, $12
 )
+ON CONFLICT (answer_id) DO UPDATE
+SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = excluded.names_tribelt,
+    cites_tribelt = excluded.cites_tribelt, correctness = excluded.correctness, wrong_claims = excluded.wrong_claims,
+    input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
+    output_tokens = prompt_extractions.output_tokens + excluded.output_tokens,
+    cost_micros = prompt_extractions.cost_micros + excluded.cost_micros,
+    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at
+WHERE prompt_extractions.failed
 `
 
 type AddPromptExtractionParams struct {
@@ -155,11 +163,14 @@ type AddPromptExtractionParams struct {
 	InputTokens  int64
 	OutputTokens int64
 	CostMicros   int64
+	HaikuTokens  int64
 	ExtractedAt  time.Time
 }
 
-func (q *Queries) AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) error {
-	_, err := q.db.Exec(ctx, addPromptExtraction,
+// An extraction, or, for an answer whose reading failed, that reading replaced: what the failed
+// reading used stays counted. An answer read already keeps its reading, and no row is touched.
+func (q *Queries) AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, addPromptExtraction,
 		arg.AnswerID,
 		arg.Failed,
 		arg.Addresses,
@@ -170,9 +181,13 @@ func (q *Queries) AddPromptExtraction(ctx context.Context, arg AddPromptExtracti
 		arg.InputTokens,
 		arg.OutputTokens,
 		arg.CostMicros,
+		arg.HaikuTokens,
 		arg.ExtractedAt,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const addPromptRunModel = `-- name: AddPromptRunModel :exec
@@ -947,6 +962,20 @@ func (q *Queries) PromptNamings(ctx context.Context) ([]PromptNamingsRow, error)
 		return nil, err
 	}
 	return items, nil
+}
+
+const promptReadingTokensSince = `-- name: PromptReadingTokensSince :one
+SELECT coalesce(sum(haiku_tokens), 0)::bigint AS tokens
+FROM prompt_extractions
+WHERE extracted_at >= $1
+`
+
+// The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
+func (q *Queries) PromptReadingTokensSince(ctx context.Context, since time.Time) (int64, error) {
+	row := q.db.QueryRow(ctx, promptReadingTokensSince, since)
+	var tokens int64
+	err := row.Scan(&tokens)
+	return tokens, err
 }
 
 const promptReviewTokensSince = `-- name: PromptReviewTokensSince :one

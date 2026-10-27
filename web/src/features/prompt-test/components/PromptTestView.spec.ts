@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { PromptAnswer } from '../../../infrastructure/api/types.gen'
+import type { PromptAnswer, PromptRetryPlan } from '../../../infrastructure/api/types.gen'
 import { competitor, me, promptAnswer, promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
@@ -21,8 +21,25 @@ function answers(): PromptAnswer[] {
   ]
 }
 
+function plan(change: Partial<PromptRetryPlan> = {}): PromptRetryPlan {
+  return {
+    askTasks: 357,
+    askCostUsd: 0.43,
+    unknownTasks: 0,
+    readTasks: 0,
+    readCostUsd: 0,
+    readingCostUsd: 0.0003,
+    answerCosts: [
+      { provider: 'google', mode: 'knowledge', costUsd: 0.0012 },
+      { provider: 'google', mode: 'web', costUsd: 0.0212 },
+    ],
+    ...change,
+  }
+}
+
 function api(admin = false, extra: Record<string, Handler> = {}) {
   return routes({
+    [`GET /api/v1/admin/prompt-runs/${RUN_ID}/retry-plan`]: () => json(plan()),
     'GET /api/v1/me': () => json(me({ isAdmin: admin })),
     'GET /api/v1/prompt-test': () => json(promptResults({ runs: [promptRun(), promptRun({ id: OLDER, startedAt: '2026-10-25T06:00:00Z', status: 'stopped' })] })),
     [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () => json({ run: promptRun(), items: answers() }),
@@ -156,7 +173,6 @@ describe('asking again', () => {
       '/ai-search/prompt-test',
     )
     const all = wrapper.findAll('button').find((b) => b.text().startsWith('Ask the'))
-    // 360 tasks over two providers: 180 each; OpenAI gave 2 answers and Google 1.
     expect(all?.text()).toBe('Ask the 357 missing answers again, about $0.43')
     await all?.trigger('click')
     await settle()
@@ -181,6 +197,56 @@ describe('asking again', () => {
     await settle()
     expect(sent).toEqual({ promptId: 'eyelink-application-twente', provider: 'google', mode: 'knowledge' })
     expect(wrapper.text()).toContain('Asking one answer again')
+  })
+
+  it('reads the answers that could not be read again, without asking again', async () => {
+    let sent: unknown = null
+    const unreadable = promptAnswer({ provider: 'google', mode: 'web' }, [], { failed: true })
+    const { wrapper } = await mountApp(
+      api(true, {
+        [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () => json({ run: promptRun(), items: [unreadable] }),
+        [`GET /api/v1/admin/prompt-runs/${RUN_ID}/retry-plan`]: () => json(plan({ askTasks: 0, readTasks: 2, readCostUsd: 0.0006 })),
+        [`POST /api/v1/admin/prompt-runs/${RUN_ID}/reread`]: async (r) => {
+          sent = await r.json()
+          return json(retried(sent), 202)
+        },
+      }),
+      '/ai-search/prompt-test?answer=eyelink-application-twente|google|web',
+    )
+    expect(wrapper.findAll('button').some((b) => b.text().startsWith('Ask the'))).toBe(false)
+    const one = detail(wrapper).findAll('button').find((b) => b.text().startsWith('Read this answer'))
+    expect(one?.text()).toBe('Read this answer again, about $0.0003')
+    await one?.trigger('click')
+    await settle()
+    expect(sent).toEqual({ promptId: 'eyelink-application-twente', provider: 'google', mode: 'web' })
+    expect(wrapper.text()).toContain('Reading one answer again')
+    const all = wrapper.findAll('button').find((b) => b.text().startsWith('Read the'))
+    expect(all?.text()).toBe('Read the 2 unread answers again, about $0.0006')
+    await all?.trigger('click')
+    await settle()
+    expect(sent).toEqual({})
+    expect(wrapper.text()).toContain('Reading 2 answers again, for about $0.00.')
+  })
+
+  it('says why a reading could not start', async () => {
+    const { wrapper } = await mountApp(
+      api(true, {
+        [`GET /api/v1/admin/prompt-runs/${RUN_ID}/retry-plan`]: () => json(plan({ readTasks: 2 })),
+        [`POST /api/v1/admin/prompt-runs/${RUN_ID}/reread`]: () => problem(409, 'Conflict', 'A Prompt run is running already.'),
+      }),
+      '/ai-search/prompt-test',
+    )
+    await wrapper.findAll('button').find((b) => b.text().startsWith('Read the'))?.trigger('click')
+    await settle()
+    expect(wrapper.get('[role="alert"]').text()).toBe('A Prompt run is running already.')
+  })
+
+  it('says when missing answers of an earlier set cannot be asked again', async () => {
+    const { wrapper } = await mountApp(
+      api(true, { [`GET /api/v1/admin/prompt-runs/${RUN_ID}/retry-plan`]: () => json(plan({ unknownTasks: 70 })) }),
+      '/ai-search/prompt-test',
+    )
+    expect(wrapper.text()).toContain('70 missing answers cannot be asked again. This run asked an earlier set of questions, and no answer kept them.')
   })
 
   it('says why it cannot, and offers nothing to a viewer', async () => {

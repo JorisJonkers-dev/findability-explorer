@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.10.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.9.0...v1.10.0) (2026-10-27)
+
+
+### Features
+
+* check every site's AI readiness again without a full scan ([#70](https://github.com/JorisJonkers-dev/findability-explorer/issues/70)) ([054d810](https://github.com/JorisJonkers-dev/findability-explorer/commit/054d8103d28d5f6244b2d72b6a55dc9494ebb8a7))
+* Haiku checks competitor candidates against Tribelt's market, and decides what it is sure about ([#74](https://github.com/JorisJonkers-dev/findability-explorer/issues/74)) ([24f548e](https://github.com/JorisJonkers-dev/findability-explorer/commit/24f548e2cc18966556be4ec882fbbb711ef3b191))
+* Haiku on an Anthropic key matches products and reads Prompt test answers ([#71](https://github.com/JorisJonkers-dev/findability-explorer/issues/71)) ([6facd6a](https://github.com/JorisJonkers-dev/findability-explorer/commit/6facd6a740eb50a7d63f621c6d5581363ca77db9))
+* the home page reads its figures from one statistics endpoint ([#72](https://github.com/JorisJonkers-dev/findability-explorer/issues/72)) ([c876b71](https://github.com/JorisJonkers-dev/findability-explorer/commit/c876b71704f2595bc06471844d1d5b3d3da4b3e2))
+
+
+### Bug Fixes
+
+* a term pairs only with terms in its own language, and every term table filters by language ([#73](https://github.com/JorisJonkers-dev/findability-explorer/issues/73)) ([fb3f239](https://github.com/JorisJonkers-dev/findability-explorer/commit/fb3f23984647fa67a53504fb399591ab7e7194cd))
+* no list is cut off at 200 ([#68](https://github.com/JorisJonkers-dev/findability-explorer/issues/68)) ([ea2817d](https://github.com/JorisJonkers-dev/findability-explorer/commit/ea2817d4f432ed20f238022620814ef291480662))
+* one name per company, an even answer grid and a table that scrolls whole ([#67](https://github.com/JorisJonkers-dev/findability-explorer/issues/67)) ([4c8e73c](https://github.com/JorisJonkers-dev/findability-explorer/commit/4c8e73c1cf049f452112e2a52749927593740a86))
+
 ## [1.9.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.8.0...v1.9.0) (2026-10-27)
 
 

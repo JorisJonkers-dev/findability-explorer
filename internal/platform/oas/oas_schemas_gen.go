@@ -1023,6 +1023,71 @@ func (s *BotRule) SetFollowsAdvice(val bool) {
 	s.FollowsAdvice = val
 }
 
+// Claude Haiku's check of a candidate. A suggestion; a person decides.
+// Ref: #/components/schemas/CandidateCheck
+type CandidateCheck struct {
+	// Whether it takes the company for a competitor of Tribelt.
+	Competitor bool `json:"competitor"`
+	// Whether it was sure.
+	Sure bool `json:"sure"`
+	// Why, in one sentence; empty when it gave no answer for it.
+	Reason string `json:"reason"`
+	// The model that checked it.
+	Model string `json:"model"`
+	// When.
+	At time.Time `json:"at"`
+}
+
+// GetCompetitor returns the value of Competitor.
+func (s *CandidateCheck) GetCompetitor() bool {
+	return s.Competitor
+}
+
+// GetSure returns the value of Sure.
+func (s *CandidateCheck) GetSure() bool {
+	return s.Sure
+}
+
+// GetReason returns the value of Reason.
+func (s *CandidateCheck) GetReason() string {
+	return s.Reason
+}
+
+// GetModel returns the value of Model.
+func (s *CandidateCheck) GetModel() string {
+	return s.Model
+}
+
+// GetAt returns the value of At.
+func (s *CandidateCheck) GetAt() time.Time {
+	return s.At
+}
+
+// SetCompetitor sets the value of Competitor.
+func (s *CandidateCheck) SetCompetitor(val bool) {
+	s.Competitor = val
+}
+
+// SetSure sets the value of Sure.
+func (s *CandidateCheck) SetSure(val bool) {
+	s.Sure = val
+}
+
+// SetReason sets the value of Reason.
+func (s *CandidateCheck) SetReason(val string) {
+	s.Reason = val
+}
+
+// SetModel sets the value of Model.
+func (s *CandidateCheck) SetModel(val string) {
+	s.Model = val
+}
+
+// SetAt sets the value of At.
+func (s *CandidateCheck) SetAt(val time.Time) {
+	s.At = val
+}
+
 // A company whose scan found a candidate.
 // Ref: #/components/schemas/CandidateCompany
 type CandidateCompany struct {
@@ -1049,6 +1114,368 @@ func (s *CandidateCompany) SetCompetitorId(val CompetitorId) {
 // SetName sets the value of Name.
 func (s *CandidateCompany) SetName(val string) {
 	s.Name = val
+}
+
+// What deciding did to one candidate.
+// Ref: #/components/schemas/CandidateDecisionResult
+type CandidateDecisionResult struct {
+	ID CompetitorCandidateId `json:"id"`
+	// Its name; absent for one that is gone.
+	Name OptString `json:"name"`
+	// Decided, or skipped with the reason.
+	Outcome CandidateDecisionResultOutcome `json:"outcome"`
+	// Why it was skipped.
+	Reason OptString `json:"reason"`
+}
+
+// GetID returns the value of ID.
+func (s *CandidateDecisionResult) GetID() CompetitorCandidateId {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *CandidateDecisionResult) GetName() OptString {
+	return s.Name
+}
+
+// GetOutcome returns the value of Outcome.
+func (s *CandidateDecisionResult) GetOutcome() CandidateDecisionResultOutcome {
+	return s.Outcome
+}
+
+// GetReason returns the value of Reason.
+func (s *CandidateDecisionResult) GetReason() OptString {
+	return s.Reason
+}
+
+// SetID sets the value of ID.
+func (s *CandidateDecisionResult) SetID(val CompetitorCandidateId) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *CandidateDecisionResult) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetOutcome sets the value of Outcome.
+func (s *CandidateDecisionResult) SetOutcome(val CandidateDecisionResultOutcome) {
+	s.Outcome = val
+}
+
+// SetReason sets the value of Reason.
+func (s *CandidateDecisionResult) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// Decided, or skipped with the reason.
+type CandidateDecisionResultOutcome string
+
+const (
+	CandidateDecisionResultOutcomeDone    CandidateDecisionResultOutcome = "done"
+	CandidateDecisionResultOutcomeSkipped CandidateDecisionResultOutcome = "skipped"
+)
+
+// AllValues returns all CandidateDecisionResultOutcome values.
+func (CandidateDecisionResultOutcome) AllValues() []CandidateDecisionResultOutcome {
+	return []CandidateDecisionResultOutcome{
+		CandidateDecisionResultOutcomeDone,
+		CandidateDecisionResultOutcomeSkipped,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CandidateDecisionResultOutcome) MarshalText() ([]byte, error) {
+	switch s {
+	case CandidateDecisionResultOutcomeDone:
+		return []byte(s), nil
+	case CandidateDecisionResultOutcomeSkipped:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CandidateDecisionResultOutcome) UnmarshalText(data []byte) error {
+	switch CandidateDecisionResultOutcome(data) {
+	case CandidateDecisionResultOutcomeDone:
+		*s = CandidateDecisionResultOutcomeDone
+		return nil
+	case CandidateDecisionResultOutcomeSkipped:
+		*s = CandidateDecisionResultOutcomeSkipped
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What deciding on several candidates did to each.
+// Ref: #/components/schemas/CandidateDecisionResults
+type CandidateDecisionResults struct {
+	// One per candidate, in the order asked.
+	Items []CandidateDecisionResult `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *CandidateDecisionResults) GetItems() []CandidateDecisionResult {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *CandidateDecisionResults) SetItems(val []CandidateDecisionResult) {
+	s.Items = val
+}
+
+func (*CandidateDecisionResults) decideCompetitorCandidatesRes() {}
+
+// Add or dismiss several competitor candidates.
+// Ref: #/components/schemas/CandidateDecisions
+type CandidateDecisions struct {
+	// Add each to the competitor list with its website, or dismiss it.
+	Action CandidateDecisionsAction `json:"action"`
+	// The candidates.
+	Ids []CompetitorCandidateId `json:"ids"`
+}
+
+// GetAction returns the value of Action.
+func (s *CandidateDecisions) GetAction() CandidateDecisionsAction {
+	return s.Action
+}
+
+// GetIds returns the value of Ids.
+func (s *CandidateDecisions) GetIds() []CompetitorCandidateId {
+	return s.Ids
+}
+
+// SetAction sets the value of Action.
+func (s *CandidateDecisions) SetAction(val CandidateDecisionsAction) {
+	s.Action = val
+}
+
+// SetIds sets the value of Ids.
+func (s *CandidateDecisions) SetIds(val []CompetitorCandidateId) {
+	s.Ids = val
+}
+
+// Add each to the competitor list with its website, or dismiss it.
+type CandidateDecisionsAction string
+
+const (
+	CandidateDecisionsActionAdd     CandidateDecisionsAction = "add"
+	CandidateDecisionsActionDismiss CandidateDecisionsAction = "dismiss"
+)
+
+// AllValues returns all CandidateDecisionsAction values.
+func (CandidateDecisionsAction) AllValues() []CandidateDecisionsAction {
+	return []CandidateDecisionsAction{
+		CandidateDecisionsActionAdd,
+		CandidateDecisionsActionDismiss,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CandidateDecisionsAction) MarshalText() ([]byte, error) {
+	switch s {
+	case CandidateDecisionsActionAdd:
+		return []byte(s), nil
+	case CandidateDecisionsActionDismiss:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CandidateDecisionsAction) UnmarshalText(data []byte) error {
+	switch CandidateDecisionsAction(data) {
+	case CandidateDecisionsActionAdd:
+		*s = CandidateDecisionsActionAdd
+		return nil
+	case CandidateDecisionsActionDismiss:
+		*s = CandidateDecisionsActionDismiss
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One name a competitor candidate goes by.
+// Ref: #/components/schemas/CandidateName
+type CandidateName struct {
+	ID CompetitorCandidateId `json:"id"`
+	// How the answers spell it most often.
+	Name string `json:"name"`
+	// How many answers give this name.
+	Answers int32 `json:"answers"`
+	// How it joined - lead (the name the candidate is listed under), site (given with an address on the
+	// same website) or model (merged by Claude Haiku or a person).
+	Joined CandidateNameJoined `json:"joined"`
+}
+
+// GetID returns the value of ID.
+func (s *CandidateName) GetID() CompetitorCandidateId {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *CandidateName) GetName() string {
+	return s.Name
+}
+
+// GetAnswers returns the value of Answers.
+func (s *CandidateName) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetJoined returns the value of Joined.
+func (s *CandidateName) GetJoined() CandidateNameJoined {
+	return s.Joined
+}
+
+// SetID sets the value of ID.
+func (s *CandidateName) SetID(val CompetitorCandidateId) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *CandidateName) SetName(val string) {
+	s.Name = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *CandidateName) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetJoined sets the value of Joined.
+func (s *CandidateName) SetJoined(val CandidateNameJoined) {
+	s.Joined = val
+}
+
+// How it joined - lead (the name the candidate is listed under), site (given with an address on the
+// same website) or model (merged by Claude Haiku or a person).
+type CandidateNameJoined string
+
+const (
+	CandidateNameJoinedLead  CandidateNameJoined = "lead"
+	CandidateNameJoinedSite  CandidateNameJoined = "site"
+	CandidateNameJoinedModel CandidateNameJoined = "model"
+)
+
+// AllValues returns all CandidateNameJoined values.
+func (CandidateNameJoined) AllValues() []CandidateNameJoined {
+	return []CandidateNameJoined{
+		CandidateNameJoinedLead,
+		CandidateNameJoinedSite,
+		CandidateNameJoinedModel,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CandidateNameJoined) MarshalText() ([]byte, error) {
+	switch s {
+	case CandidateNameJoinedLead:
+		return []byte(s), nil
+	case CandidateNameJoinedSite:
+		return []byte(s), nil
+	case CandidateNameJoinedModel:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CandidateNameJoined) UnmarshalText(data []byte) error {
+	switch CandidateNameJoined(data) {
+	case CandidateNameJoinedLead:
+		*s = CandidateNameJoinedLead
+		return nil
+	case CandidateNameJoinedSite:
+		*s = CandidateNameJoinedSite
+		return nil
+	case CandidateNameJoinedModel:
+		*s = CandidateNameJoinedModel
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Whether Claude Haiku is reviewing the candidates, and why its last review stopped short.
+// Ref: #/components/schemas/CandidateReviewState
+type CandidateReviewState struct {
+	// Whether it is reviewing now.
+	Running bool `json:"running"`
+	// Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its
+	// provider failed). Absent when it went well.
+	Problem OptCandidateReviewStateProblem `json:"problem"`
+}
+
+// GetRunning returns the value of Running.
+func (s *CandidateReviewState) GetRunning() bool {
+	return s.Running
+}
+
+// GetProblem returns the value of Problem.
+func (s *CandidateReviewState) GetProblem() OptCandidateReviewStateProblem {
+	return s.Problem
+}
+
+// SetRunning sets the value of Running.
+func (s *CandidateReviewState) SetRunning(val bool) {
+	s.Running = val
+}
+
+// SetProblem sets the value of Problem.
+func (s *CandidateReviewState) SetProblem(val OptCandidateReviewStateProblem) {
+	s.Problem = val
+}
+
+func (*CandidateReviewState) startCandidateReviewRes() {}
+
+// Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its
+// provider failed). Absent when it went well.
+type CandidateReviewStateProblem string
+
+const (
+	CandidateReviewStateProblemNoKey  CandidateReviewStateProblem = "noKey"
+	CandidateReviewStateProblemFailed CandidateReviewStateProblem = "failed"
+)
+
+// AllValues returns all CandidateReviewStateProblem values.
+func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
+	return []CandidateReviewStateProblem{
+		CandidateReviewStateProblemNoKey,
+		CandidateReviewStateProblemFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CandidateReviewStateProblem) MarshalText() ([]byte, error) {
+	switch s {
+	case CandidateReviewStateProblemNoKey:
+		return []byte(s), nil
+	case CandidateReviewStateProblemFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CandidateReviewStateProblem) UnmarshalText(data []byte) error {
+	switch CandidateReviewStateProblem(data) {
+	case CandidateReviewStateProblemNoKey:
+		*s = CandidateReviewStateProblemNoKey
+		return nil
+	case CandidateReviewStateProblemFailed:
+		*s = CandidateReviewStateProblemFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type ClearActiveLlmForbidden ProblemStatusCode
@@ -1559,6 +1986,13 @@ type CompetitorCandidate struct {
 	// When an answer last named it.
 	LastSeenAt time.Time                      `json:"lastSeenAt"`
 	Decision   OptCompetitorCandidateDecision `json:"decision"`
+	// The domains of its own websites the addresses point to, the most given first.
+	Sites []string `json:"sites"`
+	// The home page to add it with, on its first site; absent without one.
+	Website OptString `json:"website"`
+	// Every name it goes by, the one it is listed under first.
+	Names []CandidateName   `json:"names"`
+	Check OptCandidateCheck `json:"check"`
 }
 
 // GetID returns the value of ID.
@@ -1606,6 +2040,26 @@ func (s *CompetitorCandidate) GetDecision() OptCompetitorCandidateDecision {
 	return s.Decision
 }
 
+// GetSites returns the value of Sites.
+func (s *CompetitorCandidate) GetSites() []string {
+	return s.Sites
+}
+
+// GetWebsite returns the value of Website.
+func (s *CompetitorCandidate) GetWebsite() OptString {
+	return s.Website
+}
+
+// GetNames returns the value of Names.
+func (s *CompetitorCandidate) GetNames() []CandidateName {
+	return s.Names
+}
+
+// GetCheck returns the value of Check.
+func (s *CompetitorCandidate) GetCheck() OptCandidateCheck {
+	return s.Check
+}
+
 // SetID sets the value of ID.
 func (s *CompetitorCandidate) SetID(val CompetitorCandidateId) {
 	s.ID = val
@@ -1651,18 +2105,45 @@ func (s *CompetitorCandidate) SetDecision(val OptCompetitorCandidateDecision) {
 	s.Decision = val
 }
 
+// SetSites sets the value of Sites.
+func (s *CompetitorCandidate) SetSites(val []string) {
+	s.Sites = val
+}
+
+// SetWebsite sets the value of Website.
+func (s *CompetitorCandidate) SetWebsite(val OptString) {
+	s.Website = val
+}
+
+// SetNames sets the value of Names.
+func (s *CompetitorCandidate) SetNames(val []CandidateName) {
+	s.Names = val
+}
+
+// SetCheck sets the value of Check.
+func (s *CompetitorCandidate) SetCheck(val OptCandidateCheck) {
+	s.Check = val
+}
+
 func (*CompetitorCandidate) addCompetitorCandidateRes()     {}
 func (*CompetitorCandidate) dismissCompetitorCandidateRes() {}
 
 // How many candidates have each status.
 // Ref: #/components/schemas/CompetitorCandidateCounts
 type CompetitorCandidateCounts struct {
+	// Pending candidates Claude Haiku has not checked.
+	Unchecked int32 `json:"unchecked"`
 	// Pending candidates.
 	Pending int32 `json:"pending"`
 	// Added ones.
 	Added int32 `json:"added"`
 	// Dismissed ones.
 	Dismissed int32 `json:"dismissed"`
+}
+
+// GetUnchecked returns the value of Unchecked.
+func (s *CompetitorCandidateCounts) GetUnchecked() int32 {
+	return s.Unchecked
 }
 
 // GetPending returns the value of Pending.
@@ -1678,6 +2159,11 @@ func (s *CompetitorCandidateCounts) GetAdded() int32 {
 // GetDismissed returns the value of Dismissed.
 func (s *CompetitorCandidateCounts) GetDismissed() int32 {
 	return s.Dismissed
+}
+
+// SetUnchecked sets the value of Unchecked.
+func (s *CompetitorCandidateCounts) SetUnchecked(val int32) {
+	s.Unchecked = val
 }
 
 // SetPending sets the value of Pending.
@@ -1748,12 +2234,18 @@ func (s *CompetitorCandidateDecision) SetAt(val time.Time) {
 
 type CompetitorCandidateId string
 
-// The competitor candidates with one status.
+// The competitor candidates with one status, and Claude Haiku's review of them.
 // Ref: #/components/schemas/CompetitorCandidateList
 type CompetitorCandidateList struct {
+	Review CandidateReviewState `json:"review"`
 	// The candidates, most answers first.
 	Items  []CompetitorCandidate     `json:"items"`
 	Counts CompetitorCandidateCounts `json:"counts"`
+}
+
+// GetReview returns the value of Review.
+func (s *CompetitorCandidateList) GetReview() CandidateReviewState {
+	return s.Review
 }
 
 // GetItems returns the value of Items.
@@ -1764,6 +2256,11 @@ func (s *CompetitorCandidateList) GetItems() []CompetitorCandidate {
 // GetCounts returns the value of Counts.
 func (s *CompetitorCandidateList) GetCounts() CompetitorCandidateCounts {
 	return s.Counts
+}
+
+// SetReview sets the value of Review.
+func (s *CompetitorCandidateList) SetReview(val CandidateReviewState) {
+	s.Review = val
 }
 
 // SetItems sets the value of Items.
@@ -2198,6 +2695,18 @@ func (s *CrawlerFeeds) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+type DecideCompetitorCandidatesBadRequest ProblemStatusCode
+
+func (*DecideCompetitorCandidatesBadRequest) decideCompetitorCandidatesRes() {}
+
+type DecideCompetitorCandidatesForbidden ProblemStatusCode
+
+func (*DecideCompetitorCandidatesForbidden) decideCompetitorCandidatesRes() {}
+
+type DecideCompetitorCandidatesUnauthorized ProblemStatusCode
+
+func (*DecideCompetitorCandidatesUnauthorized) decideCompetitorCandidatesRes() {}
 
 type DeleteCompetitorBadRequest ProblemStatusCode
 
@@ -4625,6 +5134,98 @@ func (o OptBool) Get() (v bool, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBool) Or(d bool) bool {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCandidateCheck returns new OptCandidateCheck with value set to v.
+func NewOptCandidateCheck(v CandidateCheck) OptCandidateCheck {
+	return OptCandidateCheck{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCandidateCheck is optional CandidateCheck.
+type OptCandidateCheck struct {
+	Value CandidateCheck
+	Set   bool
+}
+
+// IsSet returns true if OptCandidateCheck was set.
+func (o OptCandidateCheck) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCandidateCheck) Reset() {
+	var v CandidateCheck
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCandidateCheck) SetTo(v CandidateCheck) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCandidateCheck) Get() (v CandidateCheck, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCandidateCheck) Or(d CandidateCheck) CandidateCheck {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCandidateReviewStateProblem returns new OptCandidateReviewStateProblem with value set to v.
+func NewOptCandidateReviewStateProblem(v CandidateReviewStateProblem) OptCandidateReviewStateProblem {
+	return OptCandidateReviewStateProblem{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCandidateReviewStateProblem is optional CandidateReviewStateProblem.
+type OptCandidateReviewStateProblem struct {
+	Value CandidateReviewStateProblem
+	Set   bool
+}
+
+// IsSet returns true if OptCandidateReviewStateProblem was set.
+func (o OptCandidateReviewStateProblem) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCandidateReviewStateProblem) Reset() {
+	var v CandidateReviewStateProblem
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCandidateReviewStateProblem) SetTo(v CandidateReviewStateProblem) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCandidateReviewStateProblem) Get() (v CandidateReviewStateProblem, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCandidateReviewStateProblem) Or(d CandidateReviewStateProblem) CandidateReviewStateProblem {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10048,6 +10649,31 @@ func (s *SitemapSummary) SetLanguages(val []string) {
 	s.Languages = val
 }
 
+type SplitCompetitorCandidateBadRequest ProblemStatusCode
+
+func (*SplitCompetitorCandidateBadRequest) splitCompetitorCandidateRes() {}
+
+type SplitCompetitorCandidateConflict ProblemStatusCode
+
+func (*SplitCompetitorCandidateConflict) splitCompetitorCandidateRes() {}
+
+type SplitCompetitorCandidateForbidden ProblemStatusCode
+
+func (*SplitCompetitorCandidateForbidden) splitCompetitorCandidateRes() {}
+
+// SplitCompetitorCandidateNoContent is response for SplitCompetitorCandidate operation.
+type SplitCompetitorCandidateNoContent struct{}
+
+func (*SplitCompetitorCandidateNoContent) splitCompetitorCandidateRes() {}
+
+type SplitCompetitorCandidateNotFound ProblemStatusCode
+
+func (*SplitCompetitorCandidateNotFound) splitCompetitorCandidateRes() {}
+
+type SplitCompetitorCandidateUnauthorized ProblemStatusCode
+
+func (*SplitCompetitorCandidateUnauthorized) splitCompetitorCandidateRes() {}
+
 // Tribelt against its competitors on one measure.
 // Ref: #/components/schemas/Standing
 type Standing struct {
@@ -10276,6 +10902,14 @@ func (*StartAnalysisUnauthorized) startAnalysisRes() {}
 type StartAnalysisUnprocessableEntity ProblemStatusCode
 
 func (*StartAnalysisUnprocessableEntity) startAnalysisRes() {}
+
+type StartCandidateReviewForbidden ProblemStatusCode
+
+func (*StartCandidateReviewForbidden) startCandidateReviewRes() {}
+
+type StartCandidateReviewUnauthorized ProblemStatusCode
+
+func (*StartCandidateReviewUnauthorized) startCandidateReviewRes() {}
 
 type StartPromptRunConflict ProblemStatusCode
 

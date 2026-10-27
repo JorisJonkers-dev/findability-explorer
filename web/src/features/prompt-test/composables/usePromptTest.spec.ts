@@ -29,12 +29,13 @@ describe('useCompetitorCandidates', () => {
   it('has no candidates before they load', async () => {
     const { state } = mountComposable(
       () => useCompetitorCandidates(ref('pending')),
-      routes({ 'GET /api/v1/admin/competitor-candidates': () => json({ items: [], counts: { pending: 0, added: 0, dismissed: 0 } }) }),
+      routes({ 'GET /api/v1/admin/competitor-candidates': () => json({ items: [], counts: { pending: 0, added: 0, dismissed: 0, unchecked: 0 }, review: { running: false } }) }),
     )
     expect(state.candidates.value).toEqual([])
     expect(state.counts.value).toBeUndefined()
     await flushPromises()
     expect(state.counts.value?.pending).toBe(0)
+    expect(state.review.value).toEqual({ running: false })
     expect(state.forbidden.value).toBe(false)
     expect(state.error.value).toBeNull()
   })
@@ -138,5 +139,35 @@ describe('usePromptResults', () => {
     expect(state.results.value?.runs[0]?.status).toBe('done')
     await vi.advanceTimersByTimeAsync(RUN_POLL_MS * 2)
     expect(sent).toEqual(['GET /api/v1/prompt-test', 'GET /api/v1/prompt-test'])
+  })
+
+  it('adds or dismisses several at once, splits a name off, and starts Haiku', async () => {
+    const { state, sent } = mountComposable(
+      useCandidateDecision,
+      routes({
+        'POST /api/v1/admin/competitor-candidates/decisions': () =>
+          json({ items: [{ id: '3a7bd3e2360a9f01', name: 'Intralox', outcome: 'done' }, { id: '0123456789abcdef', outcome: 'skipped', reason: 'No website.' }] }),
+        'POST /api/v1/admin/competitor-candidates/0123456789abcdef/split': () => new Response(null, { status: 204 }),
+        'POST /api/v1/admin/competitor-candidates/review': () => json({ running: true }, 202),
+      }),
+    )
+    state.decideMany('add', ['3a7bd3e2360a9f01', '0123456789abcdef'])
+    expect(state.isDeciding.value).toBe(true)
+    await flushPromises()
+    expect(state.notice.value).toBe('Added 1 company. Skipped 1.')
+    expect(state.results.value).toEqual([{ id: '0123456789abcdef', outcome: 'skipped', reason: 'No website.' }])
+    state.split('0123456789abcdef', 'Metiz')
+    await flushPromises()
+    expect(state.notice.value).toBe('Metiz is a company of its own again.')
+    expect(state.results.value).toEqual([])
+    state.startReview()
+    await flushPromises()
+    expect(state.notice.value).toBe('Haiku is merging the duplicates and checking the companies.')
+    expect(state.error.value).toBeNull()
+    expect(sent.filter((r) => !r.startsWith('GET'))).toEqual([
+      'POST /api/v1/admin/competitor-candidates/decisions',
+      'POST /api/v1/admin/competitor-candidates/0123456789abcdef/split',
+      'POST /api/v1/admin/competitor-candidates/review',
+    ])
   })
 })

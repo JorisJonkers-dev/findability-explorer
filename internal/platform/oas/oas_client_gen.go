@@ -83,6 +83,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/competitors/{competitorId}/scans/compare
 	CompareScans(ctx context.Context, params CompareScansParams) (CompareScansRes, error)
+	// DecideCompetitorCandidates invokes decideCompetitorCandidates operation.
+	//
+	// Administrators only. Adds each candidate to the competitor list with its website, or dismisses it.
+	// One without a website, one decided already, and one the list refuses are skipped with the reason.
+	//
+	// POST /api/v1/admin/competitor-candidates/decisions
+	DecideCompetitorCandidates(ctx context.Context, request *CandidateDecisions) (DecideCompetitorCandidatesRes, error)
 	// DeleteCompetitor invokes deleteCompetitor operation.
 	//
 	// Administrators only. An added company is deleted with every scan of it. A researched company is the
@@ -226,8 +233,8 @@ type Invoker interface {
 	// ListCompetitorCandidates invokes listCompetitorCandidates operation.
 	//
 	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
-	// with how often and by which providers' models, and the addresses given; filtered by status, most
-	// answers first.
+	// with how often and by which providers' models, the addresses given and its websites; names on one
+	// website, or merged, are one company. Filtered by status, most answers first.
 	//
 	// GET /api/v1/admin/competitor-candidates
 	ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (ListCompetitorCandidatesRes, error)
@@ -301,6 +308,13 @@ type Invoker interface {
 	//
 	// PUT /api/v1/admin/plan/targets
 	SetPlanTargets(ctx context.Context, request *PlanTargetsChange) (SetPlanTargetsRes, error)
+	// SplitCompetitorCandidate invokes splitCompetitorCandidate operation.
+	//
+	// Administrators only. Takes a name Claude Haiku or a person merged into a candidate out of it again;
+	// it is not merged again. Names on one website stay one company: 409 for those.
+	//
+	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/split
+	SplitCompetitorCandidate(ctx context.Context, params SplitCompetitorCandidateParams) (SplitCompetitorCandidateRes, error)
 	// StartAnalysis invokes startAnalysis operation.
 	//
 	// Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
@@ -311,6 +325,15 @@ type Invoker interface {
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, request *NewAnalysis) (StartAnalysisRes, error)
+	// StartCandidateReview invokes startCandidateReview operation.
+	//
+	// Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
+	// candidates that are one company, or a company on the list, and then checks each company it has not
+	// checked for whether it is a competitor of Tribelt. Its check is a suggestion; a person adds or
+	// dismisses. Returns the review's state; running already is no error.
+	//
+	// POST /api/v1/admin/competitor-candidates/review
+	StartCandidateReview(ctx context.Context) (StartCandidateReviewRes, error)
 	// StartPromptRun invokes startPromptRun operation.
 	//
 	// Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
@@ -1342,6 +1365,123 @@ func (c *Client) sendCompareScans(ctx context.Context, params CompareScansParams
 
 	stage = "DecodeResponse"
 	result, err := decodeCompareScansResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DecideCompetitorCandidates invokes decideCompetitorCandidates operation.
+//
+// Administrators only. Adds each candidate to the competitor list with its website, or dismisses it.
+// One without a website, one decided already, and one the list refuses are skipped with the reason.
+//
+// POST /api/v1/admin/competitor-candidates/decisions
+func (c *Client) DecideCompetitorCandidates(ctx context.Context, request *CandidateDecisions) (DecideCompetitorCandidatesRes, error) {
+	res, err := c.sendDecideCompetitorCandidates(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendDecideCompetitorCandidates(ctx context.Context, request *CandidateDecisions) (res DecideCompetitorCandidatesRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("decideCompetitorCandidates"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates/decisions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DecideCompetitorCandidatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates/decisions"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeDecideCompetitorCandidatesRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, DecideCompetitorCandidatesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDecideCompetitorCandidatesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3605,8 +3745,8 @@ func (c *Client) sendListAnalyses(ctx context.Context, params ListAnalysesParams
 // ListCompetitorCandidates invokes listCompetitorCandidates operation.
 //
 // Administrators only. Every company the Prompt runs' answers name that is not on the company list,
-// with how often and by which providers' models, and the addresses given; filtered by status, most
-// answers first.
+// with how often and by which providers' models, the addresses given and its websites; names on one
+// website, or merged, are one company. Filtered by status, most answers first.
 //
 // GET /api/v1/admin/competitor-candidates
 func (c *Client) ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (ListCompetitorCandidatesRes, error) {
@@ -5061,6 +5201,142 @@ func (c *Client) sendSetPlanTargets(ctx context.Context, request *PlanTargetsCha
 	return result, nil
 }
 
+// SplitCompetitorCandidate invokes splitCompetitorCandidate operation.
+//
+// Administrators only. Takes a name Claude Haiku or a person merged into a candidate out of it again;
+// it is not merged again. Names on one website stay one company: 409 for those.
+//
+// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/split
+func (c *Client) SplitCompetitorCandidate(ctx context.Context, params SplitCompetitorCandidateParams) (SplitCompetitorCandidateRes, error) {
+	res, err := c.sendSplitCompetitorCandidate(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendSplitCompetitorCandidate(ctx context.Context, params SplitCompetitorCandidateParams) (res SplitCompetitorCandidateRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("splitCompetitorCandidate"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates/{competitorCandidateId}/split"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SplitCompetitorCandidateOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates/"
+	{
+		// Encode "competitorCandidateId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "competitorCandidateId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CompetitorCandidateId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/split"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, SplitCompetitorCandidateOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSplitCompetitorCandidateResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // StartAnalysis invokes startAnalysis operation.
 //
 // Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
@@ -5174,6 +5450,122 @@ func (c *Client) sendStartAnalysis(ctx context.Context, request *NewAnalysis) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeStartAnalysisResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// StartCandidateReview invokes startCandidateReview operation.
+//
+// Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
+// candidates that are one company, or a company on the list, and then checks each company it has not
+// checked for whether it is a competitor of Tribelt. Its check is a suggestion; a person adds or
+// dismisses. Returns the review's state; running already is no error.
+//
+// POST /api/v1/admin/competitor-candidates/review
+func (c *Client) StartCandidateReview(ctx context.Context) (StartCandidateReviewRes, error) {
+	res, err := c.sendStartCandidateReview(ctx)
+	return res, err
+}
+
+func (c *Client) sendStartCandidateReview(ctx context.Context) (res StartCandidateReviewRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("startCandidateReview"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates/review"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StartCandidateReviewOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates/review"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, StartCandidateReviewOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStartCandidateReviewResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

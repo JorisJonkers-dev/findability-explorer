@@ -99,8 +99,8 @@ describe('the language model\'s review', () => {
   })
 
   it('keeps the lists fresh while it reviews', () => {
-    expect(reviewPoll({ running: true, waiting: 3 })).toBe(3000)
-    expect(reviewPoll({ running: false, waiting: 3 })).toBe(false)
+    expect(reviewPoll({ running: true })).toBe(3000)
+    expect(reviewPoll({ running: false })).toBe(false)
     expect(reviewPoll(undefined)).toBe(false)
   })
 

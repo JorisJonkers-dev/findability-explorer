@@ -564,6 +564,39 @@ func (q *Queries) ListPromptAnswers(ctx context.Context, arg ListPromptAnswersPa
 	return items, nil
 }
 
+const listPromptCandidateChecks = `-- name: ListPromptCandidateChecks :many
+SELECT candidate_id, competitor, sure, reason, model, checked_at
+FROM prompt_candidate_checks
+ORDER BY checked_at, candidate_id
+`
+
+func (q *Queries) ListPromptCandidateChecks(ctx context.Context) ([]PromptCandidateCheck, error) {
+	rows, err := q.db.Query(ctx, listPromptCandidateChecks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptCandidateCheck{}
+	for rows.Next() {
+		var i PromptCandidateCheck
+		if err := rows.Scan(
+			&i.CandidateID,
+			&i.Competitor,
+			&i.Sure,
+			&i.Reason,
+			&i.Model,
+			&i.CheckedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPromptCandidateDecisions = `-- name: ListPromptCandidateDecisions :many
 SELECT id, name, status, coalesce(competitor_id, '')::text AS competitor_id, decided_by, decided_at
 FROM prompt_candidate_decisions
@@ -595,6 +628,49 @@ func (q *Queries) ListPromptCandidateDecisions(ctx context.Context) ([]ListPromp
 			&i.CompetitorID,
 			&i.DecidedBy,
 			&i.DecidedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptCandidateMerges = `-- name: ListPromptCandidateMerges :many
+SELECT candidate_id, coalesce(into_id, '')::text AS into_id, coalesce(competitor_id, '')::text AS competitor_id,
+    kept_apart, merged_by, merged_at
+FROM prompt_candidate_merges
+ORDER BY merged_at, candidate_id
+`
+
+type ListPromptCandidateMergesRow struct {
+	CandidateID  string
+	IntoID       string
+	CompetitorID string
+	KeptApart    bool
+	MergedBy     string
+	MergedAt     time.Time
+}
+
+func (q *Queries) ListPromptCandidateMerges(ctx context.Context) ([]ListPromptCandidateMergesRow, error) {
+	rows, err := q.db.Query(ctx, listPromptCandidateMerges)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPromptCandidateMergesRow{}
+	for rows.Next() {
+		var i ListPromptCandidateMergesRow
+		if err := rows.Scan(
+			&i.CandidateID,
+			&i.IntoID,
+			&i.CompetitorID,
+			&i.KeptApart,
+			&i.MergedBy,
+			&i.MergedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -816,6 +892,64 @@ func (q *Queries) ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const savePromptCandidateCheck = `-- name: SavePromptCandidateCheck :exec
+INSERT INTO prompt_candidate_checks (candidate_id, competitor, sure, reason, model, checked_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (candidate_id) DO UPDATE SET
+    competitor = excluded.competitor, sure = excluded.sure, reason = excluded.reason,
+    model = excluded.model, checked_at = excluded.checked_at
+`
+
+type SavePromptCandidateCheckParams struct {
+	CandidateID string
+	Competitor  bool
+	Sure        bool
+	Reason      string
+	Model       string
+	CheckedAt   time.Time
+}
+
+func (q *Queries) SavePromptCandidateCheck(ctx context.Context, arg SavePromptCandidateCheckParams) error {
+	_, err := q.db.Exec(ctx, savePromptCandidateCheck,
+		arg.CandidateID,
+		arg.Competitor,
+		arg.Sure,
+		arg.Reason,
+		arg.Model,
+		arg.CheckedAt,
+	)
+	return err
+}
+
+const savePromptCandidateMerge = `-- name: SavePromptCandidateMerge :exec
+INSERT INTO prompt_candidate_merges (candidate_id, into_id, competitor_id, kept_apart, merged_by, merged_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (candidate_id) DO UPDATE SET
+    into_id = excluded.into_id, competitor_id = excluded.competitor_id, kept_apart = excluded.kept_apart,
+    merged_by = excluded.merged_by, merged_at = excluded.merged_at
+`
+
+type SavePromptCandidateMergeParams struct {
+	CandidateID  string
+	IntoID       pgtype.Text
+	CompetitorID pgtype.Text
+	KeptApart    bool
+	MergedBy     string
+	MergedAt     time.Time
+}
+
+func (q *Queries) SavePromptCandidateMerge(ctx context.Context, arg SavePromptCandidateMergeParams) error {
+	_, err := q.db.Exec(ctx, savePromptCandidateMerge,
+		arg.CandidateID,
+		arg.IntoID,
+		arg.CompetitorID,
+		arg.KeptApart,
+		arg.MergedBy,
+		arg.MergedAt,
+	)
+	return err
 }
 
 const savePromptSettings = `-- name: SavePromptSettings :exec

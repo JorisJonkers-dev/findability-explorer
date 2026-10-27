@@ -76,7 +76,7 @@ const NUMBER = new Intl.NumberFormat('en-GB')
                 class="border-0 bg-transparent p-0 text-xs font-semibold text-orange-ink underline underline-offset-4 stage:text-[20px]"
                 @click="emit('add', { name: n.name, url: n.href })"
               >
-                Add<span class="sr-only"> {{ n.name }} as a competitor</span>
+                Add<span class="sr-only">{{ ' ' + n.name }} as a competitor</span>
               </button>
               <RouterLink v-else-if="!n.id && isAdmin" to="/competitors/all" class="text-xs font-semibold stage:text-[20px]">
                 Add on All competitors<span class="sr-only">: {{ n.name }}</span>

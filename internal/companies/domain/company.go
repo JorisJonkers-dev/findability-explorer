@@ -383,11 +383,23 @@ func (d Directory) ByID(id string) (Company, bool) {
 // ByHost returns the first company whose website has host.
 func (d Directory) ByHost(host string) (Company, bool) {
 	for _, c := range d.companies {
-		if c.Host != "" && c.Host == host {
+		if sameSite(c.Host, host) {
 			return c, true
 		}
 	}
 	return Company{}, false
+}
+
+// sameSite reports whether two hosts are one company's website: the same registered domain, so
+// "shop.x.com" is x.com's. On a platform many companies share, only the same host is.
+func sameSite(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	if d := site.CompanyDomain(a); d != "" {
+		return d == site.CompanyDomain(b)
+	}
+	return a == b
 }
 
 // NewCompany returns the company to add for name and website: its id made unique among the

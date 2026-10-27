@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type Ref, ref } from 'vue'
 import {
   addCompetitorCandidateMutation,
+  decideCompetitorCandidatesMutation,
   dismissCompetitorCandidateMutation,
   getPromptTestResultsOptions,
   getPromptTestSettingsOptions,
@@ -9,11 +10,15 @@ import {
   listCompetitorCandidatesOptions,
   listPromptAnswersOptions,
   retryPromptRunMutation,
+  splitCompetitorCandidateMutation,
+  startCandidateReviewMutation,
   startPromptRunMutation,
   undoCompetitorCandidateMutation,
   updatePromptTestSettingsMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
 import type {
+  CandidateDecisionResult,
+  CandidateReviewState,
   CompetitorCandidate,
   CompetitorCandidateCounts,
   CompetitorCandidateStatus,
@@ -24,6 +29,8 @@ import type {
   PromptTestSettings,
   PromptTestSettingsChange,
 } from '../../../infrastructure/api/types.gen'
+import { decidedLine } from '../../competitors/domain/candidates'
+import { reviewPoll } from '../../review/domain/candidates'
 import { isForbidden } from '../../settings/domain/problems'
 import { costLabel } from '../domain/results'
 import { promptProblem } from '../domain/settings'
@@ -149,10 +156,17 @@ export function useRetryRun() {
 
 /** Server state for the competitor candidates with one status; a 403 means no administrator. */
 export function useCompetitorCandidates(status: Ref<CompetitorCandidateStatus>) {
-  const query = useQuery(computed(() => listCompetitorCandidatesOptions({ query: { status: status.value } })))
+  const query = useQuery(
+    computed(() => ({
+      ...listCompetitorCandidatesOptions({ query: { status: status.value } }),
+      // While Haiku reviews, the list changes as it merges and checks.
+      refetchInterval: (q: { state: { data?: { review: CandidateReviewState } } }) => reviewPoll(q.state.data?.review),
+    })),
+  )
   return {
     candidates: computed<CompetitorCandidate[]>(() => query.data.value?.items ?? []),
     counts: computed<CompetitorCandidateCounts | undefined>(() => query.data.value?.counts),
+    review: computed<CandidateReviewState | undefined>(() => query.data.value?.review),
     isLoading: query.isPending,
     forbidden: computed(() => isForbidden(query.error.value)),
     error: computed(() => (query.error.value ? promptProblem(query.error.value) : null)),
@@ -168,8 +182,14 @@ export function useCandidateDecision() {
   const add = useMutation(addCompetitorCandidateMutation())
   const dismiss = useMutation(dismissCompetitorCandidateMutation())
   const undo = useMutation(undoCompetitorCandidateMutation())
+  const many = useMutation(decideCompetitorCandidatesMutation())
+  const split = useMutation(splitCompetitorCandidateMutation())
+  const review = useMutation(startCandidateReviewMutation())
   const notice = ref<string | null>(null)
-  const last = ref<'add' | 'dismiss' | 'undo' | null>(null)
+  /** What the last decision on several did to each, for the ones it skipped. */
+  const results = ref<CandidateDecisionResult[]>([])
+  const last = ref<'add' | 'dismiss' | 'undo' | 'many' | 'split' | 'review' | null>(null)
+  const mutations = { add, dismiss, undo, many, split, review }
 
   function done(message: string): void {
     notice.value = message
@@ -177,18 +197,37 @@ export function useCandidateDecision() {
     void queryClient.invalidateQueries({ queryKey: [{ _id: 'listCompetitors' }] })
   }
 
-  function begin(action: 'add' | 'dismiss' | 'undo'): void {
+  function begin(action: NonNullable<typeof last.value>): void {
     last.value = action
     notice.value = null
+    results.value = []
   }
 
   return {
-    isDeciding: computed(() => add.isPending.value || dismiss.isPending.value || undo.isPending.value),
+    isDeciding: computed(() => Object.values(mutations).some((m) => m.isPending.value)),
     notice,
+    results,
     error: computed(() => {
-      const error = last.value === 'add' ? add.error.value : last.value === 'dismiss' ? dismiss.error.value : undo.error.value
+      const error = last.value ? mutations[last.value].error.value : null
       return error ? promptProblem(error) : null
     }),
+    decideMany: (action: 'add' | 'dismiss', ids: string[]) => {
+      begin('many')
+      many.mutate({ body: { action, ids } }, {
+        onSuccess: (r) => {
+          results.value = r.items.filter((i) => i.outcome === 'skipped')
+          done(decidedLine(action, r.items))
+        },
+      })
+    },
+    split: (id: string, name: string) => {
+      begin('split')
+      split.mutate({ path: { competitorCandidateId: id } }, { onSuccess: () => { done(`${name} is a company of its own again.`) } })
+    },
+    startReview: () => {
+      begin('review')
+      review.mutate({}, { onSuccess: () => { done('Haiku is merging the duplicates and checking the companies.') } })
+    },
     add: (id: string, name: string, url: string) => {
       begin('add')
       add.mutate({ path: { competitorCandidateId: id }, body: { name, url } }, { onSuccess: () => { done(`Added ${name} to the competitors.`) } })

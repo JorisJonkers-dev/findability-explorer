@@ -2580,12 +2580,131 @@ export type CompetitorCandidate = {
      */
     lastSeenAt: string;
     decision?: CompetitorCandidateDecision;
+    /**
+     * The domains of its own websites the addresses point to, the most given first.
+     */
+    sites?: Array<string>;
+    /**
+     * The home page to add it with, on its first site; absent without one.
+     */
+    website?: string;
+    /**
+     * Every name it goes by, the one it is listed under first.
+     */
+    names?: Array<CandidateName>;
+    check?: CandidateCheck;
+};
+
+/**
+ * One name a competitor candidate goes by.
+ */
+export type CandidateName = {
+    id: CompetitorCandidateId;
+    /**
+     * How the answers spell it most often.
+     */
+    name: string;
+    /**
+     * How many answers give this name.
+     */
+    answers: number;
+    /**
+     * How it joined - lead (the name the candidate is listed under), site (given with an address on the same website) or model (merged by Claude Haiku or a person).
+     */
+    joined: 'lead' | 'site' | 'model';
+};
+
+/**
+ * Claude Haiku's check of a candidate. A suggestion; a person decides.
+ */
+export type CandidateCheck = {
+    /**
+     * Whether it takes the company for a competitor of Tribelt.
+     */
+    competitor: boolean;
+    /**
+     * Whether it was sure.
+     */
+    sure: boolean;
+    /**
+     * Why, in one sentence; empty when it gave no answer for it.
+     */
+    reason: string;
+    /**
+     * The model that checked it.
+     */
+    model: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * Whether Claude Haiku is reviewing the candidates, and why its last review stopped short.
+ */
+export type CandidateReviewState = {
+    /**
+     * Whether it is reviewing now.
+     */
+    running: boolean;
+    /**
+     * Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its provider failed). Absent when it went well.
+     */
+    problem?: 'noKey' | 'failed';
+};
+
+/**
+ * Add or dismiss several competitor candidates.
+ */
+export type CandidateDecisions = {
+    /**
+     * Add each to the competitor list with its website, or dismiss it.
+     */
+    action: 'add' | 'dismiss';
+    /**
+     * The candidates.
+     */
+    ids: Array<CompetitorCandidateId>;
+};
+
+/**
+ * What deciding on several candidates did to each.
+ */
+export type CandidateDecisionResults = {
+    /**
+     * One per candidate, in the order asked.
+     */
+    items: Array<CandidateDecisionResult>;
+};
+
+/**
+ * What deciding did to one candidate.
+ */
+export type CandidateDecisionResult = {
+    id: CompetitorCandidateId;
+    /**
+     * Its name; absent for one that is gone.
+     */
+    name?: string;
+    /**
+     * Decided, or skipped with the reason.
+     */
+    outcome: 'done' | 'skipped';
+    /**
+     * Why it was skipped.
+     */
+    reason?: string;
 };
 
 /**
  * How many candidates have each status.
  */
 export type CompetitorCandidateCounts = {
+    /**
+     * Pending candidates Claude Haiku has not checked.
+     */
+    unchecked: number;
     /**
      * Pending candidates.
      */
@@ -2601,9 +2720,10 @@ export type CompetitorCandidateCounts = {
 };
 
 /**
- * The competitor candidates with one status.
+ * The competitor candidates with one status, and Claude Haiku's review of them.
  */
 export type CompetitorCandidateList = {
+    review: CandidateReviewState;
     /**
      * The candidates, most answers first.
      */
@@ -4055,6 +4175,129 @@ export type ListCompetitorCandidatesResponses = {
 };
 
 export type ListCompetitorCandidatesResponse = ListCompetitorCandidatesResponses[keyof ListCompetitorCandidatesResponses];
+
+export type StartCandidateReviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/review';
+};
+
+export type StartCandidateReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartCandidateReviewError = StartCandidateReviewErrors[keyof StartCandidateReviewErrors];
+
+export type StartCandidateReviewResponses = {
+    /**
+     * The review is under way.
+     */
+    202: CandidateReviewState;
+};
+
+export type StartCandidateReviewResponse = StartCandidateReviewResponses[keyof StartCandidateReviewResponses];
+
+export type DecideCompetitorCandidatesData = {
+    /**
+     * What to do, and to which candidates.
+     */
+    body: CandidateDecisions;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/decisions';
+};
+
+export type DecideCompetitorCandidatesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type DecideCompetitorCandidatesError = DecideCompetitorCandidatesErrors[keyof DecideCompetitorCandidatesErrors];
+
+export type DecideCompetitorCandidatesResponses = {
+    /**
+     * What happened to each candidate.
+     */
+    200: CandidateDecisionResults;
+};
+
+export type DecideCompetitorCandidatesResponse = DecideCompetitorCandidatesResponses[keyof DecideCompetitorCandidatesResponses];
+
+export type SplitCompetitorCandidateData = {
+    body?: never;
+    path: {
+        /**
+         * The competitor candidate's id.
+         */
+        competitorCandidateId: CompetitorCandidateId;
+    };
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/{competitorCandidateId}/split';
+};
+
+export type SplitCompetitorCandidateErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SplitCompetitorCandidateError = SplitCompetitorCandidateErrors[keyof SplitCompetitorCandidateErrors];
+
+export type SplitCompetitorCandidateResponses = {
+    /**
+     * Split off.
+     */
+    204: void;
+};
+
+export type SplitCompetitorCandidateResponse = SplitCompetitorCandidateResponses[keyof SplitCompetitorCandidateResponses];
 
 export type AddCompetitorCandidateData = {
     /**

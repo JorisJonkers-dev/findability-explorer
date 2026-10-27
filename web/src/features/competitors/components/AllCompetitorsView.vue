@@ -138,7 +138,7 @@ function show(f: RosterFilter): void {
                     :disabled="isQueuing"
                     @click="rescan({ competitorIds: [c.id] })"
                   >
-                    {{ c.scans === 0 ? 'Scan' : 'Scan again' }}<span class="sr-only"> {{ c.name }}</span>
+                    {{ c.scans === 0 ? 'Scan' : 'Scan again' }}<span class="sr-only">{{ ' ' + c.name }}</span>
                   </button>
                 </td>
               </tr>

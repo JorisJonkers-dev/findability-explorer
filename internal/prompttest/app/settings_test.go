@@ -130,7 +130,7 @@ func TestCandidatesAreReviewedAddedDismissedAndUndone(t *testing.T) {
 	}
 	pending, counts, err := e.svc.Candidates(t.Context(), domain.CandidatePending)
 	if err != nil || len(pending) != 1 || pending[0].Name != "Ashworth" || pending[0].Answers != 40 ||
-		!slices.Equal(pending[0].Addresses, []string{"https://ashworth.com"}) || counts[domain.CandidatePending] != 1 {
+		!slices.Equal(pending[0].Addresses, []string{"https://ashworth.com"}) || counts.Pending != 1 {
 		t.Fatalf("pending = %+v, %v, %v", pending, counts, err)
 	}
 	id := pending[0].ID
@@ -142,7 +142,7 @@ func TestCandidatesAreReviewedAddedDismissedAndUndone(t *testing.T) {
 		t.Errorf("a decided candidate dismissed: %v", err)
 	}
 	all, counts, _ := e.svc.Candidates(t.Context(), "")
-	if len(all) != 1 || counts[domain.CandidateAdded] != 1 {
+	if len(all) != 1 || counts.Added != 1 {
 		t.Errorf("all = %+v, %v", all, counts)
 	}
 	if err := e.svc.UndoCandidate(t.Context(), "joris", id); err != nil || len(e.dir.added) != 0 {

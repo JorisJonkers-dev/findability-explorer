@@ -98,7 +98,9 @@ type Querier interface {
 	ListPromptAnswerCompanies(ctx context.Context, runID uuid.UUID) ([]ListPromptAnswerCompaniesRow, error)
 	// A run's answers with how they were read; the answer's text only when with_text is true.
 	ListPromptAnswers(ctx context.Context, arg ListPromptAnswersParams) ([]ListPromptAnswersRow, error)
+	ListPromptCandidateChecks(ctx context.Context) ([]PromptCandidateCheck, error)
 	ListPromptCandidateDecisions(ctx context.Context) ([]ListPromptCandidateDecisionsRow, error)
+	ListPromptCandidateMerges(ctx context.Context) ([]ListPromptCandidateMergesRow, error)
 	ListPromptRunModels(ctx context.Context, ids []uuid.UUID) ([]ListPromptRunModelsRow, error)
 	ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRunsRow, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
@@ -116,6 +118,8 @@ type Querier interface {
 	// Runs a finished run again, held by owner, unless any run is running: the run lock.
 	ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error)
 	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
+	SavePromptCandidateCheck(ctx context.Context, arg SavePromptCandidateCheckParams) error
+	SavePromptCandidateMerge(ctx context.Context, arg SavePromptCandidateMergeParams) error
 	SavePromptSettings(ctx context.Context, arg SavePromptSettingsParams) error
 	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error

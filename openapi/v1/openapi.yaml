@@ -1085,8 +1085,9 @@ paths:
       summary: List the competitor candidates
       description: >-
         Administrators only. Every company the Prompt runs' answers name that is not on the
-        company list, with how often and by which providers' models, and the addresses given;
-        filtered by status, most answers first.
+        company list, with how often and by which providers' models, the addresses given and its
+        websites; names on one website, or merged, are one company. Filtered by status, most
+        answers first.
       tags: [admin]
       parameters:
         - name: status
@@ -1107,6 +1108,85 @@ paths:
         "401":
           $ref: "#/components/responses/Problem"
         "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates/review:
+    post:
+      operationId: startCandidateReview
+      summary: Let Claude Haiku review the competitor candidates
+      description: >-
+        Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
+        candidates that are one company, or a company on the list, and then checks each company it
+        has not checked for whether it is a competitor of Tribelt. Its check is a suggestion; a
+        person adds or dismisses. Returns the review's state; running already is no error.
+      tags: [admin]
+      responses:
+        "202":
+          description: The review is under way.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateReviewState"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates/decisions:
+    post:
+      operationId: decideCompetitorCandidates
+      summary: Add or dismiss several competitor candidates at once
+      description: >-
+        Administrators only. Adds each candidate to the competitor list with its website, or
+        dismisses it. One without a website, one decided already, and one the list refuses are
+        skipped with the reason.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: What to do, and to which candidates.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateDecisions"
+      responses:
+        "200":
+          description: What happened to each candidate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateDecisionResults"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates/{competitorCandidateId}/split:
+    post:
+      operationId: splitCompetitorCandidate
+      summary: Split a merged name off its company
+      description: >-
+        Administrators only. Takes a name Claude Haiku or a person merged into a candidate out of
+        it again; it is not merged again. Names on one website stay one company: 409 for those.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/CompetitorCandidateIdPath"
+      responses:
+        "204":
+          description: Split off.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -5019,12 +5099,163 @@ components:
           example: "2026-11-01T06:10:00Z"
         decision:
           $ref: "#/components/schemas/CompetitorCandidateDecision"
+        sites:
+          type: array
+          maxItems: 20
+          description: The domains of its own websites the addresses point to, the most given first.
+          items:
+            type: string
+            maxLength: 253
+            example: ashworth.com
+        website:
+          type: string
+          maxLength: 500
+          description: The home page to add it with, on its first site; absent without one.
+          example: https://www.ashworth.com/
+        names:
+          type: array
+          maxItems: 200
+          description: Every name it goes by, the one it is listed under first.
+          items:
+            $ref: "#/components/schemas/CandidateName"
+        check:
+          $ref: "#/components/schemas/CandidateCheck"
+    CandidateName:
+      description: One name a competitor candidate goes by.
+      type: object
+      additionalProperties: false
+      required: [id, name, answers, joined]
+      properties:
+        id:
+          $ref: "#/components/schemas/CompetitorCandidateId"
+        name:
+          type: string
+          maxLength: 200
+          description: How the answers spell it most often.
+          example: Ashworth Bros. Inc.
+        answers:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000000
+          description: How many answers give this name.
+          example: 2
+        joined:
+          description: >-
+            How it joined - lead (the name the candidate is listed under), site (given with an
+            address on the same website) or model (merged by Claude Haiku or a person).
+          type: string
+          enum: [lead, site, model]
+    CandidateCheck:
+      description: Claude Haiku's check of a candidate. A suggestion; a person decides.
+      type: object
+      additionalProperties: false
+      required: [competitor, sure, reason, model, at]
+      properties:
+        competitor:
+          type: boolean
+          description: Whether it takes the company for a competitor of Tribelt.
+          example: true
+        sure:
+          type: boolean
+          description: Whether it was sure.
+          example: true
+        reason:
+          type: string
+          maxLength: 500
+          description: Why, in one sentence; empty when it gave no answer for it.
+          example: Makes stainless steel wire mesh conveyor belts for ovens.
+        model:
+          type: string
+          maxLength: 200
+          description: The model that checked it.
+          example: "anthropic: claude-haiku-5-5"
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-10-27T09:30:00Z"
+    CandidateReviewState:
+      description: Whether Claude Haiku is reviewing the candidates, and why its last review stopped short.
+      type: object
+      additionalProperties: false
+      required: [running]
+      properties:
+        running:
+          type: boolean
+          description: Whether it is reviewing now.
+          example: false
+        problem:
+          description: >-
+            Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the
+            model or its provider failed). Absent when it went well.
+          type: string
+          enum: [noKey, failed]
+    CandidateDecisions:
+      description: Add or dismiss several competitor candidates.
+      type: object
+      additionalProperties: false
+      required: [action, ids]
+      properties:
+        action:
+          type: string
+          enum: [add, dismiss]
+          description: Add each to the competitor list with its website, or dismiss it.
+        ids:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          description: The candidates.
+          items:
+            $ref: "#/components/schemas/CompetitorCandidateId"
+    CandidateDecisionResults:
+      description: What deciding on several candidates did to each.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          description: One per candidate, in the order asked.
+          items:
+            $ref: "#/components/schemas/CandidateDecisionResult"
+    CandidateDecisionResult:
+      description: What deciding did to one candidate.
+      type: object
+      additionalProperties: false
+      required: [id, outcome]
+      properties:
+        id:
+          $ref: "#/components/schemas/CompetitorCandidateId"
+        name:
+          type: string
+          maxLength: 200
+          description: Its name; absent for one that is gone.
+          example: Ashworth
+        outcome:
+          type: string
+          enum: [done, skipped]
+          description: Decided, or skipped with the reason.
+        reason:
+          type: string
+          maxLength: 300
+          description: Why it was skipped.
+          example: The answers gave no website for it; add it on its own.
     CompetitorCandidateCounts:
       description: How many candidates have each status.
       type: object
       additionalProperties: false
-      required: [pending, added, dismissed]
+      required: [pending, added, dismissed, unchecked]
       properties:
+        unchecked:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: Pending candidates Claude Haiku has not checked.
+          example: 4
         pending:
           type: integer
           format: int32
@@ -5047,11 +5278,13 @@ components:
           description: Dismissed ones.
           example: 5
     CompetitorCandidateList:
-      description: The competitor candidates with one status.
+      description: The competitor candidates with one status, and Claude Haiku's review of them.
       type: object
       additionalProperties: false
-      required: [items, counts]
+      required: [items, counts, review]
       properties:
+        review:
+          $ref: "#/components/schemas/CandidateReviewState"
         items:
           type: array
           maxItems: 1000

@@ -88,6 +88,16 @@ func (UnimplementedHandler) CompareScans(ctx context.Context, params CompareScan
 	return r, ht.ErrNotImplemented
 }
 
+// DecideCompetitorCandidates implements decideCompetitorCandidates operation.
+//
+// Administrators only. Adds each candidate to the competitor list with its website, or dismisses it.
+// One without a website, one decided already, and one the list refuses are skipped with the reason.
+//
+// POST /api/v1/admin/competitor-candidates/decisions
+func (UnimplementedHandler) DecideCompetitorCandidates(ctx context.Context, req *CandidateDecisions) (r DecideCompetitorCandidatesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteCompetitor implements deleteCompetitor operation.
 //
 // Administrators only. An added company is deleted with every scan of it. A researched company is the
@@ -285,8 +295,8 @@ func (UnimplementedHandler) ListAnalyses(ctx context.Context, params ListAnalyse
 // ListCompetitorCandidates implements listCompetitorCandidates operation.
 //
 // Administrators only. Every company the Prompt runs' answers name that is not on the company list,
-// with how often and by which providers' models, and the addresses given; filtered by status, most
-// answers first.
+// with how often and by which providers' models, the addresses given and its websites; names on one
+// website, or merged, are one company. Filtered by status, most answers first.
 //
 // GET /api/v1/admin/competitor-candidates
 func (UnimplementedHandler) ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (r ListCompetitorCandidatesRes, _ error) {
@@ -390,6 +400,16 @@ func (UnimplementedHandler) SetPlanTargets(ctx context.Context, req *PlanTargets
 	return r, ht.ErrNotImplemented
 }
 
+// SplitCompetitorCandidate implements splitCompetitorCandidate operation.
+//
+// Administrators only. Takes a name Claude Haiku or a person merged into a candidate out of it again;
+// it is not merged again. Names on one website stay one company: 409 for those.
+//
+// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/split
+func (UnimplementedHandler) SplitCompetitorCandidate(ctx context.Context, params SplitCompetitorCandidateParams) (r SplitCompetitorCandidateRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StartAnalysis implements startAnalysis operation.
 //
 // Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
@@ -400,6 +420,18 @@ func (UnimplementedHandler) SetPlanTargets(ctx context.Context, req *PlanTargets
 //
 // POST /api/v1/analyses
 func (UnimplementedHandler) StartAnalysis(ctx context.Context, req *NewAnalysis) (r StartAnalysisRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StartCandidateReview implements startCandidateReview operation.
+//
+// Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
+// candidates that are one company, or a company on the list, and then checks each company it has not
+// checked for whether it is a competitor of Tribelt. Its check is a suggestion; a person adds or
+// dismisses. Returns the review's state; running already is no error.
+//
+// POST /api/v1/admin/competitor-candidates/review
+func (UnimplementedHandler) StartCandidateReview(ctx context.Context) (r StartCandidateReviewRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

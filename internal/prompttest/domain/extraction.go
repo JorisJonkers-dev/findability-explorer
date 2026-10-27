@@ -3,12 +3,12 @@ package domain
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"net/url"
 	"slices"
 	"strings"
 	"unicode"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/site"
 )
 
 // Correctness is how what an answer says about Tribelt holds against the fact sheet; empty when
@@ -115,30 +115,21 @@ func aliases(c DirectoryCompany) []string {
 	return out
 }
 
-// hostOf is an address's host without "www.", lower case; "" when it has none.
-func hostOf(raw string) string {
-	if !strings.Contains(raw, "://") {
-		raw = "https://" + raw
-	}
-	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil {
-		return ""
-	}
-	return strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
-}
-
-// sameSite reports whether host is site or one of its subdomains.
-func sameSite(host, site string) bool {
-	return site != "" && (host == site || strings.HasSuffix(host, "."+site))
+// sameCompany reports whether an address is on the website of the company with host: the same
+// registered domain, so "products.bandogrp.com" is Bando's. An address on a marketplace,
+// directory or social network is nobody's website.
+func sameCompany(address, host string) bool {
+	d := site.CompanyDomain(address)
+	return d != "" && d == site.Domain(host)
 }
 
 // Match finds the company on the list a name (and the address given for it) means: by website
-// host, by name or alias, or by a short name that starts one of them ("ESFO" for "ESFO
+// domain, by name or alias, or by a short name that starts one of them ("ESFO" for "ESFO
 // Transportbanden"). It returns "" for a name not on the list.
 func Match(n Named, directory []DirectoryCompany) string {
-	if h := hostOf(n.URL); h != "" {
+	if n.URL != "" {
 		for _, c := range directory {
-			if sameSite(h, c.Host) {
+			if sameCompany(n.URL, c.Host) {
 				return c.ID
 			}
 		}
@@ -191,8 +182,7 @@ func Read(x Extracted, citations []string, directory []DirectoryCompany) Extract
 		}
 	}
 	for _, a := range out.Addresses {
-		h := hostOf(a)
-		out.CitesTribelt = out.CitesTribelt || slices.ContainsFunc(tribeltHosts, func(t string) bool { return sameSite(h, t) })
+		out.CitesTribelt = out.CitesTribelt || slices.ContainsFunc(tribeltHosts, func(t string) bool { return sameCompany(a, t) })
 	}
 	if !out.NamesTribelt {
 		out.Correctness, out.WrongClaims = CorrectnessNone, nil
@@ -212,9 +202,8 @@ func CandidateID(key string) string {
 func CitedCompanies(addresses []string, directory []DirectoryCompany) []string {
 	var out []string
 	for _, a := range addresses {
-		h := hostOf(a)
 		for _, c := range directory {
-			if sameSite(h, c.Host) && !slices.Contains(out, c.ID) {
+			if sameCompany(a, c.Host) && !slices.Contains(out, c.ID) {
 				out = append(out, c.ID)
 			}
 		}

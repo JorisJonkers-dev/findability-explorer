@@ -63,6 +63,8 @@ type Service struct {
 	spawn  func(func())
 	onFail func(uuid.UUID, error)
 	cfg    Config
+	// review is the language model's review of the candidates; its reviewers are nil until WithReviewers.
+	review review
 }
 
 // Option changes how a Service waits and runs work in the background; tests use them.
@@ -71,6 +73,12 @@ type Option func(*Service)
 // WithSleep replaces the pause between calls.
 func WithSleep(sleep func(context.Context, time.Duration) error) Option {
 	return func(s *Service) { s.sleep = sleep }
+}
+
+// WithReviewers lets a language model review the competitor candidates; onError hears why a
+// review failed, which only the logs can report.
+func WithReviewers(r Reviewers, onError func(error)) Option {
+	return func(s *Service) { s.review.reviewers, s.review.onError = r, onError }
 }
 
 // WithSpawn replaces how a run is started in the background.

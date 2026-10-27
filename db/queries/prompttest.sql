@@ -168,3 +168,28 @@ VALUES (@id, @name, @status, sqlc.narg(competitor_id), @decided_by, @decided_at)
 -- name: DeletePromptCandidateDecision :execrows
 DELETE FROM prompt_candidate_decisions
 WHERE id = @id;
+
+-- name: ListPromptCandidateMerges :many
+SELECT candidate_id, coalesce(into_id, '')::text AS into_id, coalesce(competitor_id, '')::text AS competitor_id,
+    kept_apart, merged_by, merged_at
+FROM prompt_candidate_merges
+ORDER BY merged_at, candidate_id;
+
+-- name: SavePromptCandidateMerge :exec
+INSERT INTO prompt_candidate_merges (candidate_id, into_id, competitor_id, kept_apart, merged_by, merged_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (candidate_id) DO UPDATE SET
+    into_id = excluded.into_id, competitor_id = excluded.competitor_id, kept_apart = excluded.kept_apart,
+    merged_by = excluded.merged_by, merged_at = excluded.merged_at;
+
+-- name: ListPromptCandidateChecks :many
+SELECT candidate_id, competitor, sure, reason, model, checked_at
+FROM prompt_candidate_checks
+ORDER BY checked_at, candidate_id;
+
+-- name: SavePromptCandidateCheck :exec
+INSERT INTO prompt_candidate_checks (candidate_id, competitor, sure, reason, model, checked_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (candidate_id) DO UPDATE SET
+    competitor = excluded.competitor, sure = excluded.sure, reason = excluded.reason,
+    model = excluded.model, checked_at = excluded.checked_at;

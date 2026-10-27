@@ -279,3 +279,47 @@ func TestAFinishedRunIsAskedAgainUnderTheLock(t *testing.T) {
 		t.Errorf("answering an answered task = %v", err)
 	}
 }
+
+func TestMergesAndChecksOfCandidates(t *testing.T) {
+	t.Parallel()
+	r := repository(t)
+	ctx := t.Context()
+	merges := []domain.Merge{
+		{CandidateID: "00000000000000a2", IntoID: "00000000000000a1", By: domain.ModelMerger, At: at},
+		{CandidateID: "00000000000000b1", CompetitorID: "ashworth", By: domain.ModelMerger, At: at.Add(time.Minute)},
+	}
+	if err := r.SaveMerges(ctx, merges); err != nil {
+		t.Fatal(err)
+	}
+	// A person splits a name off: it replaces the model's merge.
+	if err := r.SaveMerges(ctx, []domain.Merge{{CandidateID: "00000000000000a2", Separate: true, By: "joris", At: at.Add(time.Hour)}}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Merges(ctx)
+	if err != nil || len(got) != 2 || got[0] != merges[1] || !got[1].Separate || got[1].IntoID != "" || got[1].By != "joris" {
+		t.Fatalf("merges = %+v, %v", got, err)
+	}
+	if err := r.SaveMerges(ctx, []domain.Merge{{CandidateID: "00000000000000c1", By: "joris", At: at}}); err == nil {
+		t.Error("a merge into nothing was stored")
+	}
+
+	checks := []domain.CompanyVerdict{
+		{CandidateID: "00000000000000a1", Competitor: true, Sure: true, Reason: "Makes metal belts.", Model: "anthropic: claude-haiku-5-5", At: at},
+		{CandidateID: "00000000000000b1", Model: "anthropic: claude-haiku-5-5", At: at},
+	}
+	if err := r.SaveCompanyVerdicts(ctx, checks); err != nil {
+		t.Fatal(err)
+	}
+	again := checks[1]
+	again.Competitor, again.At = true, at.Add(time.Hour)
+	if err := r.SaveCompanyVerdicts(ctx, []domain.CompanyVerdict{again}); err != nil {
+		t.Fatal(err)
+	}
+	verdicts, err := r.CompanyVerdicts(ctx)
+	if err != nil || len(verdicts) != 2 || verdicts[0] != checks[0] || verdicts[1] != again {
+		t.Fatalf("checks = %+v, %v", verdicts, err)
+	}
+	if err := r.SaveCompanyVerdicts(ctx, []domain.CompanyVerdict{{CandidateID: "not-an-id", Model: "m", At: at}}); err == nil {
+		t.Error("a check on a bad id was stored")
+	}
+}

@@ -24,6 +24,8 @@ type repo struct {
 	runs      []*storedRun
 	answers   []domain.Answer
 	decisions []domain.CandidateDecision
+	merges    []domain.Merge
+	verdicts  []domain.CompanyVerdict
 	failOn    map[string]bool
 	// heartbeatsLeft, when not negative, is how many heartbeats succeed before the run is
 	// taken over by another instance.
@@ -292,6 +294,41 @@ func (r *repo) Decide(_ context.Context, d domain.CandidateDecision) error {
 		return err
 	}
 	r.decisions = append(r.decisions, d)
+	return nil
+}
+
+func (r *repo) Merges(context.Context) ([]domain.Merge, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.merges), r.err("Merges")
+}
+
+func (r *repo) SaveMerges(_ context.Context, ms []domain.Merge) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("SaveMerges"); err != nil {
+		return err
+	}
+	for _, m := range ms {
+		r.merges = slices.DeleteFunc(r.merges, func(x domain.Merge) bool { return x.CandidateID == m.CandidateID })
+		r.merges = append(r.merges, m)
+	}
+	return nil
+}
+
+func (r *repo) CompanyVerdicts(context.Context) ([]domain.CompanyVerdict, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.verdicts), r.err("CompanyVerdicts")
+}
+
+func (r *repo) SaveCompanyVerdicts(_ context.Context, vs []domain.CompanyVerdict) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("SaveCompanyVerdicts"); err != nil {
+		return err
+	}
+	r.verdicts = append(r.verdicts, vs...)
 	return nil
 }
 

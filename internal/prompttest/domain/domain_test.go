@@ -138,10 +138,15 @@ func TestMatchFindsACompanyByNameAliasOrWebsite(t *testing.T) {
 			t.Errorf("Match(%+v) = %q, want %q", n, got, want)
 		}
 	}
+	// The same registered domain: a subdomain, or an address without a scheme.
+	if got := domain.Match(domain.Named{Name: "WBC", URL: "shop.wirebelt.co.uk/belts"}, directory()); got != "wire-belt" {
+		t.Errorf("a subdomain = %q", got)
+	}
 	if got := domain.Match(domain.Named{Name: "Narviflex"}, directory()); got != "esfo" {
 		t.Errorf("an alias's first word = %q", got)
 	}
-	for _, n := range []domain.Named{{Name: "Ashworth"}, {Name: "AB"}, {Name: "B.V."}, {Name: "Ashworth", URL: "http://[::1"}} {
+	// A page on a directory is nobody's website.
+	for _, n := range []domain.Named{{Name: "Ashworth"}, {Name: "AB"}, {Name: "B.V."}, {Name: "Ashworth", URL: "http://[::1"}, {Name: "Rothstein", URL: "https://www.europages.nl/tribelt.nl"}} {
 		if got := domain.Match(n, directory()); got != "" {
 			t.Errorf("Match(%+v) = %q, want none", n, got)
 		}
@@ -244,7 +249,7 @@ func TestCandidatesGatherUnmatchedNamesAcrossRuns(t *testing.T) {
 		{ID: domain.CandidateID(domain.NameKey("Distributor X")), Status: domain.CandidateDismissed, By: "joris"},
 		{ID: domain.CandidateID(domain.NameKey("Newly Added")), Status: domain.CandidateAdded, CompetitorID: "newly-added"},
 	}
-	got := domain.Candidates(sightings, decisions, dir)
+	got := domain.Candidates(sightings, decisions, dir, nil)
 	if len(got) != 3 {
 		t.Fatalf("candidates = %+v", got)
 	}

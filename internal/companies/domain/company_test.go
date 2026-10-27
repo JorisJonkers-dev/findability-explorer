@@ -262,12 +262,17 @@ func TestDuplicatesAreMatchedByHostAndNameKey(t *testing.T) {
 	d := domain.NewDirectory([]domain.Company{
 		{ID: "martens", Name: "Märtens Transportbänder GmbH", Host: "martens-belts.com"},
 		{ID: "wire-belt", Name: "Wire Belt Company Ltd", Host: "wirebelt.co.uk"},
+		{ID: "on-facebook", Name: "Only On Facebook", Host: "facebook.com"},
 	}, nil)
 	for _, tc := range []struct {
 		name, host string
 		want       string
 	}{
 		{"Anything", "martens-belts.com", "martens"},
+		// One registered domain is one website.
+		{"Anything", "shop.wirebelt.co.uk", "wire-belt"},
+		// A platform many companies share is no one's website.
+		{"Another On Facebook", "m.facebook.com", ""},
 		{"Martens Transportbander", "new.example", "martens"},
 		{"Wire Belt Company", "", "wire-belt"},
 		{"Wire Belt Osterloh", "wirebelt.de", ""},

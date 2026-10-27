@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CompetitorCandidate } from '../../../infrastructure/api/types.gen'
-import { candidateDecisionLine, candidateDraft, candidateEvidence, checkCandidateDraft } from './candidates'
+import { CHECK_FILTERS, type CheckFilter, candidateDecisionLine, candidateDraft, candidateEvidence, checkCandidateDraft, checkLine, decidedLine, idsOf, keptBy, matchesSearch, otherNames, reviewLine } from './candidates'
 
 const candidate = (overrides: Partial<CompetitorCandidate> = {}): CompetitorCandidate => ({
   id: '3a7bd3e2360a9f01',
@@ -38,5 +38,60 @@ describe('a company named in AI answers', () => {
     expect(checkCandidateDraft({ name: ' ', website: 'https://x.com' })).toEqual({ kind: 'invalid', message: 'Enter the company’s name.' })
     expect(checkCandidateDraft({ name: 'X', website: '' })).toEqual({ kind: 'invalid', message: 'Enter its website, starting with https://.' })
     expect(checkCandidateDraft({ name: 'X', website: 'www.x.com' })).toEqual({ kind: 'invalid', message: 'Enter its website, starting with https://.' })
+  })
+})
+
+describe('finding and acting on many companies', () => {
+  const metiz = candidate({
+    name: 'Taiwan Metiz Alliance',
+    sites: ['metiz.tw'],
+    website: 'https://metiz.tw/',
+    names: [
+      { id: '3a7bd3e2360a9f01', name: 'Taiwan Metiz Alliance', answers: 4, joined: 'lead' },
+      { id: '3a7bd3e2360a9f02', name: 'Metiz', answers: 1, joined: 'site' },
+    ],
+  })
+  const check = (over: Partial<NonNullable<CompetitorCandidate['check']>> = {}) => ({
+    competitor: true, sure: true, reason: 'Makes wire mesh belts.', model: 'anthropic: claude-haiku-5-5', at: '2026-10-27T09:00:00Z', ...over,
+  })
+
+  it('searches every name and website, and lists the other names', () => {
+    expect(matchesSearch(metiz, '  ')).toBe(true)
+    expect(matchesSearch(metiz, 'metiz')).toBe(true)
+    expect(matchesSearch(metiz, 'METIZ.TW')).toBe(true)
+    expect(matchesSearch(metiz, 'ashworth')).toBe(false)
+    expect(matchesSearch(candidate(), 'ashw')).toBe(true)
+    expect(otherNames(metiz).map((n) => n.name)).toEqual(['Metiz'])
+    expect(otherNames(candidate())).toEqual([])
+    expect(candidateDraft(metiz)).toEqual({ name: 'Taiwan Metiz Alliance', website: 'https://metiz.tw/' })
+    expect(idsOf([metiz, candidate()])).toEqual(['3a7bd3e2360a9f01', '3a7bd3e2360a9f01'])
+  })
+
+  it('filters on what Haiku made of each, and says it', () => {
+    const yes = candidate({ check: check() })
+    const no = candidate({ check: check({ competitor: false, reason: 'Makes plastic belts.' }) })
+    const unsure = candidate({ check: check({ sure: false, reason: 'Could be either.' }) })
+    const silent = candidate({ check: check({ sure: false, reason: '' }) })
+    const none = candidate()
+    const kept = (f: CheckFilter) => [yes, no, unsure, none].filter((c) => keptBy(c, f)).length
+    expect(CHECK_FILTERS.map((f) => [f.value, kept(f.value)])).toEqual([['all', 4], ['competitor', 1], ['not', 1], ['unsure', 1], ['unchecked', 1]])
+    expect(checkLine(none)).toBeNull()
+    expect(checkLine(yes)).toBe('Haiku says a competitor. Makes wire mesh belts.')
+    expect(checkLine(no)).toBe('Haiku says not a competitor. Makes plastic belts.')
+    expect(checkLine(unsure)).toBe('Haiku is unsure. Could be either.')
+    expect(checkLine(silent)).toBe('Haiku gave no answer for it.')
+  })
+
+  it('says how far Haiku is, and what acting on several did', () => {
+    expect(reviewLine({ running: true }, 3)).toBe('Haiku is merging the duplicates and checking the companies.')
+    expect(reviewLine({ running: false, problem: 'noKey' }, 3)).toBe('No Anthropic key is set up, so Haiku cannot check the companies.')
+    expect(reviewLine({ running: false, problem: 'failed' }, 3)).toBe('Haiku failed on its last try. Try again.')
+    expect(reviewLine({ running: false }, 1)).toBe('Haiku has not checked 1 company yet.')
+    expect(reviewLine({ running: false }, 12)).toBe('Haiku has not checked 12 companies yet.')
+    expect(reviewLine({ running: false }, 0)).toBe('Haiku has checked every company.')
+    const done = { id: '3a7bd3e2360a9f01', outcome: 'done' as const }
+    const skipped = { id: '3a7bd3e2360a9f02', outcome: 'skipped' as const, reason: 'No website.' }
+    expect(decidedLine('add', [done, done, skipped])).toBe('Added 2 companies. Skipped 1.')
+    expect(decidedLine('dismiss', [done])).toBe('Dismissed 1 company.')
   })
 })

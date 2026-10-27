@@ -42,7 +42,7 @@ describe('the Prompt test’s settings', () => {
 
 describe('the competitor candidates', () => {
   it('names the tabs and reads the one in the address', () => {
-    expect(candidateTab('pending', { pending: 12, added: 1, dismissed: 3 })).toBe('To review (12)')
+    expect(candidateTab('pending', { pending: 12, added: 1, dismissed: 3, unchecked: 0 })).toBe('To review (12)')
     expect(candidateTab('dismissed', undefined)).toBe('Dismissed')
     expect([parseCandidateStatus('added'), parseCandidateStatus('nonsense'), parseCandidateStatus(undefined)]).toEqual(['added', 'pending', 'pending'])
   })

@@ -185,10 +185,10 @@ export function newTermCount(keywords: readonly Pick<Keyword, 'inMap'>[]): numbe
   return keywords.filter((k) => !k.inMap).length
 }
 
-/** The line beside a finished scan's host: "15 pages read · 4 new terms". */
+/** The line beside a finished scan's host: "15 pages read, 4 new terms". */
 export function resultLine(pagesRead: number, newTerms: number): string {
   const pages = `${String(pagesRead)} ${pagesRead === 1 ? 'page' : 'pages'} read`
-  return `${pages} · ${String(newTerms)} new ${newTerms === 1 ? 'term' : 'terms'}`
+  return `${pages}, ${String(newTerms)} new ${newTerms === 1 ? 'term' : 'terms'}`
 }
 
 /** Who matched the products: "Matched by openrouter/anthropic/claude-haiku". */

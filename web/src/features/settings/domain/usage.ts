@@ -19,7 +19,7 @@ export function usageLines(u: LlmKeyUsage): string[] {
       u.monthlyUsd === undefined ? null : `${dollars(u.monthlyUsd)} this month`,
       u.totalUsd === undefined ? null : `${dollars(u.totalUsd)} in all`,
     ].filter((s) => s !== null)
-    lines.push(spend.join(' · '))
+    lines.push(`${spend.join(', ')}.`)
     if (u.limitUsd === undefined) {
       lines.push('No spending limit on this key.')
     } else {

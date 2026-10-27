@@ -136,10 +136,10 @@ describe('labels', () => {
   it('sums the scans up for the company list', () => {
     const now = new Date(2026, 9, 26, 9, 0)
     expect(listScanLabel({ scans: 0 }, now)).toBe('No scans')
-    expect(listScanLabel({ scans: 2, lastScan: summary({ createdAt: new Date(2026, 9, 26, 7, 24).toISOString() }) }, now)).toBe('2 scans · today')
-    expect(listScanLabel({ scans: 1, lastScan: summary({ createdAt: new Date(2026, 9, 3).toISOString() }) }, now)).toBe('1 scan · 3 Oct')
-    expect(listScanLabel({ scans: 4, lastScan: summary({ status: 'queued' }) }, now)).toBe('4 scans · waiting to start')
-    expect(listScanLabel({ scans: 2, lastScan: summary({ status: 'running', pagesCrawled: 3, maxPages: 15 }) }, now)).toBe('2 scans · reading page 4 of 15')
+    expect(listScanLabel({ scans: 2, lastScan: summary({ createdAt: new Date(2026, 9, 26, 7, 24).toISOString() }) }, now)).toBe('2 scans, today')
+    expect(listScanLabel({ scans: 1, lastScan: summary({ createdAt: new Date(2026, 9, 3).toISOString() }) }, now)).toBe('1 scan, 3 Oct')
+    expect(listScanLabel({ scans: 4, lastScan: summary({ status: 'queued' }) }, now)).toBe('4 scans, waiting to start')
+    expect(listScanLabel({ scans: 2, lastScan: summary({ status: 'running', pagesCrawled: 3, maxPages: 15 }) }, now)).toBe('2 scans, reading page 4 of 15')
   })
 
   it('tells a company being scanned now', () => {

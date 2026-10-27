@@ -12,7 +12,7 @@ describe('a credential', () => {
   })
 
   it('is named by provider and label, and only a stored one can be removed', () => {
-    expect(credentialName(storedCredential())).toBe('OpenRouter · Course budget key')
+    expect(credentialName(storedCredential())).toBe('Course budget key (OpenRouter)')
     expect(canRemove(storedCredential())).toBe(true)
     expect(canRemove(vaultCredential())).toBe(false)
   })
@@ -41,7 +41,7 @@ describe('the active model', () => {
     expect(activeState(llmSettings())).toEqual({
       kind: 'active',
       model: 'claude-haiku-5-5',
-      credential: 'Anthropic (Claude) · Vault key',
+      credential: 'Vault key (Anthropic (Claude))',
       isDefault: true,
       working: true,
     })

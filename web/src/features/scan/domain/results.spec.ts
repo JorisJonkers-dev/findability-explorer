@@ -199,8 +199,8 @@ describe('the pages read', () => {
 describe('the result line', () => {
   it('counts the pages read and the new terms', () => {
     expect(newTermCount([{ inMap: true }, { inMap: false }, { inMap: false }])).toBe(2)
-    expect(resultLine(15, 4)).toBe('15 pages read · 4 new terms')
-    expect(resultLine(1, 1)).toBe('1 page read · 1 new term')
+    expect(resultLine(15, 4)).toBe('15 pages read, 4 new terms')
+    expect(resultLine(1, 1)).toBe('1 page read, 1 new term')
   })
 
   it('names the model that matched the products, when there was one', () => {

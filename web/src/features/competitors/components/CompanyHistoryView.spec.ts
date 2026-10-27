@@ -82,9 +82,9 @@ describe('a company’s search terms and history', () => {
 
     const timeline = wrapper.get('ol[aria-label="Scans, newest first"]')
     expect(timeline.findAll('li').map((li) => li.text())).toEqual([
-      'Scan 3, Finished23 Oct 2026 · Finished · 48 of 60 pagesanthropic: claude-haiku-5-5',
-      'Scan 2, Failed22 Oct 2026 · Failed · 0 of 15 pagesno model',
-      'Scan 1, Finished22 Oct 2026 · Finished · 15 of 15 pagesno model',
+      'Scan 3, Finished23 Oct 2026. Finished. 48 of 60 pages.anthropic: claude-haiku-5-5',
+      'Scan 2, Failed22 Oct 2026. Failed. 0 of 15 pages.no model',
+      'Scan 1, Finished22 Oct 2026. Finished. 15 of 15 pages.no model',
     ])
     expect(timeline.get('a').attributes('href')).toBe(`/scan/${SCAN_3}?company=twentebelt`)
 

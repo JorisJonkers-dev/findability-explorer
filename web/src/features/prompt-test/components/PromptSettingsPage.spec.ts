@@ -72,7 +72,7 @@ describe('the Prompt test settings', () => {
     expect(wrapper.get('section[aria-labelledby="run-title"] table').text()).toContain('40,000 / 90,000')
     expect(wrapper.get('section[aria-labelledby="run-title"] table').text()).toContain('$0.42')
     const choice = form(wrapper, 'choice-title')
-    expect(choice.get('select').findAll('option').map((o) => o.text())).toEqual(['Choose a key', 'OpenRouter · Course budget key'])
+    expect(choice.get('select').findAll('option').map((o) => o.text())).toEqual(['Choose a key', 'Course budget key (OpenRouter)'])
     expect(choice.findAll('ul[aria-label="Providers"] li').map((l) => l.find('span').text())).toEqual([
       'OpenAIopenai/gpt-oss-20b',
       'Googlegoogle/gemma:free, then google/gemini-2.5-flash-lite',

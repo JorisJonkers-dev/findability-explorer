@@ -38,7 +38,7 @@ func New(uc UseCases, actor func(context.Context) string) *Handler {
 }
 
 // maxCandidates is the most candidates one list returns, as the contract allows.
-const maxCandidates = 1000
+const maxCandidates = 10000
 
 // ListTermCandidates implements listTermCandidates.
 func (h *Handler) ListTermCandidates(ctx context.Context, params oas.ListTermCandidatesParams) (oas.ListTermCandidatesRes, error) {

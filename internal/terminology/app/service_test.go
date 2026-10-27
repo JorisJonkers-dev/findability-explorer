@@ -30,14 +30,14 @@ func many(n int) []domain.Term {
 }
 
 func TestSearchClampsTheLimit(t *testing.T) {
-	svc := newService(catalogue{terms: many(300)})
-	cases := map[int]int{0: app.DefaultLimit, -4: app.DefaultLimit, 7: 7, 1000: app.MaxLimit}
+	svc := newService(catalogue{terms: many(10_200)})
+	cases := map[int]int{0: app.DefaultLimit, -4: app.DefaultLimit, 7: 7, 50_000: app.MaxLimit}
 	for limit, want := range cases {
-		if got := svc.Search(domain.Query{Limit: limit}); len(got.Items) != want || got.Total != 300 {
+		if got := svc.Search(domain.Query{Limit: limit}); len(got.Items) != want || got.Total != 10_200 {
 			t.Errorf("Search(limit %d) = %d items of %d, want %d", limit, len(got.Items), got.Total, want)
 		}
 	}
-	if len(svc.Terms()) != 300 {
+	if len(svc.Terms()) != 10_200 {
 		t.Error("Terms does not return the whole map")
 	}
 }

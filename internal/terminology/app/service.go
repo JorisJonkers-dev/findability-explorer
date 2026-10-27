@@ -18,7 +18,7 @@ const (
 	// DefaultLimit is how many terms Search returns when the caller names no limit.
 	DefaultLimit = 50
 	// MaxLimit is the most terms one Search returns.
-	MaxLimit = 200
+	MaxLimit = 10000
 )
 
 // Catalogue is the read-only terminology map of the desk research. The seed adapter implements it.

@@ -157,7 +157,7 @@ func (h *Handler) GetLlmKeyUsage(ctx context.Context, params oas.GetLlmKeyUsageP
 	if !u.Since.IsZero() {
 		out.Since = oas.NewOptDateTime(u.Since)
 	}
-	for _, m := range u.Models[:min(len(u.Models), 200)] {
+	for _, m := range u.Models[:min(len(u.Models), 1000)] {
 		out.Models = append(out.Models, oas.LlmModelTokens{
 			Model: clip(m.Model, 200), InputTokens: m.InputTokens, OutputTokens: m.OutputTokens, CacheReadTokens: m.CacheRead,
 		})

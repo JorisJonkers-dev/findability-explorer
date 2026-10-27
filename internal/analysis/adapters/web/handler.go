@@ -290,7 +290,7 @@ func toProfileTerm(t domain.ProfileTerm) oas.ProfileTerm {
 }
 
 // maxChanges is the most changes of one kind a group lists, as the contract allows.
-const maxChanges = 200
+const maxChanges = 10000
 
 func toChanges(changes []domain.TermChange) []oas.TermChange {
 	out := make([]oas.TermChange, 0, min(len(changes), maxChanges))

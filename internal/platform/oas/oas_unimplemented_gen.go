@@ -384,11 +384,12 @@ func (UnimplementedHandler) RejectTermCandidate(ctx context.Context, params Reje
 // RetryPromptRun implements retryPromptRun operation.
 //
 // Administrators only. Asks a finished run's failed and missing answers again, or only the one
-// question of one provider and mode named, in the same run: with the run's prompt set and models, each
-// new answer replacing the failed one, what the failed try cost still counted. It runs in the
-// background and stops at the month's budget like any run. 404 for a run nobody knows; 409 while a run
-// is running or once the month's budget is spent; 422 when nothing is left to ask, the run asked an
-// earlier set of questions, or no OpenRouter key is chosen.
+// question of one provider and mode named, in the same run: with the run's questions and models, each
+// new answer replacing the failed one, what the failed try cost still counted. A run of an earlier
+// prompt set asks the questions its answers kept; a question no answer kept cannot be asked again. It
+// runs in the background and stops at the month's budget like any run. 404 for a run nobody knows; 409
+// while a run is running or once the month's budget is spent; 422 when nothing is left to ask or no
+// OpenRouter key is chosen.
 //
 // POST /api/v1/admin/prompt-runs/{runId}/retry
 func (UnimplementedHandler) RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (r RetryPromptRunRes, _ error) {

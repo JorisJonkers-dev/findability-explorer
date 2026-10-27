@@ -431,3 +431,33 @@ func TestPricesFollowTheProvidersSetNow(t *testing.T) {
 		t.Errorf("with deepseek = %+v", more)
 	}
 }
+
+func TestQuestionsOfARunAreItsSetOrWhatItsAnswersKept(t *testing.T) {
+	current := domain.Run{PromptSetVersion: domain.PromptSetVersion}
+	if set := domain.QuestionsOf(current, nil); set.Version != domain.PromptSetVersion || len(set.Prompts) != 20 {
+		t.Fatalf("the current set = %+v", set)
+	}
+	supplier := domain.Prompt{ID: "eyelink-supplier-twente", Family: domain.FamilyEyelink, Kind: domain.KindSupplier, Scope: domain.ScopeTwente, Language: "nl", Text: "Wie levert oogjesbanden?"}
+	problem := domain.Prompt{ID: "eyelink-problem-germany", Family: domain.FamilyEyelink, Kind: domain.KindProblem, Scope: domain.ScopeGermany, Language: "de", Text: "Unser Band reißt."}
+	models := []domain.ModelChoice{{Provider: "openai"}, {Provider: "google"}}
+	earlier := domain.Run{PromptSetVersion: 1, Models: models, Tasks: 3 * 2 * 2}
+	answers := []domain.Answer{
+		{Prompt: supplier, Provider: "openai", Mode: domain.ModeWeb},
+		{Prompt: problem, Provider: "google", Mode: domain.ModeKnowledge, Failure: "Rate limited."},
+		{Prompt: supplier, Provider: "google", Mode: domain.ModeWeb},
+	}
+	set := domain.QuestionsOf(earlier, answers)
+	if set.Version != 1 || len(set.Prompts) != 2 || set.Prompts[0] != supplier || set.Prompts[1] != problem {
+		t.Fatalf("an earlier set = %+v", set)
+	}
+	// Three questions were asked; one of them no answer kept.
+	if n := domain.Unknown(earlier, set); n != 4 {
+		t.Errorf("unknown = %d", n)
+	}
+	if n := domain.Unknown(domain.Run{Models: models}, set); n != 0 {
+		t.Errorf("unknown of a run asked as a whole = %d", n)
+	}
+	if missing := domain.Unanswered(set, models, answers); len(missing) != 6 {
+		t.Errorf("unanswered = %d", len(missing))
+	}
+}

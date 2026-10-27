@@ -18,16 +18,12 @@ type Retry struct {
 	Estimate domain.Micros
 }
 
-// Errors asking again returns besides the ports' own.
-var (
-	// ErrEarlierSet is returned for a run of a prompt set this release no longer asks.
-	ErrEarlierSet = fmt.Errorf("%w: this run asked an earlier set of questions, which is no longer asked", domain.ErrInvalid)
-	// ErrNothingFailed is returned when the run, or the one question named, has no failed answer.
-	ErrNothingFailed = fmt.Errorf("%w: no answer to ask again", domain.ErrInvalid)
-)
+// ErrNothingFailed is returned when the run, or the one question named, has no failed answer.
+var ErrNothingFailed = fmt.Errorf("%w: no answer to ask again", domain.ErrInvalid)
 
 // Retry asks a finished run's failed answers again, or the one task named, in the same run: with
-// the run's prompt set and models, each new answer replacing the failed one. It refuses while a
+// the questions the run asked (domain.QuestionsOf, so a run of an earlier prompt set asks the
+// questions its answers kept) and its models, each new answer replacing the failed one. It refuses while a
 // run is running (domain.ErrRunActive) or once the month's budget is spent
 // (domain.ErrBudgetReached), and stops at the budget like any run. The answers are asked in the
 // background.
@@ -39,15 +35,11 @@ func (s *Service) Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskK
 	if run.Status == domain.RunRunning {
 		return Retry{}, domain.ErrRunActive
 	}
-	set := domain.CurrentPromptSet()
-	if run.PromptSetVersion != set.Version {
-		return Retry{}, ErrEarlierSet
-	}
 	answers, err := s.repo.Answers(ctx, runID, false)
 	if err != nil {
 		return Retry{}, fmt.Errorf("the run's answers: %w", err)
 	}
-	tasks := domain.Unanswered(set, run.Models, answers)
+	tasks := domain.Unanswered(domain.QuestionsOf(run, answers), run.Models, answers)
 	if task != nil {
 		tasks = keep(tasks, *task)
 	}

@@ -85,8 +85,8 @@ func (s *Service) execute(ctx context.Context, run domain.Run, only map[domain.T
 	return e.finish(ctx)
 }
 
-// resume loads what a run has done: the tasks still to ask, or the ones only names, and the
-// answers stored without being read, as when a restart came between the two.
+// resume loads what a run has done: the tasks still to ask of the questions it asked, or the ones
+// only names, and the answers stored without being read, as when a restart came between the two.
 func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.TaskKey]bool) (*execution, []domain.Task, []domain.Answer, error) {
 	settings, err := s.settings(ctx)
 	if err != nil {
@@ -104,14 +104,12 @@ func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.Ta
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("this month's spend: %w", err)
 	}
-	set := domain.CurrentPromptSet()
-	if run.PromptSetVersion != set.Version {
-		return nil, nil, nil, fmt.Errorf("the run asked prompt set %d, which this release no longer has", run.PromptSetVersion)
-	}
 	done, err := s.repo.Answers(ctx, run.ID, true)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("the run's answers: %w", err)
 	}
+	// A run of an earlier prompt set asks the questions its answers kept.
+	set := domain.QuestionsOf(run, done)
 	answered := map[domain.TaskKey]bool{}
 	var unread []domain.Answer
 	for _, a := range done {

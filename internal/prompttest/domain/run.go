@@ -176,6 +176,30 @@ var (
 	ErrCompanyKnown = errors.New("another company has this website")
 )
 
+// QuestionsOf is the prompt set a run asked: the current one when the run asked it, else the
+// questions its answers kept, since every answer, a failed one too, keeps its question's text. A
+// question of an earlier set that no answer kept is not known any more, so it is left out.
+func QuestionsOf(run Run, answers []Answer) PromptSet {
+	if run.PromptSetVersion == PromptSetVersion {
+		return CurrentPromptSet()
+	}
+	set := PromptSet{Version: run.PromptSetVersion}
+	seen := map[string]bool{}
+	for _, a := range answers {
+		if !seen[a.Prompt.ID] {
+			seen[a.Prompt.ID] = true
+			set.Prompts = append(set.Prompts, a.Prompt)
+		}
+	}
+	return set
+}
+
+// Unknown is how many of a run's tasks cannot be asked again because their question is not
+// known: questions of an earlier set that no answer kept.
+func Unknown(run Run, set PromptSet) int {
+	return max(run.Tasks-len(Tasks(set, run.Models)), 0)
+}
+
 // Unanswered are the tasks of a run on set and models that have no answer, or whose answer failed.
 func Unanswered(set PromptSet, models []ModelChoice, answers []Answer) []Task {
 	answered := map[TaskKey]bool{}

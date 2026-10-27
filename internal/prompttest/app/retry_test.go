@@ -103,11 +103,6 @@ func TestRetryRefusals(t *testing.T) {
 	if _, err := e.svc.Retry(t.Context(), uuid.New(), nil); !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("no such run = %v", err)
 	}
-	e.repo.runs[0].run.PromptSetVersion = 1
-	if _, err := e.svc.Retry(t.Context(), run.ID, nil); !errors.Is(err, app.ErrEarlierSet) {
-		t.Errorf("an earlier set = %v", err)
-	}
-	e.repo.runs[0].run.PromptSetVersion = domain.PromptSetVersion
 	e.repo.settings.CredentialID = ""
 	if _, err := e.svc.Retry(t.Context(), run.ID, nil); !errors.Is(err, domain.ErrNoKey) {
 		t.Errorf("no key = %v", err)
@@ -126,5 +121,44 @@ func TestRetryRefusals(t *testing.T) {
 	}
 	if len(e.failures) == 0 {
 		t.Error("a retry that could not be recorded was not reported")
+	}
+}
+
+// earlierRun is a finished run of prompt set 1, which this release no longer asks: two questions,
+// one asked twice, the other failed once and never asked in the other mode.
+func earlierRun(t *testing.T) (*env, domain.Run) {
+	t.Helper()
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	run := domain.Run{
+		ID: uuid.New(), PromptSetVersion: 1, FactSheet: "facts", Status: domain.RunStopped, Tasks: 3 * 2,
+		Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}},
+	}
+	e.repo.runs = append(e.repo.runs, &storedRun{run: run, owner: "a"})
+	supplier := domain.Prompt{ID: "eyelink-supplier-twente", Family: domain.FamilyEyelink, Kind: domain.KindSupplier, Scope: domain.ScopeTwente, Language: "nl", Text: "Wie levert oogjesbanden in Twente?"}
+	problem := domain.Prompt{ID: "eyelink-problem-germany", Family: domain.FamilyEyelink, Kind: domain.KindProblem, Scope: domain.ScopeGermany, Language: "de", Text: "Unser Ösenband reißt."}
+	read := &domain.Extraction{Cost: 2}
+	e.repo.answers = []domain.Answer{
+		{ID: uuid.New(), RunID: run.ID, Prompt: supplier, PromptSetVersion: 1, Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Text: "Twentebelt.", Cost: 10}, Extraction: read},
+		{ID: uuid.New(), RunID: run.ID, Prompt: supplier, PromptSetVersion: 1, Provider: "openai", Mode: domain.ModeWeb, Reply: domain.Reply{Text: "Twentebelt.", Cost: 10}, Extraction: read},
+		{ID: uuid.New(), RunID: run.ID, Prompt: problem, PromptSetVersion: 1, Provider: "openai", Mode: domain.ModeKnowledge, Failure: "Rate limited."},
+	}
+	return e, run
+}
+
+func TestRetryAsksARunOfAnEarlierSetWithTheQuestionsItKept(t *testing.T) {
+	e, run := earlierRun(t)
+	got, err := e.svc.Retry(t.Context(), run.ID, nil)
+	// The failed answer and the mode never asked; the third question no answer kept.
+	if err != nil || got.Tasks != 2 {
+		t.Fatalf("retry = %+v, %v", got, err)
+	}
+	if failures(e) != 0 || len(e.repo.answers) != 4 || e.run(t).Status != domain.RunDone {
+		t.Fatalf("after asking again: %d failures in %d answers, run %s", failures(e), len(e.repo.answers), e.run(t).Status)
+	}
+	for _, a := range e.repo.answers {
+		if a.Prompt.ID == "eyelink-problem-germany" && (a.Prompt.Text != "Unser Ösenband reißt." || a.PromptSetVersion != 1 || a.Extraction == nil) {
+			t.Errorf("asked again = %+v", a)
+		}
 	}
 }

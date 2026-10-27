@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.11.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.10.0...v1.11.0) (2026-10-27)
+
+
+### Features
+
+* a researched map of the competitor candidates, and a script that applies it ([#84](https://github.com/JorisJonkers-dev/findability-explorer/issues/84)) ([620ce58](https://github.com/JorisJonkers-dev/findability-explorer/commit/620ce588ae8c0224c05ea54dd0f3d0ff6d64077a))
+* Haiku archives the companies on the list that do not compete, keeping their scans ([#79](https://github.com/JorisJonkers-dev/findability-explorer/issues/79)) ([dc1597a](https://github.com/JorisJonkers-dev/findability-explorer/commit/dc1597ae4dba08ea35723c08199b9fcf500676a2))
+
+
+### Bug Fixes
+
+* a phrase on pages in several languages takes the one its own words tell ([#82](https://github.com/JorisJonkers-dev/findability-explorer/issues/82)) ([f68396b](https://github.com/JorisJonkers-dev/findability-explorer/commit/f68396b12177770cb9caca2f7f1cbc3e31b3cab9))
+* AI readiness says Allowed, Partly or Blocked in words, and the headline counts what the table shows ([#76](https://github.com/JorisJonkers-dev/findability-explorer/issues/76)) ([0e519c0](https://github.com/JorisJonkers-dev/findability-explorer/commit/0e519c062d299955f35ab4fbf40776255c62ff51))
+* Haiku jobs stop at the monthly budget, failed readings can be read again, and the off switch wins ([#83](https://github.com/JorisJonkers-dev/findability-explorer/issues/83)) ([6feffc8](https://github.com/JorisJonkers-dev/findability-explorer/commit/6feffc89a6c373b4201043af1869ddd55cf85a0e))
+* Haiku's silence on a company is no check, and companies go to it by number ([#80](https://github.com/JorisJonkers-dev/findability-explorer/issues/80)) ([9da37f5](https://github.com/JorisJonkers-dev/findability-explorer/commit/9da37f52eebe7bfead160f1bdb7210d3ff3ce0a1))
+* one definition per statistic, computed once, and targets that are still goals ([#85](https://github.com/JorisJonkers-dev/findability-explorer/issues/85)) ([08874f5](https://github.com/JorisJonkers-dev/findability-explorer/commit/08874f5db4670d9986eebd73ad1a9d1b82256e6a))
+* **prompt-test:** show every grid mark in the legend and name the columns in full ([#81](https://github.com/JorisJonkers-dev/findability-explorer/issues/81)) ([c5edefe](https://github.com/JorisJonkers-dev/findability-explorer/commit/c5edefe91b37d3e3c975c2d8bc685ad78a1d32a1))
+* run at the site of the database ([#77](https://github.com/JorisJonkers-dev/findability-explorer/issues/77)) ([222a10c](https://github.com/JorisJonkers-dev/findability-explorer/commit/222a10c94d898da48a2d790bfed9aa25d512c10b))
+
 ## [1.10.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.9.0...v1.10.0) (2026-10-27)
 
 

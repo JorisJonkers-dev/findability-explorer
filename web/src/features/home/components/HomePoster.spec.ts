@@ -17,6 +17,11 @@ const api = routes({
 })
 
 const tiles = (wrapper: VueWrapper) => wrapper.findAll('nav[aria-label="Sections"] a')
+const overviewLink = (wrapper: VueWrapper) => {
+  const link = wrapper.findAll('nav[aria-label="Main"] a').find((a) => a.text() === 'Overview')
+  if (!link) throw new Error('no Overview link')
+  return link
+}
 const poster = (wrapper: VueWrapper) => wrapper.get('main > div > div > div')
 
 describe('the poster', () => {
@@ -35,7 +40,7 @@ describe('the poster', () => {
   it('links to the five sections, each with its figure and line', async () => {
     const { wrapper } = await mountApp(api, '/')
     expect(tiles(wrapper).map((a) => [a.attributes('href'), a.attributes('aria-label')])).toEqual([
-      ['/buyers', 'Buyers: 43× Organic visitors contact Tribelt 43 times more often than paid ones. Zoom in.'],
+      ['/catching-up', 'Catching up: … measures where Tribelt trails the leaders. Zoom in.'],
       ['/ai-search', 'AI search: 0 Googlebot visits to our mirror in more than three weeks. AI crawlers read every page. Zoom in.'],
       ['/competitors', 'Competitors: 2 competitors sell the same belts in Europe, each under its own names. Zoom in.'],
       ['/terms', "Search terms: 3 search terms in 2 languages. Tribelt's own website uses 1 of them. Zoom in."],
@@ -67,9 +72,9 @@ describe('the zoom', () => {
     await settle()
     expect(router.currentRoute.value.path).toBe('/plan')
     // Opened from the poster, the section settles in.
-    expect(wrapper.get('article').classes()).toContain('detail-in')
+    expect(wrapper.find('.detail-in').exists()).toBe(true)
 
-    await wrapper.get('article button').trigger('click')
+    await wrapper.get('nav[aria-label="Main"] button.cursor-zoom-out').trigger('click')
     await settle()
     expect(router.currentRoute.value.path).toBe('/')
     expect(poster(wrapper).classes()).toContain('zoom-out')
@@ -95,12 +100,13 @@ describe('the zoom', () => {
   })
 
   it('shows a section loaded directly without a zoom, and its Overview opens the poster as a new page', async () => {
-    const { wrapper, router } = await mountApp(api, '/buyers')
-    expect(wrapper.get('article').classes()).not.toContain('detail-in')
-    await wrapper.get('article button').trigger('click')
+    const { wrapper, router } = await mountApp(api, '/terms')
+    expect(wrapper.find('.detail-in').exists()).toBe(false)
+    expect(wrapper.find('nav[aria-label="Main"] button.cursor-zoom-out').exists()).toBe(false)
+    await overviewLink(wrapper).trigger('click')
     await settle()
     expect(router.currentRoute.value.fullPath).toBe('/')
-    // Back from the buyers section, the poster shrinks out of the buyers tile.
+    // Back from the search terms section, the poster shrinks out of its tile.
     expect(poster(wrapper).classes()).toContain('zoom-out')
   })
 })

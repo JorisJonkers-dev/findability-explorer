@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { TermCandidateStatus } from '../../../infrastructure/api/types.gen'
-import AccountBar from '../../shell/components/AccountBar.vue'
-import SectionEyebrow from '../../shell/components/SectionEyebrow.vue'
+import SettingsShell from '../../shell/components/SettingsShell.vue'
 import { useTermCandidates, useTermDecision } from '../composables/useTermReview'
 import { parseStatus, STATUSES, statusTab } from '../domain/candidates'
 import CandidateItem from './CandidateItem.vue'
@@ -23,30 +22,13 @@ const FORBIDDEN = 'Only administrators can review terms.'
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-10 px-4 pt-5 pb-20 sm:px-8 lg:pt-10">
-    <header class="flex flex-col gap-8">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <RouterLink
-          to="/settings"
-          class="inline-flex min-h-11 items-center gap-2 rounded-full bg-black px-5 font-medium text-white no-underline hover:bg-ink-2 hover:text-white"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 5 8 12l7 7" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          Settings
-        </RouterLink>
-        <AccountBar tone="light" />
-      </div>
-      <div class="flex flex-col gap-4">
-        <SectionEyebrow>Settings</SectionEyebrow>
-        <h1 class="m-0 font-display text-4xl leading-[0.95] font-semibold tracking-[-0.03em] sm:text-6xl">Term review</h1>
-        <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-          Phrases the scans found that the terminology map does not hold yet, with the companies that use them. An
-          accepted term joins the map, its search and the next scans; a rejected one stays out until the decision is
-          undone.
-        </p>
-      </div>
-    </header>
+  <SettingsShell title="Term review" :waiting="counts?.pending">
+    <template #lead>
+      <p class="m-0 max-w-[62ch] text-lg text-ink-2">
+        Phrases the scans found that the terminology map does not hold yet, with the companies that use them. An
+        accepted term joins the map and its search. A rejected one stays out until the decision is undone.
+      </p>
+    </template>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
       <p class="m-0 text-xl font-semibold">{{ FORBIDDEN }}</p>
@@ -83,5 +65,5 @@ const FORBIDDEN = 'Only administrators can review terms.'
         />
       </ul>
     </template>
-  </div>
+  </SettingsShell>
 </template>

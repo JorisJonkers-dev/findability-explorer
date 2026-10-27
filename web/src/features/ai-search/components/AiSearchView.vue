@@ -8,6 +8,7 @@ import RoundedPhoto from '../../../shared/ui/RoundedPhoto.vue'
 import RecommendationList from '../../../shared/ui/RecommendationList.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
 import SectionView from '../../shell/components/SectionView.vue'
+import { AI_SEARCH_TABS } from '../../shell/domain/sections'
 import PromptSummary from '../../prompt-test/components/PromptSummary.vue'
 import {
   AD_SURFACES,
@@ -33,7 +34,7 @@ const AD_DOT: Record<AdState, string> = { no: 'bg-orange-ink', notYet: 'bg-blue-
 </script>
 
 <template>
-  <SectionView section="ai-search" :title="TITLE" :source="SOURCE">
+  <SectionView section="ai-search" :title="TITLE" :source="SOURCE" :tabs="AI_SEARCH_TABS">
     <div class="flex flex-col gap-14 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,0.8fr)] stage:gap-24">
       <section aria-labelledby="tl-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-9">
         <SectionHeading id="tl-title">Who read the mirror, and when</SectionHeading>

@@ -4,6 +4,7 @@ import { useColumnLayout } from '../../../shared/useColumnLayout'
 import { computed, toRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import SectionView from '../../shell/components/SectionView.vue'
+import { companyTabs } from '../../shell/domain/sections'
 import ReadinessFiles from '../../readiness/components/ReadinessFiles.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { useCompany } from '../composables/useCompany'
@@ -30,7 +31,7 @@ function columnProps(i: number) {
 </script>
 
 <template>
-  <SectionView section="competitors" :title="title" :source="['Scans: live, from this app', 'Grouped by the terminology map']">
+  <SectionView section="competitors" :title="title" :tabs="companyTabs(companyId)" :source="['Scans: live, from this app', 'Grouped by the terminology map']">
     <div
       class="flex flex-col gap-10 stage:grid stage:min-h-0 stage:grid-rows-[auto_minmax(0,1fr)] stage:gap-x-24 stage:gap-y-10"
       :style="{ gridTemplateColumns: columns.template.value }"

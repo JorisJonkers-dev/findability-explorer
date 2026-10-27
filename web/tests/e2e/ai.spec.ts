@@ -4,7 +4,6 @@ const VIEWS = [
   { path: '/ai-search/readiness', title: 'AI readiness', heading: 'Who lets search engines and AI assistants in.' },
   { path: '/ai-search/prompt-test', title: 'Prompt test', heading: 'Do AI assistants name Tribelt?' },
   { path: '/settings/prompt-test', title: 'Prompt test settings', heading: 'Prompt test' },
-  { path: '/settings/candidates', title: 'Competitor candidates', heading: 'Competitor candidates' },
 ] as const
 
 for (const view of VIEWS) {

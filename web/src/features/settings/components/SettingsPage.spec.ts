@@ -51,8 +51,8 @@ describe('the settings page', () => {
     })
     const { wrapper } = await mountApp(server(settings).handle, '/settings')
     expect(document.title).toBe('Settings · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Language model')
-    expect(wrapper.get('nav[aria-label="Account"]').text()).toContain('Ada')
+    expect(wrapper.get('h1').text()).toBe('Language models')
+    expect(wrapper.get('header').text()).toContain('Signed in as Ada')
 
     const vault = keyItem(wrapper, 'Anthropic (Claude) · Vault key')
     expect(vault.text()).toContain('Vault')

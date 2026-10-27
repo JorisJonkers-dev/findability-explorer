@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
-import { RouterLink } from 'vue-router'
-import AccountBar from '../../shell/components/AccountBar.vue'
-import SectionEyebrow from '../../shell/components/SectionEyebrow.vue'
+import SettingsShell from '../../shell/components/SettingsShell.vue'
 import { useLlmSettings } from '../composables/useLlmSettings'
 import { FORBIDDEN_MESSAGE } from '../domain/problems'
 import AddCredentialForm from './AddCredentialForm.vue'
@@ -21,34 +19,13 @@ function removed(): void {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-12 px-4 pt-5 pb-20 sm:px-8 lg:pt-10">
-    <header class="flex flex-col gap-8">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <RouterLink
-          to="/"
-          class="inline-flex min-h-11 items-center gap-2 rounded-full bg-black px-5 font-medium text-white no-underline hover:bg-ink-2 hover:text-white"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 5 8 12l7 7" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          Overview
-        </RouterLink>
-        <AccountBar tone="light" />
-      </div>
-      <div class="flex flex-col gap-4">
-        <SectionEyebrow>Settings</SectionEyebrow>
-        <h1 class="m-0 font-display text-4xl leading-[0.95] font-semibold tracking-[-0.03em] sm:text-6xl">Language model</h1>
-        <p class="m-0 flex flex-wrap gap-x-6 gap-y-1">
-          <RouterLink to="/settings/terms" class="font-medium">Review the terms scans found</RouterLink>
-          <RouterLink to="/settings/prompt-test" class="font-medium">The Prompt test</RouterLink>
-          <RouterLink to="/settings/candidates" class="font-medium">Competitor candidates</RouterLink>
-        </p>
-        <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-          The model that matches a scanned website's products to Tribelt's belt families. API keys are checked with
-          their provider, stored sealed, and never shown again.
-        </p>
-      </div>
-    </header>
+  <SettingsShell title="Language models">
+    <template #lead>
+      <p class="m-0 max-w-[62ch] text-lg text-ink-2">
+        The model that matches a scanned website's products to Tribelt's belt families. API keys are checked with
+        their provider, stored sealed, and never shown again.
+      </p>
+    </template>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
       <p class="m-0 text-xl font-semibold">{{ FORBIDDEN_MESSAGE }}</p>
@@ -76,5 +53,5 @@ function removed(): void {
         <EventList :events="settings.events" />
       </div>
     </template>
-  </div>
+  </SettingsShell>
 </template>

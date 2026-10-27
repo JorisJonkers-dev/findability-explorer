@@ -9,13 +9,12 @@ import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import AccountBar from '../../shell/components/AccountBar.vue'
 import StageFrame from '../../shell/components/StageFrame.vue'
 import { usePreviousPath } from '../../shell/composables/navigation'
-import { SECTIONS, sectionOfPath } from '../../shell/domain/sections'
+import { type SectionId, SECTIONS, sectionOfPath } from '../../shell/domain/sections'
 import { useTermMap } from '../../terminology/composables/useTermSearch'
 import { useZoom } from '../composables/useZoom'
 import { COURSE_LINE, EYEBROW, LEAD, TEAM_LINE, TILE_TEXT } from '../domain/content'
 import { crawlerBars, familyBars, languageBars, makerCount, originOf, termsText } from '../domain/tiles'
 import TileBars from './TileBars.vue'
-import TilePairs from './TilePairs.vue'
 import TilePlan from './TilePlan.vue'
 
 const router = useRouter()
@@ -28,17 +27,19 @@ const { zoomClass, origin, zoomIn, zoomOut, finished } = useZoom((index) => {
   void router.push(SECTIONS[index]?.path ?? '/')
 })
 
-/** Each tile's big figure and line; the competitors and terms tiles count the live data. */
-const figures = computed(() => {
+/** Each tile's big figure and line, by section; the competitors and terms tiles count the live data. */
+const figures = computed<Record<SectionId, { big: string; text: string }>>(() => {
   const makers = makerCount(competitors.value)
   const terms = map.terms.value
-  return [
-    TILE_TEXT.buyers,
-    TILE_TEXT.aiSearch,
-    { big: makers > 0 ? String(makers) : '…', text: TILE_TEXT.competitors },
-    { big: terms.length > 0 ? String(map.total.value) : '…', text: terms.length > 0 ? termsText(terms) : 'search terms in the terminology map.' },
-    TILE_TEXT.plan,
-  ]
+  return {
+    'catching-up': { big: '…', text: 'measures where Tribelt trails the leaders.' },
+    'ai-search': TILE_TEXT.aiSearch,
+    competitors: { big: makers > 0 ? String(makers) : '…', text: TILE_TEXT.competitors },
+    products: { big: '', text: '' },
+    terms: { big: terms.length > 0 ? String(map.total.value) : '…', text: terms.length > 0 ? termsText(terms) : 'search terms in the terminology map.' },
+    plan: TILE_TEXT.plan,
+    buyers: TILE_TEXT.buyers,
+  }
 })
 
 /** Where a tile's centre is in the poster, measured in the poster's own (unscaled) pixels. */
@@ -94,19 +95,18 @@ onMounted(() => {
           <a
             ref="tiles"
             :href="href"
-            :aria-label="`${section.label}: ${figures[index]?.big} ${figures[index]?.text} Zoom in.`"
+            :aria-label="`${section.label}: ${figures[section.id].big} ${figures[section.id].text} Zoom in.`"
             class="flex cursor-zoom-in flex-col gap-4 overflow-hidden rounded-2xl bg-mist p-5 text-black no-underline transition-colors duration-200 hover:bg-grey hover:text-black stage:min-h-0 stage:gap-6 stage:rounded-[28px] stage:px-[52px] stage:pt-[52px] stage:pb-11"
             @click="open(index, $event)"
           >
             <span class="flex items-baseline gap-3 text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase stage:gap-[18px] stage:text-[28px]">
               <span>{{ section.number }}</span><span class="text-ink-2">{{ section.label }}</span>
             </span>
-            <span class="font-display text-6xl leading-[0.9] font-semibold tracking-[-0.03em] stage:text-[168px]">{{ figures[index]?.big }}</span>
-            <span class="leading-snug text-ink-2 stage:min-h-[132px] stage:text-[34px] stage:leading-[1.3]">{{ figures[index]?.text }}</span>
+            <span class="font-display text-6xl leading-[0.9] font-semibold tracking-[-0.03em] stage:text-[168px]">{{ figures[section.id].big }}</span>
+            <span class="leading-snug text-ink-2 stage:min-h-[132px] stage:text-[34px] stage:leading-[1.3]">{{ figures[section.id].text }}</span>
             <span aria-hidden="true" class="flex flex-col justify-end gap-3 stage:min-h-0 stage:flex-1 stage:gap-[18px]">
-              <TilePairs v-if="section.id === 'buyers'" />
               <TileBars
-                v-else-if="section.id === 'ai-search'"
+                v-if="section.id === 'ai-search'"
                 :bars="crawlerBars(CRAWLER_PAGES)"
                 fill="blue-grey"
                 strong="Googlebot"
@@ -117,7 +117,7 @@ onMounted(() => {
                 v-else-if="section.id === 'competitors'"
                 :bars="familyBars(competitors)"
                 fill="orange"
-                :legend="[{ label: `Competitors offering each Tribelt family, of ${figures[2]?.big}`, fill: 'orange' }]"
+                :legend="[{ label: `Competitors offering each Tribelt family, of ${figures.competitors.big}`, fill: 'orange' }]"
               />
               <TileBars
                 v-else-if="section.id === 'terms'"
@@ -128,7 +128,7 @@ onMounted(() => {
                   { label: 'Only others use', fill: 'blue-grey' },
                 ]"
               />
-              <TilePlan v-else />
+              <TilePlan v-else-if="section.id === 'plan'" />
             </span>
             <span aria-hidden="true" class="inline-flex items-center gap-2 text-sm font-medium text-muted stage:gap-3.5 stage:text-[24px]">
               <svg viewBox="0 0 24 24" class="size-5 stage:size-[30px]" fill="none" stroke="currentColor" stroke-width="2">

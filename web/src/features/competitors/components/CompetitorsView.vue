@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import StageColumn from '../../../shared/ui/StageColumn.vue'
 import { useColumnLayout } from '../../../shared/useColumnLayout'
 import SectionView from '../../shell/components/SectionView.vue'
+import { COMPETITOR_TABS } from '../../shell/domain/sections'
 import ScanPanel from '../../scan/components/ScanPanel.vue'
 import { useTermMap } from '../../terminology/composables/useTermSearch'
 import { useMe } from '../../shell/composables/useMe'
@@ -60,7 +61,7 @@ function scan(url: string): void {
 </script>
 
 <template>
-  <SectionView section="competitors" :title="title" :source="['Desk research, 22 and 26 October 2026', 'Scans: live, from this app']">
+  <SectionView section="competitors" :title="title" :tabs="COMPETITOR_TABS" :source="['Desk research, 22 and 26 October 2026', 'Scans: live, from this app']">
     <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :style="{ gridTemplateColumns: columns.template.value }">
       <StageColumn v-bind="columnProps(0)" @widen="columns.widen(0)" @minimise="columns.minimise(0)" @restore="columns.restore(0)">
         <CompanyList :companies="companies" :archived="archived" :selected-id="selected?.id" :loading="isLoading" @pick="pick" />

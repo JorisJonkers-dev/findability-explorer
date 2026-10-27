@@ -51,6 +51,6 @@ describe('the AI search view', () => {
 
   it('leads on to the AI readiness of the competitors', async () => {
     const { wrapper } = await mountApp(routes({}), '/ai-search')
-    expect(wrapper.get('a[href="/ai-search/readiness"]').text()).toBe('Who follows this: AI readiness of the competitors')
+    expect(wrapper.findAll('article a[href="/ai-search/readiness"]').map((a) => a.text())).toContain('Who follows this: AI readiness of the competitors')
   })
 })

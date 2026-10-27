@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import ProgressBar from '../../../shared/ui/ProgressBar.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
 import SectionView from '../../shell/components/SectionView.vue'
+import { AI_SEARCH_TABS } from '../../shell/domain/sections'
 import { useMe } from '../../shell/composables/useMe'
 import { usePromptResults } from '../composables/usePromptTest'
 import { costLabel, latestRun, modeName, progressLabel, providerName, ranking, runDate, sharesLine, statusName, tally } from '../domain/results'
@@ -20,6 +21,7 @@ const competitors = computed(() => (results.value ? ranking(results.value.mentio
 
 <template>
   <SectionView
+    :tabs="AI_SEARCH_TABS"
     section="ai-search"
     title="Do AI assistants name Tribelt?"
     :source="['Prompt runs: live, from this app, through OpenRouter', 'The October pilot by hand, as the first point']"

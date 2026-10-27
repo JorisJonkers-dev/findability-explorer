@@ -7,7 +7,7 @@ import { credentialName } from '../../settings/domain/credentials'
 import { useStartRun, usePromptResults, usePromptSettings, useUpdatePromptSettings } from '../composables/usePromptTest'
 import { costLabel, progressLabel, runDate, statusName } from '../domain/results'
 import { momentLabel, openRouterKeys, parseBudget, parseProviders, promptGroups } from '../domain/settings'
-import SettingsShell from './SettingsShell.vue'
+import SettingsShell from '../../shell/components/SettingsShell.vue'
 
 const { settings, isLoading, forbidden, error } = usePromptSettings()
 const llm = useLlmSettings()

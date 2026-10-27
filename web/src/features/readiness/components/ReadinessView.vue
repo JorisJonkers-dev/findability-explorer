@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import SectionView from '../../shell/components/SectionView.vue'
+import { AI_SEARCH_TABS } from '../../shell/domain/sections'
 import { useReadinessTable } from '../composables/useReadiness'
 import ReadinessTable from './ReadinessTable.vue'
 
@@ -9,6 +10,7 @@ const { rows, isLoading, error } = useReadinessTable()
 
 <template>
   <SectionView
+    :tabs="AI_SEARCH_TABS"
     section="ai-search"
     title="Who lets search engines and AI assistants in."
     :source="['Each company\'s newest scan, live from this app', 'Held against the report\'s recommendations']"

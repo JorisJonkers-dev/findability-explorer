@@ -9,6 +9,12 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
     history,
     routes: [
       { path: '/', name: 'home', component: () => import('../features/home/components/HomePoster.vue'), meta: { title: 'Overview' } },
+      {
+        path: '/catching-up',
+        name: 'catching-up',
+        component: () => import('../features/catching-up/components/CatchingUpView.vue'),
+        meta: { title: 'Catching up' },
+      },
       { path: '/buyers', name: 'buyers', component: () => import('../features/buyers/components/BuyersView.vue'), meta: { title: 'Buyers' } },
       { path: '/ai-search', name: 'ai-search', component: () => import('../features/ai-search/components/AiSearchView.vue'), meta: { title: 'AI search' } },
       {
@@ -29,14 +35,14 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         component: () => import('../features/prompt-test/components/PromptSettingsPage.vue'),
         meta: { title: 'Prompt test settings' },
       },
-      {
-        path: '/settings/candidates',
-        name: 'competitor-candidates',
-        component: () => import('../features/prompt-test/components/CandidateReviewPage.vue'),
-        meta: { title: 'Competitor candidates' },
-      },
       // One view for the companies alone and for a scan beside them, so a started scan keeps the form.
       { path: '/competitors', name: 'competitors', component: competitors, meta: { title: 'Competitors' } },
+      {
+        path: '/competitors/all',
+        name: 'all-competitors',
+        component: () => import('../features/competitors/components/AllCompetitorsView.vue'),
+        meta: { title: 'All competitors' },
+      },
       { path: '/scan/:id', name: 'scan', component: competitors, props: (to) => ({ scanId: String(to.params.id) }), meta: { title: 'Scan' } },
       // A company's search terms and scan history, a section view of its own: the stage has no room beside the list.
       {
@@ -46,11 +52,21 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         props: (to) => ({ companyId: String(to.params.id) }),
         meta: { title: 'Search terms and history' },
       },
+      { path: '/products', name: 'products', component: () => import('../features/products/components/ProductsView.vue'), meta: { title: 'Products' } },
+      {
+        path: '/products/:family',
+        name: 'product',
+        component: () => import('../features/products/components/ProductView.vue'),
+        props: (to) => ({ slug: String(to.params.family) }),
+        meta: { title: 'Products' },
+      },
       { path: '/terms', name: 'terms', component: () => import('../features/terminology/components/TermsView.vue'), meta: { title: 'Search terms' } },
       { path: '/plan', name: 'plan', component: () => import('../features/plan/components/PlanView.vue'), meta: { title: 'The plan' } },
       { path: '/settings', name: 'settings', component: () => import('../features/settings/components/SettingsPage.vue'), meta: { title: 'Settings' } },
       { path: '/settings/terms', name: 'term-review', component: () => import('../features/review/components/TermReviewPage.vue'), meta: { title: 'Term review' } },
       // Earlier versions' addresses, which links and bookmarks may still carry.
+      // The competitor candidates are suggestions on the list of all competitors now.
+      { path: '/settings/candidates', redirect: '/competitors/all' },
       { path: '/terminology', redirect: (to) => ({ path: '/terms', query: to.query }) },
       { path: '/keywords', redirect: (to) => ({ path: '/terms', query: to.query }) },
       { path: '/competitors/:id', redirect: (to) => ({ path: '/competitors', query: { company: String(to.params.id) } }) },

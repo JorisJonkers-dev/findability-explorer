@@ -130,7 +130,7 @@ test('an administrator accepts a candidate into the terminology map', async ({ p
     await route.fulfill({ json: { ...candidate, status: 'accepted' } })
   })
   await page.goto('/settings')
-  await page.getByRole('link', { name: 'Review the terms scans found' }).click()
+  await page.getByRole('navigation', { name: 'Settings' }).getByRole('link', { name: /^Term review/ }).click()
   await expect(page).toHaveURL('/settings/terms')
   await expect(page.getByRole('heading', { level: 1, name: 'Term review' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: 'spiral freezer belt' })).toBeVisible()

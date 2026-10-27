@@ -17,7 +17,6 @@ test('the poster renders and is accessible', async ({ page }) => {
   // The live figures: the research's 44 competitors and the map's 90 terms in Dutch, German and English.
   await expect(sections.getByRole('link', { name: /^Competitors: 44 competitors/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^Search terms: 90 search terms in 3 languages\. Tribelt's own website uses 30 of them\./ })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: 'Account' }).first()).toContainText('Signed in as')
   await expectAccessible(page)
 })
 
@@ -32,19 +31,16 @@ for (const section of SECTIONS) {
 
 test('a tile zooms into its section, and Overview zooms back out', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: /^Buyers:/ }).click()
-  await expect(page).toHaveURL('/buyers')
-  await expect(page.getByRole('heading', { level: 1, name: 'Paid search buys traffic, not buyers.' })).toBeVisible()
-  await page.getByRole('button', { name: 'Contact rate' }).click()
-  await page.getByRole('button', { name: 'Users', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Users', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: /^The plan:/ }).click()
+  await expect(page).toHaveURL('/plan')
+  await expect(page.getByRole('heading', { level: 1, name: 'Measure first. Then build. Then expand.' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Overview' }).click()
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Overview' }).click()
   await expect(page).toHaveURL('/')
   await expect(page.getByRole('heading', { level: 1, name: /^One belt/ })).toBeVisible()
   // The browser's own back and forward agree with the zoom.
   await page.goForward()
-  await expect(page).toHaveURL('/buyers')
+  await expect(page).toHaveURL('/plan')
 })
 
 test('the company picker suggests a known company, and names an unknown one', async ({ page }) => {
@@ -97,9 +93,10 @@ test('the terms view filters by language and survives a reload', async ({ page }
 
 test('the settings page is reachable for an administrator, and accessible', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Account' }).getByRole('link', { name: 'Settings' }).click()
+  await page.goto('/plan')
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Settings' }).click()
   await expect(page).toHaveURL('/settings')
-  await expect(page.getByRole('heading', { level: 1, name: 'Language model' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Language models' })).toBeVisible()
   await expect(page).toHaveTitle('Settings · Findability Explorer')
   await expect(page.getByLabel('API key', { exact: true })).toHaveAttribute('type', 'password')
   await expectAccessible(page)

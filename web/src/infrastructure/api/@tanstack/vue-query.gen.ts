@@ -416,7 +416,7 @@ export const getReadinessFilesQueryKey = (options: Options<GetReadinessFilesData
 /**
  * Get the raw files a scan read its AI readiness from
  *
- * Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI readiness.
+ * Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100 KB, to check the classification against. They are public on the site, so every signed-in account reads them. 404 when the scan recorded no AI readiness.
  */
 export const getReadinessFilesOptions = (options: Options<GetReadinessFilesData>) => queryOptions<GetReadinessFilesResponse, GetReadinessFilesError, GetReadinessFilesResponse, ReturnType<typeof getReadinessFilesQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

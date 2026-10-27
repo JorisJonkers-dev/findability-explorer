@@ -134,8 +134,6 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.AddCompetitorOperation:    domain.NeedAdminChange,
 	oas.UpdateCompetitorOperation: domain.NeedAdminChange,
 	oas.DeleteCompetitorOperation: domain.NeedAdminChange,
-	// The raw files a scan read its AI readiness from.
-	oas.GetReadinessFilesOperation: domain.NeedAdminView,
 	// The Prompt test: everyone signed in reads the results, only administrators run and set it.
 	oas.StartPromptRunOperation:             domain.NeedAdminChange,
 	oas.RetryPromptRunOperation:             domain.NeedAdminChange,

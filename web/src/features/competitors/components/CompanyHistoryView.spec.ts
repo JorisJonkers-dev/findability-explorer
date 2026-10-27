@@ -183,11 +183,11 @@ describe('a company’s AI readiness over time', () => {
       api({
         'GET /api/v1/me': () => json(me({ isAdmin: true })),
         'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { scan: summary({ id: SCAN_3 }) })] }),
-        [`GET /api/v1/admin/analyses/${SCAN_3}/readiness-files`]: () => json(files),
+        [`GET /api/v1/analyses/${SCAN_3}/readiness-files`]: () => json(files),
       }),
       '/competitors/twentebelt/history',
     )
-    expect(requests()).toContain(`GET /api/v1/admin/analyses/${SCAN_3}/readiness-files`)
+    expect(requests()).toContain(`GET /api/v1/analyses/${SCAN_3}/readiness-files`)
     const section = wrapper.get('section[aria-labelledby="files-title"]')
     expect(section.findAll('summary').map((s) => s.text())).toEqual(['robots.txt', 'llms.txt: the first 100 KB', 'llms-full.txt: not served'])
     const marked = section.findAll('pre')[0]?.findAll('span.font-semibold').map((l) => l.text())
@@ -205,7 +205,7 @@ describe('a company’s AI readiness over time', () => {
       api({
         'GET /api/v1/me': () => json(me({ isAdmin: true })),
         'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { scan: summary({ id: SCAN_3 }) })] }),
-        [`GET /api/v1/admin/analyses/${SCAN_3}/readiness-files`]: () => problem(500, 'Internal Server Error', 'Down.'),
+        [`GET /api/v1/analyses/${SCAN_3}/readiness-files`]: () => problem(500, 'Internal Server Error', 'Down.'),
       }),
       '/competitors/twentebelt/history',
     )

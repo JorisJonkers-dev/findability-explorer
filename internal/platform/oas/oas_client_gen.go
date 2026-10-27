@@ -173,11 +173,11 @@ type Invoker interface {
 	GetPromptTestSettings(ctx context.Context) (GetPromptTestSettingsRes, error)
 	// GetReadinessFiles invokes getReadinessFiles operation.
 	//
-	// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
-	// each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI
-	// readiness.
+	// Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100
+	// KB, to check the classification against. They are public on the site, so every signed-in account
+	// reads them. 404 when the scan recorded no AI readiness.
 	//
-	// GET /api/v1/admin/analyses/{analysisId}/readiness-files
+	// GET /api/v1/analyses/{analysisId}/readiness-files
 	GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (GetReadinessFilesRes, error)
 	// GetStandings invokes getStandings operation.
 	//
@@ -2814,11 +2814,11 @@ func (c *Client) sendGetPromptTestSettings(ctx context.Context) (res GetPromptTe
 
 // GetReadinessFiles invokes getReadinessFiles operation.
 //
-// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
-// each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI
-// readiness.
+// Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100
+// KB, to check the classification against. They are public on the site, so every signed-in account
+// reads them. 404 when the scan recorded no AI readiness.
 //
-// GET /api/v1/admin/analyses/{analysisId}/readiness-files
+// GET /api/v1/analyses/{analysisId}/readiness-files
 func (c *Client) GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (GetReadinessFilesRes, error) {
 	res, err := c.sendGetReadinessFiles(ctx, params)
 	return res, err
@@ -2828,7 +2828,7 @@ func (c *Client) sendGetReadinessFiles(ctx context.Context, params GetReadinessF
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("getReadinessFiles"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/admin/analyses/{analysisId}/readiness-files"),
+		semconv.URLTemplateKey.String("/api/v1/analyses/{analysisId}/readiness-files"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2862,7 +2862,7 @@ func (c *Client) sendGetReadinessFiles(ctx context.Context, params GetReadinessF
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v1/admin/analyses/"
+	pathParts[0] = "/api/v1/analyses/"
 	{
 		// Encode "analysisId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{

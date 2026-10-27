@@ -152,11 +152,11 @@ type Handler interface {
 	GetPromptTestSettings(ctx context.Context) (GetPromptTestSettingsRes, error)
 	// GetReadinessFiles implements getReadinessFiles operation.
 	//
-	// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
-	// each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI
-	// readiness.
+	// Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100
+	// KB, to check the classification against. They are public on the site, so every signed-in account
+	// reads them. 404 when the scan recorded no AI readiness.
 	//
-	// GET /api/v1/admin/analyses/{analysisId}/readiness-files
+	// GET /api/v1/analyses/{analysisId}/readiness-files
 	GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (GetReadinessFilesRes, error)
 	// GetStandings implements getStandings operation.
 	//

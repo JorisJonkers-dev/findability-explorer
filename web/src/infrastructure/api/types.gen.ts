@@ -3001,7 +3001,7 @@ export type GetReadinessFilesData = {
         analysisId: string;
     };
     query?: never;
-    url: '/api/v1/admin/analyses/{analysisId}/readiness-files';
+    url: '/api/v1/analyses/{analysisId}/readiness-files';
 };
 
 export type GetReadinessFilesErrors = {

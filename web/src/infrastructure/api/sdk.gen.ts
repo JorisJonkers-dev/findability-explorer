@@ -443,7 +443,7 @@ export const getAnalysis = <ThrowOnError extends boolean = false>(options: Optio
 /**
  * Get the raw files a scan read its AI readiness from
  *
- * Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI readiness.
+ * Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100 KB, to check the classification against. They are public on the site, so every signed-in account reads them. 404 when the scan recorded no AI readiness.
  */
 export const getReadinessFiles = <ThrowOnError extends boolean = false>(options: Options<GetReadinessFilesData, ThrowOnError>): RequestResult<GetReadinessFilesResponses, GetReadinessFilesErrors, ThrowOnError> => (options.client ?? client).get<GetReadinessFilesResponses, GetReadinessFilesErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({
@@ -457,7 +457,7 @@ export const getReadinessFiles = <ThrowOnError extends boolean = false>(options:
             name: 'fe_session',
             type: 'apiKey'
         }],
-    url: '/api/v1/admin/analyses/{analysisId}/readiness-files',
+    url: '/api/v1/analyses/{analysisId}/readiness-files',
     ...options
 });
 

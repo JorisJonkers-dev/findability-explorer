@@ -652,15 +652,15 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
-  /api/v1/admin/analyses/{analysisId}/readiness-files:
+  /api/v1/analyses/{analysisId}/readiness-files:
     get:
       operationId: getReadinessFiles
       summary: Get the raw files a scan read its AI readiness from
       description: >-
-        Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to
-        the scan, each capped at 100 KB, to check the classification against. 404 when the scan
-        recorded no AI readiness.
-      tags: [admin]
+        Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each
+        capped at 100 KB, to check the classification against. They are public on the site, so
+        every signed-in account reads them. 404 when the scan recorded no AI readiness.
+      tags: [analyses]
       parameters:
         - name: analysisId
           in: path

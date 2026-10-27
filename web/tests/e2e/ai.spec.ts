@@ -1,7 +1,7 @@
 import { expect, expectAccessible, test } from './fixtures'
 
 const VIEWS = [
-  { path: '/ai-search/readiness', title: 'AI readiness', heading: 'Who lets search engines and AI assistants in.' },
+  { path: '/ai-search/readiness', title: 'AI readiness', heading: /./ },
   { path: '/ai-search/prompt-test', title: 'Prompt test', heading: /./ },
   { path: '/settings/prompt-test', title: 'Prompt test settings', heading: 'Prompt test' },
 ] as const
@@ -93,5 +93,15 @@ test('the Prompt test grid opens an answer and keeps its filters in the address'
   await page.getByRole('button', { name: 'Ask OpenAI again, about $0.0014' }).click()
   await expect(page.getByText('Asking one answer again, for about $0.00.')).toBeVisible()
   expect(asked).toEqual({ promptId: 'eyelink-application-twente', provider: 'openai', mode: 'knowledge' })
+  await expectAccessible(page)
+})
+
+test("the AI readiness page shows a site's robots.txt when it is picked", async ({ page }) => {
+  await page.goto('/ai-search/readiness')
+  await expect(page.getByRole('region', { name: /set up for AI$/ })).toBeVisible()
+  const sites = page.getByRole('region', { name: 'Site by site' })
+  await sites.getByRole('rowgroup', { name: 'Competitors' }).getByRole('button').first().click()
+  await expect(page).toHaveURL(/site=/)
+  await expect(sites.getByText('What it means')).toBeVisible()
   await expectAccessible(page)
 })

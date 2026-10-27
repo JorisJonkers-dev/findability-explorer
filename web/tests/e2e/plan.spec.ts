@@ -9,7 +9,7 @@ test('the plan ticks an improvement off and back, and keeps the tick', async ({ 
   await expectAccessible(page)
   const box = page.getByRole('checkbox', { name: title })
   await box.check()
-  await expect(page.getByText('Ticked off by e2e.')).toBeVisible()
+  await expect(improvements.getByRole('listitem').filter({ hasText: title })).toContainText('Ticked off by e2e.')
   await page.reload()
   await expect(box).toBeChecked()
   await box.uncheck()

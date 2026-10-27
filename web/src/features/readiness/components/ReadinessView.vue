@@ -121,7 +121,7 @@ function pick(r: AiReadinessRow): void {
             <caption class="sr-only">AI readiness per site: each crawler's access, the sitemap, llms.txt, llms-full.txt, Markdown pages, structured data and platform</caption>
             <thead>
               <tr class="border-b-2 border-black">
-                <th scope="col" class="sticky left-0 z-10 bg-white px-2 py-2 text-left font-semibold">
+                <th scope="col" class="px-2 py-2 text-left font-semibold">
                   <SortButton label="Company" :direction="directionOf(sort, 'name')" @sort="sortBy('name')">Company</SortButton>
                 </th>
                 <th v-for="b in BOTS" :key="b.token" scope="col" class="px-1 py-2 text-center align-bottom text-xs font-semibold stage:text-[18px]">
@@ -134,13 +134,13 @@ function pick(r: AiReadinessRow): void {
             </thead>
             <tbody v-for="band in bands" :key="band.band" :aria-label="BAND_LABELS[band.band]">
               <tr>
-                <th :colspan="BOTS.length + 6" scope="colgroup" class="sticky left-0 bg-mist px-2 py-1.5 text-left text-xs font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[20px]">
+                <th :colspan="BOTS.length + 6" scope="colgroup" class="bg-mist px-2 py-1.5 text-left text-xs font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[20px]">
                   {{ BAND_LABELS[band.band] }}
                 </th>
               </tr>
               <tr v-for="r in band.rows" :key="r.competitorId" class="border-b border-grey" :class="selected?.competitorId === r.competitorId ? 'bg-orange-pale' : ''">
-                <th scope="row" class="sticky left-0 z-10 bg-inherit px-2 py-1.5 text-left font-medium">
-                  <span class="flex items-center gap-2 bg-white px-1" :class="selected?.competitorId === r.competitorId ? 'bg-orange-pale' : ''">
+                <th scope="row" class="px-2 py-1.5 text-left font-medium">
+                  <span class="flex items-center gap-2">
                     <button
                       type="button"
                       :aria-pressed="selected?.competitorId === r.competitorId"

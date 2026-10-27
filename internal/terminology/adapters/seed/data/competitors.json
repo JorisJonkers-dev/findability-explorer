@@ -55,7 +55,10 @@
     ]
   },
   {
-    "name": "ESFO Transportbanden B.V. (ESFO Metal Belts, Narviflex Group)",
+    "name": "ESFO Transportbanden B.V.",
+    "other_names": [
+      "ESFO Metal Belts"
+    ],
     "country": "NL",
     "website": "https://www.esfo-metalbelts.com",
     "languages": [
@@ -179,7 +182,12 @@
     ]
   },
   {
-    "name": "Ashworth (Ashworth Bros.; Ashworth Belts B.V. Amsterdam; Ashworth Europe Ltd UK)",
+    "name": "Ashworth",
+    "other_names": [
+      "Ashworth Bros.",
+      "Ashworth Belts B.V.",
+      "Ashworth Europe Ltd"
+    ],
     "country": "US (EU units NL + UK)",
     "website": "https://www.ashworth.com",
     "languages": [
@@ -411,7 +419,10 @@
     ]
   },
   {
-    "name": "Märtens Transportbänder GmbH (MARTENS)",
+    "name": "Märtens Transportbänder GmbH",
+    "other_names": [
+      "Märtens"
+    ],
     "country": "DE (Flensburg)",
     "website": "https://www.martens-belts.com",
     "languages": [
@@ -464,7 +475,7 @@
     ]
   },
   {
-    "name": "STEINHAUS GmbH (Siebtechnik Tema / Multotec group)",
+    "name": "STEINHAUS GmbH",
     "country": "DE (Mülheim an der Ruhr)",
     "website": "https://www.steinhaus-gmbh.de",
     "languages": [
@@ -511,7 +522,7 @@
     ]
   },
   {
-    "name": "HEIN, LEHMANN GmbH (Siebtechnik Tema / Multotec group)",
+    "name": "HEIN, LEHMANN GmbH",
     "country": "DE (Krefeld)",
     "website": "https://www.heinlehmann.com",
     "languages": [
@@ -612,7 +623,7 @@
     ]
   },
   {
-    "name": "GEPPERT-Band GmbH (Dorner)",
+    "name": "GEPPERT-Band GmbH",
     "country": "DE (Jülich)",
     "website": "unverified (geppert-band.de did not resolve on 2026-10-22)",
     "languages": [
@@ -638,7 +649,10 @@
     ]
   },
   {
-    "name": "Codina Metal (Bandas Metálicas Codina S.L.)",
+    "name": "Codina Metal",
+    "other_names": [
+      "Bandas Metálicas Codina S.L."
+    ],
     "country": "ES (La Torre de Claramunt)",
     "website": "https://codinametal.com",
     "languages": [
@@ -762,7 +776,7 @@
     ]
   },
   {
-    "name": "NTM (Italy)",
+    "name": "NTM",
     "country": "IT",
     "website": "unverified (no official site found)",
     "languages": [
@@ -789,7 +803,7 @@
     ]
   },
   {
-    "name": "Cambridge Engineered Solutions (Regal Rexnord)",
+    "name": "Cambridge Engineered Solutions",
     "country": "US (Cambridge, MD; plants US, Mexico, Brazil)",
     "website": "https://www.cambridge-es.com (blocked by Cloudflare 403 on 2026-10-22)",
     "languages": [
@@ -831,7 +845,7 @@
     ]
   },
   {
-    "name": "Audubon (meshbelt.com)",
+    "name": "Audubon",
     "country": "US (Feasterville, PA)",
     "website": "https://www.meshbelt.com",
     "languages": [
@@ -872,7 +886,7 @@
     ]
   },
   {
-    "name": "Lumsden Belting (Fenner Precision Polymers)",
+    "name": "Lumsden Belting",
     "country": "US (Lancaster, PA)",
     "website": "https://www.fenner.com/brands/lumsden",
     "languages": [
@@ -981,7 +995,10 @@
     ]
   },
   {
-    "name": "IPCO (formerly Sandvik Process Systems)",
+    "name": "IPCO",
+    "other_names": [
+      "Sandvik Process Systems"
+    ],
     "country": "SE",
     "website": "https://www.ipco.com",
     "languages": [
@@ -1152,7 +1169,7 @@
     ]
   },
   {
-    "name": "Lesjöfors (metal conveyor belts product line on lesjofors.com)",
+    "name": "Lesjöfors",
     "country": "SE",
     "website": "https://www.lesjofors.com/en/products/metal-conveyor-belts/",
     "languages": [
@@ -1212,7 +1229,10 @@
     ]
   },
   {
-    "name": "CSS Draht Schmidt GmbH (CSS Belts)",
+    "name": "CSS Draht Schmidt GmbH",
+    "other_names": [
+      "CSS Belts"
+    ],
     "country": "DE (Lahnstein)",
     "website": "https://www.css-belts.com",
     "languages": [
@@ -1270,7 +1290,10 @@
     ]
   },
   {
-    "name": "DOH Drahtwerk Oberndorfer Hütte (Peter Weil GmbH & Co. KG)",
+    "name": "DOH Drahtwerk Oberndorfer Hütte",
+    "other_names": [
+      "Peter Weil GmbH & Co. KG"
+    ],
     "country": "DE (Solms-Oberndorf)",
     "website": "https://www.d-o-h.de/de/",
     "languages": [
@@ -1332,7 +1355,7 @@
     ]
   },
   {
-    "name": "Rothstein Metallfördergurte (GmbH & Co. KG)",
+    "name": "Rothstein Metallfördergurte",
     "country": "DE (Reichshof-Brüchermühle / Gummersbach area; location differs between sources, unverified)",
     "website": "unverified (official site not found; rothstein-group.de is a different company)",
     "languages": [
@@ -1366,7 +1389,7 @@
     ]
   },
   {
-    "name": "Heinrich Heidecker (e.K.)",
+    "name": "Heinrich Heidecker",
     "country": "DE (Königsbach-Stein)",
     "website": "https://www.heidecker.de",
     "languages": [
@@ -1399,7 +1422,10 @@
     ]
   },
   {
-    "name": "ASP Automationstechnik GmbH (Ing. Walter Schweighofer GmbH)",
+    "name": "ASP Automationstechnik GmbH",
+    "other_names": [
+      "Ing. Walter Schweighofer GmbH"
+    ],
     "country": "AT (Anger / Weiz)",
     "website": "https://asp-gmbh.at",
     "languages": [
@@ -1454,7 +1480,7 @@
     ]
   },
   {
-    "name": "DK Transportbaand (DK Transportbaand ApS)",
+    "name": "DK Transportbaand",
     "country": "DK (Ferritslev, Fyn; Eastern/Western Europe office in Borne, NL)",
     "website": "https://www.dk-transportbaand.com",
     "languages": [
@@ -1532,7 +1558,10 @@
     ]
   },
   {
-    "name": "Métal Étiré & Tissé Solutions (METAL ETIRE)",
+    "name": "Métal Étiré & Tissé Solutions",
+    "other_names": [
+      "Métal Étiré"
+    ],
     "country": "FR (Saint-Maixant)",
     "website": "https://www.metaletire.fr",
     "languages": [
@@ -1574,7 +1603,7 @@
     ]
   },
   {
-    "name": "Costacurta (Costacurta S.p.A.-VICO)",
+    "name": "Costacurta",
     "country": "IT (Milan)",
     "website": "https://www.costacurta.com",
     "languages": [
@@ -1617,7 +1646,7 @@
     ]
   },
   {
-    "name": "Pietro Bonaiti (Pietro Bonaiti S.r.l.)",
+    "name": "Pietro Bonaiti",
     "country": "IT (Lecco)",
     "website": "https://www.pietrobonaiti.com",
     "languages": [
@@ -1696,7 +1725,7 @@
     ]
   },
   {
-    "name": "Spiraltech (Spiraltech S.r.l.)",
+    "name": "Spiraltech",
     "country": "IT (Pasturo, Lecco)",
     "website": "https://www.spiraltech.it",
     "languages": [
@@ -1739,7 +1768,10 @@
     ]
   },
   {
-    "name": "Palmet (Zakład mechaniczny Joanna Leśniak)",
+    "name": "Palmet",
+    "other_names": [
+      "Zakład mechaniczny Joanna Leśniak"
+    ],
     "country": "PL (Moszczenica)",
     "website": "https://palmet.pl",
     "languages": [
@@ -1822,7 +1854,10 @@
     ]
   },
   {
-    "name": "Screen Systems (Wedge Wire Screens / Screen Systems Ltd)",
+    "name": "Screen Systems",
+    "other_names": [
+      "Wedge Wire Screens"
+    ],
     "country": "UK (St Helens)",
     "website": "https://www.screensystems.com",
     "languages": [
@@ -1995,7 +2030,10 @@
     ]
   },
   {
-    "name": "Beijing PFM Screen (PFM SCREEN Belting)",
+    "name": "Beijing PFM Screen",
+    "other_names": [
+      "PFM Screen Belting"
+    ],
     "country": "CN (Langfang, Hebei)",
     "website": "https://www.industrialconveyorbelt.com",
     "languages": [
@@ -2051,7 +2089,7 @@
     ]
   },
   {
-    "name": "Hebei General Metal Netting (Hebei General Metal Netting Co., Ltd.)",
+    "name": "Hebei General Metal Netting",
     "country": "CN (Anping County, Hebei)",
     "website": "https://www.generalmesh.com",
     "languages": [

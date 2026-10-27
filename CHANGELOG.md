@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.7.0...v1.8.0) (2026-10-27)
+
+
+### Features
+
+* the redesign, built around catching up with the field ([#61](https://github.com/JorisJonkers-dev/findability-explorer/issues/61)) ([e6484d4](https://github.com/JorisJonkers-dev/findability-explorer/commit/e6484d44289a9eff7c7bff95cd825d68ec2830db))
+
 ## [1.7.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.6.0...v1.7.0) (2026-10-27)
 
 

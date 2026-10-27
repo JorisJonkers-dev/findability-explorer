@@ -150,7 +150,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	if err != nil {
 		return err
 	}
-	// The language model reviews the phrases scans find, with the model product matching uses.
+	// Haiku reviews the phrases scans find, on an Anthropic key.
 	terminology.WithReviewer(terminologyRepo, judges{llm: llm})
 	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
 	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, limits, now)
@@ -345,17 +345,18 @@ func monthStart(t time.Time) time.Time {
 // termReviewEvery is how often the language model looks for new phrases to review.
 const termReviewEvery = 10 * time.Minute
 
-// judges hands the terminology context the judge the language-model settings name now.
+// judges hands the terminology context its judge: Haiku on an Anthropic key, whatever model
+// product matching uses, since reviewing hundreds of phrases must stay cheap.
 type judges struct {
 	llm *llmapp.Service
 }
 
 func (j judges) Current(ctx context.Context) (terminologyapp.Judge, string, error) {
-	client, provider, model, err := j.llm.Current(ctx)
+	client, model, err := j.llm.Haiku(ctx)
 	if err != nil || client == nil {
 		return nil, "", err
 	}
-	return judge.New(client, model), llmdomain.Describe(provider, model), nil
+	return judge.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
 }
 
 // matchers hands the analysis context the matcher the language-model settings name now.

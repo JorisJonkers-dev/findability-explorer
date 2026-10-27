@@ -6,10 +6,12 @@ after the first round), and most of them are clearly in or clearly out. Reviewin
 is more work than the team will do, so the queue stood still.
 
 **A language model reviews the queue, and a person handles what it is unsure about.** Every
-waiting candidate the model has not seen goes to the model the language-model settings choose for
-product matching (ADR-0002), forty at a time, with a few map terms of each tier as examples. For
-each phrase it says whether to accept it, whether it is sure, why, and the term it becomes: the
-text, language, family and tier.
+waiting candidate the model has not seen goes to Claude Haiku on an Anthropic key, forty at a
+time, with a few map terms of each tier as examples. It is always Haiku on Anthropic's own API,
+whatever model product matching uses, because OpenRouter costs more for the same model. The key is
+the one Vault delivers in ANTHROPIC_API_KEY, else a stored Anthropic key (ADR-0002) whose latest
+test did not fail. For each phrase it says whether to accept it, whether it is sure, why, and the
+term it becomes: the text, language, family and tier.
 
 - A sure verdict is recorded as a decision by the language model (`decided_by` is
   `language model`), exactly as an administrator's would be, and can be undone the same way.
@@ -20,8 +22,8 @@ text, language, family and tier.
   undone decision does not come back, and a candidate it skipped counts as unsure.
 
 The review runs in the background every ten minutes and when an administrator asks for it on the
-Term review page. Without a model set up, nothing is asked and every phrase waits for a person, as
-before.
+Term review page. Without an Anthropic key, nothing is asked and every phrase waits for a person,
+as before.
 
 ## Consequences
 

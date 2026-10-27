@@ -39,7 +39,7 @@ const FORBIDDEN = 'Only administrators can review terms.'
     <template v-else>
       <section v-if="review" aria-label="The language model's review" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-mist p-4 sm:p-5">
         <p class="m-0 font-medium" aria-live="polite">{{ reviewLine(review) }}</p>
-        <RouterLink v-if="review.problem === 'noModel'" to="/settings" class="font-medium">Choose a model in Language models</RouterLink>
+        <RouterLink v-if="review.problem === 'noModel'" to="/settings" class="font-medium">Add one in Language models</RouterLink>
         <button
           v-else-if="!review.running && review.waiting > 0"
           type="button"

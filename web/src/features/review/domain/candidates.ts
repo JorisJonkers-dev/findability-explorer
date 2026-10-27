@@ -102,7 +102,7 @@ export function verdictLine(candidate: TermCandidate): string | null {
 export function reviewLine(state: TermReviewState): string {
   const phrases = (n: number) => (n === 1 ? '1 phrase' : `${String(n)} phrases`)
   if (state.running) return state.waiting > 0 ? `The language model is reviewing ${phrases(state.waiting)}.` : 'The language model is reviewing the phrases.'
-  if (state.problem === 'noModel') return 'No language model is set up, so every phrase waits for you.'
+  if (state.problem === 'noModel') return 'No Anthropic key is set up, so every phrase waits for you.'
   if (state.problem === 'failed') return 'The language model failed on its last try. It tries again within ten minutes.'
   if (state.waiting > 0) return `${phrases(state.waiting)} ${state.waiting === 1 ? 'waits' : 'wait'} for the language model.`
   return 'The language model has reviewed every phrase.'

@@ -277,3 +277,14 @@ type Client interface {
 type Connector interface {
 	Connect(p Provider, key string) Client
 }
+
+// AnthropicKey is the Anthropic key cheap background work uses: the first readable one, in the
+// order given (the Vault key first), whose latest test did not fail.
+func AnthropicKey(creds []Credential) (Credential, bool) {
+	for _, c := range creds {
+		if c.Provider == Anthropic && c.Readable && (c.LastTest == nil || c.LastTest.OK) {
+			return c, true
+		}
+	}
+	return Credential{}, false
+}

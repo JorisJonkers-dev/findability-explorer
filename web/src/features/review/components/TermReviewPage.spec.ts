@@ -185,7 +185,7 @@ describe('the term review', () => {
 
     const none = await mountApp(api([], {}, { running: false, waiting: 3, problem: 'noModel' }), '/settings/terms')
     const link = none.wrapper.get('section[aria-label="The language model\'s review"] a')
-    expect(link.text()).toBe('Choose a model in Language models')
+    expect(link.text()).toBe('Add one in Language models')
     expect(link.attributes('href')).toBe('/settings')
     expect(none.wrapper.findAll('button').some((b) => b.text() === 'Review them now')).toBe(false)
   })

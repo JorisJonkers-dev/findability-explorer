@@ -395,7 +395,7 @@ export const listTermCandidatesOptions = (options?: Options<ListTermCandidatesDa
 /**
  * Let the language model review the waiting candidates now
  *
- * Administrators only. The language model reviews every waiting candidate it has not reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is sure about, as the language model, and leaves the rest waiting with its suggestion. Returns the review's state.
+ * Administrators only. Claude Haiku, on an Anthropic key, reviews every waiting candidate it has not reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is sure about, as the language model, and leaves the rest waiting with its suggestion. Returns the review's state.
  */
 export const startTermReviewMutation = (options?: Partial<Options<StartTermReviewData>>): UseMutationOptions<StartTermReviewResponse, StartTermReviewError, Options<StartTermReviewData>> => {
     const mutationOptions: UseMutationOptions<StartTermReviewResponse, StartTermReviewError, Options<StartTermReviewData>> = {

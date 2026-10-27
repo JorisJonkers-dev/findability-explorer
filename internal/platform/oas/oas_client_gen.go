@@ -332,9 +332,10 @@ type Invoker interface {
 	StartRescans(ctx context.Context, request *RescanRequest) (StartRescansRes, error)
 	// StartTermReview invokes startTermReview operation.
 	//
-	// Administrators only. The language model reviews every waiting candidate it has not reviewed yet, in
-	// the background, as it does every ten minutes. It decides the phrases it is sure about, as the
-	// language model, and leaves the rest waiting with its suggestion. Returns the review's state.
+	// Administrators only. Claude Haiku, on an Anthropic key, reviews every waiting candidate it has not
+	// reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is sure
+	// about, as the language model, and leaves the rest waiting with its suggestion. Returns the review's
+	// state.
 	//
 	// POST /api/v1/admin/term-candidates/review
 	StartTermReview(ctx context.Context) (StartTermReviewRes, error)
@@ -5418,9 +5419,10 @@ func (c *Client) sendStartRescans(ctx context.Context, request *RescanRequest) (
 
 // StartTermReview invokes startTermReview operation.
 //
-// Administrators only. The language model reviews every waiting candidate it has not reviewed yet, in
-// the background, as it does every ten minutes. It decides the phrases it is sure about, as the
-// language model, and leaves the rest waiting with its suggestion. Returns the review's state.
+// Administrators only. Claude Haiku, on an Anthropic key, reviews every waiting candidate it has not
+// reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is sure
+// about, as the language model, and leaves the rest waiting with its suggestion. Returns the review's
+// state.
 //
 // POST /api/v1/admin/term-candidates/review
 func (c *Client) StartTermReview(ctx context.Context) (StartTermReviewRes, error) {

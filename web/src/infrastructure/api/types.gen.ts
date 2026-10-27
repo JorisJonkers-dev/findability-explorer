@@ -1173,7 +1173,7 @@ export type TermReviewState = {
      */
     waiting: number;
     /**
-     * Why its last review stopped short - noModel (no language model is set up) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its provider failed). Absent when it went well.
      */
     problem?: 'noModel' | 'failed';
 };

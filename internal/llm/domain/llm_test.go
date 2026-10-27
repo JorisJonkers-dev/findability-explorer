@@ -98,3 +98,21 @@ func TestDescribeAndClip(t *testing.T) {
 		t.Fatalf("Clip of a long message has %d runes", len(got))
 	}
 }
+
+func TestBackgroundWorkUsesAWorkingAnthropicKey(t *testing.T) {
+	vault := domain.VaultCredential("sk-ant-vault")
+	stored := domain.Credential{ID: "a", Provider: domain.Anthropic, Readable: true}
+	failing := domain.Credential{ID: "f", Provider: domain.Anthropic, Readable: true, LastTest: &domain.Test{OK: false}}
+	sealed := domain.Credential{ID: "s", Provider: domain.Anthropic}
+	router := domain.Credential{ID: "o", Provider: domain.OpenRouter, Readable: true}
+	admin := domain.Credential{ID: "x", Provider: domain.AnthropicAdmin, Readable: true}
+	if c, ok := domain.AnthropicKey([]domain.Credential{vault, stored}); !ok || c.ID != domain.VaultID {
+		t.Errorf("with the Vault key = %+v, %v", c, ok)
+	}
+	if c, ok := domain.AnthropicKey([]domain.Credential{router, admin, failing, sealed, stored}); !ok || c.ID != "a" {
+		t.Errorf("without it = %+v, %v", c, ok)
+	}
+	if _, ok := domain.AnthropicKey([]domain.Credential{router, failing}); ok {
+		t.Error("an OpenRouter or failing key was chosen")
+	}
+}

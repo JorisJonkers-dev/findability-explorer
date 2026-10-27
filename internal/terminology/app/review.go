@@ -30,8 +30,8 @@ type Judges interface {
 	Current(ctx context.Context) (Judge, string, error)
 }
 
-// ErrNoModel is returned by Review when no language model is set up.
-var ErrNoModel = errors.New("no language model is set up")
+// ErrNoModel is returned by Review when there is no model to ask: no Anthropic key is set up.
+var ErrNoModel = errors.New("no Anthropic key is set up")
 
 // Problem is why the last review stopped short.
 type Problem string

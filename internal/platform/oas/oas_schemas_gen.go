@@ -10997,8 +10997,8 @@ type TermReviewState struct {
 	Running bool `json:"running"`
 	// How many waiting candidates it has not reviewed yet.
 	Waiting int32 `json:"waiting"`
-	// Why its last review stopped short - noModel (no language model is set up) or failed (the model or
-	// its provider failed). Absent when it went well.
+	// Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its
+	// provider failed). Absent when it went well.
 	Problem OptTermReviewStateProblem `json:"problem"`
 }
 
@@ -11034,8 +11034,8 @@ func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
 
 func (*TermReviewState) startTermReviewRes() {}
 
-// Why its last review stopped short - noModel (no language model is set up) or failed (the model or
-// its provider failed). Absent when it went well.
+// Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its
+// provider failed). Absent when it went well.
 type TermReviewStateProblem string
 
 const (

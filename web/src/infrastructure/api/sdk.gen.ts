@@ -426,7 +426,7 @@ export const listTermCandidates = <ThrowOnError extends boolean = false>(options
 /**
  * Let the language model review the waiting candidates now
  *
- * Administrators only. The language model reviews every waiting candidate it has not reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is sure about, as the language model, and leaves the rest waiting with its suggestion. Returns the review's state.
+ * Administrators only. Claude Haiku, on an Anthropic key, reviews every waiting candidate it has not reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is sure about, as the language model, and leaves the rest waiting with its suggestion. Returns the review's state.
  */
 export const startTermReview = <ThrowOnError extends boolean = false>(options?: Options<StartTermReviewData, ThrowOnError>): RequestResult<StartTermReviewResponses, StartTermReviewErrors, ThrowOnError> => (options?.client ?? client).post<StartTermReviewResponses, StartTermReviewErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

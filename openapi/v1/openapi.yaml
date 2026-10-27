@@ -624,8 +624,8 @@ paths:
       operationId: startTermReview
       summary: Let the language model review the waiting candidates now
       description: >-
-        Administrators only. The language model reviews every waiting candidate it has not
-        reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is
+        Administrators only. Claude Haiku, on an Anthropic key, reviews every waiting candidate it
+        has not reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is
         sure about, as the language model, and leaves the rest waiting with its suggestion. Returns
         the review's state.
       tags: [admin]
@@ -3105,7 +3105,7 @@ components:
           example: 663
         problem:
           description: >-
-            Why its last review stopped short - noModel (no language model is set up) or failed
+            Why its last review stopped short - noModel (no Anthropic key is set up) or failed
             (the model or its provider failed). Absent when it went well.
           type: string
           enum: [noModel, failed]

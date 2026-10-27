@@ -37,7 +37,7 @@ export function section(id: SectionId): Section {
 }
 
 /** A tab inside a section: a page of it. */
-export type Tab = { label: string; path: string }
+export type Tab = { label: string; path: string; /** A count beside the label, such as the terms waiting. */ count?: number }
 
 /** The AI search section's pages. */
 export const AI_SEARCH_TABS: readonly Tab[] = [

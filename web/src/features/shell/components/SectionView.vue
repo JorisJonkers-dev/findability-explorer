@@ -9,18 +9,26 @@ import TopBar from './TopBar.vue'
 
 const props = withDefaults(
   defineProps<{
-    section: SectionId
+    /** The section the page is in; a page outside the sections, such as settings, names its eyebrow instead. */
+    section?: SectionId
+    eyebrow?: string
     title: string
+    /** What the tabs are called for screen readers. */
+    tabsLabel?: string
     /** Where the figures come from, a line each. */
     source?: readonly string[]
     /** The section's pages, shown as tabs beside the title. */
     tabs?: readonly Tab[]
   }>(),
-  { source: () => [], tabs: () => [] },
+  { section: undefined, eyebrow: undefined, tabsLabel: undefined, source: () => [], tabs: () => [] },
 )
 
-const meta = computed(() => sectionById(props.section))
-const eyebrow = computed(() => [meta.value.number, meta.value.label].filter(Boolean).join(' '))
+const eyebrowText = computed(() => {
+  if (!props.section) return props.eyebrow ?? ''
+  const meta = sectionById(props.section)
+  return [meta.number, meta.label].filter(Boolean).join(' ')
+})
+const titleId = computed(() => `${props.section ?? 'page'}-title`)
 // Opened from the poster, the view settles in as the poster's zoom fades out; loaded directly, it just shows.
 const fromPoster = usePreviousPath().value === '/'
 </script>
@@ -34,9 +42,9 @@ const fromPoster = usePreviousPath().value === '/'
       <TopBar />
       <header class="flex flex-col gap-5 stage:grid stage:grid-cols-[minmax(0,1fr)_auto] stage:items-end stage:gap-18">
         <div class="flex flex-col gap-3 stage:gap-4">
-          <SectionEyebrow>{{ eyebrow }}</SectionEyebrow>
+          <SectionEyebrow>{{ eyebrowText }}</SectionEyebrow>
           <h1
-            :id="`${section}-title`"
+            :id="titleId"
             class="m-0 font-display text-4xl leading-[0.95] font-semibold tracking-[-0.03em] text-balance sm:text-5xl stage:text-[112px]"
           >
             {{ title }}
@@ -46,7 +54,7 @@ const fromPoster = usePreviousPath().value === '/'
           v-if="tabs.length > 0 || source.length > 0 || $slots.aside"
           class="flex flex-col gap-3 stage:items-end stage:gap-5 stage:pb-3"
         >
-          <SectionTabs v-if="tabs.length > 0" :tabs="tabs" />
+          <SectionTabs v-if="tabs.length > 0" :tabs="tabs" :label="tabsLabel" />
           <slot name="aside" />
           <p v-if="source.length > 0" class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">
             <template v-for="(line, index) in source" :key="line"><br v-if="index > 0" />{{ line }}</template>
@@ -54,7 +62,7 @@ const fromPoster = usePreviousPath().value === '/'
         </div>
       </header>
       <!-- One element fills the stage below the header; it lays out its own columns. -->
-      <article class="flex flex-col gap-8 stage:grid stage:min-h-0 stage:grid-rows-[minmax(0,1fr)]" :aria-labelledby="`${section}-title`">
+      <article class="flex flex-col gap-8 stage:grid stage:min-h-0 stage:grid-rows-[minmax(0,1fr)]" :aria-labelledby="titleId">
         <slot />
       </article>
     </div>

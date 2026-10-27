@@ -26,5 +26,7 @@ export function useStage() {
     active,
     /** The stage's size and transform, or undefined while the views stack. */
     style: computed(() => (active.value ? stageStyle(fit.value) : undefined)),
+    /** The zoom that draws content on the stage at the window's own sizes, as a page; undefined while the views stack. */
+    pageZoom: computed(() => (active.value ? 1 / fit.value.scale : undefined)),
   }
 }

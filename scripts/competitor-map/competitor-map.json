@@ -1,0 +1,5627 @@
+{
+  "date": "2026-10-27",
+  "source": "The production competitor review queue, To review (381 companies; the page said 383), copied by the owner on 2026-10-27. The 9 added and 79 dismissed companies were not in the copy and are not in this map.",
+  "definition": "A competitor of Tribelt makes metal conveyor belts (wire mesh, eyelink, spiral, chain, ladder, plate link, solid steel and similar) for process conveying in heat, cold, wet and hygienic steps, or heavy loads in recycling, waste and filtration, or has them made and sells them under its own name, and sells into Europe. Dealers, installers, machine and system builders that buy their belts, rubber, fabric, PVC, PU and plastic modular belting, fence and sieve mesh, unrelated businesses and invented names are not. See README.md.",
+  "counts": {
+    "companies": 381,
+    "competitor": 15,
+    "not": 364,
+    "unclear": 2,
+    "nonexistent": 218,
+    "duplicateOfListed": 4
+  },
+  "companies": [
+    {
+      "name": "Kienzle GmbH",
+      "otherNames": [
+        "Kienzle GmbH Drahtförderbänder"
+      ],
+      "websites": [
+        "kienzle.com"
+      ],
+      "answers": 8,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "Wire conveyor belts (spiral link, lamella, wire loop and round-wire link belts) for heat treatment, filter, painting and washing lines.",
+      "reason": "A family maker of wire conveyor belts in Leinfelden-Echterdingen since 1926, for heat treatment and washing: Tribelt's products and uses in Germany. Not to be confused with Kienzle Uhren, Kienzle Apparate or the CNC shop Kienzle GmbH in Illerrieden (kienzle-gmbh.com). No working website: kienzle.com does not exist and kienzle-gmbh.de is a parked IONOS page, so it cannot be added with a website yet.",
+      "evidence": [
+        "https://www.wlw.de/de/firma/kienzle-gmbh-drahtfoerderbaender-965811 : 'Seit 1926 stellen wir, das Familienunternehmen Kienzle in Echterdingen bei Stuttgart Drahtförderbänder her'; supplier type Hersteller; Gartenstrasse 25, 70771 Leinfelden-Echterdingen; no website listed",
+        "kienzle.com: no DNS record on 2026-10-27; kienzle-gmbh.de: IONOS 'Diese Domain ist bereits registriert'"
+      ]
+    },
+    {
+      "name": "Taiwan Metiz Alliance",
+      "otherNames": [
+        "Metiz Alliance",
+        "Metiz Wire Mesh Conveyor Belts – Taiwan Metiz Alliance"
+      ],
+      "websites": [
+        "metiz.tw"
+      ],
+      "answers": 8,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "Taiwanese export alliance for fastener-making equipment that also sells stainless wire mesh belts for heat treatment furnaces and solid steel belts under its own name.",
+      "reason": "It says it develops and manufactures wire mesh conveyor belts for continuous heat treatment furnaces (400 to 1,070 °C) and sells into Germany, Italy, France, Spain and England. Belts are a side line of an equipment exporter, likely made by member factories, but sold under its name, which the definition counts.",
+      "evidence": [
+        "https://metiz.tw/product_conveyor_belt.htm : 'Taiwan Metiz Alliance develops and manufactures steel wire mesh conveyor belts ... for continuous heat treatment furnaces'",
+        "https://metiz.tw/ : 'MAIN SUPPLY MARKETS EUROPE Germany, Italy, France, Spain, England'"
+      ],
+      "website": "https://metiz.tw"
+    },
+    {
+      "name": "Scanbelt Conveyma",
+      "otherNames": [
+        "Scanbelt"
+      ],
+      "websites": [
+        "scanbelt-conveyma.nl"
+      ],
+      "answers": 7,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Dutch supplier of plastic modular belts, bearings, chains, technical plastics and timing belts.",
+      "reason": "Plastic modular belts and conveyor components: a substitute product and a component supplier, not metal process belts.",
+      "evidence": [
+        "https://scanbelt-conveyma.nl/ : 'Wij leveren modulaire banden (transportbanden), flenslagers, stelvoeten, transportkettingen, technische kunststoffen ...'"
+      ]
+    },
+    {
+      "name": "Volta Belting Europe B.V.",
+      "otherNames": [
+        "Volta"
+      ],
+      "websites": [
+        "voltabelting.com"
+      ],
+      "answers": 7,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Thermoplastic (homogeneous) food-grade conveyor belts for meat, poultry and fish.",
+      "reason": "Plastic belting, not metal process belts.",
+      "evidence": [
+        "https://www.voltabelting.com/ : 'Food Grade Conveyor Belts | Volta Belting Technology'"
+      ]
+    },
+    {
+      "name": "ORA Machines",
+      "otherNames": [
+        "MTF Technik",
+        "MTF Technik Hardy Schürfeld GmbH & Co. KG",
+        "ORA Machines / MTF Technik"
+      ],
+      "websites": [
+        "oramachines.com",
+        "mtf-technik.de"
+      ],
+      "answers": 6,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "ORA Machines is a Dutch supplier of machines for the plastics-processing industry; MTF Technik builds conveyors and separation systems.",
+      "reason": "Machine and conveyor builders that do not make metal belts.",
+      "evidence": [
+        "https://www.oramachines.com/ : 'Totaalleverancier in de plastic verwerkende industrie'",
+        "https://www.mtf-technik.de/de/ : 'MTF Technik entwickelt und fertigt individuelle Förderbänder, Separiersysteme und Automatisierungslösungen'"
+      ]
+    },
+    {
+      "name": "Flexco",
+      "otherNames": [
+        "Flexco Europe BV"
+      ],
+      "websites": [
+        "flexco.com"
+      ],
+      "answers": 5,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Belt fasteners, splicing tools and belt cleaners for conveyor belts.",
+      "reason": "Accessories for (mostly rubber) conveyor belts, not belts.",
+      "evidence": [
+        "https://flexco.de/GR/EN/Flexco.htm : 'We manufacture belt fasteners, endless splicing tools, cleaners, and more.'"
+      ]
+    },
+    {
+      "name": "Magaldi",
+      "otherNames": [],
+      "websites": [
+        "magaldi.com"
+      ],
+      "answers": 5,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Complete heavy-duty steel belt conveyors (Superbelt, Ecobelt) for hot bottom ash, clinker and bulk material in power, cement and mining plants.",
+      "reason": "Builds whole conveyor systems for severe bulk handling with its own steel pan belts; it does not sell process belts to food or oven makers. Borderline only for waste-to-energy ash, judged not a competitor.",
+      "evidence": [
+        "https://www.magaldi.com/it : 'leader mondiale nella progettazione e realizzazione di macchine ed impianti per il trasporto di materiali in condizioni severe'"
+      ]
+    },
+    {
+      "name": "Rexnord",
+      "otherNames": [],
+      "websites": [
+        "rexnord.com"
+      ],
+      "answers": 5,
+      "verdict": "competitor",
+      "confidence": "high",
+      "makes": "Regal Rexnord sells the Cambridge metal conveyor belts (since the 2016 acquisition) on rexnord.com, besides chains, plastic modular belts and power transmission products.",
+      "reason": "Its metal belts are the Cambridge belts, and Cambridge Engineered Solutions is already on the competitor list. It is the same competitor, so it should not be added a second time; merge it into Cambridge or leave it.",
+      "evidence": [
+        "https://www.rexnord.com/products-services/process-motion-control/conveying-solutions/metal-conveyor-belts/straight-line-positive-drive : Regal Rexnord metal conveyor belts",
+        "https://biztimes.com/rexnord-acquires-metal-conveyor-manufacturer/ : Rexnord acquired Cambridge"
+      ],
+      "duplicateOf": "Cambridge Engineered Solutions"
+    },
+    {
+      "name": "George Lane",
+      "otherNames": [],
+      "websites": [
+        "georgelane.co.uk"
+      ],
+      "answers": 4,
+      "verdict": "competitor",
+      "confidence": "high",
+      "makes": "Woven wire mesh belting, spiral, honeycomb and plate link belts made in Birmingham, UK.",
+      "reason": "A UK maker of wire mesh conveyor belts for ovens and furnaces: the same products and uses as Tribelt.",
+      "evidence": [
+        "https://www.georgelane.co.uk/ : 'Wire Mesh Belting Manufacturers | George Lane'; 'We are Conveyor Belt Manufacturers in Birmingham ... Wire Mesh Belting and Woven Wire Conveyor Belt'"
+      ],
+      "website": "https://www.georgelane.co.uk"
+    },
+    {
+      "name": "Habasit Twente BV",
+      "otherNames": [],
+      "websites": [],
+      "answers": 4,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Habasit makes fabric, plastic and modular plastic belts; no 'Habasit Twente BV' exists as such.",
+      "reason": "Fabric and plastic modular belting, a substitute product.",
+      "evidence": [
+        "No website given; Habasit is a Swiss maker of fabric and plastic modular belts"
+      ]
+    },
+    {
+      "name": "Modutech",
+      "otherNames": [],
+      "websites": [
+        "modutech.com.tr"
+      ],
+      "answers": 4,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Plastic modular belts, chains and wear strips made in Manisa, Turkey.",
+      "reason": "Plastic modular belts: a substitute product.",
+      "evidence": [
+        "https://modutech.com.tr/ : 'Modutech modüler plastik bantlar, zincirler ve sürtünme kızakları'"
+      ]
+    },
+    {
+      "name": "Sveba",
+      "otherNames": [
+        "Sveba Dahlen"
+      ],
+      "websites": [
+        "sveba.com"
+      ],
+      "answers": 4,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Bakery ovens (Sveba Dahlen).",
+      "reason": "An oven builder that buys its belts: a customer, not a competitor.",
+      "evidence": [
+        "https://sveba.com/ : 'We are Oven Professionals | Sveba Dahlen'"
+      ]
+    },
+    {
+      "name": "Twentsche Cable Factory BV",
+      "otherNames": [],
+      "websites": [
+        "tkf.nl"
+      ],
+      "answers": 4,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Electrical and data cables (TKF, Twentsche Kabelfabriek).",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://www.tkf.nl/nl : 'TKF - kabels & systemen voor bouw & infra ...'"
+      ]
+    },
+    {
+      "name": "V.S.T. Verspaning Service Twente B.V.",
+      "otherNames": [],
+      "websites": [
+        "vstbv.nl"
+      ],
+      "answers": 4,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Machining (verspaning) job shop in Twente.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://vstbv.nl/ : 'Verspannings Service Twente B.V.'"
+      ]
+    },
+    {
+      "name": "ALLERT",
+      "otherNames": [
+        "Vaimo"
+      ],
+      "websites": [
+        "vaimo.net"
+      ],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Unknown; the website given, vaimo.net, is Vaimo, a digital commerce agency.",
+      "reason": "No belt maker of this name found; the website belongs to an unrelated agency.",
+      "evidence": [
+        "https://www.vaimo.com/ : 'Vaimo〡Digital commerce & customer experience experts'"
+      ]
+    },
+    {
+      "name": "Anping Singokin Wire Mesh",
+      "otherNames": [
+        "Anping Singokin"
+      ],
+      "websites": [],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Chinese wire mesh maker, mainly fences (chain link, 3D, anti-climb), welded mesh and gabions; conveyor belt mesh is a side line on marketplaces.",
+      "reason": "Mainly a fence and welded-mesh maker. It does list spiral and chain oven belts on Made-in-China and Alibaba, so it is close to the line, but its own site is about fencing and it is not a belt specialist.",
+      "evidence": [
+        "https://www.sgkwiremesh.com/ : product menu of fences; 'wedge wire screen, woven wire mesh ... conveyor belt wire mesh etc.'",
+        "https://sgkwiremesh.en.made-in-china.com/product-group/cbPayEBCnzRv/Conveyor-Belt-Mesh-catalog-1.html : '304 316 310S Ss Spiral Wire Mesh Conveyor Belt for Food Industry'"
+      ]
+    },
+    {
+      "name": "Averinox",
+      "otherNames": [],
+      "websites": [
+        "averinox.com"
+      ],
+      "answers": 3,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "Dutch maker of industrial wire mesh, filtration media and metal process belts: plate link, woven and rod belts for baking, drying, washing and quenching.",
+      "reason": "It supplies metal conveyor and process belts under its own name for baking, drying, washing and sintering, with sprockets: Tribelt's products and uses, in the Netherlands. Its spiral belts are polyester filter belts and do not count.",
+      "evidence": [
+        "https://averinox.com/products/plate-belts/ : 'Metal conveyor and process belts for baking, drying, washing and quenching. The range includes plate links on rods, woven constructions and rod belts'",
+        "https://averinox.com/ : 'Dutch manufacturer with 25+ years of experience'"
+      ],
+      "website": "https://averinox.com"
+    },
+    {
+      "name": "Bando Group (Heat Carry ™)",
+      "otherNames": [
+        "Heat Carry ™ Conveyor Belts",
+        "Heat Carry™"
+      ],
+      "websites": [
+        "bandogrp.com"
+      ],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Bando Chemical: rubber and elastomer transmission and conveyor belts; Heat Carry is a heat-resistant rubber conveyor belt.",
+      "reason": "Rubber belting, not metal.",
+      "evidence": [
+        "https://www.bandogrp.com/ : 'ゴムとエラストマーのグローバルサプライヤー' (global supplier of rubber and elastomers)"
+      ]
+    },
+    {
+      "name": "Bühler",
+      "otherNames": [],
+      "websites": [],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Process plants for grain milling, food, feed and materials.",
+      "reason": "A machine and plant builder that buys its belts.",
+      "evidence": [
+        "Known group: buhlergroup.com, milling and process equipment; no website given"
+      ]
+    },
+    {
+      "name": "De Boer Verspaning B.V.",
+      "otherNames": [],
+      "websites": [],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Machining (verspaning) firm.",
+      "reason": "Unrelated business; the name says machining.",
+      "evidence": [
+        "No website given; 'verspaning' is machining"
+      ]
+    },
+    {
+      "name": "Dorner Manufacturing Corp.",
+      "otherNames": [
+        "Dorner Manufacturing Corporation"
+      ],
+      "websites": [
+        "dorner.com"
+      ],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "US builder of conveyor systems (flat belt, modular and precision conveyors).",
+      "reason": "A conveyor system builder. Its shareholders bought Geppert-Band, the German wire belt maker that is already on the competitor list, but Dorner itself does not make metal process belts.",
+      "evidence": [
+        "dorner.com returned HTTP 409 to a script on 2026-10-27",
+        "https://www.industrial-production.de/wirtschaft---unternehmen/40-jahre-geppert-band.htm : Dorner shareholders acquired Geppert-Band"
+      ]
+    },
+    {
+      "name": "GEA",
+      "otherNames": [],
+      "websites": [],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Food processing machinery, including spiral freezers and ovens.",
+      "reason": "A machine builder that buys its belts: a customer.",
+      "evidence": [
+        "No website given; GEA Group builds food processing lines"
+      ]
+    },
+    {
+      "name": "HIGHTEMP",
+      "otherNames": [],
+      "websites": [
+        "hightemp-furnaces.com"
+      ],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Industrial heat-treatment furnaces and heat-treatment services (Hightemp Furnaces, DOWA), India.",
+      "reason": "A furnace builder, which buys its mesh belts.",
+      "evidence": [
+        "https://www.hightemp-furnaces.com/ : 'A leading manufacturer of industrial furnaces and commercial heat treatment service provider'"
+      ]
+    },
+    {
+      "name": "Hebei Risen",
+      "otherNames": [
+        "Hebei Risen Conveyor Belt Products Co.",
+        "Ltd.",
+        "Hebei Risen Imp&exp Trading Co.,ltd"
+      ],
+      "websites": [],
+      "answers": 3,
+      "verdict": "competitor",
+      "confidence": "high",
+      "makes": "Chinese maker of wire mesh conveyor belts: chain-driven, flat flex, balanced weave, compound balanced, plate link, eyelink, ladder and honeycomb belts, for ovens, quenching, washing, frying and freezing.",
+      "reason": "Makes the same belt types as Tribelt for the same uses and exports them; a maker anywhere that sells into Europe counts. Its real website is metalconveybelt.com.",
+      "evidence": [
+        "https://metalconveybelt.com/ : 'Hebei Risen Conveyor Belt Products Co., Ltd - Mesh Belt & Conveyor Parts Manufacturer and Factory in China'; 'Chain Driven Wire Mesh Belt, Iron Plate Conveyor Belt, Compound Balanced Belt, Flat Flex Belt, Balanced Weave Belt ... Widely Used In Baking Oven, Quenching Tank, Washing Machine, Fryer Machine, Freezer Machine'"
+      ],
+      "website": "https://www.metalconveybelt.com"
+    },
+    {
+      "name": "Mecalux",
+      "otherNames": [],
+      "websites": [
+        "mecalux.com"
+      ],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Warehouse racking and storage systems.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://www.mecalux.com/ : 'Mecalux International | Warehouse Storage Solutions'"
+      ]
+    },
+    {
+      "name": "Phoenix",
+      "otherNames": [],
+      "websites": [],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Phoenix Conveyor Belt Systems: rubber and steel-cord conveyor belts for mining (Continental group).",
+      "reason": "Rubber and steel-cord belting for bulk handling.",
+      "evidence": [
+        "No website given; same as Phoenix Conveyor Belt Systems GmbH"
+      ]
+    },
+    {
+      "name": "Phoenix Conveyor Belt Systems GmbH",
+      "otherNames": [
+        "Phoenix Conveyor Belting Europe GmbH",
+        "Phoenix Conveyor Belts B.V."
+      ],
+      "websites": [],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Rubber and steel-cord conveyor belts for mining and bulk handling, Hamburg (Continental group).",
+      "reason": "Rubber and steel-cord belting for bulk handling.",
+      "evidence": [
+        "No website given; Phoenix Conveyor Belt Systems is ContiTech's steel-cord belting business"
+      ]
+    },
+    {
+      "name": "REMA TIP TOP TSN",
+      "otherNames": [],
+      "websites": [
+        "rematiptop-tsn.nl"
+      ],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Supplier and service company for rubber conveyor belts and wear linings in the Netherlands.",
+      "reason": "A dealer and service firm for rubber belts.",
+      "evidence": [
+        "https://rematiptop-tsn.nl/ : 'de grootste totaal leverancier van rubber transportbanden, -componenten en slijtvast bekledingsmateriaal in Nederland'"
+      ]
+    },
+    {
+      "name": "The Henry Group",
+      "otherNames": [],
+      "websites": [
+        "thehenrygroup.com"
+      ],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Greenville, Texas maker of bakery equipment: ovens, proofers, conveyors, spirals, baggers and pan cleaners.",
+      "reason": "A bakery machine builder; its conveyors use mat-top (plastic) belts.",
+      "evidence": [
+        "https://www.just-food.com/contractors/baking-equipment/henry-group : 'industrial equipment ovens, proofers, conveyor systems, spirals ...'",
+        "thehenrygroup.com returned 404"
+      ]
+    },
+    {
+      "name": "Yiyi Mesh Belt",
+      "otherNames": [],
+      "websites": [],
+      "answers": 3,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No such company found; the nearest is Henan Yiheng Mesh Belt, a maker of polyester and nonwoven forming belts.",
+      "reason": "Probably a garbled name. The nearest real company makes polyester belts, not metal belts.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27; nearest: Henan Yiheng Mesh Belt Industry (polyester mesh belts), yhfilterbelt.com"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Annilte",
+      "otherNames": [],
+      "websites": [
+        "annilte.net"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Felt, Nomex, PVC and PU belts, poultry manure and egg belts, China.",
+      "reason": "Fabric, PVC and PU belts.",
+      "evidence": [
+        "https://annilte.net/ : 'Felt Conveyor Belt, Nomex Belt, Poultry Manure Belt, Egg Belt, Pvc Conveyor Belt'"
+      ]
+    },
+    {
+      "name": "Beerepoot B.V.",
+      "otherNames": [],
+      "websites": [
+        "beerepoot.nl"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "New and used roller conveyors, belt conveyors and lift tables, NL.",
+      "reason": "A conveyor builder and dealer.",
+      "evidence": [
+        "https://beerepoot.nl/ : 'Specialist in nieuwe & gebruikte rollenbanen, transportbanden, heftafels en lopende banden'"
+      ]
+    },
+    {
+      "name": "Belt Technik GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No company of this exact name found; the nearest, BELTech GmbH in Lüdenscheid, makes rubber conveyor belts.",
+      "reason": "Unconfirmed name; the nearest match makes rubber belts.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27; nearest: https://www.werktuigen.com/wth/52950/beltech-gmbh-luedenscheid"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Berner",
+      "otherNames": [],
+      "websites": [
+        "berner-gmbh.de",
+        "berner.de"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "berner-gmbh.de is Berner Kunststofftechnik (plastics); berner.de is the Berner tools and fasteners shop.",
+      "reason": "Neither website belongs to a metal belt maker.",
+      "evidence": [
+        "https://www.berner-gmbh.de/ : 'Berner Kunststofftechnik GmbH'",
+        "https://shop.berner.eu/de-de/ : Berner trade supplies shop"
+      ]
+    },
+    {
+      "name": "Biscuit People",
+      "otherNames": [],
+      "websites": [
+        "biscuitpeople.com"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Online platform and directory for the biscuit industry.",
+      "reason": "A directory and publisher.",
+      "evidence": [
+        "https://www.biscuitpeople.com/ : 'Biscuit People is the international platform for biscuit industry'"
+      ]
+    },
+    {
+      "name": "ContiTech",
+      "otherNames": [],
+      "websites": [
+        "conti-tech.com"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Continental's rubber, textile and steel-cord conveyor belting and other rubber products.",
+      "reason": "Rubber and steel-cord belting.",
+      "evidence": [
+        "conti-tech.com returned HTTP 500; ContiTech is Continental's rubber products division"
+      ]
+    },
+    {
+      "name": "Dents",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name in belts found.",
+      "reason": "A garbled name from an AI answer.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "EngineersWireMesh",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "Indian maker (Mohali, Punjab) of stainless wire mesh, perforated sheet and conveyor belts: balanced weave, compound balanced, chain link, honeycomb, eyelink and slat chain belts.",
+      "reason": "Makes Tribelt's belt types and says it exports to Europe.",
+      "evidence": [
+        "https://www.engineerswiremesh.com/ : product list includes balanced weave, compound balanced weave, chain link, honeycomb, rod reinforced, eyelink and slat chain conveyor belts; 'serves clients across Europe, Asia, the Middle East, and North America'"
+      ],
+      "website": "https://www.engineerswiremesh.com"
+    },
+    {
+      "name": "EuroConveyor",
+      "otherNames": [],
+      "websites": [
+        "euroconveyor.com"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Dutch supplier of modular conveyor systems, spare parts and service.",
+      "reason": "A conveyor system supplier and distributor.",
+      "evidence": [
+        "https://euroconveyor.com/ : 'Modulair conveyor solutions, spare parts & services'"
+      ]
+    },
+    {
+      "name": "GTEEK",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "GTeek is a supplier of rubber, PVC, PU, modular and other belts, representing other makers (Habasit and others); metal and wire mesh belts are one resold line.",
+      "reason": "A belt distributor, not a maker of metal belts. Haiku's note that it makes furnace mesh belts is not supported by its site.",
+      "evidence": [
+        "https://gteek.com/ : 'We also represent the leaders of the industry in elastomeric products'; menu 'Plastic conveyor belts ... Metal conveyor belts, Wire Mesh Belts ... Habasit Belting Solutions'"
+      ]
+    },
+    {
+      "name": "Gasbarre",
+      "otherNames": [],
+      "websites": [
+        "gasbarre.com"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "US builder of thermal processing furnaces, powder compaction presses and tooling.",
+      "reason": "A furnace builder; it may supply replacement belts for its furnaces but sells no belt range of its own.",
+      "evidence": [
+        "https://www.gasbarre.com/ : 'Thermal Processing Systems | Powder Compaction Solutions | Manufacturing Technologies'"
+      ]
+    },
+    {
+      "name": "Haver & Boecker",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Haver & Boecker (Oelde): industrial wire mesh (screening, filtration, architecture) and machines for bulk material packing and processing.",
+      "reason": "Its wire mesh is for screening, filtration and architecture; no metal conveyor belt range is shown on its site. Haiku's note that it makes metal conveyor belts is not supported.",
+      "evidence": [
+        "https://www.haverboecker.com/en/ : 'BULK & LIQUID MANAGEMENT AND INDUSTRIAL WIRE MESH SOLUTIONS'; no conveyor belt products listed"
+      ]
+    },
+    {
+      "name": "Heanjia Super-Metals",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Chinese supplier of high-temperature alloy wire, strip and bar (alloywirestrip.com).",
+      "reason": "A material supplier; no mesh belt products found.",
+      "evidence": [
+        "https://www.slideshare.net/heanjiaalloys : Heanjia Super-metals Co., Ltd., alloy materials, alloywirestrip.com"
+      ]
+    },
+    {
+      "name": "Heat and Control",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "US builder of food processing lines: fryers, ovens, seasoning and packaging systems.",
+      "reason": "A machine builder that buys its belts: a customer.",
+      "evidence": [
+        "No website given; Heat and Control builds snack and food processing equipment"
+      ]
+    },
+    {
+      "name": "Horizon Performance Technologies",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "US builder of industrial ovens and parts washers, with a spare parts catalogue.",
+      "reason": "An oven and washer builder that buys its belts.",
+      "evidence": [
+        "https://horizonpfm.com/ : 'Horizon Performance Technologies builds custom-engineered industrial ovens and industrial washers'"
+      ]
+    },
+    {
+      "name": "Innova",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "An ambiguous name named only in a list; no conveyor belt maker called Innova was found (Innova is also Marel's food software).",
+      "reason": "No evidence of a metal belt maker.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27 making metal belts"
+      ]
+    },
+    {
+      "name": "Korutek",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "UK builder and maintainer of spiral freezer and cooler systems (formerly Eurotek Engineering), with spare parts.",
+      "reason": "A freezer builder and service company that supplies spare belts but does not make them: a customer of belt makers.",
+      "evidence": [
+        "https://korutek.com/ : 'Korutek design, build and maintain advanced industrial freezing and cooling systems'; spare parts include 'spiral belt path'"
+      ]
+    },
+    {
+      "name": "LEWCO",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "LEWCO Inc. (Sandusky, Ohio) builds conveyors and industrial ovens.",
+      "reason": "A conveyor and oven builder; it builds belts into its own machines rather than selling a belt range.",
+      "evidence": [
+        "No website given; LEWCO is a US builder of conveyors and industrial ovens"
+      ]
+    },
+    {
+      "name": "LinMaster",
+      "otherNames": [
+        "LinMaster Conveyors"
+      ],
+      "websites": [
+        "linmaster.com"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "linmaster.com is a parked domain; no conveyor company of this name found.",
+      "reason": "Probably a garbled or invented name.",
+      "evidence": [
+        "https://linmaster.com/ : parking redirect to /lander",
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Lindberg/MPH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "US builder of industrial furnaces, including mesh belt furnaces.",
+      "reason": "A furnace builder that buys its belts.",
+      "evidence": [
+        "No website given; Lindberg/MPH is a US furnace builder"
+      ]
+    },
+    {
+      "name": "MGS Conveyor Systems",
+      "otherNames": [
+        "MGS Conveyors"
+      ],
+      "websites": [
+        "mgsconeveyors.com"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "mgsconeveyors.com (sic) does not exist; no clear company found.",
+      "reason": "A garbled website and an unconfirmed general conveyor name.",
+      "evidence": [
+        "mgsconeveyors.com: no DNS record on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "P&P verspaning",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "A machining (verspaning) business.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "No website given; 'verspaning' is machining"
+      ]
+    },
+    {
+      "name": "Puteken",
+      "otherNames": [],
+      "websites": [
+        "puteken.com"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Chinese maker of PU, PVC, silicone and rubber conveyor and timing belts.",
+      "reason": "Plastic and rubber belting.",
+      "evidence": [
+        "https://www.puteken.com/ : 'Coil Wrapper Belt | Silicone Timing Belt | Conveyor Belt | Power Transmission Belt | PU Timing Belt'"
+      ]
+    },
+    {
+      "name": "Quiel GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No company of this name making belts was found.",
+      "reason": "Probably a garbled or invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "RICHTHOFER",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found.",
+      "reason": "Probably a garbled or invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27 (searched with tunnel oven belts)"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Rd Verspaning",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "A machining (verspaning) business.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "No website given; 'verspaning' is machining"
+      ]
+    },
+    {
+      "name": "S&P Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "s-p-foerdertechnik.de"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; s-p-foerdertechnik.de does not exist.",
+      "reason": "Probably an invented name.",
+      "evidence": [
+        "s-p-foerdertechnik.de: no DNS record",
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Shanghai Zhiyue",
+      "otherNames": [
+        "Shanghai Zhiyue Machinery (China)"
+      ],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Shanghai Zhiyue Machinery appears on Made-in-China as a supplier of flat-top and side-flex chains.",
+      "reason": "A table-top chain supplier; no metal process belts found.",
+      "evidence": [
+        "https://www.made-in-china.com/factory/side-flex-flat-top-chains.html : lists Shanghai Zhiyue Machinery Co., Ltd. under flat-top chains"
+      ]
+    },
+    {
+      "name": "Span Tech",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Span Tech LLC (US) builds plastic chain conveyors.",
+      "reason": "Plastic conveyors; spantech.com is an unrelated software firm.",
+      "evidence": [
+        "https://www.spantech.com/ : 'Spantech Software'",
+        "Span Tech LLC, Glasgow KY, plastic chain conveyors"
+      ]
+    },
+    {
+      "name": "Stablers",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No belt company of this name found.",
+      "reason": "Probably a garbled name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Stahlrück",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name; 'Stahlrück' is not a known brand.",
+      "reason": "Probably a garbled name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27; results only concern steel link belts in mining"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Surface Combustion",
+      "otherNames": [],
+      "websites": [
+        "surfacecombustion.com"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "US builder of heat-treating furnaces.",
+      "reason": "A furnace builder that buys its belts.",
+      "evidence": [
+        "surfacecombustion.com (Cloudflare block); known US furnace maker"
+      ]
+    },
+    {
+      "name": "Titan Conveyors",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "US builder of heavy-duty conveyors, including wire mesh belt conveyors.",
+      "reason": "A conveyor builder; no sign that it makes the belts.",
+      "evidence": [
+        "https://www.titanconveyors.com/ : 'custom-build conveyors with all-welded, heavy-gauge frames'; product line 'Wire Mesh Belt Conveyors'"
+      ]
+    },
+    {
+      "name": "Transovate",
+      "otherNames": [],
+      "websites": [
+        "transovate.tech"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Chinese maker of coil wrapper, timing, PU and modular belts.",
+      "reason": "Plastic and PU belting.",
+      "evidence": [
+        "https://www.transovate.tech/ : 'Coil Wrapper Belt, Grinding Machine conveyor belt, timing belt with silicone, Ziplink Belt'"
+      ]
+    },
+    {
+      "name": "Zoe Lactic",
+      "otherNames": [],
+      "websites": [],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found.",
+      "reason": "A garbled name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "schaefer",
+      "otherNames": [],
+      "websites": [
+        "schaefer-band.com",
+        "schaefer.de"
+      ],
+      "answers": 2,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "schaefer.de is a parked domain; schaefer-band.com does not exist.",
+      "reason": "No belt maker found behind the name or its websites.",
+      "evidence": [
+        "https://schaefer.de/ : parked page; schaefer-band.com has no DNS record"
+      ]
+    },
+    {
+      "name": "A&W Conveyor Industrie",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "ABP Induction Systems GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Induction melting and heating furnaces (Dortmund).",
+      "reason": "Unrelated to conveyor belts.",
+      "evidence": [
+        "No website given; ABP Induction is a German induction furnace maker"
+      ]
+    },
+    {
+      "name": "AC Foodtech",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "A food machinery name; described as a builder of spiral freezer systems.",
+      "reason": "A freezer builder at most, which buys its belts; no metal belt maker of this name found.",
+      "evidence": [
+        "No website given; No company of this name found in web searches on 2026-10-27 making belts"
+      ]
+    },
+    {
+      "name": "ACB Transportbanden & Onderdelen",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Dutch firm that supplies, installs and maintains rubber, plastic, modular and metal conveyor belts and rollers from four locations.",
+      "reason": "A supplier and service company, not a maker; Haiku's note that it makes metal belts is not supported.",
+      "evidence": [
+        "https://automa.net/company/acb-transportbanden : 'supplies, installs, and maintains conveyor belts, roller conveyors, and transport systems'"
+      ]
+    },
+    {
+      "name": "AFC-Holcroft",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "US builder of heat-treating furnaces, including mesh belt and cast link belt furnaces.",
+      "reason": "A furnace builder that buys or builds belts into its own furnaces; no belt range.",
+      "evidence": [
+        "No website given; AFC-Holcroft is a US furnace builder"
+      ]
+    },
+    {
+      "name": "ALD Vacuum Technologies",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Vacuum furnaces and heat-treatment plants.",
+      "reason": "A furnace builder; vacuum furnaces have no belts.",
+      "evidence": [
+        "No website given; ALD Vacuum Technologies, Hanau"
+      ]
+    },
+    {
+      "name": "ALFOTEC",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27 (searched with heat-resistant plate conveyors)"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "AMETEK Lamina Ceramics",
+      "otherNames": [],
+      "websites": [
+        "ameteklaminaceramics.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "AMETEK's ceramic components business; the website given does not exist.",
+      "reason": "Not a conveyor belt maker.",
+      "evidence": [
+        "ameteklaminaceramics.com: no DNS record"
+      ]
+    },
+    {
+      "name": "AMF Automation",
+      "otherNames": [],
+      "websites": [
+        "amfautomation.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "A bakery automation name (AMF Bakery Systems builds bakery lines); amfautomation.com redirects to a bare IP address.",
+      "reason": "A bakery machine builder at most.",
+      "evidence": [
+        "amfautomation.com redirects to https://198.71.54.108/"
+      ]
+    },
+    {
+      "name": "AMF Industries",
+      "otherNames": [],
+      "websites": [
+        "amfindustries.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Mining equipment and services (amfindustries.com).",
+      "reason": "Unrelated to metal process belts.",
+      "evidence": [
+        "http://www.amfindustries.com/ : 'Mining | A Passion for Excellence!'"
+      ]
+    },
+    {
+      "name": "AUMUND",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Bucket elevators and pan conveyors for hot bulk material such as clinker.",
+      "reason": "A builder of bulk handling conveyors, not process belts.",
+      "evidence": [
+        "No website given; AUMUND Fördertechnik, Rheinberg"
+      ]
+    },
+    {
+      "name": "Aasted ApS",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Chocolate and confectionery machinery (Denmark).",
+      "reason": "A machine builder that buys its belts.",
+      "evidence": [
+        "No website given; Aasted, Farum"
+      ]
+    },
+    {
+      "name": "Alcon Belt Systems",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Described as non-metallic belts; no company found.",
+      "reason": "Not a metal belt maker even by the hint.",
+      "evidence": [
+        "No website given; No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Alraun Maschinenbau",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Described as a builder of modular dryers; no website and no belt products found.",
+      "reason": "A dryer builder at most, which buys its belts.",
+      "evidence": [
+        "No website given; no metal belt maker of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Amandus Kahl",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Feed and pellet machinery, including belt dryers and coolers (Reinbek).",
+      "reason": "A machine builder that buys its belts.",
+      "evidence": [
+        "No website given; Amandus Kahl GmbH & Co. KG, Reinbek"
+      ]
+    },
+    {
+      "name": "Anjaneya Beltings",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Chennai (India) firm listing rubber belt conveyors and nylon woven belts.",
+      "reason": "Rubber and textile belting; Haiku's note of balanced weave and spiral belts is not supported.",
+      "evidence": [
+        "https://m.indiamart.com/anjaneyabeltings : woven nylon belt; directory lists it as a rubber belt conveyor maker"
+      ]
+    },
+    {
+      "name": "BBS Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "bbs-transportbanden.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a regional dealer.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "bbs-transportbanden.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "BGT Conveyor Service",
+      "otherNames": [],
+      "websites": [
+        "bgtconveyor.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a service and import company.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "bgtconveyor.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "BTM Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "btm-transportbanden.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a regional dealer.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "btm-transportbanden.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Bailey Brands",
+      "otherNames": [],
+      "websites": [
+        "baileybrands.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "The website given redirects to baileygp.com (blocked); described as flat belt and roller conveyors.",
+      "reason": "No metal belt maker found.",
+      "evidence": [
+        "baileybrands.com redirects to https://www.baileygp.com/ (Cloudflare block)"
+      ]
+    },
+    {
+      "name": "Band-Tech B.V.",
+      "otherNames": [],
+      "websites": [
+        "band-tech.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "band-tech.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Barmor",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "BeCo International",
+      "otherNames": [],
+      "websites": [
+        "beco-international.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "The website given is a reserved domain at Mijndomein; no company found.",
+      "reason": "Probably invented.",
+      "evidence": [
+        "http://beco-international.com/ : 'Domein Gereserveerd - Mijndomein.nl'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Beckert Bandtechnik GmbH & Co. KG",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found.",
+      "reason": "Probably an invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Beco Conveyors BV",
+      "otherNames": [],
+      "websites": [
+        "becoconveyors.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "becoconveyors.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Beco GmbH",
+      "otherNames": [],
+      "websites": [
+        "beco.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "beco.de serves an empty page; no belt maker found.",
+      "reason": "No evidence of a metal belt maker.",
+      "evidence": [
+        "https://beco.de/ : empty page"
+      ]
+    },
+    {
+      "name": "Bekaert",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Steel wire and wire products (Belgium).",
+      "reason": "A wire supplier to belt makers, not a belt maker.",
+      "evidence": [
+        "No website given; NV Bekaert SA, steel wire"
+      ]
+    },
+    {
+      "name": "Belt & Band Company",
+      "otherNames": [],
+      "websites": [
+        "beltandband.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "The website given redirects to a leather watch strap shop.",
+      "reason": "Not a belt maker of any conveyor kind.",
+      "evidence": [
+        "beltandband.com redirects to https://lombardbespoke.com/ : 'Lombard Bespoke Leather'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Belt & Cross",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Belt Engineering",
+      "otherNames": [],
+      "websites": [
+        "belte.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "belte.com is a parked domain; no company found.",
+      "reason": "Probably invented.",
+      "evidence": [
+        "https://belte.com/ : parking redirect to /lander"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Belt Solutions B.V.",
+      "otherNames": [],
+      "websites": [
+        "belt-solutions.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a belt specialist with wire mesh stock.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "belt-solutions.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "BeltCrafters",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Beltcon",
+      "otherNames": [],
+      "websites": [
+        "beltcon.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a belt supplier.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "beltcon.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Belten GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Beltmasters",
+      "otherNames": [],
+      "websites": [
+        "beltmasters.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "beltmasters.de: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Berghof Fördertechnik GmbH",
+      "otherNames": [],
+      "websites": [
+        "berghof-foerdertechnik.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "berghof-foerdertechnik.de: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Berghofer",
+      "otherNames": [],
+      "websites": [
+        "berghofer.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "berghofer.com is a domain for sale; no company found.",
+      "reason": "Probably invented.",
+      "evidence": [
+        "https://www.hugedomains.com/domain_profile.cfm?d=berghofer.com : 'Berghofer.com is for sale'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Berner Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "berner-foerdertechnik.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "berner-foerdertechnik.de: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Bertrand Technologies",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Bessmann GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found.",
+      "reason": "Probably an invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Bloor",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Boge",
+      "otherNames": [],
+      "websites": [
+        "boge.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Compressors and compressed air systems.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://www.boge.com/de-de/ : 'BOGE | Ihr Partner für Drucklufttechnik'"
+      ]
+    },
+    {
+      "name": "Bosch Rexroth",
+      "otherNames": [],
+      "websites": [
+        "boschrexroth.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Hydraulics, drives and factory automation, including aluminium profile conveyors.",
+      "reason": "Unrelated to metal process belts.",
+      "evidence": [
+        "https://www.boschrexroth.com/en/dc/ : 'your partner for hydraulics and automation'"
+      ]
+    },
+    {
+      "name": "Bridger",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Bridger Global",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Bruynooghe nv",
+      "otherNames": [],
+      "websites": [
+        "bruynooghe-nv.be"
+      ],
+      "answers": 1,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "Belgian maker and supplier of conveyor belts, including eyelink, grill (flat wire) and spiral metal belts in stainless and steel.",
+      "reason": "It calls itself a producer, and makes eyelink, grill and spiral metal belts to size (65 to 6,000 mm wide) for ovens, coolers, dryers and washers, in Belgium and the Netherlands.",
+      "evidence": [
+        "https://bruynooghe-nv.be/nl/producten/metalen-transportbanden : 'Draadogenbanden in staal of roestvrij staal ... Grillebanden ... Spiraalbanden'; 'Productiemogelijkheden: breedtes van 65 tot 6000 mm'",
+        "https://bruynooghe-nv.be/nl/home : 'We zijn producent en leverancier van transportbanden'"
+      ],
+      "website": "https://bruynooghe-nv.be"
+    },
+    {
+      "name": "Burkle Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "burkle.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "burkle.de redirects to buerkle.de, which returns 404; Bürkle makes lab equipment and presses.",
+      "reason": "No conveyor belt maker found.",
+      "evidence": [
+        "burkle.de redirects to https://www.buerkle.de/ (404)"
+      ]
+    },
+    {
+      "name": "Böcker",
+      "otherNames": [],
+      "websites": [
+        "boecker.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Truck-mounted cranes and material lifts.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://boecker.de/de/ : 'Autokrane, Anhängerkrane, Aufzüge'"
+      ]
+    },
+    {
+      "name": "CSS Flex",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No product or company of this name found; nearest are Bosch Rexroth's CSS conveyor belt sections. Not to be confused with CSS Draht Schmidt, already on the list.",
+      "reason": "No evidence of a separate belt maker.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "CUSIMINO Conveyor Systems",
+      "otherNames": [],
+      "websites": [
+        "cusimino.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "cusimino.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Can-Eng Furnaces International",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Canadian builder of industrial furnaces.",
+      "reason": "A furnace builder that buys its belts.",
+      "evidence": [
+        "No website given; Can-Eng Furnaces, Niagara Falls"
+      ]
+    },
+    {
+      "name": "Century Mash",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Charlect",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Chiorino",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Italian maker of PVC, PU, polyolefin and textile belts.",
+      "reason": "Lightweight plastic and fabric belting.",
+      "evidence": [
+        "No website given; Chiorino S.p.A., Biella"
+      ]
+    },
+    {
+      "name": "Continental Conveyor Belts GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A mix of Continental (rubber belting) and a generic name; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Conveyor Group",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "ConveyorTech GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Conveyorsystemen Twente (CST)",
+      "otherNames": [],
+      "websites": [
+        "conveyorsys.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as flat belt conveyor systems.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "conveyorsys.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Crown Bakery Sales",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Danerr LP conveyor & Belt",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "De Groot Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "degroot-transportbanden.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "degroot-transportbanden.nl: no DNS record; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Dee Berk",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Deutscher Drahtostahl",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Die Anlagentechnik GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Dijk 't Voel – De Oost-Welijke Conveyor Services",
+      "otherNames": [],
+      "websites": [
+        "dijktvoel.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "dijktvoel.nl: no DNS record; garbled name"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Draka 'veyron",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Dubb & Co. Mandril Systems",
+      "otherNames": [],
+      "websites": [
+        "dubb.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "dubb.nl shows an empty page titled 'dubb.nl'; no company found.",
+      "reason": "Probably invented.",
+      "evidence": [
+        "https://dubb.nl/ : empty page"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Dynamic Conveyor Corporation",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "US builder of plastic modular conveyors (DynaClean).",
+      "reason": "A plastic conveyor builder.",
+      "evidence": [
+        "No website given; Dynamic Conveyor Corporation, Muskegon"
+      ]
+    },
+    {
+      "name": "Dynamite Conveyors",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Dörken Drahtgitter GmbH & Co. KG",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found (Dörken is a maker of building membranes and coatings).",
+      "reason": "Probably an invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Dürlsch",
+      "otherNames": [],
+      "websites": [
+        "durlsch.net"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "durlsch.net: no DNS record; garbled name"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "E+ Conveyor",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "EA Broekema BV",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "Dutch maker (Veendam, since 1953) of rod conveyor belts (steel or stainless rods on belts or chains) for agricultural machines, food processing (washing, drying, fish) and recycling.",
+      "reason": "Borderline. Its rod belts are steel rods carried by rubber belts or chains, mainly for harvesters, but it makes and sells them for washing, drying and cooling food and for recycling, Tribelt's uses, in Tribelt's home market. Judged a competitor for that part of its range.",
+      "evidence": [
+        "https://broekema.nl/wp-content/uploads/2024/03/Transportbanden-oplossingen-en-onderdelen-Drieluik-FlyerA4-EN.pdf : rod belts for washing and drying produce, processing fish, drying and cooling; steel rods for domestic waste",
+        "https://broekema.nl/en/company/ : rod conveyor belts since 1953"
+      ],
+      "website": "https://broekema.nl"
+    },
+    {
+      "name": "EBS Conveyors",
+      "otherNames": [],
+      "websites": [
+        "ebsconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "ebsconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "EKKO-Gummi",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "EMCO",
+      "otherNames": [],
+      "websites": [
+        "emcoindustries.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "The website given redirects to an eco cleaning products shop.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "emcoindustries.com redirects to https://www.earthcoproducts.com/ : 'EarthCo Products Eco Friendly Cleaning Products'"
+      ]
+    },
+    {
+      "name": "EMG Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "emg-foerdertechnik.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "emg-foerdertechnik.de: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "EPSON Tech",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Eagle Conveyors",
+      "otherNames": [],
+      "websites": [
+        "eagleconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "eagleconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Eisen Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "eisen-foerdertechnik.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "eisen-foerdertechnik.de: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Ersilia",
+      "otherNames": [],
+      "websites": [
+        "ersilia.it"
+      ],
+      "answers": 1,
+      "verdict": "unclear",
+      "confidence": "low",
+      "makes": "ersilia.it exists but shows only a maintenance page ('Torneremo presto'). The answers described scissor-lattice belts for frozen goods.",
+      "reason": "A live Italian domain, but nothing shows what it makes. Check again when the site is back.",
+      "evidence": [
+        "https://www.ersilia.it/ : HTTP 503 'Torneremo presto.'",
+        "No belt maker named Ersilia found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Executive Benz Iso mixer ... (garbled)",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "F.A.H.S. (Fabriek Aluminium Handelsmaatschappij Stadsbanden B.V.)",
+      "otherNames": [],
+      "websites": [
+        "fahs.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "fahs.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "FCE Industries",
+      "otherNames": [],
+      "websites": [
+        "fce-industries.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "fce-industries.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "FPS Food Process Solutions",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Canadian builder of spiral freezers, tunnel freezers and coolers.",
+      "reason": "A freezer builder that buys its belts: a customer.",
+      "evidence": [
+        "No website given; FPS Food Process Solutions, Richmond BC"
+      ]
+    },
+    {
+      "name": "FW Celesco",
+      "otherNames": [],
+      "websites": [
+        "celesco.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "celesco.com redirects to TE Connectivity (sensors).",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "celesco.com redirects to https://www.te.com/en/home.html"
+      ]
+    },
+    {
+      "name": "Fenner Dunlop",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Rubber and steel-cord conveyor belting for mining and bulk.",
+      "reason": "Rubber and steel-cord belting.",
+      "evidence": [
+        "No website given; Fenner Dunlop conveyor belting (Michelin group)"
+      ]
+    },
+    {
+      "name": "Festo",
+      "otherNames": [],
+      "websites": [
+        "festo.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Pneumatic and electric automation.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://festo.com/ : 'Festo Worldwide'"
+      ]
+    },
+    {
+      "name": "Fl",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A fragment of a name"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Flex",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A fragment of a name"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Flex Netherlands",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Flexal",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Flexcon International",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Flexitail Industries",
+      "otherNames": [],
+      "websites": [
+        "flexitail.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "flexitail.com redirects to a password-protected shop.",
+      "reason": "Probably invented.",
+      "evidence": [
+        "flexitail.com redirects to https://passivebeauty.com/password : 'Opening soon'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Flexo Industries",
+      "otherNames": [],
+      "websites": [
+        "flexoindustries.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "flexoindustries.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Flinn Automation",
+      "otherNames": [],
+      "websites": [
+        "flinnautomation.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "flinnautomation.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Fossidler",
+      "otherNames": [],
+      "websites": [
+        "fossidler.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "fossidler.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Fossidrive",
+      "otherNames": [],
+      "websites": [
+        "fossidrive.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "fossidrive.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Fri-Jado",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Dutch maker of rotisseries, food display and hot holding equipment.",
+      "reason": "Unrelated to metal process belts.",
+      "evidence": [
+        "No website given; Fri-Jado, Etten-Leur"
+      ]
+    },
+    {
+      "name": "Friedrich Kabel GmbH & Co. KG",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27 (searched as a wire link belt maker in Lübeck)"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Frieks",
+      "otherNames": [],
+      "websites": [
+        "frieks.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "frieks.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Frigoscandia",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Spiral and tunnel freezers, now a JBT brand; its self-stacking belts are part of its own freezers.",
+      "reason": "A freezer builder; its belts are not sold as a separate range.",
+      "evidence": [
+        "No website given; Frigoscandia is JBT's freezer brand"
+      ]
+    },
+    {
+      "name": "Fryba Conveyor Systems",
+      "otherNames": [],
+      "websites": [
+        "fryba.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "fryba.com returns 403; no conveyor company of this name found.",
+      "reason": "No evidence of a metal belt maker.",
+      "evidence": [
+        "https://fryba.com/ : 403 Forbidden"
+      ]
+    },
+    {
+      "name": "Förderband-Service GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found.",
+      "reason": "Probably an invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "GOHS Conveyor Belts",
+      "otherNames": [],
+      "websites": [
+        "gohs.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "The website given redirects to a personal homepage (goh.com); no belt company found. Hint was PU and PA belts.",
+      "reason": "Probably invented; not a metal belt maker even by the hint.",
+      "evidence": [
+        "gohs.com redirects to http://www.goh.com/ : 'Welcome to Thomas P. Goh homepage'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Gebr. Knauer GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Geerling Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "geerling.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "geerling.nl is a domain for sale.",
+      "reason": "Probably invented.",
+      "evidence": [
+        "https://geerling.nl/en-gb : 'Nameshift.com ... Buy this domain'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Gelicon",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Gironet",
+      "otherNames": [],
+      "websites": [
+        "gironet.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "gironet.nl redirects to an unrelated site that does not load.",
+      "reason": "No company found.",
+      "evidence": [
+        "gironet.nl redirects to https://www.avot.org/ (HTTP 523)"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Glass Fab Ltd.",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Grainger Conveyor Systems",
+      "otherNames": [],
+      "websites": [
+        "graingerconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "graingerconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Grieve",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Grieve Corporation (US) builds industrial ovens and furnaces, some with wire belt conveyors.",
+      "reason": "An oven builder that buys its belts.",
+      "evidence": [
+        "No website given; The Grieve Corporation, Round Lake, Illinois"
+      ]
+    },
+    {
+      "name": "Groupe 1m",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Güttler Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "guettler.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Synthetic prism rollers for farm land rollers.",
+      "reason": "Unrelated to conveyor belts.",
+      "evidence": [
+        "https://guettler.de/ : 'Güttler Synthetik-Prismenwalzen'"
+      ]
+    },
+    {
+      "name": "H.J.W. Groeneweg Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "groeneweg.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "groeneweg.nl returns 404; no company found.",
+      "reason": "Probably invented.",
+      "evidence": [
+        "http://groeneweg.nl/ : 404 Not Found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "HANSAM Group",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "HARDER – Deutsche Stahlfertigung",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "HB Conveyors",
+      "otherNames": [],
+      "websites": [
+        "hbconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as modular belts.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "hbconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "HIGHTOP Metal",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found.",
+      "reason": "Probably a garbled name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27 (searched with oven conveyor belts, China)"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Harding September",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Hardy Canada",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Harmon Automation",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Haver & Boecker OHG",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Same company as Haver & Boecker: wire mesh for screening and filtration, and packing machines.",
+      "reason": "Screening and filtration mesh, not conveyor belts.",
+      "evidence": [
+        "https://www.haverboecker.com/en/ : 'HAVER & BOECKER OHG ... INDUSTRIAL WIRE MESH SOLUTIONS'"
+      ]
+    },
+    {
+      "name": "Hebei Algemene Metalen Gaas B.V.",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "A garbled Dutch rendering of Hebei General Metal Netting, the Chinese wire mesh belt maker already on the competitor list.",
+      "reason": "Same company as Hebei General Metal Netting, which is on the list; it should not be added again.",
+      "evidence": [
+        "No website given; 'Algemene Metalen Gaas' is Dutch for 'General Metal Netting'"
+      ],
+      "duplicateOf": "Hebei General Metal Netting"
+    },
+    {
+      "name": "Hebei Innovat Building Materials",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Hilding Mattson",
+      "otherNames": [],
+      "websites": [
+        "hildingmattson.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "hildingmattson.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Hoff & Strobel",
+      "otherNames": [],
+      "websites": [
+        "hoff-strobel.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "hoff-strobel.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Horizon Performance Technology (USA)",
+      "otherNames": [],
+      "websites": [
+        "horizonpfm.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Same company as Horizon Performance Technologies: industrial ovens and washers.",
+      "reason": "An oven and washer builder that buys its belts.",
+      "evidence": [
+        "https://horizonpfm.com/ : 'builds custom-engineered industrial ovens and industrial washers'"
+      ]
+    },
+    {
+      "name": "Hosokawa Micron",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Powder processing machinery: mills, mixers, dryers.",
+      "reason": "A machine builder.",
+      "evidence": [
+        "No website given; Hosokawa Micron Group"
+      ]
+    },
+    {
+      "name": "IEP GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "ITS",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Industrieofen- und Anlagenbau GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "A generic name for an industrial oven builder.",
+      "reason": "An oven builder at most, which buys its belts.",
+      "evidence": [
+        "No website given; No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Infinity Engineering Solutions",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Pune (India) seller of conveyor chains, roller chains and some wire mesh belts (IndiaMART).",
+      "reason": "A small Indian chain and conveyor firm selling in India; no website and no sign of sales into Europe.",
+      "evidence": [
+        "https://m.indiamart.com/infinity-engineering-solutions/profile.html : 'Conveyors Chain, Industrial Roller Chain ... Wire Mesh Conveyor Belt ... Metal Conveyor Belt in Pune'"
+      ]
+    },
+    {
+      "name": "Ingenieursbureau Transportbanden Bergsma",
+      "otherNames": [],
+      "websites": [
+        "bergsma.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "bergsma.nl belongs to an unrelated media and app business.",
+      "reason": "No belt company found.",
+      "evidence": [
+        "https://bergsma.nl/ : 'Dorpsapp | bergsma.media | Dyntickets'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Inita Conveyor",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Interroll Fördertechnik GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Conveyor rollers, drum motors and conveyor modules.",
+      "reason": "A conveyor component maker.",
+      "evidence": [
+        "No website given; Interroll Group"
+      ]
+    },
+    {
+      "name": "Ipsen",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Heat-treatment furnaces, mostly vacuum and atmosphere batch furnaces.",
+      "reason": "A furnace builder.",
+      "evidence": [
+        "No website given; Ipsen, Kleve"
+      ]
+    },
+    {
+      "name": "J+S United States",
+      "otherNames": [],
+      "websites": [
+        "js-united-states.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "js-united-states.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "J.O. A. (Jacobs-Ottagroup)",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "JBT",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "JBT (now JBT Marel): food processing machinery, including Frigoscandia spiral freezers.",
+      "reason": "A machine builder; its freezer belts are part of its own freezers.",
+      "evidence": [
+        "No website given; JBT Marel Corporation"
+      ]
+    },
+    {
+      "name": "JBT Corporation",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Same as JBT: food processing machinery and spiral freezers.",
+      "reason": "A machine builder.",
+      "evidence": [
+        "No website given; JBT Marel Corporation"
+      ]
+    },
+    {
+      "name": "JDI Engineering",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "JDM Gummi",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "JOA – Jorg Ottagroup",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Jiangsu Mater Industrial Co., Ltd",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Described as a PTFE belt distributor.",
+      "reason": "PTFE belts and a distributor; not metal.",
+      "evidence": [
+        "No website given; No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Jungheinrich",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Forklifts and warehouse equipment.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "No website given; Jungheinrich AG, Hamburg"
+      ]
+    },
+    {
+      "name": "KONI-CON & K-TILE",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kaak",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Kaak Group (NL): industrial bakery lines and ovens.",
+      "reason": "A bakery line builder that buys its belts: a customer.",
+      "evidence": [
+        "No website given; Kaak Group, Terborg"
+      ]
+    },
+    {
+      "name": "Kabelmetal GmbH & Co. KG",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kabelspiraal",
+      "otherNames": [],
+      "websites": [
+        "kabelspiraal.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "kabelspiraal.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kabelwerke G. Rautter GmbH & Co. KG",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kask Conveyor",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Keiper GmbH & Co. KG",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Ken Freiks",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kesselberg Conveors & Systems",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kieselstein International GmbH",
+      "otherNames": [],
+      "websites": [
+        "kieselsteinev.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "kieselsteinev.com does not exist; Kieselstein in Chemnitz makes wire drawing machines and wire, not belts.",
+      "reason": "Not a belt maker.",
+      "evidence": [
+        "kieselsteinev.com: no DNS record"
+      ]
+    },
+    {
+      "name": "Kimberly-Clark Professional",
+      "otherNames": [],
+      "websites": [
+        "kcprofessional.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Paper, hygiene and workplace products.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "kcprofessional.com (Kimberly-Clark Professional)"
+      ]
+    },
+    {
+      "name": "Kitzberger",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No belt company of this name found.",
+      "reason": "Probably an invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Klein-Hammer Industrial",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kondex",
+      "otherNames": [],
+      "websites": [
+        "kondex.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "US maker of wear parts and components for agriculture and industry.",
+      "reason": "Unrelated to metal process belts.",
+      "evidence": [
+        "https://www.kondex.com/ : 'Experience Manufacturing that Works for You'"
+      ]
+    },
+    {
+      "name": "Kortrijk Transportbanden BV",
+      "otherNames": [],
+      "websites": [
+        "kortrijktransportbanden.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "kortrijktransportbanden.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kovach",
+      "otherNames": [],
+      "websites": [
+        "kovach.net"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Metal panel and glazing systems for building envelopes.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://www.kovach.net/ : 'Superior Building Envelope Solutions'"
+      ]
+    },
+    {
+      "name": "Kramer",
+      "otherNames": [],
+      "websites": [
+        "kramer-band.de"
+      ],
+      "answers": 1,
+      "verdict": "unclear",
+      "confidence": "low",
+      "makes": "kramer-band.de exists but shows only a maintenance page ('KRAMER will be back soon'); no product information. The answers described drying and cooling belts.",
+      "reason": "A live domain with 'band' in its name suggests a real belt business, but nothing shows what it makes or whether the belts are metal. Check again when the site is back.",
+      "evidence": [
+        "http://kramer-band.de/ : 'Site is undergoing maintenance. New website under construction.'",
+        "No 'Kramer Band' belt maker found in web searches on 2026-10-27; Kramer-Werke (construction machinery) is unrelated"
+      ]
+    },
+    {
+      "name": "KraussMaffei Wegheitstechnik",
+      "otherNames": [],
+      "websites": [
+        "kraussmaffei.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Plastics machinery: injection moulding and extrusion.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://kraussmaffei.com/en : 'Plastics Machinery – Injection Molding to Extrusion'"
+      ]
+    },
+    {
+      "name": "Krones / KHS",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Beverage filling and packaging machinery.",
+      "reason": "Machine builders.",
+      "evidence": [
+        "No website given; Krones AG and KHS GmbH"
+      ]
+    },
+    {
+      "name": "Kuhn Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "kuhn-foerdertechnik.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "kuhn-foerdertechnik.de: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kuhn Mackley",
+      "otherNames": [],
+      "websites": [
+        "kuhn-mackley.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as PU belts.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "kuhn-mackley.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kuhnke Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "kuhnke.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "kuhnke.de redirects to Kendrion: valves, actuators, brakes.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "kuhnke.de redirects to https://www.kendrion.com/en/"
+      ]
+    },
+    {
+      "name": "Kuhnle & Nagel",
+      "otherNames": [],
+      "websites": [
+        "kuhnle-nagel.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "kuhnle-nagel.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Kuriyama",
+      "otherNames": [],
+      "websites": [
+        "kuriyama.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Industrial hoses and couplings.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://kuriyama.com/ : 'Industrial Hose, Couplings, Accessories'"
+      ]
+    },
+    {
+      "name": "Körber Industrial",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "LEDO TECHNOLOGY",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "LVO – Leverings- en Verloservice voor Ogenbanden",
+      "otherNames": [],
+      "websites": [
+        "lvo-conveyor.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "lvo-conveyor.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Lacon",
+      "otherNames": [],
+      "websites": [
+        "laconbelt.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "laconbelt.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Lerfex",
+      "otherNames": [],
+      "websites": [
+        "lerfex.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as modular belts.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "lerfex.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Lester & Brinley",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Lydia Mining Tools",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Lödige Logmatik",
+      "otherNames": [],
+      "websites": [
+        "lodige.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Lödige Industries: goods lifts and logistics systems (the website given redirects to lodige.nl).",
+      "reason": "Unrelated to metal process belts.",
+      "evidence": [
+        "https://www.lodige.nl/ : 'Lödige Industries voor efficiënte logistieke oplossingen'"
+      ]
+    },
+    {
+      "name": "Lödige Maschinenbau GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Mixers, granulators and dryers for process industries (Paderborn).",
+      "reason": "A machine builder; unrelated to belts.",
+      "evidence": [
+        "No website given; Gebrüder Lödige Maschinenbau GmbH"
+      ]
+    },
+    {
+      "name": "Lödige Process Technology GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Same Lödige process business: mixers and dryers.",
+      "reason": "A machine builder.",
+      "evidence": [
+        "No website given; Lödige Process Technology"
+      ]
+    },
+    {
+      "name": "MEPCO",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "METALLIC",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A fragment of a name"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "MITSUBISHI Heavy Industries",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Heavy machinery, energy and aerospace.",
+      "reason": "Not a conveyor belt maker.",
+      "evidence": [
+        "No website given; Mitsubishi Heavy Industries"
+      ]
+    },
+    {
+      "name": "Maaskant",
+      "otherNames": [],
+      "websites": [
+        "maaskant.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "maaskant.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Martin Engineering",
+      "otherNames": [],
+      "websites": [
+        "martineng.net"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Bulk material handling products: belt cleaners, skirting, air cannons (martineng.net itself is a parked domain).",
+      "reason": "Accessories for bulk conveyors, not belts.",
+      "evidence": [
+        "https://martineng.net/ : parked domain; Martin Engineering is at martin-eng.com"
+      ]
+    },
+    {
+      "name": "Martin Sproggens",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Master Milk",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Mastercon",
+      "otherNames": [],
+      "websites": [
+        "mastercon.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "mastercon.com is a 'coming soon' page.",
+      "reason": "No company found.",
+      "evidence": [
+        "https://mastercon.com/ : 'mastercon.com - Coming Soon'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Mayer Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "mayer-foerdertechnik.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "mayer-foerdertechnik.de: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Mayline Conveyors",
+      "otherNames": [],
+      "websites": [
+        "maylineconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "maylineconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "McLean",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Meech International plc",
+      "otherNames": [],
+      "websites": [
+        "meechintl.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Static control and web cleaning equipment (meechintl.com does not exist; Meech is at meech.com).",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "meechintl.com: no DNS record"
+      ]
+    },
+    {
+      "name": "Megadyne",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Rubber and polyurethane timing and conveyor belts (Italy).",
+      "reason": "Rubber and PU belting.",
+      "evidence": [
+        "No website given; Megadyne Group"
+      ]
+    },
+    {
+      "name": "Merkema Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "merkema.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "merkema.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Mertens Conveyor Systems",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Metacam (Netherlands)",
+      "otherNames": [],
+      "websites": [
+        "metacam.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; metacam.nl does not serve a site. 'MetaCon' belts are unknown.",
+      "reason": "Probably an invented name.",
+      "evidence": [
+        "metacam.nl: no web server answers",
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Metaltown",
+      "otherNames": [],
+      "websites": [
+        "metaltown.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "metaltown.com is a parked domain.",
+      "reason": "No company found.",
+      "evidence": [
+        "https://metaltown.com/ : parking redirect to /lander"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Metso / Outotec (now part of Metso)",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Mining and minerals processing equipment.",
+      "reason": "Bulk and mining; not process belts.",
+      "evidence": [
+        "No website given; Metso"
+      ]
+    },
+    {
+      "name": "Mettler-Toledo",
+      "otherNames": [],
+      "websites": [
+        "mt.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Weighing and product inspection equipment.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "mt.com (Mettler-Toledo)"
+      ]
+    },
+    {
+      "name": "Metz Industries",
+      "otherNames": [],
+      "websites": [
+        "metzindustries.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "metzindustries.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Midwest Conveyor",
+      "otherNames": [],
+      "websites": [
+        "midwestconveyor.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "midwestconveyor.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Midwest Conveyors",
+      "otherNames": [],
+      "websites": [
+        "midwestconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "midwestconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Mieddhbf",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Miedl & Schnall",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Miller-Belt",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Mingke",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "Shanghai Mingke Process Systems: solid carbon and stainless steel belts and steel belt systems for baking ovens, chemical granulation and pressing.",
+      "reason": "Solid steel process belts for tunnel ovens, the same niche as Berndorf and IPCO, which are on the competitor list. Sells internationally; sales into Europe not confirmed.",
+      "evidence": [
+        "https://www.mingkebelts.com/ : 'specialized in manufacturing high-strength steel belts and providing continuous process solutions based on steel belts'",
+        "https://china.org.ru/product/1600207775105 : 'Mingke Carbon Steel Belts are widely applied to food industry, like tunnel bakery oven'"
+      ],
+      "website": "https://www.mingkebelts.com"
+    },
+    {
+      "name": "Molex-Seitz",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Mulder Transportbanden B.V.",
+      "otherNames": [],
+      "websites": [
+        "mulder-transportbanden.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a dealer.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "mulder-transportbanden.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Müller Beltex",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Müller conveyor systems",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Müller-Borchers GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found.",
+      "reason": "Probably an invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "NGB",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "competitor",
+      "confidence": "low",
+      "makes": "NGB Elram Industries (Israel): conveying components, chains, plastic modular belts, and stainless wire mesh (WB series) and stainless steel (GBSS) belts for bakery, washing and cooling.",
+      "reason": "Mainly a component and plastic modular belt maker, but it also offers stainless wire mesh and steel belts for bakery, washing and freezing, sold internationally through catalogues. The name 'NGB' in an answer is ambiguous, so confidence is low.",
+      "evidence": [
+        "https://www.ngb.co.il/ : 'NGB GROUP – NGB ELRAM INDUSTRIES ... Conveying Belts'",
+        "https://www.directindustry.com/prod/ngb/product-19754-735551.html : 'Wire mesh conveyor belt WB series'",
+        "https://pdf.directindustry.com/pdf/ngb/gbss-101/19754-368934.html : stainless steel belt for bakery, washing, cooling and freezing"
+      ],
+      "website": "https://www.ngb.co.il"
+    },
+    {
+      "name": "NHBA Conveyor & Heating",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Nelstun",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Nippon Sanso Matheson",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Industrial gases.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "No website given; Nippon Sanso Holdings / Matheson"
+      ]
+    },
+    {
+      "name": "Nobel-Steel",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Norenhelm",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Nous Zen",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Ollsher",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Original Fulgheri Coating",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Parker Hannifin – Parker Conveyor Systems",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Parker Hannifin: motion and control technology; 'Parker Conveyor Systems' is not a known Parker business.",
+      "reason": "Not a conveyor belt maker.",
+      "evidence": [
+        "No website given; Parker Hannifin Corporation"
+      ]
+    },
+    {
+      "name": "Parts",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A fragment of a name"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Peterson",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A bare surname from an answer"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "PolyOne (Exanorm)",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Plastics compounds (PolyOne, now Avient).",
+      "reason": "Plastics, not metal belts.",
+      "evidence": [
+        "No website given; PolyOne / Avient"
+      ]
+    },
+    {
+      "name": "PolyVeyance Systems",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Precision Coating and Coated Fabrics",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "PTFE-coated fabric and mesh belts.",
+      "reason": "Coated fabric belts, not metal.",
+      "evidence": [
+        "No website given; described as PTFE mesh"
+      ]
+    },
+    {
+      "name": "Prins Transportbanden B.V.",
+      "otherNames": [],
+      "websites": [
+        "prins-transportbanden.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a dealer.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "prins-transportbanden.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Protector Conveyor",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "R&M",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "RABEN & RAVEN",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "RM Technologies",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "RM-Systeme GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "RZB Holland",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27; described as steel oven belts"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Rapida",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Roper Frank",
+      "otherNames": [],
+      "websites": [
+        "roperfrank.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "roperfrank.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Ross Industries",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "US maker of meat and food processing equipment (tenderizers, presses, formers).",
+      "reason": "A machine builder.",
+      "evidence": [
+        "No website given; Ross Industries, Midland VA"
+      ]
+    },
+    {
+      "name": "Ross USA",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Rotabar B.V.",
+      "otherNames": [],
+      "websites": [
+        "rotabar.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "rotabar.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Rutten Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "rutten.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "rutten.nl returns 404; no company found.",
+      "reason": "Probably invented.",
+      "evidence": [
+        "http://rutten.nl/ : 404 Not Found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "S&S Industries",
+      "otherNames": [],
+      "websites": [
+        "ssindustries.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "ssindustries.com is a parked domain.",
+      "reason": "No company found.",
+      "evidence": [
+        "https://ssindustries.com/ : parking redirect to /lander"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "S. Ray",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "SIEBTCHNIK TEMA B.V.",
+      "otherNames": [],
+      "websites": [
+        "siebtechnik-tema.nl"
+      ],
+      "answers": 1,
+      "verdict": "competitor",
+      "confidence": "high",
+      "makes": "SIEBTECHNIK TEMA (screening, centrifuges, sampling) sells the wire conveyor belts of its group company HEIN, LEHMANN.",
+      "reason": "Its conveyor belts are HEIN, LEHMANN belts, and HEIN, LEHMANN is already on the competitor list; it should not be added again.",
+      "evidence": [
+        "https://www.siebtechnik-tema.com/unit_operation/hl-conveyor-belts/ : 'Conveyor belts from HEIN, LEHMANN ... wire conveyor belts ... oven belts ... metal belts'"
+      ],
+      "duplicateOf": "HEIN, LEHMANN GmbH"
+    },
+    {
+      "name": "SIMTASK B.V.",
+      "otherNames": [],
+      "websites": [
+        "simtask.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "simtask.nl resolves but serves no page; no company found.",
+      "reason": "No evidence of a belt maker.",
+      "evidence": [
+        "simtask.nl: no web server answers"
+      ]
+    },
+    {
+      "name": "SM Furnaces",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Described as a furnace maker.",
+      "reason": "A furnace builder at most.",
+      "evidence": [
+        "No website given; No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "SOMMER",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A common surname (Sommer); no belt maker of this name found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "SYNTHON",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Synthon is a pharmaceutical company; no belt maker of this name found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Saint-Gobain",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Building materials and performance plastics, including PTFE-coated fabrics.",
+      "reason": "PTFE fabric belts, not metal.",
+      "evidence": [
+        "No website given; Saint-Gobain"
+      ]
+    },
+    {
+      "name": "Sauer",
+      "otherNames": [],
+      "websites": [
+        "sauer-group.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "sauer-group.com refuses requests (HTTP 436); no conveyor belt maker of this name found.",
+      "reason": "No evidence of a belt maker.",
+      "evidence": [
+        "http://sauer-group.com/ : HTTP 436"
+      ]
+    },
+    {
+      "name": "Schaul",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Scheppach",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Woodworking machines and garden tools.",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "No website given; Scheppach GmbH"
+      ]
+    },
+    {
+      "name": "Scherma",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No company found; possibly a garbled name.",
+      "reason": "No evidence of a metal belt maker.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Scherma Italia",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No company found; possibly a garbled name.",
+      "reason": "No evidence of a metal belt maker.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Schfer",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A garbled 'Schäfer'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Schiebel Stahl",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Schleifring GmbH & Co. KG",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Slip rings and rotary joints (Fürstenfeldbruck).",
+      "reason": "Unrelated business; Haiku's note of wire-loop belts is not supported.",
+      "evidence": [
+        "No website given; Schleifring GmbH makes slip rings"
+      ]
+    },
+    {
+      "name": "Scott Equipment",
+      "otherNames": [],
+      "websites": [
+        "scottequipment.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "US maker of mixers, dryers and bulk processing equipment.",
+      "reason": "A machine builder.",
+      "evidence": [
+        "https://scottequipment.com/ : 'Custom mixing, blending, drying, storage, separation, and bulk material handling solutions'"
+      ]
+    },
+    {
+      "name": "Seghers",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Shermac Conveyors",
+      "otherNames": [],
+      "websites": [
+        "shermacconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as modular.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "shermacconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Shree Jagdamba Industries",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Faridabad (India) workshop listing hinge, metal, balanced weave and chain link belts on TradeIndia.",
+      "reason": "A small Indian maker selling in India; no website and no sign of sales into Europe.",
+      "evidence": [
+        "https://www.tradeindia.com/jagdamba-industries-12887892/ : Faridabad manufacturer, metal belt, balanced weave, chain link belts"
+      ]
+    },
+    {
+      "name": "Sichforder",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Siedel",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Spectra Plast India Private Limited",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Indian maker of plastic modular belts, slat and crate chains and conveyor parts; IndiaMART also lists eyelink and IQF wire mesh belts.",
+      "reason": "Its own site presents plastic modular belts and slat chains; metal mesh belts appear only on a marketplace and there is no sign of sales into Europe.",
+      "evidence": [
+        "https://www.spectraplast.in/ : 'We are Manufacturers of Modular Belt & SS Slat or Crate Chain parts'",
+        "https://m.indiamart.com/spectraplast/profile.html : eyelink and IQF wire mesh belts listed"
+      ]
+    },
+    {
+      "name": "Spiroflow",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Bulk handling equipment: flexible screw and tubular drag conveyors, bag fillers.",
+      "reason": "A bulk equipment builder.",
+      "evidence": [
+        "No website given; Spiroflow Ltd, UK"
+      ]
+    },
+    {
+      "name": "Spooner",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Spooner Industries (UK): industrial dryers, ovens and coolers.",
+      "reason": "A dryer and oven builder that buys its belts.",
+      "evidence": [
+        "No website given; Spooner Industries, Ilkley"
+      ]
+    },
+    {
+      "name": "Standen",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Starrex",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Stoll Werktechnik",
+      "otherNames": [],
+      "websites": [
+        "stoll.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Flat knitting machines (STOLL).",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "https://www.stoll.com/en/ : spare parts and services for STOLL knitting machines"
+      ]
+    },
+    {
+      "name": "Storeen Engineering",
+      "otherNames": [],
+      "websites": [
+        "storeenengineering.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as steel slatted and metal conveyor bands.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "storeenengineering.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Strong Metal",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found; strongmetal.com is a parked domain.",
+      "reason": "Probably a garbled name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27",
+        "https://www.strongmetal.com/ : parking redirect"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Sumikawa",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Sunshine Conveying",
+      "otherNames": [],
+      "websites": [
+        "sunshineconveying.com"
+      ],
+      "answers": 1,
+      "verdict": "competitor",
+      "confidence": "medium",
+      "makes": "Chinese maker (Lingxian Sunshine Conveying Equipment) of conveyor mesh belts, chains, sprockets and plate chains for food and drying lines.",
+      "reason": "It makes and sells wire mesh conveyor belts and sprockets for food processing and drying, at home and abroad. Its export to Europe is claimed in general terms only.",
+      "evidence": [
+        "https://www.sunshineconveying.com/ : 'focusing on the manufacture and sale of conveyor mesh belt, chain, sprocket, chain plate, conveyor, dryer ...'; 'strive to open up domestic and foreign markets'"
+      ],
+      "website": "https://www.sunshineconveying.com"
+    },
+    {
+      "name": "Säve GmbH",
+      "otherNames": [],
+      "websites": [
+        "save.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "save.de shows only 'a new website is being developed'.",
+      "reason": "No company found.",
+      "evidence": [
+        "http://save.de/ : 'Hier entsteht eine neue Webpräsenz'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "TMA Conveyor",
+      "otherNames": [],
+      "websites": [
+        "tmaconveyor.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "tmaconveyor.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "TRW BL dynamic Command",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Takahashi Galilei",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Described as a Japanese freezer maker.",
+      "reason": "A freezer builder at most.",
+      "evidence": [
+        "No website given; No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Tegramo (Italy)",
+      "otherNames": [],
+      "websites": [
+        "tegramo.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as PTFE belts.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "tegramo.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Teknik Conveyor Systems",
+      "otherNames": [],
+      "websites": [
+        "teknikconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as modular.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "teknikconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Tempo International",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Therelek",
+      "otherNames": [],
+      "websites": [
+        "therelek.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Indian builder of industrial and vacuum furnaces and heat-treatment services.",
+      "reason": "A furnace builder.",
+      "evidence": [
+        "https://www.therelek.com/ : 'Industrial & Vacuum Furnace Manufacturer in India, Heat Treatment Services'"
+      ]
+    },
+    {
+      "name": "Thermcraft",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "US builder of laboratory and industrial furnaces.",
+      "reason": "A furnace builder.",
+      "evidence": [
+        "No website given; Thermcraft, Winston-Salem"
+      ]
+    },
+    {
+      "name": "Thomas Conveyor & Transport Group",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "US maker of screw conveyors and bulk handling equipment (Thomas Conveyor).",
+      "reason": "A bulk conveyor builder.",
+      "evidence": [
+        "No website given"
+      ]
+    },
+    {
+      "name": "Touton PTFE",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "PTFE products.",
+      "reason": "PTFE, not metal belts.",
+      "evidence": [
+        "No website given"
+      ]
+    },
+    {
+      "name": "Trackmatic",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Transnorm",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "Belt curves and conveyors for logistics.",
+      "reason": "A logistics conveyor maker.",
+      "evidence": [
+        "No website given; Transnorm System GmbH, Harsum"
+      ]
+    },
+    {
+      "name": "Transportbanden De Groot",
+      "otherNames": [],
+      "websites": [
+        "detransportband.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "detransportband.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Transportbanden Koenders B.V.",
+      "otherNames": [],
+      "websites": [
+        "koenders.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a distributor.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "koenders.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Tsubaki Corporation",
+      "otherNames": [],
+      "websites": [
+        "tsubaki.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Chains, power transmission products and materials handling systems.",
+      "reason": "Chains, not metal process belts.",
+      "evidence": [
+        "https://www.tsubaki.com/ : 'manufacturer and supplier of chain, power transmission products'"
+      ]
+    },
+    {
+      "name": "Tsubakimoto",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Tsubakimoto Chain: same as Tsubaki.",
+      "reason": "Chains, not metal process belts.",
+      "evidence": [
+        "No website given; Tsubakimoto Chain Co."
+      ]
+    },
+    {
+      "name": "Unifood B.V.",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27; described as stainless steel conveyors, which would be a builder anyway"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Unison Conveyors",
+      "otherNames": [],
+      "websites": [
+        "unisonconveyors.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "unisonconveyors.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Ursulf",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Uｋore Silicon",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Van Beek Bandoen BV",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company of this name found in Enschede; the Enschede metal belt maker is ESFO, already on the list.",
+      "reason": "Probably a garbled name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Van Beek Belting",
+      "otherNames": [],
+      "websites": [
+        "vanbeekbelting.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; vanbeekbelting.nl does not exist.",
+      "reason": "Probably a garbled name.",
+      "evidence": [
+        "vanbeekbelting.nl: no DNS record",
+        "No company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Van den Berg Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "vandenberg-transportbanden.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "vandenberg-transportbanden.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Van der Weide Transportbanden",
+      "otherNames": [],
+      "websites": [
+        "vdwtransportbanden.nl"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist. Described as a distributor.",
+      "reason": "Probably invented by the AI answer. Even if it existed, a firm of this kind would be a dealer or builder, not a belt maker.",
+      "evidence": [
+        "vdwtransportbanden.nl: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Vemag Maschinenbau GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Vacuum fillers and portioning machines for food.",
+      "reason": "A machine builder.",
+      "evidence": [
+        "No website given; VEMAG, Verden"
+      ]
+    },
+    {
+      "name": "WAMGROUP S.p.A.",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Bulk handling equipment: screw conveyors, filters, valves.",
+      "reason": "A bulk equipment builder.",
+      "evidence": [
+        "No website given; WAMGROUP, Italy"
+      ]
+    },
+    {
+      "name": "WIETZ – VSE",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Wardcraft Conveyor",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "US builder of conveyors and conveyor spare parts (wardcraftconveyor.com).",
+      "reason": "A conveyor builder; no sign that it makes metal belts.",
+      "evidence": [
+        "https://www.wardcraftconveyor.com/ : 'Product Families ... I Need Spare Parts!'; conveyor systems"
+      ]
+    },
+    {
+      "name": "WeMovus",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Weaver Fördertechnik",
+      "otherNames": [],
+      "websites": [
+        "weaver-foerdertechnik.com"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No company found; the website the answers gave does not exist.",
+      "reason": "Probably invented by the AI answer.",
+      "evidence": [
+        "weaver-foerdertechnik.com: no DNS record on 2026-10-27",
+        "No such company found"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Weber-Technik GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "The only Weber-Technik found sells bicycle trailer couplings; no wire belt maker of this name.",
+      "reason": "Probably a garbled name.",
+      "evidence": [
+        "No company of this name found in web searches on 2026-10-27 making wire belts"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Weberman Industries",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Weimer Bearing",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Weimer Bearing & Transmission: US distributor of motion control, power transmission and fluid control products.",
+      "reason": "A distributor.",
+      "evidence": [
+        "https://www.weimerbearing.com/ : 'specializes in high-tech electrical motion control, mechanical power transmission and fluid control products'"
+      ]
+    },
+    {
+      "name": "Werner",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "A bare surname from an answer"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Wilckens (Metalltage)",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Williams Industrial Service",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Described as a furnace builder.",
+      "reason": "A furnace builder at most.",
+      "evidence": [
+        "No website given; No company of this name found in web searches on 2026-10-27"
+      ]
+    },
+    {
+      "name": "Wintersteiger",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "Seed-testing, ski service and wood machinery (Austria).",
+      "reason": "Unrelated business.",
+      "evidence": [
+        "No website given; Wintersteiger AG, Ried"
+      ]
+    },
+    {
+      "name": "Wittel",
+      "otherNames": [],
+      "websites": [
+        "wittel.de"
+      ],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "medium",
+      "makes": "wittel.de is a fresh placeholder page.",
+      "reason": "No company found.",
+      "evidence": [
+        "http://wittel.de/ : 'Sie sehen hier eine soeben freigeschaltete Homepage'"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "Yutong Drying",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "Chinese maker of industrial dryers.",
+      "reason": "A dryer builder.",
+      "evidence": [
+        "No website given"
+      ]
+    },
+    {
+      "name": "Zellmann GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "eleitung",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "high",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "sciprotec ipe GmbH",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "not",
+      "confidence": "low",
+      "makes": "No real company found; a garbled or invented name from an AI answer.",
+      "reason": "Garbled or invented name.",
+      "evidence": [
+        "Garbled name with no website; no company of this name found in web searches on 2026-10-27"
+      ],
+      "nonexistent": true
+    },
+    {
+      "name": "wire-mesh.com",
+      "otherNames": [],
+      "websites": [],
+      "answers": 1,
+      "verdict": "competitor",
+      "confidence": "high",
+      "makes": "Wire-Mesh Products, Inc. (York, PA): balanced weave and other wire mesh conveyor belts.",
+      "reason": "wire-mesh.com is the website of Wire-Mesh Products, Inc., already on the competitor list; it should not be added again.",
+      "evidence": [
+        "Seed competitor list: 'Wire-Mesh Products, Inc.' with website https://wire-mesh.com"
+      ],
+      "duplicateOf": "Wire-Mesh Products, Inc."
+    }
+  ]
+}

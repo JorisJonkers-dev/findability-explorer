@@ -24,7 +24,8 @@ func Families() []Family {
 }
 
 // Kind is the kind of question a prompt asks: for a supplier, for a belt for an application, or
-// about a problem with a belt.
+// about a problem with a belt. Prompt set 2 asks only the application question; answers to
+// prompt set 1 keep their kind.
 type Kind string
 
 const (
@@ -32,9 +33,6 @@ const (
 	KindApplication Kind = "application"
 	KindProblem     Kind = "problem"
 )
-
-// Kinds lists them in the order the results show them.
-func Kinds() []Kind { return []Kind{KindSupplier, KindApplication, KindProblem} }
 
 // Scope is where and in which language a prompt asks: a region in its language, or a language
 // with no region.
@@ -49,7 +47,8 @@ const (
 	ScopeEnglish     Scope = "english"
 )
 
-// Scopes lists them in the order the results show them.
+// Scopes lists them in the order the results show them: every scope an answer may have, including
+// the Netherlands and Germany that only prompt set 1 asked in.
 func Scopes() []Scope {
 	return []Scope{ScopeTwente, ScopeNetherlands, ScopeGermany, ScopeDutch, ScopeGerman, ScopeEnglish}
 }
@@ -64,20 +63,6 @@ func LanguageOf(s Scope) string {
 	case ScopeTwente, ScopeNetherlands, ScopeDutch:
 	}
 	return "nl"
-}
-
-// region is the place a scope names in its own language's sentence, or "" for a language alone.
-func region(s Scope) string {
-	switch s {
-	case ScopeTwente:
-		return "in Twente"
-	case ScopeNetherlands:
-		return "in Nederland"
-	case ScopeGermany:
-		return "in Deutschland"
-	case ScopeDutch, ScopeGerman, ScopeEnglish:
-	}
-	return ""
 }
 
 // Prompt is one buyer question of the prompt set.
@@ -97,89 +82,77 @@ type PromptSet struct {
 	Prompts []Prompt
 }
 
-// PromptSetVersion is the version of CurrentPromptSet.
-const PromptSetVersion = 1
+// PromptSetVersion is the version of CurrentPromptSet. Version 1 asked 90 questions (a supplier,
+// an application and a problem question in six scopes); version 2 keeps the one a buyer most
+// often asks, so a run costs about a sixth.
+const PromptSetVersion = 2
 
-// CurrentPromptSet is the prompt set Prompt runs ask now: 5 belt families × a supplier, an
-// application and a problem question × 6 scopes = 90 prompts, in general terms, never Tribelt's
-// product names, so they measure what a buyer who does not know the names is told.
+// SetScopes are the scopes the current prompt set asks in: Twente in Dutch, and Dutch, German
+// and English with no region.
+func SetScopes() []Scope {
+	return []Scope{ScopeTwente, ScopeDutch, ScopeGerman, ScopeEnglish}
+}
+
+// CurrentPromptSet is the prompt set Prompt runs ask now: for each of the 5 belt families, the
+// application question a buyer would type, in 4 scopes = 20 prompts. The buyer describes the job
+// and asks which belt and who makes it, in general terms and never with Tribelt's product names,
+// so a run measures what a buyer who does not know the names is told.
 func CurrentPromptSet() PromptSet {
 	set := PromptSet{Version: PromptSetVersion}
 	for _, f := range Families() {
-		for _, k := range Kinds() {
-			for _, s := range Scopes() {
-				set.Prompts = append(set.Prompts, Prompt{
-					ID: fmt.Sprintf("%s-%s-%s", f, k, s), Family: f, Kind: k, Scope: s, Language: LanguageOf(s),
-					Text: question(f, k, s),
-				})
-			}
+		for _, s := range SetScopes() {
+			set.Prompts = append(set.Prompts, Prompt{
+				ID: fmt.Sprintf("%s-%s-%s", f, KindApplication, s), Family: f, Kind: KindApplication, Scope: s,
+				Language: LanguageOf(s), Text: question(f, s),
+			})
 		}
 	}
 	return set
 }
 
-// wording is what a family is called, used for and goes wrong with, in one language.
-type wording struct {
-	belt, application, problem string
-}
-
-// wordings are each family's words per language, in general terms.
-func wordings(f Family, language string) wording {
-	all := map[Family]map[string]wording{
+// situation is what a buyer of a family is building or running, in a language.
+func situation(f Family, language string) string {
+	all := map[Family]map[string]string{
 		FamilyEyelink: {
-			"nl": {"draadogenbanden (metalen transportbanden van gelaste draadogen)", "een doorloopoven in een industriële bakkerij", "Onze ovenband van draadogen loopt steeds uit het spoor."},
-			"de": {"Drahtösengliederbänder (Förderbänder aus geschweißten Drahtösen)", "einen Durchlaufofen in einer Großbäckerei", "Unser Ofenband aus Drahtösen läuft immer wieder aus der Spur."},
-			"en": {"wire eyelink conveyor belts", "a tunnel oven in an industrial bakery", "Our eyelink oven belt keeps running off track."},
+			"nl": "We bouwen een doorloopoven voor een industriële bakkerij.",
+			"de": "Wir bauen einen Durchlaufofen für eine Großbäckerei.",
+			"en": "We are building a tunnel oven for an industrial bakery.",
 		},
 		FamilyOpenSpiral: {
-			"nl": {"open spiraalbanden van metaal (open geweven gaasbanden)", "het drogen en koelen van producten op een open band", "In onze metalen gaasband breken steeds draden."},
-			"de": {"Weitspiralbänder aus Metall (offen geflochtene Drahtgewebebänder)", "das Trocknen und Kühlen von Produkten auf einem offenen Band", "In unserem Drahtgewebeband brechen immer wieder Drähte."},
-			"en": {"open spiral (balanced weave) metal conveyor belts", "drying and cooling products on an open belt", "Wires keep breaking in our woven wire mesh belt."},
+			"nl": "We willen producten drogen en daarna koelen op een open band waar de lucht goed doorheen kan.",
+			"de": "Wir wollen Produkte auf einem offenen, gut luftdurchlässigen Band trocknen und anschließend kühlen.",
+			"en": "We want to dry and then cool products on an open belt that lets the air through.",
 		},
 		FamilyClosedSpiral: {
-			"nl": {"gesloten spiraalbanden (dicht geweven metalen transportbanden)", "het transport van kleine onderdelen door een oven", "Kleine producten vallen door onze metalen transportband heen."},
-			"de": {"Engspiralbänder (dicht geflochtene Metallförderbänder)", "den Transport kleiner Teile durch einen Ofen", "Kleine Produkte fallen durch unser Metallförderband."},
-			"en": {"closed spiral (compound balanced) metal conveyor belts", "carrying small parts through an oven", "Small products fall through our metal conveyor belt."},
+			"nl": "We moeten kleine onderdelen door een industriële oven voeren zonder dat ze door de band vallen.",
+			"de": "Wir müssen kleine Teile durch einen Industrieofen fördern, ohne dass sie durch das Band fallen.",
+			"en": "We need to carry small parts through an industrial oven without them falling through the belt.",
 		},
 		FamilyTriFlex: {
-			"nl": {"bochtgaande roestvrijstalen spiraaltransportbanden voor spiraaltorens", "een spiraalvriezer of spiraalkoeler", "Onze band in de spiraalvriezer loopt vast in de bochten."},
-			"de": {"kurvengängige Edelstahl-Spiralförderbänder für Spiraltürme", "einen Spiralfroster oder Spiralkühler", "Unser Band im Spiralfroster verklemmt sich in den Kurven."},
-			"en": {"curve-going stainless steel belts for spiral towers", "a spiral freezer or spiral cooler", "Our spiral freezer belt jams in the curves."},
+			"nl": "We plaatsen een spiraalvriezer voor diepvriesproducten.",
+			"de": "Wir installieren einen Spiralfroster für Tiefkühlprodukte.",
+			"en": "We are installing a spiral freezer for frozen food.",
 		},
 		FamilyOther: {
-			"nl": {"metalen transportbanden zoals staafbanden, vlakdraadbanden en kettingbanden", "zware, hete producten in een hardingsoven", "Onze metalen band slijt snel onder zware, hete lasten."},
-			"de": {"Metallförderbänder wie Stabgliederbänder, Flachdrahtbänder und Kettenbänder", "schwere, heiße Teile in einem Härteofen", "Unser Metallförderband verschleißt schnell unter schweren, heißen Lasten."},
-			"en": {"metal conveyor belts such as rod belts, flat wire belts and chain belts", "heavy, hot parts in a hardening furnace", "Our metal conveyor belt wears out quickly under heavy, hot loads."},
+			"nl": "We moeten zware, hete onderdelen door een hardingsoven transporteren.",
+			"de": "Wir müssen schwere, heiße Teile durch einen Härteofen fördern.",
+			"en": "We need to move heavy, hot parts through a hardening furnace.",
 		},
 	}
 	return all[f][language]
 }
 
-// question writes the prompt for a family, kind and scope in the scope's language.
-func question(f Family, k Kind, s Scope) string {
+// question writes a family's application question for a scope, in the scope's language, as a
+// buyer would type it: the job, then which belt and who supplies it.
+func question(f Family, s Scope) string {
 	language := LanguageOf(s)
-	w := wordings(f, language)
-	where := region(s)
-	if where != "" {
-		where = " " + where
+	ask := map[string]string{
+		"nl": " Wat voor transportband moeten we daarvoor gebruiken, en welke fabrikanten kunnen die leveren?",
+		"de": " Welches Förderband sollten wir dafür einsetzen, und welche Hersteller können es liefern?",
+		"en": " What kind of conveyor belt should we use, and which manufacturers can supply it?",
+	}[language]
+	if s == ScopeTwente {
+		ask = " Wat voor transportband moeten we daarvoor gebruiken, en welke fabrikanten in de regio Twente kunnen die leveren?"
 	}
-	switch language {
-	case "de":
-		return map[Kind]string{
-			KindSupplier:    "Welche Firmen liefern " + w.belt + where + "? Nenne Hersteller und Lieferanten.",
-			KindApplication: "Welches Förderband eignet sich für " + w.application + ", und wer liefert es" + where + "?",
-			KindProblem:     w.problem + " Woran liegt das, welches Band wäre besser, und wer liefert es" + where + "?",
-		}[k]
-	case "en":
-		return map[Kind]string{
-			KindSupplier:    "Which companies supply " + w.belt + "? Name manufacturers and suppliers.",
-			KindApplication: "Which conveyor belt suits " + w.application + ", and who supplies it?",
-			KindProblem:     w.problem + " What causes this, which belt would be better, and who supplies it?",
-		}[k]
-	}
-	return map[Kind]string{
-		KindSupplier:    "Welke bedrijven leveren " + w.belt + where + "? Noem fabrikanten en leveranciers.",
-		KindApplication: "Welke transportband is geschikt voor " + w.application + ", en wie levert die" + where + "?",
-		KindProblem:     w.problem + " Waar ligt dat aan, welke band is beter, en wie levert die" + where + "?",
-	}[k]
+	return situation(f, language) + ask
 }

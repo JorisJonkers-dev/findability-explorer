@@ -14,7 +14,7 @@ version, so a change in the questions never looks like a change in visibility. S
 set read-only; an editor is a later step.
 
 **The cheapest model of each large provider, free ones included.** A run takes, for each provider
-on the list (OpenAI, Google, Anthropic, Mistral, Meta, xAI and DeepSeek by default, editable in
+on the list (OpenAI, Google, Anthropic, Mistral and DeepSeek by default, editable in
 Settings), its cheapest text model on OpenRouter's price list by prompt plus completion price,
 leaving out image, audio and embedding models, batch-only variants, variable-priced routers and
 moderation models. A free model is paced within OpenRouter's limits and retried when rate limited;
@@ -26,7 +26,7 @@ results measure what the providers' models know and find, not what the Gemini ap
 **Two passes.** Every prompt is asked from the model's own knowledge and again with OpenRouter's
 web search, so a result tells "the model knows Tribelt" (training data) from "search finds
 Tribelt" (grounded answers), the report's two routes. Web-search answers carry the addresses they
-cite, which feed citation share. A run is about 90 × 7 × 2 ≈ 1,300 answers.
+cite, which feed citation share. A run is 20 × 5 × 2 = 200 answers (see the amendment below).
 
 **Natural answers, read by one fixed extractor.** The models are asked as a buyer would ask, with
 no format imposed, so the answer is what a person would see. One extractor model, fixed in code
@@ -56,3 +56,16 @@ become competitor candidates, reviewed like the terminology map's (ADR-0003).
   prompts not yet answered.
 - Nothing calls OpenRouter in CI: the run, the fallback, the budget, the lock and the resume are
   tested at the service seam with fakes, the OpenRouter adapter against a local server.
+
+## Amendment, 27 October 2026: prompt set 2
+
+The first run cost about 1.75 cents an answer, so the full set of 90 × 7 × 2 ≈ 1,300 answers came
+to some $22, more than twice the monthly budget. xAI's and Anthropic's models cost the most, as
+OpenRouter runs their own, dearer web search. Prompt set 2 keeps one question per belt family, the
+application question a buyer actually types ("We are building a tunnel oven for an industrial
+bakery. What kind of conveyor belt should we use, and which manufacturers can supply it?"), in
+four scopes (Twente in Dutch; Dutch, German and English with no region), and drops the supplier
+and problem questions and the Netherlands and Germany scopes. Meta and xAI leave the default
+providers. A run is now 20 × 5 × 2 = 200 answers. Answers to prompt set 1 keep their version and
+are never compared with set 2's; a run of set 1 still running when the release lands is failed
+rather than resumed.

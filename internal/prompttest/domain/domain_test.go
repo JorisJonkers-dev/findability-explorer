@@ -12,9 +12,9 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
 
-func TestThePromptSetAsksNinetyQuestionsInGeneralTerms(t *testing.T) {
+func TestThePromptSetAsksTwentyApplicationQuestionsInGeneralTerms(t *testing.T) {
 	set := domain.CurrentPromptSet()
-	if set.Version != domain.PromptSetVersion || len(set.Prompts) != 90 {
+	if domain.PromptSetVersion != 2 || set.Version != domain.PromptSetVersion || len(set.Prompts) != 20 {
 		t.Fatalf("set v%d has %d prompts", set.Version, len(set.Prompts))
 	}
 	ids := map[string]bool{}
@@ -25,34 +25,33 @@ func TestThePromptSetAsksNinetyQuestionsInGeneralTerms(t *testing.T) {
 		}
 		ids[p.ID] = true
 		languages[p.Language]++
-		if p.Language != domain.LanguageOf(p.Scope) || strings.TrimSpace(p.Text) == "" {
+		if p.Kind != domain.KindApplication || p.Language != domain.LanguageOf(p.Scope) || !slices.Contains(domain.SetScopes(), p.Scope) {
 			t.Errorf("prompt %s = %+v", p.ID, p)
 		}
-		if lower := strings.ToLower(p.Text); strings.Contains(lower, "tribelt") || strings.Contains(lower, "tri-flex") {
-			t.Errorf("prompt %s names Tribelt or its products: %s", p.ID, p.Text)
+		if lower := strings.ToLower(p.Text); strings.Contains(lower, "tribelt") || strings.Contains(lower, "tri-flex") || strings.Contains(lower, "(") {
+			t.Errorf("prompt %s names Tribelt or its products, or explains a term: %s", p.ID, p.Text)
 		}
 	}
-	if languages["nl"] != 45 || languages["de"] != 30 || languages["en"] != 15 {
+	if languages["nl"] != 10 || languages["de"] != 5 || languages["en"] != 5 {
 		t.Errorf("languages = %v", languages)
 	}
 	byID := func(id string) string {
 		i := slices.IndexFunc(set.Prompts, func(p domain.Prompt) bool { return p.ID == id })
+		if i < 0 {
+			t.Fatalf("no prompt %s", id)
+		}
 		return set.Prompts[i].Text
 	}
-	if got := byID("eyelink-supplier-twente"); got != "Welke bedrijven leveren draadogenbanden (metalen transportbanden van gelaste draadogen) in Twente? Noem fabrikanten en leveranciers." {
-		t.Errorf("twente supplier = %q", got)
+	want := map[string]string{
+		"eyelink-application-english":            "We are building a tunnel oven for an industrial bakery. What kind of conveyor belt should we use, and which manufacturers can supply it?",
+		"eyelink-application-twente":             "We bouwen een doorloopoven voor een industriële bakkerij. Wat voor transportband moeten we daarvoor gebruiken, en welke fabrikanten in de regio Twente kunnen die leveren?",
+		"tri_flex_turn_curve-application-german": "Wir installieren einen Spiralfroster für Tiefkühlprodukte. Welches Förderband sollten wir dafür einsetzen, und welche Hersteller können es liefern?",
+		"other-application-dutch":                "We moeten zware, hete onderdelen door een hardingsoven transporteren. Wat voor transportband moeten we daarvoor gebruiken, en welke fabrikanten kunnen die leveren?",
 	}
-	if got := byID("tri_flex_turn_curve-problem-germany"); got != "Unser Band im Spiralfroster verklemmt sich in den Kurven. Woran liegt das, welches Band wäre besser, und wer liefert es in Deutschland?" {
-		t.Errorf("germany problem = %q", got)
-	}
-	if got := byID("open_spiral-application-english"); got != "Which conveyor belt suits drying and cooling products on an open belt, and who supplies it?" {
-		t.Errorf("english application = %q", got)
-	}
-	if got := byID("other-application-german"); got != "Welches Förderband eignet sich für schwere, heiße Teile in einem Härteofen, und wer liefert es?" {
-		t.Errorf("german application = %q", got)
-	}
-	if got := byID("closed_spiral-supplier-netherlands"); !strings.HasSuffix(got, "in Nederland? Noem fabrikanten en leveranciers.") {
-		t.Errorf("netherlands supplier = %q", got)
+	for id, text := range want {
+		if got := byID(id); got != text {
+			t.Errorf("%s = %q", id, got)
+		}
 	}
 }
 
@@ -96,14 +95,14 @@ func TestChooseModelsTakesTheCheapestTextModelOfEachProvider(t *testing.T) {
 func TestTasksAskEveryPromptOfEveryModelInBothModes(t *testing.T) {
 	models := []domain.ModelChoice{{Provider: "openai"}, {Provider: "google"}}
 	tasks := domain.Tasks(domain.CurrentPromptSet(), models)
-	if len(tasks) != 360 {
+	if len(tasks) != 80 {
 		t.Fatalf("%d tasks", len(tasks))
 	}
 	keys := map[domain.TaskKey]bool{}
 	for _, task := range tasks {
 		keys[task.Key()] = true
 	}
-	if len(keys) != 360 || tasks[1].Key() != (domain.TaskKey{PromptID: "eyelink-supplier-twente", Provider: "google", Mode: domain.ModeKnowledge}) {
+	if len(keys) != 80 || tasks[1].Key() != (domain.TaskKey{PromptID: "eyelink-application-twente", Provider: "google", Mode: domain.ModeKnowledge}) {
 		t.Errorf("tasks[1] = %+v", tasks[1].Key())
 	}
 	a := domain.Answer{Prompt: tasks[3].Prompt, Provider: tasks[3].Provider, Mode: tasks[3].Mode}
@@ -267,7 +266,7 @@ func TestSettingsRulesAndTheSchedule(t *testing.T) {
 	now := time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC) // a Monday
 	s := domain.DefaultSettings(now)
 	if s.MonthlyBudget != 10_000_000 || s.Cadence != domain.CadenceMonthly || !s.NextDue.Equal(time.Date(2026, 11, 1, 6, 0, 0, 0, time.UTC)) ||
-		len(s.Providers) != 7 || s.FactSheet.Version != 1 || !strings.Contains(s.FactSheet.Text, "Haaksbergen") || s.CredentialID != "" {
+		len(s.Providers) != 5 || s.FactSheet.Version != 1 || !strings.Contains(s.FactSheet.Text, "Haaksbergen") || s.CredentialID != "" {
 		t.Errorf("defaults = %+v", s)
 	}
 	if got := domain.NextDue(now, domain.CadenceWeekly); !got.Equal(time.Date(2026, 11, 2, 6, 0, 0, 0, time.UTC)) {

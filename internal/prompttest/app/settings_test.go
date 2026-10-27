@@ -23,7 +23,7 @@ func TestSettingsStartFromTheDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if view.Settings.CredentialID != "" || view.Settings.MonthlyBudget != domain.DefaultBudget || len(view.PromptSet.Prompts) != 90 ||
+	if view.Settings.CredentialID != "" || view.Settings.MonthlyBudget != domain.DefaultBudget || len(view.PromptSet.Prompts) != 20 ||
 		view.ExtractorModel != domain.ExtractorModel || view.SpentThisMonth != 0 {
 		t.Errorf("view = %+v", view)
 	}
@@ -129,7 +129,7 @@ func TestCandidatesAreReviewedAddedDismissedAndUndone(t *testing.T) {
 		t.Fatal(err)
 	}
 	pending, counts, err := e.svc.Candidates(t.Context(), domain.CandidatePending)
-	if err != nil || len(pending) != 1 || pending[0].Name != "Ashworth" || pending[0].Answers != 180 ||
+	if err != nil || len(pending) != 1 || pending[0].Name != "Ashworth" || pending[0].Answers != 40 ||
 		!slices.Equal(pending[0].Addresses, []string{"https://ashworth.com"}) || counts[domain.CandidatePending] != 1 {
 		t.Fatalf("pending = %+v, %v, %v", pending, counts, err)
 	}

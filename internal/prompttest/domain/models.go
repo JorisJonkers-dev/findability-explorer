@@ -7,9 +7,10 @@ import (
 )
 
 // DefaultProviders are the large providers whose cheapest model a Prompt run asks, by their
-// OpenRouter id prefix: OpenAI, Google, Anthropic, Mistral, Meta, xAI and DeepSeek.
+// OpenRouter id prefix: OpenAI, Google, Anthropic, Mistral and DeepSeek. Meta and xAI were
+// dropped: xAI's web search cost the most, and neither is an assistant these buyers use.
 func DefaultProviders() []string {
-	return []string{"openai", "google", "anthropic", "mistralai", "meta-llama", "x-ai", "deepseek"}
+	return []string{"openai", "google", "anthropic", "mistralai", "deepseek"}
 }
 
 // ExtractorModel is the one model that reads every answer, fixed in code and changed only by a

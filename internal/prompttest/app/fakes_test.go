@@ -277,7 +277,7 @@ func (r *repo) Undecide(_ context.Context, id string) error {
 	return nil
 }
 
-// gateway answers every prompt: each model's answer names Twentebelt and, for Dutch prompts,
+// gateway answers every prompt: each model's answer names Twentebelt and, for Twente prompts,
 // Tribelt; a model in limited is always rate limited; extraction fails failExtract times first.
 type gateway struct {
 	mu          sync.Mutex
@@ -319,7 +319,7 @@ func (g *gateway) Ask(_ context.Context, model, prompt string, web bool) (domain
 		return domain.Reply{}, g.askErr
 	}
 	text := "Twentebelt makes these belts."
-	if strings.HasPrefix(prompt, "Welke") {
+	if strings.Contains(prompt, "Twente") {
 		text += " Tribelt in Haaksbergen too."
 	}
 	r := domain.Reply{Text: text, InputTokens: 20, OutputTokens: 30, Cost: 10}

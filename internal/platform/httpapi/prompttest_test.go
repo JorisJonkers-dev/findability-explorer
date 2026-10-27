@@ -128,7 +128,7 @@ func TestPromptTestResultsAreForEveryoneSignedIn(t *testing.T) {
 	srv := serve(t, a)
 	r := callAs(t, srv, http.MethodGet, "/api/v1/prompt-test", "", "tester")
 	runs, _ := r.body["runs"].([]any)
-	if r.code != http.StatusOK || len(runs) != 1 || r.body["promptSetVersion"].(float64) != 1 {
+	if r.code != http.StatusOK || len(runs) != 1 || r.body["promptSetVersion"].(float64) != domain.PromptSetVersion {
 		t.Fatalf("results = %d %v", r.code, r.body)
 	}
 	run := runs[0].(map[string]any)
@@ -159,7 +159,7 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	}
 	first := items[0].(map[string]any)
 	x := first["extraction"].(map[string]any)
-	if first["costUsd"].(float64) != 2 || first["kind"] != "supplier" || x["correctness"] != "wrong" ||
+	if first["costUsd"].(float64) != 2 || first["kind"] != "application" || x["correctness"] != "wrong" ||
 		x["companies"].([]any)[0].(map[string]any)["competitorId"] != "tribelt" || x["companies"].([]any)[1].(map[string]any)["url"] != "https://ashworth.com" {
 		t.Errorf("answer = %v", first)
 	}
@@ -210,7 +210,7 @@ func TestPromptTestSettings(t *testing.T) {
 	}
 	r := callAs(t, srv, http.MethodGet, "/api/v1/admin/prompt-test", "", "admin")
 	if r.code != http.StatusOK || r.body["monthlyBudgetUsd"].(float64) != 10 || r.body["spentThisMonthUsd"].(float64) != 2.5 ||
-		len(r.body["promptSet"].(map[string]any)["prompts"].([]any)) != 90 || r.body["factSheet"].(map[string]any)["updatedBy"] != "joris" ||
+		len(r.body["promptSet"].(map[string]any)["prompts"].([]any)) != 20 || r.body["factSheet"].(map[string]any)["updatedBy"] != "joris" ||
 		r.body["credentialId"] != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" {
 		t.Fatalf("settings = %d %v", r.code, r.body)
 	}

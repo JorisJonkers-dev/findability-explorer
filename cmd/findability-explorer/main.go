@@ -485,7 +485,7 @@ func (d promptDirectory) Companies(ctx context.Context) ([]prompttestdomain.Dire
 	}
 	out := make([]prompttestdomain.DirectoryCompany, 0, len(listed))
 	for _, l := range listed {
-		out = append(out, prompttestdomain.DirectoryCompany{ID: l.ID, Name: l.Name, Host: l.Host, Role: prompttestdomain.Role(l.Role())})
+		out = append(out, prompttestdomain.DirectoryCompany{ID: l.ID, Name: l.Name, OtherNames: l.OtherNames, Host: l.Host, Role: prompttestdomain.Role(l.Role())})
 	}
 	return out, nil
 }

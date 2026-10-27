@@ -124,7 +124,9 @@ type BeltName struct {
 
 // Company is a company in the map: a competitor, or a company in Tribelt's own group.
 type Company struct {
-	Name          string
+	Name string
+	// OtherNames are the names AI answers may give it instead, such as "Ashworth Bros.".
+	OtherNames    []string
 	Country       string
 	Website       string
 	Languages     []string

@@ -66,10 +66,12 @@ type BeltName struct {
 
 // Company is a known company.
 type Company struct {
-	ID      string
-	Source  Source
-	Name    string
-	Country string
+	ID     string
+	Source Source
+	Name   string
+	// OtherNames are the names AI answers may give it instead, such as "Ashworth Bros.".
+	OtherNames []string
+	Country    string
 	// Website is the address as the research noted it, or the address a user added.
 	Website string
 	// URL is the website to visit and scan; nil when the research found none.

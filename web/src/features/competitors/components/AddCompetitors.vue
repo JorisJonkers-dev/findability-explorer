@@ -178,7 +178,7 @@ function send(): void {
             class="min-h-10 rounded-full border-0 bg-transparent px-3 text-sm font-medium text-ink-2 underline underline-offset-4 stage:text-[22px]"
             @click="tray = tray.filter((_, j) => j !== i)"
           >
-            Remove<span class="sr-only"> {{ t.name }}</span>
+            Remove<span class="sr-only">{{ ' ' + t.name }}</span>
           </button>
         </li>
       </ul>
@@ -215,7 +215,7 @@ function send(): void {
             class="min-h-10 rounded-full border-0 bg-orange px-4 text-sm font-semibold text-black hover:bg-orange-soft stage:text-[22px]"
             @click="tray = addToTray(tray, { name: c.name, website: candidateWebsite(c), candidateId: c.id })"
           >
-            Add<span class="sr-only"> {{ c.name }}</span>
+            Add<span class="sr-only">{{ ' ' + c.name }}</span>
           </button>
           <button
             type="button"

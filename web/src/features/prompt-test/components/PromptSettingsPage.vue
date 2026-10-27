@@ -205,7 +205,7 @@ function saveFactSheet(): void {
                 :disabled="providers.length === 1"
                 @click="providers = providers.filter((x) => x !== p)"
               >
-                Remove<span class="sr-only"> {{ providerName(p) }}</span>
+                Remove<span class="sr-only">{{ ' ' + providerName(p) }}</span>
               </button>
             </li>
           </ul>

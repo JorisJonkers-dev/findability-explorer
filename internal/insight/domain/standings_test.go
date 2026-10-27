@@ -178,3 +178,21 @@ func TestWithoutDataNothingTrails(t *testing.T) {
 		t.Error("an unknown measure has no value")
 	}
 }
+
+func TestAccessOfCountsTheCrawlersKeptOut(t *testing.T) {
+	for _, tc := range []struct {
+		readable         bool
+		blocked, crawler int
+		want             domain.Access
+	}{
+		{true, 0, 10, domain.AccessOpen},
+		{true, 2, 10, domain.AccessSome},
+		{true, 10, 10, domain.AccessClosed},
+		{false, 0, 10, domain.AccessUnknown},
+		{true, 0, 0, domain.AccessUnknown},
+	} {
+		if got := domain.AccessOf(tc.readable, tc.blocked, tc.crawler); got != tc.want {
+			t.Errorf("AccessOf(%v, %d, %d) = %s, want %s", tc.readable, tc.blocked, tc.crawler, got, tc.want)
+		}
+	}
+}

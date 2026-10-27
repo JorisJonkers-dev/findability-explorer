@@ -6,7 +6,8 @@ import { companyPath } from '../../shell/domain/sections'
 import { answerCost, counts, excerpt, hostOf, isTribeltSite, TRIBELT_ID } from '../domain/grid'
 import { CORRECTNESS, familyName, modeName, providerName, scopeName } from '../domain/results'
 
-const props = defineProps<{ answer: PromptAnswer | undefined; competitors: readonly Competitor[] }>()
+const props = defineProps<{ answer: PromptAnswer | undefined; competitors: readonly Competitor[]; isAdmin?: boolean }>()
+const emit = defineEmits<{ add: [company: { name: string; url: string }] }>()
 
 const whole = ref(false)
 watch(
@@ -67,6 +68,17 @@ const NUMBER = new Intl.NumberFormat('en-GB')
               <span v-else>{{ n.name }}</span>
               <RouterLink v-if="n.id && !n.tribelt" :to="companyPath(n.id)" class="text-xs text-ink-2 stage:text-[20px]">its page</RouterLink>
               <span v-if="!n.id" class="text-xs text-muted stage:text-[20px]">not a competitor yet</span>
+              <button
+                v-if="!n.id && isAdmin && n.href"
+                type="button"
+                class="border-0 bg-transparent p-0 text-xs font-semibold text-orange-ink underline underline-offset-4 stage:text-[20px]"
+                @click="emit('add', { name: n.name, url: n.href })"
+              >
+                Add<span class="sr-only"> {{ n.name }} as a competitor</span>
+              </button>
+              <RouterLink v-else-if="!n.id && isAdmin" to="/competitors/all" class="text-xs font-semibold stage:text-[20px]">
+                Add on All competitors<span class="sr-only">: {{ n.name }}</span>
+              </RouterLink>
             </li>
           </ol>
         </div>

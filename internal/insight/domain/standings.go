@@ -64,6 +64,9 @@ type Answer struct {
 	Cited    []string
 }
 
+// ScopeTwente is the scope of the questions a buyer asks for Twente.
+const ScopeTwente = "twente"
+
 // Run is one Prompt run with the answers that count.
 type Run struct {
 	ID        string
@@ -133,6 +136,22 @@ const (
 	BotPartly  BotAccess = "partly"
 	BotBlocked BotAccess = "blocked"
 )
+
+// AccessOf is how far a site lets the crawlers in, from how many of them robots.txt keeps out of
+// the whole site: every one let in, some kept out, or all of them; unknown when robots.txt could
+// not be read.
+func AccessOf(readable bool, blocked, crawlers int) Access {
+	switch {
+	case !readable || crawlers == 0:
+		return AccessUnknown
+	case blocked == crawlers:
+		return AccessClosed
+	case blocked > 0:
+		return AccessSome
+	default:
+		return AccessOpen
+	}
+}
 
 // Readiness is what a company's newest scan recorded of its AI readiness.
 type Readiness struct {

@@ -58,7 +58,7 @@ const promptCard = computed(() => {
               stroke-linejoin="round"
               stroke-linecap="round"
             />
-            <circle :cx="l.endX" :cy="l.endY" :r="l.tribelt ? 13 : 8" :class="l.tribelt ? 'fill-orange' : 'fill-blue-grey'" stroke="#ffffff" stroke-width="3" />
+            <circle :cx="l.endX" :cy="l.endY" :r="l.tribelt ? 13 : 8" :class="l.tribelt ? 'fill-orange' : 'fill-blue-grey'" class="stroke-white" stroke-width="3" />
             <text
               :x="CHART.right + 20"
               :y="l.labelY"

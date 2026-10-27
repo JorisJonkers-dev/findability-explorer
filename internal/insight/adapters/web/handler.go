@@ -156,6 +156,11 @@ func toProduct(p domain.Product, companies map[string]domain.Company) oas.Produc
 
 // GetPlan implements getPlan.
 func (h *Handler) GetPlan(ctx context.Context) (oas.GetPlanRes, error) {
+	return h.plan(ctx)
+}
+
+// plan is the plan as it stands, as every plan operation answers.
+func (h *Handler) plan(ctx context.Context) (*oas.Plan, error) {
 	p, err := h.uc.Plan(ctx)
 	if err != nil {
 		return nil, err
@@ -176,11 +181,7 @@ func (h *Handler) TickImprovement(ctx context.Context, req *oas.ImprovementTick,
 	case err != nil:
 		return nil, err
 	}
-	p, err := h.uc.Plan(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return toPlan(p), nil
+	return h.plan(ctx)
 }
 
 // SetPlanTargets implements setPlanTargets.
@@ -200,11 +201,7 @@ func (h *Handler) SetPlanTargets(ctx context.Context, req *oas.PlanTargetsChange
 	case err != nil:
 		return nil, err
 	}
-	p, err := h.uc.Plan(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return toPlan(p), nil
+	return h.plan(ctx)
 }
 
 func toPlan(p app.Plan) *oas.Plan {

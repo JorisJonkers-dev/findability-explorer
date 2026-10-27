@@ -223,7 +223,6 @@ function saveFactSheet(): void {
             </label>
             <button type="button" class="min-h-11 rounded-full border-2 border-black bg-white px-5 font-semibold hover:bg-mist" @click="add">Add</button>
           </div>
-          <p class="m-0 text-sm text-ink-2">Each provider's cheapest model answers, with a paid one when a free model cannot.</p>
         </fieldset>
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="flex flex-col gap-1.5 font-medium">

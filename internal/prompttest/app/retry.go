@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -68,7 +67,7 @@ func (s *Service) Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskK
 	for _, t := range tasks {
 		only[t.Key()] = true
 	}
-	run.Status, run.FinishedAt, run.Failure = domain.RunRunning, time.Time{}, ""
+	run = run.Reopened()
 	s.spawn(func() {
 		if err := s.execute(context.WithoutCancel(context.Background()), run, only); err != nil {
 			s.onFail(run.ID, err)

@@ -98,6 +98,12 @@ type Run struct {
 	Tasks int
 }
 
+// Reopened is the run running again, as asking its failed answers again makes it.
+func (r Run) Reopened() Run {
+	r.Status, r.FinishedAt, r.Failure = RunRunning, time.Time{}, ""
+	return r
+}
+
 // Progress is how far a run got, overall and per provider, and what it cost.
 type Progress struct {
 	Answered     int

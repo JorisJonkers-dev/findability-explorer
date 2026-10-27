@@ -1,18 +1,5 @@
-import type { AiReadiness, AiReadinessRow } from '../../../infrastructure/api/types.gen'
+import type { AiReadiness, AiReadinessRow, ReadinessRank } from '../../../infrastructure/api/types.gen'
 import { formatValue } from '../../catching-up/domain/standings'
-
-/**
- * The checks a site passes out of five, as the standings count them (internal/insight/domain): its
- * crawlers let in, half when some are kept out, a sitemap, llms.txt, llms-full.txt and Markdown pages.
- */
-export function readinessScore(r: AiReadiness): number {
-  let crawlers = 0
-  if (r.robots !== 'unreachable' && r.bots.length > 0) {
-    const blocked = r.bots.filter((b) => b.access === 'blocked').length
-    crawlers = blocked === 0 ? 1 : blocked < r.bots.length ? 0.5 : 0
-  }
-  return crawlers + [r.sitemap.files > 0, r.llmsTxt.present, r.llmsFullTxt, r.markdown].filter(Boolean).length
-}
 
 /** The checks the summary counts, and whether a site passes each. */
 export const CHECKS: readonly { label: string; passes: (r: AiReadiness) => boolean }[] = [
@@ -67,16 +54,11 @@ export function scanRange(rows: readonly AiReadinessRow[]): string | null {
   return first === last ? `Scanned on ${day(first)}` : `Last scans from ${day(first)} to ${day(last)}`
 }
 
-/** The page's headline: who leads, and where Tribelt stands, by checks passed. */
-export function readinessHeadline(rows: readonly AiReadinessRow[]): string {
-  const sites = scanned(rows)
-  const competitors = sites
-    .filter((r) => r.role === 'competitor')
-    .sort((a, b) => readinessScore(b.readiness) - readinessScore(a.readiness) || a.name.localeCompare(b.name))
-  const leader = competitors[0]
-  const tribelt = sites.find((r) => r.role === 'tribelt')
+/** The page's headline, from the readiness ranking the AI search summary serves: who leads, and Tribelt's checks. */
+export function readinessHeadline(ranking: readonly ReadinessRank[]): string {
+  const leader = ranking.find((r) => r.role === 'competitor')
+  const tribelt = ranking.find((r) => r.role === 'tribelt')
   if (!leader) return 'Who lets search engines and AI assistants in.'
-  const lead = `${leader.name} leads with ${formatValue('readinessChecks', readinessScore(leader.readiness))} of five checks.`
-  if (!tribelt) return lead
-  return `${lead} Tribelt passes ${formatValue('readinessChecks', readinessScore(tribelt.readiness))}.`
+  const lead = `${leader.name} leads with ${formatValue('readinessChecks', leader.score)} of five checks.`
+  return tribelt ? `${lead} Tribelt passes ${formatValue('readinessChecks', tribelt.score)}.` : lead
 }

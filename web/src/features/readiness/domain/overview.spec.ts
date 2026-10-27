@@ -1,18 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bots, readiness, readinessRow, summary } from '../../../testing/fixtures'
-import { accessMark, checkSummary, readinessHeadline, readinessScore, scanRange, scanned } from './overview'
-
-const ALL = Object.fromEntries(bots().map((b) => [b.bot, 'blocked' as const]))
-
-describe('the readiness score', () => {
-  it('counts five checks, half for crawlers when some are kept out', () => {
-    expect(readinessScore(readiness())).toBe(5)
-    expect(readinessScore(readiness({ bots: bots({ GPTBot: 'blocked' }), llmsFullTxt: false }))).toBe(3.5)
-    expect(readinessScore(readiness({ bots: bots(ALL) }))).toBe(4)
-    expect(readinessScore(readiness({ robots: 'unreachable', bots: [] }))).toBe(4)
-    expect(readinessScore(readiness({ sitemap: { declared: false, files: 0, addresses: 0, languages: [] }, llmsTxt: { present: false, bytes: 0, links: 0 }, markdown: false }))).toBe(2)
-  })
-})
+import { accessMark, checkSummary, readinessHeadline, scanRange, scanned } from './overview'
 
 describe('the summary', () => {
   it('counts the scanned sites passing each check, with Tribelt beside it', () => {
@@ -54,15 +42,14 @@ describe('the scans and the headline', () => {
     expect(scanRange([readinessRow('C', { scan: undefined })])).toBeNull()
   })
 
-  it('names the leader and where Tribelt stands', () => {
-    const rows = [
-      readinessRow('Tribelt', { role: 'tribelt', readiness: readiness({ llmsFullTxt: false, markdown: false }) }),
-      readinessRow('Märtens'),
-      readinessRow('Ashworth'),
-      readinessRow('Mirror', { role: 'mirror' }),
+  it('names the leader of the backend ranking and where Tribelt stands', () => {
+    const ranking = [
+      { competitorId: 'martens', name: 'Märtens', role: 'competitor' as const, score: 5 },
+      { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt' as const, score: 3.5 },
     ]
-    expect(readinessHeadline(rows)).toBe('Ashworth leads with 5 of five checks. Tribelt passes 3.')
-    expect(readinessHeadline(rows.slice(1, 2))).toBe('Märtens leads with 5 of five checks.')
-    expect(readinessHeadline(rows.slice(0, 1))).toBe('Who lets search engines and AI assistants in.')
+    expect(readinessHeadline(ranking)).toBe('Märtens leads with 5 of five checks. Tribelt passes 3½.')
+    expect(readinessHeadline(ranking.slice(0, 1))).toBe('Märtens leads with 5 of five checks.')
+    expect(readinessHeadline(ranking.slice(1))).toBe('Who lets search engines and AI assistants in.')
   })
+
 })

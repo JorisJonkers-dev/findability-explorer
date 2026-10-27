@@ -78,7 +78,7 @@ const TIERS = ['product', 'spec', 'application', 'problem', 'broad'] as const
             </a>
           </li>
         </ul>
-        <p v-if="product.sellers.length === 0" class="m-0 text-muted">No competitor sells it, as far as the research and the scans know.</p>
+        <p v-if="product.sellers.length === 0" class="m-0 text-muted">No competitor sells it.</p>
       </section>
 
       <aside aria-labelledby="answers-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-8">

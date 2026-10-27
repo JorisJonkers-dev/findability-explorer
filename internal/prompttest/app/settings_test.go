@@ -344,3 +344,20 @@ func TestTheSettingsHaveNoPricesWithoutAKeyOrAPriceList(t *testing.T) {
 		}
 	}
 }
+
+func TestThePricesCountAProviderAddedSinceTheRun(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	e.repo.settings.Providers = []string{"openai", "google"}
+	v, err := e.svc.Settings(t.Context())
+	if err != nil || v.Prices.Basis != domain.BasisRun || len(v.Prices.Providers) != 2 || v.Prices.Providers[1].Provider != "google" {
+		t.Fatalf("prices = %+v, %v", v.Prices, err)
+	}
+	e.gw.modelsErr = errBoom
+	if v, err := e.svc.Settings(t.Context()); err != nil || len(v.Prices.Providers) != 1 {
+		t.Errorf("without the price list = %+v, %v", v.Prices, err)
+	}
+}

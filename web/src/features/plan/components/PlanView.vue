@@ -48,7 +48,7 @@ const TONE = { orange: 'bg-orange text-black', black: 'bg-black text-white', 'bl
               :class="picked === i ? 'bg-mist' : 'bg-transparent hover:bg-mist'"
               @click="picked = i"
             >
-              <span aria-hidden="true" class="font-display text-3xl font-semibold stage:text-[72px]" :class="picked === i ? 'text-orange' : 'text-silver'">{{ s.number }}</span>
+              <span aria-hidden="true" class="font-display text-3xl font-semibold stage:text-[72px]" :class="picked === i ? 'text-orange-ink' : 'text-silver'">{{ s.number }}</span>
               <span class="flex flex-col">
                 <span class="font-semibold stage:text-[34px]">{{ s.title }}</span>
                 <span class="text-sm text-ink-2 stage:text-[24px]">{{ s.when }}</span>

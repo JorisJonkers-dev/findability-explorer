@@ -403,3 +403,23 @@ func TestPricesBeforeAnyRun(t *testing.T) {
 		t.Errorf("no prices = %+v", none)
 	}
 }
+
+func TestAReopenedRunRunsAgain(t *testing.T) {
+	r := domain.Run{Status: domain.RunStopped, FinishedAt: time.Now(), Failure: "Budget."}.Reopened()
+	if r.Status != domain.RunRunning || !r.FinishedAt.IsZero() || r.Failure != "" {
+		t.Errorf("reopened = %+v", r)
+	}
+}
+
+func TestPricesFollowTheProvidersSetNow(t *testing.T) {
+	models := []domain.ModelChoice{{Provider: "openai", Model: "openai/a"}, {Provider: "google", Model: "google/b"}}
+	kept, missing := domain.Asked(models, []string{"openai", "deepseek"})
+	if len(kept) != 1 || kept[0].Provider != "openai" || len(missing) != 1 || missing[0] != "deepseek" {
+		t.Fatalf("kept %+v, missing %v", kept, missing)
+	}
+	p := domain.PricesFromRun([]domain.Answer{{Provider: "openai", Mode: domain.ModeWeb, Reply: domain.Reply{Cost: 100}}}, kept, 20, domain.CadenceMonthly, 10_000_000)
+	more := p.With([]domain.ProviderPrice{{Provider: "deepseek", Knowledge: 50, Web: 50}}, 20, domain.CadenceMonthly)
+	if len(more.Providers) != 2 || more.Run != p.Run+2000 || more.Basis != domain.BasisRun || len(p.Providers) != 1 {
+		t.Errorf("with deepseek = %+v", more)
+	}
+}

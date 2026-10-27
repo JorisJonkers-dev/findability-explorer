@@ -9,6 +9,7 @@ import SortButton from '../../../shared/ui/SortButton.vue'
 import { hostOf } from '../../prompt-test/domain/grid'
 import SectionView from '../../shell/components/SectionView.vue'
 import { AI_SEARCH_TABS, companyPath } from '../../shell/domain/sections'
+import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
 import { useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
 import { accessMark, checkSummary, readinessHeadline, scanned, scanRange } from '../domain/overview'
 import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary, type ReadinessColumn, tableRows } from '../domain/readiness'
@@ -16,6 +17,7 @@ import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary,
 const route = useRoute()
 const router = useRouter()
 const { rows, isLoading, error } = useReadinessTable()
+const { summary: aiSearch } = useAiSearchSummary()
 
 // Sorted by a column while one is picked; Tribelt and the mirror stay on top whatever the sort.
 const sort = ref<Sort<ReadinessColumn>>(null)
@@ -59,7 +61,7 @@ function pick(r: AiReadinessRow): void {
 </script>
 
 <template>
-  <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(rows)" :tabs="AI_SEARCH_TABS">
+  <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(aiSearch?.ranking ?? [])" :tabs="AI_SEARCH_TABS">
     <template v-if="!isLoading && !error" #aside>
       <p class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">
         {{ sites }} sites.<template v-if="scanRange(rows)"> {{ scanRange(rows) }}.</template>

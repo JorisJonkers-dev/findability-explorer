@@ -213,3 +213,27 @@ describe('before and around the grid', () => {
     expect(answersDown.wrapper.get('[role="alert"]').text()).toContain('Gone.')
   })
 })
+
+describe('a company an answer names', () => {
+  it('can be added as a competitor by an administrator, from the answer', async () => {
+    let sent: unknown = null
+    const named = promptAnswer({ provider: 'openai', mode: 'web' }, ['Twentebelt:twentebelt', 'Intralox'])
+    const withUrl = { ...named, extraction: { ...(named.extraction as NonNullable<PromptAnswer['extraction']>), companies: [{ name: 'Intralox', url: 'https://www.intralox.com', position: 1 }, { name: 'Habasit', position: 2 }] } }
+    const { wrapper } = await mountApp(
+      api(true, {
+        [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () => json({ run: promptRun(), items: [withUrl] }),
+        'POST /api/v1/admin/competitors/batch': async (r) => {
+          sent = await r.json()
+          return json({ items: [{ name: 'Intralox', outcome: 'added', competitorId: 'intralox' }], scans: 0 })
+        },
+      }),
+      '/ai-search/prompt-test?answer=eyelink-application-twente|openai|web',
+    )
+    const names = wrapper.findAll('ol[aria-label="Companies named"] li')
+    expect(names[1]?.find('a[href="/competitors/all"]').exists()).toBe(true)
+    await names[0]?.get('button').trigger('click')
+    await settle()
+    expect(sent).toEqual({ items: [{ name: 'Intralox', url: 'https://www.intralox.com' }], scan: false })
+    expect(wrapper.text()).toContain('Added 1 competitor.')
+  })
+})

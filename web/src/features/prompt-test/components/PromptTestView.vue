@@ -4,7 +4,9 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { PromptMode, PromptScope } from '../../../infrastructure/api/types.gen'
 import { saveText } from '../../../shared/download'
 import { percent } from '../../../shared/percent'
+import { useAddCompanies } from '../../competitors/composables/useCompanyAdmin'
 import { useCompetitors } from '../../competitors/composables/useCompetitors'
+import { batchSummary } from '../../competitors/domain/tray'
 import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { AI_SEARCH_TABS } from '../../shell/domain/sections'
@@ -21,6 +23,12 @@ const { results, isLoading, error } = usePromptResults()
 const { competitors } = useCompetitors()
 const { isStarting, notice: startNotice, error: startError, start } = useStartRun()
 const { isRetrying, notice: retryNotice, error: retryError, retry } = useRetryRun()
+const { batch: added, error: addError, add: addCompanies } = useAddCompanies()
+
+/** Adds a company an answer named as a competitor, without scanning it yet. */
+function addNamed(company: { name: string; url: string }): void {
+  addCompanies([company], false, () => undefined)
+}
 
 // The run, the filters and the picked answer live in the address, so a reload or a link shows the same.
 const run = computed(() => results.value?.runs.find((r) => r.id === route.query.run) ?? latestRun(results.value))
@@ -177,7 +185,9 @@ function download(): void {
             <span class="text-right text-sm font-semibold stage:text-[24px]">{{ Math.round(n.share * 100) }}%</span>
           </div>
         </figure>
-        <AnswerDetail :answer="picked" :competitors="competitors">
+        <p v-if="added" aria-live="polite" class="m-0 text-sm font-medium stage:text-[24px]">{{ batchSummary(added) }}</p>
+        <p v-if="addError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ addError }}</p>
+        <AnswerDetail :answer="picked" :competitors="competitors" :is-admin="isAdmin" @add="addNamed">
           <button
             v-if="isAdmin && picked && !counts(picked) && picked.failure !== undefined"
             type="button"

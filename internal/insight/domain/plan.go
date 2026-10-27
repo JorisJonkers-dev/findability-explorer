@@ -47,6 +47,9 @@ func Improvements() []Improvement {
 	}
 }
 
+// Manual reports whether only an administrator can tick the improvement off: no scan checks it.
+func (imp Improvement) Manual() bool { return imp.Check == CheckNone }
+
 // Passes reports whether Tribelt's readiness shows the check done.
 func (c AutoCheck) Passes(r Readiness) bool {
 	switch c {
@@ -89,7 +92,7 @@ func PlanItems(ticks []Tick, tribelt *Readiness, standings []Standing) []PlanIte
 	out := make([]PlanItem, 0, len(Improvements()))
 	for _, imp := range Improvements() {
 		item := PlanItem{Improvement: imp, Leader: LeaderOf(standings, imp.Measure)}
-		if imp.Check != CheckNone {
+		if !imp.Manual() {
 			item.Auto = true
 			item.Done = tribelt != nil && imp.Check.Passes(*tribelt)
 		} else if i := slices.IndexFunc(ticks, func(t Tick) bool { return t.ImprovementID == imp.ID }); i >= 0 {
@@ -139,7 +142,7 @@ func (f Facts) watched(t Target) (float64, bool) {
 		if f.Run == nil {
 			return 0, false
 		}
-		return ShareOfVoice(f.Run.Keep(func(a Answer) bool { return a.Scope == "twente" }), TribeltID)
+		return ShareOfVoice(f.Run.Keep(func(a Answer) bool { return a.Scope == ScopeTwente }), TribeltID)
 	case TargetReadiness:
 		return f.Value(MeasureReadiness, TribeltID)
 	case TargetTermsUsed:
@@ -182,7 +185,7 @@ func KeepAnEyeOn(companies []Company, f Facts, standings []Standing) []EyeOn {
 		out = append(out, EyeOn{Why: WatchBestPrepared, Leader: *l})
 	}
 	if f.Run != nil {
-		twente := Facts{Run: &Run{Answers: f.Run.Keep(func(a Answer) bool { return a.Scope == "twente" })}}
+		twente := Facts{Run: &Run{Answers: f.Run.Keep(func(a Answer) bool { return a.Scope == ScopeTwente })}}
 		if l := standing(MeasureShareOfVoice, companies, twente).Leader; l != nil && l.Value > 0 {
 			out = append(out, EyeOn{Why: WatchTwente, Leader: *l})
 		}

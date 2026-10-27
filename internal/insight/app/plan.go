@@ -45,7 +45,7 @@ func (s *Service) Tick(ctx context.Context, actor, id string, done bool) error {
 	if !ok {
 		return domain.ErrUnknownImprovement
 	}
-	if imp.Check != domain.CheckNone {
+	if !imp.Manual() {
 		return domain.ErrCheckedByScan
 	}
 	if !done {

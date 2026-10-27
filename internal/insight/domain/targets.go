@@ -3,6 +3,7 @@ package domain
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 // Target is a number to watch in the plan, with the value Tribelt aims for this year.
@@ -40,6 +41,9 @@ const maxCountTarget = 10_000
 // CheckTarget checks a target's value: a share from 0 to 1, a readiness score from 0 to 5 in
 // halves, or a count of terms or citations.
 func CheckTarget(t Target, v float64) (float64, error) {
+	if !slices.Contains(Targets(), t) {
+		return 0, fmt.Errorf("%w: no target is called %q", ErrInvalid, t)
+	}
 	ok := false
 	switch t {
 	case TargetShareOfVoice, TargetTwenteShareOfVoice:
@@ -48,8 +52,6 @@ func CheckTarget(t Target, v float64) (float64, error) {
 		ok = v > 0 && v <= 5 && v*2 == float64(int(v*2))
 	case TargetTermsUsed, TargetCitations:
 		ok = v > 0 && v <= maxCountTarget && v == float64(int(v))
-	default:
-		return 0, fmt.Errorf("%w: no target is called %q", ErrInvalid, t)
 	}
 	if !ok {
 		return 0, fmt.Errorf("%w: %v is no target for %s", ErrInvalid, v, t)

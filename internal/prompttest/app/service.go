@@ -136,16 +136,18 @@ func (s *Service) Settings(ctx context.Context) (View, error) {
 	return v, nil
 }
 
-// price fills in the latest run's models and the price overview: from the latest run's answers
-// when it has any, otherwise from OpenRouter's price list for the providers set, when the key
-// works, otherwise with nothing to go by.
+// price fills in the latest run's models and the price overview for the providers set now: each
+// one the latest run asked by what its answers cost, and the others, before any run or added
+// since, by OpenRouter's price list when the key works.
 func (s *Service) price(ctx context.Context, v *View) error {
 	questions := len(v.PromptSet.Prompts)
-	cadence, budget := v.Settings.Cadence, v.Settings.MonthlyBudget
+	cadence, budget, providers := v.Settings.Cadence, v.Settings.MonthlyBudget, v.Settings.Providers
 	runs, err := s.repo.Runs(ctx, 1)
 	if err != nil {
 		return fmt.Errorf("the latest run: %w", err)
 	}
+	v.Prices = domain.NoPrices(cadence, budget)
+	missing := providers
 	if len(runs) > 0 {
 		v.Models = runs[0].Models
 		answers, err := s.repo.Answers(ctx, runs[0].ID, false)
@@ -153,24 +155,39 @@ func (s *Service) price(ctx context.Context, v *View) error {
 			return fmt.Errorf("the latest run's answers: %w", err)
 		}
 		if len(answers) > 0 {
-			v.Prices = domain.PricesFromRun(answers, runs[0].Models, questions, cadence, budget)
-			return nil
+			var kept []domain.ModelChoice
+			kept, missing = domain.Asked(runs[0].Models, providers)
+			v.Prices = domain.PricesFromRun(answers, kept, questions, cadence, budget)
 		}
 	}
-	v.Prices = domain.NoPrices(cadence, budget)
-	if !v.KeyWorks {
+	if len(missing) == 0 || !v.KeyWorks {
 		return nil
 	}
-	gw, err := s.gateways.Gateway(ctx, v.Settings.CredentialID)
-	if err != nil {
-		return nil //nolint:nilerr // without a gateway there is no price list, which the overview says
+	catalogue := s.catalogue(ctx, v.Settings.CredentialID)
+	if catalogue == nil {
+		return nil
 	}
-	catalogue, err := gw.Models(ctx)
-	if err != nil {
-		return nil //nolint:nilerr // without the price list the overview has nothing to go by
+	estimate := domain.PricesFromCatalogue(catalogue, domain.ChooseModels(catalogue, missing), questions, cadence, budget)
+	if v.Prices.Basis == domain.BasisRun {
+		v.Prices = v.Prices.With(estimate.Providers, questions, cadence)
+		return nil
 	}
-	v.Prices = domain.PricesFromCatalogue(catalogue, domain.ChooseModels(catalogue, v.Settings.Providers), questions, cadence, budget)
+	v.Prices = estimate
 	return nil
+}
+
+// catalogue is OpenRouter's price list, or nil when it cannot be had: the overview then has
+// nothing to go by for the providers it would price.
+func (s *Service) catalogue(ctx context.Context, credentialID string) []domain.CatalogueModel {
+	gw, err := s.gateways.Gateway(ctx, credentialID)
+	if err != nil {
+		return nil
+	}
+	models, err := gw.Models(ctx)
+	if err != nil {
+		return nil
+	}
+	return models
 }
 
 func (s *Service) settings(ctx context.Context) (domain.Settings, error) {

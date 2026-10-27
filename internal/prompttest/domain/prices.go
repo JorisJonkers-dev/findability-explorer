@@ -1,5 +1,7 @@
 package domain
 
+import "slices"
+
 // PriceBasis is where a price overview comes from: the latest run's own costs, OpenRouter's
 // price list before any run, or nothing to go by.
 type PriceBasis string
@@ -106,6 +108,29 @@ func PricesFromCatalogue(catalogue []CatalogueModel, models []ModelChoice, quest
 		p.Providers = append(p.Providers, ProviderPrice{Provider: m.Provider, Model: m.Model, Fallback: m.Fallback, Knowledge: one, Web: one})
 	}
 	return p.total(questions, cadence, budget)
+}
+
+// With is the overview with more providers' prices added, as the price list gives them for
+// providers a run has not asked yet, and the totals counted again.
+func (p Prices) With(extra []ProviderPrice, questions int, cadence Cadence) Prices {
+	p.Providers = append(append([]ProviderPrice{}, p.Providers...), extra...)
+	return p.total(questions, cadence, p.Budget)
+}
+
+// Asked are the models of a run that providers still in the settings answered with, and the
+// providers in the settings the run did not ask.
+func Asked(models []ModelChoice, providers []string) (kept []ModelChoice, missing []string) {
+	for _, m := range models {
+		if slices.Contains(providers, m.Provider) {
+			kept = append(kept, m)
+		}
+	}
+	for _, p := range providers {
+		if !slices.ContainsFunc(models, func(m ModelChoice) bool { return m.Provider == p }) {
+			missing = append(missing, p)
+		}
+	}
+	return kept, missing
 }
 
 // NoPrices is the overview with nothing to go by.

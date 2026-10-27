@@ -95,7 +95,11 @@ func TestAddManyWithoutScanningAndItsLimits(t *testing.T) {
 
 func TestAddManyFailures(t *testing.T) {
 	item := []app.NewItem{{Name: "Intralox", Website: "https://intralox.com", CandidateID: "x"}}
-	if _, err := service(&repo{listErrAfter: 1}, scans{}).AddMany(t.Context(), "u", item, false); !errors.Is(err, errBoom) {
+	if _, err := service(&repo{}, scans{}).AddMany(t.Context(), "u", item, false); err == nil {
+		t.Error("a batch without its ports added companies")
+	}
+	unwired, _, _ := batchService(&repo{listErrAfter: 1})
+	if _, err := unwired.AddMany(t.Context(), "u", item, false); !errors.Is(err, errBoom) {
 		t.Errorf("a failing list = %v", err)
 	}
 	svc, _, _ := batchService(&repo{addErr: errBoom})

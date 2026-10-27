@@ -23,6 +23,21 @@ const table = [
 const api = () =>
   routes({
     'GET /api/v1/ai-readiness': () => json({ items: table }),
+    'GET /api/v1/ai-search': () =>
+      json({
+        goal: 0.4,
+        followed: [],
+        trend: [],
+        crawlers: [],
+        keepingOut: [],
+        ranking: [
+          { competitorId: 'esfo', name: 'ESFO', role: 'competitor', score: 5 },
+          { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', score: 3.5 },
+        ],
+        sites: 5,
+        questions: 0,
+        providers: 0,
+      }),
     [`GET /api/v1/analyses/${ANALYSIS_ID}/readiness-files`]: () =>
       json({ robotsTxt: 'User-agent: GPTBot\nDisallow: /', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }),
   })

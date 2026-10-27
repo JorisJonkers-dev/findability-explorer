@@ -109,7 +109,7 @@ func (r readiness) Readiness(ctx context.Context) (map[string]insightdomain.Read
 
 func readinessOf(r analysisdomain.Readiness, at time.Time) insightdomain.Readiness {
 	out := insightdomain.Readiness{
-		Crawlers: insightdomain.AccessOpen, Sitemap: r.Sitemap.Files > 0, SitemapPages: r.Sitemap.Addresses,
+		Sitemap: r.Sitemap.Files > 0, SitemapPages: r.Sitemap.Addresses,
 		SitemapLanguages: r.Sitemap.Languages, LLMs: r.LLMs.Present, LLMsFull: r.LLMsFull, Markdown: r.Markdown,
 		StructuredData: r.StructuredData, ScannedAt: at, Bots: map[string]insightdomain.BotAccess{},
 	}
@@ -119,14 +119,7 @@ func readinessOf(r analysisdomain.Readiness, at time.Time) insightdomain.Readine
 			out.Blocked = append(out.Blocked, b.Bot)
 		}
 	}
-	switch {
-	case r.Robots == analysisdomain.RobotsUnreachable || len(r.Bots) == 0:
-		out.Crawlers = insightdomain.AccessUnknown
-	case len(out.Blocked) == len(r.Bots):
-		out.Crawlers = insightdomain.AccessClosed
-	case len(out.Blocked) > 0:
-		out.Crawlers = insightdomain.AccessSome
-	}
+	out.Crawlers = insightdomain.AccessOf(r.Robots != analysisdomain.RobotsUnreachable, len(out.Blocked), len(r.Bots))
 	return out
 }
 

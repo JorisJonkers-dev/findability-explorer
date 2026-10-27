@@ -15,6 +15,9 @@ const MaxBatch = 100
 // ErrBatchSize is returned for a batch with no company, or more than MaxBatch.
 var ErrBatchSize = fmt.Errorf("add 1 to %d companies at once", MaxBatch)
 
+// errNoBatchPorts is returned when the composition root never handed over the batch's ports.
+var errNoBatchPorts = errors.New("adding several companies is not wired: call WithBatch")
+
 // Candidates is the port to the prompt-test context: a competitor candidate the answers named,
 // recorded as added once its company is.
 type Candidates interface {
@@ -64,6 +67,9 @@ type Batch struct {
 func (s *Service) AddMany(ctx context.Context, user string, items []NewItem, scan bool) (Batch, error) {
 	if len(items) == 0 || len(items) > MaxBatch {
 		return Batch{}, ErrBatchSize
+	}
+	if s.candidates == nil || s.scanner == nil {
+		return Batch{}, errNoBatchPorts
 	}
 	d, err := s.directory(ctx)
 	if err != nil {

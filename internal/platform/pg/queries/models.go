@@ -318,3 +318,24 @@ type TermDecision struct {
 	DecidedBy   string
 	DecidedAt   time.Time
 }
+
+type TermReviewUsage struct {
+	ID           int64
+	InputTokens  int64
+	OutputTokens int64
+	UsedAt       time.Time
+}
+
+type TermVerdict struct {
+	CandidateID string
+	Phrase      string
+	Accept      bool
+	Sure        bool
+	Reason      string
+	Term        string
+	Language    string
+	Family      string
+	Tier        string
+	Model       string
+	ReviewedAt  time.Time
+}

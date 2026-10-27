@@ -143,6 +143,7 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 	}, func(context.Context) ([]terminologydomain.Sighting, error) {
 		return []terminologydomain.Sighting{{Text: "Drahtösengliederband", Language: "de", CompanyID: "pelger"}}, nil
 	}, time.Now)
+	terminology.WithReviewer(verdictStore{}, noJudge{})
 	companies := companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		&companyRepo{}, companyScans{}, time.Now,
@@ -420,3 +421,23 @@ func TestUnknownPathsAndMethods(t *testing.T) {
 		t.Errorf("broken body status %d", r.code)
 	}
 }
+
+// verdictStore holds the language model's one verdict: unsure about "belt news".
+type verdictStore struct{}
+
+func (verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, error) {
+	return []terminologydomain.Verdict{{
+		CandidateID: terminologydomain.CandidateID("belt news"), Phrase: "belt news", Accept: true, Reason: "Could go either way.",
+		Term:  terminologydomain.Acceptance{Text: "belt news", Language: "en", Family: "all", Tier: "broad"},
+		Model: "claude-haiku-5-5", At: time.Date(2026, 10, 27, 9, 0, 0, 0, time.UTC),
+	}}, nil
+}
+
+func (verdictStore) SaveVerdicts(context.Context, []terminologydomain.Verdict, terminologydomain.Usage) error {
+	return nil
+}
+
+// noJudge is the language-model settings without a model.
+type noJudge struct{}
+
+func (noJudge) Current(context.Context) (terminologyapp.Judge, string, error) { return nil, "", nil }

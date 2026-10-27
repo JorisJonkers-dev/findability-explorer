@@ -5,6 +5,7 @@ package persistence
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/queries"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
@@ -96,4 +97,53 @@ func (r *Repository) Undo(ctx context.Context, candidateID string) (bool, error)
 		return false, fmt.Errorf("delete decision: %w", err)
 	}
 	return n > 0, nil
+}
+
+var _ app.Verdicts = (*Repository)(nil)
+
+// Verdicts returns the language model's verdicts, oldest first.
+func (r *Repository) Verdicts(ctx context.Context) ([]domain.Verdict, error) {
+	rows, err := r.store.Queries().ListTermVerdicts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select verdicts: %w", err)
+	}
+	out := make([]domain.Verdict, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Verdict{
+			CandidateID: row.CandidateID, Phrase: row.Phrase, Accept: row.Accept, Sure: row.Sure, Reason: row.Reason,
+			Term:  domain.Acceptance{Text: row.Term, Language: row.Language, Family: row.Family, Tier: row.Tier},
+			Model: row.Model, At: row.ReviewedAt.UTC(),
+		})
+	}
+	return out, nil
+}
+
+// SaveVerdicts stores the verdicts of one request and what it consumed, in one transaction. A
+// candidate with a verdict already keeps it.
+func (r *Repository) SaveVerdicts(ctx context.Context, verdicts []domain.Verdict, usage domain.Usage) error {
+	return r.store.InTx(ctx, func(q *queries.Queries) error {
+		for _, v := range verdicts {
+			if err := q.InsertTermVerdict(ctx, queries.InsertTermVerdictParams{
+				CandidateID: v.CandidateID, Phrase: v.Phrase, Accept: v.Accept, Sure: v.Sure, Reason: v.Reason,
+				Term: v.Term.Text, Language: v.Term.Language, Family: v.Term.Family, Tier: v.Term.Tier, Model: v.Model, ReviewedAt: v.At,
+			}); err != nil {
+				return fmt.Errorf("insert verdict: %w", err)
+			}
+		}
+		if err := q.InsertTermReviewUsage(ctx, queries.InsertTermReviewUsageParams{
+			InputTokens: usage.InputTokens, OutputTokens: usage.OutputTokens, UsedAt: usage.At,
+		}); err != nil {
+			return fmt.Errorf("insert usage: %w", err)
+		}
+		return nil
+	})
+}
+
+// TokensSince is how many tokens asking the language model for verdicts used since t.
+func (r *Repository) TokensSince(ctx context.Context, t time.Time) (int64, error) {
+	n, err := r.store.Queries().TermReviewTokensSince(ctx, t)
+	if err != nil {
+		return 0, fmt.Errorf("sum the review's tokens: %w", err)
+	}
+	return n, nil
 }

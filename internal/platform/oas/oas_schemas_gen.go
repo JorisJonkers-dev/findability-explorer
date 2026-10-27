@@ -5781,6 +5781,144 @@ func (o OptTermDecision) Or(d TermDecision) TermDecision {
 	return d
 }
 
+// NewOptTermReviewStateProblem returns new OptTermReviewStateProblem with value set to v.
+func NewOptTermReviewStateProblem(v TermReviewStateProblem) OptTermReviewStateProblem {
+	return OptTermReviewStateProblem{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermReviewStateProblem is optional TermReviewStateProblem.
+type OptTermReviewStateProblem struct {
+	Value TermReviewStateProblem
+	Set   bool
+}
+
+// IsSet returns true if OptTermReviewStateProblem was set.
+func (o OptTermReviewStateProblem) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermReviewStateProblem) Reset() {
+	var v TermReviewStateProblem
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermReviewStateProblem) SetTo(v TermReviewStateProblem) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermReviewStateProblem) Get() (v TermReviewStateProblem, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermReviewStateProblem) Or(d TermReviewStateProblem) TermReviewStateProblem {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTermSuggestion returns new OptTermSuggestion with value set to v.
+func NewOptTermSuggestion(v TermSuggestion) OptTermSuggestion {
+	return OptTermSuggestion{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermSuggestion is optional TermSuggestion.
+type OptTermSuggestion struct {
+	Value TermSuggestion
+	Set   bool
+}
+
+// IsSet returns true if OptTermSuggestion was set.
+func (o OptTermSuggestion) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermSuggestion) Reset() {
+	var v TermSuggestion
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermSuggestion) SetTo(v TermSuggestion) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermSuggestion) Get() (v TermSuggestion, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermSuggestion) Or(d TermSuggestion) TermSuggestion {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTermVerdict returns new OptTermVerdict with value set to v.
+func NewOptTermVerdict(v TermVerdict) OptTermVerdict {
+	return OptTermVerdict{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermVerdict is optional TermVerdict.
+type OptTermVerdict struct {
+	Value TermVerdict
+	Set   bool
+}
+
+// IsSet returns true if OptTermVerdict was set.
+func (o OptTermVerdict) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermVerdict) Reset() {
+	var v TermVerdict
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermVerdict) SetTo(v TermVerdict) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermVerdict) Get() (v TermVerdict, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermVerdict) Or(d TermVerdict) TermVerdict {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptURI returns new OptURI with value set to v.
 func NewOptURI(v url.URL) OptURI {
 	return OptURI{
@@ -10171,6 +10309,14 @@ type StartRescansUnprocessableEntity ProblemStatusCode
 
 func (*StartRescansUnprocessableEntity) startRescansRes() {}
 
+type StartTermReviewForbidden ProblemStatusCode
+
+func (*StartTermReviewForbidden) startTermReviewRes() {}
+
+type StartTermReviewUnauthorized ProblemStatusCode
+
+func (*StartTermReviewUnauthorized) startTermReviewRes() {}
+
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term
 type Term struct {
@@ -10356,6 +10502,7 @@ type TermCandidate struct {
 	// When the newest scan that found it was started.
 	LastSeenAt time.Time       `json:"lastSeenAt"`
 	Decision   OptTermDecision `json:"decision"`
+	Verdict    OptTermVerdict  `json:"verdict"`
 }
 
 // GetID returns the value of ID.
@@ -10423,6 +10570,11 @@ func (s *TermCandidate) GetDecision() OptTermDecision {
 	return s.Decision
 }
 
+// GetVerdict returns the value of Verdict.
+func (s *TermCandidate) GetVerdict() OptTermVerdict {
+	return s.Verdict
+}
+
 // SetID sets the value of ID.
 func (s *TermCandidate) SetID(val TermCandidateId) {
 	s.ID = val
@@ -10488,6 +10640,11 @@ func (s *TermCandidate) SetDecision(val OptTermDecision) {
 	s.Decision = val
 }
 
+// SetVerdict sets the value of Verdict.
+func (s *TermCandidate) SetVerdict(val OptTermVerdict) {
+	s.Verdict = val
+}
+
 func (*TermCandidate) acceptTermCandidateRes() {}
 func (*TermCandidate) rejectTermCandidateRes() {}
 func (*TermCandidate) undoTermDecisionRes()    {}
@@ -10535,12 +10692,13 @@ func (s *TermCandidateCounts) SetRejected(val int32) {
 
 type TermCandidateId string
 
-// The candidates with one status.
+// The candidates with one status, and how far the language model is with them.
 // Ref: #/components/schemas/TermCandidateList
 type TermCandidateList struct {
 	// The candidates, most companies and highest score first.
 	Items  []TermCandidate     `json:"items"`
 	Counts TermCandidateCounts `json:"counts"`
+	Review TermReviewState     `json:"review"`
 }
 
 // GetItems returns the value of Items.
@@ -10553,6 +10711,11 @@ func (s *TermCandidateList) GetCounts() TermCandidateCounts {
 	return s.Counts
 }
 
+// GetReview returns the value of Review.
+func (s *TermCandidateList) GetReview() TermReviewState {
+	return s.Review
+}
+
 // SetItems sets the value of Items.
 func (s *TermCandidateList) SetItems(val []TermCandidate) {
 	s.Items = val
@@ -10561,6 +10724,11 @@ func (s *TermCandidateList) SetItems(val []TermCandidate) {
 // SetCounts sets the value of Counts.
 func (s *TermCandidateList) SetCounts(val TermCandidateCounts) {
 	s.Counts = val
+}
+
+// SetReview sets the value of Review.
+func (s *TermCandidateList) SetReview(val TermReviewState) {
+	s.Review = val
 }
 
 func (*TermCandidateList) listTermCandidatesRes() {}
@@ -10822,6 +10990,93 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
+// How far the language model is with the waiting candidates.
+// Ref: #/components/schemas/TermReviewState
+type TermReviewState struct {
+	// Whether it is reviewing now.
+	Running bool `json:"running"`
+	// How many waiting candidates it has not reviewed yet.
+	Waiting int32 `json:"waiting"`
+	// Why its last review stopped short - noModel (no language model is set up) or failed (the model or
+	// its provider failed). Absent when it went well.
+	Problem OptTermReviewStateProblem `json:"problem"`
+}
+
+// GetRunning returns the value of Running.
+func (s *TermReviewState) GetRunning() bool {
+	return s.Running
+}
+
+// GetWaiting returns the value of Waiting.
+func (s *TermReviewState) GetWaiting() int32 {
+	return s.Waiting
+}
+
+// GetProblem returns the value of Problem.
+func (s *TermReviewState) GetProblem() OptTermReviewStateProblem {
+	return s.Problem
+}
+
+// SetRunning sets the value of Running.
+func (s *TermReviewState) SetRunning(val bool) {
+	s.Running = val
+}
+
+// SetWaiting sets the value of Waiting.
+func (s *TermReviewState) SetWaiting(val int32) {
+	s.Waiting = val
+}
+
+// SetProblem sets the value of Problem.
+func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
+	s.Problem = val
+}
+
+func (*TermReviewState) startTermReviewRes() {}
+
+// Why its last review stopped short - noModel (no language model is set up) or failed (the model or
+// its provider failed). Absent when it went well.
+type TermReviewStateProblem string
+
+const (
+	TermReviewStateProblemNoModel TermReviewStateProblem = "noModel"
+	TermReviewStateProblemFailed  TermReviewStateProblem = "failed"
+)
+
+// AllValues returns all TermReviewStateProblem values.
+func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
+	return []TermReviewStateProblem{
+		TermReviewStateProblemNoModel,
+		TermReviewStateProblemFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TermReviewStateProblem) MarshalText() ([]byte, error) {
+	switch s {
+	case TermReviewStateProblemNoModel:
+		return []byte(s), nil
+	case TermReviewStateProblemFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TermReviewStateProblem) UnmarshalText(data []byte) error {
+	switch TermReviewStateProblem(data) {
+	case TermReviewStateProblemNoModel:
+		*s = TermReviewStateProblemNoModel
+		return nil
+	case TermReviewStateProblemFailed:
+		*s = TermReviewStateProblemFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // A page of matching terms.
 // Ref: #/components/schemas/TermSearch
 type TermSearch struct {
@@ -10863,6 +11118,133 @@ func (s *TermSearch) SetFacets(val Facets) {
 }
 
 func (*TermSearch) searchTermsRes() {}
+
+// The term the language model would add, as the map would hold it.
+// Ref: #/components/schemas/TermSuggestion
+type TermSuggestion struct {
+	// The term.
+	Term     string     `json:"term"`
+	Language Language   `json:"language"`
+	Family   BeltFamily `json:"family"`
+	Tier     IntentTier `json:"tier"`
+}
+
+// GetTerm returns the value of Term.
+func (s *TermSuggestion) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *TermSuggestion) GetLanguage() Language {
+	return s.Language
+}
+
+// GetFamily returns the value of Family.
+func (s *TermSuggestion) GetFamily() BeltFamily {
+	return s.Family
+}
+
+// GetTier returns the value of Tier.
+func (s *TermSuggestion) GetTier() IntentTier {
+	return s.Tier
+}
+
+// SetTerm sets the value of Term.
+func (s *TermSuggestion) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *TermSuggestion) SetLanguage(val Language) {
+	s.Language = val
+}
+
+// SetFamily sets the value of Family.
+func (s *TermSuggestion) SetFamily(val BeltFamily) {
+	s.Family = val
+}
+
+// SetTier sets the value of Tier.
+func (s *TermSuggestion) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// The language model's review of a candidate. A sure verdict is also its decision; an unsure one
+// leaves the candidate waiting for a person, with the term it suggests.
+// Ref: #/components/schemas/TermVerdict
+type TermVerdict struct {
+	// Whether it would add the phrase to the map.
+	Accept bool `json:"accept"`
+	// Whether it was sure; when not, a person decides.
+	Sure bool `json:"sure"`
+	// Why, in one sentence.
+	Reason string            `json:"reason"`
+	Term   OptTermSuggestion `json:"term"`
+	// The model that reviewed it.
+	Model string `json:"model"`
+	// When.
+	At time.Time `json:"at"`
+}
+
+// GetAccept returns the value of Accept.
+func (s *TermVerdict) GetAccept() bool {
+	return s.Accept
+}
+
+// GetSure returns the value of Sure.
+func (s *TermVerdict) GetSure() bool {
+	return s.Sure
+}
+
+// GetReason returns the value of Reason.
+func (s *TermVerdict) GetReason() string {
+	return s.Reason
+}
+
+// GetTerm returns the value of Term.
+func (s *TermVerdict) GetTerm() OptTermSuggestion {
+	return s.Term
+}
+
+// GetModel returns the value of Model.
+func (s *TermVerdict) GetModel() string {
+	return s.Model
+}
+
+// GetAt returns the value of At.
+func (s *TermVerdict) GetAt() time.Time {
+	return s.At
+}
+
+// SetAccept sets the value of Accept.
+func (s *TermVerdict) SetAccept(val bool) {
+	s.Accept = val
+}
+
+// SetSure sets the value of Sure.
+func (s *TermVerdict) SetSure(val bool) {
+	s.Sure = val
+}
+
+// SetReason sets the value of Reason.
+func (s *TermVerdict) SetReason(val string) {
+	s.Reason = val
+}
+
+// SetTerm sets the value of Term.
+func (s *TermVerdict) SetTerm(val OptTermSuggestion) {
+	s.Term = val
+}
+
+// SetModel sets the value of Model.
+func (s *TermVerdict) SetModel(val string) {
+	s.Model = val
+}
+
+// SetAt sets the value of At.
+func (s *TermVerdict) SetAt(val time.Time) {
+	s.At = val
+}
 
 type TestLlmCredentialBadRequest ProblemStatusCode
 

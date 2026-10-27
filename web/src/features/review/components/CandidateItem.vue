@@ -3,7 +3,7 @@ import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import type { TermAcceptance, TermCandidate } from '../../../infrastructure/api/types.gen'
 import { FAMILIES, familyLabel, LANGUAGES, languageLabel, TIERS, tierLabel } from '../../../shared/vocabulary'
 import { atLabel } from '../../settings/domain/time'
-import { type AcceptDraft, checkDraft, decisionLine, draftOf, evidenceLine, suggestionLine } from '../domain/candidates'
+import { type AcceptDraft, checkDraft, decisionLine, draftOf, evidenceLine, suggestionLine, verdictLine } from '../domain/candidates'
 
 const props = defineProps<{ candidate: TermCandidate; busy: boolean }>()
 const emit = defineEmits<{ accept: [body: TermAcceptance]; reject: []; undo: [] }>()
@@ -14,6 +14,15 @@ const draft = ref<AcceptDraft>(draftOf(props.candidate))
 const draftError = ref<string | null>(null)
 const termInput = useTemplateRef<HTMLInputElement>('termInput')
 const decided = computed(() => decisionLine(props.candidate))
+const verdict = computed(() => verdictLine(props.candidate))
+// The term the language model suggests, ready to accept in one step.
+const suggested = computed(() => (props.candidate.verdict?.term ? draftOf(props.candidate) : null))
+
+function acceptSuggested(): void {
+  if (!suggested.value) return
+  const check = checkDraft(suggested.value)
+  if (check.kind === 'ok') emit('accept', check.body)
+}
 
 async function openForm(): Promise<void> {
   draft.value = draftOf(props.candidate)
@@ -44,6 +53,11 @@ function submit(): void {
       <span class="text-muted">Found at </span>{{ candidate.companies.map((c) => c.name).join(', ') }}
     </p>
     <p class="m-0 text-sm"><span class="text-muted">Suggested: </span>{{ suggestionLine(candidate) }}</p>
+    <p v-if="verdict" class="m-0 text-sm">{{ verdict }}</p>
+    <p v-if="candidate.status === 'pending' && suggested" class="m-0 text-sm">
+      <span class="text-muted">It suggests </span>“{{ suggested.term }}”, {{ languageLabel(suggested.language) }}, {{ tierLabel(suggested.tier) }},
+      {{ familyLabel(suggested.family) }}.
+    </p>
     <p v-if="decided" class="m-0 text-sm font-medium">{{ decided }}</p>
     <p v-if="candidate.decision?.term" class="m-0 text-sm text-ink-2">
       In the map as “{{ candidate.decision.term.term }}”, {{ languageLabel(candidate.decision.term.language) }},
@@ -98,6 +112,16 @@ function submit(): void {
 
     <div v-else class="flex flex-wrap items-center gap-3">
       <template v-if="candidate.status === 'pending'">
+        <button
+          v-if="suggested"
+          type="button"
+          :disabled="busy"
+          :aria-describedby="titleId"
+          class="min-h-11 rounded-full border-0 bg-black px-5 font-semibold text-white hover:bg-ink-2 disabled:opacity-70"
+          @click="acceptSuggested"
+        >
+          Accept as suggested
+        </button>
         <button
           type="button"
           :disabled="busy"

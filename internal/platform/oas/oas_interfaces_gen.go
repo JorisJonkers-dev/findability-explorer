@@ -153,6 +153,10 @@ type StartRescansRes interface {
 	startRescansRes()
 }
 
+type StartTermReviewRes interface {
+	startTermReviewRes()
+}
+
 type TestLlmCredentialRes interface {
 	testLlmCredentialRes()
 }

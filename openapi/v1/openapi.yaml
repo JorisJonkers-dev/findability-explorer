@@ -619,6 +619,29 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/review:
+    post:
+      operationId: startTermReview
+      summary: Let the language model review the waiting candidates now
+      description: >-
+        Administrators only. The language model reviews every waiting candidate it has not
+        reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is
+        sure about, as the language model, and leaves the rest waiting with its suggestion. Returns
+        the review's state.
+      tags: [admin]
+      responses:
+        "202":
+          description: The review is under way.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermReviewState"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/term-candidates/{candidateId}/accept:
     post:
       operationId: acceptTermCandidate
@@ -3010,6 +3033,82 @@ components:
           example: "2026-10-23T09:30:00Z"
         decision:
           $ref: "#/components/schemas/TermDecision"
+        verdict:
+          $ref: "#/components/schemas/TermVerdict"
+    TermVerdict:
+      description: >-
+        The language model's review of a candidate. A sure verdict is also its decision; an unsure
+        one leaves the candidate waiting for a person, with the term it suggests.
+      type: object
+      additionalProperties: false
+      required: [accept, sure, reason, model, at]
+      properties:
+        accept:
+          type: boolean
+          description: Whether it would add the phrase to the map.
+          example: true
+        sure:
+          type: boolean
+          description: Whether it was sure; when not, a person decides.
+          example: false
+        reason:
+          type: string
+          maxLength: 500
+          description: Why, in one sentence.
+          example: Buyers search for this kind of belt.
+        term:
+          $ref: "#/components/schemas/TermSuggestion"
+        model:
+          type: string
+          maxLength: 200
+          description: The model that reviewed it.
+          example: claude-haiku-5-5
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-10-27T09:30:00Z"
+    TermSuggestion:
+      description: The term the language model would add, as the map would hold it.
+      type: object
+      additionalProperties: false
+      required: [term, language, family, tier]
+      properties:
+        term:
+          type: string
+          maxLength: 200
+          description: The term.
+          example: spiral freezer belt
+        language:
+          $ref: "#/components/schemas/Language"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+    TermReviewState:
+      description: How far the language model is with the waiting candidates.
+      type: object
+      additionalProperties: false
+      required: [running, waiting]
+      properties:
+        running:
+          type: boolean
+          description: Whether it is reviewing now.
+          example: true
+        waiting:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many waiting candidates it has not reviewed yet.
+          example: 663
+        problem:
+          description: >-
+            Why its last review stopped short - noModel (no language model is set up) or failed
+            (the model or its provider failed). Absent when it went well.
+          type: string
+          enum: [noModel, failed]
     TermCandidateCounts:
       description: How many candidates have each status.
       type: object
@@ -3038,10 +3137,10 @@ components:
           description: Rejected candidates.
           example: 7
     TermCandidateList:
-      description: The candidates with one status.
+      description: The candidates with one status, and how far the language model is with them.
       type: object
       additionalProperties: false
-      required: [items, counts]
+      required: [items, counts, review]
       properties:
         items:
           type: array
@@ -3051,6 +3150,8 @@ components:
             $ref: "#/components/schemas/TermCandidate"
         counts:
           $ref: "#/components/schemas/TermCandidateCounts"
+        review:
+          $ref: "#/components/schemas/TermReviewState"
     TermAcceptance:
       description: A candidate as it joins the terminology map.
       type: object

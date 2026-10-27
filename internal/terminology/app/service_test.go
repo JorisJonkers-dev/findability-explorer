@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -55,12 +56,15 @@ var now = time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
 
 // reviews is an in-memory Reviews; the err fields make a method fail.
 type reviews struct {
+	mu                          sync.Mutex
 	decisions                   []domain.Decision
 	listErr, decideErr, undoErr error
 	listErrAfter, lists         int
 }
 
 func (r *reviews) Decisions(context.Context) ([]domain.Decision, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.lists++
 	if r.listErr != nil || (r.listErrAfter > 0 && r.lists >= r.listErrAfter) {
 		return nil, errBoom
@@ -69,6 +73,8 @@ func (r *reviews) Decisions(context.Context) ([]domain.Decision, error) {
 }
 
 func (r *reviews) Decide(_ context.Context, d domain.Decision) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if r.decideErr != nil {
 		return r.decideErr
 	}
@@ -77,6 +83,8 @@ func (r *reviews) Decide(_ context.Context, d domain.Decision) error {
 }
 
 func (r *reviews) Undo(_ context.Context, id string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if r.undoErr != nil {
 		return false, r.undoErr
 	}

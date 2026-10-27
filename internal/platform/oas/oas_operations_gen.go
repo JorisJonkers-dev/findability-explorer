@@ -44,6 +44,7 @@ const (
 	StartAnalysisOperation              OperationName = "StartAnalysis"
 	StartPromptRunOperation             OperationName = "StartPromptRun"
 	StartRescansOperation               OperationName = "StartRescans"
+	StartTermReviewOperation            OperationName = "StartTermReview"
 	TestLlmCredentialOperation          OperationName = "TestLlmCredential"
 	TickImprovementOperation            OperationName = "TickImprovement"
 	UndoCompetitorCandidateOperation    OperationName = "UndoCompetitorCandidate"

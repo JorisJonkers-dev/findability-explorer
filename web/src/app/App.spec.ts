@@ -172,7 +172,7 @@ describe('the settings menu', () => {
     const { wrapper } = await mountApp(
       routes({
         'GET /api/v1/me': () => json(me({ isAdmin: true })),
-        'GET /api/v1/admin/term-candidates': () => json({ items: [], counts: { pending: 8, accepted: 0, rejected: 0 } }),
+        'GET /api/v1/admin/term-candidates': () => json({ items: [], counts: { pending: 8, accepted: 0, rejected: 0 }, review: { running: false, waiting: 0 } }),
       }),
       '/settings/prompt-test',
     )

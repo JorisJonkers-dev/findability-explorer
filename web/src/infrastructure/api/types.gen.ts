@@ -1117,6 +1117,65 @@ export type TermCandidate = {
      */
     lastSeenAt: string;
     decision?: TermDecision;
+    verdict?: TermVerdict;
+};
+
+/**
+ * The language model's review of a candidate. A sure verdict is also its decision; an unsure one leaves the candidate waiting for a person, with the term it suggests.
+ */
+export type TermVerdict = {
+    /**
+     * Whether it would add the phrase to the map.
+     */
+    accept: boolean;
+    /**
+     * Whether it was sure; when not, a person decides.
+     */
+    sure: boolean;
+    /**
+     * Why, in one sentence.
+     */
+    reason: string;
+    term?: TermSuggestion;
+    /**
+     * The model that reviewed it.
+     */
+    model: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * The term the language model would add, as the map would hold it.
+ */
+export type TermSuggestion = {
+    /**
+     * The term.
+     */
+    term: string;
+    language: Language;
+    family: BeltFamily;
+    tier: IntentTier;
+};
+
+/**
+ * How far the language model is with the waiting candidates.
+ */
+export type TermReviewState = {
+    /**
+     * Whether it is reviewing now.
+     */
+    running: boolean;
+    /**
+     * How many waiting candidates it has not reviewed yet.
+     */
+    waiting: number;
+    /**
+     * Why its last review stopped short - noModel (no language model is set up) or failed (the model or its provider failed). Absent when it went well.
+     */
+    problem?: 'noModel' | 'failed';
 };
 
 /**
@@ -1138,7 +1197,7 @@ export type TermCandidateCounts = {
 };
 
 /**
- * The candidates with one status.
+ * The candidates with one status, and how far the language model is with them.
  */
 export type TermCandidateList = {
     /**
@@ -1146,6 +1205,7 @@ export type TermCandidateList = {
      */
     items: Array<TermCandidate>;
     counts: TermCandidateCounts;
+    review: TermReviewState;
 };
 
 /**
@@ -3334,6 +3394,39 @@ export type ListTermCandidatesResponses = {
 };
 
 export type ListTermCandidatesResponse = ListTermCandidatesResponses[keyof ListTermCandidatesResponses];
+
+export type StartTermReviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/term-candidates/review';
+};
+
+export type StartTermReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartTermReviewError = StartTermReviewErrors[keyof StartTermReviewErrors];
+
+export type StartTermReviewResponses = {
+    /**
+     * The review is under way.
+     */
+    202: TermReviewState;
+};
+
+export type StartTermReviewResponse = StartTermReviewResponses[keyof StartTermReviewResponses];
 
 export type AcceptTermCandidateData = {
     /**

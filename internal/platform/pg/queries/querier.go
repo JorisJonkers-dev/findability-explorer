@@ -66,6 +66,8 @@ type Querier interface {
 	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
+	InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error
+	InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error
 	// The number of the first finished scan of a company that found each phrase.
 	KeywordFirstScans(ctx context.Context, competitorID pgtype.Text) ([]KeywordFirstScansRow, error)
 	// The map terms each company's newest finished scan found, once per company.
@@ -100,6 +102,7 @@ type Querier interface {
 	ListPromptRunModels(ctx context.Context, ids []uuid.UUID) ([]ListPromptRunModelsRow, error)
 	ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRunsRow, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
+	ListTermVerdicts(ctx context.Context) ([]TermVerdict, error)
 	// The schedule's next due time, locked until the transaction ends; no row before any was saved.
 	LockPromptSchedule(ctx context.Context) ([]time.Time, error)
 	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
@@ -118,6 +121,7 @@ type Querier interface {
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
 	SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) error
+	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (int64, error)
 	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
 	// How many scans the language model answered for, and the tokens one of them used on average.
 	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)

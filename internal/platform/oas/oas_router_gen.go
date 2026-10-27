@@ -23,7 +23,7 @@ var (
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn64AllowedHeaders = map[string]string{
+	rn65AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
 	rn58AllowedHeaders = map[string]string{
@@ -600,7 +600,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn64AllowedHeaders,
+											allowedHeaders: rn65AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -812,6 +812,37 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								break
 							}
 
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case 'r': // Prefix: "review"
+								origElem := elem
+								if l := len("review"); len(elem) >= l && elem[0:l] == "review" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleStartTermReviewRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: nil,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+								elem = origElem
+							}
 							// Param: "candidateId"
 							// Match until "/"
 							idx := strings.IndexByte(elem, '/')
@@ -2272,6 +2303,37 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								break
 							}
 
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case 'r': // Prefix: "review"
+								origElem := elem
+								if l := len("review"); len(elem) >= l && elem[0:l] == "review" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = StartTermReviewOperation
+										r.summary = "Let the language model review the waiting candidates now"
+										r.operationID = "startTermReview"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/admin/term-candidates/review"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
+								}
+
+								elem = origElem
+							}
 							// Param: "candidateId"
 							// Match until "/"
 							idx := strings.IndexByte(elem, '/')

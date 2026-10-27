@@ -6,6 +6,7 @@ import type {
   TermCandidate,
   TermCandidateCounts,
   TermCandidateStatus,
+  TermReviewState,
 } from '../../../infrastructure/api/types.gen'
 import { zProblem } from '../../../infrastructure/api/zod.gen'
 import { describeError } from '../../../shared/describeError'
@@ -31,10 +32,15 @@ export function parseStatus(raw: unknown): TermCandidateStatus {
 export type AcceptDraft = { term: string; language: Language; family: BeltFamily; tier: IntentTier; usedBy: string }
 
 /**
- * The draft a candidate starts from: its phrase, its first language the map knows (else English),
- * the classifier's family (else other belts) and tier, and the companies that use it.
+ * The draft a candidate starts from: the language model's suggestion, else its phrase, its first
+ * language the map knows (else English), the classifier's family (else other belts) and tier; and
+ * the companies that use it.
  */
 export function draftOf(candidate: TermCandidate): AcceptDraft {
+  const usedBy = candidate.companies.map((c) => c.name).join(', ')
+  // The language model's suggestion, when it made one, is the better start.
+  const suggested = candidate.verdict?.term
+  if (suggested) return { ...suggested, usedBy }
   const language = candidate.languages.find(isLanguage) ?? 'en'
   return {
     term: candidate.phrase,
@@ -74,11 +80,32 @@ export function suggestionLine(candidate: TermCandidate): string {
   return `${tierLabel(candidate.suggestedTier)}${family}${closest}`
 }
 
+/** Who decided a decision of the language model's names. */
+export const MODEL_REVIEWER = 'language model'
+
 /** Who decided and when: "Accepted by joris, 23 Oct 2026, 09:30 UTC", or null while pending. */
 export function decisionLine(candidate: TermCandidate): string | null {
   const d = candidate.decision
   if (!d) return null
-  return `${STATUS_LABELS[d.status]} by ${d.by}, ${atLabel(d.at)}`
+  const by = d.by === MODEL_REVIEWER ? 'the language model' : d.by
+  return `${STATUS_LABELS[d.status]} by ${by}, ${atLabel(d.at)}`
+}
+
+/** What the language model made of a candidate, or null before it has seen it. */
+export function verdictLine(candidate: TermCandidate): string | null {
+  const v = candidate.verdict
+  if (!v) return null
+  return v.sure ? v.reason : `The language model was unsure. ${v.reason}`
+}
+
+/** How far the language model is with the waiting phrases. */
+export function reviewLine(state: TermReviewState): string {
+  const phrases = (n: number) => (n === 1 ? '1 phrase' : `${String(n)} phrases`)
+  if (state.running) return state.waiting > 0 ? `The language model is reviewing ${phrases(state.waiting)}.` : 'The language model is reviewing the phrases.'
+  if (state.problem === 'noModel') return 'No language model is set up, so every phrase waits for you.'
+  if (state.problem === 'failed') return 'The language model failed on its last try. It tries again within ten minutes.'
+  if (state.waiting > 0) return `${phrases(state.waiting)} ${state.waiting === 1 ? 'waits' : 'wait'} for the language model.`
+  return 'The language model has reviewed every phrase.'
 }
 
 /** A refused review action in words. */
@@ -94,4 +121,12 @@ export function shouldRetry(failures: number, error: unknown): boolean {
   const problem = zProblem.safeParse(error)
   const refused = problem.success && problem.data.status >= 400 && problem.data.status < 500
   return !refused && failures < 3
+}
+
+/** How often the lists are asked for again while the language model reviews. */
+export const REVIEW_POLL_MS = 3000
+
+/** The lists are asked for again while the language model reviews, since it decides as it goes. */
+export function reviewPoll(state: TermReviewState | undefined): number | false {
+  return state?.running ? REVIEW_POLL_MS : false
 }

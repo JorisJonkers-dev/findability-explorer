@@ -4,18 +4,27 @@ import {
   acceptTermCandidateMutation,
   listTermCandidatesOptions,
   rejectTermCandidateMutation,
+  startTermReviewMutation,
   undoTermDecisionMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
-import type { TermAcceptance, TermCandidate, TermCandidateCounts, TermCandidateStatus } from '../../../infrastructure/api/types.gen'
+import type { TermAcceptance, TermCandidate, TermCandidateCounts, TermCandidateStatus, TermReviewState } from '../../../infrastructure/api/types.gen'
 import { isForbidden } from '../../settings/domain/problems'
-import { reviewProblem, shouldRetry } from '../domain/candidates'
+import { reviewPoll, reviewProblem, shouldRetry } from '../domain/candidates'
 
 /** Server state for the candidates with one status; a 403 means the account is no administrator. */
 export function useTermCandidates(status: Ref<TermCandidateStatus>) {
-  const query = useQuery(computed(() => ({ ...listTermCandidatesOptions({ query: { status: status.value } }), retry: shouldRetry })))
+  const query = useQuery(
+    computed(() => ({
+      ...listTermCandidatesOptions({ query: { status: status.value } }),
+      retry: shouldRetry,
+      // While the language model reviews, the lists change as it decides.
+      refetchInterval: (q: { state: { data?: { review: TermReviewState } } }) => reviewPoll(q.state.data?.review),
+    })),
+  )
   return {
     candidates: computed<TermCandidate[]>(() => (query.data.value ? query.data.value.items : [])),
     counts: computed<TermCandidateCounts | undefined>(() => query.data.value?.counts),
+    review: computed<TermReviewState | undefined>(() => query.data.value?.review),
     isLoading: query.isPending,
     forbidden: computed(() => isForbidden(query.error.value)),
     error: computed(() => (query.error.value ? reviewProblem(query.error.value) : null)),
@@ -64,6 +73,19 @@ export function useTermDecision() {
     undo: (candidateId: string, phrase: string) => {
       begin('undo')
       undo.mutate({ path: { candidateId } }, { onSuccess: () => { done(`“${phrase}” is back in the queue.`) } })
+    },
+  }
+}
+
+/** Lets the language model review the waiting phrases now; the lists follow its progress. */
+export function useStartReview() {
+  const queryClient = useQueryClient()
+  const start = useMutation(startTermReviewMutation())
+  return {
+    isStarting: start.isPending,
+    error: computed(() => (start.error.value ? reviewProblem(start.error.value) : null)),
+    start: () => {
+      start.mutate({}, { onSuccess: () => void queryClient.invalidateQueries({ queryKey: [{ _id: 'listTermCandidates' }] }) })
     },
   }
 }

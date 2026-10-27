@@ -79,6 +79,8 @@ type Candidate struct {
 	// Source is the start address of the newest scan that found it.
 	Source   string
 	Decision *Decision
+	// Verdict is the language model's review of it, once it has one.
+	Verdict *Verdict
 }
 
 // CandidateID is a candidate's id: the first 16 hex characters of the SHA-256 of its folded phrase.

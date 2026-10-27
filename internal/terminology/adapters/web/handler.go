@@ -10,6 +10,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
@@ -21,6 +22,8 @@ type UseCases interface {
 	Accept(ctx context.Context, user, id string, a domain.Acceptance) (domain.Candidate, error)
 	Reject(ctx context.Context, user, id string) (domain.Candidate, error)
 	Undo(ctx context.Context, id string) (domain.Candidate, error)
+	ReviewState(ctx context.Context) (app.ReviewState, error)
+	StartReview()
 }
 
 // Handler implements the terminology operations. Business rules stay in the use cases.
@@ -52,9 +55,32 @@ func (h *Handler) ListTermCandidates(ctx context.Context, params oas.ListTermCan
 	for _, c := range list {
 		items = append(items, toCandidate(c))
 	}
-	return &oas.TermCandidateList{Items: items, Counts: oas.TermCandidateCounts{
+	state, err := h.uc.ReviewState(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &oas.TermCandidateList{Items: items, Review: toReviewState(state), Counts: oas.TermCandidateCounts{
 		Pending: int32(counts.Pending), Accepted: int32(counts.Accepted), Rejected: int32(counts.Rejected), //nolint:gosec // small counts
 	}}, nil
+}
+
+// StartTermReview implements startTermReview.
+func (h *Handler) StartTermReview(ctx context.Context) (oas.StartTermReviewRes, error) {
+	h.uc.StartReview()
+	state, err := h.uc.ReviewState(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := toReviewState(state)
+	return &out, nil
+}
+
+func toReviewState(s app.ReviewState) oas.TermReviewState {
+	out := oas.TermReviewState{Running: s.Running, Waiting: int32(s.Waiting)} //nolint:gosec // a small count
+	if s.Problem != app.ProblemNone {
+		out.Problem = oas.NewOptTermReviewStateProblem(oas.TermReviewStateProblem(s.Problem))
+	}
+	return out
 }
 
 // AcceptTermCandidate implements acceptTermCandidate.
@@ -143,6 +169,15 @@ func toCandidate(c domain.Candidate) oas.TermCandidate {
 			decision.Term = oas.NewOptTerm(ToTerm(*d.Term))
 		}
 		out.Decision = oas.NewOptTermDecision(decision)
+	}
+	if v := c.Verdict; v != nil {
+		verdict := oas.TermVerdict{Accept: v.Accept, Sure: v.Sure, Reason: v.Reason, Model: v.Model, At: v.At}
+		if v.Suggests() {
+			verdict.Term = oas.NewOptTermSuggestion(oas.TermSuggestion{
+				Term: v.Term.Text, Language: oas.Language(v.Term.Language), Family: oas.BeltFamily(v.Term.Family), Tier: oas.IntentTier(v.Term.Tier),
+			})
+		}
+		out.Verdict = oas.NewOptTermVerdict(verdict)
 	}
 	return out
 }

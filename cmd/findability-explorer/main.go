@@ -68,6 +68,7 @@ import (
 	prompttestdomain "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/server"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/seal"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/judge"
 	terminologypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/seed"
 	terminologyapp "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
@@ -123,7 +124,8 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	now := func() time.Time { return time.Now().UTC() }
 	analysisRepo := persistence.New(store)
 	var companies *companiesapp.Service
-	terminology := terminologyapp.New(catalogue, terminologypersistence.New(store),
+	terminologyRepo := terminologypersistence.New(store)
+	terminology := terminologyapp.New(catalogue, terminologyRepo,
 		func(ctx context.Context) ([]terminologydomain.Observation, error) {
 			return observations(ctx, analysisRepo, companies)
 		},
@@ -144,10 +146,13 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	if err != nil {
 		return err
 	}
-	llm, err := newLLM(logger, getenv, store, analysisRepo, secret, limits, now)
+	llm, err := newLLM(logger, getenv, store, analysisRepo, terminologyRepo, secret, limits, now)
 	if err != nil {
 		return err
 	}
+	// The language model reviews the phrases scans find, with the model product matching uses.
+	terminology.WithReviewer(terminologyRepo, judges{llm: llm})
+	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
 	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, limits, now)
 	if err != nil {
 		return err
@@ -300,7 +305,7 @@ func limitsOf(getenv func(string) string) (limits, error) {
 
 // newLLM builds the language-model settings: the Vault key, the keys admins add, and the active model.
 func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, analyses *persistence.Repository,
-	secret string, l limits, now func() time.Time,
+	reviews *terminologypersistence.Repository, secret string, l limits, now func() time.Time,
 ) (*llmapp.Service, error) {
 	sealer, err := seal.NewSealer(secret, llmpersistence.HKDFInfo)
 	if err != nil {
@@ -315,6 +320,11 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 		if err != nil {
 			return llmapp.Spending{}, err
 		}
+		reviewed, err := reviews.TokensSince(ctx, monthStart(now()))
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		month += reviewed
 		scans, average, err := analyses.TokensPerScan(ctx)
 		if err != nil {
 			return llmapp.Spending{}, err
@@ -330,6 +340,22 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 func monthStart(t time.Time) time.Time {
 	t = t.UTC()
 	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+}
+
+// termReviewEvery is how often the language model looks for new phrases to review.
+const termReviewEvery = 10 * time.Minute
+
+// judges hands the terminology context the judge the language-model settings name now.
+type judges struct {
+	llm *llmapp.Service
+}
+
+func (j judges) Current(ctx context.Context) (terminologyapp.Judge, string, error) {
+	client, provider, model, err := j.llm.Current(ctx)
+	if err != nil || client == nil {
+		return nil, "", err
+	}
+	return judge.New(client, model), llmdomain.Describe(provider, model), nil
 }
 
 // matchers hands the analysis context the matcher the language-model settings name now.

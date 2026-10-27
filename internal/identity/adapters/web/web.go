@@ -152,6 +152,7 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.AcceptTermCandidateOperation: domain.NeedAdminChange,
 	oas.RejectTermCandidateOperation: domain.NeedAdminChange,
 	oas.UndoTermDecisionOperation:    domain.NeedAdminChange,
+	oas.StartTermReviewOperation:     domain.NeedAdminChange,
 }
 
 // HandleSessionCookie resolves the session and puts the principal, and its subject, on ctx. The

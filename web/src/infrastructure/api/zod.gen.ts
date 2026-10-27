@@ -548,6 +548,28 @@ export const zTermDecision = z.object({
 });
 
 /**
+ * The term the language model would add, as the map would hold it.
+ */
+export const zTermSuggestion = z.object({
+    term: z.string().max(200),
+    language: zLanguage,
+    family: zBeltFamily,
+    tier: zIntentTier
+});
+
+/**
+ * The language model's review of a candidate. A sure verdict is also its decision; an unsure one leaves the candidate waiting for a person, with the term it suggests.
+ */
+export const zTermVerdict = z.object({
+    accept: z.boolean(),
+    sure: z.boolean(),
+    reason: z.string().max(500),
+    term: zTermSuggestion.optional(),
+    model: z.string().max(200),
+    at: z.iso.datetime({ offset: true }).max(64)
+});
+
+/**
  * A phrase finished scans found that the terminology map did not hold, with its evidence across companies and the classifier's suggestion.
  */
 export const zTermCandidate = z.object({
@@ -563,7 +585,17 @@ export const zTermCandidate = z.object({
     suggestedFamily: zBeltFamily.optional(),
     closestTerm: z.string().max(200).optional(),
     lastSeenAt: z.iso.datetime({ offset: true }).max(64),
-    decision: zTermDecision.optional()
+    decision: zTermDecision.optional(),
+    verdict: zTermVerdict.optional()
+});
+
+/**
+ * How far the language model is with the waiting candidates.
+ */
+export const zTermReviewState = z.object({
+    running: z.boolean(),
+    waiting: z.int().gte(0).lte(1000000),
+    problem: z.enum(['noModel', 'failed']).optional()
 });
 
 /**
@@ -576,11 +608,12 @@ export const zTermCandidateCounts = z.object({
 });
 
 /**
- * The candidates with one status.
+ * The candidates with one status, and how far the language model is with them.
  */
 export const zTermCandidateList = z.object({
     items: z.array(zTermCandidate).max(1000),
-    counts: zTermCandidateCounts
+    counts: zTermCandidateCounts,
+    review: zTermReviewState
 });
 
 /**
@@ -1733,6 +1766,11 @@ export const zListTermCandidatesQuery = z.object({
  * The candidates and how many have each status.
  */
 export const zListTermCandidatesResponse = zTermCandidateList;
+
+/**
+ * The review is under way.
+ */
+export const zStartTermReviewResponse = zTermReviewState;
 
 /**
  * The term as it joins the map.

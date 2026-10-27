@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import type { TermCandidate, TermCandidateList } from '../../../infrastructure/api/types.gen'
+import type { TermCandidate, TermCandidateList, TermReviewState } from '../../../infrastructure/api/types.gen'
 import { me, term } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
@@ -37,7 +37,7 @@ const accepted = candidate({
 
 type Sent = { method: string; path: string; body: unknown }
 
-function api(sent: Sent[], extra: Record<string, Handler> = {}) {
+function api(sent: Sent[], extra: Record<string, Handler> = {}, review: TermReviewState = { running: false, waiting: 0 }, pending = candidate()) {
   const record = (answer: () => Response): Handler => async (request) => {
     const text = await request.text()
     sent.push({ method: request.method, path: new URL(request.url).pathname, body: text === '' ? null : JSON.parse(text) })
@@ -47,12 +47,13 @@ function api(sent: Sent[], extra: Record<string, Handler> = {}) {
     'GET /api/v1/me': () => json(me({ isAdmin: true })),
     'GET /api/v1/admin/term-candidates': (request) => {
       const status = new URL(request.url).searchParams.get('status')
-      const items = status === 'accepted' ? [accepted] : status === 'rejected' ? [] : [candidate()]
-      return json({ items, counts } satisfies TermCandidateList)
+      const items = status === 'accepted' ? [accepted] : status === 'rejected' ? [] : [pending]
+      return json({ items, counts, review } satisfies TermCandidateList)
     },
     [`POST /api/v1/admin/term-candidates/${ID}/accept`]: record(() => json(candidate({ status: 'accepted' }))),
     [`POST /api/v1/admin/term-candidates/${ID}/reject`]: record(() => json(candidate({ status: 'rejected' }))),
     'DELETE /api/v1/admin/term-candidates/ffffffffffffffff/decision': record(() => json(candidate({ status: 'pending' }))),
+    'POST /api/v1/admin/term-candidates/review': record(() => json({ ...review, running: true }, 202)),
     ...extra,
   })
 }
@@ -170,5 +171,44 @@ describe('the term review', () => {
     const failing = await mountApp(api([], { 'GET /api/v1/admin/term-candidates': () => problem(400, 'Bad Request') }), '/settings/terms')
     expect(failing.wrapper.get('[role="alert"]').text()).toBe('Bad Request')
     expect(failing.wrapper.get('[role="group"][aria-label="Show"]').findAll('button')[0]?.text()).toBe('To review')
+  })
+
+  it('shows how far the language model is, and starts it on the waiting phrases', async () => {
+    const sent: Sent[] = []
+    const { wrapper } = await mountApp(api(sent, {}, { running: false, waiting: 3 }), '/settings/terms')
+    const status = wrapper.get('section[aria-label="The language model\'s review"]')
+    expect(status.text()).toContain('3 phrases wait for the language model.')
+    await button(wrapper, 'Review them now').trigger('click')
+    await settle()
+    expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual(['POST /api/v1/admin/term-candidates/review'])
+    wrapper.unmount()
+
+    const none = await mountApp(api([], {}, { running: false, waiting: 3, problem: 'noModel' }), '/settings/terms')
+    const link = none.wrapper.get('section[aria-label="The language model\'s review"] a')
+    expect(link.text()).toBe('Choose a model in Language models')
+    expect(link.attributes('href')).toBe('/settings')
+    expect(none.wrapper.findAll('button').some((b) => b.text() === 'Review them now')).toBe(false)
+  })
+
+  it('shows what the language model made of a phrase, and accepts its suggestion in one step', async () => {
+    const sent: Sent[] = []
+    const unsure = candidate({
+      verdict: {
+        accept: true, sure: false, reason: 'Could go either way.', model: 'claude-haiku-5-5', at: '2026-10-27T09:00:00Z',
+        term: { term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'application' },
+      },
+    })
+    const { wrapper } = await mountApp(api(sent, {}, { running: false, waiting: 0 }, unsure), '/settings/terms')
+    const item = wrapper.get('ul[aria-label="Candidates"] li')
+    expect(item.text()).toContain('The language model was unsure. Could go either way.')
+    expect(item.text()).toContain('It suggests “spiral freezer belt”, English, Application,')
+    await button(wrapper, 'Accept as suggested').trigger('click')
+    await settle()
+    expect(sent).toEqual([
+      {
+        method: 'POST', path: `/api/v1/admin/term-candidates/${ID}/accept`,
+        body: { term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'application', usedBy: ['Twentebelt', 'Märtens'] },
+      },
+    ])
   })
 })

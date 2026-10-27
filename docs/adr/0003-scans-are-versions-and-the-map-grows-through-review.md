@@ -22,7 +22,7 @@ the results and the history. An added company is deleted with its scans; a resea
 the desk research's record, so an administrator's change to it (name, website, archived) is stored
 beside it in `company_overrides`, and removing one archives it instead of deleting anything.
 
-**The map grows through a review queue, not by itself.** A phrase a finished scan found that was
+**The map grows through a review queue, not by itself.** (ADR-0005 lets a language model decide the candidates it is sure about.) A phrase a finished scan found that was
 not one of the map's spellings is a candidate, keyed by its folded phrase and aggregated across
 companies with its evidence (companies, scans, languages, best score) and the classifier's
 suggested family and tier. An administrator accepts it, writing the term, language, family, tier

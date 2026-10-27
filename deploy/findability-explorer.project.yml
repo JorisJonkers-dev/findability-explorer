@@ -93,10 +93,12 @@ applications:
             rotation: { tolerates: restart }
 
         # A crawl holds up to 30 pages of 2 MiB each in memory while it extracts; GOMEMLIMIT in the
-        # env file keeps the Go heap under this.
+        # env file keeps the Go heap under this. It runs at the site of its database, because a page
+        # makes many queries and each one crossing between sites made the app slow.
         placement:
           memory: 256Mi
           cpu: 100m
+          site: frankfurt
 
         probes:
           readiness: { path: /readyz, port: 8080 } # fails while Postgres does not answer

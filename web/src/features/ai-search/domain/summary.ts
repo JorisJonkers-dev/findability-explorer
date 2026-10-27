@@ -61,12 +61,12 @@ export function linesOf(summary: Pick<AiSearchSummary, 'followed' | 'trend'>, to
 }
 
 /** Tribelt's share in the newest run and in the first one the trend shows, or undefined before any run. */
-export function tribeltShares(summary: Pick<AiSearchSummary, 'followed' | 'trend'>): { now: number; first: number } | undefined {
+export function tribeltShares(summary: Pick<AiSearchSummary, 'followed' | 'trend'>): { now: number; first: number; firstAt: string } | undefined {
   const i = summary.followed.findIndex((c) => c.role === 'tribelt')
   const first = summary.trend.at(0)
   const last = summary.trend.at(-1)
   if (i < 0 || !first || !last) return undefined
-  return { now: last.shares[i] ?? 0, first: first.shares[i] ?? 0 }
+  return { now: last.shares[i] ?? 0, first: first.shares[i] ?? 0, firstAt: first.runStartedAt }
 }
 
 /** The line beside the big figure: how it moved since the first run shown. */
@@ -74,7 +74,7 @@ export function trendLine(summary: Pick<AiSearchSummary, 'followed' | 'trend'>):
   const t = tribeltShares(summary)
   if (!t) return 'No Prompt run has finished yet.'
   if (summary.trend.length === 1) return 'of the answers in the first Prompt run'
-  const first = shortDate(summary.trend[0]?.runStartedAt ?? '')
+  const first = shortDate(t.firstAt)
   if (t.now === t.first) return `of the answers in the newest run, the same as on ${first}`
   return `of the answers in the newest run, ${t.now > t.first ? 'up' : 'down'} from ${pct(t.first)} on ${first}`
 }
@@ -100,7 +100,7 @@ export const ACCESS: Record<CrawlerAccess | 'unknown', { text: string; mark: str
 /** Names as a sentence: "A", "A and B", "A, B and 3 more". */
 export function nameList(names: readonly string[], shown = 3): string {
   if (names.length <= 1) return names.join('')
-  if (names.length <= shown) return `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`
+  if (names.length <= shown) return `${names.slice(0, -1).join(', ')} and ${names.slice(-1).join('')}`
   return `${names.slice(0, shown).join(', ')} and ${String(names.length - shown)} more`
 }
 

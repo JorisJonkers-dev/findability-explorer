@@ -6,6 +6,8 @@ import type {
   BotRule,
   Competitor,
   Me,
+  PromptAnswer,
+  PromptExtraction,
   PromptRun,
   PromptTestResults,
   Term,
@@ -212,6 +214,49 @@ export function promptResults(overrides: Partial<PromptTestResults> = {}): Promp
     wrongClaims: [
       { answerId: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', runId: RUN_ID, at: '2026-11-01T06:10:00Z', provider: 'openai', model: 'openai/gpt-oss-20b', promptId: 'eyelink-supplier-twente', mode: 'knowledge', correctness: 'wrong', claim: 'Tribelt is in Hengelo.' },
     ],
+    ...overrides,
+  }
+}
+
+let answers = 0
+
+/** A read answer of the run; companies are the names in order, a known one as "Name:id". */
+export function promptAnswer(
+  overrides: Partial<PromptAnswer> = {},
+  companies: string[] = ['Twentebelt:twentebelt', 'Tribelt:tribelt'],
+  extraction: Partial<PromptExtraction> = {},
+): PromptAnswer {
+  return {
+    id: `00000000-0000-4000-8000-${String((answers += 1)).padStart(12, '0')}`,
+    promptId: 'eyelink-application-twente',
+    family: 'eyelink',
+    kind: 'application',
+    scope: 'twente',
+    language: 'nl',
+    prompt: 'We bouwen een doorloopoven voor een industriële bakkerij. Welke fabrikanten in de regio Twente?',
+    promptSetVersion: 2,
+    provider: 'openai',
+    model: 'openai/gpt-oss-20b',
+    mode: 'knowledge',
+    text: 'Twentebelt in Hengelo and Tribelt in Haaksbergen make eyelink belts.',
+    citations: [],
+    at: '2026-11-01T06:10:00Z',
+    costUsd: 0.0012,
+    inputTokens: 900,
+    outputTokens: 300,
+    extraction: {
+      failed: false,
+      companies: companies.map((c, i) => {
+        const [name, id] = c.split(':') as [string, string | undefined]
+        return { name, position: i + 1, ...(id ? { competitorId: id } : {}) }
+      }),
+      addresses: [],
+      namesTribelt: companies.some((c) => c.endsWith(':tribelt')),
+      citesTribelt: false,
+      wrongClaims: [],
+      costUsd: 0.0002,
+      ...extraction,
+    },
     ...overrides,
   }
 }

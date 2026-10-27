@@ -20,13 +20,12 @@ export function usePreviousPath() {
 }
 
 /**
- * Goes back to the poster: back through history when the poster opened this view, so the back
- * button of the browser and of the view agree; otherwise to the poster as a new page.
+ * Goes back to the poster the current view was zoomed into from, back through history, so the
+ * back button of the browser and of the view agree. Only a view reached from the poster offers it.
  */
 export function useBackToOverview(): () => void {
   const router = useRouter()
   return () => {
-    if (previous.value === '/') router.back()
-    else void router.push('/')
+    router.back()
   }
 }

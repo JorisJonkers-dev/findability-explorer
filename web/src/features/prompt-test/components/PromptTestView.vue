@@ -1,105 +1,162 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
-import ProgressBar from '../../../shared/ui/ProgressBar.vue'
-import SectionHeading from '../../../shared/ui/SectionHeading.vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import type { PromptMode, PromptScope } from '../../../infrastructure/api/types.gen'
+import { saveText } from '../../../shared/download'
+import { percent } from '../../../shared/percent'
+import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import SectionView from '../../shell/components/SectionView.vue'
-import { AI_SEARCH_TABS } from '../../shell/domain/sections'
 import { useMe } from '../../shell/composables/useMe'
-import { usePromptResults } from '../composables/usePromptTest'
-import { costLabel, latestRun, modeName, progressLabel, providerName, ranking, runDate, sharesLine, statusName, tally } from '../domain/results'
-import AnswerBrowser from './AnswerBrowser.vue'
-import ShareTable from './ShareTable.vue'
-import TrendTable from './TrendTable.vue'
+import { AI_SEARCH_TABS } from '../../shell/domain/sections'
+import { usePromptAnswers, usePromptResults, useStartRun } from '../composables/usePromptTest'
+import { byKey, gridHeadline, headlineNumbers, MODE_FILTERS, mostNamed, parseFilter, SCOPE_FILTERS, toCsv } from '../domain/grid'
+import { costLabel, latestRun, progressLabel, runDate, shareLabel, statusName } from '../domain/results'
+import AnswerDetail from './AnswerDetail.vue'
+import PromptGrid from './PromptGrid.vue'
 
-const { results, isLoading, error } = usePromptResults()
+const route = useRoute()
+const router = useRouter()
 const { isAdmin } = useMe()
-const run = computed(() => latestRun(results.value))
-const running = computed(() => results.value?.runs.find((r) => r.status === 'running'))
-const competitors = computed(() => (results.value ? ranking(results.value.mentions).slice(0, 15) : []))
+const { results, isLoading, error } = usePromptResults()
+const { competitors } = useCompetitors()
+const { isStarting, notice: startNotice, error: startError, start } = useStartRun()
+
+// The run, the filters and the picked answer live in the address, so a reload or a link shows the same.
+const run = computed(() => results.value?.runs.find((r) => r.id === route.query.run) ?? latestRun(results.value))
+const mode = computed(() => parseFilter<PromptMode>(route.query.mode, MODE_FILTERS))
+const scope = computed(() => parseFilter<PromptScope>(route.query.scope, SCOPE_FILTERS))
+const selected = computed(() => (typeof route.query.answer === 'string' ? route.query.answer : undefined))
+const { answers: list, isLoading: answersLoading, error: answersError } = usePromptAnswers(
+  computed(() => run.value?.id),
+  computed(() => ({})),
+)
+const answers = computed(() => list.value?.items ?? [])
+const picked = computed(() => (selected.value ? byKey(answers.value).get(selected.value) : undefined))
+
+function nameOf(id: string): string {
+  return competitors.value.find((c) => c.id === id)?.name ?? id
+}
+const title = computed(() => gridHeadline(answers.value, nameOf))
+const numbers = computed(() => headlineNumbers(answers.value))
+const named = computed(() => mostNamed(answers.value))
+const most = computed(() => Math.max(...named.value.map((n) => n.share), 0.01))
+
+function setQuery(change: Record<string, string | undefined>): void {
+  const query = { ...route.query, ...change }
+  for (const [k, v] of Object.entries(query)) if (v === undefined || v === 'all') Reflect.deleteProperty(query, k)
+  void router.replace({ query })
+}
+
+function download(): void {
+  if (run.value) saveText(`prompt-run-${run.value.startedAt.slice(0, 10)}.csv`, toCsv(answers.value))
+}
 </script>
 
 <template>
-  <SectionView
-    :tabs="AI_SEARCH_TABS"
-    section="ai-search"
-    title="Do AI assistants name Tribelt?"
-    :source="['Prompt runs: live, from this app, through OpenRouter', 'The October pilot by hand, as the first point']"
-  >
-    <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] stage:gap-x-24 stage:gap-y-10 stage:overflow-y-auto">
-      <p class="m-0 max-w-4xl text-ink-2 stage:col-span-2 stage:max-w-none stage:text-[30px]">
-        20 buyer questions in general terms, one per belt family describing the job a belt has to do, asked for Twente and
-        in Dutch, German and English, of the cheapest model of each large provider, from its own knowledge and with web
-        search. One fixed model reads every answer.
-        <RouterLink to="/ai-search" class="font-medium underline underline-offset-4">Back to AI search</RouterLink>
+  <SectionView section="ai-search" :title="title" :tabs="AI_SEARCH_TABS">
+    <template v-if="results && run" #aside>
+      <div class="flex flex-wrap items-center gap-3 stage:justify-end stage:gap-4">
+        <label class="inline-flex items-center gap-2 text-sm font-medium stage:gap-3 stage:text-[24px]">
+          Run
+          <select
+            :value="run.id"
+            class="min-h-11 rounded-lg border-2 border-silver bg-white px-3 stage:min-h-16 stage:px-5 stage:text-[24px]"
+            @change="setQuery({ run: ($event.target as HTMLSelectElement).value, answer: undefined })"
+          >
+            <option v-for="r in results.runs" :key="r.id" :value="r.id">{{ runDate(r) }} ({{ statusName(r.status).toLowerCase() }})</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          class="inline-flex min-h-11 items-center rounded-full border-2 border-silver bg-white px-4 text-sm font-medium hover:border-black stage:min-h-16 stage:px-7 stage:text-[24px]"
+          :disabled="answers.length === 0"
+          @click="download"
+        >
+          Download as CSV
+        </button>
+        <button
+          v-if="isAdmin"
+          type="button"
+          class="inline-flex min-h-11 items-center rounded-full border-0 bg-orange px-4 text-sm font-semibold text-black hover:bg-orange-soft disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
+          :disabled="isStarting || results.runs.some((r) => r.status === 'running')"
+          @click="start"
+        >
+          Run now
+        </button>
+      </div>
+      <p class="m-0 text-sm text-muted stage:text-right stage:text-[24px]">
+        {{ progressLabel(run) }}. {{ statusName(run.status) }}. Cost {{ costLabel(run.costUsd) }}.
       </p>
-      <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
-      <p v-else-if="isLoading" class="m-0 text-muted">Loading the results…</p>
-      <template v-else-if="results">
-        <section aria-labelledby="run-title" class="flex flex-col gap-5 stage:gap-8">
-          <SectionHeading id="run-title">{{ run ? `The run of ${runDate(run)}` : 'No Prompt run yet' }}</SectionHeading>
-          <div v-if="running" class="flex flex-col gap-2" data-testid="run-progress">
-            <ProgressBar
-              :fraction="(running.answered + running.failed) / Math.max(running.tasks, 1)"
-              label="Prompt run"
-              :text="`${progressLabel(running)} · ${costLabel(running.costUsd)} so far`"
-            />
-            <ul aria-label="Per model" class="m-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 text-sm text-ink-2 stage:text-[24px]">
-              <li v-for="p in running.byProvider" :key="p.provider">{{ providerName(p.provider) }}: {{ p.answered }}</li>
-            </ul>
+      <p v-if="startNotice" class="m-0 text-sm font-medium stage:text-[24px]" aria-live="polite">{{ startNotice }}</p>
+      <p v-if="startError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ startError }}</p>
+    </template>
+
+    <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
+    <p v-else-if="isLoading" class="m-0 text-muted">Loading the results…</p>
+    <div v-else-if="!run" class="flex flex-col gap-4">
+      <p class="m-0 text-ink-2 stage:text-[30px]">
+        No Prompt run yet. The first starts on the schedule, or when an administrator starts one<template v-if="isAdmin">
+          in <RouterLink to="/settings/prompt-test" class="underline underline-offset-4">the Prompt test settings</RouterLink></template>.
+      </p>
+    </div>
+    <div
+      v-else
+      class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] stage:gap-24"
+    >
+      <section aria-labelledby="grid-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
+        <div class="flex flex-col gap-1">
+          <h2 id="grid-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Every question and answer</h2>
+          <span class="text-ink-2 stage:text-[26px]">Where each answer names Tribelt. Pick a square to read the answer.</span>
+        </div>
+        <p v-if="answersError" role="alert" class="m-0 text-orange-ink">{{ answersError }}</p>
+        <p v-else-if="answersLoading" class="m-0 text-muted">Loading the answers…</p>
+        <PromptGrid
+          v-else
+          :run="run"
+          :answers="answers"
+          :mode="mode"
+          :scope="scope"
+          :selected="selected"
+          @mode="(m) => setQuery({ mode: m })"
+          @scope="(s) => setQuery({ scope: s })"
+          @select="(key) => setQuery({ answer: key })"
+        />
+      </section>
+
+      <aside aria-label="Results and the selected answer" class="flex flex-col gap-6 stage:min-h-0 stage:gap-10 stage:overflow-y-auto">
+        <dl class="m-0 grid grid-cols-3 gap-3 stage:gap-6">
+          <div class="flex flex-col gap-1">
+            <dt class="order-2 text-sm text-ink-2 stage:text-[24px]">of answers name Tribelt</dt>
+            <dd class="order-1 m-0 font-display text-3xl font-semibold text-orange-ink stage:text-[88px]">{{ shareLabel(numbers.named, numbers.counted) }}</dd>
           </div>
-          <p v-if="!run" class="m-0 text-ink-2">
-            The first run starts on the schedule, or when an administrator starts one in
-            <RouterLink v-if="isAdmin" to="/settings/prompt-test" class="underline underline-offset-4">the Prompt test's settings</RouterLink><template v-else>Settings</template>.
-          </p>
-          <template v-else>
-            <p class="m-0 text-sm text-ink-2 stage:text-[26px]">
-              {{ statusName(run.status) }} · {{ progressLabel(run) }} · {{ costLabel(run.costUsd) }} · prompt set {{ run.promptSetVersion }},
-              fact sheet {{ run.factSheetVersion }}
-            </p>
-            <dl class="m-0 grid grid-cols-1 gap-4 sm:grid-cols-2 stage:gap-8">
-              <div v-for="mode in (['knowledge', 'web'] as const)" :key="mode" class="flex flex-col gap-1 rounded-2xl bg-mist p-4 stage:p-8">
-                <dt class="text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[24px]">{{ modeName(mode) }}</dt>
-                <dd class="m-0 font-display text-2xl font-semibold stage:text-[56px]">{{ sharesLine(tally(run.cells, { mode })) }}</dd>
-              </div>
-            </dl>
-            <ShareTable :run="run" />
-          </template>
-        </section>
-
-        <section aria-labelledby="trend-title" class="flex flex-col gap-5 stage:gap-8">
-          <SectionHeading id="trend-title">Across runs</SectionHeading>
-          <TrendTable :runs="results.runs" />
-        </section>
-
-        <section v-if="run" aria-labelledby="ranking-title" class="flex flex-col gap-4 stage:gap-6">
-          <SectionHeading id="ranking-title">Who the answers name instead</SectionHeading>
-          <p v-if="competitors.length === 0" class="m-0 text-ink-2">The answers name no competitor on the list.</p>
-          <ol v-else aria-label="Competitors named" class="m-0 flex flex-col gap-1 pl-6 stage:text-[28px]">
-            <li v-for="m in competitors" :key="m.competitorId">
-              <RouterLink :to="{ path: '/competitors', query: { company: m.competitorId } }">{{ m.name }}</RouterLink>
-              <span class="text-ink-2"> · {{ m.answers }} answers, first in {{ m.first }}</span>
-            </li>
-          </ol>
-          <RouterLink v-if="isAdmin" to="/settings/candidates" class="self-start text-sm font-medium stage:text-[24px]">Companies named that are not on the list</RouterLink>
-        </section>
-
-        <section aria-labelledby="claims-title" class="flex flex-col gap-4 stage:gap-6">
-          <SectionHeading id="claims-title">What they get wrong about Tribelt</SectionHeading>
-          <p v-if="results.wrongClaims.length === 0" class="m-0 text-ink-2">No answer said anything about Tribelt that the fact sheet contradicts.</p>
-          <ul v-else aria-label="Wrong claims" class="m-0 flex list-none flex-col gap-2 p-0 stage:text-[26px]">
-            <li v-for="c in results.wrongClaims.slice(0, 20)" :key="`${c.answerId}-${c.claim}`" class="flex flex-col">
-              <span class="font-medium">“{{ c.claim }}”</span>
-              <span class="text-xs text-muted stage:text-[20px]">{{ c.model }} · {{ modeName(c.mode) }} · {{ runDate({ startedAt: c.at }) }}</span>
-            </li>
-          </ul>
-        </section>
-
-        <section v-if="run" aria-labelledby="answers-title" class="flex flex-col gap-5 stage:col-span-2 stage:gap-8">
-          <SectionHeading id="answers-title">The answers</SectionHeading>
-          <AnswerBrowser :key="run.id" :run="run" />
-        </section>
-      </template>
+          <div class="flex flex-col gap-1">
+            <dt class="order-2 text-sm text-ink-2 stage:text-[24px]">when the buyer asks for Twente</dt>
+            <dd class="order-1 m-0 font-display text-3xl font-semibold stage:text-[88px]">{{ shareLabel(numbers.twente, numbers.twenteCounted) }}</dd>
+          </div>
+          <div class="flex flex-col gap-1">
+            <dt class="order-2 text-sm text-ink-2 stage:text-[24px]">of {{ numbers.web }} web answers cite tribelt.nl</dt>
+            <dd class="order-1 m-0 font-display text-3xl font-semibold stage:text-[88px]">{{ numbers.cited }}</dd>
+          </div>
+        </dl>
+        <figure class="m-0 flex flex-col gap-2 stage:gap-3">
+          <figcaption class="flex flex-col">
+            <span class="font-semibold stage:text-[32px]">Who the answers name</span>
+            <span class="text-sm text-muted stage:text-[22px]">Share of the {{ numbers.counted }} answers that name each company</span>
+          </figcaption>
+          <div
+            v-for="n in named"
+            :key="n.id"
+            class="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3rem] items-center gap-3 stage:grid-cols-[300px_minmax(0,1fr)_80px] stage:gap-4"
+          >
+            <span class="truncate text-sm stage:text-[24px]" :class="n.tribelt ? 'font-bold text-orange-ink' : ''">{{ nameOf(n.id) }}</span>
+            <span aria-hidden="true" class="relative h-3 bg-white stage:h-5">
+              <span class="absolute inset-y-0 left-0" :class="n.tribelt ? 'bg-orange' : 'bg-blue-grey'" :style="{ width: percent(n.share / most) }"></span>
+            </span>
+            <span class="text-right text-sm font-semibold stage:text-[24px]">{{ Math.round(n.share * 100) }}%</span>
+          </div>
+        </figure>
+        <AnswerDetail :answer="picked" :competitors="competitors" />
+      </aside>
     </div>
   </SectionView>
 </template>

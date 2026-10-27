@@ -50,11 +50,12 @@ func promptAnswers() []domain.Answer {
 	return []domain.Answer{
 		{
 			ID: uuid.New(), RunID: runID, Prompt: set.Prompts[0], PromptSetVersion: 1, Provider: "google", Model: "google/gemini", Mode: domain.ModeWeb,
-			Reply: domain.Reply{Text: "Tribelt and Twentebelt.", Citations: []string{"https://www.tribelt.nl/"}, Cost: 1_500_000}, At: answered,
+			Reply: domain.Reply{Text: "Tribelt and Twentebelt.", Citations: []string{"https://www.tribelt.nl/"}, Cost: 1_500_000, InputTokens: 100, OutputTokens: 40}, At: answered,
 			Extraction: &domain.Extraction{
 				Companies:    []domain.Company{{Name: "Tribelt", CompetitorID: "tribelt", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
 				Addresses:    []string{"https://www.tribelt.nl/"},
 				NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."}, Cost: 500_000,
+				InputTokens: 300, OutputTokens: 20,
 			},
 		},
 		{ID: uuid.New(), RunID: runID, Prompt: set.Prompts[1], PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeKnowledge, Failure: "Rate limited.", At: answered},
@@ -159,7 +160,7 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	}
 	first := items[0].(map[string]any)
 	x := first["extraction"].(map[string]any)
-	if first["costUsd"].(float64) != 2 || first["kind"] != "application" || x["correctness"] != "wrong" ||
+	if first["costUsd"].(float64) != 2 || first["inputTokens"].(float64) != 400 || first["outputTokens"].(float64) != 60 || first["kind"] != "application" || x["correctness"] != "wrong" ||
 		x["companies"].([]any)[0].(map[string]any)["competitorId"] != "tribelt" || x["companies"].([]any)[1].(map[string]any)["url"] != "https://ashworth.com" {
 		t.Errorf("answer = %v", first)
 	}

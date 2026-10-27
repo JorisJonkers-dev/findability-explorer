@@ -10022,6 +10022,14 @@ func (s *PromptAnswer) encodeFields(e *jx.Encoder) {
 		s.CostUsd.Encode(e)
 	}
 	{
+		e.FieldStart("inputTokens")
+		e.Int64(s.InputTokens)
+	}
+	{
+		e.FieldStart("outputTokens")
+		e.Int64(s.OutputTokens)
+	}
+	{
 		if s.Extraction.Set {
 			e.FieldStart("extraction")
 			s.Extraction.Encode(e)
@@ -10029,7 +10037,7 @@ func (s *PromptAnswer) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPromptAnswer = [17]string{
+var jsonFieldsNameOfPromptAnswer = [19]string{
 	0:  "id",
 	1:  "promptId",
 	2:  "family",
@@ -10046,7 +10054,9 @@ var jsonFieldsNameOfPromptAnswer = [17]string{
 	13: "failure",
 	14: "at",
 	15: "costUsd",
-	16: "extraction",
+	16: "inputTokens",
+	17: "outputTokens",
+	18: "extraction",
 }
 
 // Decode decodes PromptAnswer from json.
@@ -10246,6 +10256,30 @@ func (s *PromptAnswer) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"costUsd\"")
 			}
+		case "inputTokens":
+			requiredBitSet[2] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int64()
+				s.InputTokens = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"inputTokens\"")
+			}
+		case "outputTokens":
+			requiredBitSet[2] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.OutputTokens = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"outputTokens\"")
+			}
 		case "extraction":
 			if err := func() error {
 				s.Extraction.Reset()
@@ -10268,7 +10302,7 @@ func (s *PromptAnswer) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11011111,
-		0b00000000,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

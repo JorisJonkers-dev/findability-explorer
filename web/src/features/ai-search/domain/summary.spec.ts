@@ -57,7 +57,7 @@ describe("Tribelt's figure", () => {
   it('compares the newest run with the first one shown', () => {
     expect(pct(0.236)).toBe('24%')
     expect(shortDate('2026-10-26T06:00:00Z')).toBe('26 Oct')
-    expect(tribeltShares({ followed, trend })).toEqual({ now: 0.24, first: 0.14 })
+    expect(tribeltShares({ followed, trend })).toEqual({ now: 0.24, first: 0.14, firstAt: '2026-10-26T06:00:00Z' })
     expect(trendLine({ followed, trend })).toBe('of the answers in the newest run, up from 14% on 26 Oct')
     expect(trendLine({ followed, trend: [...trend].reverse() })).toBe('of the answers in the newest run, down from 24% on 2 Nov')
     expect(trendLine({ followed, trend: [trend[0], { ...trend[0], runStartedAt: '2026-11-02T06:00:00Z' }] as AiSearchSummary['trend'] })).toBe(
@@ -70,7 +70,7 @@ describe("Tribelt's figure", () => {
     expect(tribeltShares({ followed, trend: [] })).toBeUndefined()
     expect(tribeltShares({ followed: followed.slice(1), trend })).toBeUndefined()
     expect(trendLine({ followed, trend: [] })).toBe('No Prompt run has finished yet.')
-    expect(tribeltShares({ followed, trend: [{ runStartedAt: '', shares: [] }] })).toEqual({ now: 0, first: 0 })
+    expect(tribeltShares({ followed, trend: [{ runStartedAt: '', shares: [] }] })).toEqual({ now: 0, first: 0, firstAt: '' })
   })
 })
 

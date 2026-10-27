@@ -269,13 +269,15 @@ func toAnswer(a domain.Answer) oas.PromptAnswer {
 		ID: a.ID, PromptId: a.Prompt.ID, Family: oas.PromptFamily(a.Prompt.Family), Kind: oas.PromptKind(a.Prompt.Kind),
 		Scope: oas.PromptScope(a.Prompt.Scope), Language: a.Prompt.Language, Prompt: a.Prompt.Text,
 		PromptSetVersion: int32(a.PromptSetVersion), Provider: a.Provider, Model: a.Model, Mode: oas.PromptMode(a.Mode), //nolint:gosec // small versions
-		Text: a.Text, Citations: orEmpty(a.Citations), At: a.At,
+		Text: a.Text, Citations: orEmpty(a.Citations), At: a.At, InputTokens: a.InputTokens, OutputTokens: a.OutputTokens,
 	}
 	if a.Failure != "" {
 		out.Failure = oas.NewOptString(a.Failure)
 	}
 	if x := a.Extraction; x != nil {
 		cost += x.Cost
+		out.InputTokens += x.InputTokens
+		out.OutputTokens += x.OutputTokens
 		e := oas.PromptExtraction{
 			Failed: x.Failed, Companies: make([]oas.PromptNamedCompany, 0, len(x.Companies)), Addresses: orEmpty(x.Addresses),
 			NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, WrongClaims: orEmpty(x.WrongClaims), CostUsd: oas.Usd(x.Cost.Dollars()),

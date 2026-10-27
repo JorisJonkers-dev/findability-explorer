@@ -1887,6 +1887,14 @@ export type PromptAnswer = {
      */
     at: string;
     costUsd: Usd;
+    /**
+     * The tokens asking and reading the answer read.
+     */
+    inputTokens: number;
+    /**
+     * The tokens asking and reading the answer wrote.
+     */
+    outputTokens: number;
     extraction?: PromptExtraction;
 };
 

@@ -5850,9 +5850,13 @@ type PromptAnswer struct {
 	// Why the model gave no answer.
 	Failure OptString `json:"failure"`
 	// When it answered.
-	At         time.Time           `json:"at"`
-	CostUsd    Usd                 `json:"costUsd"`
-	Extraction OptPromptExtraction `json:"extraction"`
+	At      time.Time `json:"at"`
+	CostUsd Usd       `json:"costUsd"`
+	// The tokens asking and reading the answer read.
+	InputTokens int64 `json:"inputTokens"`
+	// The tokens asking and reading the answer wrote.
+	OutputTokens int64               `json:"outputTokens"`
+	Extraction   OptPromptExtraction `json:"extraction"`
 }
 
 // GetID returns the value of ID.
@@ -5933,6 +5937,16 @@ func (s *PromptAnswer) GetAt() time.Time {
 // GetCostUsd returns the value of CostUsd.
 func (s *PromptAnswer) GetCostUsd() Usd {
 	return s.CostUsd
+}
+
+// GetInputTokens returns the value of InputTokens.
+func (s *PromptAnswer) GetInputTokens() int64 {
+	return s.InputTokens
+}
+
+// GetOutputTokens returns the value of OutputTokens.
+func (s *PromptAnswer) GetOutputTokens() int64 {
+	return s.OutputTokens
 }
 
 // GetExtraction returns the value of Extraction.
@@ -6018,6 +6032,16 @@ func (s *PromptAnswer) SetAt(val time.Time) {
 // SetCostUsd sets the value of CostUsd.
 func (s *PromptAnswer) SetCostUsd(val Usd) {
 	s.CostUsd = val
+}
+
+// SetInputTokens sets the value of InputTokens.
+func (s *PromptAnswer) SetInputTokens(val int64) {
+	s.InputTokens = val
+}
+
+// SetOutputTokens sets the value of OutputTokens.
+func (s *PromptAnswer) SetOutputTokens(val int64) {
+	s.OutputTokens = val
 }
 
 // SetExtraction sets the value of Extraction.

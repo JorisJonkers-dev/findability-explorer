@@ -3769,7 +3769,7 @@ components:
       description: One model's answer to one prompt, with how it was read.
       type: object
       additionalProperties: false
-      required: [id, promptId, family, kind, scope, language, prompt, promptSetVersion, provider, model, mode, text, citations, at, costUsd]
+      required: [id, promptId, family, kind, scope, language, prompt, promptSetVersion, provider, model, mode, text, citations, at, costUsd, inputTokens, outputTokens]
       properties:
         id:
           type: string
@@ -3843,6 +3843,20 @@ components:
           example: "2026-11-01T06:10:00Z"
         costUsd:
           $ref: "#/components/schemas/Usd"
+        inputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000
+          description: The tokens asking and reading the answer read.
+          example: 1840
+        outputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000
+          description: The tokens asking and reading the answer wrote.
+          example: 612
         extraction:
           $ref: "#/components/schemas/PromptExtraction"
     PromptAnswerList:

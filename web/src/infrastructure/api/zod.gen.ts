@@ -1129,6 +1129,8 @@ export const zPromptAnswer = z.object({
     failure: z.string().max(300).optional(),
     at: z.iso.datetime({ offset: true }).max(64),
     costUsd: zUsd,
+    inputTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000)),
+    outputTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000)),
     extraction: zPromptExtraction.optional()
 });
 

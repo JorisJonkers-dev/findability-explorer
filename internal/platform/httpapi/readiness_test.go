@@ -5,11 +5,44 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
+	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 )
+
+func (a *analyses) StartReadinessCheck(context.Context) (analysisapp.ReadinessCheck, error) {
+	if a.checkErr != nil {
+		return analysisapp.ReadinessCheck{}, a.checkErr
+	}
+	a.check = analysisapp.ReadinessCheck{Running: true, Total: 40}
+	return a.check, nil
+}
+
+func (a *analyses) ReadinessCheckState() analysisapp.ReadinessCheck { return a.check }
+
+func TestStartReadinessCheck(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	if r := call(t, srv, http.MethodPost, "/api/v1/admin/readiness-checks", "", true); r.code != http.StatusForbidden {
+		t.Fatalf("a non-admin checking: status %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPost, "/api/v1/admin/readiness-checks", "", "admin")
+	if r.code != http.StatusAccepted || r.body["running"] != true || r.body["total"].(float64) != 40 {
+		t.Fatalf("check = %d %v", r.code, r.body)
+	}
+	a.check = analysisapp.ReadinessCheck{Checked: 39, Failed: 1, Total: 40}
+	table := call(t, srv, http.MethodGet, "/api/v1/ai-readiness", "", true)
+	if c := table.body["check"].(map[string]any); c["running"] != false || c["checked"].(float64) != 39 || c["failed"].(float64) != 1 {
+		t.Errorf("table's check = %v", c)
+	}
+	a.checkErr = errors.New("database down")
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/readiness-checks", "", "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("failing check: status %d", r.code)
+	}
+}
 
 func (a *analyses) ReadinessTable(context.Context) ([]domain.ReadinessRow, error) {
 	return a.readinessRows, a.readinessErr
@@ -36,6 +69,7 @@ func readiness() domain.Readiness {
 func TestAIReadinessTable(t *testing.T) {
 	scan := done()
 	rd := readiness()
+	rd.CheckedAt = time.Date(2026, 10, 27, 18, 30, 0, 0, time.UTC)
 	scan.Readiness = &rd
 	a := &analyses{readinessRows: []domain.ReadinessRow{
 		{Company: domain.Company{ID: "tribelt", Name: "Tribelt B.V.", Role: domain.RoleTribelt}, Scan: &scan},
@@ -53,6 +87,9 @@ func TestAIReadinessTable(t *testing.T) {
 	gpt := bots[5].(map[string]any)
 	if tribelt["role"] != "tribelt" || got["robots"] != "found" || gpt["bot"] != "GPTBot" || gpt["access"] != "blocked" || gpt["followsAdvice"] != false {
 		t.Errorf("tribelt = %v", tribelt)
+	}
+	if got["checkedAt"] != "2026-10-27T18:30:00Z" {
+		t.Errorf("checkedAt = %v", got["checkedAt"])
 	}
 	if got["stack"].(map[string]any)["cms"] != "WordPress" || got["stack"].(map[string]any)["seoPlugin"] != nil || got["gaps"].(float64) != 8 {
 		t.Errorf("stack and gaps = %v %v", got["stack"], got["gaps"])

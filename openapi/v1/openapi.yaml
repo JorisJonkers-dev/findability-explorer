@@ -549,6 +549,30 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/readiness-checks:
+    post:
+      operationId: startReadinessCheck
+      summary: Check every scanned company's AI readiness again
+      description: >-
+        Administrators only. In the background, reads the AI readiness files of each company's
+        newest scan's site again (robots.txt, the sitemaps, llms.txt, llms-full.txt, the home page
+        and its Markdown twin) and records what they say on that scan, dated. It crawls no pages
+        and asks no language model, so it costs nothing. A company whose scan is still queued or
+        running is left out. Returns the check's state; running already is no error.
+      tags: [admin]
+      responses:
+        "202":
+          description: The check is under way.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessCheckState"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/rescans:
     post:
       operationId: startRescans
@@ -3389,6 +3413,14 @@ components:
       additionalProperties: false
       required: [robots, bots, sitemap, llmsTxt, llmsFullTxt, markdown, homeRead, structuredData, languages, stack, advice, gaps]
       properties:
+        checkedAt:
+          type: string
+          format: date-time
+          maxLength: 40
+          description: >-
+            When an administrator checked it again after its scan, without a crawl; absent when
+            the scan itself read it.
+          example: "2026-10-27T18:30:00Z"
         robots:
           $ref: "#/components/schemas/RobotsStatus"
         bots:
@@ -4153,7 +4185,7 @@ components:
       description: Every company's AI readiness, Tribelt and the mirror first.
       type: object
       additionalProperties: false
-      required: [items]
+      required: [items, check]
       properties:
         items:
           type: array
@@ -4161,6 +4193,41 @@ components:
           description: The rows.
           items:
             $ref: "#/components/schemas/AiReadinessRow"
+        check:
+          $ref: "#/components/schemas/ReadinessCheckState"
+    ReadinessCheckState:
+      description: >-
+        How far checking every scanned company's AI readiness again has come, or how the last check
+        ended; all zero when none ran since the server started.
+      type: object
+      additionalProperties: false
+      required: [running, checked, failed, total]
+      properties:
+        running:
+          type: boolean
+          description: Whether a check runs now.
+          example: true
+        checked:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many sites it has done, of total.
+          example: 12
+        failed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many of those could not be read or recorded; they keep what their scan recorded.
+          example: 1
+        total:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many sites it checks.
+          example: 40
     ReadinessChange:
       description: >-
         One field of AI readiness that differs between two scans: a crawler (bot:GPTBot), robots,

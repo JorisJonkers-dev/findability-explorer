@@ -147,7 +147,10 @@ func (*AddLlmCredentialUnprocessableEntity) addLlmCredentialRes() {}
 // crawl, held against the report's recommendations.
 // Ref: #/components/schemas/AiReadiness
 type AiReadiness struct {
-	Robots RobotsStatus `json:"robots"`
+	// When an administrator checked it again after its scan, without a crawl; absent when the scan itself
+	// read it.
+	CheckedAt OptDateTime  `json:"checkedAt"`
+	Robots    RobotsStatus `json:"robots"`
 	// Each search and AI crawler's access; empty when robots.txt was unreachable.
 	Bots    []BotRule      `json:"bots"`
 	Sitemap SitemapSummary `json:"sitemap"`
@@ -167,6 +170,11 @@ type AiReadiness struct {
 	Advice []ReadinessAdvice `json:"advice"`
 	// How many recommendations the site does not follow, each blocked crawler included.
 	Gaps int32 `json:"gaps"`
+}
+
+// GetCheckedAt returns the value of CheckedAt.
+func (s *AiReadiness) GetCheckedAt() OptDateTime {
+	return s.CheckedAt
 }
 
 // GetRobots returns the value of Robots.
@@ -227,6 +235,11 @@ func (s *AiReadiness) GetAdvice() []ReadinessAdvice {
 // GetGaps returns the value of Gaps.
 func (s *AiReadiness) GetGaps() int32 {
 	return s.Gaps
+}
+
+// SetCheckedAt sets the value of CheckedAt.
+func (s *AiReadiness) SetCheckedAt(val OptDateTime) {
+	s.CheckedAt = val
 }
 
 // SetRobots sets the value of Robots.
@@ -383,7 +396,8 @@ func (s *AiReadinessRow) SetReadiness(val OptAiReadiness) {
 // Ref: #/components/schemas/AiReadinessTable
 type AiReadinessTable struct {
 	// The rows.
-	Items []AiReadinessRow `json:"items"`
+	Items []AiReadinessRow    `json:"items"`
+	Check ReadinessCheckState `json:"check"`
 }
 
 // GetItems returns the value of Items.
@@ -391,9 +405,19 @@ func (s *AiReadinessTable) GetItems() []AiReadinessRow {
 	return s.Items
 }
 
+// GetCheck returns the value of Check.
+func (s *AiReadinessTable) GetCheck() ReadinessCheckState {
+	return s.Check
+}
+
 // SetItems sets the value of Items.
 func (s *AiReadinessTable) SetItems(val []AiReadinessRow) {
 	s.Items = val
+}
+
+// SetCheck sets the value of Check.
+func (s *AiReadinessTable) SetCheck(val ReadinessCheckState) {
+	s.Check = val
 }
 
 func (*AiReadinessTable) getAiReadinessRes() {}
@@ -10029,6 +10053,62 @@ func (s *ReadinessCheck) UnmarshalText(data []byte) error {
 	}
 }
 
+// How far checking every scanned company's AI readiness again has come, or how the last check ended;
+// all zero when none ran since the server started.
+// Ref: #/components/schemas/ReadinessCheckState
+type ReadinessCheckState struct {
+	// Whether a check runs now.
+	Running bool `json:"running"`
+	// How many sites it has done, of total.
+	Checked int32 `json:"checked"`
+	// How many of those could not be read or recorded; they keep what their scan recorded.
+	Failed int32 `json:"failed"`
+	// How many sites it checks.
+	Total int32 `json:"total"`
+}
+
+// GetRunning returns the value of Running.
+func (s *ReadinessCheckState) GetRunning() bool {
+	return s.Running
+}
+
+// GetChecked returns the value of Checked.
+func (s *ReadinessCheckState) GetChecked() int32 {
+	return s.Checked
+}
+
+// GetFailed returns the value of Failed.
+func (s *ReadinessCheckState) GetFailed() int32 {
+	return s.Failed
+}
+
+// GetTotal returns the value of Total.
+func (s *ReadinessCheckState) GetTotal() int32 {
+	return s.Total
+}
+
+// SetRunning sets the value of Running.
+func (s *ReadinessCheckState) SetRunning(val bool) {
+	s.Running = val
+}
+
+// SetChecked sets the value of Checked.
+func (s *ReadinessCheckState) SetChecked(val int32) {
+	s.Checked = val
+}
+
+// SetFailed sets the value of Failed.
+func (s *ReadinessCheckState) SetFailed(val int32) {
+	s.Failed = val
+}
+
+// SetTotal sets the value of Total.
+func (s *ReadinessCheckState) SetTotal(val int32) {
+	s.Total = val
+}
+
+func (*ReadinessCheckState) startReadinessCheckRes() {}
+
 // The raw files a scan read its AI readiness from; empty when the site served none.
 // Ref: #/components/schemas/ReadinessFiles
 type ReadinessFiles struct {
@@ -10926,6 +11006,14 @@ func (*StartPromptRunUnauthorized) startPromptRunRes() {}
 type StartPromptRunUnprocessableEntity ProblemStatusCode
 
 func (*StartPromptRunUnprocessableEntity) startPromptRunRes() {}
+
+type StartReadinessCheckForbidden ProblemStatusCode
+
+func (*StartReadinessCheckForbidden) startReadinessCheckRes() {}
+
+type StartReadinessCheckUnauthorized ProblemStatusCode
+
+func (*StartReadinessCheckUnauthorized) startReadinessCheckRes() {}
 
 type StartRescansBadRequest ProblemStatusCode
 

@@ -1332,6 +1332,10 @@ export type SiteStack = {
  * What a site tells search engines and AI assistants about itself, read by a scan before its page crawl, held against the report's recommendations.
  */
 export type AiReadiness = {
+    /**
+     * When an administrator checked it again after its scan, without a crawl; absent when the scan itself read it.
+     */
+    checkedAt?: string;
     robots: RobotsStatus;
     /**
      * Each search and AI crawler's access; empty when robots.txt was unreachable.
@@ -1895,6 +1899,29 @@ export type AiReadinessTable = {
      * The rows.
      */
     items: Array<AiReadinessRow>;
+    check: ReadinessCheckState;
+};
+
+/**
+ * How far checking every scanned company's AI readiness again has come, or how the last check ended; all zero when none ran since the server started.
+ */
+export type ReadinessCheckState = {
+    /**
+     * Whether a check runs now.
+     */
+    running: boolean;
+    /**
+     * How many sites it has done, of total.
+     */
+    checked: number;
+    /**
+     * How many of those could not be read or recorded; they keep what their scan recorded.
+     */
+    failed: number;
+    /**
+     * How many sites it checks.
+     */
+    total: number;
 };
 
 /**
@@ -3428,6 +3455,39 @@ export type GetAiReadinessResponses = {
 };
 
 export type GetAiReadinessResponse = GetAiReadinessResponses[keyof GetAiReadinessResponses];
+
+export type StartReadinessCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/readiness-checks';
+};
+
+export type StartReadinessCheckErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartReadinessCheckError = StartReadinessCheckErrors[keyof StartReadinessCheckErrors];
+
+export type StartReadinessCheckResponses = {
+    /**
+     * The check is under way.
+     */
+    202: ReadinessCheckState;
+};
+
+export type StartReadinessCheckResponse = StartReadinessCheckResponses[keyof StartReadinessCheckResponses];
 
 export type StartRescansData = {
     /**

@@ -322,6 +322,16 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/prompt-runs
 	StartPromptRun(ctx context.Context) (StartPromptRunRes, error)
+	// StartReadinessCheck implements startReadinessCheck operation.
+	//
+	// Administrators only. In the background, reads the AI readiness files of each company's newest scan's
+	// site again (robots.txt, the sitemaps, llms.txt, llms-full.txt, the home page and its Markdown twin)
+	// and records what they say on that scan, dated. It crawls no pages and asks no language model, so it
+	// costs nothing. A company whose scan is still queued or running is left out. Returns the check's
+	// state; running already is no error.
+	//
+	// POST /api/v1/admin/readiness-checks
+	StartReadinessCheck(ctx context.Context) (StartReadinessCheckRes, error)
 	// StartRescans implements startRescans operation.
 	//
 	// Administrators only. Queues one scan for each named company with a website, or with `all`, for every

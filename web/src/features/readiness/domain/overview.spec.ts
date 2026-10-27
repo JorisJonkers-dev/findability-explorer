@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bots, readiness, readinessRow, summary } from '../../../testing/fixtures'
-import { accessMark, checkSummary, readinessHeadline, scanRange, scanned } from './overview'
+import { accessMark, checkedAgain, checkSummary, readinessCheckLine, readinessHeadline, scanRange, scanned } from './overview'
 
 describe('the summary', () => {
   it('counts the scanned sites passing each check, with Tribelt beside it', () => {
@@ -52,4 +52,26 @@ describe('the scans and the headline', () => {
     expect(readinessHeadline(ranking.slice(1))).toBe('Who lets search engines and AI assistants in.')
   })
 
+})
+
+describe('checking AI readiness again', () => {
+  it('says how far a check has come, and how it ended', () => {
+    expect(readinessCheckLine(undefined)).toBe('')
+    expect(readinessCheckLine({ running: false, checked: 0, failed: 0, total: 0 })).toBe('')
+    expect(readinessCheckLine({ running: true, checked: 0, failed: 0, total: 1 })).toBe('Checking 0 of 1 site again.')
+    expect(readinessCheckLine({ running: true, checked: 12, failed: 0, total: 40 })).toBe('Checking 12 of 40 sites again.')
+    expect(readinessCheckLine({ running: false, checked: 40, failed: 0, total: 40 })).toBe('Checked 40 sites again.')
+    expect(readinessCheckLine({ running: false, checked: 40, failed: 1, total: 40 })).toBe("Checked 39 sites again. 1 site could not be read and keeps its scan's result.")
+    expect(readinessCheckLine({ running: false, checked: 2, failed: 2, total: 2 })).toBe("Checked 0 sites again. 2 sites could not be read and keep their scan's result.")
+  })
+
+  it('names the newest day a site was checked again', () => {
+    expect(checkedAgain([readinessRow('Märtens'), readinessRow('Never', { readiness: undefined })])).toBeNull()
+    expect(
+      checkedAgain([
+        readinessRow('Märtens', { readiness: readiness({ checkedAt: '2026-10-26T09:00:00Z' }) }),
+        readinessRow('Twentebelt', { readiness: readiness({ checkedAt: '2026-10-27T18:30:00Z' }) }),
+      ]),
+    ).toBe('AI readiness checked again on 27 October 2026')
+  })
 })

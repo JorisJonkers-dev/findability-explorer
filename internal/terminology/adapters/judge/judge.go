@@ -31,7 +31,7 @@ Each phrase was found on a competitor's website. For each one, decide:
 - accept: a buyer looking for a metal conveyor belt, what it is used for, a specification of it, or a problem it solves might search with this phrase.
 - reject: anything else, such as navigation and marketing words, company, brand or place names, plastic, rubber or fabric belts, phrases cut off mid-sentence, and words too general to tell what someone looks for.
 
-For an accepted phrase, write the term as the map should hold it: the phrase cleaned up, singular, in lower case unless it is a name. Give its language (nl, de or en), the Tribelt family it belongs to, and its tier:
+For an accepted phrase, write the term as the map should hold it: the phrase cleaned up, singular, in lower case unless it is a name. Give its language, which is the language the phrase was found in (nl, de or en); a phrase written in another language than that, such as a German word found on an English page, is rejected, as the map pairs a phrase only with terms in its own language. Give the Tribelt family it belongs to, and its tier:
 - spec: a material, size, measure or other specification;
 - product: a kind of belt or belt part;
 - application: what the belt is used for, such as an oven, freezer or line;

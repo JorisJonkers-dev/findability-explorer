@@ -210,8 +210,8 @@ func TestFindKnownTerms(t *testing.T) {
 		{Text: "°", Language: "en", Family: "spec_all", Tier: "spec"},
 	}
 	pages := []domain.Page{
-		{Title: "Drahtosengliederband", Headings: []string{"Balanced-weave belt"}, Text: "A balanced weave belt. Spirals."},
-		{Description: "drahtösengliederband und spiral", Text: "balanced weave belts"},
+		{Language: "en", Title: "Drahtosengliederband", Headings: []string{"Balanced-weave belt"}, Text: "A balanced weave belt. Spirals. A spiral. Balanced weave belts."},
+		{Language: "de-DE", Title: "Drahtösengliederband", Description: "drahtösengliederband und spiral", Text: "balanced weave belts"},
 	}
 	got := domain.FindKnownTerms(pages, glossary)
 	if len(got) != 3 {
@@ -230,15 +230,35 @@ func TestFindKnownTerms(t *testing.T) {
 	}
 }
 
+// A term counts only on the pages in its language: the German term on the English page, and the
+// English terms on the German page, do not count, and a page in a language not told counts none.
+// American English is English.
+func TestFindKnownTermsKeepsToTheTermsLanguage(t *testing.T) {
+	glossary := []domain.GlossaryTerm{
+		{Text: "Transportband", Language: "de"},
+		{Text: "conveyor belt", Language: "en-US"},
+		{Text: "spiral", Language: "und"},
+	}
+	pages := []domain.Page{
+		{Language: "nl", Text: "Transportband"},                // Dutch, spelled like the German term
+		{Language: "en", Text: "Transportband. Conveyor belt"}, // the English page counts only its English term
+		{Text: "Spiral"}, // not told: counts nothing, not even an und term
+	}
+	got := domain.FindKnownTerms(pages, glossary)
+	if len(got) != 1 || got[0].Text != "conveyor belt" || got[0].Occurrences != 1 {
+		t.Fatalf("found %+v, want only conveyor belt once", got)
+	}
+}
+
 func TestFindKnownTermsKeepsAtMostMaxKnownTerms(t *testing.T) {
 	var glossary []domain.GlossaryTerm
 	var text []string
 	for i := range domain.MaxKnownTerms + 20 {
 		w := "term" + string(rune('a'+i%26)) + string(rune('a'+i/26))
-		glossary = append(glossary, domain.GlossaryTerm{Text: w})
+		glossary = append(glossary, domain.GlossaryTerm{Text: w, Language: "en"})
 		text = append(text, w)
 	}
-	if got := domain.FindKnownTerms([]domain.Page{{Text: strings.Join(text, " ")}}, glossary); len(got) != domain.MaxKnownTerms {
+	if got := domain.FindKnownTerms([]domain.Page{{Language: "en", Text: strings.Join(text, " ")}}, glossary); len(got) != domain.MaxKnownTerms {
 		t.Fatalf("%d known terms, want %d", len(got), domain.MaxKnownTerms)
 	}
 }
@@ -293,7 +313,7 @@ func TestAlternatives(t *testing.T) {
 
 func TestFindKnownTermsCountsAlternativesAndPlurals(t *testing.T) {
 	glossary := []domain.GlossaryTerm{{Text: "eye-link belt / eyelink belt", Language: "en"}, {Text: "metal conveyor belt(s)", Language: "en"}}
-	pages := []domain.Page{{Title: "Eyelink belts", Text: "An eye-link belt.\nMetal conveyor belts and one metal conveyor belt."}}
+	pages := []domain.Page{{Language: "en", Title: "Eyelink belts", Text: "An eye-link belt.\nMetal conveyor belts and one metal conveyor belt."}}
 	got := domain.FindKnownTerms(pages, glossary)
 	if len(got) != 2 || got[0].Occurrences != 2 || got[1].Occurrences != 2 {
 		t.Fatalf("found %+v, want both terms twice", got)

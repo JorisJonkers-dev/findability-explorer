@@ -229,9 +229,11 @@ describe('sorting the tables', () => {
 describe("Tribelt's term", () => {
   it('says Tribelt uses a term, names its own term for the same thing, or that it lacks one', () => {
     expect(MAP.map((t) => tribeltTerm(t, MAP))).toEqual(['Uses it', 'Eyelink belt', 'Uses it', 'Lacks it', 'Lacks it'])
-    // In another language than Tribelt has, it names the language.
+    // A term is never paired with Tribelt's term in another language.
     const dutch = term({ term: 'draadogenband', language: 'nl', family: 'eyelink', tier: 'product', usedBy: ['ESFO'] })
-    expect(tribeltTerm(dutch, [...MAP, dutch])).toBe('Eyelink belt (English)')
+    expect(tribeltTerm(dutch, [...MAP, dutch])).toBe('Lacks it')
+    const own = term({ term: 'oogjesband', language: 'nl', family: 'eyelink', tier: 'broad', usedBy: ['Tribelt'] })
+    expect(tribeltTerm(dutch, [...MAP, dutch, own])).toBe('oogjesband')
     // A specification is its own thing: Tribelt's other specification is no stand-in for it.
     const pitch = term({ term: 'belt pitch', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Ashworth'] })
     const steel = term({ term: 'AISI 316', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Tribelt'] })

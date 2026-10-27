@@ -28,14 +28,15 @@ func TestCandidatesAggregateAcrossCompanies(t *testing.T) {
 		obs("s3", "alpha", "rejected one", "en", 2, 1, "broad", "", "", at),
 	}
 	terms := []domain.Term{{Text: "eyelink belt / eye-link belt (s)", Language: domain.LanguageEn}}
-	decisions := []domain.Decision{{CandidateID: domain.CandidateID("Rejected One"), Status: domain.StatusRejected, By: "j", At: at}}
+	decisions := []domain.Decision{{CandidateID: domain.CandidateID("Rejected One", "en"), Status: domain.StatusRejected, By: "j", At: at}}
 	got := domain.Candidates(observed, decisions, terms)
-	if len(got) != 3 {
+	if len(got) != 4 {
 		t.Fatalf("candidates %+v", got)
 	}
+	// The German use of the phrase is a candidate of its own.
 	c := got[0]
-	if c.Phrase != "spiral freezer" || c.Status != domain.StatusPending || c.Scans != 2 || c.BestScore != 30 || c.MaxPages != 5 ||
-		strings.Join(c.Languages, " ") != "en de" || c.Companies[0].Name != "Alpha" || c.Companies[1].ID != "zeta" ||
+	if c.Phrase != "spiral freezer" || c.Status != domain.StatusPending || c.Scans != 2 || c.BestScore != 30 || c.MaxPages != 2 ||
+		c.Language != "en" || strings.Join(c.Languages, " ") != "en" || c.Companies[0].Name != "Alpha" || c.Companies[1].ID != "zeta" ||
 		c.SuggestedTier != domain.TierApplication || c.SuggestedFamily != domain.FamilyTriFlex || c.Closest != "spiral belt" ||
 		!c.LastSeenAt.Equal(at) || c.Source != "https://alpha.test/" || c.Decision != nil || len(c.ID) != 16 {
 		t.Fatalf("spiral freezer = %+v", c)
@@ -52,7 +53,7 @@ func TestCandidatesAggregateAcrossCompanies(t *testing.T) {
 		t.Fatalf("rejected one = %+v", r)
 	}
 	list, counts := domain.Count(append(got, domain.Candidate{Status: domain.StatusAccepted}), domain.StatusPending)
-	if len(list) != 2 || counts != (domain.Counts{Pending: 2, Accepted: 1, Rejected: 1, Unreviewed: 2}) {
+	if len(list) != 3 || counts != (domain.Counts{Pending: 3, Accepted: 1, Rejected: 1, Unreviewed: 3}) {
 		t.Fatalf("Count = %d, %+v", len(list), counts)
 	}
 }

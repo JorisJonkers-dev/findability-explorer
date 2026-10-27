@@ -173,7 +173,7 @@ func (s *Service) Accept(ctx context.Context, user, id string, a domain.Acceptan
 	if c.Status != domain.StatusPending {
 		return domain.Candidate{}, domain.ErrDecided
 	}
-	term, err := domain.NewTerm(a, c.Source, s.Terms())
+	term, err := c.NewTerm(a, s.Terms())
 	if err != nil {
 		return domain.Candidate{}, err
 	}
@@ -213,7 +213,9 @@ func (s *Service) Undo(ctx context.Context, id string) (domain.Candidate, error)
 	if c.Status == domain.StatusPending {
 		return domain.Candidate{}, domain.ErrPending
 	}
-	if _, err := s.reviews.Undo(ctx, id); err != nil {
+	// The decision's own id: one made before candidates were kept apart by language carries the
+	// phrase's id (domain.PhraseID).
+	if _, err := s.reviews.Undo(ctx, c.Decision.CandidateID); err != nil {
 		return domain.Candidate{}, fmt.Errorf("undo decision: %w", err)
 	}
 	if err := s.Load(ctx); err != nil {

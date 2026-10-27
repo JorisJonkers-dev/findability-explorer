@@ -3,6 +3,8 @@ package domain
 import (
 	"slices"
 	"time"
+
+	focus "github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 )
 
 // A language model reviews the waiting candidates (ADR-0005). It accepts or rejects each one, and
@@ -65,7 +67,8 @@ func Complete(asked []Candidate, answered []Verdict, model string, at time.Time)
 }
 
 // Decision is the decision a sure verdict makes on candidate c, by the model. An unsure verdict,
-// or an accepted term the map cannot take, makes none: the candidate waits for a person.
+// or an accepted term the map cannot take or that is not in c's language, makes none: the
+// candidate waits for a person.
 func (v Verdict) Decision(c Candidate, terms []Term) (Decision, bool) {
 	if !v.Sure {
 		return Decision{}, false
@@ -79,7 +82,7 @@ func (v Verdict) Decision(c Candidate, terms []Term) (Decision, bool) {
 	for _, co := range c.Companies[:min(len(c.Companies), maxUsedBy)] {
 		a.UsedBy = append(a.UsedBy, co.Name)
 	}
-	term, err := NewTerm(a, c.Source, terms)
+	term, err := c.NewTerm(a, terms)
 	if err != nil {
 		return Decision{}, false
 	}
@@ -87,8 +90,17 @@ func (v Verdict) Decision(c Candidate, terms []Term) (Decision, bool) {
 	return d, true
 }
 
+// AppliesTo reports whether a verdict given on c's phrase, before candidates were kept apart by
+// language, holds for c: a rejection holds in every language, an acceptance only in the language
+// of the term it suggests. A candidate it does not hold for is asked about again.
+func (v Verdict) AppliesTo(c Candidate) bool {
+	return !v.Accept || focus.Same(v.Term.Language, c.Language)
+}
+
 // WithVerdicts attaches the model's verdict to each candidate it reviewed, and to a waiting one
-// the term it suggests when the map, holding terms, could take it.
+// the term it suggests when the map, holding terms, could take it in the candidate's language.
+// A verdict given on the phrase alone, before candidates were kept apart by language, counts
+// where it applies (Verdict.AppliesTo).
 func WithVerdicts(candidates []Candidate, verdicts []Verdict, terms []Term) []Candidate {
 	byID := map[string]Verdict{}
 	for _, v := range verdicts {
@@ -97,10 +109,14 @@ func WithVerdicts(candidates []Candidate, verdicts []Verdict, terms []Term) []Ca
 	for i, c := range candidates {
 		v, ok := byID[c.ID]
 		if !ok {
+			v, ok = byID[PhraseID(c.Phrase)]
+			ok = ok && v.AppliesTo(c)
+		}
+		if !ok {
 			continue
 		}
 		candidates[i].Verdict = &v
-		if _, err := NewTerm(v.Term, "", terms); c.Status == StatusPending && v.Accept && err == nil {
+		if _, err := c.NewTerm(v.Term, terms); c.Status == StatusPending && v.Accept && err == nil {
 			s := v.Term
 			candidates[i].Suggestion = &s
 		}

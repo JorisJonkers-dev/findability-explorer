@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 )
 
 // Lexicon is the vocabulary of metal conveyor belts the analysis judges a site's phrases by: every
@@ -164,13 +165,20 @@ func (l Lexicon) Relevant(words []string) bool {
 type Classification struct {
 	Tier   string
 	Family string
-	// Closest is the map term that shares the most specific words with the phrase.
+	// Closest is the map term in the phrase's language that shares the most specific words with
+	// the phrase.
 	Closest string
-	// InMap is true when the phrase is one of the map's own spellings, plural or not.
+	// InMap is true when the phrase is one of the spellings of a map term in its language, plural
+	// or not.
 	InMap bool
 }
 
 // Classify finds the map term closest to the phrase and takes its tier and family.
+//
+// Only the terms in the phrase's language count (see lang.Same): a Dutch phrase spelled like a
+// German term is not in the map, and is never closest to an English term. A phrase in a language
+// not told matches no term and is broad. The words' weights and the families they point at are
+// counted over the whole map, as they say how specific a word is, not which term it is.
 //
 // A phrase that is one of the map's own spellings takes that term's family and tier. Otherwise only the phrase's words
 // that point at a family decide its family (see familyOf): a phrase of generic words, such as
@@ -178,13 +186,12 @@ type Classification struct {
 // most of its words is of one. The closest term is the one of the family the phrase's words
 // point at most clearly; or the closest of all when a word points at its family; or else the
 // closest of no family (broad terms, and specification terms for a phrase with a specification
-// word). Closest is the term sharing the most specific words; on a tie a term in the phrase's
-// language, then the term with fewer words of its own wins. A phrase whose only close terms are
+// word). Closest is the term sharing the most specific words; on a tie the term with fewer words
+// of its own wins. A phrase whose only close terms are
 // of a family it does not name is broad, keeping a specification, application or problem tier.
 func (l Lexicon) Classify(words []string, language string) Classification {
-	if i, ok := l.spelling(words); ok {
-		// The spelling's family and tier; the closest term of them, so one in the phrase's
-		// language if the map has it.
+	if i, ok := l.spelling(words, language); ok {
+		// The spelling's family and tier; the closest term of them.
 		spelt := l.terms[i].term
 		if j := l.closest(words, language, func(t GlossaryTerm) bool { return t.Family == spelt.Family && t.Tier == spelt.Tier }); j >= 0 {
 			i = j
@@ -212,7 +219,7 @@ func (l Lexicon) ofFamily(words []string, language string) (int, bool) {
 	if i := l.closest(words, language, func(GlossaryTerm) bool { return true }); i >= 0 && scores[l.terms[i].term.Family] > 0 {
 		return i, true
 	}
-	return l.containedSpelling(words)
+	return l.containedSpelling(words, language)
 }
 
 // withoutFamily classifies a phrase that names no family by the closest term of no family. A
@@ -245,12 +252,15 @@ func (l Lexicon) withoutFamily(words []string, language string) Classification {
 	return Classification{Tier: tier, Closest: t.Text}
 }
 
-// containedSpelling is the index of the term with the longest spelling of two words or more that
-// the phrase holds word for word, plural or not.
-func (l Lexicon) containedSpelling(words []string) (int, bool) {
+// containedSpelling is the index of the term in language with the longest spelling of two words
+// or more that the phrase holds word for word, plural or not.
+func (l Lexicon) containedSpelling(words []string, language string) (int, bool) {
 	plain := singularAll(words)
 	best, length := -1, 1
 	for i, t := range l.terms {
+		if !lang.Same(t.term.Language, language) {
+			continue
+		}
 		for _, alt := range t.alts {
 			if len(alt) > length && holds(plain, singularAll(alt)) {
 				best, length = i, len(alt)
@@ -291,12 +301,12 @@ func (l Lexicon) from(i int, inMap bool) Classification {
 	return Classification{Tier: t.Tier, Family: t.Family, Closest: t.Text, InMap: inMap}
 }
 
-// closest is the index of the term keep accepts that shares the most specific words with the
-// phrase, by the tie-breaks Classify names, or -1 when none shares a specific word.
+// closest is the index of the term in language keep accepts that shares the most specific words
+// with the phrase, by the tie-breaks Classify names, or -1 when none shares a specific word.
 func (l Lexicon) closest(words []string, language string, keep func(GlossaryTerm) bool) int {
 	best, bestScore := -1, 0.0
 	for i, t := range l.terms {
-		if !keep(t.term) {
+		if !lang.Same(t.term.Language, language) || !keep(t.term) {
 			continue
 		}
 		score := 0.0
@@ -308,12 +318,9 @@ func (l Lexicon) closest(words []string, language string, keep func(GlossaryTerm
 		if score == 0 {
 			continue // the term shares no specific word with the phrase
 		}
-		// A tenth of a word's weight per word of the term breaks ties, and a fifth for a term in
-		// the phrase's own language.
-		score -= 0.1 * l.specific * float64(len(t.words))
-		if sameLanguage(t.term.Language, language) {
-			score += 0.2 * l.specific
-		}
+		// A tenth of a word's weight per word of the term breaks ties. Every term here is in the
+		// phrase's language, which is worth a fifth, so a long term sharing one word still counts.
+		score += 0.2*l.specific - 0.1*l.specific*float64(len(t.words))
 		if score > bestScore {
 			best, bestScore = i, score
 		}
@@ -331,17 +338,14 @@ func (t lexiconTerm) shares(w string) bool {
 	})
 }
 
-// sameLanguage compares primary subtags, so en-US terms count for an English page.
-func sameLanguage(a, b string) bool {
-	pa, _, _ := strings.Cut(a, "-")
-	pb, _, _ := strings.Cut(b, "-")
-	return pa != "" && pa == pb
-}
-
-// spelling is the index of the term the phrase is one of the spellings of, plural or not.
-func (l Lexicon) spelling(words []string) (int, bool) {
+// spelling is the index of the term in language the phrase is one of the spellings of, plural or
+// not.
+func (l Lexicon) spelling(words []string, language string) (int, bool) {
 	plain := singularAll(words)
 	for i, t := range l.terms {
+		if !lang.Same(t.term.Language, language) {
+			continue
+		}
 		for _, alt := range t.alts {
 			if slices.Equal(alt, words) || slices.Equal(alt, plain) || slices.Equal(singularAll(alt), plain) {
 				return i, true

@@ -6163,9 +6163,10 @@ func (s *Server) handleListPromptAnswersRequest(args [1]string, argsEscaped bool
 
 // handleListTermCandidatesRequest handles listTermCandidates operation.
 //
-// Administrators only. Every phrase a finished scan found that the terminology map did not hold,
-// across companies, with its evidence and the classifier's suggestion; filtered by review status, most
-// companies and highest score first.
+// Administrators only. Every phrase a finished scan found that the terminology map did not hold in its
+// language, across companies, with its evidence and the classifier's suggestion; filtered by review
+// status, most companies and highest score first. The same phrase in another language is another
+// candidate.
 //
 // GET /api/v1/admin/term-candidates
 func (s *Server) handleListTermCandidatesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

@@ -8,7 +8,7 @@ import (
 )
 
 func waiting(phrase string, companies ...string) domain.Candidate {
-	c := domain.Candidate{ID: domain.CandidateID(phrase), Phrase: phrase, Status: domain.StatusPending, Source: "https://www.twentebelt.com"}
+	c := domain.Candidate{ID: domain.CandidateID(phrase, "en"), Phrase: phrase, Language: "en", Status: domain.StatusPending, Source: "https://www.twentebelt.com"}
 	for _, name := range companies {
 		c.Companies = append(c.Companies, domain.CandidateCompany{ID: name, Name: name})
 	}

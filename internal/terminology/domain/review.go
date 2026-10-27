@@ -60,11 +60,16 @@ type CandidateCompany struct {
 	Name string
 }
 
-// Candidate is a phrase scans found outside the map, with its evidence across companies.
+// Candidate is a phrase scans found outside the map in one language, with its evidence across
+// companies. The same phrase in another language is another candidate: a phrase is only ever
+// paired with, merged with or judged against terms in its own language (see lang.Same).
 type Candidate struct {
-	ID        string
-	Phrase    string
-	Status    Status
+	ID     string
+	Phrase string
+	Status Status
+	// Language is the primary subtag of the language it was found in: en-US is en.
+	Language string
+	// Languages is Language alone, for the list the contract reports.
 	Languages []string
 	Companies []CandidateCompany
 	Scans     int
@@ -74,8 +79,9 @@ type Candidate struct {
 	// is empty when it named none.
 	SuggestedTier   Tier
 	SuggestedFamily Family
-	Closest         string
-	LastSeenAt      time.Time
+	// Closest is the map term in its language the classifier found closest, if any.
+	Closest    string
+	LastSeenAt time.Time
 	// Source is the start address of the newest scan that found it.
 	Source   string
 	Decision *Decision
@@ -85,29 +91,53 @@ type Candidate struct {
 	Suggestion *Acceptance
 }
 
-// CandidateID is a candidate's id: the first 16 hex characters of the SHA-256 of its folded phrase.
-func CandidateID(phrase string) string {
+// CandidateID is a candidate's id: the first 16 hex characters of the SHA-256 of its folded phrase
+// and the primary subtag of its language.
+func CandidateID(phrase, language string) string {
+	sum := sha256.Sum256([]byte(Fold(phrase) + "\x00" + focus.Primary(language)))
+	return hex.EncodeToString(sum[:])[:16]
+}
+
+// PhraseID is the id a candidate had before candidates were kept apart by language: made from
+// its folded phrase alone. Decisions and verdicts made then still carry it; see Decision.AppliesTo
+// and Verdict.AppliesTo.
+func PhraseID(phrase string) string {
 	sum := sha256.Sum256([]byte(Fold(phrase)))
 	return hex.EncodeToString(sum[:])[:16]
 }
 
-// Candidates aggregates observations by phrase. A phrase with a decision takes its status; one
-// without is pending, unless the map has it by now (the map grew since the scan). They come with
-// the most companies first, then the highest score, then by phrase.
+// spelt is a folded spelling of a map term in one language.
+type spelt struct {
+	text     string
+	language string
+}
+
+// Candidates aggregates observations by phrase and language. A candidate with a decision takes
+// its status; one without is pending, unless the map has the phrase in its language by now (the
+// map grew since the scan). A closest term the scan named in another language is dropped, as scans
+// before the language rule paired phrases across languages. They come with the most companies
+// first, then the highest score, then by phrase and language.
 func Candidates(obs []Observation, decisions []Decision, terms []Term) []Candidate {
-	inMap := map[string]bool{}
+	inMap := map[spelt]bool{}
+	termLanguages := map[string][]string{}
 	for _, t := range terms {
+		language := focus.Primary(string(t.Language))
 		for _, alt := range spellings(t.Text) {
-			inMap[alt] = true
+			inMap[spelt{alt, language}] = true
 		}
+		termLanguages[t.Text] = append(termLanguages[t.Text], language)
 	}
 	byID := map[string]*tally{}
 	var order []string
 	for _, o := range obs {
-		id := CandidateID(o.Phrase)
+		o.Language = focus.Primary(o.Language)
+		if langs, known := termLanguages[o.Closest]; known && !slices.Contains(langs, o.Language) {
+			o.Closest = ""
+		}
+		id := CandidateID(o.Phrase, o.Language)
 		t, ok := byID[id]
 		if !ok {
-			t = &tally{candidate: Candidate{ID: id, Phrase: o.Phrase}, scans: map[string]bool{}, languages: map[string]int{}, judgements: map[judgement]int{}}
+			t = &tally{candidate: Candidate{ID: id, Phrase: o.Phrase, Language: o.Language}, scans: map[string]bool{}, judgements: map[judgement]int{}}
 			byID[id] = t
 			order = append(order, id)
 		}
@@ -120,17 +150,50 @@ func Candidates(obs []Observation, decisions []Decision, terms []Term) []Candida
 	out := make([]Candidate, 0, len(order))
 	for _, id := range order {
 		c := byID[id].result()
-		if d, ok := decided[id]; ok {
+		phrase := Fold(c.Phrase)
+		if d, ok := decisionOn(c, decided); ok {
 			c.Status, c.Decision = d.Status, &d
-		} else if inMap[Fold(c.Phrase)] || inMap[singular(Fold(c.Phrase))] {
+		} else if inMap[spelt{phrase, c.Language}] || inMap[spelt{singular(phrase), c.Language}] {
 			continue
 		}
 		out = append(out, c)
 	}
 	slices.SortFunc(out, func(a, b Candidate) int {
-		return cmp.Or(cmp.Compare(len(b.Companies), len(a.Companies)), cmp.Compare(b.BestScore, a.BestScore), strings.Compare(a.Phrase, b.Phrase))
+		return cmp.Or(cmp.Compare(len(b.Companies), len(a.Companies)), cmp.Compare(b.BestScore, a.BestScore),
+			strings.Compare(a.Phrase, b.Phrase), strings.Compare(a.Language, b.Language))
 	})
 	return out
+}
+
+// decisionOn is the decision on c: the one made on its id, or else one made on its phrase before
+// candidates were kept apart by language, when that one applies to c's language.
+func decisionOn(c Candidate, decided map[string]Decision) (Decision, bool) {
+	if d, ok := decided[c.ID]; ok {
+		return d, true
+	}
+	d, ok := decided[PhraseID(c.Phrase)]
+	return d, ok && d.AppliesTo(c)
+}
+
+// AppliesTo reports whether a decision made on c's phrase, before candidates were kept apart by
+// language, holds for c: a rejection holds in every language, an acceptance only in the language
+// of the term it made. A term accepted as German so leaves the Dutch use of the phrase waiting.
+func (d Decision) AppliesTo(c Candidate) bool {
+	return d.Term == nil || focus.Same(string(d.Term.Language), c.Language)
+}
+
+// ErrOtherLanguage is returned when a candidate would become a term in another language than the
+// one it was found in.
+var ErrOtherLanguage = fmt.Errorf("%w: language; a candidate becomes a term only in the language it was found in", ErrUnknownValue)
+
+// NewTerm checks the term a would make of c against the map's terms and returns it, sourced from
+// the newest scan that found c. The term must be in c's language: a phrase is never merged with
+// a term in another language.
+func (c Candidate) NewTerm(a Acceptance, terms []Term) (Term, error) {
+	if !focus.Same(a.Language, c.Language) {
+		return Term{}, ErrOtherLanguage
+	}
+	return NewTerm(a, c.Source, terms)
 }
 
 // spellings are the folded forms a term stands for: each " / " alternative without remarks in
@@ -163,7 +226,6 @@ type judgement struct {
 type tally struct {
 	candidate  Candidate
 	scans      map[string]bool
-	languages  map[string]int
 	judgements map[judgement]int
 	companies  []CandidateCompany
 }
@@ -171,7 +233,6 @@ type tally struct {
 func (t *tally) add(o Observation) {
 	c := &t.candidate
 	t.scans[o.ScanID] = true
-	t.languages[o.Language]++
 	t.judgements[judgement{tier: o.Tier, family: o.Family, closest: o.Closest}]++
 	if !slices.ContainsFunc(t.companies, func(x CandidateCompany) bool { return x.ID == o.CompanyID }) {
 		t.companies = append(t.companies, CandidateCompany{ID: o.CompanyID, Name: o.CompanyName})
@@ -187,7 +248,7 @@ func (t *tally) result() Candidate {
 	c := t.candidate
 	c.Status = StatusPending
 	c.Scans = len(t.scans)
-	c.Languages = keysByCount(t.languages)
+	c.Languages = []string{c.Language}
 	c.Companies = slices.SortedFunc(slices.Values(t.companies), func(a, b CandidateCompany) int {
 		return strings.Compare(Fold(a.Name), Fold(b.Name))
 	})
@@ -209,15 +270,6 @@ func (t *tally) result() Candidate {
 
 func compareJudgement(a, b judgement) int {
 	return cmp.Or(strings.Compare(a.tier, b.tier), strings.Compare(a.family, b.family), strings.Compare(a.closest, b.closest))
-}
-
-func keysByCount(counts map[string]int) []string {
-	out := make([]string, 0, len(counts))
-	for k := range counts {
-		out = append(out, k)
-	}
-	slices.SortFunc(out, func(a, b string) int { return cmp.Or(cmp.Compare(counts[b], counts[a]), strings.Compare(a, b)) })
-	return out
 }
 
 // Counts is how many candidates have each status, and how many waiting ones the model has not

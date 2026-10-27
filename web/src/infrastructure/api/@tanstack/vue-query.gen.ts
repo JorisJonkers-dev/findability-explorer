@@ -416,7 +416,7 @@ export const listTermCandidatesQueryKey = (options?: Options<ListTermCandidatesD
 /**
  * List the search terms scans found outside the map
  *
- * Administrators only. Every phrase a finished scan found that the terminology map did not hold, across companies, with its evidence and the classifier's suggestion; filtered by review status, most companies and highest score first.
+ * Administrators only. Every phrase a finished scan found that the terminology map did not hold in its language, across companies, with its evidence and the classifier's suggestion; filtered by review status, most companies and highest score first. The same phrase in another language is another candidate.
  */
 export const listTermCandidatesOptions = (options?: Options<ListTermCandidatesData>) => queryOptions<ListTermCandidatesResponse, ListTermCandidatesError, ListTermCandidatesResponse, ReturnType<typeof listTermCandidatesQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

@@ -93,8 +93,8 @@ func Summarise(p Page, lex Lexicon) PageSummary {
 // PageLanguage is the declared language's primary subtag ("de-DE" is "de"), or else the language
 // whose stopwords are most frequent in the page, or UnknownLanguage.
 func PageLanguage(p Page) string {
-	if lang, _, _ := strings.Cut(strings.ToLower(strings.TrimSpace(p.Language)), "-"); lang != "" {
-		return lang
+	if declared := lang.Primary(p.Language); declared != "" {
+		return declared
 	}
 	return DetectLanguage(p.Title + " " + p.Description + " " + p.Text)
 }
@@ -403,31 +403,60 @@ const fragmentShare = 0.8
 // ("eye-link belt / eyelink belt", "metal conveyor belt(s)") counts every alternative, and each
 // alternative also matches with a plural s. Terms that do not appear are left out; the rest come
 // most frequent first.
+//
+// A term counts only on the pages in its language (see lang.Same; PageLanguage tells a page's): a
+// German term on an English page is not the English site using it, and a page whose language
+// could not be told counts no term at all.
 func FindKnownTerms(pages []Page, glossary []GlossaryTerm) []KnownTerm {
-	var corpus strings.Builder
+	corpora := corporaByLanguage(pages)
+	var out []KnownTerm
+	for _, g := range glossary {
+		language := lang.Primary(g.Language)
+		corpus, ok := corpora[language]
+		if !ok || language == UnknownLanguage {
+			continue // no page in the term's language; pages not told match no term
+		}
+		if n := occurrences(corpus, g.Text); n > 0 {
+			out = append(out, KnownTerm{GlossaryTerm: g, Occurrences: n})
+		}
+	}
+	slices.SortStableFunc(out, func(a, b KnownTerm) int { return cmp.Compare(b.Occurrences, a.Occurrences) })
+	return out[:min(len(out), MaxKnownTerms)]
+}
+
+// corporaByLanguage is the folded text of the pages in each language PageLanguage tells, each
+// segment between spaces so a term matches only whole words.
+func corporaByLanguage(pages []Page) map[string]string {
+	builders := map[string]*strings.Builder{}
 	for _, p := range pages {
+		language := PageLanguage(p)
+		corpus, ok := builders[language]
+		if !ok {
+			corpus = &strings.Builder{}
+			builders[language] = corpus
+		}
 		for _, part := range append([]string{p.Title, p.Description, p.Text}, p.Headings...) {
 			for _, segment := range Segments(part) {
 				corpus.WriteString(" " + fold.Fold(strings.Join(Tokens(segment), " ")) + " ")
 			}
 		}
 	}
-	text := corpus.String()
-	var out []KnownTerm
-	for _, g := range glossary {
-		n := 0
-		for _, alt := range Alternatives(g.Text) {
-			needle := fold.Fold(strings.Join(Tokens(alt), " "))
-			if needle != "" {
-				n += strings.Count(text, " "+needle+" ") + strings.Count(text, " "+needle+"s ")
-			}
-		}
-		if n > 0 {
-			out = append(out, KnownTerm{GlossaryTerm: g, Occurrences: n})
+	out := make(map[string]string, len(builders))
+	for language, b := range builders {
+		out[language] = b.String()
+	}
+	return out
+}
+
+// occurrences counts each alternative of term in corpus, singular or with a plural s.
+func occurrences(corpus, term string) int {
+	n := 0
+	for _, alt := range Alternatives(term) {
+		if needle := fold.Fold(strings.Join(Tokens(alt), " ")); needle != "" {
+			n += strings.Count(corpus, " "+needle+" ") + strings.Count(corpus, " "+needle+"s ")
 		}
 	}
-	slices.SortStableFunc(out, func(a, b KnownTerm) int { return cmp.Compare(b.Occurrences, a.Occurrences) })
-	return out[:min(len(out), MaxKnownTerms)]
+	return n
 }
 
 // Alternatives splits a glossary entry into the spellings it stands for: "a / b" is a and b, and

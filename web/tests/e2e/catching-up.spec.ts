@@ -5,7 +5,7 @@ test('Catching up compares Tribelt on every measure and is accessible', async ({
   await expect(page).toHaveTitle('Catching up · Findability Explorer')
   const field = page.getByRole('region', { name: 'Tribelt against the field' })
   await expect(field.getByRole('figure')).toHaveCount(5)
-  await expect(field.getByRole('figure').first()).toContainText('How often AI answers name the company')
+  await expect(field.getByRole('figure').first()).toContainText('Share of AI answers in the newest Prompt run that name the company')
   await expect(field.getByRole('figure').first()).toContainText('Typical competitor')
   await expectAccessible(page)
 })

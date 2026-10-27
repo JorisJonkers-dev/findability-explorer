@@ -13,7 +13,7 @@ import (
 // by the rule instead.
 
 // ByTheMap is the analysis as the map lex was built from judges it now: each keyword stored in no
-// language takes the one its own words tell (lang.Vocabulary.Phrase; ADR-0010), and is left out
+// language takes the one its own words tell (lang.Vocabulary.Phrase; ADR-0011), and is left out
 // when the scan has the phrase in that language already; each is classified again from its phrase
 // and language (Lexicon.Classify), so it is in the map, and closest to a term, only in its own
 // language; and only the known terms in a language of a page the scan read. Which page a known term was counted on is not stored, so one in a language the scan read

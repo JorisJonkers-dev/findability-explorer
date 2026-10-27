@@ -127,7 +127,7 @@ func Candidates(obs []Observation, decisions []Decision, terms []Term) []Candida
 	for _, o := range obs {
 		o.Language = focus.Primary(o.Language)
 		if !focus.Told(o.Language) {
-			// Stored before a phrase's own words were asked: they may tell it now (ADR-0010).
+			// Stored before a phrase's own words were asked: they may tell it now (ADR-0011).
 			o.Language = vocabulary.Phrase(o.Phrase)
 		}
 		if langs, known := termLanguages[o.Closest]; known && !slices.Contains(langs, o.Language) {

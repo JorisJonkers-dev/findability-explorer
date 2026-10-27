@@ -10,7 +10,7 @@ import (
 
 // A phrase's own language: what its words say about the language it is in, apart from the page it
 // was found on. A scan reads a phrase's language from its pages, and asks the phrase only when
-// those pages are in no language or in several (ADR-0010).
+// those pages are in no language or in several (ADR-0011).
 
 // set is a set of languages: the focus languages, and other for every language out of focus.
 type set uint8

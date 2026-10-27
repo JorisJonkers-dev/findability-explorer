@@ -1247,6 +1247,130 @@ export type AiReadiness = {
 };
 
 /**
+ * A company the AI search trend follows.
+ */
+export type FollowedCompany = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+};
+
+/**
+ * One Prompt run in the trend.
+ */
+export type ShareTrendPoint = {
+    /**
+     * When the run started.
+     */
+    runStartedAt: string;
+    /**
+     * The share of the run's answers naming each followed company, in the order of `followed`, from 0 to 1.
+     */
+    shares: Array<number>;
+};
+
+/**
+ * What a crawler feeds - answers AI assistants give today, or what future models know.
+ */
+export type CrawlerFeeds = 'today' | 'future';
+
+/**
+ * A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
+ */
+export type TribeltCrawler = {
+    /**
+     * Its robots.txt token.
+     */
+    bot: string;
+    /**
+     * Who runs it.
+     */
+    lab: string;
+    /**
+     * What letting it in gets Tribelt.
+     */
+    gets: string;
+    feeds: CrawlerFeeds;
+    access?: CrawlerAccess;
+};
+
+/**
+ * A competitor whose robots.txt keeps crawlers out of the whole site.
+ */
+export type KeepingOut = {
+    competitorId: CompetitorId;
+    /**
+     * The competitor's name.
+     */
+    name: string;
+    /**
+     * The crawlers it keeps out.
+     */
+    blocked: Array<string>;
+};
+
+/**
+ * A company in the readiness ranking.
+ */
+export type ReadinessRank = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    /**
+     * Readiness checks passed out of five, in halves.
+     */
+    score: number;
+};
+
+/**
+ * The AI search summary.
+ */
+export type AiSearchSummary = {
+    /**
+     * The share of answers Tribelt aims to be named in.
+     */
+    goal: number;
+    /**
+     * The companies the trend follows - Tribelt, then the most named competitors.
+     */
+    followed: Array<FollowedCompany>;
+    /**
+     * The newest runs, oldest first.
+     */
+    trend: Array<ShareTrendPoint>;
+    /**
+     * Every crawler a scan records, those that feed answers today first.
+     */
+    crawlers: Array<TribeltCrawler>;
+    /**
+     * The competitors that keep crawlers out, most crawlers first.
+     */
+    keepingOut: Array<KeepingOut>;
+    /**
+     * Tribelt among the best-prepared competitors, highest score first.
+     */
+    ranking: Array<ReadinessRank>;
+    /**
+     * How many sites have a recorded AI readiness.
+     */
+    sites: number;
+    /**
+     * How many buyer questions the newest run asked; 0 before any run.
+     */
+    questions: number;
+    /**
+     * How many providers the newest run asked; 0 before any run.
+     */
+    providers: number;
+};
+
+/**
  * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
  */
 export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapPages' | 'termsUsed';
@@ -2017,6 +2141,35 @@ export type CompetitorCandidateIdPath = CompetitorCandidateId;
  * The credential's id.
  */
 export type CredentialId = LlmCredentialId;
+
+export type GetAiSearchSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai-search';
+};
+
+export type GetAiSearchSummaryErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetAiSearchSummaryError = GetAiSearchSummaryErrors[keyof GetAiSearchSummaryErrors];
+
+export type GetAiSearchSummaryResponses = {
+    /**
+     * The summary.
+     */
+    200: AiSearchSummary;
+};
+
+export type GetAiSearchSummaryResponse = GetAiSearchSummaryResponses[keyof GetAiSearchSummaryResponses];
 
 export type GetStandingsData = {
     body?: never;

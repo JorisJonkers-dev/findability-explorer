@@ -382,6 +382,121 @@ func (s *AiReadinessTable) SetItems(val []AiReadinessRow) {
 
 func (*AiReadinessTable) getAiReadinessRes() {}
 
+// The AI search summary.
+// Ref: #/components/schemas/AiSearchSummary
+type AiSearchSummary struct {
+	// The share of answers Tribelt aims to be named in.
+	Goal float64 `json:"goal"`
+	// The companies the trend follows - Tribelt, then the most named competitors.
+	Followed []FollowedCompany `json:"followed"`
+	// The newest runs, oldest first.
+	Trend []ShareTrendPoint `json:"trend"`
+	// Every crawler a scan records, those that feed answers today first.
+	Crawlers []TribeltCrawler `json:"crawlers"`
+	// The competitors that keep crawlers out, most crawlers first.
+	KeepingOut []KeepingOut `json:"keepingOut"`
+	// Tribelt among the best-prepared competitors, highest score first.
+	Ranking []ReadinessRank `json:"ranking"`
+	// How many sites have a recorded AI readiness.
+	Sites int32 `json:"sites"`
+	// How many buyer questions the newest run asked; 0 before any run.
+	Questions int32 `json:"questions"`
+	// How many providers the newest run asked; 0 before any run.
+	Providers int32 `json:"providers"`
+}
+
+// GetGoal returns the value of Goal.
+func (s *AiSearchSummary) GetGoal() float64 {
+	return s.Goal
+}
+
+// GetFollowed returns the value of Followed.
+func (s *AiSearchSummary) GetFollowed() []FollowedCompany {
+	return s.Followed
+}
+
+// GetTrend returns the value of Trend.
+func (s *AiSearchSummary) GetTrend() []ShareTrendPoint {
+	return s.Trend
+}
+
+// GetCrawlers returns the value of Crawlers.
+func (s *AiSearchSummary) GetCrawlers() []TribeltCrawler {
+	return s.Crawlers
+}
+
+// GetKeepingOut returns the value of KeepingOut.
+func (s *AiSearchSummary) GetKeepingOut() []KeepingOut {
+	return s.KeepingOut
+}
+
+// GetRanking returns the value of Ranking.
+func (s *AiSearchSummary) GetRanking() []ReadinessRank {
+	return s.Ranking
+}
+
+// GetSites returns the value of Sites.
+func (s *AiSearchSummary) GetSites() int32 {
+	return s.Sites
+}
+
+// GetQuestions returns the value of Questions.
+func (s *AiSearchSummary) GetQuestions() int32 {
+	return s.Questions
+}
+
+// GetProviders returns the value of Providers.
+func (s *AiSearchSummary) GetProviders() int32 {
+	return s.Providers
+}
+
+// SetGoal sets the value of Goal.
+func (s *AiSearchSummary) SetGoal(val float64) {
+	s.Goal = val
+}
+
+// SetFollowed sets the value of Followed.
+func (s *AiSearchSummary) SetFollowed(val []FollowedCompany) {
+	s.Followed = val
+}
+
+// SetTrend sets the value of Trend.
+func (s *AiSearchSummary) SetTrend(val []ShareTrendPoint) {
+	s.Trend = val
+}
+
+// SetCrawlers sets the value of Crawlers.
+func (s *AiSearchSummary) SetCrawlers(val []TribeltCrawler) {
+	s.Crawlers = val
+}
+
+// SetKeepingOut sets the value of KeepingOut.
+func (s *AiSearchSummary) SetKeepingOut(val []KeepingOut) {
+	s.KeepingOut = val
+}
+
+// SetRanking sets the value of Ranking.
+func (s *AiSearchSummary) SetRanking(val []ReadinessRank) {
+	s.Ranking = val
+}
+
+// SetSites sets the value of Sites.
+func (s *AiSearchSummary) SetSites(val int32) {
+	s.Sites = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *AiSearchSummary) SetQuestions(val int32) {
+	s.Questions = val
+}
+
+// SetProviders sets the value of Providers.
+func (s *AiSearchSummary) SetProviders(val int32) {
+	s.Providers = val
+}
+
+func (*AiSearchSummary) getAiSearchSummaryRes() {}
+
 // An analysis with its progress and results.
 // Ref: #/components/schemas/Analysis
 type Analysis struct {
@@ -1864,6 +1979,49 @@ func (s *CrawlerAccess) UnmarshalText(data []byte) error {
 	}
 }
 
+// What a crawler feeds - answers AI assistants give today, or what future models know.
+// Ref: #/components/schemas/CrawlerFeeds
+type CrawlerFeeds string
+
+const (
+	CrawlerFeedsToday  CrawlerFeeds = "today"
+	CrawlerFeedsFuture CrawlerFeeds = "future"
+)
+
+// AllValues returns all CrawlerFeeds values.
+func (CrawlerFeeds) AllValues() []CrawlerFeeds {
+	return []CrawlerFeeds{
+		CrawlerFeedsToday,
+		CrawlerFeedsFuture,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CrawlerFeeds) MarshalText() ([]byte, error) {
+	switch s {
+	case CrawlerFeedsToday:
+		return []byte(s), nil
+	case CrawlerFeedsFuture:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CrawlerFeeds) UnmarshalText(data []byte) error {
+	switch CrawlerFeeds(data) {
+	case CrawlerFeedsToday:
+		*s = CrawlerFeedsToday
+		return nil
+	case CrawlerFeedsFuture:
+		*s = CrawlerFeedsFuture
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type DeleteCompetitorBadRequest ProblemStatusCode
 
 func (*DeleteCompetitorBadRequest) deleteCompetitorRes() {}
@@ -2056,6 +2214,45 @@ func (s *Facets) SetFamilies(val []FacetCount) {
 	s.Families = val
 }
 
+// A company the AI search trend follows.
+// Ref: #/components/schemas/FollowedCompany
+type FollowedCompany struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string      `json:"name"`
+	Role CompanyRole `json:"role"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *FollowedCompany) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *FollowedCompany) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *FollowedCompany) GetRole() CompanyRole {
+	return s.Role
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *FollowedCompany) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *FollowedCompany) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *FollowedCompany) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
 type GetAnalysisBadRequest ProblemStatusCode
 
 func (*GetAnalysisBadRequest) getAnalysisRes() {}
@@ -2198,6 +2395,46 @@ func (s *IntentTier) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// A competitor whose robots.txt keeps crawlers out of the whole site.
+// Ref: #/components/schemas/KeepingOut
+type KeepingOut struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The competitor's name.
+	Name string `json:"name"`
+	// The crawlers it keeps out.
+	Blocked []string `json:"blocked"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *KeepingOut) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *KeepingOut) GetName() string {
+	return s.Name
+}
+
+// GetBlocked returns the value of Blocked.
+func (s *KeepingOut) GetBlocked() []string {
+	return s.Blocked
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *KeepingOut) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *KeepingOut) SetName(val string) {
+	s.Name = val
+}
+
+// SetBlocked sets the value of Blocked.
+func (s *KeepingOut) SetBlocked(val []string) {
+	s.Blocked = val
 }
 
 // A phrase about metal belts that the site emphasises, scored by where and how often it appears.
@@ -4221,6 +4458,52 @@ func (o OptCompetitorId) Or(d CompetitorId) CompetitorId {
 	return d
 }
 
+// NewOptCrawlerAccess returns new OptCrawlerAccess with value set to v.
+func NewOptCrawlerAccess(v CrawlerAccess) OptCrawlerAccess {
+	return OptCrawlerAccess{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCrawlerAccess is optional CrawlerAccess.
+type OptCrawlerAccess struct {
+	Value CrawlerAccess
+	Set   bool
+}
+
+// IsSet returns true if OptCrawlerAccess was set.
+func (o OptCrawlerAccess) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCrawlerAccess) Reset() {
+	var v CrawlerAccess
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCrawlerAccess) SetTo(v CrawlerAccess) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCrawlerAccess) Get() (v CrawlerAccess, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCrawlerAccess) Or(d CrawlerAccess) CrawlerAccess {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptDateTime returns new OptDateTime with value set to v.
 func NewOptDateTime(v time.Time) OptDateTime {
 	return OptDateTime{
@@ -5313,6 +5596,7 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 }
 
 func (*ProblemStatusCode) getAiReadinessRes()       {}
+func (*ProblemStatusCode) getAiSearchSummaryRes()   {}
 func (*ProblemStatusCode) getMeRes()                {}
 func (*ProblemStatusCode) getPromptTestResultsRes() {}
 func (*ProblemStatusCode) getStandingsRes()         {}
@@ -7567,6 +7851,57 @@ func (s *ReadinessFiles) SetLlmsFullTruncated(val bool) {
 
 func (*ReadinessFiles) getReadinessFilesRes() {}
 
+// A company in the readiness ranking.
+// Ref: #/components/schemas/ReadinessRank
+type ReadinessRank struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string      `json:"name"`
+	Role CompanyRole `json:"role"`
+	// Readiness checks passed out of five, in halves.
+	Score float64 `json:"score"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *ReadinessRank) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *ReadinessRank) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *ReadinessRank) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetScore returns the value of Score.
+func (s *ReadinessRank) GetScore() float64 {
+	return s.Score
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *ReadinessRank) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *ReadinessRank) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *ReadinessRank) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetScore sets the value of Score.
+func (s *ReadinessRank) SetScore(val float64) {
+	s.Score = val
+}
+
 type RejectTermCandidateBadRequest ProblemStatusCode
 
 func (*RejectTermCandidateBadRequest) rejectTermCandidateRes() {}
@@ -7892,6 +8227,36 @@ func (*SetActiveLlmUnauthorized) setActiveLlmRes() {}
 type SetActiveLlmUnprocessableEntity ProblemStatusCode
 
 func (*SetActiveLlmUnprocessableEntity) setActiveLlmRes() {}
+
+// One Prompt run in the trend.
+// Ref: #/components/schemas/ShareTrendPoint
+type ShareTrendPoint struct {
+	// When the run started.
+	RunStartedAt time.Time `json:"runStartedAt"`
+	// The share of the run's answers naming each followed company, in the order of `followed`, from 0 to
+	// 1.
+	Shares []float64 `json:"shares"`
+}
+
+// GetRunStartedAt returns the value of RunStartedAt.
+func (s *ShareTrendPoint) GetRunStartedAt() time.Time {
+	return s.RunStartedAt
+}
+
+// GetShares returns the value of Shares.
+func (s *ShareTrendPoint) GetShares() []float64 {
+	return s.Shares
+}
+
+// SetRunStartedAt sets the value of RunStartedAt.
+func (s *ShareTrendPoint) SetRunStartedAt(val time.Time) {
+	s.RunStartedAt = val
+}
+
+// SetShares sets the value of Shares.
+func (s *ShareTrendPoint) SetShares(val []float64) {
+	s.Shares = val
+}
 
 // The tools behind a site, as far as its headers and home page tell; each absent when unknown.
 // Ref: #/components/schemas/SiteStack
@@ -8948,6 +9313,69 @@ func (*TestLlmCredentialUnauthorized) testLlmCredentialRes() {}
 type TestLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*TestLlmCredentialUnprocessableEntity) testLlmCredentialRes() {}
+
+// A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
+// Ref: #/components/schemas/TribeltCrawler
+type TribeltCrawler struct {
+	// Its robots.txt token.
+	Bot string `json:"bot"`
+	// Who runs it.
+	Lab string `json:"lab"`
+	// What letting it in gets Tribelt.
+	Gets   string           `json:"gets"`
+	Feeds  CrawlerFeeds     `json:"feeds"`
+	Access OptCrawlerAccess `json:"access"`
+}
+
+// GetBot returns the value of Bot.
+func (s *TribeltCrawler) GetBot() string {
+	return s.Bot
+}
+
+// GetLab returns the value of Lab.
+func (s *TribeltCrawler) GetLab() string {
+	return s.Lab
+}
+
+// GetGets returns the value of Gets.
+func (s *TribeltCrawler) GetGets() string {
+	return s.Gets
+}
+
+// GetFeeds returns the value of Feeds.
+func (s *TribeltCrawler) GetFeeds() CrawlerFeeds {
+	return s.Feeds
+}
+
+// GetAccess returns the value of Access.
+func (s *TribeltCrawler) GetAccess() OptCrawlerAccess {
+	return s.Access
+}
+
+// SetBot sets the value of Bot.
+func (s *TribeltCrawler) SetBot(val string) {
+	s.Bot = val
+}
+
+// SetLab sets the value of Lab.
+func (s *TribeltCrawler) SetLab(val string) {
+	s.Lab = val
+}
+
+// SetGets sets the value of Gets.
+func (s *TribeltCrawler) SetGets(val string) {
+	s.Gets = val
+}
+
+// SetFeeds sets the value of Feeds.
+func (s *TribeltCrawler) SetFeeds(val CrawlerFeeds) {
+	s.Feeds = val
+}
+
+// SetAccess sets the value of Access.
+func (s *TribeltCrawler) SetAccess(val OptCrawlerAccess) {
+	s.Access = val
+}
 
 type UndoCompetitorCandidateBadRequest ProblemStatusCode
 

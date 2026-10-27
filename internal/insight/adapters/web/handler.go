@@ -14,6 +14,7 @@ import (
 // UseCases is what the adapter needs from the application layer.
 type UseCases interface {
 	Standings(ctx context.Context) (app.Standings, error)
+	AiSearch(ctx context.Context) (app.AiSearch, error)
 }
 
 // Handler implements the insight operations. Business rules stay in the use cases.
@@ -59,4 +60,41 @@ func toStandings(in []domain.Standing) []oas.Standing {
 		out = append(out, o)
 	}
 	return out
+}
+
+// GetAiSearchSummary implements getAiSearchSummary.
+func (h *Handler) GetAiSearchSummary(ctx context.Context) (oas.GetAiSearchSummaryRes, error) {
+	s, err := h.uc.AiSearch(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.AiSearchSummary{
+		Goal: s.Goal, Followed: []oas.FollowedCompany{}, Trend: []oas.ShareTrendPoint{}, Crawlers: []oas.TribeltCrawler{},
+		KeepingOut: []oas.KeepingOut{}, Ranking: []oas.ReadinessRank{},
+		Sites: int32(s.Sites), Questions: int32(s.Questions), Providers: int32(s.Providers), //nolint:gosec // small counts
+	}
+	for _, c := range s.Followed {
+		out.Followed = append(out.Followed, oas.FollowedCompany{CompetitorId: oas.CompetitorId(c.ID), Name: c.Name, Role: oas.CompanyRole(c.Role)})
+	}
+	for _, p := range s.Trend {
+		shares := make([]float64, 0, len(p.Shares))
+		for _, sh := range p.Shares {
+			shares = append(shares, sh.Share)
+		}
+		out.Trend = append(out.Trend, oas.ShareTrendPoint{RunStartedAt: p.StartedAt, Shares: shares})
+	}
+	for _, c := range s.Crawlers {
+		row := oas.TribeltCrawler{Bot: c.Bot, Lab: c.Lab, Gets: c.Gets, Feeds: oas.CrawlerFeeds(c.Feeds)}
+		if c.Access != "" {
+			row.Access = oas.NewOptCrawlerAccess(oas.CrawlerAccess(c.Access))
+		}
+		out.Crawlers = append(out.Crawlers, row)
+	}
+	for _, k := range s.KeepingOut {
+		out.KeepingOut = append(out.KeepingOut, oas.KeepingOut{CompetitorId: oas.CompetitorId(k.CompanyID), Name: k.Name, Blocked: k.Blocked})
+	}
+	for _, r := range s.Ranking {
+		out.Ranking = append(out.Ranking, oas.ReadinessRank{CompetitorId: oas.CompetitorId(r.CompanyID), Name: r.Name, Role: oas.CompanyRole(r.Role), Score: r.Score})
+	}
+	return out, nil
 }

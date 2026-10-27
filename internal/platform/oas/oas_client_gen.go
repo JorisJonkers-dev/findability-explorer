@@ -103,6 +103,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/ai-readiness
 	GetAiReadiness(ctx context.Context) (GetAiReadinessRes, error)
+	// GetAiSearchSummary invokes getAiSearchSummary operation.
+	//
+	// Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the
+	// newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and
+	// what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared
+	// competitors by readiness checks passed out of five.
+	//
+	// GET /api/v1/ai-search
+	GetAiSearchSummary(ctx context.Context) (GetAiSearchSummaryRes, error)
 	// GetAnalysis invokes getAnalysis operation.
 	//
 	// Returns the analysis, its progress, and every result found so far.
@@ -1671,6 +1680,122 @@ func (c *Client) sendGetAiReadiness(ctx context.Context) (res GetAiReadinessRes,
 
 	stage = "DecodeResponse"
 	result, err := decodeGetAiReadinessResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetAiSearchSummary invokes getAiSearchSummary operation.
+//
+// Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the
+// newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and
+// what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared
+// competitors by readiness checks passed out of five.
+//
+// GET /api/v1/ai-search
+func (c *Client) GetAiSearchSummary(ctx context.Context) (GetAiSearchSummaryRes, error) {
+	res, err := c.sendGetAiSearchSummary(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetAiSearchSummary(ctx context.Context) (res GetAiSearchSummaryRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getAiSearchSummary"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/ai-search"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAiSearchSummaryOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/ai-search"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetAiSearchSummaryOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetAiSearchSummaryResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

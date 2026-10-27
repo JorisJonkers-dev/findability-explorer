@@ -41,6 +41,10 @@ type GetAiReadinessRes interface {
 	getAiReadinessRes()
 }
 
+type GetAiSearchSummaryRes interface {
+	getAiSearchSummaryRes()
+}
+
 type GetAnalysisRes interface {
 	getAnalysisRes()
 }

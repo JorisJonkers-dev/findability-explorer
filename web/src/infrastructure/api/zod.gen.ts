@@ -663,6 +663,73 @@ export const zAiReadiness = z.object({
 });
 
 /**
+ * A company the AI search trend follows.
+ */
+export const zFollowedCompany = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole
+});
+
+/**
+ * One Prompt run in the trend.
+ */
+export const zShareTrendPoint = z.object({
+    runStartedAt: z.iso.datetime({ offset: true }).max(64),
+    shares: z.array(z.number().gte(0).lte(1)).max(10)
+});
+
+/**
+ * What a crawler feeds - answers AI assistants give today, or what future models know.
+ */
+export const zCrawlerFeeds = z.enum(['today', 'future']);
+
+/**
+ * A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
+ */
+export const zTribeltCrawler = z.object({
+    bot: z.string().max(40),
+    lab: z.string().max(60),
+    gets: z.string().max(200),
+    feeds: zCrawlerFeeds,
+    access: zCrawlerAccess.optional()
+});
+
+/**
+ * A competitor whose robots.txt keeps crawlers out of the whole site.
+ */
+export const zKeepingOut = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    blocked: z.array(z.string().max(40)).max(20)
+});
+
+/**
+ * A company in the readiness ranking.
+ */
+export const zReadinessRank = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    score: z.number().gte(0).lte(5)
+});
+
+/**
+ * The AI search summary.
+ */
+export const zAiSearchSummary = z.object({
+    goal: z.number().gte(0).lte(1),
+    followed: z.array(zFollowedCompany).max(10),
+    trend: z.array(zShareTrendPoint).max(50),
+    crawlers: z.array(zTribeltCrawler).max(20),
+    keepingOut: z.array(zKeepingOut).max(300),
+    ranking: z.array(zReadinessRank).max(20),
+    sites: z.int().gte(0).lte(1000),
+    questions: z.int().gte(0).lte(1000),
+    providers: z.int().gte(0).lte(100)
+});
+
+/**
  * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
  */
 export const zStandingMeasure = z.enum([
@@ -1224,6 +1291,11 @@ export const zCompetitorCandidateIdPath = zCompetitorCandidateId;
  * The credential's id.
  */
 export const zCredentialId = zLlmCredentialId;
+
+/**
+ * The summary.
+ */
+export const zGetAiSearchSummaryResponse = zAiSearchSummary;
 
 /**
  * The standings.

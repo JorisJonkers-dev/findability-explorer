@@ -52,6 +52,11 @@ func New(ports Ports, now func() time.Time) *Service {
 	return &Service{ports: ports, now: now}
 }
 
+// targets are the plan's targets now.
+func (s *Service) targets() map[domain.Target]float64 {
+	return domain.DefaultTargets()
+}
+
 // Standings is how Tribelt stands against its competitors now.
 type Standings struct {
 	Standings []domain.Standing

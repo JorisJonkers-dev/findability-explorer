@@ -14,6 +14,9 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
 )
 
+// TribeltID is Tribelt's own id among the companies.
+const TribeltID = "tribelt"
+
 // Role is what a company is to Tribelt.
 type Role string
 
@@ -53,6 +56,7 @@ const (
 // family, and the companies on the list it names, in order, and whose sites it cites.
 type Answer struct {
 	PromptID string
+	Provider string
 	Mode     Mode
 	Scope    string
 	Family   string
@@ -121,9 +125,20 @@ const (
 	AccessUnknown Access = "unknown"
 )
 
+// BotAccess is how far robots.txt lets one crawler in.
+type BotAccess string
+
+const (
+	BotAllowed BotAccess = "allowed"
+	BotPartly  BotAccess = "partly"
+	BotBlocked BotAccess = "blocked"
+)
+
 // Readiness is what a company's newest scan recorded of its AI readiness.
 type Readiness struct {
 	Crawlers Access
+	// Bots is each crawler's access, by its robots.txt token; empty when robots.txt could not be read.
+	Bots map[string]BotAccess
 	// Blocked are the crawlers kept out of the whole site.
 	Blocked          []string
 	Sitemap          bool

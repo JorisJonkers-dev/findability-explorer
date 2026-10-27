@@ -76,7 +76,7 @@ func (p promptRuns) Runs(ctx context.Context, limit int) ([]insightdomain.Run, e
 		run := insightdomain.Run{ID: r.Run.ID.String(), StartedAt: r.Run.StartedAt}
 		for _, a := range r.Answers {
 			run.Answers = append(run.Answers, insightdomain.Answer{
-				PromptID: a.Prompt.ID, Mode: insightdomain.Mode(a.Mode), Scope: string(a.Prompt.Scope), Family: string(a.Prompt.Family),
+				PromptID: a.Prompt.ID, Provider: a.Provider, Mode: insightdomain.Mode(a.Mode), Scope: string(a.Prompt.Scope), Family: string(a.Prompt.Family),
 				Named: a.Extraction.NamedCompanies(), Cited: prompttestdomain.CitedCompanies(a.Extraction.Addresses, directory),
 			})
 		}
@@ -109,9 +109,10 @@ func readinessOf(r analysisdomain.Readiness, at time.Time) insightdomain.Readine
 	out := insightdomain.Readiness{
 		Crawlers: insightdomain.AccessOpen, Sitemap: r.Sitemap.Files > 0, SitemapPages: r.Sitemap.Addresses,
 		SitemapLanguages: r.Sitemap.Languages, LLMs: r.LLMs.Present, LLMsFull: r.LLMsFull, Markdown: r.Markdown,
-		StructuredData: r.StructuredData, ScannedAt: at,
+		StructuredData: r.StructuredData, ScannedAt: at, Bots: map[string]insightdomain.BotAccess{},
 	}
 	for _, b := range r.Bots {
+		out.Bots[b.Bot] = insightdomain.BotAccess(b.Access)
 		if b.Access == analysisdomain.AccessBlocked {
 			out.Blocked = append(out.Blocked, b.Bot)
 		}

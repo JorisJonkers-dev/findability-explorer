@@ -43,6 +43,27 @@ tags:
       How Tribelt stands against its competitors, its belt families against the field, and the
       plan, all computed from the newest Prompt runs, scans and research.
 paths:
+  /api/v1/ai-search:
+    get:
+      operationId: getAiSearchSummary
+      summary: Get the AI search summary
+      description: >-
+        Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the
+        competitors the newest run names most; which crawlers tribelt.nl's newest scan lets in,
+        with the lab behind each and what it feeds; the competitors that keep crawlers out; and
+        Tribelt among the best-prepared competitors by readiness checks passed out of five.
+      tags: [insight]
+      responses:
+        "200":
+          description: The summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSearchSummary"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/standings:
     get:
       operationId: getStandings
@@ -2948,6 +2969,179 @@ components:
           maximum: 100
           description: How many recommendations the site does not follow, each blocked crawler included.
           example: 3
+    FollowedCompany:
+      description: A company the AI search trend follows.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Ashworth
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+    ShareTrendPoint:
+      description: One Prompt run in the trend.
+      type: object
+      additionalProperties: false
+      required: [runStartedAt, shares]
+      properties:
+        runStartedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the run started.
+          example: "2026-11-02T06:00:00Z"
+        shares:
+          type: array
+          maxItems: 10
+          description: The share of the run's answers naming each followed company, in the order of `followed`, from 0 to 1.
+          items:
+            type: number
+            format: double
+            minimum: 0
+            maximum: 1
+            example: 0.24
+    CrawlerFeeds:
+      description: What a crawler feeds - answers AI assistants give today, or what future models know.
+      type: string
+      enum: [today, future]
+    TribeltCrawler:
+      description: A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
+      type: object
+      additionalProperties: false
+      required: [bot, lab, gets, feeds]
+      properties:
+        bot:
+          type: string
+          maxLength: 40
+          description: Its robots.txt token.
+          example: OAI-SearchBot
+        lab:
+          type: string
+          maxLength: 60
+          description: Who runs it.
+          example: OpenAI
+        gets:
+          type: string
+          maxLength: 200
+          description: What letting it in gets Tribelt.
+          example: Links in ChatGPT search answers
+        feeds:
+          $ref: "#/components/schemas/CrawlerFeeds"
+        access:
+          $ref: "#/components/schemas/CrawlerAccess"
+    KeepingOut:
+      description: A competitor whose robots.txt keeps crawlers out of the whole site.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, blocked]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The competitor's name.
+          example: Wire Belt Company
+        blocked:
+          type: array
+          maxItems: 20
+          description: The crawlers it keeps out.
+          items:
+            type: string
+            maxLength: 40
+            example: GPTBot
+    ReadinessRank:
+      description: A company in the readiness ranking.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role, score]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Märtens Transportbänder
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        score:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+          description: Readiness checks passed out of five, in halves.
+          example: 3.5
+    AiSearchSummary:
+      description: The AI search summary.
+      type: object
+      additionalProperties: false
+      required: [goal, followed, trend, crawlers, keepingOut, ranking, sites, questions, providers]
+      properties:
+        goal:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of answers Tribelt aims to be named in.
+          example: 0.4
+        followed:
+          type: array
+          maxItems: 10
+          description: The companies the trend follows - Tribelt, then the most named competitors.
+          items:
+            $ref: "#/components/schemas/FollowedCompany"
+        trend:
+          type: array
+          maxItems: 50
+          description: The newest runs, oldest first.
+          items:
+            $ref: "#/components/schemas/ShareTrendPoint"
+        crawlers:
+          type: array
+          maxItems: 20
+          description: Every crawler a scan records, those that feed answers today first.
+          items:
+            $ref: "#/components/schemas/TribeltCrawler"
+        keepingOut:
+          type: array
+          maxItems: 300
+          description: The competitors that keep crawlers out, most crawlers first.
+          items:
+            $ref: "#/components/schemas/KeepingOut"
+        ranking:
+          type: array
+          maxItems: 20
+          description: Tribelt among the best-prepared competitors, highest score first.
+          items:
+            $ref: "#/components/schemas/ReadinessRank"
+        sites:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many sites have a recorded AI readiness.
+          example: 41
+        questions:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many buyer questions the newest run asked; 0 before any run.
+          example: 20
+        providers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many providers the newest run asked; 0 before any run.
+          example: 5
     StandingMeasure:
       description: >-
         A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the

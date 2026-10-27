@@ -117,6 +117,18 @@ func (UnimplementedHandler) GetAiReadiness(ctx context.Context) (r GetAiReadines
 	return r, ht.ErrNotImplemented
 }
 
+// GetAiSearchSummary implements getAiSearchSummary operation.
+//
+// Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the
+// newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and
+// what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared
+// competitors by readiness checks passed out of five.
+//
+// GET /api/v1/ai-search
+func (UnimplementedHandler) GetAiSearchSummary(ctx context.Context) (r GetAiSearchSummaryRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAnalysis implements getAnalysis operation.
 //
 // Returns the analysis, its progress, and every result found so far.

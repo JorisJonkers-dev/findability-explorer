@@ -72,8 +72,13 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       { path: '/settings', name: 'settings', component: () => import('../features/settings/components/SettingsPage.vue'), meta: { title: 'Settings' } },
       { path: '/settings/terms', name: 'term-review', component: () => import('../features/review/components/TermReviewPage.vue'), meta: { title: 'Term review' } },
       // Earlier versions' addresses, which links and bookmarks may still carry.
-      // The competitor candidates are suggestions on the list of all competitors now.
-      { path: '/settings/candidates', redirect: '/competitors/all' },
+      {
+        path: '/settings/competitors',
+        name: 'competitor-review',
+        component: () => import('../features/competitors/components/CompetitorReviewPage.vue'),
+        meta: { title: 'Competitor review' },
+      },
+      { path: '/settings/candidates', redirect: '/settings/competitors' },
       { path: '/terminology', redirect: (to) => ({ path: '/terms', query: to.query }) },
       { path: '/keywords', redirect: (to) => ({ path: '/terms', query: to.query }) },
       { path: '/scan', redirect: (to) => ({ path: '/competitors', query: to.query }) },

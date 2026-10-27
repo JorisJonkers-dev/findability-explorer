@@ -152,7 +152,7 @@ describe('the routes', () => {
     await router.push(`/analyses/${ANALYSIS_ID}`)
     expect(router.currentRoute.value.fullPath).toBe(`/scan/${ANALYSIS_ID}`)
     await router.push('/settings/candidates')
-    expect(router.currentRoute.value.fullPath).toBe('/competitors/all')
+    expect(router.currentRoute.value.fullPath).toBe('/settings/competitors')
   })
 
   it('keeps the scroll position within a view, and starts a new view at the top', async () => {

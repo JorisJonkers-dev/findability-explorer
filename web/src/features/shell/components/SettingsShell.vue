@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useTermCandidates } from '../../review/composables/useTermReview'
+import { useCompetitorCandidates } from '../../prompt-test/composables/usePromptTest'
 import { useMe } from '../composables/useMe'
 import { useStage } from '../composables/useStage'
 import type { Tab } from '../domain/sections'
@@ -13,11 +14,14 @@ const { me } = useMe()
 const { pageZoom } = useStage()
 // How many terms wait in Term review: its tab shows it on every settings page.
 const { counts } = useTermCandidates(ref('pending'))
+// And how many named companies wait in Competitor review.
+const { counts: named } = useCompetitorCandidates(ref('pending'))
 
 const tabs = computed<Tab[]>(() => [
   { label: 'Language models', path: '/settings' },
   { label: 'Prompt test', path: '/settings/prompt-test' },
   { label: 'Term review', path: '/settings/terms', ...(counts.value ? { count: counts.value.pending } : {}) },
+  { label: 'Competitor review', path: '/settings/competitors', ...(named.value ? { count: named.value.pending } : {}) },
 ])
 </script>
 

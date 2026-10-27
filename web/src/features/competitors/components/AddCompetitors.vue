@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
+import { RouterLink } from 'vue-router'
 import type { Competitor } from '../../../infrastructure/api/types.gen'
 import { useCandidateDecision, useCompetitorCandidates } from '../../prompt-test/composables/usePromptTest'
 import { candidateWebsite } from '../../prompt-test/domain/settings'
@@ -227,6 +228,7 @@ function send(): void {
         </li>
       </ul>
       <p v-if="decisionError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ decisionError }}</p>
+      <RouterLink to="/settings/competitors" class="self-start text-sm font-medium stage:text-[22px]">Review every company named in AI answers</RouterLink>
     </div>
   </section>
 </template>

@@ -44,9 +44,11 @@ test("a section's tabs open its pages", async ({ page }) => {
   await expectAccessible(page)
 })
 
-test('the old candidates review goes to All competitors', async ({ page }) => {
+test('the old candidates review goes to Competitor review', async ({ page }) => {
   await page.goto('/settings/candidates')
-  await expect(page).toHaveURL('/competitors/all')
+  await expect(page).toHaveURL('/settings/competitors')
+  await expect(page.getByRole('heading', { level: 1, name: 'Competitor review' })).toBeVisible()
+  await expectAccessible(page)
 })
 
 test.describe('at phone width', () => {

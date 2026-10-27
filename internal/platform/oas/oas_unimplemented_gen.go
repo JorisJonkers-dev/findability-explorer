@@ -44,6 +44,19 @@ func (UnimplementedHandler) AddCompetitorCandidate(ctx context.Context, req *New
 	return r, ht.ErrNotImplemented
 }
 
+// AddCompetitors implements addCompetitors operation.
+//
+// Administrators only. Adds the companies in order and says per item what became of it: added; skipped
+// as a duplicate when a known company, or an earlier item, has its website's host or its name; or
+// rejected without a valid name or website. An item from a competitor candidate records the candidate
+// as added. With `scan`, the added companies are scanned straight away. 422 for no item or more than
+// 100.
+//
+// POST /api/v1/admin/competitors/batch
+func (UnimplementedHandler) AddCompetitors(ctx context.Context, req *CompetitorBatchRequest) (r AddCompetitorsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // AddLlmCredential implements addLlmCredential operation.
 //
 // Checks the key with the provider (by listing its models) and stores it sealed. A key the provider

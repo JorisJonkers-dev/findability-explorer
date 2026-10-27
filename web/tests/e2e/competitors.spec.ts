@@ -11,3 +11,24 @@ test('All competitors lists the field, filters it, and opens a company', async (
   await list.getByRole('rowheader').first().getByRole('link').click()
   await expect(page).toHaveURL(/\/competitors/)
 })
+
+test('an administrator picks companies into the tray and adds them in one go', async ({ page }) => {
+  let sent: unknown = null
+  await page.route('**/api/v1/admin/competitors/batch', async (route) => {
+    sent = route.request().postDataJSON()
+    await route.fulfill({ json: { items: [{ name: 'Example Belts', outcome: 'added', competitorId: 'example-belts' }], scans: 0 } })
+  })
+  await page.goto('/competitors/all')
+  const field = page.getByRole('combobox', { name: 'Name or website' })
+  await field.fill('example-belts.de')
+  await expect(page.getByRole('option', { name: /Add example-belts\.de/ })).toBeVisible()
+  await expectAccessible(page)
+  await field.press('ArrowDown')
+  await field.press('ArrowUp')
+  await field.press('Enter')
+  await expect(page.getByRole('list', { name: 'To add' })).toContainText('Example Belts')
+  await page.getByLabel('Scan them straight away').uncheck()
+  await page.getByRole('button', { name: 'Add 1 competitor' }).click()
+  await expect(page.getByText('Added 1 competitor.')).toBeVisible()
+  expect(sent).toEqual({ items: [{ name: 'Example Belts', url: 'https://example-belts.de/' }], scan: false })
+})

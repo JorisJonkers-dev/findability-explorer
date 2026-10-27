@@ -41,6 +41,7 @@ var operationRolesSessionCookie = map[string][]string{
 	AcceptTermCandidateOperation:        []string{},
 	AddCompetitorOperation:              []string{},
 	AddCompetitorCandidateOperation:     []string{},
+	AddCompetitorsOperation:             []string{},
 	AddLlmCredentialOperation:           []string{},
 	ClearActiveLlmOperation:             []string{},
 	CompareScansOperation:               []string{},

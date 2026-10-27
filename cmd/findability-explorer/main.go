@@ -161,6 +161,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		})
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
 	insight := newInsight(companies, promptTest, analysis, terminology, now)
+	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
 
 	gate, err := newGate(ctx, logger, getenv, store, secret, now)
 	if err != nil {

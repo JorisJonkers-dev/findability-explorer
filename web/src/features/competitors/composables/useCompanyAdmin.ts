@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, watch } from 'vue'
 import {
   addCompetitorMutation,
+  addCompetitorsMutation,
   deleteCompetitorMutation,
   listAnalysesOptions,
   listAnalysesQueryKey,
@@ -9,7 +10,7 @@ import {
   startRescansMutation,
   updateCompetitorMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
-import type { AnalysisList, Competitor, CompetitorUpdate, RescanBatch, RescanRequest } from '../../../infrastructure/api/types.gen'
+import type { AnalysisList, Competitor, CompetitorBatch, CompetitorUpdate, NewCompetitorItem, RescanBatch, RescanRequest } from '../../../infrastructure/api/types.gen'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 import { companyProblem, rescanProgress } from '../domain/admin'
 
@@ -58,6 +59,33 @@ export function useAddCompany() {
     },
     reset: () => {
       add.reset()
+    },
+  }
+}
+
+/**
+ * Adds several companies at once, scanning them straight away when asked; administrators only.
+ * The candidates the answers named are asked for again too: an added one leaves the suggestions.
+ */
+export function useAddCompanies() {
+  const refresh = useRefresh()
+  const queryClient = useQueryClient()
+  const add = useMutation(addCompetitorsMutation())
+  return {
+    isAdding: add.isPending,
+    batch: computed<CompetitorBatch | undefined>(() => add.data.value),
+    error: computed(() => (add.error.value ? companyProblem(add.error.value) : null)),
+    add: (items: NewCompetitorItem[], scan: boolean, onDone: (batch: CompetitorBatch) => void) => {
+      add.mutate(
+        { body: { items, scan } },
+        {
+          onSuccess: (batch) => {
+            refresh()
+            void queryClient.invalidateQueries({ queryKey: [{ _id: 'listCompetitorCandidates' }] })
+            onDone(batch)
+          },
+        },
+      )
     },
   }
 }

@@ -132,6 +132,7 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.StartAnalysisOperation:    domain.NeedAdminChange,
 	oas.StartRescansOperation:     domain.NeedAdminChange,
 	oas.AddCompetitorOperation:    domain.NeedAdminChange,
+	oas.AddCompetitorsOperation:   domain.NeedAdminChange,
 	oas.UpdateCompetitorOperation: domain.NeedAdminChange,
 	oas.DeleteCompetitorOperation: domain.NeedAdminChange,
 	// The Prompt test: everyone signed in reads the results, only administrators run and set it.

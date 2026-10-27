@@ -10,6 +10,7 @@ import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { companyPath, COMPETITOR_TABS } from '../../shell/domain/sections'
 import { useRescan } from '../composables/useCompanyAdmin'
+import AddCompetitors from './AddCompetitors.vue'
 import { useCompetitors } from '../composables/useCompetitors'
 import { rescanSummary, unscannedCandidates } from '../domain/admin'
 import { hostOf } from '../domain/company'
@@ -42,7 +43,7 @@ function show(f: RosterFilter): void {
     :title="competitorCount > 0 ? `${String(competitorCount)} competitors, and Tribelt among them.` : 'Every competitor.'"
     :tabs="COMPETITOR_TABS"
   >
-    <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :class="'stage:grid-cols-1'">
+    <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :class="isAdmin ? 'stage:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]' : 'stage:grid-cols-1'">
       <section aria-labelledby="list-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <h2 id="list-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">All competitors</h2>
@@ -145,6 +146,7 @@ function show(f: RosterFilter): void {
           </table>
         </div>
       </section>
+      <AddCompetitors v-if="isAdmin" :companies="active" />
     </div>
   </SectionView>
 </template>

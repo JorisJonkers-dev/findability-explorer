@@ -258,3 +258,42 @@ func TestCountedRunsKeepOnlyAnswersThatCount(t *testing.T) {
 		e.repo.failOn[op] = false
 	}
 }
+
+func TestACandidateAddedFromAListIsRecorded(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	pending, _, _ := e.svc.Candidates(t.Context(), domain.CandidatePending)
+	id := pending[0].ID
+	if err := e.svc.RecordAdded(t.Context(), "joris", id, "ashworth"); err != nil {
+		t.Fatal(err)
+	}
+	added, _, _ := e.svc.Candidates(t.Context(), domain.CandidateAdded)
+	if len(added) != 1 || added[0].Decision.CompetitorID != "ashworth" || added[0].Decision.By != "joris" {
+		t.Fatalf("added = %+v", added)
+	}
+	if err := e.svc.RecordAdded(t.Context(), "joris", id, "ashworth"); !errors.Is(err, app.ErrDecided) {
+		t.Errorf("recorded twice: %v", err)
+	}
+	if err := e.svc.RecordAdded(t.Context(), "joris", "0123456789abcdef", "x"); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("an unknown candidate: %v", err)
+	}
+	for _, op := range []string{"Sightings", "CandidateDecisions"} {
+		e.repo.failOn[op] = true
+		if err := e.svc.RecordAdded(t.Context(), "joris", id, "x"); !errors.Is(err, errBoom) {
+			t.Errorf("%s failing: %v", op, err)
+		}
+		e.repo.failOn[op] = false
+	}
+	fresh := newEnv(t, newRepo(), "a")
+	fresh.repo.settings.Providers = []string{"openai"}
+	if _, err := fresh.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	fresh.repo.failOn["Decide"] = true
+	if err := fresh.svc.RecordAdded(t.Context(), "joris", id, "x"); !errors.Is(err, errBoom) {
+		t.Errorf("Decide failing: %v", err)
+	}
+}

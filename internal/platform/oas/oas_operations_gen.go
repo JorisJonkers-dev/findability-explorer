@@ -9,6 +9,7 @@ const (
 	AcceptTermCandidateOperation        OperationName = "AcceptTermCandidate"
 	AddCompetitorOperation              OperationName = "AddCompetitor"
 	AddCompetitorCandidateOperation     OperationName = "AddCompetitorCandidate"
+	AddCompetitorsOperation             OperationName = "AddCompetitors"
 	AddLlmCredentialOperation           OperationName = "AddLlmCredential"
 	ClearActiveLlmOperation             OperationName = "ClearActiveLlm"
 	CompareScansOperation               OperationName = "CompareScans"

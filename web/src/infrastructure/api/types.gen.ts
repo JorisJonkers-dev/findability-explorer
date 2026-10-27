@@ -181,6 +181,70 @@ export type Competitor = {
 export type CompanyRole = 'tribelt' | 'mirror' | 'group' | 'competitor';
 
 /**
+ * One company of a batch; one without a valid name or website is rejected on its own.
+ */
+export type NewCompetitorItem = {
+    /**
+     * The company's name.
+     */
+    name: string;
+    /**
+     * Its website, an http or https address on a public host.
+     */
+    url?: string;
+    candidateId?: CompetitorCandidateId;
+};
+
+/**
+ * Companies to add at once.
+ */
+export type CompetitorBatchRequest = {
+    /**
+     * The companies, in order.
+     */
+    items: Array<NewCompetitorItem>;
+    /**
+     * Whether to scan the added companies straight away.
+     */
+    scan?: boolean;
+};
+
+/**
+ * What became of one item - added, skipped as a duplicate, or rejected.
+ */
+export type CompetitorBatchOutcome = 'added' | 'duplicate' | 'rejected';
+
+/**
+ * One item's outcome.
+ */
+export type CompetitorBatchItem = {
+    /**
+     * The name as added, or as sent.
+     */
+    name: string;
+    outcome: CompetitorBatchOutcome;
+    competitorId?: CompetitorId;
+    /**
+     * Why it was skipped or rejected.
+     */
+    reason?: string;
+};
+
+/**
+ * What a batch did.
+ */
+export type CompetitorBatch = {
+    /**
+     * Each item's outcome, in order.
+     */
+    items: Array<CompetitorBatchItem>;
+    /**
+     * How many scans started.
+     */
+    scans: number;
+};
+
+/**
  * A company to add.
  */
 export type NewCompetitor = {
@@ -2365,6 +2429,50 @@ export type AddCompetitorResponses = {
 };
 
 export type AddCompetitorResponse = AddCompetitorResponses[keyof AddCompetitorResponses];
+
+export type AddCompetitorsData = {
+    /**
+     * The companies to add.
+     */
+    body: CompetitorBatchRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitors/batch';
+};
+
+export type AddCompetitorsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddCompetitorsError = AddCompetitorsErrors[keyof AddCompetitorsErrors];
+
+export type AddCompetitorsResponses = {
+    /**
+     * What became of each item, and how many scans started.
+     */
+    200: CompetitorBatch;
+};
+
+export type AddCompetitorsResponse = AddCompetitorsResponses[keyof AddCompetitorsResponses];
 
 export type DeleteCompetitorData = {
     body?: never;

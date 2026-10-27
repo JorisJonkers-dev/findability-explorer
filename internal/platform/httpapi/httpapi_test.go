@@ -147,6 +147,7 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		&companyRepo{}, companyScans{}, time.Now,
 	)
+	companies.WithBatch(batchPorts{}, batchPorts{})
 	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{
 		Terminology: terminology, Analysis: a, Companies: companies, LLM: l, PromptTest: a.prompts(), Insight: a.insights(), Auth: auth{},
 	})

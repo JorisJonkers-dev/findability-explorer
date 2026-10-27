@@ -13,6 +13,10 @@ type AddCompetitorRes interface {
 	addCompetitorRes()
 }
 
+type AddCompetitorsRes interface {
+	addCompetitorsRes()
+}
+
 type AddLlmCredentialRes interface {
 	addLlmCredentialRes()
 }

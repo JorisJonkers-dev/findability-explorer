@@ -43,9 +43,9 @@ describe('the list', () => {
   })
 
   it('puts Tribelt first, then the most named competitors, then the group', () => {
-    const list = [competitor('B'), competitor('De Spiraal', { role: 'group' }), competitor('A'), competitor('C'), competitor('Tribelt', { role: 'tribelt' })]
+    const list = [competitor('D'), competitor('B'), competitor('De Spiraal', { role: 'group' }), competitor('A'), competitor('C'), competitor('Tribelt', { role: 'tribelt' })]
     const share = (c: { name: string }) => ({ A: 0.1, C: 0.5 })[c.name as 'A' | 'C']
-    expect(rosterOrder(list, share).map((c) => c.name)).toEqual(['Tribelt', 'C', 'A', 'B', 'De Spiraal'])
+    expect(rosterOrder(list, share).map((c) => c.name)).toEqual(['Tribelt', 'C', 'A', 'B', 'D', 'De Spiraal'])
   })
 
   it('writes place, role and the last scan', () => {

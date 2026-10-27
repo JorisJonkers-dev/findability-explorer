@@ -62,7 +62,9 @@ export function keeps(c: Pick<Competitor, 'role' | 'scans'>, filter: RosterFilte
 /** The order of the list: Tribelt, then the competitors the answers name most, then by name, then the group. */
 export function rosterOrder<T extends Pick<Competitor, 'role' | 'name'>>(companies: readonly T[], share: (c: T) => number | undefined): T[] {
   const band = (c: T) => (c.role === 'tribelt' ? 0 : c.role === 'competitor' ? 1 : 2)
-  return [...companies].sort((a, b) => band(a) - band(b) || (share(b) ?? -1) - (share(a) ?? -1) || a.name.localeCompare(b.name))
+  // A company no run has named yet sorts below every share.
+  const ofShare = (c: T) => share(c) ?? -1
+  return [...companies].sort((a, b) => band(a) - band(b) || ofShare(b) - ofShare(a) || a.name.localeCompare(b.name))
 }
 
 const REGIONS = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'code' })
@@ -70,7 +72,7 @@ const REGIONS = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'code'
 /** Where a company is: its country's name, or nothing the research did not note. */
 export function placeOf(c: Pick<Competitor, 'country'>): string {
   if (!/^[A-Z]{2}$/.test(c.country)) return c.country
-  return REGIONS.of(c.country) ?? c.country
+  return String(REGIONS.of(c.country))
 }
 
 /** Its role, as the list writes it. */

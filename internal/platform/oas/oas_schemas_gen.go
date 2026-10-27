@@ -111,6 +111,22 @@ type AddCompetitorUnprocessableEntity ProblemStatusCode
 
 func (*AddCompetitorUnprocessableEntity) addCompetitorRes() {}
 
+type AddCompetitorsBadRequest ProblemStatusCode
+
+func (*AddCompetitorsBadRequest) addCompetitorsRes() {}
+
+type AddCompetitorsForbidden ProblemStatusCode
+
+func (*AddCompetitorsForbidden) addCompetitorsRes() {}
+
+type AddCompetitorsUnauthorized ProblemStatusCode
+
+func (*AddCompetitorsUnauthorized) addCompetitorsRes() {}
+
+type AddCompetitorsUnprocessableEntity ProblemStatusCode
+
+func (*AddCompetitorsUnprocessableEntity) addCompetitorsRes() {}
+
 type AddLlmCredentialBadRequest ProblemStatusCode
 
 func (*AddLlmCredentialBadRequest) addLlmCredentialRes() {}
@@ -1363,6 +1379,167 @@ func (s *Competitor) SetHomepageTitle(val string) {
 
 func (*Competitor) addCompetitorRes()    {}
 func (*Competitor) updateCompetitorRes() {}
+
+// What a batch did.
+// Ref: #/components/schemas/CompetitorBatch
+type CompetitorBatch struct {
+	// Each item's outcome, in order.
+	Items []CompetitorBatchItem `json:"items"`
+	// How many scans started.
+	Scans int32 `json:"scans"`
+}
+
+// GetItems returns the value of Items.
+func (s *CompetitorBatch) GetItems() []CompetitorBatchItem {
+	return s.Items
+}
+
+// GetScans returns the value of Scans.
+func (s *CompetitorBatch) GetScans() int32 {
+	return s.Scans
+}
+
+// SetItems sets the value of Items.
+func (s *CompetitorBatch) SetItems(val []CompetitorBatchItem) {
+	s.Items = val
+}
+
+// SetScans sets the value of Scans.
+func (s *CompetitorBatch) SetScans(val int32) {
+	s.Scans = val
+}
+
+func (*CompetitorBatch) addCompetitorsRes() {}
+
+// One item's outcome.
+// Ref: #/components/schemas/CompetitorBatchItem
+type CompetitorBatchItem struct {
+	// The name as added, or as sent.
+	Name         string                 `json:"name"`
+	Outcome      CompetitorBatchOutcome `json:"outcome"`
+	CompetitorId OptCompetitorId        `json:"competitorId"`
+	// Why it was skipped or rejected.
+	Reason OptString `json:"reason"`
+}
+
+// GetName returns the value of Name.
+func (s *CompetitorBatchItem) GetName() string {
+	return s.Name
+}
+
+// GetOutcome returns the value of Outcome.
+func (s *CompetitorBatchItem) GetOutcome() CompetitorBatchOutcome {
+	return s.Outcome
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CompetitorBatchItem) GetCompetitorId() OptCompetitorId {
+	return s.CompetitorId
+}
+
+// GetReason returns the value of Reason.
+func (s *CompetitorBatchItem) GetReason() OptString {
+	return s.Reason
+}
+
+// SetName sets the value of Name.
+func (s *CompetitorBatchItem) SetName(val string) {
+	s.Name = val
+}
+
+// SetOutcome sets the value of Outcome.
+func (s *CompetitorBatchItem) SetOutcome(val CompetitorBatchOutcome) {
+	s.Outcome = val
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CompetitorBatchItem) SetCompetitorId(val OptCompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetReason sets the value of Reason.
+func (s *CompetitorBatchItem) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// What became of one item - added, skipped as a duplicate, or rejected.
+// Ref: #/components/schemas/CompetitorBatchOutcome
+type CompetitorBatchOutcome string
+
+const (
+	CompetitorBatchOutcomeAdded     CompetitorBatchOutcome = "added"
+	CompetitorBatchOutcomeDuplicate CompetitorBatchOutcome = "duplicate"
+	CompetitorBatchOutcomeRejected  CompetitorBatchOutcome = "rejected"
+)
+
+// AllValues returns all CompetitorBatchOutcome values.
+func (CompetitorBatchOutcome) AllValues() []CompetitorBatchOutcome {
+	return []CompetitorBatchOutcome{
+		CompetitorBatchOutcomeAdded,
+		CompetitorBatchOutcomeDuplicate,
+		CompetitorBatchOutcomeRejected,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CompetitorBatchOutcome) MarshalText() ([]byte, error) {
+	switch s {
+	case CompetitorBatchOutcomeAdded:
+		return []byte(s), nil
+	case CompetitorBatchOutcomeDuplicate:
+		return []byte(s), nil
+	case CompetitorBatchOutcomeRejected:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CompetitorBatchOutcome) UnmarshalText(data []byte) error {
+	switch CompetitorBatchOutcome(data) {
+	case CompetitorBatchOutcomeAdded:
+		*s = CompetitorBatchOutcomeAdded
+		return nil
+	case CompetitorBatchOutcomeDuplicate:
+		*s = CompetitorBatchOutcomeDuplicate
+		return nil
+	case CompetitorBatchOutcomeRejected:
+		*s = CompetitorBatchOutcomeRejected
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Companies to add at once.
+// Ref: #/components/schemas/CompetitorBatchRequest
+type CompetitorBatchRequest struct {
+	// The companies, in order.
+	Items []NewCompetitorItem `json:"items"`
+	// Whether to scan the added companies straight away.
+	Scan OptBool `json:"scan"`
+}
+
+// GetItems returns the value of Items.
+func (s *CompetitorBatchRequest) GetItems() []NewCompetitorItem {
+	return s.Items
+}
+
+// GetScan returns the value of Scan.
+func (s *CompetitorBatchRequest) GetScan() OptBool {
+	return s.Scan
+}
+
+// SetItems sets the value of Items.
+func (s *CompetitorBatchRequest) SetItems(val []NewCompetitorItem) {
+	s.Items = val
+}
+
+// SetScan sets the value of Scan.
+func (s *CompetitorBatchRequest) SetScan(val OptBool) {
+	s.Scan = val
+}
 
 // A company the answers name that is not on the company list.
 // Ref: #/components/schemas/CompetitorCandidate
@@ -4004,6 +4181,46 @@ func (s *NewCompetitor) SetURL(val url.URL) {
 	s.URL = val
 }
 
+// One company of a batch; one without a valid name or website is rejected on its own.
+// Ref: #/components/schemas/NewCompetitorItem
+type NewCompetitorItem struct {
+	// The company's name.
+	Name string `json:"name"`
+	// Its website, an http or https address on a public host.
+	URL         OptString                `json:"url"`
+	CandidateId OptCompetitorCandidateId `json:"candidateId"`
+}
+
+// GetName returns the value of Name.
+func (s *NewCompetitorItem) GetName() string {
+	return s.Name
+}
+
+// GetURL returns the value of URL.
+func (s *NewCompetitorItem) GetURL() OptString {
+	return s.URL
+}
+
+// GetCandidateId returns the value of CandidateId.
+func (s *NewCompetitorItem) GetCandidateId() OptCompetitorCandidateId {
+	return s.CandidateId
+}
+
+// SetName sets the value of Name.
+func (s *NewCompetitorItem) SetName(val string) {
+	s.Name = val
+}
+
+// SetURL sets the value of URL.
+func (s *NewCompetitorItem) SetURL(val OptString) {
+	s.URL = val
+}
+
+// SetCandidateId sets the value of CandidateId.
+func (s *NewCompetitorItem) SetCandidateId(val OptCompetitorCandidateId) {
+	s.CandidateId = val
+}
+
 // An API key to add.
 // Ref: #/components/schemas/NewLlmCredential
 type NewLlmCredential struct {
@@ -4360,6 +4577,52 @@ func (o OptCompetitorCandidateDecision) Get() (v CompetitorCandidateDecision, ok
 
 // Or returns value if set, or given parameter if does not.
 func (o OptCompetitorCandidateDecision) Or(d CompetitorCandidateDecision) CompetitorCandidateDecision {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCompetitorCandidateId returns new OptCompetitorCandidateId with value set to v.
+func NewOptCompetitorCandidateId(v CompetitorCandidateId) OptCompetitorCandidateId {
+	return OptCompetitorCandidateId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCompetitorCandidateId is optional CompetitorCandidateId.
+type OptCompetitorCandidateId struct {
+	Value CompetitorCandidateId
+	Set   bool
+}
+
+// IsSet returns true if OptCompetitorCandidateId was set.
+func (o OptCompetitorCandidateId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCompetitorCandidateId) Reset() {
+	var v CompetitorCandidateId
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCompetitorCandidateId) SetTo(v CompetitorCandidateId) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCompetitorCandidateId) Get() (v CompetitorCandidateId, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCompetitorCandidateId) Or(d CompetitorCandidateId) CompetitorCandidateId {
 	if v, ok := o.Get(); ok {
 		return v
 	}

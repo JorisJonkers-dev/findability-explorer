@@ -50,15 +50,24 @@ type Scans interface {
 
 // Service runs the companies use cases.
 type Service struct {
-	research Research
-	repo     Repository
-	scans    Scans
-	now      func() time.Time
+	research   Research
+	repo       Repository
+	scans      Scans
+	candidates Candidates
+	scanner    Scanner
+	now        func() time.Time
 }
 
 // New returns a Service.
 func New(research Research, repo Repository, scans Scans, now func() time.Time) *Service {
 	return &Service{research: research, repo: repo, scans: scans, now: now}
+}
+
+// WithBatch hands the Service what adding several companies at once needs: the competitor
+// candidates to record as added, and the scanner to scan them straight away. The composition root
+// calls it once the other contexts exist.
+func (s *Service) WithBatch(candidates Candidates, scanner Scanner) {
+	s.candidates, s.scanner = candidates, scanner
 }
 
 func (s *Service) directory(ctx context.Context) (domain.Directory, error) {

@@ -112,3 +112,31 @@ func (s *Service) UndoCandidate(ctx context.Context, actor, id string) error {
 	}
 	return s.repo.Undecide(ctx, id)
 }
+
+// RecordAdded records a pending candidate as added, as the company competitorID that was added
+// another way: from a list of several at once. It returns domain.ErrNotFound for a name the
+// answers never gave, and ErrDecided for a candidate decided already.
+func (s *Service) RecordAdded(ctx context.Context, actor, id, competitorID string) error {
+	sightings, err := s.repo.Sightings(ctx)
+	if err != nil {
+		return fmt.Errorf("unmatched names: %w", err)
+	}
+	decisions, err := s.repo.CandidateDecisions(ctx)
+	if err != nil {
+		return fmt.Errorf("candidate decisions: %w", err)
+	}
+	// Without the company list: the company just added would hide the candidate.
+	all := domain.Candidates(sightings, decisions, nil)
+	i := slices.IndexFunc(all, func(c domain.Candidate) bool { return c.ID == id })
+	switch {
+	case i < 0:
+		return domain.ErrNotFound
+	case all[i].Decision != nil:
+		return ErrDecided
+	}
+	d := domain.CandidateDecision{ID: id, Name: all[i].Name, Status: domain.CandidateAdded, CompetitorID: competitorID, By: actor, At: s.now()}
+	if err := s.repo.Decide(ctx, d); err != nil {
+		return fmt.Errorf("record the decision: %w", err)
+	}
+	return nil
+}

@@ -89,6 +89,33 @@ export const zCompanyRole = z.enum([
 ]);
 
 /**
+ * What became of one item - added, skipped as a duplicate, or rejected.
+ */
+export const zCompetitorBatchOutcome = z.enum([
+    'added',
+    'duplicate',
+    'rejected'
+]);
+
+/**
+ * One item's outcome.
+ */
+export const zCompetitorBatchItem = z.object({
+    name: z.string().max(300),
+    outcome: zCompetitorBatchOutcome,
+    competitorId: zCompetitorId.optional(),
+    reason: z.string().max(300).optional()
+});
+
+/**
+ * What a batch did.
+ */
+export const zCompetitorBatch = z.object({
+    items: z.array(zCompetitorBatchItem).max(100),
+    scans: z.int().gte(0).lte(100)
+});
+
+/**
  * A company to add.
  */
 export const zNewCompetitor = z.object({
@@ -1227,6 +1254,23 @@ export const zPromptTestSettingsChange = z.object({
 export const zCompetitorCandidateId = z.string().length(16).regex(/^[0-9a-f]{16}$/);
 
 /**
+ * One company of a batch; one without a valid name or website is rejected on its own.
+ */
+export const zNewCompetitorItem = z.object({
+    name: z.string().max(300),
+    url: z.string().max(500).optional(),
+    candidateId: zCompetitorCandidateId.optional()
+});
+
+/**
+ * Companies to add at once.
+ */
+export const zCompetitorBatchRequest = z.object({
+    items: z.array(zNewCompetitorItem).max(100),
+    scan: z.boolean().optional()
+});
+
+/**
  * Where a competitor candidate is in the review.
  */
 export const zCompetitorCandidateStatus = z.enum([
@@ -1350,6 +1394,16 @@ export const zAddCompetitorBody = zNewCompetitor;
  * The added company.
  */
 export const zAddCompetitorResponse = zCompetitor;
+
+/**
+ * The companies to add.
+ */
+export const zAddCompetitorsBody = zCompetitorBatchRequest;
+
+/**
+ * What became of each item, and how many scans started.
+ */
+export const zAddCompetitorsResponse = zCompetitorBatch;
 
 export const zDeleteCompetitorPath = z.object({
     competitorId: zCompetitorId

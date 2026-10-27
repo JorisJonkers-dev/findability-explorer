@@ -206,6 +206,47 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitors/batch:
+    post:
+      operationId: addCompetitors
+      summary: Add several competitors at once
+      description: >-
+        Administrators only. Adds the companies in order and says per item what became of it:
+        added; skipped as a duplicate when a known company, or an earlier item, has its website's
+        host or its name; or rejected without a valid name or website. An item from a competitor
+        candidate records the candidate as added. With `scan`, the added companies are scanned
+        straight away. 422 for no item or more than 100.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The companies to add.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompetitorBatchRequest"
+            example:
+              items:
+                - name: Intralox
+                  url: https://www.intralox.com
+                  candidateId: 3a7bd3e2360a9f01
+              scan: true
+      responses:
+        "200":
+          description: What became of each item, and how many scans started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorBatch"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/competitors/{competitorId}:
     get:
       operationId: getCompetitor
@@ -1560,6 +1601,83 @@ components:
         benchmark), or a competitor. Only competitors count as competitors.
       type: string
       enum: [tribelt, mirror, group, competitor]
+    NewCompetitorItem:
+      description: One company of a batch; one without a valid name or website is rejected on its own.
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 300
+          description: The company's name.
+          example: Intralox
+        url:
+          type: string
+          maxLength: 500
+          description: Its website, an http or https address on a public host.
+          example: https://www.intralox.com
+        candidateId:
+          $ref: "#/components/schemas/CompetitorCandidateId"
+    CompetitorBatchRequest:
+      description: Companies to add at once.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          description: The companies, in order.
+          items:
+            $ref: "#/components/schemas/NewCompetitorItem"
+        scan:
+          type: boolean
+          description: Whether to scan the added companies straight away.
+          example: true
+    CompetitorBatchOutcome:
+      description: What became of one item - added, skipped as a duplicate, or rejected.
+      type: string
+      enum: [added, duplicate, rejected]
+    CompetitorBatchItem:
+      description: One item's outcome.
+      type: object
+      additionalProperties: false
+      required: [name, outcome]
+      properties:
+        name:
+          type: string
+          maxLength: 300
+          description: The name as added, or as sent.
+          example: Intralox
+        outcome:
+          $ref: "#/components/schemas/CompetitorBatchOutcome"
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        reason:
+          type: string
+          maxLength: 300
+          description: Why it was skipped or rejected.
+          example: Add its website first.
+    CompetitorBatch:
+      description: What a batch did.
+      type: object
+      additionalProperties: false
+      required: [items, scans]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          description: Each item's outcome, in order.
+          items:
+            $ref: "#/components/schemas/CompetitorBatchItem"
+        scans:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many scans started.
+          example: 2
     NewCompetitor:
       description: A company to add.
       type: object

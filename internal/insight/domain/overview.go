@@ -125,37 +125,36 @@ func AiSearchOf(run *Run, companies []Company) AiSearchOverview {
 	if out.Answers == 0 {
 		return out
 	}
-	type count struct{ answers, first int }
-	counts := map[string]*count{}
-	for _, a := range run.Answers {
-		for _, id := range a.Named {
-			if counts[id] == nil {
-				counts[id] = &count{}
-			}
-			counts[id].answers++
-			if a.First == id {
-				counts[id].first++
-			}
-		}
-	}
+	answers, first := namings(run.Answers)
 	var competitors []Mentioned
-	tribelt := Mentioned{CompanyID: TribeltID, Name: "Tribelt", Role: RoleTribelt}
+	tribelt := Mentioned{CompanyID: TribeltID, Name: "Tribelt", Role: RoleTribelt, Answers: answers[TribeltID]}
 	for _, c := range companies {
-		n, ok := counts[c.ID]
-		switch {
-		case c.ID == TribeltID && ok:
-			tribelt.Answers = n.answers
-		case c.Role == RoleCompetitor && ok:
-			competitors = append(competitors, Mentioned{CompanyID: c.ID, Name: c.Name, Role: c.Role, Answers: n.answers})
+		if c.Role == RoleCompetitor && answers[c.ID] > 0 {
+			competitors = append(competitors, Mentioned{CompanyID: c.ID, Name: c.Name, Role: c.Role, Answers: answers[c.ID]})
 		}
 	}
 	slices.SortFunc(competitors, func(a, b Mentioned) int {
-		return cmp.Or(cmp.Compare(b.Answers, a.Answers), cmp.Compare(counts[b.CompanyID].first, counts[a.CompanyID].first), strings.Compare(a.CompanyID, b.CompanyID))
+		return cmp.Or(cmp.Compare(b.Answers, a.Answers), cmp.Compare(first[b.CompanyID], first[a.CompanyID]), strings.Compare(a.CompanyID, b.CompanyID))
 	})
-	out.Companies = append(competitors[:min(len(competitors), VoicesShown)], tribelt)
+	out.Companies = append(out.Companies, competitors[:min(len(competitors), VoicesShown)]...)
+	out.Companies = append(out.Companies, tribelt)
 	// Tribelt goes after the competitors it ties with, as the home page has always shown it.
 	slices.SortStableFunc(out.Companies, func(a, b Mentioned) int { return cmp.Compare(b.Answers, a.Answers) })
 	return out
+}
+
+// namings counts, per company, the answers that name it and those that name it first of all.
+func namings(answers []Answer) (named, first map[string]int) {
+	named, first = map[string]int{}, map[string]int{}
+	for _, a := range answers {
+		for _, id := range a.Named {
+			named[id]++
+		}
+		if a.First != "" {
+			first[a.First]++
+		}
+	}
+	return named, first
 }
 
 // CreditsTribelt is whether one of the map's credits for a term names Tribelt: "Tribelt", or one

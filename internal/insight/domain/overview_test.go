@@ -110,15 +110,15 @@ func TestOverviewOfCountsEveryTile(t *testing.T) {
 
 func TestCreditsTribeltNamesTribeltOrOneOfItsProductLines(t *testing.T) {
 	for credits, want := range map[string]bool{
-		"Tribelt":                       true,
-		"Tribelt (Tri-Flex)":            true,
+		"Tribelt":                            true,
+		"Tribelt (Tri-Flex)":                 true,
 		"  Tribelt  (variabler Spaltweite) ": true,
-		"Tribelt B.V.":                  false,
-		"Tribeltech":                    false,
-		"Märtens (Tribelt)":             false,
-		"Tribelt (a) b)":                false,
-		"(Tribelt)":                     false,
-		"Tribelt)":                      false,
+		"Tribelt B.V.":                       false,
+		"Tribeltech":                         false,
+		"Märtens (Tribelt)":                  false,
+		"Tribelt (a) b)":                     false,
+		"(Tribelt)":                          false,
+		"Tribelt)":                           false,
 	} {
 		if got := domain.CreditsTribelt([]string{"Märtens", credits}); got != want {
 			t.Errorf("%q: %v", credits, got)

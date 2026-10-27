@@ -130,7 +130,7 @@ func TestProductsAreForEveryoneSignedIn(t *testing.T) {
 
 func (c *insightCases) Overview(context.Context) (domain.Overview, error) {
 	return domain.Overview{
-		Terms: domain.TermsOverview{Total: 387, Tribelt: 30, Languages: []domain.LanguageTerms{{Language: "en", Terms: 200, Tribelt: 20}, {Language: "de", Terms: 187, Tribelt: 10}}},
+		Terms:       domain.TermsOverview{Total: 387, Tribelt: 30, Languages: []domain.LanguageTerms{{Language: "en", Terms: 200, Tribelt: 20}, {Language: "de", Terms: 187, Tribelt: 10}}},
 		Competitors: domain.CompetitorsOverview{Makers: 24, Families: []domain.FamilyMakers{{Family: "eyelink", Makers: 9}, {Family: "other"}}},
 		AiSearch: domain.AiSearchOverview{Answers: 1260, Companies: []domain.Mentioned{
 			{CompanyID: "twentebelt", Name: "Twentebelt", Role: domain.RoleCompetitor, Answers: 412},

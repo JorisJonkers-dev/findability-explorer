@@ -8,6 +8,7 @@ import {
   getPromptTestSettingsQueryKey,
   listCompetitorCandidatesOptions,
   listPromptAnswersOptions,
+  retryPromptRunMutation,
   startPromptRunMutation,
   undoCompetitorCandidateMutation,
   updatePromptTestSettingsMutation,
@@ -18,11 +19,13 @@ import type {
   CompetitorCandidateStatus,
   ListPromptAnswersData,
   PromptAnswerList,
+  PromptMode,
   PromptTestResults,
   PromptTestSettings,
   PromptTestSettingsChange,
 } from '../../../infrastructure/api/types.gen'
 import { isForbidden } from '../../settings/domain/problems'
+import { costLabel } from '../domain/results'
 import { promptProblem } from '../domain/settings'
 
 /** How often the results are asked for again while a run is running. */
@@ -42,12 +45,13 @@ export function usePromptResults() {
   }
 }
 
-/** The answers of a run the filter keeps; nothing is asked until a run is named. */
-export function usePromptAnswers(runId: Ref<string | undefined>, filter: Ref<NonNullable<ListPromptAnswersData['query']>>) {
+/** The answers of a run the filter keeps, asked for again while poll is true; nothing is asked until a run is named. */
+export function usePromptAnswers(runId: Ref<string | undefined>, filter: Ref<NonNullable<ListPromptAnswersData['query']>>, poll: Ref<boolean> = ref(false)) {
   const query = useQuery(
     computed(() => ({
       ...listPromptAnswersOptions({ path: { runId: runId.value ?? '' }, query: filter.value }),
       enabled: runId.value !== undefined,
+      refetchInterval: poll.value ? RUN_POLL_MS : (false as const),
     })),
   )
   return {
@@ -110,6 +114,32 @@ export function useStartRun() {
             notice.value = `A Prompt run started: ${String(run.tasks)} answers to ask.`
             void queryClient.invalidateQueries({ queryKey: [{ _id: 'getPromptTestResults' }] })
             void queryClient.invalidateQueries({ queryKey: getPromptTestSettingsQueryKey() })
+          },
+        },
+      )
+    },
+  }
+}
+
+/** Asks a run's failed answers again, or one; the results and the run's answers follow it. */
+export function useRetryRun() {
+  const queryClient = useQueryClient()
+  const retry = useMutation(retryPromptRunMutation())
+  const notice = ref<string | null>(null)
+  return {
+    isRetrying: retry.isPending,
+    notice,
+    error: computed(() => (retry.error.value ? promptProblem(retry.error.value) : null)),
+    retry: (runId: string, task?: { promptId: string; provider: string; mode: PromptMode }) => {
+      notice.value = null
+      retry.mutate(
+        { path: { runId }, body: task ?? {} },
+        {
+          onSuccess: (r) => {
+            const answers = r.tasks === 1 ? 'one answer' : `${String(r.tasks)} answers`
+            notice.value = `Asking ${answers} again, for about ${costLabel(r.estimatedCostUsd)}.`
+            void queryClient.invalidateQueries({ queryKey: [{ _id: 'getPromptTestResults' }] })
+            void queryClient.invalidateQueries({ queryKey: [{ _id: 'listPromptAnswers' }] })
           },
         },
       )

@@ -84,5 +84,14 @@ test('the Prompt test grid opens an answer and keeps its filters in the address'
   await expect(page).toHaveURL(/mode=knowledge/)
   await page.reload()
   await expect(page.getByRole('group', { name: 'Search mode' }).getByRole('button', { name: 'Own knowledge' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByRole('button', { name: /OpenAI from its own knowledge: No answer/ })).toBeVisible()
+  await page.getByRole('button', { name: /OpenAI from its own knowledge: No answer/ }).click()
+  let asked: unknown = null
+  await page.route(`**/api/v1/admin/prompt-runs/${RUN}/retry`, async (route) => {
+    asked = route.request().postDataJSON()
+    await route.fulfill({ status: 202, json: { run: { ...run, status: 'running' }, tasks: 1, estimatedCostUsd: 0.0014 } })
+  })
+  await page.getByRole('button', { name: 'Ask OpenAI again, about $0.0014' }).click()
+  await expect(page.getByText('Asking one answer again, for about $0.00.')).toBeVisible()
+  expect(asked).toEqual({ promptId: 'eyelink-application-twente', provider: 'openai', mode: 'knowledge' })
+  await expectAccessible(page)
 })

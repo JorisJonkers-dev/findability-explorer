@@ -330,3 +330,30 @@ func TestCitedAndNamedCompaniesAreOnTheListEachOnce(t *testing.T) {
 		t.Errorf("named = %v", named)
 	}
 }
+
+func TestUnansweredAndWhatAskingAgainCosts(t *testing.T) {
+	set := domain.CurrentPromptSet()
+	models := []domain.ModelChoice{{Provider: "openai"}, {Provider: "google"}}
+	p := set.Prompts[0]
+	answers := []domain.Answer{
+		{Prompt: p, Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 100}, Extraction: &domain.Extraction{Cost: 20}},
+		{Prompt: p, Provider: "openai", Mode: domain.ModeWeb, Reply: domain.Reply{Cost: 300}},
+		{Prompt: p, Provider: "google", Mode: domain.ModeKnowledge, Failure: "Rate limited.", Reply: domain.Reply{Cost: 5}},
+	}
+	left := domain.Unanswered(set, models, answers)
+	if len(left) != len(domain.Tasks(set, models))-2 {
+		t.Fatalf("unanswered = %d", len(left))
+	}
+	google := []domain.Task{{Prompt: p, Provider: "google", Mode: domain.ModeKnowledge}}
+	openai := []domain.Task{{Prompt: p, Provider: "openai", Mode: domain.ModeWeb}}
+	// Google has no answer to go by: the average of every answer, (120 + 300) / 2.
+	if got := domain.Estimate(answers, google); got != 210 {
+		t.Errorf("google estimate = %d", got)
+	}
+	if got := domain.Estimate(answers, append(openai, google...)); got != 420 {
+		t.Errorf("both = %d", got)
+	}
+	if got := domain.Estimate(nil, google); got != 0 {
+		t.Errorf("no answers = %d", got)
+	}
+}

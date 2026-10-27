@@ -6886,6 +6886,88 @@ func (s *PromptQuestion) SetText(val string) {
 	s.Text = val
 }
 
+// A run asked again.
+// Ref: #/components/schemas/PromptRetry
+type PromptRetry struct {
+	Run PromptRun `json:"run"`
+	// How many answers it asks again.
+	Tasks            int32 `json:"tasks"`
+	EstimatedCostUsd Usd   `json:"estimatedCostUsd"`
+}
+
+// GetRun returns the value of Run.
+func (s *PromptRetry) GetRun() PromptRun {
+	return s.Run
+}
+
+// GetTasks returns the value of Tasks.
+func (s *PromptRetry) GetTasks() int32 {
+	return s.Tasks
+}
+
+// GetEstimatedCostUsd returns the value of EstimatedCostUsd.
+func (s *PromptRetry) GetEstimatedCostUsd() Usd {
+	return s.EstimatedCostUsd
+}
+
+// SetRun sets the value of Run.
+func (s *PromptRetry) SetRun(val PromptRun) {
+	s.Run = val
+}
+
+// SetTasks sets the value of Tasks.
+func (s *PromptRetry) SetTasks(val int32) {
+	s.Tasks = val
+}
+
+// SetEstimatedCostUsd sets the value of EstimatedCostUsd.
+func (s *PromptRetry) SetEstimatedCostUsd(val Usd) {
+	s.EstimatedCostUsd = val
+}
+
+func (*PromptRetry) retryPromptRunRes() {}
+
+// What to ask again - every failed answer of the run when empty, or the one question of one provider
+// and mode when all three are given.
+// Ref: #/components/schemas/PromptRetryRequest
+type PromptRetryRequest struct {
+	// The question's id.
+	PromptId OptString `json:"promptId"`
+	// The provider whose model to ask.
+	Provider OptString     `json:"provider"`
+	Mode     OptPromptMode `json:"mode"`
+}
+
+// GetPromptId returns the value of PromptId.
+func (s *PromptRetryRequest) GetPromptId() OptString {
+	return s.PromptId
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptRetryRequest) GetProvider() OptString {
+	return s.Provider
+}
+
+// GetMode returns the value of Mode.
+func (s *PromptRetryRequest) GetMode() OptPromptMode {
+	return s.Mode
+}
+
+// SetPromptId sets the value of PromptId.
+func (s *PromptRetryRequest) SetPromptId(val OptString) {
+	s.PromptId = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptRetryRequest) SetProvider(val OptString) {
+	s.Provider = val
+}
+
+// SetMode sets the value of Mode.
+func (s *PromptRetryRequest) SetMode(val OptPromptMode) {
+	s.Mode = val
+}
+
 // One Prompt run, with how far it got and what it cost.
 // Ref: #/components/schemas/PromptRun
 type PromptRun struct {
@@ -8071,6 +8153,30 @@ func (s *RescanSkip) SetName(val string) {
 func (s *RescanSkip) SetReason(val string) {
 	s.Reason = val
 }
+
+type RetryPromptRunBadRequest ProblemStatusCode
+
+func (*RetryPromptRunBadRequest) retryPromptRunRes() {}
+
+type RetryPromptRunConflict ProblemStatusCode
+
+func (*RetryPromptRunConflict) retryPromptRunRes() {}
+
+type RetryPromptRunForbidden ProblemStatusCode
+
+func (*RetryPromptRunForbidden) retryPromptRunRes() {}
+
+type RetryPromptRunNotFound ProblemStatusCode
+
+func (*RetryPromptRunNotFound) retryPromptRunRes() {}
+
+type RetryPromptRunUnauthorized ProblemStatusCode
+
+func (*RetryPromptRunUnauthorized) retryPromptRunRes() {}
+
+type RetryPromptRunUnprocessableEntity ProblemStatusCode
+
+func (*RetryPromptRunUnprocessableEntity) retryPromptRunRes() {}
 
 // What became of robots.txt - found, missing (so every crawler may read every page), or unreachable
 // (the site would not serve it, so the crawler policy is unknown).

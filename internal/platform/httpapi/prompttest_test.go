@@ -16,6 +16,8 @@ import (
 // promptTests is a stand-in for the prompt-test use cases, so these tests exercise the contract.
 type promptTests struct {
 	err       error
+	retryErr  error
+	retried   *domain.TaskKey
 	startErr  error
 	updateErr error
 	decideErr error
@@ -85,6 +87,16 @@ func (p *promptTests) Start(_ context.Context, actor string) (domain.Run, error)
 	r := promptRun()
 	r.Status, r.FinishedAt, r.Failure = domain.RunRunning, time.Time{}, ""
 	return r, p.startErr
+}
+
+func (p *promptTests) Retry(_ context.Context, id uuid.UUID, task *domain.TaskKey) (app.Retry, error) {
+	if id != runID {
+		return app.Retry{}, domain.ErrNotFound
+	}
+	p.retried = task
+	r := promptRun()
+	r.Status, r.FinishedAt = domain.RunRunning, time.Time{}
+	return app.Retry{Run: r, Tasks: 7, Estimate: 84_000}, p.retryErr
 }
 
 func view() app.View {
@@ -284,5 +296,40 @@ func TestCompetitorCandidates(t *testing.T) {
 	a.prompts().err = errors.New("down")
 	if r := callAs(t, srv, http.MethodGet, base, "", "admin"); r.code != http.StatusInternalServerError {
 		t.Errorf("failing list: %d", r.code)
+	}
+}
+
+func TestAskingAgainIsForAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	path := "/api/v1/admin/prompt-runs/" + runID.String() + "/retry"
+	if r := callAs(t, srv, http.MethodPost, path, `{}`, "tester"); r.code != http.StatusForbidden {
+		t.Errorf("a viewer asked again: %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPost, path, `{}`, "admin")
+	if r.code != http.StatusAccepted || r.body["tasks"].(float64) != 7 || r.body["estimatedCostUsd"].(float64) != 0.084 ||
+		r.body["run"].(map[string]any)["status"] != "running" || a.prompts().retried != nil {
+		t.Fatalf("retry all = %d %v", r.code, r.body)
+	}
+	r = callAs(t, srv, http.MethodPost, path, `{"promptId":"eyelink-application-twente","provider":"openai","mode":"web"}`, "admin")
+	if want := (domain.TaskKey{PromptID: "eyelink-application-twente", Provider: "openai", Mode: domain.ModeWeb}); r.code != http.StatusAccepted || *a.prompts().retried != want {
+		t.Errorf("retry one = %d, %+v", r.code, a.prompts().retried)
+	}
+	if r := callAs(t, srv, http.MethodPost, path, `{"provider":"openai"}`, "admin"); r.code != http.StatusUnprocessableEntity {
+		t.Errorf("half a task = %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-runs/"+uuid.NewString()+"/retry", `{}`, "admin"); r.code != http.StatusNotFound {
+		t.Errorf("no such run = %d", r.code)
+	}
+	for err, want := range map[error]int{
+		domain.ErrRunActive:     http.StatusConflict,
+		domain.ErrBudgetReached: http.StatusConflict,
+		app.ErrNothingFailed:    http.StatusUnprocessableEntity,
+		errors.New("broken"):    http.StatusInternalServerError,
+	} {
+		a.prompts().retryErr = err
+		if r := callAs(t, srv, http.MethodPost, path, `{}`, "admin"); r.code != want {
+			t.Errorf("%v: %d", err, r.code)
+		}
 	}
 }

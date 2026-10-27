@@ -226,3 +226,23 @@ export function answerCost(usd: number): string {
   if (usd >= 0.1) return `$${usd.toFixed(2)}`
   return `$${usd.toPrecision(2).replace(/0+$/, '').replace(/\.$/, '')}`
 }
+
+/** The average cost of a given answer of the provider, or of any provider when it has none; 0 without answers. */
+export function averageCost(answers: readonly PromptAnswer[], provider: string): number {
+  const given = answers.filter((a) => a.failure === undefined)
+  const mine = given.filter((a) => a.provider === provider)
+  const list = mine.length > 0 ? mine : given
+  return list.length === 0 ? 0 : list.reduce((sum, a) => sum + a.costUsd, 0) / list.length
+}
+
+/** How many of a run's answers are failed or missing, and what asking them again should cost. */
+export function retryPlan(run: Pick<PromptRun, 'models' | 'tasks'>, answers: readonly PromptAnswer[]): { count: number; estimate: number } {
+  const perProvider = run.models.length === 0 ? 0 : run.tasks / run.models.length
+  return run.models.reduce(
+    (plan, m) => {
+      const missing = Math.max(0, perProvider - answers.filter((a) => a.provider === m.provider && a.failure === undefined).length)
+      return { count: plan.count + missing, estimate: plan.estimate + missing * averageCost(answers, m.provider) }
+    },
+    { count: 0, estimate: 0 },
+  )
+}

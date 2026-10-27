@@ -160,6 +160,62 @@ var (
 	ErrNoModels = errors.New("none of the providers has a text model on OpenRouter's price list")
 	// ErrNotFound is returned for a run, answer or candidate nobody knows.
 	ErrNotFound = errors.New("not found")
+	// ErrAnswered is returned when storing an answer to a task the run answered already.
+	ErrAnswered = errors.New("the run answered this question already")
+	// ErrBudgetReached is returned when asking again while the month's budget is spent.
+	ErrBudgetReached = errors.New("the month's budget for Prompt runs is reached")
 	// ErrCompanyKnown is returned when a candidate is added with a website another company has.
 	ErrCompanyKnown = errors.New("another company has this website")
 )
+
+// Unanswered are the tasks of a run on set and models that have no answer, or whose answer failed.
+func Unanswered(set PromptSet, models []ModelChoice, answers []Answer) []Task {
+	answered := map[TaskKey]bool{}
+	for _, a := range answers {
+		if a.Failure == "" {
+			answered[a.Key()] = true
+		}
+	}
+	var out []Task
+	for _, t := range Tasks(set, models) {
+		if !answered[t.Key()] {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// Estimate is what asking tasks again should cost: for each, the average cost of an answer of its
+// provider in answers, reading included, or of any answer when its provider has none; nothing
+// when no answer was given at all.
+func Estimate(answers []Answer, tasks []Task) Micros {
+	type sum struct {
+		cost Micros
+		n    int64
+	}
+	byProvider := map[string]sum{}
+	var all sum
+	for _, a := range answers {
+		if a.Failure != "" {
+			continue
+		}
+		cost := a.Cost
+		if a.Extraction != nil {
+			cost += a.Extraction.Cost
+		}
+		p := byProvider[a.Provider]
+		byProvider[a.Provider] = sum{cost: p.cost + cost, n: p.n + 1}
+		all = sum{cost: all.cost + cost, n: all.n + 1}
+	}
+	var out Micros
+	for _, t := range tasks {
+		s := byProvider[t.Provider]
+		if s.n == 0 {
+			s = all
+		}
+		if s.n > 0 {
+			out += s.cost / Micros(s.n)
+		}
+	}
+	return out
+}

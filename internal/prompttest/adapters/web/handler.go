@@ -22,6 +22,7 @@ type UseCases interface {
 	Results(ctx context.Context) (app.Results, error)
 	Answers(ctx context.Context, runID uuid.UUID, filter app.AnswerFilter) (app.RunResult, []domain.Answer, error)
 	Start(ctx context.Context, actor string) (domain.Run, error)
+	Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, map[domain.CandidateStatus]int, error)
@@ -115,6 +116,39 @@ func (h *Handler) StartPromptRun(ctx context.Context) (oas.StartPromptRunRes, er
 	}
 	out := toRun(run, domain.Progress{}, nil)
 	return &out, nil
+}
+
+// RetryPromptRun implements retryPromptRun.
+func (h *Handler) RetryPromptRun(ctx context.Context, req *oas.PromptRetryRequest, params oas.RetryPromptRunParams) (oas.RetryPromptRunRes, error) {
+	prompt, hasPrompt := req.PromptId.Get()
+	provider, hasProvider := req.Provider.Get()
+	mode, hasMode := req.Mode.Get()
+	var task *domain.TaskKey
+	switch {
+	case hasPrompt && hasProvider && hasMode:
+		task = &domain.TaskKey{PromptID: prompt, Provider: provider, Mode: domain.Mode(mode)}
+	case hasPrompt || hasProvider || hasMode:
+		return &oas.RetryPromptRunUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity,
+			Response:   httpx.Problem(http.StatusUnprocessableEntity, "Name the question, the provider and the mode, or none of them."),
+		}, nil
+	}
+	r, err := h.uc.Retry(ctx, params.RunId, task)
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.RetryPromptRunNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No Prompt run has this id.")}, nil
+	case errors.Is(err, domain.ErrRunActive), errors.Is(err, domain.ErrBudgetReached):
+		return &oas.RetryPromptRunConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, sentence(err))}, nil
+	case app.IsInputError(err):
+		return &oas.RetryPromptRunUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, sentence(err)),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.PromptRetry{
+		Run: toRun(r.Run, domain.Progress{}, nil), Tasks: int32(r.Tasks), EstimatedCostUsd: oas.Usd(r.Estimate.Dollars()), //nolint:gosec // at most a run's tasks
+	}, nil
 }
 
 // GetPromptTestSettings implements getPromptTestSettings.

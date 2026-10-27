@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const addPromptAnswer = `-- name: AddPromptAnswer :exec
+const addPromptAnswer = `-- name: AddPromptAnswer :one
 INSERT INTO prompt_answers (
     id, run_id, prompt_id, family, kind, scope, language, prompt_text, prompt_set_version, provider, model, mode, answer,
     citations, input_tokens, output_tokens, cost_micros, failure, answered_at
@@ -22,6 +22,14 @@ VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
     $13, $14, $15, $16, $17, $18, $19
 )
+ON CONFLICT (run_id, prompt_id, provider, mode) DO UPDATE
+SET model = excluded.model, answer = excluded.answer, citations = excluded.citations,
+    input_tokens = prompt_answers.input_tokens + excluded.input_tokens,
+    output_tokens = prompt_answers.output_tokens + excluded.output_tokens,
+    cost_micros = prompt_answers.cost_micros + excluded.cost_micros, failure = excluded.failure,
+    answered_at = excluded.answered_at
+WHERE prompt_answers.failure IS NOT NULL
+RETURNING id
 `
 
 type AddPromptAnswerParams struct {
@@ -46,8 +54,10 @@ type AddPromptAnswerParams struct {
 	AnsweredAt       time.Time
 }
 
-func (q *Queries) AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams) error {
-	_, err := q.db.Exec(ctx, addPromptAnswer,
+// An answer, or, for a task whose earlier answer failed, that answer replaced: what the failed try
+// cost stays counted. A task answered already keeps its answer, and no row comes back.
+func (q *Queries) AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, addPromptAnswer,
 		arg.ID,
 		arg.RunID,
 		arg.PromptID,
@@ -68,7 +78,9 @@ func (q *Queries) AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams
 		arg.Failure,
 		arg.AnsweredAt,
 	)
-	return err
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const addPromptAnswerCompany = `-- name: AddPromptAnswerCompany :exec
@@ -783,6 +795,27 @@ func (q *Queries) PromptSpentSince(ctx context.Context, since time.Time) (int64,
 	var spent int64
 	err := row.Scan(&spent)
 	return spent, err
+}
+
+const reopenPromptRun = `-- name: ReopenPromptRun :execrows
+UPDATE prompt_runs AS p
+SET status = 'running', finished_at = NULL, failure = NULL, owner = $1, heartbeat_at = $2
+WHERE p.id = $3 AND p.status <> 'running' AND NOT EXISTS (SELECT 1 FROM prompt_runs AS r WHERE r.status = 'running')
+`
+
+type ReopenPromptRunParams struct {
+	Owner string
+	At    time.Time
+	ID    uuid.UUID
+}
+
+// Runs a finished run again, held by owner, unless any run is running: the run lock.
+func (q *Queries) ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error) {
+	result, err := q.db.Exec(ctx, reopenPromptRun, arg.Owner, arg.At, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const savePromptSettings = `-- name: SavePromptSettings :exec

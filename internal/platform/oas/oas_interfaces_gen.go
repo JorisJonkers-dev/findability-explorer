@@ -113,6 +113,10 @@ type RejectTermCandidateRes interface {
 	rejectTermCandidateRes()
 }
 
+type RetryPromptRunRes interface {
+	retryPromptRunRes()
+}
+
 type SearchTermsRes interface {
 	searchTermsRes()
 }

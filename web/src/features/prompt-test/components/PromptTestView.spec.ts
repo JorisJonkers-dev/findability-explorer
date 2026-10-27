@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PromptAnswer } from '../../../infrastructure/api/types.gen'
 import { competitor, me, promptAnswer, promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
-import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
+import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 const OLDER = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d'
 
@@ -21,7 +21,7 @@ function answers(): PromptAnswer[] {
   ]
 }
 
-function api(admin = false, extra: Record<string, (r: Request) => Response> = {}) {
+function api(admin = false, extra: Record<string, Handler> = {}) {
   return routes({
     'GET /api/v1/me': () => json(me({ isAdmin: admin })),
     'GET /api/v1/prompt-test': () => json(promptResults({ runs: [promptRun(), promptRun({ id: OLDER, startedAt: '2026-10-25T06:00:00Z', status: 'stopped' })] })),
@@ -138,6 +138,62 @@ describe('the Prompt test grid', () => {
   it('offers no run button to a viewer', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/prompt-test')
     expect(wrapper.findAll('button').some((b) => b.text() === 'Run now')).toBe(false)
+  })
+})
+
+describe('asking again', () => {
+  const retried = (body: unknown) => ({ run: promptRun({ status: 'running' }), tasks: (body as { promptId?: string }).promptId ? 1 : 2, estimatedCostUsd: 0.0024 })
+
+  it('asks every missing answer again, with the cost shown first', async () => {
+    let sent: unknown = null
+    const { wrapper } = await mountApp(
+      api(true, {
+        [`POST /api/v1/admin/prompt-runs/${RUN_ID}/retry`]: async (r) => {
+          sent = await r.json()
+          return json(retried(sent), 202)
+        },
+      }),
+      '/ai-search/prompt-test',
+    )
+    const all = wrapper.findAll('button').find((b) => b.text().startsWith('Ask the'))
+    // 360 tasks over two providers: 180 each; OpenAI gave 2 answers and Google 1.
+    expect(all?.text()).toBe('Ask the 357 missing answers again, about $0.43')
+    await all?.trigger('click')
+    await settle()
+    expect(sent).toEqual({})
+    expect(wrapper.text()).toContain('Asking 2 answers again, for about $0.00.')
+  })
+
+  it('asks one failed answer again from its detail', async () => {
+    let sent: unknown = null
+    const { wrapper } = await mountApp(
+      api(true, {
+        [`POST /api/v1/admin/prompt-runs/${RUN_ID}/retry`]: async (r) => {
+          sent = await r.json()
+          return json(retried(sent), 202)
+        },
+      }),
+      '/ai-search/prompt-test?answer=eyelink-application-twente|google|knowledge',
+    )
+    const one = detail(wrapper).findAll('button').find((b) => b.text().startsWith('Ask Google again'))
+    expect(one?.text()).toBe('Ask Google again, about $0.0012')
+    await one?.trigger('click')
+    await settle()
+    expect(sent).toEqual({ promptId: 'eyelink-application-twente', provider: 'google', mode: 'knowledge' })
+    expect(wrapper.text()).toContain('Asking one answer again')
+  })
+
+  it('says why it cannot, and offers nothing to a viewer', async () => {
+    const { wrapper } = await mountApp(
+      api(true, { [`POST /api/v1/admin/prompt-runs/${RUN_ID}/retry`]: () => problem(409, 'Conflict', "The month's budget for Prompt runs is reached.") }),
+      '/ai-search/prompt-test',
+    )
+    await wrapper.findAll('button').find((b) => b.text().startsWith('Ask the'))?.trigger('click')
+    await settle()
+    expect(wrapper.get('[role="alert"]').text()).toBe("The month's budget for Prompt runs is reached.")
+    wrapper.unmount()
+    const viewer = await mountApp(api(), '/ai-search/prompt-test?answer=eyelink-application-twente|google|knowledge')
+    expect(viewer.wrapper.findAll('button').some((b) => b.text().startsWith('Ask'))).toBe(false)
   })
 })
 

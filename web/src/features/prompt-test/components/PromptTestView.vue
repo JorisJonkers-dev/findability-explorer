@@ -8,9 +8,9 @@ import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { AI_SEARCH_TABS } from '../../shell/domain/sections'
-import { usePromptAnswers, usePromptResults, useStartRun } from '../composables/usePromptTest'
-import { byKey, gridHeadline, headlineNumbers, MODE_FILTERS, mostNamed, parseFilter, SCOPE_FILTERS, toCsv } from '../domain/grid'
-import { costLabel, latestRun, progressLabel, runDate, shareLabel, statusName } from '../domain/results'
+import { usePromptAnswers, usePromptResults, useRetryRun, useStartRun } from '../composables/usePromptTest'
+import { answerCost, averageCost, byKey, counts, gridHeadline, headlineNumbers, MODE_FILTERS, mostNamed, parseFilter, retryPlan, SCOPE_FILTERS, toCsv } from '../domain/grid'
+import { costLabel, latestRun, progressLabel, providerName, runDate, shareLabel, statusName } from '../domain/results'
 import AnswerDetail from './AnswerDetail.vue'
 import PromptGrid from './PromptGrid.vue'
 
@@ -20,6 +20,7 @@ const { isAdmin } = useMe()
 const { results, isLoading, error } = usePromptResults()
 const { competitors } = useCompetitors()
 const { isStarting, notice: startNotice, error: startError, start } = useStartRun()
+const { isRetrying, notice: retryNotice, error: retryError, retry } = useRetryRun()
 
 // The run, the filters and the picked answer live in the address, so a reload or a link shows the same.
 const run = computed(() => results.value?.runs.find((r) => r.id === route.query.run) ?? latestRun(results.value))
@@ -29,6 +30,7 @@ const selected = computed(() => (typeof route.query.answer === 'string' ? route.
 const { answers: list, isLoading: answersLoading, error: answersError } = usePromptAnswers(
   computed(() => run.value?.id),
   computed(() => ({})),
+  computed(() => run.value?.status === 'running'),
 )
 const answers = computed(() => list.value?.items ?? [])
 const picked = computed(() => (selected.value ? byKey(answers.value).get(selected.value) : undefined))
@@ -40,6 +42,15 @@ const title = computed(() => gridHeadline(answers.value, nameOf))
 const numbers = computed(() => headlineNumbers(answers.value))
 const named = computed(() => mostNamed(answers.value))
 const most = computed(() => Math.max(...named.value.map((n) => n.share), 0.01))
+
+const anyRunning = computed(() => results.value?.runs.some((r) => r.status === 'running') ?? false)
+const plan = computed(() => (run.value ? retryPlan(run.value, answers.value) : { count: 0, estimate: 0 }))
+const canRetry = computed(() => isAdmin.value && !anyRunning.value && !isRetrying.value)
+
+function retryOne(): void {
+  const a = picked.value
+  if (run.value && a) retry(run.value.id, { promptId: a.promptId, provider: a.provider, mode: a.mode })
+}
 
 function setQuery(change: Record<string, string | undefined>): void {
   const query = { ...route.query, ...change }
@@ -83,12 +94,23 @@ function download(): void {
         >
           Run now
         </button>
+        <button
+          v-if="isAdmin && plan.count > 0"
+          type="button"
+          class="inline-flex min-h-11 items-center rounded-full border-2 border-black bg-white px-4 text-sm font-semibold hover:bg-mist disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
+          :disabled="!canRetry || run.status === 'running'"
+          @click="retry(run.id)"
+        >
+          Ask the {{ plan.count }} missing answers again, about {{ answerCost(plan.estimate) }}
+        </button>
       </div>
       <p class="m-0 text-sm text-muted stage:text-right stage:text-[24px]">
         {{ progressLabel(run) }}. {{ statusName(run.status) }}. Cost {{ costLabel(run.costUsd) }}.
       </p>
       <p v-if="startNotice" class="m-0 text-sm font-medium stage:text-[24px]" aria-live="polite">{{ startNotice }}</p>
       <p v-if="startError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ startError }}</p>
+      <p v-if="retryNotice" class="m-0 text-sm font-medium stage:text-[24px]" aria-live="polite">{{ retryNotice }}</p>
+      <p v-if="retryError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ retryError }}</p>
     </template>
 
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
@@ -155,7 +177,17 @@ function download(): void {
             <span class="text-right text-sm font-semibold stage:text-[24px]">{{ Math.round(n.share * 100) }}%</span>
           </div>
         </figure>
-        <AnswerDetail :answer="picked" :competitors="competitors" />
+        <AnswerDetail :answer="picked" :competitors="competitors">
+          <button
+            v-if="isAdmin && picked && !counts(picked) && picked.failure !== undefined"
+            type="button"
+            class="inline-flex min-h-11 items-center self-start rounded-full border-0 bg-orange px-4 text-sm font-semibold text-black hover:bg-orange-soft disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
+            :disabled="!canRetry || run.status === 'running'"
+            @click="retryOne"
+          >
+            Ask {{ providerName(picked.provider) }} again, about {{ answerCost(averageCost(answers, picked.provider)) }}
+          </button>
+        </AnswerDetail>
       </aside>
     </div>
   </SectionView>

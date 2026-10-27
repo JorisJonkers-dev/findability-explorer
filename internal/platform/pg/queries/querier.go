@@ -23,7 +23,9 @@ type Querier interface {
 	AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error
 	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
 	AddLlmEvent(ctx context.Context, arg AddLlmEventParams) error
-	AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams) error
+	// An answer, or, for a task whose earlier answer failed, that answer replaced: what the failed try
+	// cost stays counted. A task answered already keeps its answer, and no row comes back.
+	AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams) (uuid.UUID, error)
 	AddPromptAnswerCompany(ctx context.Context, arg AddPromptAnswerCompanyParams) error
 	AddPromptCandidateDecision(ctx context.Context, arg AddPromptCandidateDecisionParams) error
 	AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) error
@@ -106,6 +108,8 @@ type Querier interface {
 	// What answers and extractions cost since a moment, in millionths of a dollar.
 	PromptSpentSince(ctx context.Context, since time.Time) (int64, error)
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
+	// Runs a finished run again, held by owner, unless any run is running: the run lock.
+	ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error)
 	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
 	SavePromptSettings(ctx context.Context, arg SavePromptSettingsParams) error
 	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error

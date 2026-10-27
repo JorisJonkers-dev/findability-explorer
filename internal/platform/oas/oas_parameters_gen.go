@@ -1745,6 +1745,72 @@ func decodeRejectTermCandidateParams(args [1]string, argsEscaped bool, r *http.R
 	return params, nil
 }
 
+// RetryPromptRunParams is parameters of retryPromptRun operation.
+type RetryPromptRunParams struct {
+	// The Prompt run's id.
+	RunId uuid.UUID
+}
+
+func unpackRetryPromptRunParams(packed middleware.Parameters) (params RetryPromptRunParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "runId",
+			In:   "path",
+		}
+		params.RunId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRetryPromptRunParams(args [1]string, argsEscaped bool, r *http.Request) (params RetryPromptRunParams, _ error) {
+	// Decode path: runId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "runId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RunId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "runId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SearchTermsParams is parameters of searchTerms operation.
 type SearchTermsParams struct {
 	// Free text to look for in the term and its users.

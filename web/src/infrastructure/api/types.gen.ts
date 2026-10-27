@@ -1538,6 +1538,33 @@ export type PromptKind = 'supplier' | 'application' | 'problem';
 export type PromptScope = 'twente' | 'netherlands' | 'germany' | 'dutch' | 'german' | 'english';
 
 /**
+ * What to ask again - every failed answer of the run when empty, or the one question of one provider and mode when all three are given.
+ */
+export type PromptRetryRequest = {
+    /**
+     * The question's id.
+     */
+    promptId?: string;
+    /**
+     * The provider whose model to ask.
+     */
+    provider?: string;
+    mode?: PromptMode;
+};
+
+/**
+ * A run asked again.
+ */
+export type PromptRetry = {
+    run: PromptRun;
+    /**
+     * How many answers it asks again.
+     */
+    tasks: number;
+    estimatedCostUsd: Usd;
+};
+
+/**
  * How a prompt is asked - from the model's own knowledge, or with live web search.
  */
 export type PromptMode = 'knowledge' | 'web';
@@ -3139,6 +3166,63 @@ export type StartPromptRunResponses = {
 };
 
 export type StartPromptRunResponse = StartPromptRunResponses[keyof StartPromptRunResponses];
+
+export type RetryPromptRunData = {
+    /**
+     * Every failed answer when empty, or the one question to ask again.
+     */
+    body: PromptRetryRequest;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/prompt-runs/{runId}/retry';
+};
+
+export type RetryPromptRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RetryPromptRunError = RetryPromptRunErrors[keyof RetryPromptRunErrors];
+
+export type RetryPromptRunResponses = {
+    /**
+     * The run, running again, with how many answers it asks and what they should cost.
+     */
+    202: PromptRetry;
+};
+
+export type RetryPromptRunResponse = RetryPromptRunResponses[keyof RetryPromptRunResponses];
 
 export type GetPromptTestSettingsData = {
     body?: never;

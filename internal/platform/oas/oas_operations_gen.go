@@ -34,6 +34,7 @@ const (
 	ListPromptAnswersOperation          OperationName = "ListPromptAnswers"
 	ListTermCandidatesOperation         OperationName = "ListTermCandidates"
 	RejectTermCandidateOperation        OperationName = "RejectTermCandidate"
+	RetryPromptRunOperation             OperationName = "RetryPromptRun"
 	SearchTermsOperation                OperationName = "SearchTerms"
 	SetActiveLlmOperation               OperationName = "SetActiveLlm"
 	StartAnalysisOperation              OperationName = "StartAnalysis"

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { promptAnswer, promptRun } from '../../../testing/fixtures'
 import {
   answerCost,
+  averageCost,
+  retryPlan,
   byKey,
   columnsOf,
   counts,
@@ -148,5 +150,24 @@ describe('a cost', () => {
     expect(answerCost(0.42)).toBe('$0.42')
     expect(answerCost(0)).toBe('$0')
     expect(answerCost(0.05)).toBe('$0.05')
+  })
+})
+
+describe('asking again', () => {
+  it('counts the failed and missing answers per provider and prices them by its average answer', () => {
+    const run = promptRun({ tasks: 4 })
+    const answers = [
+      promptAnswer({ provider: 'openai', costUsd: 0.002 }),
+      promptAnswer({ provider: 'openai', mode: 'web', costUsd: 0.004 }),
+      promptAnswer({ provider: 'google', failure: 'Rate limited.', extraction: undefined, costUsd: 0.0001 }),
+    ]
+    expect(averageCost(answers, 'openai')).toBeCloseTo(0.003)
+    // Google has no answer to go by: the average of every answer.
+    expect(averageCost(answers, 'google')).toBeCloseTo(0.003)
+    expect(averageCost([], 'google')).toBe(0)
+    const plan = retryPlan(run, answers)
+    expect(plan.count).toBe(2)
+    expect(plan.estimate).toBeCloseTo(0.006)
+    expect(retryPlan(promptRun({ models: [] }), answers)).toEqual({ count: 0, estimate: 0 })
   })
 })

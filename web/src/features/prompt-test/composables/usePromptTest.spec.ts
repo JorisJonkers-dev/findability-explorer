@@ -99,6 +99,26 @@ describe('useCandidateDecision', () => {
   })
 })
 
+describe('usePromptAnswers while the run runs', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('asks for the answers again until polling stops', async () => {
+    vi.useFakeTimers()
+    const poll = ref(true)
+    const { sent } = mountComposable(
+      () => usePromptAnswers(ref(RUN_ID), ref({}), poll),
+      routes({ [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () => json({ run: promptRun(), items: [] }) }),
+    )
+    await vi.advanceTimersByTimeAsync(RUN_POLL_MS + 10)
+    expect(sent).toHaveLength(2)
+    poll.value = false
+    await vi.advanceTimersByTimeAsync(RUN_POLL_MS * 3)
+    expect(sent).toHaveLength(2)
+  })
+})
+
 describe('usePromptResults', () => {
   afterEach(() => {
     vi.useRealTimers()

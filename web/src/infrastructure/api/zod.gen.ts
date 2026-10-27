@@ -962,6 +962,15 @@ export const zPromptScope = z.enum([
 export const zPromptMode = z.enum(['knowledge', 'web']);
 
 /**
+ * What to ask again - every failed answer of the run when empty, or the one question of one provider and mode when all three are given.
+ */
+export const zPromptRetryRequest = z.object({
+    promptId: z.string().max(80).regex(/^[a-z0-9_-]+$/).optional(),
+    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/).optional(),
+    mode: zPromptMode.optional()
+});
+
+/**
  * Where a Prompt run is - running, done, stopped (the month's budget was reached; its answers are kept) or failed.
  */
 export const zPromptRunStatus = z.enum([
@@ -1037,6 +1046,15 @@ export const zPromptRun = z.object({
     costUsd: zUsd,
     byProvider: z.array(zPromptProviderProgress).max(20),
     cells: z.array(zPromptCell).max(10000)
+});
+
+/**
+ * A run asked again.
+ */
+export const zPromptRetry = z.object({
+    run: zPromptRun,
+    tasks: z.int().gte(1).lte(10000),
+    estimatedCostUsd: zUsd
 });
 
 /**
@@ -1506,6 +1524,20 @@ export const zListPromptAnswersResponse = zPromptAnswerList;
  * The run, started.
  */
 export const zStartPromptRunResponse = zPromptRun;
+
+/**
+ * Every failed answer when empty, or the one question to ask again.
+ */
+export const zRetryPromptRunBody = zPromptRetryRequest;
+
+export const zRetryPromptRunPath = z.object({
+    runId: z.uuid().max(36)
+});
+
+/**
+ * The run, running again, with how many answers it asks and what they should cost.
+ */
+export const zRetryPromptRunResponse = zPromptRetry;
 
 /**
  * The settings.

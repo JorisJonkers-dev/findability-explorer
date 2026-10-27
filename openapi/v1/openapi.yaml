@@ -786,6 +786,53 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-runs/{runId}/retry:
+    post:
+      operationId: retryPromptRun
+      summary: Ask a Prompt run's failed answers again
+      description: >-
+        Administrators only. Asks a finished run's failed and missing answers again, or only the
+        one question of one provider and mode named, in the same run: with the run's prompt set
+        and models, each new answer replacing the failed one, what the failed try cost still
+        counted. It runs in the background and stops at the month's budget like any run. 404 for
+        a run nobody knows; 409 while a run is running or once the month's budget is spent; 422
+        when nothing is left to ask, the run asked an earlier set of questions, or no OpenRouter
+        key is chosen.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        description: Every failed answer when empty, or the one question to ask again.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptRetryRequest"
+            example:
+              promptId: eyelink-application-twente
+              provider: openai
+              mode: web
+      responses:
+        "202":
+          description: The run, running again, with how many answers it asks and what they should cost.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptRetry"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/prompt-test:
     get:
       operationId: getPromptTestSettings
@@ -3353,6 +3400,44 @@ components:
         region's language, or Dutch, German or English with no region.
       type: string
       enum: [twente, netherlands, germany, dutch, german, english]
+    PromptRetryRequest:
+      description: >-
+        What to ask again - every failed answer of the run when empty, or the one question of one
+        provider and mode when all three are given.
+      type: object
+      additionalProperties: false
+      properties:
+        promptId:
+          type: string
+          maxLength: 80
+          pattern: "^[a-z0-9_-]+$"
+          description: The question's id.
+          example: eyelink-application-twente
+        provider:
+          type: string
+          maxLength: 40
+          pattern: "^[a-z0-9][a-z0-9-]*$"
+          description: The provider whose model to ask.
+          example: openai
+        mode:
+          $ref: "#/components/schemas/PromptMode"
+    PromptRetry:
+      description: A run asked again.
+      type: object
+      additionalProperties: false
+      required: [run, tasks, estimatedCostUsd]
+      properties:
+        run:
+          $ref: "#/components/schemas/PromptRun"
+        tasks:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 10000
+          description: How many answers it asks again.
+          example: 7
+        estimatedCostUsd:
+          $ref: "#/components/schemas/Usd"
     PromptMode:
       description: How a prompt is asked - from the model's own knowledge, or with live web search.
       type: string

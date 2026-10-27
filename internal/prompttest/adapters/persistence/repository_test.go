@@ -220,3 +220,62 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 		t.Errorf("undecide of nothing = %v", err)
 	}
 }
+
+func TestAFinishedRunIsAskedAgainUnderTheLock(t *testing.T) {
+	t.Parallel()
+	repo := repository(t)
+	ctx := t.Context()
+	r := run(domain.TriggerManual)
+	if err := repo.CreateRun(ctx, r, "a", at); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.ReopenRun(ctx, r.ID, "a", at); !errors.Is(err, domain.ErrRunActive) {
+		t.Fatalf("reopening a running run = %v", err)
+	}
+	prompt := domain.CurrentPromptSet().Prompts[0]
+	failed := domain.Answer{
+		ID: uuid.New(), RunID: r.ID, Prompt: prompt, PromptSetVersion: 2, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeWeb,
+		Reply: domain.Reply{InputTokens: 10, Cost: 300}, Failure: "Rate limited.", At: at,
+	}
+	if err := repo.AddAnswer(ctx, failed); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.FinishRun(ctx, r.ID, domain.RunDone, "", at); err != nil {
+		t.Fatal(err)
+	}
+	other := run(domain.TriggerManual)
+	if err := repo.CreateRun(ctx, other, "b", at); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.ReopenRun(ctx, r.ID, "a", at); !errors.Is(err, domain.ErrRunActive) {
+		t.Fatalf("reopening while another runs = %v", err)
+	}
+	if err := repo.FinishRun(ctx, other.ID, domain.RunDone, "", at); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.ReopenRun(ctx, r.ID, "a", at.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := repo.Run(ctx, r.ID); got.Status != domain.RunRunning || !got.FinishedAt.IsZero() {
+		t.Fatalf("reopened run = %+v", got)
+	}
+	again := failed
+	again.ID, again.Failure, again.Reply = uuid.New(), "", domain.Reply{Text: "Tribelt.", InputTokens: 20, Cost: 500}
+	again.Extraction = &domain.Extraction{NamesTribelt: true, Companies: []domain.Company{{Name: "Tribelt", CompetitorID: "tribelt", Position: 1}}, Cost: 50}
+	if err := repo.AddAnswer(ctx, again); err != nil {
+		t.Fatal(err)
+	}
+	answers, err := repo.Answers(ctx, r.ID, true)
+	if err != nil || len(answers) != 1 {
+		t.Fatalf("answers = %d, %v", len(answers), err)
+	}
+	if a := answers[0]; a.Failure != "" || a.Text != "Tribelt." || a.Cost != 800 || a.InputTokens != 30 || a.Extraction == nil || !a.Extraction.NamesTribelt {
+		t.Errorf("replaced answer = %+v", a)
+	}
+	if spent, _ := repo.SpentSince(ctx, at); spent != 850 {
+		t.Errorf("spent = %d, want the failed try counted too", spent)
+	}
+	if err := repo.AddAnswer(ctx, again); !errors.Is(err, domain.ErrAnswered) {
+		t.Errorf("answering an answered task = %v", err)
+	}
+}

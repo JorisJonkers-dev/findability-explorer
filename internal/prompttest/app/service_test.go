@@ -64,21 +64,21 @@ func TestARunAsksEveryPromptOfEveryModelInBothModesAndReadsEveryAnswer(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
-	if run.Tasks != 360 || len(run.Models) != 2 || run.Models[1] != (domain.ModelChoice{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini-flash-lite"}) ||
+	if run.Tasks != 80 || len(run.Models) != 2 || run.Models[1] != (domain.ModelChoice{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini-flash-lite"}) ||
 		run.FactSheetVersion != 1 || run.Trigger != domain.TriggerManual || run.StartedBy != "joris" {
 		t.Fatalf("run = %+v", run)
 	}
-	if got := e.run(t); got.Status != domain.RunDone || len(e.repo.answers) != 360 || e.gw.extracted != 360 {
+	if got := e.run(t); got.Status != domain.RunDone || len(e.repo.answers) != 80 || e.gw.extracted != 80 {
 		t.Fatalf("status %s, %d answers, %d read", got.Status, len(e.repo.answers), e.gw.extracted)
 	}
-	if e.gw.asked["google/gemma:free"] != 180 || e.gw.asked["openai/gpt-oss-20b"] != 180 {
+	if e.gw.asked["google/gemma:free"] != 40 || e.gw.asked["openai/gpt-oss-20b"] != 40 {
 		t.Errorf("asked = %v", e.gw.asked)
 	}
-	if e.sleeps.total != 180*time.Second {
-		t.Errorf("free model paced %v, want a second before each of its 180 calls", e.sleeps.total)
+	if e.sleeps.total != 40*time.Second {
+		t.Errorf("free model paced %v, want a second before each of its 40 calls", e.sleeps.total)
 	}
 	a := e.repo.answers[0]
-	if a.PromptSetVersion != 1 || a.Model == "" || a.Extraction == nil || a.Extraction.Failed {
+	if a.PromptSetVersion != domain.PromptSetVersion || a.Model == "" || a.Extraction == nil || a.Extraction.Failed {
 		t.Errorf("answer = %+v", a)
 	}
 
@@ -87,30 +87,30 @@ func TestARunAsksEveryPromptOfEveryModelInBothModesAndReadsEveryAnswer(t *testin
 		t.Fatalf("results = %+v, %v", res, err)
 	}
 	p := res.Runs[0].Progress
-	if p.Answered != 360 || p.Cost != 360*(10+2) || len(p.ByProvider) != 2 {
+	if p.Answered != 80 || p.Cost != 80*(10+2) || len(p.ByProvider) != 2 {
 		t.Errorf("progress = %+v", p)
 	}
 	named, cited, answers := 0, 0, 0
 	for _, c := range res.Runs[0].Cells {
 		named, cited, answers = named+c.Named, cited+c.Cited, answers+c.Answers
 	}
-	// Dutch supplier and application prompts (30 of 90) name Tribelt; web answers (half) cite it.
-	if answers != 360 || named != 120 || cited != 180 {
+	// The Twente prompts (5 of 20) name Tribelt; web answers (half) cite it.
+	if answers != 80 || named != 20 || cited != 40 {
 		t.Errorf("answers %d, named %d, cited %d", answers, named, cited)
 	}
-	if len(res.Mentions) != 2 || res.Mentions[0].CompetitorID != "twentebelt" || res.Mentions[0].Answers != 360 ||
+	if len(res.Mentions) != 2 || res.Mentions[0].CompetitorID != "twentebelt" || res.Mentions[0].Answers != 80 ||
 		res.Mentions[0].Name != "Twentebelt" || res.Mentions[1].Role != domain.RoleTribelt {
 		t.Errorf("mentions = %+v", res.Mentions)
 	}
-	if len(res.WrongClaims) != 120 || res.WrongClaims[0].Claim != "Tribelt is in Hengelo." {
+	if len(res.WrongClaims) != 20 || res.WrongClaims[0].Claim != "Tribelt is in Hengelo." {
 		t.Errorf("%d wrong claims", len(res.WrongClaims))
 	}
 	run2, answers2, err := e.svc.Answers(t.Context(), run.ID, app.AnswerFilter{})
-	if err != nil || run2.Run.ID != run.ID || run2.Progress.Answered != 360 || len(answers2) != 360 || answers2[0].Text == "" {
+	if err != nil || run2.Run.ID != run.ID || run2.Progress.Answered != 80 || len(answers2) != 80 || answers2[0].Text == "" {
 		t.Errorf("answers = %d, %v", len(answers2), err)
 	}
 	filter := app.AnswerFilter{Provider: "google", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeWeb}
-	if _, kept, err := e.svc.Answers(t.Context(), run.ID, filter); err != nil || len(kept) != 3 {
+	if _, kept, err := e.svc.Answers(t.Context(), run.ID, filter); err != nil || len(kept) != 1 {
 		t.Errorf("filtered answers = %d, %v", len(kept), err)
 	}
 	if _, _, err := e.svc.Answers(t.Context(), uuid.New(), app.AnswerFilter{}); !errors.Is(err, domain.ErrNotFound) {
@@ -124,8 +124,8 @@ func TestAFreeModelThatIsRateLimitedHandsOverToThePaidOne(t *testing.T) {
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)
 	}
-	if e.gw.asked["google/gemma:free"] != 3 || e.gw.asked["google/gemini-flash-lite"] != 180 {
-		t.Errorf("asked = %v: the free model three times, then the paid one for all 180", e.gw.asked)
+	if e.gw.asked["google/gemma:free"] != 3 || e.gw.asked["google/gemini-flash-lite"] != 40 {
+		t.Errorf("asked = %v: the free model three times, then the paid one for all 40", e.gw.asked)
 	}
 	var models []string
 	for _, a := range e.repo.answers {
@@ -133,7 +133,7 @@ func TestAFreeModelThatIsRateLimitedHandsOverToThePaidOne(t *testing.T) {
 			models = append(models, a.Model)
 		}
 	}
-	if len(models) != 180 || models[0] != "google/gemini-flash-lite" {
+	if len(models) != 40 || models[0] != "google/gemini-flash-lite" {
 		t.Errorf("google answered %d times by %v", len(models), models[:1])
 	}
 	if e.run(t).Status != domain.RunDone {
@@ -148,15 +148,15 @@ func TestAModelThatCannotAnswerIsRecordedAsFailed(t *testing.T) {
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)
 	}
-	if len(e.repo.answers) != 180 || e.repo.answers[0].Failure != "The model is rate limited." || e.repo.answers[0].Extraction != nil {
+	if len(e.repo.answers) != 40 || e.repo.answers[0].Failure != "The model is rate limited." || e.repo.answers[0].Extraction != nil {
 		t.Fatalf("answers %d, first %+v", len(e.repo.answers), e.repo.answers[0])
 	}
 	// Each try waits longer than the one before: 0, 10s and 20s.
-	if e.sleeps.total != 180*30*time.Second {
+	if e.sleeps.total != 40*30*time.Second {
 		t.Errorf("waited %v", e.sleeps.total)
 	}
 	res, _ := e.svc.Results(t.Context())
-	if res.Runs[0].Progress.Failed != 180 || len(res.Runs[0].Cells) != 0 {
+	if res.Runs[0].Progress.Failed != 40 || len(res.Runs[0].Cells) != 0 {
 		t.Errorf("progress = %+v", res.Runs[0].Progress)
 	}
 	e.gw.limited = map[string]bool{}
@@ -185,23 +185,23 @@ func TestAnAnswerTheExtractorCannotReadIsRetriedThenMarked(t *testing.T) {
 func TestARunStopsCleanlyAtTheMonthsBudget(t *testing.T) {
 	e := newEnv(t, newRepo(), "a")
 	e.repo.settings.Providers = []string{"openai"}
-	e.repo.settings.MonthlyBudget = 12 * 50 // fifty answers, each 10 asked and 2 read
+	e.repo.settings.MonthlyBudget = 12 * 30 // thirty answers, each 10 asked and 2 read
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)
 	}
 	run := e.run(t)
-	if run.Status != domain.RunStopped || run.Failure == "" || len(e.repo.answers) != 50 {
+	if run.Status != domain.RunStopped || run.Failure == "" || len(e.repo.answers) != 30 {
 		t.Fatalf("run %s (%q) with %d answers", run.Status, run.Failure, len(e.repo.answers))
 	}
 	view, err := e.svc.Settings(t.Context())
-	if err != nil || view.SpentThisMonth != 600 {
+	if err != nil || view.SpentThisMonth != 360 {
 		t.Errorf("spent = %v, %v", view.SpentThisMonth, err)
 	}
 	// A spent budget starts no question at all.
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)
 	}
-	if run := e.run(t); run.Status != domain.RunStopped || len(e.repo.answers) != 50 {
+	if run := e.run(t); run.Status != domain.RunStopped || len(e.repo.answers) != 30 {
 		t.Errorf("second run %s, %d answers", run.Status, len(e.repo.answers))
 	}
 }
@@ -324,10 +324,10 @@ func TestARunInterruptedByARestartIsResumedByAnotherInstance(t *testing.T) {
 	if err := fresh.Tick(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	if got := e.run(t); got.ID != run.ID || got.Status != domain.RunDone || len(r.answers) != 180 {
+	if got := e.run(t); got.ID != run.ID || got.Status != domain.RunDone || len(r.answers) != 40 {
 		t.Fatalf("run %s with %d answers", got.Status, len(r.answers))
 	}
-	if e.gw.asked["openai/gpt-oss-20b"] != 178 || e.gw.extracted != 179 || r.answers[1].Extraction == nil {
+	if e.gw.asked["openai/gpt-oss-20b"] != 38 || e.gw.extracted != 39 || r.answers[1].Extraction == nil {
 		t.Errorf("asked %v, read %d: only what was left", e.gw.asked, e.gw.extracted)
 	}
 }
@@ -359,7 +359,7 @@ func TestARunThatCannotBeRecordedFails(t *testing.T) {
 	// An unread answer whose extraction cannot be stored stops the run before it asks more.
 	r := newRepo("SetExtraction")
 	e := newEnv(t, r, "a")
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: 1, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
 	r.answers = []domain.Answer{{ID: uuid.New(), RunID: run.ID, Prompt: domain.CurrentPromptSet().Prompts[0], Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Text: "x"}}}
 	if err := e.svc.Execute(t.Context(), run); !errors.Is(err, errBoom) || e.run(t).Status != domain.RunFailed || len(r.answers) != 1 {
@@ -379,7 +379,7 @@ func TestARunThatCannotStartIsFailed(t *testing.T) {
 	for name, change := range cases {
 		t.Run(name, func(t *testing.T) {
 			e := newEnv(t, newRepo(), "a")
-			run := domain.Run{ID: uuid.New(), PromptSetVersion: 1, Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+			run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 			e.repo.runs = append(e.repo.runs, &storedRun{run: run, owner: "a"})
 			change(e, &run)
 			if err := e.svc.Execute(t.Context(), run); err != nil {
@@ -403,7 +403,7 @@ func TestARunEndsWhenItsContextDoes(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	svc := app.New(e.repo, gateways{gw: e.gw}, e.dir, e.clock.Now, app.Config{}, func(uuid.UUID, error) {},
 		app.WithSleep(func(ctx context.Context, _ time.Duration) error { cancel(); return ctx.Err() }))
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: 1, Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true}}}
 	e.repo.runs = append(e.repo.runs, &storedRun{run: run, owner: "a"})
 	if err := svc.Execute(ctx, run); err != nil || len(e.repo.answers) != 0 {
 		t.Errorf("Execute = %v with %d answers", err, len(e.repo.answers))
@@ -466,7 +466,7 @@ func TestAResumedRunOverBudgetReadsAndAsksNoMore(t *testing.T) {
 	r := newRepo()
 	e := newEnv(t, r, "a")
 	r.settings.MonthlyBudget = 1
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: 1, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
 	prompt := domain.CurrentPromptSet().Prompts[0]
 	for _, mode := range domain.Modes() {
@@ -505,7 +505,7 @@ func TestASlowRunStaysHeldWhileItWaitsOnAModel(t *testing.T) {
 	e := newEnv(t, r, "a")
 	r.settings.Providers = []string{"openai"}
 	e.gw.slow = 30 * time.Millisecond
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: 1, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
 	r.answers = nil
 	// Only two prompts are left to ask, each slower than the stale window.
@@ -528,14 +528,14 @@ func TestAResumedProviderKeepsToItsPaidFallback(t *testing.T) {
 	r := newRepo()
 	e := newEnv(t, r, "a")
 	choice := domain.ModelChoice{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini-flash-lite"}
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: 1, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{choice}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{choice}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
 	first := domain.Tasks(domain.CurrentPromptSet(), run.Models)[0]
 	r.answers = []domain.Answer{{ID: uuid.New(), RunID: run.ID, Prompt: first.Prompt, Provider: "google", Model: choice.Fallback, Mode: first.Mode, Failure: "x"}}
 	if err := e.svc.Execute(t.Context(), run); err != nil {
 		t.Fatal(err)
 	}
-	if e.gw.asked["google/gemma:free"] != 0 || e.gw.asked[choice.Fallback] != 179 {
+	if e.gw.asked["google/gemma:free"] != 0 || e.gw.asked[choice.Fallback] != 39 {
 		t.Errorf("asked %v: the free model gave up before the restart, so the paid one answers the rest", e.gw.asked)
 	}
 }

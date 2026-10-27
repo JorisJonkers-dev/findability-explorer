@@ -26,9 +26,9 @@ const competitors = computed(() => (results.value ? ranking(results.value.mentio
   >
     <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] stage:gap-x-24 stage:gap-y-10 stage:overflow-y-auto">
       <p class="m-0 max-w-4xl text-ink-2 stage:col-span-2 stage:max-w-none stage:text-[30px]">
-        90 buyer questions in general terms, about each belt family, for a supplier, an application and a problem, in six
-        scopes, asked of the cheapest model of each large provider, from its own knowledge and with web search. One fixed
-        model reads every answer.
+        20 buyer questions in general terms, one per belt family describing the job a belt has to do, asked for Twente and
+        in Dutch, German and English, of the cheapest model of each large provider, from its own knowledge and with web
+        search. One fixed model reads every answer.
         <RouterLink to="/ai-search" class="font-medium underline underline-offset-4">Back to AI search</RouterLink>
       </p>
       <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>

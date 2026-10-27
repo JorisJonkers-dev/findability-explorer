@@ -118,7 +118,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: JorisJonkers-dev/github-workflows/.github/workflows/publish-fragment.yml@618d5851b22d2c46d4234deaa07e0f1950e2b65d # v0.34.3
+    uses: JorisJonkers-dev/github-workflows/.github/workflows/publish-fragment.yml@16d241e44f03c5cc4696d2d0de615717a61ef3c0 # v0.36.0
     with:
       project-file: deploy/findability-explorer.project.yml
       version: ${{ needs.release-please.outputs.tag_name }}

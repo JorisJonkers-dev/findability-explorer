@@ -50,9 +50,14 @@ func (s *Service) execute(ctx context.Context, run domain.Run, only map[domain.T
 		return s.fail(ctx, run.ID, err)
 	}
 	// The run is held while a model is slow too: one call may take longer than the stale window.
+	// The heartbeat stops, and is waited for, before the run returns, so no beat lands after it.
 	beating, stop := context.WithCancel(ctx)
-	defer stop()
-	go e.heartbeat(beating, s.cfg.Stale/4)
+	var heart sync.WaitGroup
+	heart.Go(func() { e.heartbeat(beating, s.cfg.Stale/4) })
+	defer func() {
+		stop()
+		heart.Wait()
+	}()
 	for _, a := range unread {
 		if e.halted() {
 			break

@@ -16,6 +16,8 @@ import (
 // promptTests is a stand-in for the prompt-test use cases, so these tests exercise the contract.
 type promptTests struct {
 	err       error
+	retryErr  error
+	retried   *domain.TaskKey
 	startErr  error
 	updateErr error
 	decideErr error
@@ -50,11 +52,12 @@ func promptAnswers() []domain.Answer {
 	return []domain.Answer{
 		{
 			ID: uuid.New(), RunID: runID, Prompt: set.Prompts[0], PromptSetVersion: 1, Provider: "google", Model: "google/gemini", Mode: domain.ModeWeb,
-			Reply: domain.Reply{Text: "Tribelt and Twentebelt.", Citations: []string{"https://www.tribelt.nl/"}, Cost: 1_500_000}, At: answered,
+			Reply: domain.Reply{Text: "Tribelt and Twentebelt.", Citations: []string{"https://www.tribelt.nl/"}, Cost: 1_500_000, InputTokens: 100, OutputTokens: 40}, At: answered,
 			Extraction: &domain.Extraction{
 				Companies:    []domain.Company{{Name: "Tribelt", CompetitorID: "tribelt", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
 				Addresses:    []string{"https://www.tribelt.nl/"},
 				NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."}, Cost: 500_000,
+				InputTokens: 300, OutputTokens: 20,
 			},
 		},
 		{ID: uuid.New(), RunID: runID, Prompt: set.Prompts[1], PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeKnowledge, Failure: "Rate limited.", At: answered},
@@ -86,11 +89,26 @@ func (p *promptTests) Start(_ context.Context, actor string) (domain.Run, error)
 	return r, p.startErr
 }
 
+func (p *promptTests) Retry(_ context.Context, id uuid.UUID, task *domain.TaskKey) (app.Retry, error) {
+	if id != runID {
+		return app.Retry{}, domain.ErrNotFound
+	}
+	p.retried = task
+	r := promptRun()
+	r.Status, r.FinishedAt = domain.RunRunning, time.Time{}
+	return app.Retry{Run: r, Tasks: 7, Estimate: 84_000}, p.retryErr
+}
+
 func view() app.View {
 	s := domain.DefaultSettings(answered)
 	s.CredentialID = "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f"
 	s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt = "joris", answered
-	return app.View{Settings: s, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000}
+	models := []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini"}}
+	return app.View{
+		Settings: s, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000,
+		Models: models, KeyWorks: true,
+		Prices: domain.PricesFromRun([]domain.Answer{{Provider: "google", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 1000}}}, models, 20, domain.CadenceWeekly, 10_000_000),
+	}
 }
 
 func (p *promptTests) Settings(context.Context) (app.View, error) { return view(), p.err }
@@ -159,7 +177,7 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	}
 	first := items[0].(map[string]any)
 	x := first["extraction"].(map[string]any)
-	if first["costUsd"].(float64) != 2 || first["kind"] != "application" || x["correctness"] != "wrong" ||
+	if first["costUsd"].(float64) != 2 || first["inputTokens"].(float64) != 400 || first["outputTokens"].(float64) != 60 || first["kind"] != "application" || x["correctness"] != "wrong" ||
 		x["companies"].([]any)[0].(map[string]any)["competitorId"] != "tribelt" || x["companies"].([]any)[1].(map[string]any)["url"] != "https://ashworth.com" {
 		t.Errorf("answer = %v", first)
 	}
@@ -211,8 +229,15 @@ func TestPromptTestSettings(t *testing.T) {
 	r := callAs(t, srv, http.MethodGet, "/api/v1/admin/prompt-test", "", "admin")
 	if r.code != http.StatusOK || r.body["monthlyBudgetUsd"].(float64) != 10 || r.body["spentThisMonthUsd"].(float64) != 2.5 ||
 		len(r.body["promptSet"].(map[string]any)["prompts"].([]any)) != 20 || r.body["factSheet"].(map[string]any)["updatedBy"] != "joris" ||
-		r.body["credentialId"] != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" {
+		r.body["credentialId"] != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" || r.body["keyWorks"] != true ||
+		r.body["models"].([]any)[0].(map[string]any)["fallback"] != "google/gemini" {
 		t.Fatalf("settings = %d %v", r.code, r.body)
+	}
+	prices := r.body["prices"].(map[string]any)
+	provider := prices["providers"].([]any)[0].(map[string]any)
+	if prices["basis"] != "run" || prices["runUsd"].(float64) != 0.02 || prices["overBudget"] != false || prices["budgetUsd"].(float64) != 10 ||
+		provider["knowledgeUsd"].(float64) != 0.001 || provider["fallback"] != "google/gemini" {
+		t.Errorf("prices = %v", prices)
 	}
 	body := `{"credentialId":"3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f","providers":["openai"],"monthlyBudgetUsd":12.5,"cadence":"weekly","factSheet":"Tribelt makes belts in Haaksbergen."}`
 	if r := callAs(t, srv, http.MethodPatch, "/api/v1/admin/prompt-test", body, "admin"); r.code != http.StatusOK {
@@ -283,5 +308,40 @@ func TestCompetitorCandidates(t *testing.T) {
 	a.prompts().err = errors.New("down")
 	if r := callAs(t, srv, http.MethodGet, base, "", "admin"); r.code != http.StatusInternalServerError {
 		t.Errorf("failing list: %d", r.code)
+	}
+}
+
+func TestAskingAgainIsForAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	path := "/api/v1/admin/prompt-runs/" + runID.String() + "/retry"
+	if r := callAs(t, srv, http.MethodPost, path, `{}`, "tester"); r.code != http.StatusForbidden {
+		t.Errorf("a viewer asked again: %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPost, path, `{}`, "admin")
+	if r.code != http.StatusAccepted || r.body["tasks"].(float64) != 7 || r.body["estimatedCostUsd"].(float64) != 0.084 ||
+		r.body["run"].(map[string]any)["status"] != "running" || a.prompts().retried != nil {
+		t.Fatalf("retry all = %d %v", r.code, r.body)
+	}
+	r = callAs(t, srv, http.MethodPost, path, `{"promptId":"eyelink-application-twente","provider":"openai","mode":"web"}`, "admin")
+	if want := (domain.TaskKey{PromptID: "eyelink-application-twente", Provider: "openai", Mode: domain.ModeWeb}); r.code != http.StatusAccepted || *a.prompts().retried != want {
+		t.Errorf("retry one = %d, %+v", r.code, a.prompts().retried)
+	}
+	if r := callAs(t, srv, http.MethodPost, path, `{"provider":"openai"}`, "admin"); r.code != http.StatusUnprocessableEntity {
+		t.Errorf("half a task = %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-runs/"+uuid.NewString()+"/retry", `{}`, "admin"); r.code != http.StatusNotFound {
+		t.Errorf("no such run = %d", r.code)
+	}
+	for err, want := range map[error]int{
+		domain.ErrRunActive:     http.StatusConflict,
+		domain.ErrBudgetReached: http.StatusConflict,
+		app.ErrNothingFailed:    http.StatusUnprocessableEntity,
+		errors.New("broken"):    http.StatusInternalServerError,
+	} {
+		a.prompts().retryErr = err
+		if r := callAs(t, srv, http.MethodPost, path, `{}`, "admin"); r.code != want {
+			t.Errorf("%v: %d", err, r.code)
+		}
 	}
 }

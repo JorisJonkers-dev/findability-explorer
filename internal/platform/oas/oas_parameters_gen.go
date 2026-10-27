@@ -1745,6 +1745,72 @@ func decodeRejectTermCandidateParams(args [1]string, argsEscaped bool, r *http.R
 	return params, nil
 }
 
+// RetryPromptRunParams is parameters of retryPromptRun operation.
+type RetryPromptRunParams struct {
+	// The Prompt run's id.
+	RunId uuid.UUID
+}
+
+func unpackRetryPromptRunParams(packed middleware.Parameters) (params RetryPromptRunParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "runId",
+			In:   "path",
+		}
+		params.RunId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRetryPromptRunParams(args [1]string, argsEscaped bool, r *http.Request) (params RetryPromptRunParams, _ error) {
+	// Decode path: runId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "runId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RunId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "runId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SearchTermsParams is parameters of searchTerms operation.
 type SearchTermsParams struct {
 	// Free text to look for in the term and its users.
@@ -2273,6 +2339,92 @@ func decodeTestLlmCredentialParams(args [1]string, argsEscaped bool, r *http.Req
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "credentialId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// TickImprovementParams is parameters of tickImprovement operation.
+type TickImprovementParams struct {
+	// The improvement's id.
+	ImprovementId string
+}
+
+func unpackTickImprovementParams(packed middleware.Parameters) (params TickImprovementParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "improvementId",
+			In:   "path",
+		}
+		params.ImprovementId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeTickImprovementParams(args [1]string, argsEscaped bool, r *http.Request) (params TickImprovementParams, _ error) {
+	// Decode path: improvementId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "improvementId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.ImprovementId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     60,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^[a-z0-9]+(-[a-z0-9]+)*$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.ImprovementId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "improvementId",
 			In:   "path",
 			Err:  err,
 		}

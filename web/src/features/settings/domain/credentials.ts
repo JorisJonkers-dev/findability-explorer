@@ -9,7 +9,7 @@ export function sourceLabel(credential: Pick<LlmCredential, 'source'>): string {
 
 /** How a key is named in a list or a select: "OpenRouter · Course budget key". */
 export function credentialName(credential: Pick<LlmCredential, 'provider' | 'label'>): string {
-  return `${providerLabel(credential.provider)} · ${credential.label}`
+  return `${credential.label} (${providerLabel(credential.provider)})`
 }
 
 /** Who added a key, and when: "Added by joris on 23 Oct 2026, 09:30 UTC", or Vault's line. */

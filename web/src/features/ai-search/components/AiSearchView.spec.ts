@@ -1,56 +1,74 @@
-import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { promptResults } from '../../../testing/fixtures'
-import { json, mountApp, routes } from '../../../testing/mountApp'
+import type { AiSearchSummary } from '../../../infrastructure/api/types.gen'
+import { json, mountApp, problem, routes } from '../../../testing/mountApp'
 
-const rows = (wrapper: VueWrapper) => wrapper.findAll('ul[aria-label="Crawlers"] button')
-const detail = (wrapper: VueWrapper) => wrapper.get('section[aria-labelledby="tl-title"] [aria-live="polite"]')
+const summary: AiSearchSummary = {
+  goal: 0.4,
+  followed: [
+    { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt' },
+    { competitorId: 'ashworth', name: 'Ashworth', role: 'competitor' },
+  ],
+  trend: [
+    { runStartedAt: '2026-10-26T06:00:00Z', shares: [0.14, 0.62] },
+    { runStartedAt: '2026-11-02T06:00:00Z', shares: [0.24, 0.57] },
+  ],
+  crawlers: [
+    { bot: 'OAI-SearchBot', lab: 'OpenAI', gets: 'Links in ChatGPT search answers', feeds: 'today', access: 'allowed' },
+    { bot: 'GPTBot', lab: 'OpenAI', gets: 'What future ChatGPT models know', feeds: 'future', access: 'blocked' },
+  ],
+  keepingOut: [{ competitorId: 'wire-belt', name: 'Wire Belt Company', blocked: ['GPTBot'] }],
+  ranking: [
+    { competitorId: 'martens', name: 'Märtens', role: 'competitor', score: 5 },
+    { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', score: 3.5 },
+  ],
+  sites: 41,
+  questions: 20,
+  providers: 5,
+}
 
-describe('the AI search view', () => {
-  it('opens on Googlebot, which never came', async () => {
-    const { wrapper } = await mountApp(routes({}), '/ai-search')
+describe('the AI search summary', () => {
+  it("shows Tribelt's share against the goal, from the data", async () => {
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/ai-search': () => json(summary) }), '/ai-search')
     expect(document.title).toBe('AI search · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Google never came. AI crawlers read everything.')
-    expect(wrapper.text()).toContain('Log of 30 September – 23 October 2026')
-    expect(wrapper.text()).toContain('8,630 requests logged')
-    expect(rows(wrapper).map((r) => r.attributes('aria-pressed'))).toEqual(['false', 'false', 'false', 'false', 'true', 'false'])
-    expect(detail(wrapper).text()).toContain('Googlebot · Search index')
-    expect(detail(wrapper).text()).toContain('No visits at all in more than three weeks')
-    expect(wrapper.text()).toContain('No visits in more than three weeks')
+    const share = wrapper.get('section[aria-labelledby="share-title"]')
+    expect(share.text()).toContain('24%')
+    expect(share.text()).toContain('of the answers in the newest run, up from 14% on 26 Oct')
+    expect(share.get('svg').attributes('aria-label')).toContain('The goal is 40%.')
+    expect(share.text()).toContain('Goal 40%')
+    expect(share.get('a[href="/ai-search/prompt-test"]').text()).toContain('Each Prompt run asks 5 assistants 20 buyer questions.')
   })
 
-  it('tells what a crawler did when it is picked', async () => {
-    const { wrapper } = await mountApp(routes({}), '/ai-search')
-    await rows(wrapper)[0]?.trigger('click')
-    expect(rows(wrapper)[0]?.attributes('aria-pressed')).toBe('true')
-    expect(rows(wrapper)[0]?.attributes('aria-label')).toBe('ClaudeBot: 1 day with visits, on 10 October.')
-    expect(detail(wrapper).text()).toContain('ClaudeBot · Model training')
-    expect(detail(wrapper).text()).toContain('142 reads of robots.txt')
-    await rows(wrapper)[3]?.trigger('click')
-    expect(detail(wrapper).text()).toContain('GPTBot · Unverified')
-    expect(detail(wrapper).text()).toContain('It may not be GPTBot at all.')
+  it('lists the crawlers with what tribelt.nl does with each, and who keeps them out', async () => {
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/ai-search': () => json(summary) }), '/ai-search')
+    const rows = wrapper.findAll('section[aria-labelledby="labs-title"] tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
+    expect(rows).toEqual([
+      ['OAI-SearchBotOpenAI', 'Links in ChatGPT search answers, shows up in answers today', '●Let in'],
+      ['GPTBotOpenAI', 'What future ChatGPT models know, known to future models', '✕Kept out'],
+    ])
+    const labs = wrapper.get('section[aria-labelledby="labs-title"]').text()
+    expect(labs).toContain('tribelt.nl keeps GPTBot out.')
+    expect(labs).toContain('Wire Belt Company shuts some of them out.')
   })
 
-  it('shows the pilot until the first Prompt run, and the ad surfaces', async () => {
-    const { wrapper } = await mountApp(routes({}), '/ai-search')
-    const summary = wrapper.get('[data-testid="prompt-summary"]')
-    expect(summary.text()).toContain('Pilot, Oct 2026 (by hand: 5 prompts in Gemini and ChatGPT): Tribelt named in 1 of 6 searches.')
-    expect(summary.get('a').attributes('href')).toBe('/ai-search/prompt-test')
-    const [ads] = wrapper.findAll('table')
-    expect(ads?.findAll('tbody th').map((t) => t.text())).toEqual(['Inside Gemini', 'Inside AI Overviews', 'Around AI Overviews', 'AI Mode', 'ChatGPT'])
-    expect(wrapper.text()).toContain('Goal G4')
+  it('ranks Tribelt among the best-prepared, and leads on to AI readiness', async () => {
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/ai-search': () => json(summary) }), '/ai-search')
+    const ready = wrapper.get('section[aria-labelledby="ready-title"]')
+    expect(ready.findAll('li').map((l) => l.text())).toEqual(['Märtens5', 'Tribelt B.V.3½'])
+    expect(ready.get('a[href="/ai-search/readiness"]').text()).toContain('for all 41 sites.')
   })
 
-  it('shows the latest Prompt run in place of the pilot', async () => {
-    const { wrapper } = await mountApp(routes({ 'GET /api/v1/prompt-test': () => json(promptResults()) }), '/ai-search')
-    const summary = wrapper.get('[data-testid="prompt-summary"]')
-    expect(summary.text()).toContain('Prompt run of 1 Nov 2026: 12 answers, read by one model.')
-    expect(summary.findAll('dd').map((d) => d.text())).toEqual(['17%', '33%'])
-    expect(summary.get('ul[aria-label="Named instead"]').text()).toBe('Twentebelt')
+  it('says so before the first run and scan', async () => {
+    const empty = { ...summary, followed: [], trend: [], ranking: [], questions: 0, crawlers: [{ ...summary.crawlers[0], access: undefined }] }
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/ai-search': () => json(empty) }), '/ai-search')
+    expect(wrapper.find('svg[role="img"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('No Prompt run has finished yet.')
+    expect(wrapper.text()).toContain('No site has been scanned yet.')
+    expect(wrapper.text()).toContain('once the first Prompt run is in.')
+    expect(wrapper.text()).toContain('–Not checked')
   })
 
-  it('leads on to the AI readiness of the competitors', async () => {
-    const { wrapper } = await mountApp(routes({}), '/ai-search')
-    expect(wrapper.get('a[href="/ai-search/readiness"]').text()).toBe('Who follows this: AI readiness of the competitors')
+  it('says when the summary cannot be loaded', async () => {
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/ai-search': () => problem(500, 'Internal Server Error', 'Down.') }), '/ai-search')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Down.')
   })
 })

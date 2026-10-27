@@ -206,3 +206,29 @@ func CandidateID(key string) string {
 	sum := sha256.Sum256([]byte(key))
 	return hex.EncodeToString(sum[:])[:16]
 }
+
+// CitedCompanies are the companies on the list whose website an answer's addresses point to, in
+// the order first cited, each once.
+func CitedCompanies(addresses []string, directory []DirectoryCompany) []string {
+	var out []string
+	for _, a := range addresses {
+		h := hostOf(a)
+		for _, c := range directory {
+			if sameSite(h, c.Host) && !slices.Contains(out, c.ID) {
+				out = append(out, c.ID)
+			}
+		}
+	}
+	return out
+}
+
+// NamedCompanies are the companies on the list an answer names, in its order, each once.
+func (x Extraction) NamedCompanies() []string {
+	var out []string
+	for _, c := range x.Companies {
+		if c.CompetitorID != "" && !slices.Contains(out, c.CompetitorID) {
+			out = append(out, c.CompetitorID)
+		}
+	}
+	return out
+}

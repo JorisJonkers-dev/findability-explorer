@@ -62,6 +62,12 @@ UPDATE prompt_runs
 SET status = @status, failure = sqlc.narg(failure), finished_at = @finished_at
 WHERE id = @id AND status = 'running';
 
+-- name: ReopenPromptRun :execrows
+-- Runs a finished run again, held by owner, unless any run is running: the run lock.
+UPDATE prompt_runs AS p
+SET status = 'running', finished_at = NULL, failure = NULL, owner = @owner, heartbeat_at = @at
+WHERE p.id = @id AND p.status <> 'running' AND NOT EXISTS (SELECT 1 FROM prompt_runs AS r WHERE r.status = 'running');
+
 -- name: GetPromptRun :one
 SELECT id, prompt_set_version, fact_sheet_version, fact_sheet, trigger, started_by, started_at, finished_at, status, failure, tasks
 FROM prompt_runs
@@ -79,7 +85,9 @@ FROM prompt_run_models
 WHERE run_id = ANY(sqlc.arg(ids)::uuid [])
 ORDER BY run_id, position;
 
--- name: AddPromptAnswer :exec
+-- name: AddPromptAnswer :one
+-- An answer, or, for a task whose earlier answer failed, that answer replaced: what the failed try
+-- cost stays counted. A task answered already keeps its answer, and no row comes back.
 INSERT INTO prompt_answers (
     id, run_id, prompt_id, family, kind, scope, language, prompt_text, prompt_set_version, provider, model, mode, answer,
     citations, input_tokens, output_tokens, cost_micros, failure, answered_at
@@ -87,7 +95,15 @@ INSERT INTO prompt_answers (
 VALUES (
     @id, @run_id, @prompt_id, @family, @kind, @scope, @language, @prompt_text, @prompt_set_version, @provider, @model, @mode,
     @answer, @citations, @input_tokens, @output_tokens, @cost_micros, sqlc.narg(failure), @answered_at
-);
+)
+ON CONFLICT (run_id, prompt_id, provider, mode) DO UPDATE
+SET model = excluded.model, answer = excluded.answer, citations = excluded.citations,
+    input_tokens = prompt_answers.input_tokens + excluded.input_tokens,
+    output_tokens = prompt_answers.output_tokens + excluded.output_tokens,
+    cost_micros = prompt_answers.cost_micros + excluded.cost_micros, failure = excluded.failure,
+    answered_at = excluded.answered_at
+WHERE prompt_answers.failure IS NOT NULL
+RETURNING id;
 
 -- name: AddPromptExtraction :exec
 INSERT INTO prompt_extractions (

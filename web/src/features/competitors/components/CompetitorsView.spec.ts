@@ -160,7 +160,7 @@ describe('the company card', () => {
     const card = wrapper.get('section[aria-labelledby="company-name"]')
     expect(card.get('h2').text()).toBe('Twentebelt')
     expect(card.text()).toContain('Competitor')
-    expect(card.text()).toContain('Netherlands · website in 2 languages')
+    expect(card.text()).toContain('Netherlands. Its website is in 2 languages.')
     expect(card.findAll('tbody tr').map((r) => r.text())).toEqual([
       'EyelinkNot offered',
       'Open spiralNot offered',
@@ -189,8 +189,8 @@ describe('the company card', () => {
       }),
       '/competitors',
     )
-    expect(rows(wrapper)[0]?.attributes('aria-label')).toBe('Twentebelt, Netherlands: Tri-Flex; 3 scans · reading page 5 of 15')
-    expect(rows(wrapper)[0]?.text()).toContain('3 scans · reading page 5 of 15')
+    expect(rows(wrapper)[0]?.attributes('aria-label')).toBe('Twentebelt, Netherlands: Tri-Flex; 3 scans, reading page 5 of 15')
+    expect(rows(wrapper)[0]?.text()).toContain('3 scans, reading page 5 of 15')
     const stats = wrapper.get('[data-testid="scan-stats"]')
     expect(stats.text()).toMatch(/Last scan: .* at \d\d:\d\d, reading page 5 of 15/)
     const bar = stats.get('[role="progressbar"]')
@@ -207,7 +207,7 @@ describe('the company card', () => {
       }),
       '/competitors',
     )
-    expect(rows(wrapper)[0]?.text()).toContain('1 scan · blocked')
+    expect(rows(wrapper)[0]?.text()).toContain('1 scan, blocked')
     const stats = wrapper.get('[data-testid="scan-stats"]')
     expect(stats.text()).toMatch(/Last scan: .*, blocked by its site/)
     expect(stats.get('[data-testid="blocked-note"]').text()).toContain('turns automated readers away')
@@ -285,7 +285,7 @@ describe('the scan', () => {
     await flushPromises()
     expect(wrapper.find('[role="progressbar"]').exists()).toBe(false)
     expect(wrapper.findAll('h3').map((h) => h.text())).toContain('twentebelt.com')
-    expect(wrapper.text()).toContain('1 page read · 2 new terms')
+    expect(wrapper.text()).toContain('1 page read, 2 new terms')
   })
 
   it('shows a finished scan: what Tribelt is missing, the ranked phrases and the matched products', async () => {
@@ -446,7 +446,8 @@ describe('for an account that is no administrator', () => {
     expect(wrapper.find('[aria-label="Manage this company"]').exists()).toBe(false)
     expect(wrapper.find('#admin-title').exists()).toBe(false)
     expect(wrapper.findAll('button').some((b) => b.text() === 'Scan this website')).toBe(false)
-    expect(wrapper.get('a[href="/competitors/martens/history"]').text()).toBe('Search terms and history')
+    expect(wrapper.get('a[href="/competitors/martens/history"]').text()).toBe('Over time')
+    expect(wrapper.get('a[href="/competitors/martens"]').text()).toBe('Latest scan')
     expect(wrapper.get('section[aria-labelledby="recent-title"]').text()).toContain('Twentebelt')
   })
 

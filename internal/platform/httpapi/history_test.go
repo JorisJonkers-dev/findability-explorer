@@ -308,3 +308,30 @@ func TestTermReviewQueue(t *testing.T) {
 		}
 	}
 }
+
+func TestTheLanguageModelsReview(t *testing.T) {
+	srv := serve(t, &analyses{})
+	list := callAs(t, srv, http.MethodGet, "/api/v1/admin/term-candidates", "", "admin")
+	items, _ := list.body["items"].([]any)
+	if list.code != http.StatusOK || len(items) != 2 {
+		t.Fatalf("list = %d %v", list.code, list.body)
+	}
+	if review := list.body["review"].(map[string]any); review["running"] != false || review["waiting"] != float64(1) || review["problem"] != nil {
+		t.Errorf("review = %v", review)
+	}
+	if v := items[0].(map[string]any)["verdict"]; v != nil {
+		t.Errorf("a candidate the model has not seen has a verdict: %v", v)
+	}
+	v := items[1].(map[string]any)["verdict"].(map[string]any)
+	if v["accept"] != true || v["sure"] != false || v["reason"] != "Could go either way." || v["model"] != "claude-haiku-5-5" ||
+		v["term"].(map[string]any)["family"] != "all" {
+		t.Errorf("verdict = %v", v)
+	}
+	if r := call(t, srv, http.MethodPost, "/api/v1/admin/term-candidates/review", "", true); r.code != http.StatusForbidden {
+		t.Errorf("a viewer started a review: %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPost, "/api/v1/admin/term-candidates/review", "", "admin")
+	if r.code != http.StatusAccepted || r.body["running"] != true || r.body["waiting"] != float64(1) {
+		t.Errorf("start = %d %v", r.code, r.body)
+	}
+}

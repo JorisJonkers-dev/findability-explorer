@@ -73,11 +73,15 @@ type Repository interface {
 	// Heartbeat records that owner still runs the run; false when another instance took it.
 	Heartbeat(ctx context.Context, id uuid.UUID, owner string, at time.Time) (bool, error)
 	FinishRun(ctx context.Context, id uuid.UUID, status domain.RunStatus, failure string, at time.Time) error
+	// ReopenRun runs a finished run again, held by owner, or returns domain.ErrRunActive when a run
+	// is running.
+	ReopenRun(ctx context.Context, id uuid.UUID, owner string, at time.Time) error
 	Run(ctx context.Context, id uuid.UUID) (domain.Run, error)
 	// Runs returns at most limit runs, newest first.
 	Runs(ctx context.Context, limit int) ([]domain.Run, error)
 
-	// AddAnswer stores an answer with its extraction, if it has one.
+	// AddAnswer stores an answer with its extraction, if it has one. An answer to a task whose
+	// answer failed replaces it, adding to what it cost; a task answered already is domain.ErrAnswered.
 	AddAnswer(ctx context.Context, a domain.Answer) error
 	// SetExtraction stores the extraction of an answer stored without one.
 	SetExtraction(ctx context.Context, answerID uuid.UUID, x domain.Extraction, at time.Time) error

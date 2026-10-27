@@ -23,7 +23,9 @@ type Querier interface {
 	AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error
 	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
 	AddLlmEvent(ctx context.Context, arg AddLlmEventParams) error
-	AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams) error
+	// An answer, or, for a task whose earlier answer failed, that answer replaced: what the failed try
+	// cost stays counted. A task answered already keeps its answer, and no row comes back.
+	AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams) (uuid.UUID, error)
 	AddPromptAnswerCompany(ctx context.Context, arg AddPromptAnswerCompanyParams) error
 	AddPromptCandidateDecision(ctx context.Context, arg AddPromptCandidateDecisionParams) error
 	AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) error
@@ -64,6 +66,8 @@ type Querier interface {
 	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
+	InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error
+	InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error
 	// The number of the first finished scan of a company that found each phrase.
 	KeywordFirstScans(ctx context.Context, competitorID pgtype.Text) ([]KeywordFirstScansRow, error)
 	// The map terms each company's newest finished scan found, once per company.
@@ -89,6 +93,8 @@ type Querier interface {
 	ListCompanyOverrides(ctx context.Context) ([]CompanyOverride, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
+	ListPlanTargets(ctx context.Context) ([]PlanTarget, error)
+	ListPlanTicks(ctx context.Context) ([]PlanTick, error)
 	ListPromptAnswerCompanies(ctx context.Context, runID uuid.UUID) ([]ListPromptAnswerCompaniesRow, error)
 	// A run's answers with how they were read; the answer's text only when with_text is true.
 	ListPromptAnswers(ctx context.Context, arg ListPromptAnswersParams) ([]ListPromptAnswersRow, error)
@@ -96,6 +102,7 @@ type Querier interface {
 	ListPromptRunModels(ctx context.Context, ids []uuid.UUID) ([]ListPromptRunModelsRow, error)
 	ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRunsRow, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
+	ListTermVerdicts(ctx context.Context) ([]TermVerdict, error)
 	// The schedule's next due time, locked until the transaction ends; no row before any was saved.
 	LockPromptSchedule(ctx context.Context) ([]time.Time, error)
 	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
@@ -106,15 +113,21 @@ type Querier interface {
 	// What answers and extractions cost since a moment, in millionths of a dollar.
 	PromptSpentSince(ctx context.Context, since time.Time) (int64, error)
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
+	// Runs a finished run again, held by owner, unless any run is running: the run lock.
+	ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error)
 	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
 	SavePromptSettings(ctx context.Context, arg SavePromptSettingsParams) error
 	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
+	SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) error
+	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (int64, error)
+	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
 	// How many scans the language model answered for, and the tokens one of them used on average.
 	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)
 	TokensSince(ctx context.Context, createdAt time.Time) (int64, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
+	UntickPlanImprovement(ctx context.Context, improvementID string) error
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error
 	UpdateCompany(ctx context.Context, arg UpdateCompanyParams) (int64, error)
 	UpsertAccount(ctx context.Context, arg UpsertAccountParams) (int64, error)

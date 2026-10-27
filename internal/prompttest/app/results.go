@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 
@@ -113,4 +114,34 @@ func (s *Service) Answers(ctx context.Context, runID uuid.UUID, filter AnswerFil
 		}
 	}
 	return RunResult{Run: run, Progress: domain.Progressed(answers, run.Models), Cells: domain.Cells(answers)}, kept, nil
+}
+
+// RunAnswers is a run with the answers that count, without their text.
+type RunAnswers struct {
+	Run     domain.Run
+	Answers []domain.Answer
+}
+
+// Counted returns at most limit of the newest runs that have answers that count, newest first,
+// each with only those answers: what other contexts compare companies on.
+func (s *Service) Counted(ctx context.Context, limit int) ([]RunAnswers, error) {
+	runs, err := s.repo.Runs(ctx, MaxRuns)
+	if err != nil {
+		return nil, fmt.Errorf("list the runs: %w", err)
+	}
+	out := []RunAnswers{}
+	for _, r := range runs {
+		if len(out) == limit {
+			break
+		}
+		answers, err := s.repo.Answers(ctx, r.ID, false)
+		if err != nil {
+			return nil, fmt.Errorf("the answers of run %s: %w", r.ID, err)
+		}
+		kept := slices.DeleteFunc(answers, func(a domain.Answer) bool { return !a.Counts() })
+		if len(kept) > 0 {
+			out = append(out, RunAnswers{Run: r, Answers: kept})
+		}
+	}
+	return out, nil
 }

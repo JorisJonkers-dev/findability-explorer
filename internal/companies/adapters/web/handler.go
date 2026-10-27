@@ -21,6 +21,7 @@ type UseCases interface {
 	Add(ctx context.Context, user, name, rawURL string) (domain.Company, error)
 	Update(ctx context.Context, user, id string, ch domain.Change) (domain.Listed, error)
 	Delete(ctx context.Context, user, id string) error
+	AddMany(ctx context.Context, user string, items []app.NewItem, scan bool) (app.Batch, error)
 }
 
 // Handler implements the competitor operations. Business rules stay in the use cases.
@@ -89,6 +90,35 @@ func (h *Handler) AddCompetitor(ctx context.Context, req *oas.NewCompetitor) (oa
 	}
 	out := toCompetitor(domain.Listed{Company: c})
 	return &out, nil
+}
+
+// AddCompetitors implements addCompetitors.
+func (h *Handler) AddCompetitors(ctx context.Context, req *oas.CompetitorBatchRequest) (oas.AddCompetitorsRes, error) {
+	items := make([]app.NewItem, 0, len(req.Items))
+	for _, it := range req.Items {
+		items = append(items, app.NewItem{Name: it.Name, Website: it.URL.Or(""), CandidateID: string(it.CandidateId.Or(""))})
+	}
+	b, err := h.uc.AddMany(ctx, httpx.Subject(ctx), items, req.Scan.Or(false))
+	switch {
+	case errors.Is(err, app.ErrBatchSize):
+		return &oas.AddCompetitorsUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, app.ErrBatchSize.Error()+"."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := &oas.CompetitorBatch{Items: make([]oas.CompetitorBatchItem, 0, len(b.Items)), Scans: int32(b.Scans)} //nolint:gosec // at most MaxBatch
+	for _, it := range b.Items {
+		o := oas.CompetitorBatchItem{Name: it.Name, Outcome: oas.CompetitorBatchOutcome(it.Outcome)}
+		if it.CompanyID != "" {
+			o.CompetitorId = oas.NewOptCompetitorId(oas.CompetitorId(it.CompanyID))
+		}
+		if it.Reason != "" {
+			o.Reason = oas.NewOptString(it.Reason)
+		}
+		out.Items = append(out.Items, o)
+	}
+	return out, nil
 }
 
 // UpdateCompetitor implements updateCompetitor.

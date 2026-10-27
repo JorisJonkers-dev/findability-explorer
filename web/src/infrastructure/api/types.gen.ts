@@ -181,6 +181,70 @@ export type Competitor = {
 export type CompanyRole = 'tribelt' | 'mirror' | 'group' | 'competitor';
 
 /**
+ * One company of a batch; one without a valid name or website is rejected on its own.
+ */
+export type NewCompetitorItem = {
+    /**
+     * The company's name.
+     */
+    name: string;
+    /**
+     * Its website, an http or https address on a public host.
+     */
+    url?: string;
+    candidateId?: CompetitorCandidateId;
+};
+
+/**
+ * Companies to add at once.
+ */
+export type CompetitorBatchRequest = {
+    /**
+     * The companies, in order.
+     */
+    items: Array<NewCompetitorItem>;
+    /**
+     * Whether to scan the added companies straight away.
+     */
+    scan?: boolean;
+};
+
+/**
+ * What became of one item - added, skipped as a duplicate, or rejected.
+ */
+export type CompetitorBatchOutcome = 'added' | 'duplicate' | 'rejected';
+
+/**
+ * One item's outcome.
+ */
+export type CompetitorBatchItem = {
+    /**
+     * The name as added, or as sent.
+     */
+    name: string;
+    outcome: CompetitorBatchOutcome;
+    competitorId?: CompetitorId;
+    /**
+     * Why it was skipped or rejected.
+     */
+    reason?: string;
+};
+
+/**
+ * What a batch did.
+ */
+export type CompetitorBatch = {
+    /**
+     * Each item's outcome, in order.
+     */
+    items: Array<CompetitorBatchItem>;
+    /**
+     * How many scans started.
+     */
+    scans: number;
+};
+
+/**
  * A company to add.
  */
 export type NewCompetitor = {
@@ -1053,6 +1117,65 @@ export type TermCandidate = {
      */
     lastSeenAt: string;
     decision?: TermDecision;
+    verdict?: TermVerdict;
+};
+
+/**
+ * The language model's review of a candidate. A sure verdict is also its decision; an unsure one leaves the candidate waiting for a person, with the term it suggests.
+ */
+export type TermVerdict = {
+    /**
+     * Whether it would add the phrase to the map.
+     */
+    accept: boolean;
+    /**
+     * Whether it was sure; when not, a person decides.
+     */
+    sure: boolean;
+    /**
+     * Why, in one sentence.
+     */
+    reason: string;
+    term?: TermSuggestion;
+    /**
+     * The model that reviewed it.
+     */
+    model: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * The term the language model would add, as the map would hold it.
+ */
+export type TermSuggestion = {
+    /**
+     * The term.
+     */
+    term: string;
+    language: Language;
+    family: BeltFamily;
+    tier: IntentTier;
+};
+
+/**
+ * How far the language model is with the waiting candidates.
+ */
+export type TermReviewState = {
+    /**
+     * Whether it is reviewing now.
+     */
+    running: boolean;
+    /**
+     * How many waiting candidates it has not reviewed yet.
+     */
+    waiting: number;
+    /**
+     * Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its provider failed). Absent when it went well.
+     */
+    problem?: 'noModel' | 'failed';
 };
 
 /**
@@ -1074,7 +1197,7 @@ export type TermCandidateCounts = {
 };
 
 /**
- * The candidates with one status.
+ * The candidates with one status, and how far the language model is with them.
  */
 export type TermCandidateList = {
     /**
@@ -1082,6 +1205,7 @@ export type TermCandidateList = {
      */
     items: Array<TermCandidate>;
     counts: TermCandidateCounts;
+    review: TermReviewState;
 };
 
 /**
@@ -1247,6 +1371,495 @@ export type AiReadiness = {
 };
 
 /**
+ * A company the AI search trend follows.
+ */
+export type FollowedCompany = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+};
+
+/**
+ * One Prompt run in the trend.
+ */
+export type ShareTrendPoint = {
+    /**
+     * When the run started.
+     */
+    runStartedAt: string;
+    /**
+     * The share of the run's answers naming each followed company, in the order of `followed`, from 0 to 1.
+     */
+    shares: Array<number>;
+};
+
+/**
+ * What a crawler feeds - answers AI assistants give today, or what future models know.
+ */
+export type CrawlerFeeds = 'today' | 'future';
+
+/**
+ * A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
+ */
+export type TribeltCrawler = {
+    /**
+     * Its robots.txt token.
+     */
+    bot: string;
+    /**
+     * Who runs it.
+     */
+    lab: string;
+    /**
+     * What letting it in gets Tribelt.
+     */
+    gets: string;
+    feeds: CrawlerFeeds;
+    access?: CrawlerAccess;
+};
+
+/**
+ * A competitor whose robots.txt keeps crawlers out of the whole site.
+ */
+export type KeepingOut = {
+    competitorId: CompetitorId;
+    /**
+     * The competitor's name.
+     */
+    name: string;
+    /**
+     * The crawlers it keeps out.
+     */
+    blocked: Array<string>;
+};
+
+/**
+ * A company in the readiness ranking.
+ */
+export type ReadinessRank = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    /**
+     * Readiness checks passed out of five, in halves.
+     */
+    score: number;
+};
+
+/**
+ * The AI search summary.
+ */
+export type AiSearchSummary = {
+    /**
+     * The share of answers Tribelt aims to be named in.
+     */
+    goal: number;
+    /**
+     * The companies the trend follows - Tribelt, then the most named competitors.
+     */
+    followed: Array<FollowedCompany>;
+    /**
+     * The newest runs, oldest first.
+     */
+    trend: Array<ShareTrendPoint>;
+    /**
+     * Every crawler a scan records, those that feed answers today first.
+     */
+    crawlers: Array<TribeltCrawler>;
+    /**
+     * The competitors that keep crawlers out, most crawlers first.
+     */
+    keepingOut: Array<KeepingOut>;
+    /**
+     * Tribelt among the best-prepared competitors, highest score first.
+     */
+    ranking: Array<ReadinessRank>;
+    /**
+     * How many sites have a recorded AI readiness.
+     */
+    sites: number;
+    /**
+     * How many buyer questions the newest run asked; 0 before any run.
+     */
+    questions: number;
+    /**
+     * How many providers the newest run asked; 0 before any run.
+     */
+    providers: number;
+};
+
+/**
+ * One improvement of the plan.
+ */
+export type PlanImprovement = {
+    /**
+     * Its id.
+     */
+    id: string;
+    /**
+     * What to do.
+     */
+    title: string;
+    /**
+     * What it moves, in words.
+     */
+    moves: string;
+    measure: StandingMeasure;
+    /**
+     * Whether the latest scan of tribelt.nl decides that it is done.
+     */
+    auto: boolean;
+    /**
+     * Whether it is done.
+     */
+    done: boolean;
+    /**
+     * Who ticked it off; only for one ticked by hand.
+     */
+    tickedBy?: string;
+    /**
+     * When.
+     */
+    tickedAt?: string;
+    /**
+     * Why it matters.
+     */
+    why: string;
+    /**
+     * How to do it, step by step.
+     */
+    steps: Array<string>;
+    /**
+     * When it counts as done.
+     */
+    doneWhen: string;
+    /**
+     * What the latest scan of tribelt.nl found of an improvement a scan checks; empty for one ticked by hand, or before any scan.
+     */
+    parts: Array<PlanPart>;
+    /**
+     * Tribelt's value on the measure it moves; absent without data.
+     */
+    tribelt?: number;
+    leader?: MeasureLeader;
+};
+
+/**
+ * One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
+ */
+export type PlanPart = {
+    /**
+     * What it looks for.
+     */
+    name: string;
+    /**
+     * Whether the latest scan found it.
+     */
+    present: boolean;
+};
+
+/**
+ * A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt), readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a run citing tribelt.nl).
+ */
+export type PlanTarget = 'aiShareOfVoice' | 'twenteShareOfVoice' | 'readinessChecks' | 'termsUsed' | 'citations';
+
+/**
+ * A number to watch, now and its target.
+ */
+export type WatchedNumber = {
+    target: PlanTarget;
+    /**
+     * Its value now; absent without data.
+     */
+    now?: number;
+    /**
+     * Its target.
+     */
+    goal: number;
+};
+
+/**
+ * Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
+ */
+export type EyeOnReason = 'mostNamed' | 'bestPrepared' | 'twente';
+
+/**
+ * A competitor to keep an eye on.
+ */
+export type EyeOn = {
+    why: EyeOnReason;
+    leader: MeasureLeader;
+};
+
+/**
+ * The plan as it stands.
+ */
+export type Plan = {
+    /**
+     * The version of the improvements catalogue.
+     */
+    catalogueVersion: number;
+    /**
+     * The improvements, in order.
+     */
+    improvements: Array<PlanImprovement>;
+    /**
+     * The numbers to watch.
+     */
+    watched: Array<WatchedNumber>;
+    /**
+     * The competitors to keep an eye on.
+     */
+    eyeOn: Array<EyeOn>;
+};
+
+/**
+ * Whether an improvement is done.
+ */
+export type ImprovementTick = {
+    /**
+     * Done, or not done again.
+     */
+    done: boolean;
+};
+
+/**
+ * One target to set.
+ */
+export type PlanTargetValue = {
+    target: PlanTarget;
+    /**
+     * Its new value.
+     */
+    value: number;
+};
+
+/**
+ * Targets to set.
+ */
+export type PlanTargetsChange = {
+    /**
+     * The targets.
+     */
+    targets: Array<PlanTargetValue>;
+};
+
+/**
+ * A competitor that sells a family, with its own names for it.
+ */
+export type ProductSeller = {
+    competitorId: CompetitorId;
+    /**
+     * The competitor's name.
+     */
+    name: string;
+    /**
+     * Its website.
+     */
+    websiteUrl?: string;
+    /**
+     * Its names for the family.
+     */
+    names: Array<string>;
+};
+
+/**
+ * A term of the map for a family.
+ */
+export type ProductTerm = {
+    /**
+     * The term.
+     */
+    term: string;
+    /**
+     * Its language.
+     */
+    language: string;
+    tier: IntentTier;
+    /**
+     * How many companies use it.
+     */
+    usedBy: number;
+    /**
+     * Whether Tribelt's own site uses it.
+     */
+    usedByTribelt: boolean;
+};
+
+/**
+ * How many of a family's answers in one scope name Tribelt.
+ */
+export type ProductScope = {
+    scope: PromptScope;
+    /**
+     * The answers in the scope.
+     */
+    answers: number;
+    /**
+     * Those naming Tribelt.
+     */
+    named: number;
+};
+
+/**
+ * A company a family's answers name, and the share of them that do.
+ */
+export type ProductMention = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    /**
+     * The share of the family's answers naming it.
+     */
+    share: number;
+};
+
+/**
+ * One belt family against the field.
+ */
+export type Product = {
+    family: PromptFamily;
+    /**
+     * Tribelt's own names for it.
+     */
+    tribeltNames: Array<string>;
+    /**
+     * The competitors that sell it, by name.
+     */
+    sellers: Array<ProductSeller>;
+    /**
+     * The map's terms for it, the most used first.
+     */
+    terms: Array<ProductTerm>;
+    /**
+     * How many of the terms Tribelt's site uses.
+     */
+    termsUsed: number;
+    /**
+     * The newest run's answers about it; 0 before any run.
+     */
+    answers: number;
+    /**
+     * Those naming Tribelt.
+     */
+    named: number;
+    /**
+     * The answers per scope.
+     */
+    byScope: Array<ProductScope>;
+    /**
+     * The companies its answers name most.
+     */
+    mostNamed: Array<ProductMention>;
+};
+
+/**
+ * What stands out - crowded (the family the most competitors sell), fewestTerms (whose terms Tribelt uses least) or bestInAI (whose answers name Tribelt most).
+ */
+export type ProductFinding = 'crowded' | 'fewestTerms' | 'bestInAI';
+
+/**
+ * A finding and the family it is about.
+ */
+export type ProductStandout = {
+    finding: ProductFinding;
+    family: PromptFamily;
+};
+
+/**
+ * Tribelt's belt families against the field.
+ */
+export type ProductsOverview = {
+    /**
+     * Every family, in order.
+     */
+    items: Array<Product>;
+    /**
+     * What stands out among them.
+     */
+    standouts: Array<ProductStandout>;
+};
+
+/**
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+ */
+export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapPages' | 'termsUsed';
+
+/**
+ * The competitor with the best value on a measure.
+ */
+export type MeasureLeader = {
+    competitorId: CompetitorId;
+    /**
+     * The competitor's name.
+     */
+    name: string;
+    /**
+     * Its value.
+     */
+    value: number;
+};
+
+/**
+ * Tribelt against its competitors on one measure.
+ */
+export type Standing = {
+    measure: StandingMeasure;
+    /**
+     * Tribelt's value; absent without data.
+     */
+    tribelt?: number;
+    /**
+     * The median over the competitors with data, the typical competitor; absent when none has data.
+     */
+    median?: number;
+    leader?: MeasureLeader;
+    /**
+     * How many competitors have data on the measure.
+     */
+    competitors: number;
+    /**
+     * Whether the leader is ahead of Tribelt; false when either has no value.
+     */
+    trails: boolean;
+    /**
+     * Whether Tribelt is level with or ahead of the leader.
+     */
+    leads: boolean;
+};
+
+/**
+ * How Tribelt stands against its competitors now.
+ */
+export type Standings = {
+    /**
+     * Every measure, in order.
+     */
+    measures: Array<Standing>;
+    /**
+     * How many measures Tribelt trails the leader on.
+     */
+    trailing: number;
+    /**
+     * The first improvements of the plan not done yet, in order.
+     */
+    open: Array<PlanImprovement>;
+    /**
+     * When the Prompt run the AI measures come from started; absent before any.
+     */
+    runStartedAt?: string;
+};
+
+/**
  * A scan's AI readiness in brief.
  */
 export type AiReadinessBrief = {
@@ -1346,6 +1959,33 @@ export type PromptKind = 'supplier' | 'application' | 'problem';
  * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
  */
 export type PromptScope = 'twente' | 'netherlands' | 'germany' | 'dutch' | 'german' | 'english';
+
+/**
+ * What to ask again - every failed answer of the run when empty, or the one question of one provider and mode when all three are given.
+ */
+export type PromptRetryRequest = {
+    /**
+     * The question's id.
+     */
+    promptId?: string;
+    /**
+     * The provider whose model to ask.
+     */
+    provider?: string;
+    mode?: PromptMode;
+};
+
+/**
+ * A run asked again.
+ */
+export type PromptRetry = {
+    run: PromptRun;
+    /**
+     * How many answers it asks again.
+     */
+    tasks: number;
+    estimatedCostUsd: Usd;
+};
 
 /**
  * How a prompt is asked - from the model's own knowledge, or with live web search.
@@ -1697,6 +2337,14 @@ export type PromptAnswer = {
      */
     at: string;
     costUsd: Usd;
+    /**
+     * The tokens asking and reading the answer read.
+     */
+    inputTokens: number;
+    /**
+     * The tokens asking and reading the answer wrote.
+     */
+    outputTokens: number;
     extraction?: PromptExtraction;
 };
 
@@ -1774,6 +2422,55 @@ export type PromptSet = {
 };
 
 /**
+ * Where the prices come from - run (the latest run's own costs), catalogue (OpenRouter's price list times typical tokens, before any run) or none (nothing to go by).
+ */
+export type PromptPriceBasis = 'run' | 'catalogue' | 'none';
+
+/**
+ * What one provider's answers cost.
+ */
+export type PromptProviderPrice = {
+    /**
+     * The provider.
+     */
+    provider: string;
+    /**
+     * The model it asks.
+     */
+    model: string;
+    /**
+     * The paid model asked when the free one cannot answer.
+     */
+    fallback?: string;
+    knowledgeUsd: Usd;
+    webUsd: Usd;
+    runUsd: Usd;
+};
+
+/**
+ * What Prompt runs cost, per provider, per run and per month against the budget.
+ */
+export type PromptPrices = {
+    basis: PromptPriceBasis;
+    /**
+     * Per provider, one answer from its own knowledge, one with web search, and a run.
+     */
+    providers: Array<PromptProviderPrice>;
+    readingUsd: Usd;
+    runUsd: Usd;
+    /**
+     * How many scheduled runs the cadence starts in an average month.
+     */
+    runsPerMonth: number;
+    monthUsd: Usd;
+    budgetUsd: Usd;
+    /**
+     * Whether a month of runs would cost more than the budget.
+     */
+    overBudget: boolean;
+};
+
+/**
  * The Prompt test's settings.
  */
 export type PromptTestSettings = {
@@ -1795,6 +2492,15 @@ export type PromptTestSettings = {
      * The one model that reads every answer, fixed in this release.
      */
     extractorModel: string;
+    /**
+     * The models the latest run asked, each provider's with its fallback; empty before any run.
+     */
+    models: Array<PromptModelChoice>;
+    /**
+     * Whether the chosen OpenRouter key can be read and used.
+     */
+    keyWorks: boolean;
+    prices: PromptPrices;
 };
 
 /**
@@ -1952,6 +2658,219 @@ export type CompetitorCandidateIdPath = CompetitorCandidateId;
  */
 export type CredentialId = LlmCredentialId;
 
+export type GetAiSearchSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai-search';
+};
+
+export type GetAiSearchSummaryErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetAiSearchSummaryError = GetAiSearchSummaryErrors[keyof GetAiSearchSummaryErrors];
+
+export type GetAiSearchSummaryResponses = {
+    /**
+     * The summary.
+     */
+    200: AiSearchSummary;
+};
+
+export type GetAiSearchSummaryResponse = GetAiSearchSummaryResponses[keyof GetAiSearchSummaryResponses];
+
+export type GetPlanData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/plan';
+};
+
+export type GetPlanErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPlanError = GetPlanErrors[keyof GetPlanErrors];
+
+export type GetPlanResponses = {
+    /**
+     * The plan.
+     */
+    200: Plan;
+};
+
+export type GetPlanResponse = GetPlanResponses[keyof GetPlanResponses];
+
+export type TickImprovementData = {
+    /**
+     * Whether it is done.
+     */
+    body: ImprovementTick;
+    path: {
+        /**
+         * The improvement's id.
+         */
+        improvementId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/plan/improvements/{improvementId}';
+};
+
+export type TickImprovementErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type TickImprovementError = TickImprovementErrors[keyof TickImprovementErrors];
+
+export type TickImprovementResponses = {
+    /**
+     * The plan, with the tick.
+     */
+    200: Plan;
+};
+
+export type TickImprovementResponse = TickImprovementResponses[keyof TickImprovementResponses];
+
+export type SetPlanTargetsData = {
+    /**
+     * The targets to set.
+     */
+    body: PlanTargetsChange;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/plan/targets';
+};
+
+export type SetPlanTargetsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SetPlanTargetsError = SetPlanTargetsErrors[keyof SetPlanTargetsErrors];
+
+export type SetPlanTargetsResponses = {
+    /**
+     * The plan, with the targets.
+     */
+    200: Plan;
+};
+
+export type SetPlanTargetsResponse = SetPlanTargetsResponses[keyof SetPlanTargetsResponses];
+
+export type GetProductsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/products';
+};
+
+export type GetProductsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetProductsError = GetProductsErrors[keyof GetProductsErrors];
+
+export type GetProductsResponses = {
+    /**
+     * The families.
+     */
+    200: ProductsOverview;
+};
+
+export type GetProductsResponse = GetProductsResponses[keyof GetProductsResponses];
+
+export type GetStandingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/standings';
+};
+
+export type GetStandingsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetStandingsError = GetStandingsErrors[keyof GetStandingsErrors];
+
+export type GetStandingsResponses = {
+    /**
+     * The standings.
+     */
+    200: Standings;
+};
+
+export type GetStandingsResponse = GetStandingsResponses[keyof GetStandingsResponses];
+
 export type SearchTermsData = {
     body?: never;
     path?: never;
@@ -2082,6 +3001,50 @@ export type AddCompetitorResponses = {
 };
 
 export type AddCompetitorResponse = AddCompetitorResponses[keyof AddCompetitorResponses];
+
+export type AddCompetitorsData = {
+    /**
+     * The companies to add.
+     */
+    body: CompetitorBatchRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitors/batch';
+};
+
+export type AddCompetitorsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddCompetitorsError = AddCompetitorsErrors[keyof AddCompetitorsErrors];
+
+export type AddCompetitorsResponses = {
+    /**
+     * What became of each item, and how many scans started.
+     */
+    200: CompetitorBatch;
+};
+
+export type AddCompetitorsResponse = AddCompetitorsResponses[keyof AddCompetitorsResponses];
 
 export type DeleteCompetitorData = {
     body?: never;
@@ -2432,6 +3395,39 @@ export type ListTermCandidatesResponses = {
 
 export type ListTermCandidatesResponse = ListTermCandidatesResponses[keyof ListTermCandidatesResponses];
 
+export type StartTermReviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/term-candidates/review';
+};
+
+export type StartTermReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartTermReviewError = StartTermReviewErrors[keyof StartTermReviewErrors];
+
+export type StartTermReviewResponses = {
+    /**
+     * The review is under way.
+     */
+    202: TermReviewState;
+};
+
+export type StartTermReviewResponse = StartTermReviewResponses[keyof StartTermReviewResponses];
+
 export type AcceptTermCandidateData = {
     /**
      * The term as it joins the map.
@@ -2718,7 +3714,7 @@ export type GetReadinessFilesData = {
         analysisId: string;
     };
     query?: never;
-    url: '/api/v1/admin/analyses/{analysisId}/readiness-files';
+    url: '/api/v1/analyses/{analysisId}/readiness-files';
 };
 
 export type GetReadinessFilesErrors = {
@@ -2883,6 +3879,63 @@ export type StartPromptRunResponses = {
 };
 
 export type StartPromptRunResponse = StartPromptRunResponses[keyof StartPromptRunResponses];
+
+export type RetryPromptRunData = {
+    /**
+     * Every failed answer when empty, or the one question to ask again.
+     */
+    body: PromptRetryRequest;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/prompt-runs/{runId}/retry';
+};
+
+export type RetryPromptRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RetryPromptRunError = RetryPromptRunErrors[keyof RetryPromptRunErrors];
+
+export type RetryPromptRunResponses = {
+    /**
+     * The run, running again, with how many answers it asks and what they should cost.
+     */
+    202: PromptRetry;
+};
+
+export type RetryPromptRunResponse = RetryPromptRunResponses[keyof RetryPromptRunResponses];
 
 export type GetPromptTestSettingsData = {
     body?: never;

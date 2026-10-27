@@ -185,7 +185,35 @@ func (r *repo) AddAnswer(_ context.Context, a domain.Answer) error {
 	if err := r.err("AddAnswer"); err != nil {
 		return err
 	}
+	for i, old := range r.answers {
+		if old.RunID != a.RunID || old.Key() != a.Key() {
+			continue
+		}
+		if old.Failure == "" {
+			return domain.ErrAnswered
+		}
+		a.ID, a.Cost, a.InputTokens, a.OutputTokens = old.ID, a.Cost+old.Cost, a.InputTokens+old.InputTokens, a.OutputTokens+old.OutputTokens
+		r.answers[i] = a
+		return nil
+	}
 	r.answers = append(r.answers, a)
+	return nil
+}
+
+func (r *repo) ReopenRun(_ context.Context, id uuid.UUID, owner string, at time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("ReopenRun"); err != nil {
+		return err
+	}
+	if r.running() != nil {
+		return domain.ErrRunActive
+	}
+	for _, s := range r.runs {
+		if s.run.ID == id {
+			s.run.Status, s.run.FinishedAt, s.run.Failure, s.owner, s.heartbeat = domain.RunRunning, time.Time{}, "", owner, at
+		}
+	}
 	return nil
 }
 
@@ -350,8 +378,9 @@ func (g *gateway) Extract(_ context.Context, model string, in app.ExtractInput) 
 
 // gateways hands out the one gateway for the credential "key".
 type gateways struct {
-	gw       *gateway
-	checkErr error
+	gw         *gateway
+	checkErr   error
+	gatewayErr error
 }
 
 func (g gateways) Check(_ context.Context, id string) error {
@@ -365,6 +394,9 @@ func (g gateways) Check(_ context.Context, id string) error {
 }
 
 func (g gateways) Gateway(_ context.Context, id string) (app.Gateway, error) {
+	if g.gatewayErr != nil {
+		return nil, g.gatewayErr
+	}
 	if id != "key" {
 		return nil, domain.ErrNoKey
 	}

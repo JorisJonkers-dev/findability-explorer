@@ -472,3 +472,38 @@ func TestUsageFailures(t *testing.T) {
 		t.Errorf("listing failing = %v", err)
 	}
 }
+
+func TestHaikuRunsOnAnAnthropicKeyWhateverMatchingUses(t *testing.T) {
+	f := setup("sk-ant-vault", nil)
+	client, model, err := f.svc.Haiku(t.Context())
+	if err != nil || client == nil || model != domain.DefaultModel || f.conn.connected[len(f.conn.connected)-1] != "anthropic:sk-ant-vault" {
+		t.Fatalf("with the Vault key = %v, %q, %v; connected %v", client, model, err, f.conn.connected)
+	}
+
+	stored := setup("", nil)
+	if client, _, err := stored.svc.Haiku(t.Context()); client != nil || err != nil {
+		t.Errorf("without an Anthropic key = %v, %v", client, err)
+	}
+	if _, err := stored.svc.Add(t.Context(), "joris", "openrouter", "Prompt runs", "sk-or-v1-key"); err != nil {
+		t.Fatal(err)
+	}
+	if client, _, _ := stored.svc.Haiku(t.Context()); client != nil {
+		t.Error("an OpenRouter key was used")
+	}
+	if _, err := stored.svc.Add(t.Context(), "joris", "anthropic", "Course", "sk-ant-stored"); err != nil {
+		t.Fatal(err)
+	}
+	if client, model, err := stored.svc.Haiku(t.Context()); client == nil || err != nil || model != domain.DefaultModel ||
+		stored.conn.connected[len(stored.conn.connected)-1] != "anthropic:sk-ant-stored" {
+		t.Errorf("with a stored key = %v, %q, %v; connected %v", client, model, err, stored.conn.connected)
+	}
+
+	stored.repo.failOn["Secret"] = true
+	if _, _, err := stored.svc.Haiku(t.Context()); !errors.Is(err, errBoom) {
+		t.Errorf("an unreadable key = %v", err)
+	}
+	stored.repo.failOn["List"] = true
+	if _, _, err := stored.svc.Haiku(t.Context()); !errors.Is(err, errBoom) {
+		t.Errorf("failing to list keys = %v", err)
+	}
+}

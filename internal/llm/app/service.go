@@ -420,3 +420,22 @@ func IsInputError(err error) bool {
 	return errors.Is(err, domain.ErrInvalid) || errors.Is(err, domain.ErrUnreadable) ||
 		errors.Is(err, domain.ErrVaultReadOnly) || errors.Is(err, domain.ErrKeyRefused)
 }
+
+// Haiku returns a client on an Anthropic key and the Haiku model, for background work that must
+// stay cheap whatever model product matching uses: the Vault key, else a stored Anthropic key
+// whose latest test did not fail. A nil Client means there is no such key.
+func (s *Service) Haiku(ctx context.Context) (domain.Client, string, error) {
+	creds, err := s.credentials(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	c, ok := domain.AnthropicKey(creds)
+	if !ok {
+		return nil, "", nil
+	}
+	_, key, err := s.secret(ctx, c.ID)
+	if err != nil {
+		return nil, "", fmt.Errorf("the Anthropic key: %w", err)
+	}
+	return s.connector.Connect(domain.Anthropic, key), domain.DefaultModel, nil
+}

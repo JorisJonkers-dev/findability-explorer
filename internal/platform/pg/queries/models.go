@@ -192,6 +192,20 @@ type LlmEvent struct {
 	Message      string
 }
 
+type PlanTarget struct {
+	Target string
+	Value  float64
+	SetBy  string
+	SetAt  time.Time
+}
+
+type PlanTick struct {
+	ImprovementID    string
+	CatalogueVersion int64
+	TickedBy         string
+	TickedAt         time.Time
+}
+
 type PromptAnswer struct {
 	ID               uuid.UUID
 	RunID            uuid.UUID
@@ -303,4 +317,25 @@ type TermDecision struct {
 	Status      string
 	DecidedBy   string
 	DecidedAt   time.Time
+}
+
+type TermReviewUsage struct {
+	ID           int64
+	InputTokens  int64
+	OutputTokens int64
+	UsedAt       time.Time
+}
+
+type TermVerdict struct {
+	CandidateID string
+	Phrase      string
+	Accept      bool
+	Sure        bool
+	Reason      string
+	Term        string
+	Language    string
+	Family      string
+	Tier        string
+	Model       string
+	ReviewedAt  time.Time
 }

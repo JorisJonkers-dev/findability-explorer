@@ -1,50 +1,70 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { usePreviousPath } from '../composables/navigation'
-import { section as sectionById, type SectionId } from '../domain/sections'
-import AccountBar from './AccountBar.vue'
-import BackButton from './BackButton.vue'
+import { section as sectionById, type SectionId, type Tab } from '../domain/sections'
 import SectionEyebrow from './SectionEyebrow.vue'
+import SectionTabs from './SectionTabs.vue'
 import StageFrame from './StageFrame.vue'
+import TopBar from './TopBar.vue'
 
-const props = defineProps<{
-  section: SectionId
-  title: string
-  /** Where the figures come from, a line each. */
-  source: readonly string[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** The section the page is in; a page outside the sections, such as settings, names its eyebrow instead. */
+    section?: SectionId
+    eyebrow?: string
+    title: string
+    /** What the tabs are called for screen readers. */
+    tabsLabel?: string
+    /** Where the figures come from, a line each. */
+    source?: readonly string[]
+    /** The section's pages, shown as tabs beside the title. */
+    tabs?: readonly Tab[]
+  }>(),
+  { section: undefined, eyebrow: undefined, tabsLabel: undefined, source: () => [], tabs: () => [] },
+)
 
-const meta = computed(() => sectionById(props.section))
+const eyebrowText = computed(() => {
+  if (!props.section) return props.eyebrow ?? ''
+  const meta = sectionById(props.section)
+  return [meta.number, meta.label].filter(Boolean).join(' ')
+})
+const titleId = computed(() => `${props.section ?? 'page'}-title`)
 // Opened from the poster, the view settles in as the poster's zoom fades out; loaded directly, it just shows.
 const fromPoster = usePreviousPath().value === '/'
 </script>
 
 <template>
   <StageFrame>
-    <article
-      class="flex flex-col gap-10 px-4 pt-5 pb-14 sm:px-8 stage:grid stage:h-full stage:grid-rows-[auto_minmax(0,1fr)] stage:gap-18 stage:p-28 stage:text-[34px] stage:leading-[1.4]"
+    <div
+      class="flex flex-col gap-8 px-4 pt-3 pb-14 sm:px-8 stage:grid stage:h-full stage:grid-rows-[auto_auto_minmax(0,1fr)] stage:gap-14 stage:px-28 stage:pt-16 stage:pb-28 stage:text-[34px] stage:leading-[1.4]"
       :class="{ 'detail-in': fromPoster }"
-      :aria-labelledby="`${section}-title`"
     >
-      <header class="flex flex-col gap-5 stage:grid stage:grid-cols-[auto_minmax(0,1fr)_auto] stage:items-end stage:gap-18">
-        <BackButton />
+      <TopBar />
+      <header class="flex flex-col gap-5 stage:grid stage:grid-cols-[minmax(0,1fr)_auto] stage:items-end stage:gap-18">
         <div class="flex flex-col gap-3 stage:gap-4">
-          <SectionEyebrow>{{ meta.number }} {{ meta.label }}</SectionEyebrow>
+          <SectionEyebrow>{{ eyebrowText }}</SectionEyebrow>
           <h1
-            :id="`${section}-title`"
-            class="m-0 font-display text-4xl leading-[0.95] font-semibold tracking-[-0.03em] text-balance sm:text-5xl stage:text-[128px]"
+            :id="titleId"
+            class="m-0 font-display text-4xl leading-[0.95] font-semibold tracking-[-0.03em] text-balance sm:text-5xl stage:text-[112px]"
           >
             {{ title }}
           </h1>
         </div>
-        <div class="flex flex-col gap-3 stage:items-end stage:gap-8 stage:self-stretch stage:justify-between">
-          <AccountBar tone="light" />
-          <p class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">
+        <div
+          v-if="tabs.length > 0 || source.length > 0 || $slots.aside"
+          class="flex flex-col gap-3 stage:items-end stage:gap-5 stage:pb-3"
+        >
+          <SectionTabs v-if="tabs.length > 0" :tabs="tabs" :label="tabsLabel" />
+          <slot name="aside" />
+          <p v-if="source.length > 0" class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">
             <template v-for="(line, index) in source" :key="line"><br v-if="index > 0" />{{ line }}</template>
           </p>
         </div>
       </header>
-      <slot />
-    </article>
+      <!-- One element fills the stage below the header; it lays out its own columns. -->
+      <article class="flex flex-col gap-8 stage:grid stage:min-h-0 stage:grid-rows-[minmax(0,1fr)]" :aria-labelledby="titleId">
+        <slot />
+      </article>
+    </div>
   </StageFrame>
 </template>

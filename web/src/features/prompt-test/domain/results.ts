@@ -2,7 +2,6 @@ import type {
   PromptCell,
   PromptCorrectness,
   PromptFamily,
-  PromptMention,
   PromptMode,
   PromptRun,
   PromptRunStatus,
@@ -89,54 +88,6 @@ export function tally(cells: readonly PromptCell[], filter: Partial<Pick<PromptC
     .reduce<Tally>((t, c) => add(t, c), EMPTY)
 }
 
-/** A dimension the shares are broken down by. */
-export type Dimension = 'provider' | 'scope' | 'family'
-
-export type ShareRow = { key: string; label: string; knowledge: Tally; web: Tally }
-
-/** The shares of one run per provider, scope or belt family, knowledge and web search side by side. */
-export function shareRows(run: PromptRun, by: Dimension): ShareRow[] {
-  const keys: { key: string; label: string }[] =
-    by === 'provider'
-      ? run.models.map((m) => ({ key: m.provider, label: providerName(m.provider) }))
-      : (by === 'scope' ? SCOPES : FAMILIES).map((o) => ({ key: o.value, label: o.label }))
-  return keys.map(({ key, label }) => ({
-    key,
-    label,
-    knowledge: tally(run.cells, { [by]: key, mode: 'knowledge' }),
-    web: tally(run.cells, { [by]: key, mode: 'web' }),
-  }))
-}
-
-/** The October pilot, run by hand in the consumer apps: one of six searches named Tribelt, one cited it. */
-export const PILOT = {
-  label: 'Pilot, Oct 2026',
-  note: 'by hand: 5 prompts in Gemini and ChatGPT',
-  overall: { answers: 6, named: 1, cited: 1 } satisfies Tally,
-} as const
-
-export type TrendRow = { label: string; note: string; overall: Tally; knowledge: Tally | null; web: Tally | null }
-
-/**
- * The shares across runs, oldest first, with the pilot as the first point, for the answers of one
- * provider and scope when they are picked. The pilot has no breakdown, so it shows only when
- * nothing is picked.
- */
-export function trendRows(runs: readonly PromptRun[], filter: { provider?: string; scope?: PromptScope } = {}): TrendRow[] {
-  const rows: TrendRow[] = [...runs]
-    .reverse()
-    .filter((r) => r.cells.length > 0)
-    .map((r) => {
-      const knowledge = tally(r.cells, { ...filter, mode: 'knowledge' })
-      const web = tally(r.cells, { ...filter, mode: 'web' })
-      return { label: runDate(r), note: statusName(r.status), overall: add(knowledge, web), knowledge, web }
-    })
-  if (filter.provider === undefined && filter.scope === undefined) {
-    rows.unshift({ label: PILOT.label, note: PILOT.note, overall: PILOT.overall, knowledge: null, web: null })
-  }
-  return rows
-}
-
 export function runDate(run: Pick<PromptRun, 'startedAt'>): string {
   return DAY.format(new Date(run.startedAt))
 }
@@ -168,11 +119,6 @@ export function latestRun(results: Pick<PromptTestResults, 'runs'> | undefined):
   return results?.runs.find((r) => r.cells.length > 0) ?? results?.runs[0]
 }
 
-/** The competitors the newest run's answers name, most answers first: the ranking. */
-export function ranking(mentions: readonly PromptMention[]): PromptMention[] {
-  return mentions.filter((m) => m.role === 'competitor')
-}
-
 /** How often the latest run's answers name a company, for its card; null before any run named it. */
 export function mentionLine(results: PromptTestResults | undefined, companyId: string): string | null {
   const run = latestRun(results)
@@ -189,9 +135,4 @@ export const CORRECTNESS: Record<PromptCorrectness, string> = {
   correct: 'Correct about Tribelt',
   partly: 'Partly correct about Tribelt',
   wrong: 'Wrong about Tribelt',
-}
-
-/** A Tally's two shares in words: "17% name Tribelt · 8% cite it". */
-export function sharesLine(t: Tally): string {
-  return `${shareLabel(t.named, t.answers)} name Tribelt · ${shareLabel(t.cited, t.answers)} cite it`
 }

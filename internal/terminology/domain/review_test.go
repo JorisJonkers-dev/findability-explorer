@@ -52,7 +52,7 @@ func TestCandidatesAggregateAcrossCompanies(t *testing.T) {
 		t.Fatalf("rejected one = %+v", r)
 	}
 	list, counts := domain.Count(append(got, domain.Candidate{Status: domain.StatusAccepted}), domain.StatusPending)
-	if len(list) != 2 || counts != (domain.Counts{Pending: 2, Accepted: 1, Rejected: 1}) {
+	if len(list) != 2 || counts != (domain.Counts{Pending: 2, Accepted: 1, Rejected: 1, Unreviewed: 2}) {
 		t.Fatalf("Count = %d, %+v", len(list), counts)
 	}
 }

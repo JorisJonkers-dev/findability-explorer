@@ -19,7 +19,7 @@ defineProps<{ scans: readonly AnalysisSummary[]; companyId: string }>()
           <RouterLink :to="{ path: `/scan/${scan.id}`, query: { company: companyId } }" class="font-semibold stage:text-[32px]">
             {{ scanName(scan) }}<span class="sr-only">, {{ scanState(scan) }}</span>
           </RouterLink>
-          <span class="text-sm text-ink-2 stage:text-[26px]">{{ scanDate(scan) }} · {{ scanState(scan) }} · {{ scanPages(scan) }}</span>
+          <span class="text-sm text-ink-2 stage:text-[26px]">{{ scanDate(scan) }}. {{ scanState(scan) }}. {{ scanPages(scan) }}.</span>
           <span class="text-sm text-muted stage:text-[24px]">{{ scanModel(scan) }}</span>
         </div>
       </li>

@@ -79,6 +79,59 @@ func (q *Queries) InsertTermDecision(ctx context.Context, arg InsertTermDecision
 	return result.RowsAffected(), nil
 }
 
+const insertTermReviewUsage = `-- name: InsertTermReviewUsage :exec
+INSERT INTO term_review_usage (input_tokens, output_tokens, used_at)
+VALUES ($1, $2, $3)
+`
+
+type InsertTermReviewUsageParams struct {
+	InputTokens  int64
+	OutputTokens int64
+	UsedAt       time.Time
+}
+
+func (q *Queries) InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error {
+	_, err := q.db.Exec(ctx, insertTermReviewUsage, arg.InputTokens, arg.OutputTokens, arg.UsedAt)
+	return err
+}
+
+const insertTermVerdict = `-- name: InsertTermVerdict :exec
+INSERT INTO term_verdicts (candidate_id, phrase, accept, sure, reason, term, language, family, tier, model, reviewed_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+ON CONFLICT (candidate_id) DO NOTHING
+`
+
+type InsertTermVerdictParams struct {
+	CandidateID string
+	Phrase      string
+	Accept      bool
+	Sure        bool
+	Reason      string
+	Term        string
+	Language    string
+	Family      string
+	Tier        string
+	Model       string
+	ReviewedAt  time.Time
+}
+
+func (q *Queries) InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error {
+	_, err := q.db.Exec(ctx, insertTermVerdict,
+		arg.CandidateID,
+		arg.Phrase,
+		arg.Accept,
+		arg.Sure,
+		arg.Reason,
+		arg.Term,
+		arg.Language,
+		arg.Family,
+		arg.Tier,
+		arg.Model,
+		arg.ReviewedAt,
+	)
+	return err
+}
+
 const listAcceptedTerms = `-- name: ListAcceptedTerms :many
 SELECT t.candidate_id, t.term, t.language, t.family, t.tier, t.used_by, t.source
 FROM accepted_terms AS t
@@ -144,4 +197,55 @@ func (q *Queries) ListTermDecisions(ctx context.Context) ([]TermDecision, error)
 		return nil, err
 	}
 	return items, nil
+}
+
+const listTermVerdicts = `-- name: ListTermVerdicts :many
+SELECT candidate_id, phrase, accept, sure, reason, term, language, family, tier, model, reviewed_at
+FROM term_verdicts
+ORDER BY reviewed_at, candidate_id
+`
+
+func (q *Queries) ListTermVerdicts(ctx context.Context) ([]TermVerdict, error) {
+	rows, err := q.db.Query(ctx, listTermVerdicts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TermVerdict{}
+	for rows.Next() {
+		var i TermVerdict
+		if err := rows.Scan(
+			&i.CandidateID,
+			&i.Phrase,
+			&i.Accept,
+			&i.Sure,
+			&i.Reason,
+			&i.Term,
+			&i.Language,
+			&i.Family,
+			&i.Tier,
+			&i.Model,
+			&i.ReviewedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const termReviewTokensSince = `-- name: TermReviewTokensSince :one
+SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+FROM term_review_usage
+WHERE used_at >= $1
+`
+
+func (q *Queries) TermReviewTokensSince(ctx context.Context, usedAt time.Time) (int64, error) {
+	row := q.db.QueryRow(ctx, termReviewTokensSince, usedAt)
+	var tokens int64
+	err := row.Scan(&tokens)
+	return tokens, err
 }

@@ -34,7 +34,7 @@ describe('useReadinessFiles', () => {
     const { state, sent } = mountComposable(
       () => useReadinessFiles(scan, enabled),
       routes({
-        [`GET /api/v1/admin/analyses/${SCAN}/readiness-files`]: () =>
+        [`GET /api/v1/analyses/${SCAN}/readiness-files`]: () =>
           json({ robotsTxt: 'User-agent: *', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }),
       }),
     )
@@ -55,14 +55,14 @@ describe('useReadinessFiles', () => {
   it('tells a scan without readiness from a failure', async () => {
     const missing = mountComposable(
       () => useReadinessFiles(ref(SCAN), ref(true)),
-      routes({ [`GET /api/v1/admin/analyses/${SCAN}/readiness-files`]: () => problem(404, 'Not Found', 'The scan recorded no AI readiness.') }),
+      routes({ [`GET /api/v1/analyses/${SCAN}/readiness-files`]: () => problem(404, 'Not Found', 'The scan recorded no AI readiness.') }),
     )
     await flushPromises()
     expect(missing.state.missing.value).toBe(true)
     expect(missing.state.error.value).toBeNull()
     const failed = mountComposable(
       () => useReadinessFiles(ref(SCAN), ref(true)),
-      routes({ [`GET /api/v1/admin/analyses/${SCAN}/readiness-files`]: () => problem(500, 'Internal Server Error', 'Down.') }),
+      routes({ [`GET /api/v1/analyses/${SCAN}/readiness-files`]: () => problem(500, 'Internal Server Error', 'Down.') }),
     )
     await flushPromises()
     expect(failed.state.missing.value).toBe(false)

@@ -22,6 +22,7 @@ type UseCases interface {
 	Results(ctx context.Context) (app.Results, error)
 	Answers(ctx context.Context, runID uuid.UUID, filter app.AnswerFilter) (app.RunResult, []domain.Answer, error)
 	Start(ctx context.Context, actor string) (domain.Run, error)
+	Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, map[domain.CandidateStatus]int, error)
@@ -115,6 +116,39 @@ func (h *Handler) StartPromptRun(ctx context.Context) (oas.StartPromptRunRes, er
 	}
 	out := toRun(run, domain.Progress{}, nil)
 	return &out, nil
+}
+
+// RetryPromptRun implements retryPromptRun.
+func (h *Handler) RetryPromptRun(ctx context.Context, req *oas.PromptRetryRequest, params oas.RetryPromptRunParams) (oas.RetryPromptRunRes, error) {
+	prompt, hasPrompt := req.PromptId.Get()
+	provider, hasProvider := req.Provider.Get()
+	mode, hasMode := req.Mode.Get()
+	var task *domain.TaskKey
+	switch {
+	case hasPrompt && hasProvider && hasMode:
+		task = &domain.TaskKey{PromptID: prompt, Provider: provider, Mode: domain.Mode(mode)}
+	case hasPrompt || hasProvider || hasMode:
+		return &oas.RetryPromptRunUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity,
+			Response:   httpx.Problem(http.StatusUnprocessableEntity, "Name the question, the provider and the mode, or none of them."),
+		}, nil
+	}
+	r, err := h.uc.Retry(ctx, params.RunId, task)
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.RetryPromptRunNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No Prompt run has this id.")}, nil
+	case errors.Is(err, domain.ErrRunActive), errors.Is(err, domain.ErrBudgetReached):
+		return &oas.RetryPromptRunConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, sentence(err))}, nil
+	case app.IsInputError(err):
+		return &oas.RetryPromptRunUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, sentence(err)),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.PromptRetry{
+		Run: toRun(r.Run, domain.Progress{}, nil), Tasks: int32(r.Tasks), EstimatedCostUsd: oas.Usd(r.Estimate.Dollars()), //nolint:gosec // at most a run's tasks
+	}, nil
 }
 
 // GetPromptTestSettings implements getPromptTestSettings.
@@ -230,7 +264,7 @@ func toRun(r domain.Run, p domain.Progress, cells []domain.Cell) oas.PromptRun {
 	out := oas.PromptRun{
 		ID: r.ID, PromptSetVersion: int32(r.PromptSetVersion), FactSheetVersion: int32(max(r.FactSheetVersion, 1)), //nolint:gosec // small versions
 		Trigger: oas.PromptTrigger(r.Trigger), StartedBy: r.StartedBy, StartedAt: r.StartedAt, Status: oas.PromptRunStatus(r.Status),
-		Models: make([]oas.PromptModelChoice, 0, len(r.Models)), Tasks: int32(r.Tasks), //nolint:gosec // at most a few thousand
+		Tasks:    int32(r.Tasks),                                                                                       //nolint:gosec // at most a few thousand
 		Answered: int32(p.Answered), Failed: int32(p.Failed), InputTokens: p.InputTokens, OutputTokens: p.OutputTokens, //nolint:gosec // at most a few thousand
 		CostUsd: oas.Usd(p.Cost.Dollars()), ByProvider: make([]oas.PromptProviderProgress, 0, len(p.ByProvider)),
 		Cells: make([]oas.PromptCell, 0, len(cells)),
@@ -241,13 +275,7 @@ func toRun(r domain.Run, p domain.Progress, cells []domain.Cell) oas.PromptRun {
 	if r.Failure != "" {
 		out.Failure = oas.NewOptString(r.Failure)
 	}
-	for _, m := range r.Models {
-		c := oas.PromptModelChoice{Provider: m.Provider, Model: m.Model, Free: m.Free}
-		if m.Fallback != "" {
-			c.Fallback = oas.NewOptString(m.Fallback)
-		}
-		out.Models = append(out.Models, c)
-	}
+	out.Models = toModels(r.Models)
 	for _, pp := range p.ByProvider {
 		out.ByProvider = append(out.ByProvider, oas.PromptProviderProgress{
 			Provider: pp.Provider, Answered: int32(pp.Answered), Failed: int32(pp.Failed), //nolint:gosec // at most a few thousand
@@ -269,13 +297,15 @@ func toAnswer(a domain.Answer) oas.PromptAnswer {
 		ID: a.ID, PromptId: a.Prompt.ID, Family: oas.PromptFamily(a.Prompt.Family), Kind: oas.PromptKind(a.Prompt.Kind),
 		Scope: oas.PromptScope(a.Prompt.Scope), Language: a.Prompt.Language, Prompt: a.Prompt.Text,
 		PromptSetVersion: int32(a.PromptSetVersion), Provider: a.Provider, Model: a.Model, Mode: oas.PromptMode(a.Mode), //nolint:gosec // small versions
-		Text: a.Text, Citations: orEmpty(a.Citations), At: a.At,
+		Text: a.Text, Citations: orEmpty(a.Citations), At: a.At, InputTokens: a.InputTokens, OutputTokens: a.OutputTokens,
 	}
 	if a.Failure != "" {
 		out.Failure = oas.NewOptString(a.Failure)
 	}
 	if x := a.Extraction; x != nil {
 		cost += x.Cost
+		out.InputTokens += x.InputTokens
+		out.OutputTokens += x.OutputTokens
 		e := oas.PromptExtraction{
 			Failed: x.Failed, Companies: make([]oas.PromptNamedCompany, 0, len(x.Companies)), Addresses: orEmpty(x.Addresses),
 			NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, WrongClaims: orEmpty(x.WrongClaims), CostUsd: oas.Usd(x.Cost.Dollars()),
@@ -310,6 +340,7 @@ func toSettings(v app.View) oas.PromptTestSettings {
 	if s.CredentialID != "" {
 		out.CredentialId = oas.NewOptLlmCredentialId(oas.LlmCredentialId(s.CredentialID))
 	}
+	out.KeyWorks, out.Models, out.Prices = v.KeyWorks, toModels(v.Models), toPrices(v.Prices)
 	if s.FactSheet.UpdatedBy != "" {
 		out.FactSheet.UpdatedBy = oas.NewOptString(s.FactSheet.UpdatedBy)
 		out.FactSheet.UpdatedAt = oas.NewOptDateTime(s.FactSheet.UpdatedAt)
@@ -353,4 +384,35 @@ func sentence(err error) string {
 	r := []rune(strings.TrimSuffix(msg, ".") + ".")
 	r[0] = unicode.ToUpper(r[0])
 	return string(r)
+}
+
+func toPrices(p domain.Prices) oas.PromptPrices {
+	out := oas.PromptPrices{
+		Basis: oas.PromptPriceBasis(p.Basis), Providers: make([]oas.PromptProviderPrice, 0, len(p.Providers)),
+		ReadingUsd: oas.Usd(p.Reading.Dollars()), RunUsd: oas.Usd(p.Run.Dollars()), RunsPerMonth: p.RunsPerMonth,
+		MonthUsd: oas.Usd(p.Month.Dollars()), BudgetUsd: oas.Usd(p.Budget.Dollars()), OverBudget: p.OverBudget(),
+	}
+	for _, pp := range p.Providers {
+		o := oas.PromptProviderPrice{
+			Provider: pp.Provider, Model: pp.Model, KnowledgeUsd: oas.Usd(pp.Knowledge.Dollars()), WebUsd: oas.Usd(pp.Web.Dollars()),
+			RunUsd: oas.Usd(pp.PerRun.Dollars()),
+		}
+		if pp.Fallback != "" {
+			o.Fallback = oas.NewOptString(pp.Fallback)
+		}
+		out.Providers = append(out.Providers, o)
+	}
+	return out
+}
+
+func toModels(models []domain.ModelChoice) []oas.PromptModelChoice {
+	out := make([]oas.PromptModelChoice, 0, len(models))
+	for _, m := range models {
+		c := oas.PromptModelChoice{Provider: m.Provider, Model: m.Model, Free: m.Free}
+		if m.Fallback != "" {
+			c.Fallback = oas.NewOptString(m.Fallback)
+		}
+		out = append(out, c)
+	}
+	return out
 }

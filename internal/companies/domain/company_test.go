@@ -257,3 +257,33 @@ func TestRolesSetTribeltAndTheMirrorApartFromTheCompetitors(t *testing.T) {
 		t.Errorf("the mirror lists last: %v, %v, %v", listed[0].ID, listed[1].ID, listed[2].ID)
 	}
 }
+
+func TestDuplicatesAreMatchedByHostAndNameKey(t *testing.T) {
+	d := domain.NewDirectory([]domain.Company{
+		{ID: "martens", Name: "Märtens Transportbänder GmbH", Host: "martens-belts.com"},
+		{ID: "wire-belt", Name: "Wire Belt Company Ltd", Host: "wirebelt.co.uk"},
+	}, nil)
+	for _, tc := range []struct {
+		name, host string
+		want       string
+	}{
+		{"Anything", "martens-belts.com", "martens"},
+		{"Martens Transportbander", "new.example", "martens"},
+		{"Wire Belt Company", "", "wire-belt"},
+		{"Wire Belt Osterloh", "wirebelt.de", ""},
+		{"GmbH", "other.example", ""},
+		{"", "", ""},
+	} {
+		c, ok := d.Duplicate(tc.name, tc.host)
+		if (tc.want == "") == ok || c.ID != tc.want {
+			t.Errorf("Duplicate(%q, %q) = %q, %v; want %q", tc.name, tc.host, c.ID, ok, tc.want)
+		}
+	}
+	more := d.With(domain.Company{ID: "intralox", Name: "Intralox", Host: "intralox.com"})
+	if _, ok := more.Duplicate("Intralox LLC", ""); !ok {
+		t.Error("a company added to the batch is a duplicate of the next")
+	}
+	if _, ok := d.Duplicate("Intralox", ""); ok {
+		t.Error("With changed the directory it was called on")
+	}
+}

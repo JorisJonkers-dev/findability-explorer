@@ -2,17 +2,17 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TermCandidateStatus } from '../../../infrastructure/api/types.gen'
-import AccountBar from '../../shell/components/AccountBar.vue'
-import SectionEyebrow from '../../shell/components/SectionEyebrow.vue'
-import { useTermCandidates, useTermDecision } from '../composables/useTermReview'
-import { parseStatus, STATUSES, statusTab } from '../domain/candidates'
+import SettingsShell from '../../shell/components/SettingsShell.vue'
+import { useStartReview, useTermCandidates, useTermDecision } from '../composables/useTermReview'
+import { parseStatus, reviewLine, STATUSES, statusTab } from '../domain/candidates'
 import CandidateItem from './CandidateItem.vue'
 
 const route = useRoute()
 const router = useRouter()
 // The tab lives in the address, so a reload or a link shows the same one.
 const status = computed<TermCandidateStatus>(() => parseStatus(route.query.status))
-const { candidates, counts, isLoading, forbidden, error } = useTermCandidates(status)
+const { candidates, counts, review, isLoading, forbidden, error } = useTermCandidates(status)
+const { isStarting, error: startError, start } = useStartReview()
 const { isDeciding, notice, error: decisionError, accept, reject, undo } = useTermDecision()
 
 function show(next: TermCandidateStatus): void {
@@ -23,36 +23,34 @@ const FORBIDDEN = 'Only administrators can review terms.'
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-10 px-4 pt-5 pb-20 sm:px-8 lg:pt-10">
-    <header class="flex flex-col gap-8">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <RouterLink
-          to="/settings"
-          class="inline-flex min-h-11 items-center gap-2 rounded-full bg-black px-5 font-medium text-white no-underline hover:bg-ink-2 hover:text-white"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 5 8 12l7 7" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          Settings
-        </RouterLink>
-        <AccountBar tone="light" />
-      </div>
-      <div class="flex flex-col gap-4">
-        <SectionEyebrow>Settings</SectionEyebrow>
-        <h1 class="m-0 font-display text-4xl leading-[0.95] font-semibold tracking-[-0.03em] sm:text-6xl">Term review</h1>
-        <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-          Phrases the scans found that the terminology map does not hold yet, with the companies that use them. An
-          accepted term joins the map, its search and the next scans; a rejected one stays out until the decision is
-          undone.
-        </p>
-      </div>
-    </header>
+  <SettingsShell title="Term review">
+    <template #lead>
+      <p class="m-0 max-w-[62ch] text-lg text-ink-2">
+        A language model reviews every phrase the scans find that the terminology map does not hold yet. It adds the
+        ones buyers search for to the map and leaves the rest out. The phrases it is unsure about wait here for you,
+        and any of its decisions can be undone.
+      </p>
+    </template>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
       <p class="m-0 text-xl font-semibold">{{ FORBIDDEN }}</p>
       <p class="m-0 text-ink-2">Ask an administrator for the admin role in auth-api, then sign in again.</p>
     </div>
     <template v-else>
+      <section v-if="review" aria-label="The language model's review" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-mist p-4 sm:p-5">
+        <p class="m-0 font-medium" aria-live="polite">{{ reviewLine(review) }}</p>
+        <RouterLink v-if="review.problem === 'noModel'" to="/settings" class="font-medium">Add one in Language models</RouterLink>
+        <button
+          v-else-if="!review.running && review.waiting > 0"
+          type="button"
+          :disabled="isStarting"
+          class="min-h-11 rounded-full border-0 bg-orange px-5 font-semibold text-black hover:bg-orange-soft disabled:opacity-70"
+          @click="start"
+        >
+          Review them now
+        </button>
+        <p v-if="startError" role="alert" class="m-0 w-full font-medium text-orange-ink">{{ startError }}</p>
+      </section>
       <div role="group" aria-label="Show" class="flex flex-wrap gap-2">
         <button
           v-for="s in STATUSES"
@@ -83,5 +81,5 @@ const FORBIDDEN = 'Only administrators can review terms.'
         />
       </ul>
     </template>
-  </div>
+  </SettingsShell>
 </template>

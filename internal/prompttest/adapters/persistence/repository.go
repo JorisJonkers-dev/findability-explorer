@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/queries"
@@ -207,23 +208,42 @@ func withModels(ctx context.Context, q *queries.Queries, rows []queries.ListProm
 	return out, nil
 }
 
-// AddAnswer stores an answer with its extraction, if it has one, in one transaction.
+// ReopenRun runs a finished run again, held by owner, or returns domain.ErrRunActive when a run
+// is running: the same lock that keeps one run running at a time.
+func (r *Repository) ReopenRun(ctx context.Context, id uuid.UUID, owner string, at time.Time) error {
+	n, err := r.store.Queries().ReopenPromptRun(ctx, queries.ReopenPromptRunParams{ID: id, Owner: owner, At: at})
+	if isUniqueViolation(err) || (err == nil && n == 0) {
+		return domain.ErrRunActive
+	}
+	if err != nil {
+		return fmt.Errorf("reopen prompt run: %w", err)
+	}
+	return nil
+}
+
+// AddAnswer stores an answer with its extraction, if it has one, in one transaction. An answer to
+// a task whose earlier answer failed replaces it, adding to what it cost; a task answered already
+// is domain.ErrAnswered.
 func (r *Repository) AddAnswer(ctx context.Context, a domain.Answer) error {
 	return r.store.InTx(ctx, func(q *queries.Queries) error {
-		if err := q.AddPromptAnswer(ctx, queries.AddPromptAnswerParams{
+		id, err := q.AddPromptAnswer(ctx, queries.AddPromptAnswerParams{
 			ID: a.ID, RunID: a.RunID, PromptID: a.Prompt.ID, Family: string(a.Prompt.Family), Kind: string(a.Prompt.Kind),
 			Scope: string(a.Prompt.Scope), Language: a.Prompt.Language, PromptText: clip(a.Prompt.Text, 1000),
 			PromptSetVersion: int64(a.PromptSetVersion), Provider: a.Provider, Model: clip(a.Model, 200), Mode: string(a.Mode),
 			Answer: clip(clean(a.Text), 100_000), Citations: clipAll(a.Citations, 100, 500), InputTokens: a.InputTokens,
 			OutputTokens: a.OutputTokens, CostMicros: max(int64(a.Cost), 0), Failure: optionalText(clip(a.Failure, 300)),
 			AnsweredAt: a.At,
-		}); err != nil {
+		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.ErrAnswered
+		}
+		if err != nil {
 			return fmt.Errorf("insert prompt answer: %w", err)
 		}
 		if a.Extraction == nil {
 			return nil
 		}
-		return addExtraction(ctx, q, a.ID, *a.Extraction, a.At)
+		return addExtraction(ctx, q, id, *a.Extraction, a.At)
 	})
 }
 
@@ -387,3 +407,9 @@ func clipAll(items []string, n, chars int) []string {
 
 // clean drops what Postgres text cannot hold: invalid UTF-8 and NUL characters.
 func clean(s string) string { return strings.ReplaceAll(strings.ToValidUTF8(s, ""), "\x00", "") }
+
+// isUniqueViolation reports whether err is Postgres refusing a second row a unique index forbids.
+func isUniqueViolation(err error) bool {
+	var pg *pgconn.PgError
+	return errors.As(err, &pg) && pg.Code == "23505"
+}

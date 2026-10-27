@@ -132,23 +132,27 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.StartAnalysisOperation:    domain.NeedAdminChange,
 	oas.StartRescansOperation:     domain.NeedAdminChange,
 	oas.AddCompetitorOperation:    domain.NeedAdminChange,
+	oas.AddCompetitorsOperation:   domain.NeedAdminChange,
 	oas.UpdateCompetitorOperation: domain.NeedAdminChange,
 	oas.DeleteCompetitorOperation: domain.NeedAdminChange,
-	// The raw files a scan read its AI readiness from.
-	oas.GetReadinessFilesOperation: domain.NeedAdminView,
 	// The Prompt test: everyone signed in reads the results, only administrators run and set it.
 	oas.StartPromptRunOperation:             domain.NeedAdminChange,
+	oas.RetryPromptRunOperation:             domain.NeedAdminChange,
 	oas.GetPromptTestSettingsOperation:      domain.NeedAdminView,
 	oas.UpdatePromptTestSettingsOperation:   domain.NeedAdminChange,
 	oas.ListCompetitorCandidatesOperation:   domain.NeedAdminView,
 	oas.AddCompetitorCandidateOperation:     domain.NeedAdminChange,
 	oas.DismissCompetitorCandidateOperation: domain.NeedAdminChange,
 	oas.UndoCompetitorCandidateOperation:    domain.NeedAdminChange,
+	// The plan: everyone signed in reads it, only administrators tick it off and set its targets.
+	oas.TickImprovementOperation: domain.NeedAdminChange,
+	oas.SetPlanTargetsOperation:  domain.NeedAdminChange,
 	// The review queue of the terminology map.
 	oas.ListTermCandidatesOperation:  domain.NeedAdminView,
 	oas.AcceptTermCandidateOperation: domain.NeedAdminChange,
 	oas.RejectTermCandidateOperation: domain.NeedAdminChange,
 	oas.UndoTermDecisionOperation:    domain.NeedAdminChange,
+	oas.StartTermReviewOperation:     domain.NeedAdminChange,
 }
 
 // HandleSessionCookie resolves the session and puts the principal, and its subject, on ctx. The

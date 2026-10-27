@@ -393,10 +393,16 @@ func (d Directory) ByHost(host string) (Company, bool) {
 // NewCompany returns the company to add for name and website: its id made unique among the
 // known ones with a number, or AlreadyKnownError when the website's host is taken.
 func (d Directory) NewCompany(name string, website *url.URL, by string, at time.Time) (Company, error) {
-	host := site.Host(website)
-	if known, ok := d.ByHost(host); ok {
+	if known, ok := d.ByHost(site.Host(website)); ok {
 		return Company{}, AlreadyKnownError{ID: known.ID, Name: known.Name}
 	}
+	return d.Fresh(name, website, by, at), nil
+}
+
+// Fresh returns the company to add for name and website, its id made unique among the known ones
+// with a number, without checking the host: for a caller that checked for a duplicate already.
+func (d Directory) Fresh(name string, website *url.URL, by string, at time.Time) Company {
+	host := site.Host(website)
 	base := ID(name)
 	if base == "" {
 		base = ID(strings.ReplaceAll(host, ".", " "))
@@ -411,7 +417,7 @@ func (d Directory) NewCompany(name string, website *url.URL, by string, at time.
 	return Company{
 		ID: id, Source: SourceAdded, Name: name, Website: website.String(), URL: website, Host: host,
 		AddedBy: by, AddedAt: at,
-	}, nil
+	}
 }
 
 // Sorted returns the directory's companies with their stats: researched competitors by name,
@@ -438,4 +444,30 @@ func rank(c Company) int {
 	default:
 		return 0
 	}
+}
+
+// Duplicate returns the known company a new one with name and host would repeat: one whose
+// website has the host, or whose name has the same key (ID), so "Märtens Transportbänder GmbH"
+// and "Martens Transportbander" are one company.
+func (d Directory) Duplicate(name, host string) (Company, bool) {
+	if host != "" {
+		if c, ok := d.ByHost(host); ok {
+			return c, true
+		}
+	}
+	key := ID(name)
+	if key == "" {
+		return Company{}, false
+	}
+	for _, c := range d.companies {
+		if ID(c.Name) == key {
+			return c, true
+		}
+	}
+	return Company{}, false
+}
+
+// With returns the directory with c added, as a batch adds one company after another.
+func (d Directory) With(c Company) Directory {
+	return Directory{companies: append(slices.Clone(d.companies), c)}
 }

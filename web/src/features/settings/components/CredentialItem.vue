@@ -48,8 +48,8 @@ function confirmRemove(): void {
       <span class="rounded-full bg-white px-3 py-0.5 text-sm font-medium">{{ sourceLabel(credential) }}</span>
     </div>
     <p class="m-0 text-sm text-ink-2">
-      Fingerprint <code class="font-mono text-black">{{ credential.fingerprint }}</code> ·
-      {{ originLabel(credential) }}
+      Fingerprint <code class="font-mono text-black">{{ credential.fingerprint }}</code>.
+      {{ originLabel(credential) }}.
     </p>
     <p v-if="!credential.readable" class="m-0 font-medium text-orange-ink">
       This key can no longer be read: it was sealed under another session key. Remove it and add it again.

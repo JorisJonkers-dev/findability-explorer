@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen';
-import { acceptTermCandidate, addCompetitor, addCompetitorCandidate, addLlmCredential, clearActiveLlm, compareScans, deleteCompetitor, deleteLlmCredential, dismissCompetitorCandidate, getAiReadiness, getAnalysis, getCompetitor, getCompetitorProfile, getLlmKeyUsage, getLlmSettings, getMe, getPromptTestResults, getPromptTestSettings, getReadinessFiles, listAnalyses, listCompetitorCandidates, listCompetitors, listLlmModels, listPromptAnswers, listTermCandidates, type Options, rejectTermCandidate, searchTerms, setActiveLlm, startAnalysis, startPromptRun, startRescans, testLlmCredential, undoCompetitorCandidate, undoTermDecision, updateCompetitor, updatePromptTestSettings } from '../sdk.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorCandidateData, AddCompetitorCandidateError, AddCompetitorCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, DismissCompetitorCandidateData, DismissCompetitorCandidateError, DismissCompetitorCandidateResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmKeyUsageData, GetLlmKeyUsageError, GetLlmKeyUsageResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetPromptTestResultsData, GetPromptTestResultsError, GetPromptTestResultsResponse, GetPromptTestSettingsData, GetPromptTestSettingsError, GetPromptTestSettingsResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorCandidatesData, ListCompetitorCandidatesError, ListCompetitorCandidatesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListPromptAnswersData, ListPromptAnswersError, ListPromptAnswersResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartPromptRunData, StartPromptRunError, StartPromptRunResponse, StartRescansData, StartRescansError, StartRescansResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, UndoCompetitorCandidateData, UndoCompetitorCandidateError, UndoCompetitorCandidateResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse, UpdatePromptTestSettingsData, UpdatePromptTestSettingsError, UpdatePromptTestSettingsResponse } from '../types.gen';
+import { acceptTermCandidate, addCompetitor, addCompetitorCandidate, addCompetitors, addLlmCredential, clearActiveLlm, compareScans, deleteCompetitor, deleteLlmCredential, dismissCompetitorCandidate, getAiReadiness, getAiSearchSummary, getAnalysis, getCompetitor, getCompetitorProfile, getLlmKeyUsage, getLlmSettings, getMe, getPlan, getProducts, getPromptTestResults, getPromptTestSettings, getReadinessFiles, getStandings, listAnalyses, listCompetitorCandidates, listCompetitors, listLlmModels, listPromptAnswers, listTermCandidates, type Options, rejectTermCandidate, retryPromptRun, searchTerms, setActiveLlm, setPlanTargets, startAnalysis, startPromptRun, startRescans, startTermReview, testLlmCredential, tickImprovement, undoCompetitorCandidate, undoTermDecision, updateCompetitor, updatePromptTestSettings } from '../sdk.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorCandidateData, AddCompetitorCandidateError, AddCompetitorCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddCompetitorsData, AddCompetitorsError, AddCompetitorsResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, DismissCompetitorCandidateData, DismissCompetitorCandidateError, DismissCompetitorCandidateResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAiSearchSummaryData, GetAiSearchSummaryError, GetAiSearchSummaryResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmKeyUsageData, GetLlmKeyUsageError, GetLlmKeyUsageResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetPlanData, GetPlanError, GetPlanResponse, GetProductsData, GetProductsError, GetProductsResponse, GetPromptTestResultsData, GetPromptTestResultsError, GetPromptTestResultsResponse, GetPromptTestSettingsData, GetPromptTestSettingsError, GetPromptTestSettingsResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, GetStandingsData, GetStandingsError, GetStandingsResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorCandidatesData, ListCompetitorCandidatesError, ListCompetitorCandidatesResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListPromptAnswersData, ListPromptAnswersError, ListPromptAnswersResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, RetryPromptRunData, RetryPromptRunError, RetryPromptRunResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, SetPlanTargetsData, SetPlanTargetsError, SetPlanTargetsResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartPromptRunData, StartPromptRunError, StartPromptRunResponse, StartRescansData, StartRescansError, StartRescansResponse, StartTermReviewData, StartTermReviewError, StartTermReviewResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, TickImprovementData, TickImprovementError, TickImprovementResponse, UndoCompetitorCandidateData, UndoCompetitorCandidateError, UndoCompetitorCandidateResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse, UpdatePromptTestSettingsData, UpdatePromptTestSettingsError, UpdatePromptTestSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -38,6 +38,124 @@ const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions
     }
     return [params];
 };
+
+export const getAiSearchSummaryQueryKey = (options?: Options<GetAiSearchSummaryData>) => createQueryKey('getAiSearchSummary', options);
+
+/**
+ * Get the AI search summary
+ *
+ * Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared competitors by readiness checks passed out of five.
+ */
+export const getAiSearchSummaryOptions = (options?: Options<GetAiSearchSummaryData>) => queryOptions<GetAiSearchSummaryResponse, GetAiSearchSummaryError, GetAiSearchSummaryResponse, ReturnType<typeof getAiSearchSummaryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAiSearchSummary({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAiSearchSummaryQueryKey(options)
+});
+
+export const getPlanQueryKey = (options?: Options<GetPlanData>) => createQueryKey('getPlan', options);
+
+/**
+ * Get the plan
+ *
+ * The plan's improvements in order, each with whether it is done, the measure it moves and the competitor to look at (the leader of that measure). An improvement a scan of tribelt.nl can check is done by the latest scan; the others are ticked off by hand. Also the numbers to watch against their targets, and the competitors to keep an eye on.
+ */
+export const getPlanOptions = (options?: Options<GetPlanData>) => queryOptions<GetPlanResponse, GetPlanError, GetPlanResponse, ReturnType<typeof getPlanQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getPlan({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getPlanQueryKey(options)
+});
+
+/**
+ * Tick an improvement off, or undo the tick
+ *
+ * Administrators only. Marks an improvement no scan can check as done, recording who and when, or as not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+ */
+export const tickImprovementMutation = (options?: Partial<Options<TickImprovementData>>): UseMutationOptions<TickImprovementResponse, TickImprovementError, Options<TickImprovementData>> => {
+    const mutationOptions: UseMutationOptions<TickImprovementResponse, TickImprovementError, Options<TickImprovementData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await tickImprovement({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Set the plan's targets
+ *
+ * Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1, readiness checks 0 to 5 in halves, terms and citations whole numbers. 422 when one is out of range, and nothing is stored.
+ */
+export const setPlanTargetsMutation = (options?: Partial<Options<SetPlanTargetsData>>): UseMutationOptions<SetPlanTargetsResponse, SetPlanTargetsError, Options<SetPlanTargetsData>> => {
+    const mutationOptions: UseMutationOptions<SetPlanTargetsResponse, SetPlanTargetsError, Options<SetPlanTargetsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await setPlanTargets({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getProductsQueryKey = (options?: Options<GetProductsData>) => createQueryKey('getProducts', options);
+
+/**
+ * Get Tribelt's belt families against the field
+ *
+ * For each of Tribelt's belt families: Tribelt's own names for it, the competitors that sell it with their names for it, the terminology map's terms for it with how many companies use each and whether Tribelt's site does, and how the newest Prompt run's answers about it treat Tribelt, per scope and by who they name. The standouts say which family the most competitors sell, whose terms Tribelt uses least, and whose answers name Tribelt most.
+ */
+export const getProductsOptions = (options?: Options<GetProductsData>) => queryOptions<GetProductsResponse, GetProductsError, GetProductsResponse, ReturnType<typeof getProductsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getProducts({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getProductsQueryKey(options)
+});
+
+export const getStandingsQueryKey = (options?: Options<GetStandingsData>) => createQueryKey('getStandings', options);
+
+/**
+ * Get how Tribelt stands against its competitors
+ *
+ * Compares Tribelt with its competitors on each measure, from the newest Prompt run and each company's newest scan: Tribelt's value, the median over the competitors with data, and the leader, the competitor with the best value (a tie goes to the name first alphabetically). Tribelt, its group companies and the mirror are never the median or the leader. Shares are fractions from 0 to 1.
+ */
+export const getStandingsOptions = (options?: Options<GetStandingsData>) => queryOptions<GetStandingsResponse, GetStandingsError, GetStandingsResponse, ReturnType<typeof getStandingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getStandings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getStandingsQueryKey(options)
+});
 
 export const searchTermsQueryKey = (options?: Options<SearchTermsData>) => createQueryKey('searchTerms', options);
 
@@ -88,6 +206,25 @@ export const addCompetitorMutation = (options?: Partial<Options<AddCompetitorDat
     const mutationOptions: UseMutationOptions<AddCompetitorResponse, AddCompetitorError, Options<AddCompetitorData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await addCompetitor({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Add several competitors at once
+ *
+ * Administrators only. Adds the companies in order and says per item what became of it: added; skipped as a duplicate when a known company, or an earlier item, has its website's host or its name; or rejected without a valid name or website. An item from a competitor candidate records the candidate as added. With `scan`, the added companies are scanned straight away. 422 for no item or more than 100.
+ */
+export const addCompetitorsMutation = (options?: Partial<Options<AddCompetitorsData>>): UseMutationOptions<AddCompetitorsResponse, AddCompetitorsError, Options<AddCompetitorsData>> => {
+    const mutationOptions: UseMutationOptions<AddCompetitorsResponse, AddCompetitorsError, Options<AddCompetitorsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await addCompetitors({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -256,6 +393,25 @@ export const listTermCandidatesOptions = (options?: Options<ListTermCandidatesDa
 });
 
 /**
+ * Let the language model review the waiting candidates now
+ *
+ * Administrators only. Claude Haiku, on an Anthropic key, reviews every waiting candidate it has not reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is sure about, as the language model, and leaves the rest waiting with its suggestion. Returns the review's state.
+ */
+export const startTermReviewMutation = (options?: Partial<Options<StartTermReviewData>>): UseMutationOptions<StartTermReviewResponse, StartTermReviewError, Options<StartTermReviewData>> => {
+    const mutationOptions: UseMutationOptions<StartTermReviewResponse, StartTermReviewError, Options<StartTermReviewData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startTermReview({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
  * Add a candidate to the terminology map
  *
  * Administrators only. Adds the term, as the admin wrote it, to the terminology map, where search, the facets and the next scans find it. 409 when the candidate was decided already or the map has the term in that language.
@@ -376,7 +532,7 @@ export const getReadinessFilesQueryKey = (options: Options<GetReadinessFilesData
 /**
  * Get the raw files a scan read its AI readiness from
  *
- * Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI readiness.
+ * Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100 KB, to check the classification against. They are public on the site, so every signed-in account reads them. 404 when the scan recorded no AI readiness.
  */
 export const getReadinessFilesOptions = (options: Options<GetReadinessFilesData>) => queryOptions<GetReadinessFilesResponse, GetReadinessFilesError, GetReadinessFilesResponse, ReturnType<typeof getReadinessFilesQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -440,6 +596,25 @@ export const startPromptRunMutation = (options?: Partial<Options<StartPromptRunD
     const mutationOptions: UseMutationOptions<StartPromptRunResponse, StartPromptRunError, Options<StartPromptRunData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await startPromptRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Ask a Prompt run's failed answers again
+ *
+ * Administrators only. Asks a finished run's failed and missing answers again, or only the one question of one provider and mode named, in the same run: with the run's prompt set and models, each new answer replacing the failed one, what the failed try cost still counted. It runs in the background and stops at the month's budget like any run. 404 for a run nobody knows; 409 while a run is running or once the month's budget is spent; 422 when nothing is left to ask, the run asked an earlier set of questions, or no OpenRouter key is chosen.
+ */
+export const retryPromptRunMutation = (options?: Partial<Options<RetryPromptRunData>>): UseMutationOptions<RetryPromptRunResponse, RetryPromptRunError, Options<RetryPromptRunData>> => {
+    const mutationOptions: UseMutationOptions<RetryPromptRunResponse, RetryPromptRunError, Options<RetryPromptRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await retryPromptRun({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

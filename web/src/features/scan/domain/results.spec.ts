@@ -3,7 +3,6 @@ import type { Keyword, KnownTerm } from '../../../infrastructure/api/types.gen'
 import {
   equivalentRows,
   isSingleWord,
-  joinWords,
   keywordLanguages,
   missingTerms,
   pageLanguages,
@@ -52,12 +51,8 @@ describe('scannedAt', () => {
   })
 })
 
-describe('joinWords and pageLanguages', () => {
+describe('pageLanguages', () => {
   it('joins a list as a sentence does', () => {
-    expect(joinWords([])).toBe('')
-    expect(joinWords(['English'])).toBe('English')
-    expect(joinWords(['English', 'German'])).toBe('English and German')
-    expect(joinWords(['English', 'German', 'Dutch'])).toBe('English, German and Dutch')
   })
 
   it('names the languages the most used first, skipping pages without one', () => {
@@ -199,8 +194,8 @@ describe('the pages read', () => {
 describe('the result line', () => {
   it('counts the pages read and the new terms', () => {
     expect(newTermCount([{ inMap: true }, { inMap: false }, { inMap: false }])).toBe(2)
-    expect(resultLine(15, 4)).toBe('15 pages read · 4 new terms')
-    expect(resultLine(1, 1)).toBe('1 page read · 1 new term')
+    expect(resultLine(15, 4)).toBe('15 pages read, 4 new terms')
+    expect(resultLine(1, 1)).toBe('1 page read, 1 new term')
   })
 
   it('names the model that matched the products, when there was one', () => {

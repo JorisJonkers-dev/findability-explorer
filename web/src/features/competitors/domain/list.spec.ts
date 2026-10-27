@@ -72,9 +72,9 @@ describe('the company card', () => {
   it('names what the company is and where', () => {
     expect(companyKind(tribelt)).toBe("Tribelt's own group")
     expect(companyKind(twentebelt)).toBe('Competitor')
-    expect(whereLine(twentebelt)).toBe('Netherlands · website in 2 languages')
-    expect(whereLine({ country: 'DE', languages: ['de'] })).toBe('Germany · website in 1 language')
-    expect(whereLine({ country: 'DE', languages: ['others unverified'] })).toBe('Germany')
+    expect(whereLine(twentebelt)).toBe('Netherlands. Its website is in 2 languages.')
+    expect(whereLine({ country: 'DE', languages: ['de'] })).toBe('Germany. Its website is in 1 language.')
+    expect(whereLine({ country: 'DE', languages: ['others unverified'] })).toBe('Germany.')
   })
 
   it("gives its first name for each family, and how many more", () => {

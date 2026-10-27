@@ -1,6 +1,6 @@
 import type { BeltFamily, BeltName, Competitor } from '../../../infrastructure/api/types.gen'
 import { languageLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
-import { joinWords } from '../../scan/domain/results'
+import { joinWords } from '../../../shared/words'
 import { fold } from '../../terminology/domain/fold'
 import { companyName } from '../../terminology/domain/filters'
 

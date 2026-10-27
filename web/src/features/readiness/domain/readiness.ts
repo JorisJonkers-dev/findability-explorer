@@ -1,6 +1,7 @@
 import type { AiReadiness, AiReadinessRow, CrawlerAccess, ReadinessChange, ReadinessCheck } from '../../../infrastructure/api/types.gen'
 import type { Sort, SortDirection, SortValue } from '../../../shared/sort'
 import { sortRows } from '../../../shared/sort'
+import { joinWords } from '../../../shared/words'
 
 /** The search and AI crawlers a scan records, in the server's order, with who runs them and why. */
 export const BOTS: readonly { token: string; owner: string }[] = [
@@ -219,13 +220,8 @@ export function policySummary(r: AiReadiness | undefined): string {
   if (r.robots === 'unreachable') return 'Its robots.txt could not be read, so its crawler policy is unknown.'
   const blocked = r.bots.filter((b) => b.access === 'blocked').map((b) => b.bot)
   const partly = r.bots.filter((b) => b.access === 'partly').length
-  if (blocked.length > 0) return `Blocks ${listOf(blocked)}${partly > 0 ? `, and keeps some pages from ${String(partly)} more` : ''}.`
+  if (blocked.length > 0) return `Blocks ${joinWords(blocked)}${partly > 0 ? `, and keeps some pages from ${String(partly)} more` : ''}.`
   return partly > 0 ? `Lets every search and AI crawler in, keeping some pages from ${String(partly)}.` : 'Lets every search and AI crawler in.'
-}
-
-/** "A", "A and B", "A, B and C". */
-function listOf(items: readonly string[]): string {
-  return items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.slice(-1).join('')}`
 }
 
 /** How many of the report's recommendations a site follows: "Follows 14 of 17 recommendations." */

@@ -9,11 +9,11 @@ describe('a key’s usage', () => {
         limitUsd: 100, limitRemainingUsd: 75.5, limitReset: 'monthly', freeRequests: { used: 10, limit: 1000, remaining: 990 },
       }),
     ).toEqual([
-      '$1.20 today · $5.60 this week · $24.50 this month · $25.50 in all',
+      '$1.20 today, $5.60 this week, $24.50 this month, $25.50 in all.',
       'Limit $100.00 a month, $75.50 left.',
       'Free models: 10 of 1,000 requests today.',
     ])
-    expect(usageLines({ source: 'openrouter', message: 'x', models: [], totalUsd: 0.0042 })).toEqual(['$0.0042 in all', 'No spending limit on this key.'])
+    expect(usageLines({ source: 'openrouter', message: 'x', models: [], totalUsd: 0.0042 })).toEqual(['$0.0042 in all.', 'No spending limit on this key.'])
     expect(usageLines({ source: 'openrouter', message: 'x', models: [], limitUsd: 5, limitReset: 'daily' })[1]).toBe('Limit $5.00 a day, $0.00 left.')
     expect(usageLines({ source: 'openrouter', message: 'x', models: [], limitUsd: 5, limitRemainingUsd: 1 })[1]).toBe('Limit $5.00, $1.00 left.')
   })

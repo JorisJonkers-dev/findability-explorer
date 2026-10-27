@@ -51,23 +51,23 @@ describe('the settings page', () => {
     })
     const { wrapper } = await mountApp(server(settings).handle, '/settings')
     expect(document.title).toBe('Settings · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Language model')
-    expect(wrapper.get('nav[aria-label="Account"]').text()).toContain('Ada')
+    expect(wrapper.get('h1').text()).toBe('Language models')
+    expect(wrapper.get('header').text()).toContain('Signed in as Ada')
 
-    const vault = keyItem(wrapper, 'Anthropic (Claude) · Vault key')
+    const vault = keyItem(wrapper, 'Vault key (Anthropic (Claude))')
     expect(vault.text()).toContain('Vault')
     expect(vault.text()).toContain('Fingerprint 3a7bd3e2360a')
     expect(vault.text()).toContain('Accepted on 23 Oct 2026, 09:30 UTC: The key may use 9 models.')
     expect(vault.text()).toContain('Vault delivers this key; change or remove it in Vault.')
     expect(vault.findAll('button').map((b) => b.text())).toEqual(['Test', 'Usage and cost'])
 
-    const stored = keyItem(wrapper, 'OpenRouter · Course budget key')
+    const stored = keyItem(wrapper, 'Course budget key (OpenRouter)')
     expect(stored.text()).toContain('This key can no longer be read')
     expect(stored.text()).toContain('Fingerprint 0123456789ab')
     expect(stored.text()).toContain('Not tested yet.')
     expect(button(stored, 'Test').attributes('disabled')).toBeDefined()
 
-    expect(wrapper.text()).toContain('claude-haiku-5-5 with Anthropic (Claude) · Vault key, the default.')
+    expect(wrapper.text()).toContain('claude-haiku-5-5 with Vault key (Anthropic (Claude)), the default.')
     expect(wrapper.text()).toContain('48,211 of 10,000,000 tokens used this month (0%)')
     expect(wrapper.text()).not.toContain('per hour')
     expect(wrapper.get('[data-testid="per-scan"]').text()).toBe(
@@ -148,7 +148,7 @@ describe('adding a key', () => {
 describe('testing and removing a key', () => {
   it("tests a key and shows the provider's answer", async () => {
     const { wrapper } = await mountApp(server().handle, '/settings')
-    const stored = () => keyItem(wrapper, 'OpenRouter · Course budget key')
+    const stored = () => keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored(), 'Test').trigger('click')
     await settle()
     expect(stored().get('[aria-live="polite"]').text()).toBe('Accepted on 23 Oct 2026, 11:00 UTC: The key may use 312 models.')
@@ -157,7 +157,7 @@ describe('testing and removing a key', () => {
   it('shows a refusal, and a test that could not run', async () => {
     let answer = (): Response => json({ ok: false, at: '2026-10-23T11:00:00Z', message: 'invalid x-api-key' })
     const { wrapper } = await mountApp(server(llmSettings(), { [`POST /api/v1/admin/llm/credentials/${STORED_ID}/test`]: () => answer() }).handle, '/settings')
-    const stored = () => keyItem(wrapper, 'OpenRouter · Course budget key')
+    const stored = () => keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored(), 'Test').trigger('click')
     await settle()
     expect(stored().text()).toContain('Refused on 23 Oct 2026, 11:00 UTC: invalid x-api-key')
@@ -169,10 +169,10 @@ describe('testing and removing a key', () => {
 
   it('asks before removing a key, in place', async () => {
     const { wrapper, requests } = await mountApp(server().handle, '/settings')
-    const stored = () => keyItem(wrapper, 'OpenRouter · Course budget key')
+    const stored = () => keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored(), 'Remove').trigger('click')
     await settle()
-    expect(stored().get('[role="group"]').attributes('aria-label')).toBe('Remove OpenRouter · Course budget key?')
+    expect(stored().get('[role="group"]').attributes('aria-label')).toBe('Remove Course budget key (OpenRouter)?')
     expect(document.activeElement?.textContent.trim()).toBe('Cancel')
     await button(stored(), 'Cancel').trigger('click')
     await settle()
@@ -189,7 +189,7 @@ describe('testing and removing a key', () => {
 
   it('says why a key could not be removed', async () => {
     const { wrapper } = await mountApp(server(llmSettings(), { [`DELETE /api/v1/admin/llm/credentials/${STORED_ID}`]: () => problem(404, 'Not Found') }).handle, '/settings')
-    const stored = () => keyItem(wrapper, 'OpenRouter · Course budget key')
+    const stored = () => keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored(), 'Remove').trigger('click')
     await settle()
     await button(stored(), 'Remove key').trigger('click')
@@ -220,7 +220,7 @@ describe('choosing the model', () => {
     await settle()
     expect(bodies.active).toEqual({ credentialId: STORED_ID, model: 'mistralai/mistral-small' })
     expect(chooser(wrapper).text()).toContain('Product matching now uses mistralai/mistral-small.')
-    expect(chooser(wrapper).text()).toContain('mistralai/mistral-small with OpenRouter · Course budget key.')
+    expect(chooser(wrapper).text()).toContain('mistralai/mistral-small with Course budget key (OpenRouter).')
   })
 
   it('says when no model matches the search', async () => {
@@ -294,14 +294,14 @@ describe('a key’s usage and cost', () => {
       '/settings',
     )
     expect(requests().some((r) => r.endsWith('/usage'))).toBe(false)
-    const stored = keyItem(wrapper, 'OpenRouter · Course budget key')
+    const stored = keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored, 'Usage and cost').trigger('click')
     await settle()
-    expect(stored.get('[data-testid="key-usage"]').text()).toContain('$0.50 today · $1.00 this week · $2.00 this month · $3.00 in all')
+    expect(stored.get('[data-testid="key-usage"]').text()).toContain('$0.50 today, $1.00 this week, $2.00 this month, $3.00 in all.')
     expect(stored.get('[data-testid="key-usage"]').text()).toContain('No spending limit on this key.')
     await button(stored, 'Hide usage').trigger('click')
     expect(stored.find('[data-testid="key-usage"]').exists()).toBe(false)
-    const vault = keyItem(wrapper, 'Anthropic (Claude) · Vault key')
+    const vault = keyItem(wrapper, 'Vault key (Anthropic (Claude))')
     await button(vault, 'Usage and cost').trigger('click')
     await settle()
     expect(vault.get('[role="alert"]').text()).toBe('The provider did not answer: Anthropic answered 500. Try again in a minute.')

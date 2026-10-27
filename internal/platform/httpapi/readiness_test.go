@@ -85,19 +85,16 @@ func TestAScanShowsItsReadiness(t *testing.T) {
 	}
 }
 
-func TestReadinessFilesAreForAdministrators(t *testing.T) {
+func TestReadinessFilesAreForEveryoneSignedIn(t *testing.T) {
 	id := uuid.New()
 	a := &analyses{rawFiles: map[uuid.UUID]domain.RawFiles{id: {Robots: "User-agent: GPTBot\nDisallow: /", LLMsTruncated: true}}}
 	srv := serve(t, a)
-	path := "/api/v1/admin/analyses/" + id.String() + "/readiness-files"
-	if r := callAs(t, srv, http.MethodGet, path, "", "tester"); r.code != http.StatusForbidden {
-		t.Errorf("a viewer reads the raw files: %d", r.code)
-	}
-	r := callAs(t, srv, http.MethodGet, path, "", "admin")
+	path := "/api/v1/analyses/" + id.String() + "/readiness-files"
+	r := callAs(t, srv, http.MethodGet, path, "", "tester")
 	if r.code != http.StatusOK || r.body["robotsTxt"] != "User-agent: GPTBot\nDisallow: /" || r.body["llmsTruncated"] != true || r.body["llmsTxt"] != "" {
 		t.Fatalf("files = %d %v", r.code, r.body)
 	}
-	if r := callAs(t, srv, http.MethodGet, "/api/v1/admin/analyses/"+uuid.NewString()+"/readiness-files", "", "admin"); r.code != http.StatusNotFound {
+	if r := callAs(t, srv, http.MethodGet, "/api/v1/analyses/"+uuid.NewString()+"/readiness-files", "", "admin"); r.code != http.StatusNotFound {
 		t.Errorf("files of a scan without readiness: %d", r.code)
 	}
 	a.readinessErr = errors.New("down")

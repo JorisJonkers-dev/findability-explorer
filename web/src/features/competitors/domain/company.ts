@@ -138,12 +138,12 @@ export function isScanning(company: Pick<Competitor, 'lastScan'>): boolean {
   return company.lastScan !== undefined && isInProgress(company.lastScan.status)
 }
 
-/** A company's scans in a few words for its row in the list: "2 scans · today", "2 scans · reading page 4 of 15". */
+/** A company's scans in a few words for its row in the list: "2 scans, today", "2 scans, reading page 4 of 15". */
 export function listScanLabel(company: Pick<Competitor, 'scans' | 'lastScan'>, now: Date = new Date()): string {
   if (company.scans === 0) return 'No scans'
   const count = company.scans === 1 ? '1 scan' : `${String(company.scans)} scans`
   if (!company.lastScan) return count
-  return `${count} · ${isInProgress(company.lastScan.status) ? scanState(company.lastScan) : recentLabel(company.lastScan, now)}`
+  return `${count}, ${isInProgress(company.lastScan.status) ? scanState(company.lastScan) : recentLabel(company.lastScan, now)}`
 }
 
 const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })

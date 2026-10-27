@@ -40,14 +40,24 @@ type execution struct {
 // run done, or stopped when the month's budget is reached. A run another instance took over is
 // left to it. Execute returns an error only when the run could not be recorded.
 func (s *Service) Execute(ctx context.Context, run domain.Run) error {
-	e, tasks, unread, err := s.resume(ctx, run)
+	return s.execute(ctx, run, nil)
+}
+
+// execute carries out a run as Execute does; with only, it asks those tasks and no other.
+func (s *Service) execute(ctx context.Context, run domain.Run, only map[domain.TaskKey]bool) error {
+	e, tasks, unread, err := s.resume(ctx, run, only)
 	if err != nil {
 		return s.fail(ctx, run.ID, err)
 	}
 	// The run is held while a model is slow too: one call may take longer than the stale window.
+	// The heartbeat stops, and is waited for, before the run returns, so no beat lands after it.
 	beating, stop := context.WithCancel(ctx)
-	defer stop()
-	go e.heartbeat(beating, s.cfg.Stale/4)
+	var heart sync.WaitGroup
+	heart.Go(func() { e.heartbeat(beating, s.cfg.Stale/4) })
+	defer func() {
+		stop()
+		heart.Wait()
+	}()
 	for _, a := range unread {
 		if e.halted() {
 			break
@@ -72,9 +82,9 @@ func (s *Service) Execute(ctx context.Context, run domain.Run) error {
 	return e.finish(ctx)
 }
 
-// resume loads what a run has done: the tasks still to ask, and the answers stored without being
-// read, as when a restart came between the two.
-func (s *Service) resume(ctx context.Context, run domain.Run) (*execution, []domain.Task, []domain.Answer, error) {
+// resume loads what a run has done: the tasks still to ask, or the ones only names, and the
+// answers stored without being read, as when a restart came between the two.
+func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.TaskKey]bool) (*execution, []domain.Task, []domain.Answer, error) {
 	settings, err := s.settings(ctx)
 	if err != nil {
 		return nil, nil, nil, err
@@ -109,7 +119,7 @@ func (s *Service) resume(ctx context.Context, run domain.Run) (*execution, []dom
 	}
 	var tasks []domain.Task
 	for _, t := range domain.Tasks(set, run.Models) {
-		if !answered[t.Key()] {
+		if (only == nil && !answered[t.Key()]) || only[t.Key()] {
 			tasks = append(tasks, t)
 		}
 	}

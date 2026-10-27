@@ -44,6 +44,19 @@ func (UnimplementedHandler) AddCompetitorCandidate(ctx context.Context, req *New
 	return r, ht.ErrNotImplemented
 }
 
+// AddCompetitors implements addCompetitors operation.
+//
+// Administrators only. Adds the companies in order and says per item what became of it: added; skipped
+// as a duplicate when a known company, or an earlier item, has its website's host or its name; or
+// rejected without a valid name or website. An item from a competitor candidate records the candidate
+// as added. With `scan`, the added companies are scanned straight away. 422 for no item or more than
+// 100.
+//
+// POST /api/v1/admin/competitors/batch
+func (UnimplementedHandler) AddCompetitors(ctx context.Context, req *CompetitorBatchRequest) (r AddCompetitorsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // AddLlmCredential implements addLlmCredential operation.
 //
 // Checks the key with the provider (by listing its models) and stores it sealed. A key the provider
@@ -117,6 +130,18 @@ func (UnimplementedHandler) GetAiReadiness(ctx context.Context) (r GetAiReadines
 	return r, ht.ErrNotImplemented
 }
 
+// GetAiSearchSummary implements getAiSearchSummary operation.
+//
+// Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the
+// newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and
+// what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared
+// competitors by readiness checks passed out of five.
+//
+// GET /api/v1/ai-search
+func (UnimplementedHandler) GetAiSearchSummary(ctx context.Context) (r GetAiSearchSummaryRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAnalysis implements getAnalysis operation.
 //
 // Returns the analysis, its progress, and every result found so far.
@@ -178,6 +203,31 @@ func (UnimplementedHandler) GetMe(ctx context.Context) (r GetMeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// GetPlan implements getPlan operation.
+//
+// The plan's improvements in order, each with whether it is done, the measure it moves and the
+// competitor to look at (the leader of that measure). An improvement a scan of tribelt.nl can check is
+// done by the latest scan; the others are ticked off by hand. Also the numbers to watch against their
+// targets, and the competitors to keep an eye on.
+//
+// GET /api/v1/plan
+func (UnimplementedHandler) GetPlan(ctx context.Context) (r GetPlanRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetProducts implements getProducts operation.
+//
+// For each of Tribelt's belt families: Tribelt's own names for it, the competitors that sell it with
+// their names for it, the terminology map's terms for it with how many companies use each and whether
+// Tribelt's site does, and how the newest Prompt run's answers about it treat Tribelt, per scope and
+// by who they name. The standouts say which family the most competitors sell, whose terms Tribelt uses
+// least, and whose answers name Tribelt most.
+//
+// GET /api/v1/products
+func (UnimplementedHandler) GetProducts(ctx context.Context) (r GetProductsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetPromptTestResults implements getPromptTestResults operation.
 //
 // Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
@@ -202,12 +252,24 @@ func (UnimplementedHandler) GetPromptTestSettings(ctx context.Context) (r GetPro
 
 // GetReadinessFiles implements getReadinessFiles operation.
 //
-// Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan,
-// each capped at 100 KB, to check the classification against. 404 when the scan recorded no AI
-// readiness.
+// Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each capped at 100
+// KB, to check the classification against. They are public on the site, so every signed-in account
+// reads them. 404 when the scan recorded no AI readiness.
 //
-// GET /api/v1/admin/analyses/{analysisId}/readiness-files
+// GET /api/v1/analyses/{analysisId}/readiness-files
 func (UnimplementedHandler) GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (r GetReadinessFilesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetStandings implements getStandings operation.
+//
+// Compares Tribelt with its competitors on each measure, from the newest Prompt run and each company's
+// newest scan: Tribelt's value, the median over the competitors with data, and the leader, the
+// competitor with the best value (a tie goes to the name first alphabetically). Tribelt, its group
+// companies and the mirror are never the median or the leader. Shares are fractions from 0 to 1.
+//
+// GET /api/v1/standings
+func (UnimplementedHandler) GetStandings(ctx context.Context) (r GetStandingsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -282,6 +344,20 @@ func (UnimplementedHandler) RejectTermCandidate(ctx context.Context, params Reje
 	return r, ht.ErrNotImplemented
 }
 
+// RetryPromptRun implements retryPromptRun operation.
+//
+// Administrators only. Asks a finished run's failed and missing answers again, or only the one
+// question of one provider and mode named, in the same run: with the run's prompt set and models, each
+// new answer replacing the failed one, what the failed try cost still counted. It runs in the
+// background and stops at the month's budget like any run. 404 for a run nobody knows; 409 while a run
+// is running or once the month's budget is spent; 422 when nothing is left to ask, the run asked an
+// earlier set of questions, or no OpenRouter key is chosen.
+//
+// POST /api/v1/admin/prompt-runs/{runId}/retry
+func (UnimplementedHandler) RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (r RetryPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SearchTerms implements searchTerms operation.
 //
 // Returns the terms that match the query and every filter, best match first, with the count of
@@ -300,6 +376,17 @@ func (UnimplementedHandler) SearchTerms(ctx context.Context, params SearchTermsP
 //
 // PUT /api/v1/admin/llm/active
 func (UnimplementedHandler) SetActiveLlm(ctx context.Context, req *ActiveLlm) (r SetActiveLlmRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SetPlanTargets implements setPlanTargets operation.
+//
+// Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1,
+// readiness checks 0 to 5 in halves, terms and citations whole numbers. 422 when one is out of range,
+// and nothing is stored.
+//
+// PUT /api/v1/admin/plan/targets
+func (UnimplementedHandler) SetPlanTargets(ctx context.Context, req *PlanTargetsChange) (r SetPlanTargetsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -341,6 +428,18 @@ func (UnimplementedHandler) StartRescans(ctx context.Context, req *RescanRequest
 	return r, ht.ErrNotImplemented
 }
 
+// StartTermReview implements startTermReview operation.
+//
+// Administrators only. Claude Haiku, on an Anthropic key, reviews every waiting candidate it has not
+// reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is sure
+// about, as the language model, and leaves the rest waiting with its suggestion. Returns the review's
+// state.
+//
+// POST /api/v1/admin/term-candidates/review
+func (UnimplementedHandler) StartTermReview(ctx context.Context) (r StartTermReviewRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // TestLlmCredential implements testLlmCredential operation.
 //
 // Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
@@ -349,6 +448,16 @@ func (UnimplementedHandler) StartRescans(ctx context.Context, req *RescanRequest
 //
 // POST /api/v1/admin/llm/credentials/{credentialId}/test
 func (UnimplementedHandler) TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (r TestLlmCredentialRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TickImprovement implements tickImprovement operation.
+//
+// Administrators only. Marks an improvement no scan can check as done, recording who and when, or as
+// not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+//
+// PUT /api/v1/admin/plan/improvements/{improvementId}
+func (UnimplementedHandler) TickImprovement(ctx context.Context, req *ImprovementTick, params TickImprovementParams) (r TickImprovementRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

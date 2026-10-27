@@ -6,7 +6,10 @@ import type {
   BotRule,
   Competitor,
   Me,
+  PromptAnswer,
+  PromptExtraction,
   PromptRun,
+  Product,
   PromptTestResults,
   Term,
   TermSearch,
@@ -214,4 +217,76 @@ export function promptResults(overrides: Partial<PromptTestResults> = {}): Promp
     ],
     ...overrides,
   }
+}
+
+let answers = 0
+
+/** A read answer of the run; companies are the names in order, a known one as "Name:id". */
+export function promptAnswer(
+  overrides: Partial<PromptAnswer> = {},
+  companies: string[] = ['Twentebelt:twentebelt', 'Tribelt:tribelt'],
+  extraction: Partial<PromptExtraction> = {},
+): PromptAnswer {
+  return {
+    id: `00000000-0000-4000-8000-${String((answers += 1)).padStart(12, '0')}`,
+    promptId: 'eyelink-application-twente',
+    family: 'eyelink',
+    kind: 'application',
+    scope: 'twente',
+    language: 'nl',
+    prompt: 'We bouwen een doorloopoven voor een industriële bakkerij. Welke fabrikanten in de regio Twente?',
+    promptSetVersion: 2,
+    provider: 'openai',
+    model: 'openai/gpt-oss-20b',
+    mode: 'knowledge',
+    text: 'Twentebelt in Hengelo and Tribelt in Haaksbergen make eyelink belts.',
+    citations: [],
+    at: '2026-11-01T06:10:00Z',
+    costUsd: 0.0012,
+    inputTokens: 900,
+    outputTokens: 300,
+    extraction: {
+      failed: false,
+      companies: companies.map((c, i) => {
+        const [name, id] = c.split(':') as [string, string | undefined]
+        return { name, position: i + 1, ...(id ? { competitorId: id } : {}) }
+      }),
+      addresses: [],
+      namesTribelt: companies.some((c) => c.endsWith(':tribelt')),
+      citesTribelt: false,
+      wrongClaims: [],
+      costUsd: 0.0002,
+      ...extraction,
+    },
+    ...overrides,
+  }
+}
+
+/** A belt family against the field: eyelink, with a seller, four terms and 40 answers. */
+export function product(overrides: Partial<Product> = {}): Product {
+  return {
+    family: 'eyelink',
+    tribeltNames: ['Draadogenbanden'],
+    sellers: [{ competitorId: 'twentebelt', name: 'Twentebelt', names: ['Oogbanden'] }],
+    terms: [
+      { term: 'draadogenband', language: 'nl', tier: 'product', usedBy: 9, usedByTribelt: false },
+      { term: 'eyelink belt', language: 'en-US', tier: 'product', usedBy: 5, usedByTribelt: true },
+      { term: 'Drahtösenband', language: 'de', tier: 'product', usedBy: 3, usedByTribelt: false },
+      { term: 'bande à maillons', language: 'fr', tier: 'product', usedBy: 1, usedByTribelt: false },
+    ],
+    termsUsed: 1,
+    answers: 40,
+    named: 12,
+    byScope: [],
+    mostNamed: [],
+    ...overrides,
+  }
+}
+
+/** An improvement's details: why, how and when it is done, and no scan parts. */
+export const details = {
+  why: 'It helps.',
+  steps: ['Do the first thing.', 'Do the second thing.'],
+  doneWhen: 'It is in place.',
+  parts: [] as { name: string; present: boolean }[],
 }

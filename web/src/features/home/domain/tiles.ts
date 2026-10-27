@@ -1,4 +1,6 @@
-import type { Competitor, Term } from '../../../infrastructure/api/types.gen'
+import type { Competitor, PromptTestResults, Standing, Term } from '../../../infrastructure/api/types.gen'
+import { formatValue, MEASURES } from '../../catching-up/domain/standings'
+import { latestRun, tally } from '../../prompt-test/domain/results'
 import { familyLabel, languageLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
 import { chartLanguage } from '../../terminology/domain/filters'
 import { companyName } from '../../terminology/domain/filters'
@@ -72,10 +74,54 @@ export function languageBars(terms: readonly Pick<Term, 'language' | 'usedBy'>[]
   }))
 }
 
-/** Pages each crawler fetched, against the most any did. */
-export function crawlerBars(crawlers: readonly { name: string; pages: number }[]): TileBar[] {
-  const max = Math.max(0, ...crawlers.map((c) => c.pages))
-  return crawlers.map((c) => ({ label: c.name, value: String(c.pages), first: max > 0 ? c.pages / max : 0, second: 0, zero: c.pages === 0 }))
+/** Per measure, Tribelt's value against the leader's: Tribelt's part, then the gap to the leader. */
+export function gapBars(measures: readonly Standing[]): TileBar[] {
+  return measures.map((m) => {
+    const tribelt = m.tribelt ?? 0
+    const best = Math.max(tribelt, m.leader?.value ?? 0)
+    return {
+      label: MEASURES[m.measure].short,
+      value: m.tribelt === undefined ? '–' : formatValue(m.measure, m.tribelt),
+      first: best === 0 ? 0 : tribelt / best,
+      second: best === 0 ? 0 : (best - tribelt) / best,
+      zero: false,
+    }
+  })
+}
+
+/** The Catching up tile's figure: how many measures Tribelt trails on. */
+export function catchUpFigure(measures: readonly Standing[], trailing: number): { big: string; text: string } {
+  if (measures.length === 0) return { big: '…', text: 'measures where Tribelt trails the leaders.' }
+  return { big: String(trailing), text: trailing === 1 ? 'measure where Tribelt trails the leader.' : 'measures where Tribelt trails the leaders.' }
+}
+
+/** The shares of the newest run's answers naming Tribelt and the four competitors named most, against the largest. */
+export function voiceBars(results: Pick<PromptTestResults, 'runs' | 'mentions'> | undefined): TileBar[] {
+  const run = latestRun(results)
+  const answers = run ? tally(run.cells).answers : 0
+  if (!results || answers === 0) return []
+  const tribelt = results.mentions.find((m) => m.role === 'tribelt')
+  const rows = [
+    ...results.mentions.filter((m) => m.role === 'competitor').slice(0, 4),
+    ...(tribelt ? [tribelt] : [{ name: 'Tribelt', answers: 0 }]),
+  ].sort((a, b) => b.answers - a.answers)
+  const most = Math.max(1, ...rows.map((r) => r.answers))
+  return rows.map((r) => ({
+    label: r === tribelt || r.name === 'Tribelt' ? 'Tribelt' : r.name,
+    value: `${String(Math.round((r.answers / answers) * 100))}%`,
+    first: r.answers / most,
+    second: 0,
+    zero: false,
+  }))
+}
+
+/** The AI search tile's figure: the share of the newest run's answers naming Tribelt. */
+export function aiFigure(results: Pick<PromptTestResults, 'runs' | 'mentions'> | undefined): { big: string; text: string } {
+  const bars = voiceBars(results)
+  const us = bars.find((b) => b.label === 'Tribelt')
+  if (!us) return { big: '…', text: 'of AI answers name Tribelt, once the first Prompt run is in.' }
+  const top = bars.find((b) => b.label !== 'Tribelt')
+  return { big: us.value, text: top ? `of AI answers name Tribelt. ${top.label} is named in ${top.value}.` : 'of AI answers name Tribelt.' }
 }
 
 /** The point a zoom grows from: the centre of a box, in the poster's own pixels. */

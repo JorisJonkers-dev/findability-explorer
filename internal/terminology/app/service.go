@@ -56,6 +56,9 @@ type Service struct {
 
 	mu       sync.RWMutex
 	accepted []domain.Term
+
+	// review is the language model's part of the queue; nil until WithReviewer.
+	review *reviewer
 }
 
 // New returns a Service reading catalogue and, through reviews, the terms accepted from the
@@ -140,7 +143,12 @@ func (s *Service) candidates(ctx context.Context) ([]domain.Candidate, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load decisions: %w", err)
 	}
-	return domain.Candidates(obs, decisions, s.Terms()), nil
+	verdicts, err := s.verdicts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	terms := s.Terms()
+	return domain.WithVerdicts(domain.Candidates(obs, decisions, terms), verdicts, terms), nil
 }
 
 // candidate returns the candidate with id, or domain.ErrCandidateNotFound.

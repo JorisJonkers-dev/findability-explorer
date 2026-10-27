@@ -54,6 +54,7 @@ import (
 	identityweb "github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/web"
 	identityapp "github.com/JorisJonkers-dev/findability-explorer/internal/identity/app"
 	identitydomain "github.com/JorisJonkers-dev/findability-explorer/internal/identity/domain"
+	insightpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/persistence"
 	llmpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/providers"
 	llmapp "github.com/JorisJonkers-dev/findability-explorer/internal/llm/app"
@@ -67,6 +68,7 @@ import (
 	prompttestdomain "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/server"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/seal"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/judge"
 	terminologypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/seed"
 	terminologyapp "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
@@ -122,7 +124,8 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	now := func() time.Time { return time.Now().UTC() }
 	analysisRepo := persistence.New(store)
 	var companies *companiesapp.Service
-	terminology := terminologyapp.New(catalogue, terminologypersistence.New(store),
+	terminologyRepo := terminologypersistence.New(store)
+	terminology := terminologyapp.New(catalogue, terminologyRepo,
 		func(ctx context.Context) ([]terminologydomain.Observation, error) {
 			return observations(ctx, analysisRepo, companies)
 		},
@@ -143,10 +146,13 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	if err != nil {
 		return err
 	}
-	llm, err := newLLM(logger, getenv, store, analysisRepo, secret, limits, now)
+	llm, err := newLLM(logger, getenv, store, analysisRepo, terminologyRepo, secret, limits, now)
 	if err != nil {
 		return err
 	}
+	// Haiku reviews the phrases scans find, on an Anthropic key.
+	terminology.WithReviewer(terminologyRepo, judges{llm: llm})
+	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
 	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, limits, now)
 	if err != nil {
 		return err
@@ -160,13 +166,15 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 			logger.ErrorContext(ctx, "prompt run could not be recorded", "run", id, "error", err)
 		})
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
+	insight := newInsight(insightpersistence.New(store.Queries()), companies, promptTest, analysis, terminology, now)
+	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
 
 	gate, err := newGate(ctx, logger, getenv, store, secret, now)
 	if err != nil {
 		return err
 	}
 	api, err := httpapi.New(logger, httpapi.Contexts{
-		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Auth: gate.auth,
+		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Insight: insight, Auth: gate.auth,
 	})
 	if err != nil {
 		return err
@@ -297,7 +305,7 @@ func limitsOf(getenv func(string) string) (limits, error) {
 
 // newLLM builds the language-model settings: the Vault key, the keys admins add, and the active model.
 func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, analyses *persistence.Repository,
-	secret string, l limits, now func() time.Time,
+	reviews *terminologypersistence.Repository, secret string, l limits, now func() time.Time,
 ) (*llmapp.Service, error) {
 	sealer, err := seal.NewSealer(secret, llmpersistence.HKDFInfo)
 	if err != nil {
@@ -312,6 +320,11 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 		if err != nil {
 			return llmapp.Spending{}, err
 		}
+		reviewed, err := reviews.TokensSince(ctx, monthStart(now()))
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		month += reviewed
 		scans, average, err := analyses.TokensPerScan(ctx)
 		if err != nil {
 			return llmapp.Spending{}, err
@@ -327,6 +340,23 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 func monthStart(t time.Time) time.Time {
 	t = t.UTC()
 	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+}
+
+// termReviewEvery is how often the language model looks for new phrases to review.
+const termReviewEvery = 10 * time.Minute
+
+// judges hands the terminology context its judge: Haiku on an Anthropic key, whatever model
+// product matching uses, since reviewing hundreds of phrases must stay cheap.
+type judges struct {
+	llm *llmapp.Service
+}
+
+func (j judges) Current(ctx context.Context) (terminologyapp.Judge, string, error) {
+	client, model, err := j.llm.Haiku(ctx)
+	if err != nil || client == nil {
+		return nil, "", err
+	}
+	return judge.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
 }
 
 // matchers hands the analysis context the matcher the language-model settings name now.

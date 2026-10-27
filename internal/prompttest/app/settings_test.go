@@ -224,3 +224,140 @@ func TestCandidateFailures(t *testing.T) {
 	}
 	_ = uuid.Nil
 }
+
+func TestCountedRunsKeepOnlyAnswersThatCount(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	// The first run gets no answers at all; the second has them.
+	e.gw.askErr = errors.New("down")
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	e.gw.askErr = nil
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	newest := e.run(t).ID
+	got, err := e.svc.Counted(t.Context(), 5)
+	if err != nil || len(got) != 1 || got[0].Run.ID != newest || len(got[0].Answers) != 40 {
+		t.Fatalf("counted = %d runs, %v", len(got), err)
+	}
+	for _, a := range got[0].Answers {
+		if !a.Counts() {
+			t.Fatalf("an answer that does not count: %+v", a)
+		}
+	}
+	if got, _ := e.svc.Counted(t.Context(), 0); len(got) != 0 {
+		t.Errorf("a limit of 0 = %d runs", len(got))
+	}
+	for _, op := range []string{"Runs", "Answers"} {
+		e.repo.failOn[op] = true
+		if _, err := e.svc.Counted(t.Context(), 1); !errors.Is(err, errBoom) {
+			t.Errorf("%s failing: %v", op, err)
+		}
+		e.repo.failOn[op] = false
+	}
+}
+
+func TestACandidateAddedFromAListIsRecorded(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	pending, _, _ := e.svc.Candidates(t.Context(), domain.CandidatePending)
+	id := pending[0].ID
+	if err := e.svc.RecordAdded(t.Context(), "joris", id, "ashworth"); err != nil {
+		t.Fatal(err)
+	}
+	added, _, _ := e.svc.Candidates(t.Context(), domain.CandidateAdded)
+	if len(added) != 1 || added[0].Decision.CompetitorID != "ashworth" || added[0].Decision.By != "joris" {
+		t.Fatalf("added = %+v", added)
+	}
+	if err := e.svc.RecordAdded(t.Context(), "joris", id, "ashworth"); !errors.Is(err, app.ErrDecided) {
+		t.Errorf("recorded twice: %v", err)
+	}
+	if err := e.svc.RecordAdded(t.Context(), "joris", "0123456789abcdef", "x"); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("an unknown candidate: %v", err)
+	}
+	for _, op := range []string{"Sightings", "CandidateDecisions"} {
+		e.repo.failOn[op] = true
+		if err := e.svc.RecordAdded(t.Context(), "joris", id, "x"); !errors.Is(err, errBoom) {
+			t.Errorf("%s failing: %v", op, err)
+		}
+		e.repo.failOn[op] = false
+	}
+	fresh := newEnv(t, newRepo(), "a")
+	fresh.repo.settings.Providers = []string{"openai"}
+	if _, err := fresh.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	fresh.repo.failOn["Decide"] = true
+	if err := fresh.svc.RecordAdded(t.Context(), "joris", id, "x"); !errors.Is(err, errBoom) {
+		t.Errorf("Decide failing: %v", err)
+	}
+}
+
+func TestTheSettingsPriceRunsBeforeAndAfterTheFirst(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	before, err := e.svc.Settings(t.Context())
+	if err != nil || !before.KeyWorks || before.Prices.Basis != domain.BasisCatalogue || len(before.Prices.Providers) != 2 || len(before.Models) != 0 {
+		t.Fatalf("before any run = %+v, %v", before.Prices, err)
+	}
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	after, err := e.svc.Settings(t.Context())
+	// Every answer cost 10 and reading it 2.
+	if err != nil || after.Prices.Basis != domain.BasisRun || len(after.Models) != 2 || after.Prices.Providers[0].Knowledge != 10 || after.Prices.Reading != 2 {
+		t.Fatalf("after a run = %+v, %v", after.Prices, err)
+	}
+}
+
+func TestTheSettingsHaveNoPricesWithoutAKeyOrAPriceList(t *testing.T) {
+	r := newRepo()
+	s := domain.DefaultSettings(start)
+	r.settings = &s
+	e := newEnv(t, r, "a")
+	if v, err := e.svc.Settings(t.Context()); err != nil || v.KeyWorks || v.Prices.Basis != domain.BasisNone {
+		t.Errorf("no key = %+v, %v", v.Prices, err)
+	}
+	e = newEnv(t, newRepo(), "a")
+	e.gw.modelsErr = errBoom
+	if v, err := e.svc.Settings(t.Context()); err != nil || v.Prices.Basis != domain.BasisNone {
+		t.Errorf("no price list = %+v, %v", v.Prices, err)
+	}
+	e = newEnv(t, newRepo(), "a")
+	svc := app.New(e.repo, gateways{gw: e.gw, gatewayErr: errBoom}, e.dir, e.clock.Now, app.Config{}, func(uuid.UUID, error) {})
+	if v, err := svc.Settings(t.Context()); err != nil || v.Prices.Basis != domain.BasisNone {
+		t.Errorf("no gateway = %+v, %v", v.Prices, err)
+	}
+	for _, op := range []string{"Runs", "Answers"} {
+		e := newEnv(t, newRepo(), "a")
+		e.repo.settings.Providers = []string{"openai"}
+		if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+			t.Fatal(err)
+		}
+		e.repo.failOn[op] = true
+		if _, err := e.svc.Settings(t.Context()); !errors.Is(err, errBoom) {
+			t.Errorf("%s failing: %v", op, err)
+		}
+	}
+}
+
+func TestThePricesCountAProviderAddedSinceTheRun(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	e.repo.settings.Providers = []string{"openai", "google"}
+	v, err := e.svc.Settings(t.Context())
+	if err != nil || v.Prices.Basis != domain.BasisRun || len(v.Prices.Providers) != 2 || v.Prices.Providers[1].Provider != "google" {
+		t.Fatalf("prices = %+v, %v", v.Prices, err)
+	}
+	e.gw.modelsErr = errBoom
+	if v, err := e.svc.Settings(t.Context()); err != nil || len(v.Prices.Providers) != 1 {
+		t.Errorf("without the price list = %+v, %v", v.Prices, err)
+	}
+}

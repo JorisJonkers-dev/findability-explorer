@@ -38,7 +38,180 @@ tags:
     description: >-
       The Prompt test: whether AI assistants name Tribelt when a buyer asks, measured by Prompt
       runs of a fixed, versioned prompt set on the cheapest model of each large provider.
+  - name: insight
+    description: >-
+      How Tribelt stands against its competitors, its belt families against the field, and the
+      plan, all computed from the newest Prompt runs, scans and research.
 paths:
+  /api/v1/ai-search:
+    get:
+      operationId: getAiSearchSummary
+      summary: Get the AI search summary
+      description: >-
+        Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the
+        competitors the newest run names most; which crawlers tribelt.nl's newest scan lets in,
+        with the lab behind each and what it feeds; the competitors that keep crawlers out; and
+        Tribelt among the best-prepared competitors by readiness checks passed out of five.
+      tags: [insight]
+      responses:
+        "200":
+          description: The summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSearchSummary"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/plan:
+    get:
+      operationId: getPlan
+      summary: Get the plan
+      description: >-
+        The plan's improvements in order, each with whether it is done, the measure it moves and
+        the competitor to look at (the leader of that measure). An improvement a scan of
+        tribelt.nl can check is done by the latest scan; the others are ticked off by hand. Also
+        the numbers to watch against their targets, and the competitors to keep an eye on.
+      tags: [insight]
+      responses:
+        "200":
+          description: The plan.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/plan/improvements/{improvementId}:
+    put:
+      operationId: tickImprovement
+      summary: Tick an improvement off, or undo the tick
+      description: >-
+        Administrators only. Marks an improvement no scan can check as done, recording who and
+        when, or as not done again. 404 for an unknown improvement; 422 for one a scan of
+        tribelt.nl checks.
+      tags: [admin]
+      parameters:
+        - name: improvementId
+          in: path
+          required: true
+          description: The improvement's id.
+          schema:
+            type: string
+            maxLength: 60
+            pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      requestBody:
+        required: true
+        description: Whether it is done.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImprovementTick"
+            example:
+              done: true
+      responses:
+        "200":
+          description: The plan, with the tick.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/plan/targets:
+    put:
+      operationId: setPlanTargets
+      summary: Set the plan's targets
+      description: >-
+        Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions
+        from 0 to 1, readiness checks 0 to 5 in halves, terms and citations whole numbers. 422
+        when one is out of range, and nothing is stored.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The targets to set.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanTargetsChange"
+            example:
+              targets:
+                - target: termsUsed
+                  value: 40
+      responses:
+        "200":
+          description: The plan, with the targets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/products:
+    get:
+      operationId: getProducts
+      summary: Get Tribelt's belt families against the field
+      description: >-
+        For each of Tribelt's belt families: Tribelt's own names for it, the competitors that sell
+        it with their names for it, the terminology map's terms for it with how many companies use
+        each and whether Tribelt's site does, and how the newest Prompt run's answers about it
+        treat Tribelt, per scope and by who they name. The standouts say which family the most
+        competitors sell, whose terms Tribelt uses least, and whose answers name Tribelt most.
+      tags: [insight]
+      responses:
+        "200":
+          description: The families.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductsOverview"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/standings:
+    get:
+      operationId: getStandings
+      summary: Get how Tribelt stands against its competitors
+      description: >-
+        Compares Tribelt with its competitors on each measure, from the newest Prompt run and each
+        company's newest scan: Tribelt's value, the median over the competitors with data, and the
+        leader, the competitor with the best value (a tie goes to the name first alphabetically).
+        Tribelt, its group companies and the mirror are never the median or the leader. Shares
+        are fractions from 0 to 1.
+      tags: [insight]
+      responses:
+        "200":
+          description: The standings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Standings"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/terms:
     get:
       operationId: searchTerms
@@ -154,6 +327,47 @@ paths:
         "403":
           $ref: "#/components/responses/Problem"
         "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitors/batch:
+    post:
+      operationId: addCompetitors
+      summary: Add several competitors at once
+      description: >-
+        Administrators only. Adds the companies in order and says per item what became of it:
+        added; skipped as a duplicate when a known company, or an earlier item, has its website's
+        host or its name; or rejected without a valid name or website. An item from a competitor
+        candidate records the candidate as added. With `scan`, the added companies are scanned
+        straight away. 422 for no item or more than 100.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The companies to add.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompetitorBatchRequest"
+            example:
+              items:
+                - name: Intralox
+                  url: https://www.intralox.com
+                  candidateId: 3a7bd3e2360a9f01
+              scan: true
+      responses:
+        "200":
+          description: What became of each item, and how many scans started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorBatch"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
           $ref: "#/components/responses/Problem"
         "422":
           $ref: "#/components/responses/Problem"
@@ -405,6 +619,29 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/review:
+    post:
+      operationId: startTermReview
+      summary: Let the language model review the waiting candidates now
+      description: >-
+        Administrators only. Claude Haiku, on an Anthropic key, reviews every waiting candidate it
+        has not reviewed yet, in the background, as it does every ten minutes. It decides the phrases it is
+        sure about, as the language model, and leaves the rest waiting with its suggestion. Returns
+        the review's state.
+      tags: [admin]
+      responses:
+        "202":
+          description: The review is under way.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermReviewState"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/term-candidates/{candidateId}/accept:
     post:
       operationId: acceptTermCandidate
@@ -605,15 +842,15 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
-  /api/v1/admin/analyses/{analysisId}/readiness-files:
+  /api/v1/analyses/{analysisId}/readiness-files:
     get:
       operationId: getReadinessFiles
       summary: Get the raw files a scan read its AI readiness from
       description: >-
-        Administrators only. Returns the robots.txt, llms.txt and llms-full.txt the site served to
-        the scan, each capped at 100 KB, to check the classification against. 404 when the scan
-        recorded no AI readiness.
-      tags: [admin]
+        Returns the robots.txt, llms.txt and llms-full.txt the site served to the scan, each
+        capped at 100 KB, to check the classification against. They are public on the site, so
+        every signed-in account reads them. 404 when the scan recorded no AI readiness.
+      tags: [analyses]
       parameters:
         - name: analysisId
           in: path
@@ -732,6 +969,53 @@ paths:
         "401":
           $ref: "#/components/responses/Problem"
         "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-runs/{runId}/retry:
+    post:
+      operationId: retryPromptRun
+      summary: Ask a Prompt run's failed answers again
+      description: >-
+        Administrators only. Asks a finished run's failed and missing answers again, or only the
+        one question of one provider and mode named, in the same run: with the run's prompt set
+        and models, each new answer replacing the failed one, what the failed try cost still
+        counted. It runs in the background and stops at the month's budget like any run. 404 for
+        a run nobody knows; 409 while a run is running or once the month's budget is spent; 422
+        when nothing is left to ask, the run asked an earlier set of questions, or no OpenRouter
+        key is chosen.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        description: Every failed answer when empty, or the one question to ask again.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptRetryRequest"
+            example:
+              promptId: eyelink-application-twente
+              provider: openai
+              mode: web
+      responses:
+        "202":
+          description: The run, running again, with how many answers it asks and what they should cost.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptRetry"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
           $ref: "#/components/responses/Problem"
         "409":
           $ref: "#/components/responses/Problem"
@@ -1466,6 +1750,83 @@ components:
         benchmark), or a competitor. Only competitors count as competitors.
       type: string
       enum: [tribelt, mirror, group, competitor]
+    NewCompetitorItem:
+      description: One company of a batch; one without a valid name or website is rejected on its own.
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 300
+          description: The company's name.
+          example: Intralox
+        url:
+          type: string
+          maxLength: 500
+          description: Its website, an http or https address on a public host.
+          example: https://www.intralox.com
+        candidateId:
+          $ref: "#/components/schemas/CompetitorCandidateId"
+    CompetitorBatchRequest:
+      description: Companies to add at once.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          description: The companies, in order.
+          items:
+            $ref: "#/components/schemas/NewCompetitorItem"
+        scan:
+          type: boolean
+          description: Whether to scan the added companies straight away.
+          example: true
+    CompetitorBatchOutcome:
+      description: What became of one item - added, skipped as a duplicate, or rejected.
+      type: string
+      enum: [added, duplicate, rejected]
+    CompetitorBatchItem:
+      description: One item's outcome.
+      type: object
+      additionalProperties: false
+      required: [name, outcome]
+      properties:
+        name:
+          type: string
+          maxLength: 300
+          description: The name as added, or as sent.
+          example: Intralox
+        outcome:
+          $ref: "#/components/schemas/CompetitorBatchOutcome"
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        reason:
+          type: string
+          maxLength: 300
+          description: Why it was skipped or rejected.
+          example: Add its website first.
+    CompetitorBatch:
+      description: What a batch did.
+      type: object
+      additionalProperties: false
+      required: [items, scans]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          description: Each item's outcome, in order.
+          items:
+            $ref: "#/components/schemas/CompetitorBatchItem"
+        scans:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many scans started.
+          example: 2
     NewCompetitor:
       description: A company to add.
       type: object
@@ -2672,6 +3033,82 @@ components:
           example: "2026-10-23T09:30:00Z"
         decision:
           $ref: "#/components/schemas/TermDecision"
+        verdict:
+          $ref: "#/components/schemas/TermVerdict"
+    TermVerdict:
+      description: >-
+        The language model's review of a candidate. A sure verdict is also its decision; an unsure
+        one leaves the candidate waiting for a person, with the term it suggests.
+      type: object
+      additionalProperties: false
+      required: [accept, sure, reason, model, at]
+      properties:
+        accept:
+          type: boolean
+          description: Whether it would add the phrase to the map.
+          example: true
+        sure:
+          type: boolean
+          description: Whether it was sure; when not, a person decides.
+          example: false
+        reason:
+          type: string
+          maxLength: 500
+          description: Why, in one sentence.
+          example: Buyers search for this kind of belt.
+        term:
+          $ref: "#/components/schemas/TermSuggestion"
+        model:
+          type: string
+          maxLength: 200
+          description: The model that reviewed it.
+          example: claude-haiku-5-5
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-10-27T09:30:00Z"
+    TermSuggestion:
+      description: The term the language model would add, as the map would hold it.
+      type: object
+      additionalProperties: false
+      required: [term, language, family, tier]
+      properties:
+        term:
+          type: string
+          maxLength: 200
+          description: The term.
+          example: spiral freezer belt
+        language:
+          $ref: "#/components/schemas/Language"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+    TermReviewState:
+      description: How far the language model is with the waiting candidates.
+      type: object
+      additionalProperties: false
+      required: [running, waiting]
+      properties:
+        running:
+          type: boolean
+          description: Whether it is reviewing now.
+          example: true
+        waiting:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many waiting candidates it has not reviewed yet.
+          example: 663
+        problem:
+          description: >-
+            Why its last review stopped short - noModel (no Anthropic key is set up) or failed
+            (the model or its provider failed). Absent when it went well.
+          type: string
+          enum: [noModel, failed]
     TermCandidateCounts:
       description: How many candidates have each status.
       type: object
@@ -2700,10 +3137,10 @@ components:
           description: Rejected candidates.
           example: 7
     TermCandidateList:
-      description: The candidates with one status.
+      description: The candidates with one status, and how far the language model is with them.
       type: object
       additionalProperties: false
-      required: [items, counts]
+      required: [items, counts, review]
       properties:
         items:
           type: array
@@ -2713,6 +3150,8 @@ components:
             $ref: "#/components/schemas/TermCandidate"
         counts:
           $ref: "#/components/schemas/TermCandidateCounts"
+        review:
+          $ref: "#/components/schemas/TermReviewState"
     TermAcceptance:
       description: A candidate as it joins the terminology map.
       type: object
@@ -2922,6 +3361,674 @@ components:
           maximum: 100
           description: How many recommendations the site does not follow, each blocked crawler included.
           example: 3
+    FollowedCompany:
+      description: A company the AI search trend follows.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Ashworth
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+    ShareTrendPoint:
+      description: One Prompt run in the trend.
+      type: object
+      additionalProperties: false
+      required: [runStartedAt, shares]
+      properties:
+        runStartedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the run started.
+          example: "2026-11-02T06:00:00Z"
+        shares:
+          type: array
+          maxItems: 10
+          description: The share of the run's answers naming each followed company, in the order of `followed`, from 0 to 1.
+          items:
+            type: number
+            format: double
+            minimum: 0
+            maximum: 1
+            example: 0.24
+    CrawlerFeeds:
+      description: What a crawler feeds - answers AI assistants give today, or what future models know.
+      type: string
+      enum: [today, future]
+    TribeltCrawler:
+      description: A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
+      type: object
+      additionalProperties: false
+      required: [bot, lab, gets, feeds]
+      properties:
+        bot:
+          type: string
+          maxLength: 40
+          description: Its robots.txt token.
+          example: OAI-SearchBot
+        lab:
+          type: string
+          maxLength: 60
+          description: Who runs it.
+          example: OpenAI
+        gets:
+          type: string
+          maxLength: 200
+          description: What letting it in gets Tribelt.
+          example: Links in ChatGPT search answers
+        feeds:
+          $ref: "#/components/schemas/CrawlerFeeds"
+        access:
+          $ref: "#/components/schemas/CrawlerAccess"
+    KeepingOut:
+      description: A competitor whose robots.txt keeps crawlers out of the whole site.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, blocked]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The competitor's name.
+          example: Wire Belt Company
+        blocked:
+          type: array
+          maxItems: 20
+          description: The crawlers it keeps out.
+          items:
+            type: string
+            maxLength: 40
+            example: GPTBot
+    ReadinessRank:
+      description: A company in the readiness ranking.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role, score]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Märtens Transportbänder
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        score:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+          description: Readiness checks passed out of five, in halves.
+          example: 3.5
+    AiSearchSummary:
+      description: The AI search summary.
+      type: object
+      additionalProperties: false
+      required: [goal, followed, trend, crawlers, keepingOut, ranking, sites, questions, providers]
+      properties:
+        goal:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of answers Tribelt aims to be named in.
+          example: 0.4
+        followed:
+          type: array
+          maxItems: 10
+          description: The companies the trend follows - Tribelt, then the most named competitors.
+          items:
+            $ref: "#/components/schemas/FollowedCompany"
+        trend:
+          type: array
+          maxItems: 50
+          description: The newest runs, oldest first.
+          items:
+            $ref: "#/components/schemas/ShareTrendPoint"
+        crawlers:
+          type: array
+          maxItems: 20
+          description: Every crawler a scan records, those that feed answers today first.
+          items:
+            $ref: "#/components/schemas/TribeltCrawler"
+        keepingOut:
+          type: array
+          maxItems: 300
+          description: The competitors that keep crawlers out, most crawlers first.
+          items:
+            $ref: "#/components/schemas/KeepingOut"
+        ranking:
+          type: array
+          maxItems: 20
+          description: Tribelt among the best-prepared competitors, highest score first.
+          items:
+            $ref: "#/components/schemas/ReadinessRank"
+        sites:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many sites have a recorded AI readiness.
+          example: 41
+        questions:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many buyer questions the newest run asked; 0 before any run.
+          example: 20
+        providers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: How many providers the newest run asked; 0 before any run.
+          example: 5
+    PlanImprovement:
+      description: One improvement of the plan.
+      type: object
+      additionalProperties: false
+      required: [id, title, moves, measure, auto, done, why, steps, doneWhen, parts]
+      properties:
+        id:
+          type: string
+          maxLength: 60
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+          description: Its id.
+          example: llms-files
+        title:
+          type: string
+          maxLength: 200
+          description: What to do.
+          example: Add llms.txt and llms-full.txt
+        moves:
+          type: string
+          maxLength: 200
+          description: What it moves, in words.
+          example: AI readiness
+        measure:
+          $ref: "#/components/schemas/StandingMeasure"
+        auto:
+          type: boolean
+          description: Whether the latest scan of tribelt.nl decides that it is done.
+          example: true
+        done:
+          type: boolean
+          description: Whether it is done.
+          example: false
+        tickedBy:
+          type: string
+          maxLength: 200
+          description: Who ticked it off; only for one ticked by hand.
+          example: joris
+        tickedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-11-02T09:00:00Z"
+        why:
+          type: string
+          maxLength: 500
+          description: Why it matters.
+          example: llms.txt gives AI tools a short map of the site in plain text.
+        steps:
+          type: array
+          maxItems: 10
+          description: How to do it, step by step.
+          items:
+            type: string
+            maxLength: 300
+            example: Publish both at the root of tribelt.nl, next to robots.txt.
+        doneWhen:
+          type: string
+          maxLength: 300
+          description: When it counts as done.
+          example: tribelt.nl/llms.txt and tribelt.nl/llms-full.txt both open.
+        parts:
+          type: array
+          maxItems: 10
+          description: >-
+            What the latest scan of tribelt.nl found of an improvement a scan checks; empty for one
+            ticked by hand, or before any scan.
+          items:
+            $ref: "#/components/schemas/PlanPart"
+        tribelt:
+          type: number
+          format: double
+          minimum: 0
+          description: Tribelt's value on the measure it moves; absent without data.
+          example: 2.5
+        leader:
+          $ref: "#/components/schemas/MeasureLeader"
+    PlanPart:
+      description: One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
+      type: object
+      additionalProperties: false
+      required: [name, present]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: What it looks for.
+          example: llms-full.txt
+        present:
+          type: boolean
+          description: Whether the latest scan found it.
+          example: false
+    PlanTarget:
+      description: >-
+        A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming
+        Tribelt), readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations
+        (web answers of a run citing tribelt.nl).
+      type: string
+      enum: [aiShareOfVoice, twenteShareOfVoice, readinessChecks, termsUsed, citations]
+    WatchedNumber:
+      description: A number to watch, now and its target.
+      type: object
+      additionalProperties: false
+      required: [target, goal]
+      properties:
+        target:
+          $ref: "#/components/schemas/PlanTarget"
+        now:
+          type: number
+          format: double
+          minimum: 0
+          description: Its value now; absent without data.
+          example: 0.24
+        goal:
+          type: number
+          format: double
+          minimum: 0
+          description: Its target.
+          example: 0.4
+    EyeOnReason:
+      description: Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
+      type: string
+      enum: [mostNamed, bestPrepared, twente]
+    EyeOn:
+      description: A competitor to keep an eye on.
+      type: object
+      additionalProperties: false
+      required: [why, leader]
+      properties:
+        why:
+          $ref: "#/components/schemas/EyeOnReason"
+        leader:
+          $ref: "#/components/schemas/MeasureLeader"
+    Plan:
+      description: The plan as it stands.
+      type: object
+      additionalProperties: false
+      required: [catalogueVersion, improvements, watched, eyeOn]
+      properties:
+        catalogueVersion:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000
+          description: The version of the improvements catalogue.
+          example: 1
+        improvements:
+          type: array
+          maxItems: 50
+          description: The improvements, in order.
+          items:
+            $ref: "#/components/schemas/PlanImprovement"
+        watched:
+          type: array
+          maxItems: 20
+          description: The numbers to watch.
+          items:
+            $ref: "#/components/schemas/WatchedNumber"
+        eyeOn:
+          type: array
+          maxItems: 10
+          description: The competitors to keep an eye on.
+          items:
+            $ref: "#/components/schemas/EyeOn"
+    ImprovementTick:
+      description: Whether an improvement is done.
+      type: object
+      additionalProperties: false
+      required: [done]
+      properties:
+        done:
+          type: boolean
+          description: Done, or not done again.
+          example: true
+    PlanTargetValue:
+      description: One target to set.
+      type: object
+      additionalProperties: false
+      required: [target, value]
+      properties:
+        target:
+          $ref: "#/components/schemas/PlanTarget"
+        value:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10000
+          description: Its new value.
+          example: 40
+    PlanTargetsChange:
+      description: Targets to set.
+      type: object
+      additionalProperties: false
+      required: [targets]
+      properties:
+        targets:
+          type: array
+          minItems: 1
+          maxItems: 10
+          description: The targets.
+          items:
+            $ref: "#/components/schemas/PlanTargetValue"
+    ProductSeller:
+      description: A competitor that sells a family, with its own names for it.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, names]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The competitor's name.
+          example: Twentebelt
+        websiteUrl:
+          type: string
+          format: uri
+          maxLength: 500
+          description: Its website.
+          example: https://www.twentebelt.com/
+        names:
+          type: array
+          maxItems: 100
+          description: Its names for the family.
+          items:
+            type: string
+            maxLength: 300
+            example: Oogbanden
+    ProductTerm:
+      description: A term of the map for a family.
+      type: object
+      additionalProperties: false
+      required: [term, language, tier, usedBy, usedByTribelt]
+      properties:
+        term:
+          type: string
+          maxLength: 300
+          description: The term.
+          example: draadogenband
+        language:
+          type: string
+          maxLength: 10
+          pattern: "^[a-z]{2}(-[A-Z]{2})?$"
+          description: Its language.
+          example: nl
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        usedBy:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many companies use it.
+          example: 9
+        usedByTribelt:
+          type: boolean
+          description: Whether Tribelt's own site uses it.
+          example: false
+    ProductScope:
+      description: How many of a family's answers in one scope name Tribelt.
+      type: object
+      additionalProperties: false
+      required: [scope, answers, named]
+      properties:
+        scope:
+          $ref: "#/components/schemas/PromptScope"
+        answers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The answers in the scope.
+          example: 10
+        named:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Those naming Tribelt.
+          example: 3
+    ProductMention:
+      description: A company a family's answers name, and the share of them that do.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role, share]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        share:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the family's answers naming it.
+          example: 0.6
+    Product:
+      description: One belt family against the field.
+      type: object
+      additionalProperties: false
+      required: [family, tribeltNames, sellers, terms, termsUsed, answers, named, byScope, mostNamed]
+      properties:
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+        tribeltNames:
+          type: array
+          maxItems: 100
+          description: Tribelt's own names for it.
+          items:
+            type: string
+            maxLength: 300
+            example: Draadogenbanden
+        sellers:
+          type: array
+          maxItems: 500
+          description: The competitors that sell it, by name.
+          items:
+            $ref: "#/components/schemas/ProductSeller"
+        terms:
+          type: array
+          maxItems: 2000
+          description: The map's terms for it, the most used first.
+          items:
+            $ref: "#/components/schemas/ProductTerm"
+        termsUsed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 2000
+          description: How many of the terms Tribelt's site uses.
+          example: 4
+        answers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The newest run's answers about it; 0 before any run.
+          example: 40
+        named:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Those naming Tribelt.
+          example: 12
+        byScope:
+          type: array
+          maxItems: 10
+          description: The answers per scope.
+          items:
+            $ref: "#/components/schemas/ProductScope"
+        mostNamed:
+          type: array
+          maxItems: 10
+          description: The companies its answers name most.
+          items:
+            $ref: "#/components/schemas/ProductMention"
+    ProductFinding:
+      description: >-
+        What stands out - crowded (the family the most competitors sell), fewestTerms (whose
+        terms Tribelt uses least) or bestInAI (whose answers name Tribelt most).
+      type: string
+      enum: [crowded, fewestTerms, bestInAI]
+    ProductStandout:
+      description: A finding and the family it is about.
+      type: object
+      additionalProperties: false
+      required: [finding, family]
+      properties:
+        finding:
+          $ref: "#/components/schemas/ProductFinding"
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+    ProductsOverview:
+      description: Tribelt's belt families against the field.
+      type: object
+      additionalProperties: false
+      required: [items, standouts]
+      properties:
+        items:
+          type: array
+          maxItems: 10
+          description: Every family, in order.
+          items:
+            $ref: "#/components/schemas/Product"
+        standouts:
+          type: array
+          maxItems: 10
+          description: What stands out among them.
+          items:
+            $ref: "#/components/schemas/ProductStandout"
+    StandingMeasure:
+      description: >-
+        A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the
+        share of answers naming the company, citationShare the share of web answers citing its
+        site, readinessChecks the AI readiness checks its site passes out of five (half for
+        crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and
+        termsUsed the map terms its newest scan found.
+      type: string
+      enum: [aiShareOfVoice, citationShare, readinessChecks, sitemapPages, termsUsed]
+      example: aiShareOfVoice
+    MeasureLeader:
+      description: The competitor with the best value on a measure.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, value]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The competitor's name.
+          example: Ashworth
+        value:
+          type: number
+          format: double
+          minimum: 0
+          description: Its value.
+          example: 0.57
+    Standing:
+      description: Tribelt against its competitors on one measure.
+      type: object
+      additionalProperties: false
+      required: [measure, competitors, trails, leads]
+      properties:
+        measure:
+          $ref: "#/components/schemas/StandingMeasure"
+        tribelt:
+          type: number
+          format: double
+          minimum: 0
+          description: Tribelt's value; absent without data.
+          example: 0.24
+        median:
+          type: number
+          format: double
+          minimum: 0
+          description: The median over the competitors with data, the typical competitor; absent when none has data.
+          example: 0.17
+        leader:
+          $ref: "#/components/schemas/MeasureLeader"
+        competitors:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many competitors have data on the measure.
+          example: 38
+        trails:
+          type: boolean
+          description: Whether the leader is ahead of Tribelt; false when either has no value.
+          example: true
+        leads:
+          type: boolean
+          description: Whether Tribelt is level with or ahead of the leader.
+          example: false
+    Standings:
+      description: How Tribelt stands against its competitors now.
+      type: object
+      additionalProperties: false
+      required: [measures, trailing, open]
+      properties:
+        measures:
+          type: array
+          maxItems: 20
+          description: Every measure, in order.
+          items:
+            $ref: "#/components/schemas/Standing"
+        trailing:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 20
+          description: How many measures Tribelt trails the leader on.
+          example: 4
+        open:
+          type: array
+          maxItems: 10
+          description: The first improvements of the plan not done yet, in order.
+          items:
+            $ref: "#/components/schemas/PlanImprovement"
+        runStartedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the Prompt run the AI measures come from started; absent before any.
+          example: "2026-11-02T06:00:00Z"
     AiReadinessBrief:
       description: A scan's AI readiness in brief.
       type: object
@@ -3042,6 +4149,44 @@ components:
         region's language, or Dutch, German or English with no region.
       type: string
       enum: [twente, netherlands, germany, dutch, german, english]
+    PromptRetryRequest:
+      description: >-
+        What to ask again - every failed answer of the run when empty, or the one question of one
+        provider and mode when all three are given.
+      type: object
+      additionalProperties: false
+      properties:
+        promptId:
+          type: string
+          maxLength: 80
+          pattern: "^[a-z0-9_-]+$"
+          description: The question's id.
+          example: eyelink-application-twente
+        provider:
+          type: string
+          maxLength: 40
+          pattern: "^[a-z0-9][a-z0-9-]*$"
+          description: The provider whose model to ask.
+          example: openai
+        mode:
+          $ref: "#/components/schemas/PromptMode"
+    PromptRetry:
+      description: A run asked again.
+      type: object
+      additionalProperties: false
+      required: [run, tasks, estimatedCostUsd]
+      properties:
+        run:
+          $ref: "#/components/schemas/PromptRun"
+        tasks:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 10000
+          description: How many answers it asks again.
+          example: 7
+        estimatedCostUsd:
+          $ref: "#/components/schemas/Usd"
     PromptMode:
       description: How a prompt is asked - from the model's own knowledge, or with live web search.
       type: string
@@ -3458,7 +4603,7 @@ components:
       description: One model's answer to one prompt, with how it was read.
       type: object
       additionalProperties: false
-      required: [id, promptId, family, kind, scope, language, prompt, promptSetVersion, provider, model, mode, text, citations, at, costUsd]
+      required: [id, promptId, family, kind, scope, language, prompt, promptSetVersion, provider, model, mode, text, citations, at, costUsd, inputTokens, outputTokens]
       properties:
         id:
           type: string
@@ -3532,6 +4677,20 @@ components:
           example: "2026-11-01T06:10:00Z"
         costUsd:
           $ref: "#/components/schemas/Usd"
+        inputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000
+          description: The tokens asking and reading the answer read.
+          example: 1840
+        outputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000
+          description: The tokens asking and reading the answer wrote.
+          example: 612
         extraction:
           $ref: "#/components/schemas/PromptExtraction"
     PromptAnswerList:
@@ -3627,11 +4786,77 @@ components:
           description: The prompts.
           items:
             $ref: "#/components/schemas/PromptQuestion"
+    PromptPriceBasis:
+      description: >-
+        Where the prices come from - run (the latest run's own costs), catalogue (OpenRouter's
+        price list times typical tokens, before any run) or none (nothing to go by).
+      type: string
+      enum: [run, catalogue, none]
+    PromptProviderPrice:
+      description: What one provider's answers cost.
+      type: object
+      additionalProperties: false
+      required: [provider, model, knowledgeUsd, webUsd, runUsd]
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+          description: The provider.
+          example: openai
+        model:
+          type: string
+          maxLength: 200
+          description: The model it asks.
+          example: openai/gpt-oss-20b
+        fallback:
+          type: string
+          maxLength: 200
+          description: The paid model asked when the free one cannot answer.
+          example: google/gemini-2.5-flash-lite
+        knowledgeUsd:
+          $ref: "#/components/schemas/Usd"
+        webUsd:
+          $ref: "#/components/schemas/Usd"
+        runUsd:
+          $ref: "#/components/schemas/Usd"
+    PromptPrices:
+      description: What Prompt runs cost, per provider, per run and per month against the budget.
+      type: object
+      additionalProperties: false
+      required: [basis, providers, readingUsd, runUsd, runsPerMonth, monthUsd, budgetUsd, overBudget]
+      properties:
+        basis:
+          $ref: "#/components/schemas/PromptPriceBasis"
+        providers:
+          type: array
+          maxItems: 20
+          description: Per provider, one answer from its own knowledge, one with web search, and a run.
+          items:
+            $ref: "#/components/schemas/PromptProviderPrice"
+        readingUsd:
+          $ref: "#/components/schemas/Usd"
+        runUsd:
+          $ref: "#/components/schemas/Usd"
+        runsPerMonth:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 31
+          description: How many scheduled runs the cadence starts in an average month.
+          example: 4.33
+        monthUsd:
+          $ref: "#/components/schemas/Usd"
+        budgetUsd:
+          $ref: "#/components/schemas/Usd"
+        overBudget:
+          type: boolean
+          description: Whether a month of runs would cost more than the budget.
+          example: true
     PromptTestSettings:
       description: The Prompt test's settings.
       type: object
       additionalProperties: false
-      required: [providers, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel]
+      required: [providers, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel, models, keyWorks, prices]
       properties:
         credentialId:
           $ref: "#/components/schemas/LlmCredentialId"
@@ -3664,6 +4889,18 @@ components:
           maxLength: 200
           description: The one model that reads every answer, fixed in this release.
           example: google/gemini-2.5-flash-lite
+        models:
+          type: array
+          maxItems: 20
+          description: The models the latest run asked, each provider's with its fallback; empty before any run.
+          items:
+            $ref: "#/components/schemas/PromptModelChoice"
+        keyWorks:
+          type: boolean
+          description: Whether the chosen OpenRouter key can be read and used.
+          example: true
+        prices:
+          $ref: "#/components/schemas/PromptPrices"
     PromptTestSettingsChange:
       description: The settings to change; at least one.
       type: object

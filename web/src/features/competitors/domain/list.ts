@@ -59,11 +59,11 @@ export function companyKind(company: Pick<Competitor, 'groupCompany'>): string {
   return company.groupCompany ? "Tribelt's own group" : 'Competitor'
 }
 
-/** The line under a company's name: "Netherlands · website in 2 languages". */
+/** The line under a company's name: "Netherlands. Its website is in 2 languages." */
 export function whereLine(company: Pick<Competitor, 'country' | 'languages'>): string {
   const count = languageCount(company.languages)
-  const site = count > 0 ? ` · website in ${String(count)} ${count === 1 ? 'language' : 'languages'}` : ''
-  return `${countryName(company.country)}${site}`
+  const site = count > 0 ? ` Its website is in ${String(count)} ${count === 1 ? 'language' : 'languages'}.` : ''
+  return `${countryName(company.country)}.${site}`
 }
 
 export type BeltRow = { family: BeltFamily; label: string; name: string; offered: boolean }

@@ -111,6 +111,22 @@ type AddCompetitorUnprocessableEntity ProblemStatusCode
 
 func (*AddCompetitorUnprocessableEntity) addCompetitorRes() {}
 
+type AddCompetitorsBadRequest ProblemStatusCode
+
+func (*AddCompetitorsBadRequest) addCompetitorsRes() {}
+
+type AddCompetitorsForbidden ProblemStatusCode
+
+func (*AddCompetitorsForbidden) addCompetitorsRes() {}
+
+type AddCompetitorsUnauthorized ProblemStatusCode
+
+func (*AddCompetitorsUnauthorized) addCompetitorsRes() {}
+
+type AddCompetitorsUnprocessableEntity ProblemStatusCode
+
+func (*AddCompetitorsUnprocessableEntity) addCompetitorsRes() {}
+
 type AddLlmCredentialBadRequest ProblemStatusCode
 
 func (*AddLlmCredentialBadRequest) addLlmCredentialRes() {}
@@ -381,6 +397,121 @@ func (s *AiReadinessTable) SetItems(val []AiReadinessRow) {
 }
 
 func (*AiReadinessTable) getAiReadinessRes() {}
+
+// The AI search summary.
+// Ref: #/components/schemas/AiSearchSummary
+type AiSearchSummary struct {
+	// The share of answers Tribelt aims to be named in.
+	Goal float64 `json:"goal"`
+	// The companies the trend follows - Tribelt, then the most named competitors.
+	Followed []FollowedCompany `json:"followed"`
+	// The newest runs, oldest first.
+	Trend []ShareTrendPoint `json:"trend"`
+	// Every crawler a scan records, those that feed answers today first.
+	Crawlers []TribeltCrawler `json:"crawlers"`
+	// The competitors that keep crawlers out, most crawlers first.
+	KeepingOut []KeepingOut `json:"keepingOut"`
+	// Tribelt among the best-prepared competitors, highest score first.
+	Ranking []ReadinessRank `json:"ranking"`
+	// How many sites have a recorded AI readiness.
+	Sites int32 `json:"sites"`
+	// How many buyer questions the newest run asked; 0 before any run.
+	Questions int32 `json:"questions"`
+	// How many providers the newest run asked; 0 before any run.
+	Providers int32 `json:"providers"`
+}
+
+// GetGoal returns the value of Goal.
+func (s *AiSearchSummary) GetGoal() float64 {
+	return s.Goal
+}
+
+// GetFollowed returns the value of Followed.
+func (s *AiSearchSummary) GetFollowed() []FollowedCompany {
+	return s.Followed
+}
+
+// GetTrend returns the value of Trend.
+func (s *AiSearchSummary) GetTrend() []ShareTrendPoint {
+	return s.Trend
+}
+
+// GetCrawlers returns the value of Crawlers.
+func (s *AiSearchSummary) GetCrawlers() []TribeltCrawler {
+	return s.Crawlers
+}
+
+// GetKeepingOut returns the value of KeepingOut.
+func (s *AiSearchSummary) GetKeepingOut() []KeepingOut {
+	return s.KeepingOut
+}
+
+// GetRanking returns the value of Ranking.
+func (s *AiSearchSummary) GetRanking() []ReadinessRank {
+	return s.Ranking
+}
+
+// GetSites returns the value of Sites.
+func (s *AiSearchSummary) GetSites() int32 {
+	return s.Sites
+}
+
+// GetQuestions returns the value of Questions.
+func (s *AiSearchSummary) GetQuestions() int32 {
+	return s.Questions
+}
+
+// GetProviders returns the value of Providers.
+func (s *AiSearchSummary) GetProviders() int32 {
+	return s.Providers
+}
+
+// SetGoal sets the value of Goal.
+func (s *AiSearchSummary) SetGoal(val float64) {
+	s.Goal = val
+}
+
+// SetFollowed sets the value of Followed.
+func (s *AiSearchSummary) SetFollowed(val []FollowedCompany) {
+	s.Followed = val
+}
+
+// SetTrend sets the value of Trend.
+func (s *AiSearchSummary) SetTrend(val []ShareTrendPoint) {
+	s.Trend = val
+}
+
+// SetCrawlers sets the value of Crawlers.
+func (s *AiSearchSummary) SetCrawlers(val []TribeltCrawler) {
+	s.Crawlers = val
+}
+
+// SetKeepingOut sets the value of KeepingOut.
+func (s *AiSearchSummary) SetKeepingOut(val []KeepingOut) {
+	s.KeepingOut = val
+}
+
+// SetRanking sets the value of Ranking.
+func (s *AiSearchSummary) SetRanking(val []ReadinessRank) {
+	s.Ranking = val
+}
+
+// SetSites sets the value of Sites.
+func (s *AiSearchSummary) SetSites(val int32) {
+	s.Sites = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *AiSearchSummary) SetQuestions(val int32) {
+	s.Questions = val
+}
+
+// SetProviders sets the value of Providers.
+func (s *AiSearchSummary) SetProviders(val int32) {
+	s.Providers = val
+}
+
+func (*AiSearchSummary) getAiSearchSummaryRes() {}
 
 // An analysis with its progress and results.
 // Ref: #/components/schemas/Analysis
@@ -1249,6 +1380,167 @@ func (s *Competitor) SetHomepageTitle(val string) {
 func (*Competitor) addCompetitorRes()    {}
 func (*Competitor) updateCompetitorRes() {}
 
+// What a batch did.
+// Ref: #/components/schemas/CompetitorBatch
+type CompetitorBatch struct {
+	// Each item's outcome, in order.
+	Items []CompetitorBatchItem `json:"items"`
+	// How many scans started.
+	Scans int32 `json:"scans"`
+}
+
+// GetItems returns the value of Items.
+func (s *CompetitorBatch) GetItems() []CompetitorBatchItem {
+	return s.Items
+}
+
+// GetScans returns the value of Scans.
+func (s *CompetitorBatch) GetScans() int32 {
+	return s.Scans
+}
+
+// SetItems sets the value of Items.
+func (s *CompetitorBatch) SetItems(val []CompetitorBatchItem) {
+	s.Items = val
+}
+
+// SetScans sets the value of Scans.
+func (s *CompetitorBatch) SetScans(val int32) {
+	s.Scans = val
+}
+
+func (*CompetitorBatch) addCompetitorsRes() {}
+
+// One item's outcome.
+// Ref: #/components/schemas/CompetitorBatchItem
+type CompetitorBatchItem struct {
+	// The name as added, or as sent.
+	Name         string                 `json:"name"`
+	Outcome      CompetitorBatchOutcome `json:"outcome"`
+	CompetitorId OptCompetitorId        `json:"competitorId"`
+	// Why it was skipped or rejected.
+	Reason OptString `json:"reason"`
+}
+
+// GetName returns the value of Name.
+func (s *CompetitorBatchItem) GetName() string {
+	return s.Name
+}
+
+// GetOutcome returns the value of Outcome.
+func (s *CompetitorBatchItem) GetOutcome() CompetitorBatchOutcome {
+	return s.Outcome
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CompetitorBatchItem) GetCompetitorId() OptCompetitorId {
+	return s.CompetitorId
+}
+
+// GetReason returns the value of Reason.
+func (s *CompetitorBatchItem) GetReason() OptString {
+	return s.Reason
+}
+
+// SetName sets the value of Name.
+func (s *CompetitorBatchItem) SetName(val string) {
+	s.Name = val
+}
+
+// SetOutcome sets the value of Outcome.
+func (s *CompetitorBatchItem) SetOutcome(val CompetitorBatchOutcome) {
+	s.Outcome = val
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CompetitorBatchItem) SetCompetitorId(val OptCompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetReason sets the value of Reason.
+func (s *CompetitorBatchItem) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// What became of one item - added, skipped as a duplicate, or rejected.
+// Ref: #/components/schemas/CompetitorBatchOutcome
+type CompetitorBatchOutcome string
+
+const (
+	CompetitorBatchOutcomeAdded     CompetitorBatchOutcome = "added"
+	CompetitorBatchOutcomeDuplicate CompetitorBatchOutcome = "duplicate"
+	CompetitorBatchOutcomeRejected  CompetitorBatchOutcome = "rejected"
+)
+
+// AllValues returns all CompetitorBatchOutcome values.
+func (CompetitorBatchOutcome) AllValues() []CompetitorBatchOutcome {
+	return []CompetitorBatchOutcome{
+		CompetitorBatchOutcomeAdded,
+		CompetitorBatchOutcomeDuplicate,
+		CompetitorBatchOutcomeRejected,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CompetitorBatchOutcome) MarshalText() ([]byte, error) {
+	switch s {
+	case CompetitorBatchOutcomeAdded:
+		return []byte(s), nil
+	case CompetitorBatchOutcomeDuplicate:
+		return []byte(s), nil
+	case CompetitorBatchOutcomeRejected:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CompetitorBatchOutcome) UnmarshalText(data []byte) error {
+	switch CompetitorBatchOutcome(data) {
+	case CompetitorBatchOutcomeAdded:
+		*s = CompetitorBatchOutcomeAdded
+		return nil
+	case CompetitorBatchOutcomeDuplicate:
+		*s = CompetitorBatchOutcomeDuplicate
+		return nil
+	case CompetitorBatchOutcomeRejected:
+		*s = CompetitorBatchOutcomeRejected
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Companies to add at once.
+// Ref: #/components/schemas/CompetitorBatchRequest
+type CompetitorBatchRequest struct {
+	// The companies, in order.
+	Items []NewCompetitorItem `json:"items"`
+	// Whether to scan the added companies straight away.
+	Scan OptBool `json:"scan"`
+}
+
+// GetItems returns the value of Items.
+func (s *CompetitorBatchRequest) GetItems() []NewCompetitorItem {
+	return s.Items
+}
+
+// GetScan returns the value of Scan.
+func (s *CompetitorBatchRequest) GetScan() OptBool {
+	return s.Scan
+}
+
+// SetItems sets the value of Items.
+func (s *CompetitorBatchRequest) SetItems(val []NewCompetitorItem) {
+	s.Items = val
+}
+
+// SetScan sets the value of Scan.
+func (s *CompetitorBatchRequest) SetScan(val OptBool) {
+	s.Scan = val
+}
+
 // A company the answers name that is not on the company list.
 // Ref: #/components/schemas/CompetitorCandidate
 type CompetitorCandidate struct {
@@ -1864,6 +2156,49 @@ func (s *CrawlerAccess) UnmarshalText(data []byte) error {
 	}
 }
 
+// What a crawler feeds - answers AI assistants give today, or what future models know.
+// Ref: #/components/schemas/CrawlerFeeds
+type CrawlerFeeds string
+
+const (
+	CrawlerFeedsToday  CrawlerFeeds = "today"
+	CrawlerFeedsFuture CrawlerFeeds = "future"
+)
+
+// AllValues returns all CrawlerFeeds values.
+func (CrawlerFeeds) AllValues() []CrawlerFeeds {
+	return []CrawlerFeeds{
+		CrawlerFeedsToday,
+		CrawlerFeedsFuture,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CrawlerFeeds) MarshalText() ([]byte, error) {
+	switch s {
+	case CrawlerFeedsToday:
+		return []byte(s), nil
+	case CrawlerFeedsFuture:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CrawlerFeeds) UnmarshalText(data []byte) error {
+	switch CrawlerFeeds(data) {
+	case CrawlerFeedsToday:
+		*s = CrawlerFeedsToday
+		return nil
+	case CrawlerFeedsFuture:
+		*s = CrawlerFeedsFuture
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type DeleteCompetitorBadRequest ProblemStatusCode
 
 func (*DeleteCompetitorBadRequest) deleteCompetitorRes() {}
@@ -1986,6 +2321,83 @@ func (s *Equivalent) SetSearchTerms(val []SearchTerm) {
 	s.SearchTerms = val
 }
 
+// A competitor to keep an eye on.
+// Ref: #/components/schemas/EyeOn
+type EyeOn struct {
+	Why    EyeOnReason   `json:"why"`
+	Leader MeasureLeader `json:"leader"`
+}
+
+// GetWhy returns the value of Why.
+func (s *EyeOn) GetWhy() EyeOnReason {
+	return s.Why
+}
+
+// GetLeader returns the value of Leader.
+func (s *EyeOn) GetLeader() MeasureLeader {
+	return s.Leader
+}
+
+// SetWhy sets the value of Why.
+func (s *EyeOn) SetWhy(val EyeOnReason) {
+	s.Why = val
+}
+
+// SetLeader sets the value of Leader.
+func (s *EyeOn) SetLeader(val MeasureLeader) {
+	s.Leader = val
+}
+
+// Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
+// Ref: #/components/schemas/EyeOnReason
+type EyeOnReason string
+
+const (
+	EyeOnReasonMostNamed    EyeOnReason = "mostNamed"
+	EyeOnReasonBestPrepared EyeOnReason = "bestPrepared"
+	EyeOnReasonTwente       EyeOnReason = "twente"
+)
+
+// AllValues returns all EyeOnReason values.
+func (EyeOnReason) AllValues() []EyeOnReason {
+	return []EyeOnReason{
+		EyeOnReasonMostNamed,
+		EyeOnReasonBestPrepared,
+		EyeOnReasonTwente,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s EyeOnReason) MarshalText() ([]byte, error) {
+	switch s {
+	case EyeOnReasonMostNamed:
+		return []byte(s), nil
+	case EyeOnReasonBestPrepared:
+		return []byte(s), nil
+	case EyeOnReasonTwente:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *EyeOnReason) UnmarshalText(data []byte) error {
+	switch EyeOnReason(data) {
+	case EyeOnReasonMostNamed:
+		*s = EyeOnReasonMostNamed
+		return nil
+	case EyeOnReasonBestPrepared:
+		*s = EyeOnReasonBestPrepared
+		return nil
+	case EyeOnReasonTwente:
+		*s = EyeOnReasonTwente
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // How many matching terms have one value of a facet.
 // Ref: #/components/schemas/FacetCount
 type FacetCount struct {
@@ -2054,6 +2466,45 @@ func (s *Facets) SetTiers(val []FacetCount) {
 // SetFamilies sets the value of Families.
 func (s *Facets) SetFamilies(val []FacetCount) {
 	s.Families = val
+}
+
+// A company the AI search trend follows.
+// Ref: #/components/schemas/FollowedCompany
+type FollowedCompany struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string      `json:"name"`
+	Role CompanyRole `json:"role"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *FollowedCompany) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *FollowedCompany) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *FollowedCompany) GetRole() CompanyRole {
+	return s.Role
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *FollowedCompany) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *FollowedCompany) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *FollowedCompany) SetRole(val CompanyRole) {
+	s.Role = val
 }
 
 type GetAnalysisBadRequest ProblemStatusCode
@@ -2136,6 +2587,23 @@ type GetReadinessFilesUnauthorized ProblemStatusCode
 
 func (*GetReadinessFilesUnauthorized) getReadinessFilesRes() {}
 
+// Whether an improvement is done.
+// Ref: #/components/schemas/ImprovementTick
+type ImprovementTick struct {
+	// Done, or not done again.
+	Done bool `json:"done"`
+}
+
+// GetDone returns the value of Done.
+func (s *ImprovementTick) GetDone() bool {
+	return s.Done
+}
+
+// SetDone sets the value of Done.
+func (s *ImprovementTick) SetDone(val bool) {
+	s.Done = val
+}
+
 // The kind of search a term represents.
 // Ref: #/components/schemas/IntentTier
 type IntentTier string
@@ -2198,6 +2666,46 @@ func (s *IntentTier) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// A competitor whose robots.txt keeps crawlers out of the whole site.
+// Ref: #/components/schemas/KeepingOut
+type KeepingOut struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The competitor's name.
+	Name string `json:"name"`
+	// The crawlers it keeps out.
+	Blocked []string `json:"blocked"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *KeepingOut) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *KeepingOut) GetName() string {
+	return s.Name
+}
+
+// GetBlocked returns the value of Blocked.
+func (s *KeepingOut) GetBlocked() []string {
+	return s.Blocked
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *KeepingOut) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *KeepingOut) SetName(val string) {
+	s.Name = val
+}
+
+// SetBlocked sets the value of Blocked.
+func (s *KeepingOut) SetBlocked(val []string) {
+	s.Blocked = val
 }
 
 // A phrase about metal belts that the site emphasises, scored by where and how often it appears.
@@ -3656,6 +4164,46 @@ func (s *Me) SetIsAdmin(val bool) {
 
 func (*Me) getMeRes() {}
 
+// The competitor with the best value on a measure.
+// Ref: #/components/schemas/MeasureLeader
+type MeasureLeader struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The competitor's name.
+	Name string `json:"name"`
+	// Its value.
+	Value float64 `json:"value"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *MeasureLeader) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *MeasureLeader) GetName() string {
+	return s.Name
+}
+
+// GetValue returns the value of Value.
+func (s *MeasureLeader) GetValue() float64 {
+	return s.Value
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *MeasureLeader) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *MeasureLeader) SetName(val string) {
+	s.Name = val
+}
+
+// SetValue sets the value of Value.
+func (s *MeasureLeader) SetValue(val float64) {
+	s.Value = val
+}
+
 // A website to analyse.
 // Ref: #/components/schemas/NewAnalysis
 type NewAnalysis struct {
@@ -3725,6 +4273,46 @@ func (s *NewCompetitor) SetName(val string) {
 // SetURL sets the value of URL.
 func (s *NewCompetitor) SetURL(val url.URL) {
 	s.URL = val
+}
+
+// One company of a batch; one without a valid name or website is rejected on its own.
+// Ref: #/components/schemas/NewCompetitorItem
+type NewCompetitorItem struct {
+	// The company's name.
+	Name string `json:"name"`
+	// Its website, an http or https address on a public host.
+	URL         OptString                `json:"url"`
+	CandidateId OptCompetitorCandidateId `json:"candidateId"`
+}
+
+// GetName returns the value of Name.
+func (s *NewCompetitorItem) GetName() string {
+	return s.Name
+}
+
+// GetURL returns the value of URL.
+func (s *NewCompetitorItem) GetURL() OptString {
+	return s.URL
+}
+
+// GetCandidateId returns the value of CandidateId.
+func (s *NewCompetitorItem) GetCandidateId() OptCompetitorCandidateId {
+	return s.CandidateId
+}
+
+// SetName sets the value of Name.
+func (s *NewCompetitorItem) SetName(val string) {
+	s.Name = val
+}
+
+// SetURL sets the value of URL.
+func (s *NewCompetitorItem) SetURL(val OptString) {
+	s.URL = val
+}
+
+// SetCandidateId sets the value of CandidateId.
+func (s *NewCompetitorItem) SetCandidateId(val OptCompetitorCandidateId) {
+	s.CandidateId = val
 }
 
 // An API key to add.
@@ -4089,6 +4677,52 @@ func (o OptCompetitorCandidateDecision) Or(d CompetitorCandidateDecision) Compet
 	return d
 }
 
+// NewOptCompetitorCandidateId returns new OptCompetitorCandidateId with value set to v.
+func NewOptCompetitorCandidateId(v CompetitorCandidateId) OptCompetitorCandidateId {
+	return OptCompetitorCandidateId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCompetitorCandidateId is optional CompetitorCandidateId.
+type OptCompetitorCandidateId struct {
+	Value CompetitorCandidateId
+	Set   bool
+}
+
+// IsSet returns true if OptCompetitorCandidateId was set.
+func (o OptCompetitorCandidateId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCompetitorCandidateId) Reset() {
+	var v CompetitorCandidateId
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCompetitorCandidateId) SetTo(v CompetitorCandidateId) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCompetitorCandidateId) Get() (v CompetitorCandidateId, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCompetitorCandidateId) Or(d CompetitorCandidateId) CompetitorCandidateId {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptCompetitorCandidateStatus returns new OptCompetitorCandidateStatus with value set to v.
 func NewOptCompetitorCandidateStatus(v CompetitorCandidateStatus) OptCompetitorCandidateStatus {
 	return OptCompetitorCandidateStatus{
@@ -4175,6 +4809,52 @@ func (o OptCompetitorId) Get() (v CompetitorId, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptCompetitorId) Or(d CompetitorId) CompetitorId {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCrawlerAccess returns new OptCrawlerAccess with value set to v.
+func NewOptCrawlerAccess(v CrawlerAccess) OptCrawlerAccess {
+	return OptCrawlerAccess{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCrawlerAccess is optional CrawlerAccess.
+type OptCrawlerAccess struct {
+	Value CrawlerAccess
+	Set   bool
+}
+
+// IsSet returns true if OptCrawlerAccess was set.
+func (o OptCrawlerAccess) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCrawlerAccess) Reset() {
+	var v CrawlerAccess
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCrawlerAccess) SetTo(v CrawlerAccess) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCrawlerAccess) Get() (v CrawlerAccess, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCrawlerAccess) Or(d CrawlerAccess) CrawlerAccess {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4589,6 +5269,52 @@ func (o OptLlmTest) Get() (v LlmTest, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptLlmTest) Or(d LlmTest) LlmTest {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptMeasureLeader returns new OptMeasureLeader with value set to v.
+func NewOptMeasureLeader(v MeasureLeader) OptMeasureLeader {
+	return OptMeasureLeader{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMeasureLeader is optional MeasureLeader.
+type OptMeasureLeader struct {
+	Value MeasureLeader
+	Set   bool
+}
+
+// IsSet returns true if OptMeasureLeader was set.
+func (o OptMeasureLeader) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMeasureLeader) Reset() {
+	var v MeasureLeader
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMeasureLeader) SetTo(v MeasureLeader) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMeasureLeader) Get() (v MeasureLeader, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMeasureLeader) Or(d MeasureLeader) MeasureLeader {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5055,6 +5781,144 @@ func (o OptTermDecision) Or(d TermDecision) TermDecision {
 	return d
 }
 
+// NewOptTermReviewStateProblem returns new OptTermReviewStateProblem with value set to v.
+func NewOptTermReviewStateProblem(v TermReviewStateProblem) OptTermReviewStateProblem {
+	return OptTermReviewStateProblem{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermReviewStateProblem is optional TermReviewStateProblem.
+type OptTermReviewStateProblem struct {
+	Value TermReviewStateProblem
+	Set   bool
+}
+
+// IsSet returns true if OptTermReviewStateProblem was set.
+func (o OptTermReviewStateProblem) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermReviewStateProblem) Reset() {
+	var v TermReviewStateProblem
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermReviewStateProblem) SetTo(v TermReviewStateProblem) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermReviewStateProblem) Get() (v TermReviewStateProblem, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermReviewStateProblem) Or(d TermReviewStateProblem) TermReviewStateProblem {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTermSuggestion returns new OptTermSuggestion with value set to v.
+func NewOptTermSuggestion(v TermSuggestion) OptTermSuggestion {
+	return OptTermSuggestion{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermSuggestion is optional TermSuggestion.
+type OptTermSuggestion struct {
+	Value TermSuggestion
+	Set   bool
+}
+
+// IsSet returns true if OptTermSuggestion was set.
+func (o OptTermSuggestion) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermSuggestion) Reset() {
+	var v TermSuggestion
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermSuggestion) SetTo(v TermSuggestion) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermSuggestion) Get() (v TermSuggestion, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermSuggestion) Or(d TermSuggestion) TermSuggestion {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTermVerdict returns new OptTermVerdict with value set to v.
+func NewOptTermVerdict(v TermVerdict) OptTermVerdict {
+	return OptTermVerdict{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTermVerdict is optional TermVerdict.
+type OptTermVerdict struct {
+	Value TermVerdict
+	Set   bool
+}
+
+// IsSet returns true if OptTermVerdict was set.
+func (o OptTermVerdict) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTermVerdict) Reset() {
+	var v TermVerdict
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTermVerdict) SetTo(v TermVerdict) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTermVerdict) Get() (v TermVerdict, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTermVerdict) Or(d TermVerdict) TermVerdict {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptURI returns new OptURI with value set to v.
 func NewOptURI(v url.URL) OptURI {
 	return OptURI{
@@ -5147,6 +6011,375 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// The plan as it stands.
+// Ref: #/components/schemas/Plan
+type Plan struct {
+	// The version of the improvements catalogue.
+	CatalogueVersion int32 `json:"catalogueVersion"`
+	// The improvements, in order.
+	Improvements []PlanImprovement `json:"improvements"`
+	// The numbers to watch.
+	Watched []WatchedNumber `json:"watched"`
+	// The competitors to keep an eye on.
+	EyeOn []EyeOn `json:"eyeOn"`
+}
+
+// GetCatalogueVersion returns the value of CatalogueVersion.
+func (s *Plan) GetCatalogueVersion() int32 {
+	return s.CatalogueVersion
+}
+
+// GetImprovements returns the value of Improvements.
+func (s *Plan) GetImprovements() []PlanImprovement {
+	return s.Improvements
+}
+
+// GetWatched returns the value of Watched.
+func (s *Plan) GetWatched() []WatchedNumber {
+	return s.Watched
+}
+
+// GetEyeOn returns the value of EyeOn.
+func (s *Plan) GetEyeOn() []EyeOn {
+	return s.EyeOn
+}
+
+// SetCatalogueVersion sets the value of CatalogueVersion.
+func (s *Plan) SetCatalogueVersion(val int32) {
+	s.CatalogueVersion = val
+}
+
+// SetImprovements sets the value of Improvements.
+func (s *Plan) SetImprovements(val []PlanImprovement) {
+	s.Improvements = val
+}
+
+// SetWatched sets the value of Watched.
+func (s *Plan) SetWatched(val []WatchedNumber) {
+	s.Watched = val
+}
+
+// SetEyeOn sets the value of EyeOn.
+func (s *Plan) SetEyeOn(val []EyeOn) {
+	s.EyeOn = val
+}
+
+func (*Plan) getPlanRes()         {}
+func (*Plan) setPlanTargetsRes()  {}
+func (*Plan) tickImprovementRes() {}
+
+// One improvement of the plan.
+// Ref: #/components/schemas/PlanImprovement
+type PlanImprovement struct {
+	// Its id.
+	ID string `json:"id"`
+	// What to do.
+	Title string `json:"title"`
+	// What it moves, in words.
+	Moves   string          `json:"moves"`
+	Measure StandingMeasure `json:"measure"`
+	// Whether the latest scan of tribelt.nl decides that it is done.
+	Auto bool `json:"auto"`
+	// Whether it is done.
+	Done bool `json:"done"`
+	// Who ticked it off; only for one ticked by hand.
+	TickedBy OptString `json:"tickedBy"`
+	// When.
+	TickedAt OptDateTime `json:"tickedAt"`
+	// Why it matters.
+	Why string `json:"why"`
+	// How to do it, step by step.
+	Steps []string `json:"steps"`
+	// When it counts as done.
+	DoneWhen string `json:"doneWhen"`
+	// What the latest scan of tribelt.nl found of an improvement a scan checks; empty for one ticked by
+	// hand, or before any scan.
+	Parts []PlanPart `json:"parts"`
+	// Tribelt's value on the measure it moves; absent without data.
+	Tribelt OptFloat64       `json:"tribelt"`
+	Leader  OptMeasureLeader `json:"leader"`
+}
+
+// GetID returns the value of ID.
+func (s *PlanImprovement) GetID() string {
+	return s.ID
+}
+
+// GetTitle returns the value of Title.
+func (s *PlanImprovement) GetTitle() string {
+	return s.Title
+}
+
+// GetMoves returns the value of Moves.
+func (s *PlanImprovement) GetMoves() string {
+	return s.Moves
+}
+
+// GetMeasure returns the value of Measure.
+func (s *PlanImprovement) GetMeasure() StandingMeasure {
+	return s.Measure
+}
+
+// GetAuto returns the value of Auto.
+func (s *PlanImprovement) GetAuto() bool {
+	return s.Auto
+}
+
+// GetDone returns the value of Done.
+func (s *PlanImprovement) GetDone() bool {
+	return s.Done
+}
+
+// GetTickedBy returns the value of TickedBy.
+func (s *PlanImprovement) GetTickedBy() OptString {
+	return s.TickedBy
+}
+
+// GetTickedAt returns the value of TickedAt.
+func (s *PlanImprovement) GetTickedAt() OptDateTime {
+	return s.TickedAt
+}
+
+// GetWhy returns the value of Why.
+func (s *PlanImprovement) GetWhy() string {
+	return s.Why
+}
+
+// GetSteps returns the value of Steps.
+func (s *PlanImprovement) GetSteps() []string {
+	return s.Steps
+}
+
+// GetDoneWhen returns the value of DoneWhen.
+func (s *PlanImprovement) GetDoneWhen() string {
+	return s.DoneWhen
+}
+
+// GetParts returns the value of Parts.
+func (s *PlanImprovement) GetParts() []PlanPart {
+	return s.Parts
+}
+
+// GetTribelt returns the value of Tribelt.
+func (s *PlanImprovement) GetTribelt() OptFloat64 {
+	return s.Tribelt
+}
+
+// GetLeader returns the value of Leader.
+func (s *PlanImprovement) GetLeader() OptMeasureLeader {
+	return s.Leader
+}
+
+// SetID sets the value of ID.
+func (s *PlanImprovement) SetID(val string) {
+	s.ID = val
+}
+
+// SetTitle sets the value of Title.
+func (s *PlanImprovement) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetMoves sets the value of Moves.
+func (s *PlanImprovement) SetMoves(val string) {
+	s.Moves = val
+}
+
+// SetMeasure sets the value of Measure.
+func (s *PlanImprovement) SetMeasure(val StandingMeasure) {
+	s.Measure = val
+}
+
+// SetAuto sets the value of Auto.
+func (s *PlanImprovement) SetAuto(val bool) {
+	s.Auto = val
+}
+
+// SetDone sets the value of Done.
+func (s *PlanImprovement) SetDone(val bool) {
+	s.Done = val
+}
+
+// SetTickedBy sets the value of TickedBy.
+func (s *PlanImprovement) SetTickedBy(val OptString) {
+	s.TickedBy = val
+}
+
+// SetTickedAt sets the value of TickedAt.
+func (s *PlanImprovement) SetTickedAt(val OptDateTime) {
+	s.TickedAt = val
+}
+
+// SetWhy sets the value of Why.
+func (s *PlanImprovement) SetWhy(val string) {
+	s.Why = val
+}
+
+// SetSteps sets the value of Steps.
+func (s *PlanImprovement) SetSteps(val []string) {
+	s.Steps = val
+}
+
+// SetDoneWhen sets the value of DoneWhen.
+func (s *PlanImprovement) SetDoneWhen(val string) {
+	s.DoneWhen = val
+}
+
+// SetParts sets the value of Parts.
+func (s *PlanImprovement) SetParts(val []PlanPart) {
+	s.Parts = val
+}
+
+// SetTribelt sets the value of Tribelt.
+func (s *PlanImprovement) SetTribelt(val OptFloat64) {
+	s.Tribelt = val
+}
+
+// SetLeader sets the value of Leader.
+func (s *PlanImprovement) SetLeader(val OptMeasureLeader) {
+	s.Leader = val
+}
+
+// One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
+// Ref: #/components/schemas/PlanPart
+type PlanPart struct {
+	// What it looks for.
+	Name string `json:"name"`
+	// Whether the latest scan found it.
+	Present bool `json:"present"`
+}
+
+// GetName returns the value of Name.
+func (s *PlanPart) GetName() string {
+	return s.Name
+}
+
+// GetPresent returns the value of Present.
+func (s *PlanPart) GetPresent() bool {
+	return s.Present
+}
+
+// SetName sets the value of Name.
+func (s *PlanPart) SetName(val string) {
+	s.Name = val
+}
+
+// SetPresent sets the value of Present.
+func (s *PlanPart) SetPresent(val bool) {
+	s.Present = val
+}
+
+// A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt),
+// readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a
+// run citing tribelt.nl).
+// Ref: #/components/schemas/PlanTarget
+type PlanTarget string
+
+const (
+	PlanTargetAiShareOfVoice     PlanTarget = "aiShareOfVoice"
+	PlanTargetTwenteShareOfVoice PlanTarget = "twenteShareOfVoice"
+	PlanTargetReadinessChecks    PlanTarget = "readinessChecks"
+	PlanTargetTermsUsed          PlanTarget = "termsUsed"
+	PlanTargetCitations          PlanTarget = "citations"
+)
+
+// AllValues returns all PlanTarget values.
+func (PlanTarget) AllValues() []PlanTarget {
+	return []PlanTarget{
+		PlanTargetAiShareOfVoice,
+		PlanTargetTwenteShareOfVoice,
+		PlanTargetReadinessChecks,
+		PlanTargetTermsUsed,
+		PlanTargetCitations,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PlanTarget) MarshalText() ([]byte, error) {
+	switch s {
+	case PlanTargetAiShareOfVoice:
+		return []byte(s), nil
+	case PlanTargetTwenteShareOfVoice:
+		return []byte(s), nil
+	case PlanTargetReadinessChecks:
+		return []byte(s), nil
+	case PlanTargetTermsUsed:
+		return []byte(s), nil
+	case PlanTargetCitations:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PlanTarget) UnmarshalText(data []byte) error {
+	switch PlanTarget(data) {
+	case PlanTargetAiShareOfVoice:
+		*s = PlanTargetAiShareOfVoice
+		return nil
+	case PlanTargetTwenteShareOfVoice:
+		*s = PlanTargetTwenteShareOfVoice
+		return nil
+	case PlanTargetReadinessChecks:
+		*s = PlanTargetReadinessChecks
+		return nil
+	case PlanTargetTermsUsed:
+		*s = PlanTargetTermsUsed
+		return nil
+	case PlanTargetCitations:
+		*s = PlanTargetCitations
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One target to set.
+// Ref: #/components/schemas/PlanTargetValue
+type PlanTargetValue struct {
+	Target PlanTarget `json:"target"`
+	// Its new value.
+	Value float64 `json:"value"`
+}
+
+// GetTarget returns the value of Target.
+func (s *PlanTargetValue) GetTarget() PlanTarget {
+	return s.Target
+}
+
+// GetValue returns the value of Value.
+func (s *PlanTargetValue) GetValue() float64 {
+	return s.Value
+}
+
+// SetTarget sets the value of Target.
+func (s *PlanTargetValue) SetTarget(val PlanTarget) {
+	s.Target = val
+}
+
+// SetValue sets the value of Value.
+func (s *PlanTargetValue) SetValue(val float64) {
+	s.Value = val
+}
+
+// Targets to set.
+// Ref: #/components/schemas/PlanTargetsChange
+type PlanTargetsChange struct {
+	// The targets.
+	Targets []PlanTargetValue `json:"targets"`
+}
+
+// GetTargets returns the value of Targets.
+func (s *PlanTargetsChange) GetTargets() []PlanTargetValue {
+	return s.Targets
+}
+
+// SetTargets sets the value of Targets.
+func (s *PlanTargetsChange) SetTargets(val []PlanTargetValue) {
+	s.Targets = val
+}
+
 // An RFC 9457 problem detail.
 // Ref: #/components/schemas/Problem
 type Problem struct {
@@ -5227,11 +6460,443 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 }
 
 func (*ProblemStatusCode) getAiReadinessRes()       {}
+func (*ProblemStatusCode) getAiSearchSummaryRes()   {}
 func (*ProblemStatusCode) getMeRes()                {}
+func (*ProblemStatusCode) getPlanRes()              {}
+func (*ProblemStatusCode) getProductsRes()          {}
 func (*ProblemStatusCode) getPromptTestResultsRes() {}
+func (*ProblemStatusCode) getStandingsRes()         {}
 func (*ProblemStatusCode) listAnalysesRes()         {}
 func (*ProblemStatusCode) listCompetitorsRes()      {}
 func (*ProblemStatusCode) searchTermsRes()          {}
+
+// One belt family against the field.
+// Ref: #/components/schemas/Product
+type Product struct {
+	Family PromptFamily `json:"family"`
+	// Tribelt's own names for it.
+	TribeltNames []string `json:"tribeltNames"`
+	// The competitors that sell it, by name.
+	Sellers []ProductSeller `json:"sellers"`
+	// The map's terms for it, the most used first.
+	Terms []ProductTerm `json:"terms"`
+	// How many of the terms Tribelt's site uses.
+	TermsUsed int32 `json:"termsUsed"`
+	// The newest run's answers about it; 0 before any run.
+	Answers int32 `json:"answers"`
+	// Those naming Tribelt.
+	Named int32 `json:"named"`
+	// The answers per scope.
+	ByScope []ProductScope `json:"byScope"`
+	// The companies its answers name most.
+	MostNamed []ProductMention `json:"mostNamed"`
+}
+
+// GetFamily returns the value of Family.
+func (s *Product) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetTribeltNames returns the value of TribeltNames.
+func (s *Product) GetTribeltNames() []string {
+	return s.TribeltNames
+}
+
+// GetSellers returns the value of Sellers.
+func (s *Product) GetSellers() []ProductSeller {
+	return s.Sellers
+}
+
+// GetTerms returns the value of Terms.
+func (s *Product) GetTerms() []ProductTerm {
+	return s.Terms
+}
+
+// GetTermsUsed returns the value of TermsUsed.
+func (s *Product) GetTermsUsed() int32 {
+	return s.TermsUsed
+}
+
+// GetAnswers returns the value of Answers.
+func (s *Product) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetNamed returns the value of Named.
+func (s *Product) GetNamed() int32 {
+	return s.Named
+}
+
+// GetByScope returns the value of ByScope.
+func (s *Product) GetByScope() []ProductScope {
+	return s.ByScope
+}
+
+// GetMostNamed returns the value of MostNamed.
+func (s *Product) GetMostNamed() []ProductMention {
+	return s.MostNamed
+}
+
+// SetFamily sets the value of Family.
+func (s *Product) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetTribeltNames sets the value of TribeltNames.
+func (s *Product) SetTribeltNames(val []string) {
+	s.TribeltNames = val
+}
+
+// SetSellers sets the value of Sellers.
+func (s *Product) SetSellers(val []ProductSeller) {
+	s.Sellers = val
+}
+
+// SetTerms sets the value of Terms.
+func (s *Product) SetTerms(val []ProductTerm) {
+	s.Terms = val
+}
+
+// SetTermsUsed sets the value of TermsUsed.
+func (s *Product) SetTermsUsed(val int32) {
+	s.TermsUsed = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *Product) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetNamed sets the value of Named.
+func (s *Product) SetNamed(val int32) {
+	s.Named = val
+}
+
+// SetByScope sets the value of ByScope.
+func (s *Product) SetByScope(val []ProductScope) {
+	s.ByScope = val
+}
+
+// SetMostNamed sets the value of MostNamed.
+func (s *Product) SetMostNamed(val []ProductMention) {
+	s.MostNamed = val
+}
+
+// What stands out - crowded (the family the most competitors sell), fewestTerms (whose terms Tribelt
+// uses least) or bestInAI (whose answers name Tribelt most).
+// Ref: #/components/schemas/ProductFinding
+type ProductFinding string
+
+const (
+	ProductFindingCrowded     ProductFinding = "crowded"
+	ProductFindingFewestTerms ProductFinding = "fewestTerms"
+	ProductFindingBestInAI    ProductFinding = "bestInAI"
+)
+
+// AllValues returns all ProductFinding values.
+func (ProductFinding) AllValues() []ProductFinding {
+	return []ProductFinding{
+		ProductFindingCrowded,
+		ProductFindingFewestTerms,
+		ProductFindingBestInAI,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProductFinding) MarshalText() ([]byte, error) {
+	switch s {
+	case ProductFindingCrowded:
+		return []byte(s), nil
+	case ProductFindingFewestTerms:
+		return []byte(s), nil
+	case ProductFindingBestInAI:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProductFinding) UnmarshalText(data []byte) error {
+	switch ProductFinding(data) {
+	case ProductFindingCrowded:
+		*s = ProductFindingCrowded
+		return nil
+	case ProductFindingFewestTerms:
+		*s = ProductFindingFewestTerms
+		return nil
+	case ProductFindingBestInAI:
+		*s = ProductFindingBestInAI
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A company a family's answers name, and the share of them that do.
+// Ref: #/components/schemas/ProductMention
+type ProductMention struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string      `json:"name"`
+	Role CompanyRole `json:"role"`
+	// The share of the family's answers naming it.
+	Share float64 `json:"share"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *ProductMention) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *ProductMention) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *ProductMention) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetShare returns the value of Share.
+func (s *ProductMention) GetShare() float64 {
+	return s.Share
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *ProductMention) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *ProductMention) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *ProductMention) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetShare sets the value of Share.
+func (s *ProductMention) SetShare(val float64) {
+	s.Share = val
+}
+
+// How many of a family's answers in one scope name Tribelt.
+// Ref: #/components/schemas/ProductScope
+type ProductScope struct {
+	Scope PromptScope `json:"scope"`
+	// The answers in the scope.
+	Answers int32 `json:"answers"`
+	// Those naming Tribelt.
+	Named int32 `json:"named"`
+}
+
+// GetScope returns the value of Scope.
+func (s *ProductScope) GetScope() PromptScope {
+	return s.Scope
+}
+
+// GetAnswers returns the value of Answers.
+func (s *ProductScope) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetNamed returns the value of Named.
+func (s *ProductScope) GetNamed() int32 {
+	return s.Named
+}
+
+// SetScope sets the value of Scope.
+func (s *ProductScope) SetScope(val PromptScope) {
+	s.Scope = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *ProductScope) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetNamed sets the value of Named.
+func (s *ProductScope) SetNamed(val int32) {
+	s.Named = val
+}
+
+// A competitor that sells a family, with its own names for it.
+// Ref: #/components/schemas/ProductSeller
+type ProductSeller struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The competitor's name.
+	Name string `json:"name"`
+	// Its website.
+	WebsiteUrl OptURI `json:"websiteUrl"`
+	// Its names for the family.
+	Names []string `json:"names"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *ProductSeller) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *ProductSeller) GetName() string {
+	return s.Name
+}
+
+// GetWebsiteUrl returns the value of WebsiteUrl.
+func (s *ProductSeller) GetWebsiteUrl() OptURI {
+	return s.WebsiteUrl
+}
+
+// GetNames returns the value of Names.
+func (s *ProductSeller) GetNames() []string {
+	return s.Names
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *ProductSeller) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *ProductSeller) SetName(val string) {
+	s.Name = val
+}
+
+// SetWebsiteUrl sets the value of WebsiteUrl.
+func (s *ProductSeller) SetWebsiteUrl(val OptURI) {
+	s.WebsiteUrl = val
+}
+
+// SetNames sets the value of Names.
+func (s *ProductSeller) SetNames(val []string) {
+	s.Names = val
+}
+
+// A finding and the family it is about.
+// Ref: #/components/schemas/ProductStandout
+type ProductStandout struct {
+	Finding ProductFinding `json:"finding"`
+	Family  PromptFamily   `json:"family"`
+}
+
+// GetFinding returns the value of Finding.
+func (s *ProductStandout) GetFinding() ProductFinding {
+	return s.Finding
+}
+
+// GetFamily returns the value of Family.
+func (s *ProductStandout) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// SetFinding sets the value of Finding.
+func (s *ProductStandout) SetFinding(val ProductFinding) {
+	s.Finding = val
+}
+
+// SetFamily sets the value of Family.
+func (s *ProductStandout) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// A term of the map for a family.
+// Ref: #/components/schemas/ProductTerm
+type ProductTerm struct {
+	// The term.
+	Term string `json:"term"`
+	// Its language.
+	Language string     `json:"language"`
+	Tier     IntentTier `json:"tier"`
+	// How many companies use it.
+	UsedBy int32 `json:"usedBy"`
+	// Whether Tribelt's own site uses it.
+	UsedByTribelt bool `json:"usedByTribelt"`
+}
+
+// GetTerm returns the value of Term.
+func (s *ProductTerm) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *ProductTerm) GetLanguage() string {
+	return s.Language
+}
+
+// GetTier returns the value of Tier.
+func (s *ProductTerm) GetTier() IntentTier {
+	return s.Tier
+}
+
+// GetUsedBy returns the value of UsedBy.
+func (s *ProductTerm) GetUsedBy() int32 {
+	return s.UsedBy
+}
+
+// GetUsedByTribelt returns the value of UsedByTribelt.
+func (s *ProductTerm) GetUsedByTribelt() bool {
+	return s.UsedByTribelt
+}
+
+// SetTerm sets the value of Term.
+func (s *ProductTerm) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *ProductTerm) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetTier sets the value of Tier.
+func (s *ProductTerm) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// SetUsedBy sets the value of UsedBy.
+func (s *ProductTerm) SetUsedBy(val int32) {
+	s.UsedBy = val
+}
+
+// SetUsedByTribelt sets the value of UsedByTribelt.
+func (s *ProductTerm) SetUsedByTribelt(val bool) {
+	s.UsedByTribelt = val
+}
+
+// Tribelt's belt families against the field.
+// Ref: #/components/schemas/ProductsOverview
+type ProductsOverview struct {
+	// Every family, in order.
+	Items []Product `json:"items"`
+	// What stands out among them.
+	Standouts []ProductStandout `json:"standouts"`
+}
+
+// GetItems returns the value of Items.
+func (s *ProductsOverview) GetItems() []Product {
+	return s.Items
+}
+
+// GetStandouts returns the value of Standouts.
+func (s *ProductsOverview) GetStandouts() []ProductStandout {
+	return s.Standouts
+}
+
+// SetItems sets the value of Items.
+func (s *ProductsOverview) SetItems(val []Product) {
+	s.Items = val
+}
+
+// SetStandouts sets the value of Standouts.
+func (s *ProductsOverview) SetStandouts(val []ProductStandout) {
+	s.Standouts = val
+}
+
+func (*ProductsOverview) getProductsRes() {}
 
 // How a company's search terms are grouped - one of Tribelt's belt families, other metal belts, broad
 // terms that name no family, or material and specification terms.
@@ -5479,9 +7144,13 @@ type PromptAnswer struct {
 	// Why the model gave no answer.
 	Failure OptString `json:"failure"`
 	// When it answered.
-	At         time.Time           `json:"at"`
-	CostUsd    Usd                 `json:"costUsd"`
-	Extraction OptPromptExtraction `json:"extraction"`
+	At      time.Time `json:"at"`
+	CostUsd Usd       `json:"costUsd"`
+	// The tokens asking and reading the answer read.
+	InputTokens int64 `json:"inputTokens"`
+	// The tokens asking and reading the answer wrote.
+	OutputTokens int64               `json:"outputTokens"`
+	Extraction   OptPromptExtraction `json:"extraction"`
 }
 
 // GetID returns the value of ID.
@@ -5562,6 +7231,16 @@ func (s *PromptAnswer) GetAt() time.Time {
 // GetCostUsd returns the value of CostUsd.
 func (s *PromptAnswer) GetCostUsd() Usd {
 	return s.CostUsd
+}
+
+// GetInputTokens returns the value of InputTokens.
+func (s *PromptAnswer) GetInputTokens() int64 {
+	return s.InputTokens
+}
+
+// GetOutputTokens returns the value of OutputTokens.
+func (s *PromptAnswer) GetOutputTokens() int64 {
+	return s.OutputTokens
 }
 
 // GetExtraction returns the value of Extraction.
@@ -5647,6 +7326,16 @@ func (s *PromptAnswer) SetAt(val time.Time) {
 // SetCostUsd sets the value of CostUsd.
 func (s *PromptAnswer) SetCostUsd(val Usd) {
 	s.CostUsd = val
+}
+
+// SetInputTokens sets the value of InputTokens.
+func (s *PromptAnswer) SetInputTokens(val int64) {
+	s.InputTokens = val
+}
+
+// SetOutputTokens sets the value of OutputTokens.
+func (s *PromptAnswer) SetOutputTokens(val int64) {
+	s.OutputTokens = val
 }
 
 // SetExtraction sets the value of Extraction.
@@ -6353,6 +8042,227 @@ func (s *PromptNamedCompany) SetPosition(val int32) {
 	s.Position = val
 }
 
+// Where the prices come from - run (the latest run's own costs), catalogue (OpenRouter's price list
+// times typical tokens, before any run) or none (nothing to go by).
+// Ref: #/components/schemas/PromptPriceBasis
+type PromptPriceBasis string
+
+const (
+	PromptPriceBasisRun       PromptPriceBasis = "run"
+	PromptPriceBasisCatalogue PromptPriceBasis = "catalogue"
+	PromptPriceBasisNone      PromptPriceBasis = "none"
+)
+
+// AllValues returns all PromptPriceBasis values.
+func (PromptPriceBasis) AllValues() []PromptPriceBasis {
+	return []PromptPriceBasis{
+		PromptPriceBasisRun,
+		PromptPriceBasisCatalogue,
+		PromptPriceBasisNone,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptPriceBasis) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptPriceBasisRun:
+		return []byte(s), nil
+	case PromptPriceBasisCatalogue:
+		return []byte(s), nil
+	case PromptPriceBasisNone:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptPriceBasis) UnmarshalText(data []byte) error {
+	switch PromptPriceBasis(data) {
+	case PromptPriceBasisRun:
+		*s = PromptPriceBasisRun
+		return nil
+	case PromptPriceBasisCatalogue:
+		*s = PromptPriceBasisCatalogue
+		return nil
+	case PromptPriceBasisNone:
+		*s = PromptPriceBasisNone
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What Prompt runs cost, per provider, per run and per month against the budget.
+// Ref: #/components/schemas/PromptPrices
+type PromptPrices struct {
+	Basis PromptPriceBasis `json:"basis"`
+	// Per provider, one answer from its own knowledge, one with web search, and a run.
+	Providers  []PromptProviderPrice `json:"providers"`
+	ReadingUsd Usd                   `json:"readingUsd"`
+	RunUsd     Usd                   `json:"runUsd"`
+	// How many scheduled runs the cadence starts in an average month.
+	RunsPerMonth float64 `json:"runsPerMonth"`
+	MonthUsd     Usd     `json:"monthUsd"`
+	BudgetUsd    Usd     `json:"budgetUsd"`
+	// Whether a month of runs would cost more than the budget.
+	OverBudget bool `json:"overBudget"`
+}
+
+// GetBasis returns the value of Basis.
+func (s *PromptPrices) GetBasis() PromptPriceBasis {
+	return s.Basis
+}
+
+// GetProviders returns the value of Providers.
+func (s *PromptPrices) GetProviders() []PromptProviderPrice {
+	return s.Providers
+}
+
+// GetReadingUsd returns the value of ReadingUsd.
+func (s *PromptPrices) GetReadingUsd() Usd {
+	return s.ReadingUsd
+}
+
+// GetRunUsd returns the value of RunUsd.
+func (s *PromptPrices) GetRunUsd() Usd {
+	return s.RunUsd
+}
+
+// GetRunsPerMonth returns the value of RunsPerMonth.
+func (s *PromptPrices) GetRunsPerMonth() float64 {
+	return s.RunsPerMonth
+}
+
+// GetMonthUsd returns the value of MonthUsd.
+func (s *PromptPrices) GetMonthUsd() Usd {
+	return s.MonthUsd
+}
+
+// GetBudgetUsd returns the value of BudgetUsd.
+func (s *PromptPrices) GetBudgetUsd() Usd {
+	return s.BudgetUsd
+}
+
+// GetOverBudget returns the value of OverBudget.
+func (s *PromptPrices) GetOverBudget() bool {
+	return s.OverBudget
+}
+
+// SetBasis sets the value of Basis.
+func (s *PromptPrices) SetBasis(val PromptPriceBasis) {
+	s.Basis = val
+}
+
+// SetProviders sets the value of Providers.
+func (s *PromptPrices) SetProviders(val []PromptProviderPrice) {
+	s.Providers = val
+}
+
+// SetReadingUsd sets the value of ReadingUsd.
+func (s *PromptPrices) SetReadingUsd(val Usd) {
+	s.ReadingUsd = val
+}
+
+// SetRunUsd sets the value of RunUsd.
+func (s *PromptPrices) SetRunUsd(val Usd) {
+	s.RunUsd = val
+}
+
+// SetRunsPerMonth sets the value of RunsPerMonth.
+func (s *PromptPrices) SetRunsPerMonth(val float64) {
+	s.RunsPerMonth = val
+}
+
+// SetMonthUsd sets the value of MonthUsd.
+func (s *PromptPrices) SetMonthUsd(val Usd) {
+	s.MonthUsd = val
+}
+
+// SetBudgetUsd sets the value of BudgetUsd.
+func (s *PromptPrices) SetBudgetUsd(val Usd) {
+	s.BudgetUsd = val
+}
+
+// SetOverBudget sets the value of OverBudget.
+func (s *PromptPrices) SetOverBudget(val bool) {
+	s.OverBudget = val
+}
+
+// What one provider's answers cost.
+// Ref: #/components/schemas/PromptProviderPrice
+type PromptProviderPrice struct {
+	// The provider.
+	Provider string `json:"provider"`
+	// The model it asks.
+	Model string `json:"model"`
+	// The paid model asked when the free one cannot answer.
+	Fallback     OptString `json:"fallback"`
+	KnowledgeUsd Usd       `json:"knowledgeUsd"`
+	WebUsd       Usd       `json:"webUsd"`
+	RunUsd       Usd       `json:"runUsd"`
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptProviderPrice) GetProvider() string {
+	return s.Provider
+}
+
+// GetModel returns the value of Model.
+func (s *PromptProviderPrice) GetModel() string {
+	return s.Model
+}
+
+// GetFallback returns the value of Fallback.
+func (s *PromptProviderPrice) GetFallback() OptString {
+	return s.Fallback
+}
+
+// GetKnowledgeUsd returns the value of KnowledgeUsd.
+func (s *PromptProviderPrice) GetKnowledgeUsd() Usd {
+	return s.KnowledgeUsd
+}
+
+// GetWebUsd returns the value of WebUsd.
+func (s *PromptProviderPrice) GetWebUsd() Usd {
+	return s.WebUsd
+}
+
+// GetRunUsd returns the value of RunUsd.
+func (s *PromptProviderPrice) GetRunUsd() Usd {
+	return s.RunUsd
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptProviderPrice) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetModel sets the value of Model.
+func (s *PromptProviderPrice) SetModel(val string) {
+	s.Model = val
+}
+
+// SetFallback sets the value of Fallback.
+func (s *PromptProviderPrice) SetFallback(val OptString) {
+	s.Fallback = val
+}
+
+// SetKnowledgeUsd sets the value of KnowledgeUsd.
+func (s *PromptProviderPrice) SetKnowledgeUsd(val Usd) {
+	s.KnowledgeUsd = val
+}
+
+// SetWebUsd sets the value of WebUsd.
+func (s *PromptProviderPrice) SetWebUsd(val Usd) {
+	s.WebUsd = val
+}
+
+// SetRunUsd sets the value of RunUsd.
+func (s *PromptProviderPrice) SetRunUsd(val Usd) {
+	s.RunUsd = val
+}
+
 // One provider's part of a run.
 // Ref: #/components/schemas/PromptProviderProgress
 type PromptProviderProgress struct {
@@ -6489,6 +8399,88 @@ func (s *PromptQuestion) SetLanguage(val string) {
 // SetText sets the value of Text.
 func (s *PromptQuestion) SetText(val string) {
 	s.Text = val
+}
+
+// A run asked again.
+// Ref: #/components/schemas/PromptRetry
+type PromptRetry struct {
+	Run PromptRun `json:"run"`
+	// How many answers it asks again.
+	Tasks            int32 `json:"tasks"`
+	EstimatedCostUsd Usd   `json:"estimatedCostUsd"`
+}
+
+// GetRun returns the value of Run.
+func (s *PromptRetry) GetRun() PromptRun {
+	return s.Run
+}
+
+// GetTasks returns the value of Tasks.
+func (s *PromptRetry) GetTasks() int32 {
+	return s.Tasks
+}
+
+// GetEstimatedCostUsd returns the value of EstimatedCostUsd.
+func (s *PromptRetry) GetEstimatedCostUsd() Usd {
+	return s.EstimatedCostUsd
+}
+
+// SetRun sets the value of Run.
+func (s *PromptRetry) SetRun(val PromptRun) {
+	s.Run = val
+}
+
+// SetTasks sets the value of Tasks.
+func (s *PromptRetry) SetTasks(val int32) {
+	s.Tasks = val
+}
+
+// SetEstimatedCostUsd sets the value of EstimatedCostUsd.
+func (s *PromptRetry) SetEstimatedCostUsd(val Usd) {
+	s.EstimatedCostUsd = val
+}
+
+func (*PromptRetry) retryPromptRunRes() {}
+
+// What to ask again - every failed answer of the run when empty, or the one question of one provider
+// and mode when all three are given.
+// Ref: #/components/schemas/PromptRetryRequest
+type PromptRetryRequest struct {
+	// The question's id.
+	PromptId OptString `json:"promptId"`
+	// The provider whose model to ask.
+	Provider OptString     `json:"provider"`
+	Mode     OptPromptMode `json:"mode"`
+}
+
+// GetPromptId returns the value of PromptId.
+func (s *PromptRetryRequest) GetPromptId() OptString {
+	return s.PromptId
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptRetryRequest) GetProvider() OptString {
+	return s.Provider
+}
+
+// GetMode returns the value of Mode.
+func (s *PromptRetryRequest) GetMode() OptPromptMode {
+	return s.Mode
+}
+
+// SetPromptId sets the value of PromptId.
+func (s *PromptRetryRequest) SetPromptId(val OptString) {
+	s.PromptId = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptRetryRequest) SetProvider(val OptString) {
+	s.Provider = val
+}
+
+// SetMode sets the value of Mode.
+func (s *PromptRetryRequest) SetMode(val OptPromptMode) {
+	s.Mode = val
 }
 
 // One Prompt run, with how far it got and what it cost.
@@ -6940,6 +8932,11 @@ type PromptTestSettings struct {
 	PromptSet PromptSet       `json:"promptSet"`
 	// The one model that reads every answer, fixed in this release.
 	ExtractorModel string `json:"extractorModel"`
+	// The models the latest run asked, each provider's with its fallback; empty before any run.
+	Models []PromptModelChoice `json:"models"`
+	// Whether the chosen OpenRouter key can be read and used.
+	KeyWorks bool         `json:"keyWorks"`
+	Prices   PromptPrices `json:"prices"`
 }
 
 // GetCredentialId returns the value of CredentialId.
@@ -6987,6 +8984,21 @@ func (s *PromptTestSettings) GetExtractorModel() string {
 	return s.ExtractorModel
 }
 
+// GetModels returns the value of Models.
+func (s *PromptTestSettings) GetModels() []PromptModelChoice {
+	return s.Models
+}
+
+// GetKeyWorks returns the value of KeyWorks.
+func (s *PromptTestSettings) GetKeyWorks() bool {
+	return s.KeyWorks
+}
+
+// GetPrices returns the value of Prices.
+func (s *PromptTestSettings) GetPrices() PromptPrices {
+	return s.Prices
+}
+
 // SetCredentialId sets the value of CredentialId.
 func (s *PromptTestSettings) SetCredentialId(val OptLlmCredentialId) {
 	s.CredentialId = val
@@ -7030,6 +9042,21 @@ func (s *PromptTestSettings) SetPromptSet(val PromptSet) {
 // SetExtractorModel sets the value of ExtractorModel.
 func (s *PromptTestSettings) SetExtractorModel(val string) {
 	s.ExtractorModel = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptTestSettings) SetModels(val []PromptModelChoice) {
+	s.Models = val
+}
+
+// SetKeyWorks sets the value of KeyWorks.
+func (s *PromptTestSettings) SetKeyWorks(val bool) {
+	s.KeyWorks = val
+}
+
+// SetPrices sets the value of Prices.
+func (s *PromptTestSettings) SetPrices(val PromptPrices) {
+	s.Prices = val
 }
 
 func (*PromptTestSettings) getPromptTestSettingsRes()    {}
@@ -7480,6 +9507,57 @@ func (s *ReadinessFiles) SetLlmsFullTruncated(val bool) {
 
 func (*ReadinessFiles) getReadinessFilesRes() {}
 
+// A company in the readiness ranking.
+// Ref: #/components/schemas/ReadinessRank
+type ReadinessRank struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string      `json:"name"`
+	Role CompanyRole `json:"role"`
+	// Readiness checks passed out of five, in halves.
+	Score float64 `json:"score"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *ReadinessRank) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *ReadinessRank) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *ReadinessRank) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetScore returns the value of Score.
+func (s *ReadinessRank) GetScore() float64 {
+	return s.Score
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *ReadinessRank) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *ReadinessRank) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *ReadinessRank) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetScore sets the value of Score.
+func (s *ReadinessRank) SetScore(val float64) {
+	s.Score = val
+}
+
 type RejectTermCandidateBadRequest ProblemStatusCode
 
 func (*RejectTermCandidateBadRequest) rejectTermCandidateRes() {}
@@ -7625,6 +9703,30 @@ func (s *RescanSkip) SetName(val string) {
 func (s *RescanSkip) SetReason(val string) {
 	s.Reason = val
 }
+
+type RetryPromptRunBadRequest ProblemStatusCode
+
+func (*RetryPromptRunBadRequest) retryPromptRunRes() {}
+
+type RetryPromptRunConflict ProblemStatusCode
+
+func (*RetryPromptRunConflict) retryPromptRunRes() {}
+
+type RetryPromptRunForbidden ProblemStatusCode
+
+func (*RetryPromptRunForbidden) retryPromptRunRes() {}
+
+type RetryPromptRunNotFound ProblemStatusCode
+
+func (*RetryPromptRunNotFound) retryPromptRunRes() {}
+
+type RetryPromptRunUnauthorized ProblemStatusCode
+
+func (*RetryPromptRunUnauthorized) retryPromptRunRes() {}
+
+type RetryPromptRunUnprocessableEntity ProblemStatusCode
+
+func (*RetryPromptRunUnprocessableEntity) retryPromptRunRes() {}
 
 // What became of robots.txt - found, missing (so every crawler may read every page), or unreachable
 // (the site would not serve it, so the crawler policy is unknown).
@@ -7806,6 +9908,52 @@ type SetActiveLlmUnprocessableEntity ProblemStatusCode
 
 func (*SetActiveLlmUnprocessableEntity) setActiveLlmRes() {}
 
+type SetPlanTargetsBadRequest ProblemStatusCode
+
+func (*SetPlanTargetsBadRequest) setPlanTargetsRes() {}
+
+type SetPlanTargetsForbidden ProblemStatusCode
+
+func (*SetPlanTargetsForbidden) setPlanTargetsRes() {}
+
+type SetPlanTargetsUnauthorized ProblemStatusCode
+
+func (*SetPlanTargetsUnauthorized) setPlanTargetsRes() {}
+
+type SetPlanTargetsUnprocessableEntity ProblemStatusCode
+
+func (*SetPlanTargetsUnprocessableEntity) setPlanTargetsRes() {}
+
+// One Prompt run in the trend.
+// Ref: #/components/schemas/ShareTrendPoint
+type ShareTrendPoint struct {
+	// When the run started.
+	RunStartedAt time.Time `json:"runStartedAt"`
+	// The share of the run's answers naming each followed company, in the order of `followed`, from 0 to
+	// 1.
+	Shares []float64 `json:"shares"`
+}
+
+// GetRunStartedAt returns the value of RunStartedAt.
+func (s *ShareTrendPoint) GetRunStartedAt() time.Time {
+	return s.RunStartedAt
+}
+
+// GetShares returns the value of Shares.
+func (s *ShareTrendPoint) GetShares() []float64 {
+	return s.Shares
+}
+
+// SetRunStartedAt sets the value of RunStartedAt.
+func (s *ShareTrendPoint) SetRunStartedAt(val time.Time) {
+	s.RunStartedAt = val
+}
+
+// SetShares sets the value of Shares.
+func (s *ShareTrendPoint) SetShares(val []float64) {
+	s.Shares = val
+}
+
 // The tools behind a site, as far as its headers and home page tell; each absent when unknown.
 // Ref: #/components/schemas/SiteStack
 type SiteStack struct {
@@ -7900,6 +10048,215 @@ func (s *SitemapSummary) SetLanguages(val []string) {
 	s.Languages = val
 }
 
+// Tribelt against its competitors on one measure.
+// Ref: #/components/schemas/Standing
+type Standing struct {
+	Measure StandingMeasure `json:"measure"`
+	// Tribelt's value; absent without data.
+	Tribelt OptFloat64 `json:"tribelt"`
+	// The median over the competitors with data, the typical competitor; absent when none has data.
+	Median OptFloat64       `json:"median"`
+	Leader OptMeasureLeader `json:"leader"`
+	// How many competitors have data on the measure.
+	Competitors int32 `json:"competitors"`
+	// Whether the leader is ahead of Tribelt; false when either has no value.
+	Trails bool `json:"trails"`
+	// Whether Tribelt is level with or ahead of the leader.
+	Leads bool `json:"leads"`
+}
+
+// GetMeasure returns the value of Measure.
+func (s *Standing) GetMeasure() StandingMeasure {
+	return s.Measure
+}
+
+// GetTribelt returns the value of Tribelt.
+func (s *Standing) GetTribelt() OptFloat64 {
+	return s.Tribelt
+}
+
+// GetMedian returns the value of Median.
+func (s *Standing) GetMedian() OptFloat64 {
+	return s.Median
+}
+
+// GetLeader returns the value of Leader.
+func (s *Standing) GetLeader() OptMeasureLeader {
+	return s.Leader
+}
+
+// GetCompetitors returns the value of Competitors.
+func (s *Standing) GetCompetitors() int32 {
+	return s.Competitors
+}
+
+// GetTrails returns the value of Trails.
+func (s *Standing) GetTrails() bool {
+	return s.Trails
+}
+
+// GetLeads returns the value of Leads.
+func (s *Standing) GetLeads() bool {
+	return s.Leads
+}
+
+// SetMeasure sets the value of Measure.
+func (s *Standing) SetMeasure(val StandingMeasure) {
+	s.Measure = val
+}
+
+// SetTribelt sets the value of Tribelt.
+func (s *Standing) SetTribelt(val OptFloat64) {
+	s.Tribelt = val
+}
+
+// SetMedian sets the value of Median.
+func (s *Standing) SetMedian(val OptFloat64) {
+	s.Median = val
+}
+
+// SetLeader sets the value of Leader.
+func (s *Standing) SetLeader(val OptMeasureLeader) {
+	s.Leader = val
+}
+
+// SetCompetitors sets the value of Competitors.
+func (s *Standing) SetCompetitors(val int32) {
+	s.Competitors = val
+}
+
+// SetTrails sets the value of Trails.
+func (s *Standing) SetTrails(val bool) {
+	s.Trails = val
+}
+
+// SetLeads sets the value of Leads.
+func (s *Standing) SetLeads(val bool) {
+	s.Leads = val
+}
+
+// A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of
+// answers naming the company, citationShare the share of web answers citing its site, readinessChecks
+// the AI readiness checks its site passes out of five (half for crawlers when some are kept out),
+// sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+// Ref: #/components/schemas/StandingMeasure
+type StandingMeasure string
+
+const (
+	StandingMeasureAiShareOfVoice  StandingMeasure = "aiShareOfVoice"
+	StandingMeasureCitationShare   StandingMeasure = "citationShare"
+	StandingMeasureReadinessChecks StandingMeasure = "readinessChecks"
+	StandingMeasureSitemapPages    StandingMeasure = "sitemapPages"
+	StandingMeasureTermsUsed       StandingMeasure = "termsUsed"
+)
+
+// AllValues returns all StandingMeasure values.
+func (StandingMeasure) AllValues() []StandingMeasure {
+	return []StandingMeasure{
+		StandingMeasureAiShareOfVoice,
+		StandingMeasureCitationShare,
+		StandingMeasureReadinessChecks,
+		StandingMeasureSitemapPages,
+		StandingMeasureTermsUsed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StandingMeasure) MarshalText() ([]byte, error) {
+	switch s {
+	case StandingMeasureAiShareOfVoice:
+		return []byte(s), nil
+	case StandingMeasureCitationShare:
+		return []byte(s), nil
+	case StandingMeasureReadinessChecks:
+		return []byte(s), nil
+	case StandingMeasureSitemapPages:
+		return []byte(s), nil
+	case StandingMeasureTermsUsed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StandingMeasure) UnmarshalText(data []byte) error {
+	switch StandingMeasure(data) {
+	case StandingMeasureAiShareOfVoice:
+		*s = StandingMeasureAiShareOfVoice
+		return nil
+	case StandingMeasureCitationShare:
+		*s = StandingMeasureCitationShare
+		return nil
+	case StandingMeasureReadinessChecks:
+		*s = StandingMeasureReadinessChecks
+		return nil
+	case StandingMeasureSitemapPages:
+		*s = StandingMeasureSitemapPages
+		return nil
+	case StandingMeasureTermsUsed:
+		*s = StandingMeasureTermsUsed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// How Tribelt stands against its competitors now.
+// Ref: #/components/schemas/Standings
+type Standings struct {
+	// Every measure, in order.
+	Measures []Standing `json:"measures"`
+	// How many measures Tribelt trails the leader on.
+	Trailing int32 `json:"trailing"`
+	// The first improvements of the plan not done yet, in order.
+	Open []PlanImprovement `json:"open"`
+	// When the Prompt run the AI measures come from started; absent before any.
+	RunStartedAt OptDateTime `json:"runStartedAt"`
+}
+
+// GetMeasures returns the value of Measures.
+func (s *Standings) GetMeasures() []Standing {
+	return s.Measures
+}
+
+// GetTrailing returns the value of Trailing.
+func (s *Standings) GetTrailing() int32 {
+	return s.Trailing
+}
+
+// GetOpen returns the value of Open.
+func (s *Standings) GetOpen() []PlanImprovement {
+	return s.Open
+}
+
+// GetRunStartedAt returns the value of RunStartedAt.
+func (s *Standings) GetRunStartedAt() OptDateTime {
+	return s.RunStartedAt
+}
+
+// SetMeasures sets the value of Measures.
+func (s *Standings) SetMeasures(val []Standing) {
+	s.Measures = val
+}
+
+// SetTrailing sets the value of Trailing.
+func (s *Standings) SetTrailing(val int32) {
+	s.Trailing = val
+}
+
+// SetOpen sets the value of Open.
+func (s *Standings) SetOpen(val []PlanImprovement) {
+	s.Open = val
+}
+
+// SetRunStartedAt sets the value of RunStartedAt.
+func (s *Standings) SetRunStartedAt(val OptDateTime) {
+	s.RunStartedAt = val
+}
+
+func (*Standings) getStandingsRes() {}
+
 type StartAnalysisBadRequest ProblemStatusCode
 
 func (*StartAnalysisBadRequest) startAnalysisRes() {}
@@ -7951,6 +10308,14 @@ func (*StartRescansUnauthorized) startRescansRes() {}
 type StartRescansUnprocessableEntity ProblemStatusCode
 
 func (*StartRescansUnprocessableEntity) startRescansRes() {}
+
+type StartTermReviewForbidden ProblemStatusCode
+
+func (*StartTermReviewForbidden) startTermReviewRes() {}
+
+type StartTermReviewUnauthorized ProblemStatusCode
+
+func (*StartTermReviewUnauthorized) startTermReviewRes() {}
 
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term
@@ -8137,6 +10502,7 @@ type TermCandidate struct {
 	// When the newest scan that found it was started.
 	LastSeenAt time.Time       `json:"lastSeenAt"`
 	Decision   OptTermDecision `json:"decision"`
+	Verdict    OptTermVerdict  `json:"verdict"`
 }
 
 // GetID returns the value of ID.
@@ -8204,6 +10570,11 @@ func (s *TermCandidate) GetDecision() OptTermDecision {
 	return s.Decision
 }
 
+// GetVerdict returns the value of Verdict.
+func (s *TermCandidate) GetVerdict() OptTermVerdict {
+	return s.Verdict
+}
+
 // SetID sets the value of ID.
 func (s *TermCandidate) SetID(val TermCandidateId) {
 	s.ID = val
@@ -8269,6 +10640,11 @@ func (s *TermCandidate) SetDecision(val OptTermDecision) {
 	s.Decision = val
 }
 
+// SetVerdict sets the value of Verdict.
+func (s *TermCandidate) SetVerdict(val OptTermVerdict) {
+	s.Verdict = val
+}
+
 func (*TermCandidate) acceptTermCandidateRes() {}
 func (*TermCandidate) rejectTermCandidateRes() {}
 func (*TermCandidate) undoTermDecisionRes()    {}
@@ -8316,12 +10692,13 @@ func (s *TermCandidateCounts) SetRejected(val int32) {
 
 type TermCandidateId string
 
-// The candidates with one status.
+// The candidates with one status, and how far the language model is with them.
 // Ref: #/components/schemas/TermCandidateList
 type TermCandidateList struct {
 	// The candidates, most companies and highest score first.
 	Items  []TermCandidate     `json:"items"`
 	Counts TermCandidateCounts `json:"counts"`
+	Review TermReviewState     `json:"review"`
 }
 
 // GetItems returns the value of Items.
@@ -8334,6 +10711,11 @@ func (s *TermCandidateList) GetCounts() TermCandidateCounts {
 	return s.Counts
 }
 
+// GetReview returns the value of Review.
+func (s *TermCandidateList) GetReview() TermReviewState {
+	return s.Review
+}
+
 // SetItems sets the value of Items.
 func (s *TermCandidateList) SetItems(val []TermCandidate) {
 	s.Items = val
@@ -8342,6 +10724,11 @@ func (s *TermCandidateList) SetItems(val []TermCandidate) {
 // SetCounts sets the value of Counts.
 func (s *TermCandidateList) SetCounts(val TermCandidateCounts) {
 	s.Counts = val
+}
+
+// SetReview sets the value of Review.
+func (s *TermCandidateList) SetReview(val TermReviewState) {
+	s.Review = val
 }
 
 func (*TermCandidateList) listTermCandidatesRes() {}
@@ -8603,6 +10990,93 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
+// How far the language model is with the waiting candidates.
+// Ref: #/components/schemas/TermReviewState
+type TermReviewState struct {
+	// Whether it is reviewing now.
+	Running bool `json:"running"`
+	// How many waiting candidates it has not reviewed yet.
+	Waiting int32 `json:"waiting"`
+	// Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its
+	// provider failed). Absent when it went well.
+	Problem OptTermReviewStateProblem `json:"problem"`
+}
+
+// GetRunning returns the value of Running.
+func (s *TermReviewState) GetRunning() bool {
+	return s.Running
+}
+
+// GetWaiting returns the value of Waiting.
+func (s *TermReviewState) GetWaiting() int32 {
+	return s.Waiting
+}
+
+// GetProblem returns the value of Problem.
+func (s *TermReviewState) GetProblem() OptTermReviewStateProblem {
+	return s.Problem
+}
+
+// SetRunning sets the value of Running.
+func (s *TermReviewState) SetRunning(val bool) {
+	s.Running = val
+}
+
+// SetWaiting sets the value of Waiting.
+func (s *TermReviewState) SetWaiting(val int32) {
+	s.Waiting = val
+}
+
+// SetProblem sets the value of Problem.
+func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
+	s.Problem = val
+}
+
+func (*TermReviewState) startTermReviewRes() {}
+
+// Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its
+// provider failed). Absent when it went well.
+type TermReviewStateProblem string
+
+const (
+	TermReviewStateProblemNoModel TermReviewStateProblem = "noModel"
+	TermReviewStateProblemFailed  TermReviewStateProblem = "failed"
+)
+
+// AllValues returns all TermReviewStateProblem values.
+func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
+	return []TermReviewStateProblem{
+		TermReviewStateProblemNoModel,
+		TermReviewStateProblemFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TermReviewStateProblem) MarshalText() ([]byte, error) {
+	switch s {
+	case TermReviewStateProblemNoModel:
+		return []byte(s), nil
+	case TermReviewStateProblemFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TermReviewStateProblem) UnmarshalText(data []byte) error {
+	switch TermReviewStateProblem(data) {
+	case TermReviewStateProblemNoModel:
+		*s = TermReviewStateProblemNoModel
+		return nil
+	case TermReviewStateProblemFailed:
+		*s = TermReviewStateProblemFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // A page of matching terms.
 // Ref: #/components/schemas/TermSearch
 type TermSearch struct {
@@ -8645,6 +11119,133 @@ func (s *TermSearch) SetFacets(val Facets) {
 
 func (*TermSearch) searchTermsRes() {}
 
+// The term the language model would add, as the map would hold it.
+// Ref: #/components/schemas/TermSuggestion
+type TermSuggestion struct {
+	// The term.
+	Term     string     `json:"term"`
+	Language Language   `json:"language"`
+	Family   BeltFamily `json:"family"`
+	Tier     IntentTier `json:"tier"`
+}
+
+// GetTerm returns the value of Term.
+func (s *TermSuggestion) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *TermSuggestion) GetLanguage() Language {
+	return s.Language
+}
+
+// GetFamily returns the value of Family.
+func (s *TermSuggestion) GetFamily() BeltFamily {
+	return s.Family
+}
+
+// GetTier returns the value of Tier.
+func (s *TermSuggestion) GetTier() IntentTier {
+	return s.Tier
+}
+
+// SetTerm sets the value of Term.
+func (s *TermSuggestion) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *TermSuggestion) SetLanguage(val Language) {
+	s.Language = val
+}
+
+// SetFamily sets the value of Family.
+func (s *TermSuggestion) SetFamily(val BeltFamily) {
+	s.Family = val
+}
+
+// SetTier sets the value of Tier.
+func (s *TermSuggestion) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// The language model's review of a candidate. A sure verdict is also its decision; an unsure one
+// leaves the candidate waiting for a person, with the term it suggests.
+// Ref: #/components/schemas/TermVerdict
+type TermVerdict struct {
+	// Whether it would add the phrase to the map.
+	Accept bool `json:"accept"`
+	// Whether it was sure; when not, a person decides.
+	Sure bool `json:"sure"`
+	// Why, in one sentence.
+	Reason string            `json:"reason"`
+	Term   OptTermSuggestion `json:"term"`
+	// The model that reviewed it.
+	Model string `json:"model"`
+	// When.
+	At time.Time `json:"at"`
+}
+
+// GetAccept returns the value of Accept.
+func (s *TermVerdict) GetAccept() bool {
+	return s.Accept
+}
+
+// GetSure returns the value of Sure.
+func (s *TermVerdict) GetSure() bool {
+	return s.Sure
+}
+
+// GetReason returns the value of Reason.
+func (s *TermVerdict) GetReason() string {
+	return s.Reason
+}
+
+// GetTerm returns the value of Term.
+func (s *TermVerdict) GetTerm() OptTermSuggestion {
+	return s.Term
+}
+
+// GetModel returns the value of Model.
+func (s *TermVerdict) GetModel() string {
+	return s.Model
+}
+
+// GetAt returns the value of At.
+func (s *TermVerdict) GetAt() time.Time {
+	return s.At
+}
+
+// SetAccept sets the value of Accept.
+func (s *TermVerdict) SetAccept(val bool) {
+	s.Accept = val
+}
+
+// SetSure sets the value of Sure.
+func (s *TermVerdict) SetSure(val bool) {
+	s.Sure = val
+}
+
+// SetReason sets the value of Reason.
+func (s *TermVerdict) SetReason(val string) {
+	s.Reason = val
+}
+
+// SetTerm sets the value of Term.
+func (s *TermVerdict) SetTerm(val OptTermSuggestion) {
+	s.Term = val
+}
+
+// SetModel sets the value of Model.
+func (s *TermVerdict) SetModel(val string) {
+	s.Model = val
+}
+
+// SetAt sets the value of At.
+func (s *TermVerdict) SetAt(val time.Time) {
+	s.At = val
+}
+
 type TestLlmCredentialBadRequest ProblemStatusCode
 
 func (*TestLlmCredentialBadRequest) testLlmCredentialRes() {}
@@ -8664,6 +11265,89 @@ func (*TestLlmCredentialUnauthorized) testLlmCredentialRes() {}
 type TestLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*TestLlmCredentialUnprocessableEntity) testLlmCredentialRes() {}
+
+type TickImprovementBadRequest ProblemStatusCode
+
+func (*TickImprovementBadRequest) tickImprovementRes() {}
+
+type TickImprovementForbidden ProblemStatusCode
+
+func (*TickImprovementForbidden) tickImprovementRes() {}
+
+type TickImprovementNotFound ProblemStatusCode
+
+func (*TickImprovementNotFound) tickImprovementRes() {}
+
+type TickImprovementUnauthorized ProblemStatusCode
+
+func (*TickImprovementUnauthorized) tickImprovementRes() {}
+
+type TickImprovementUnprocessableEntity ProblemStatusCode
+
+func (*TickImprovementUnprocessableEntity) tickImprovementRes() {}
+
+// A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
+// Ref: #/components/schemas/TribeltCrawler
+type TribeltCrawler struct {
+	// Its robots.txt token.
+	Bot string `json:"bot"`
+	// Who runs it.
+	Lab string `json:"lab"`
+	// What letting it in gets Tribelt.
+	Gets   string           `json:"gets"`
+	Feeds  CrawlerFeeds     `json:"feeds"`
+	Access OptCrawlerAccess `json:"access"`
+}
+
+// GetBot returns the value of Bot.
+func (s *TribeltCrawler) GetBot() string {
+	return s.Bot
+}
+
+// GetLab returns the value of Lab.
+func (s *TribeltCrawler) GetLab() string {
+	return s.Lab
+}
+
+// GetGets returns the value of Gets.
+func (s *TribeltCrawler) GetGets() string {
+	return s.Gets
+}
+
+// GetFeeds returns the value of Feeds.
+func (s *TribeltCrawler) GetFeeds() CrawlerFeeds {
+	return s.Feeds
+}
+
+// GetAccess returns the value of Access.
+func (s *TribeltCrawler) GetAccess() OptCrawlerAccess {
+	return s.Access
+}
+
+// SetBot sets the value of Bot.
+func (s *TribeltCrawler) SetBot(val string) {
+	s.Bot = val
+}
+
+// SetLab sets the value of Lab.
+func (s *TribeltCrawler) SetLab(val string) {
+	s.Lab = val
+}
+
+// SetGets sets the value of Gets.
+func (s *TribeltCrawler) SetGets(val string) {
+	s.Gets = val
+}
+
+// SetFeeds sets the value of Feeds.
+func (s *TribeltCrawler) SetFeeds(val CrawlerFeeds) {
+	s.Feeds = val
+}
+
+// SetAccess sets the value of Access.
+func (s *TribeltCrawler) SetAccess(val OptCrawlerAccess) {
+	s.Access = val
+}
 
 type UndoCompetitorCandidateBadRequest ProblemStatusCode
 
@@ -8751,3 +11435,43 @@ type UpdatePromptTestSettingsUnprocessableEntity ProblemStatusCode
 func (*UpdatePromptTestSettingsUnprocessableEntity) updatePromptTestSettingsRes() {}
 
 type Usd float64
+
+// A number to watch, now and its target.
+// Ref: #/components/schemas/WatchedNumber
+type WatchedNumber struct {
+	Target PlanTarget `json:"target"`
+	// Its value now; absent without data.
+	Now OptFloat64 `json:"now"`
+	// Its target.
+	Goal float64 `json:"goal"`
+}
+
+// GetTarget returns the value of Target.
+func (s *WatchedNumber) GetTarget() PlanTarget {
+	return s.Target
+}
+
+// GetNow returns the value of Now.
+func (s *WatchedNumber) GetNow() OptFloat64 {
+	return s.Now
+}
+
+// GetGoal returns the value of Goal.
+func (s *WatchedNumber) GetGoal() float64 {
+	return s.Goal
+}
+
+// SetTarget sets the value of Target.
+func (s *WatchedNumber) SetTarget(val PlanTarget) {
+	s.Target = val
+}
+
+// SetNow sets the value of Now.
+func (s *WatchedNumber) SetNow(val OptFloat64) {
+	s.Now = val
+}
+
+// SetGoal sets the value of Goal.
+func (s *WatchedNumber) SetGoal(val float64) {
+	s.Goal = val
+}

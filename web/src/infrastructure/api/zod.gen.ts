@@ -89,6 +89,33 @@ export const zCompanyRole = z.enum([
 ]);
 
 /**
+ * What became of one item - added, skipped as a duplicate, or rejected.
+ */
+export const zCompetitorBatchOutcome = z.enum([
+    'added',
+    'duplicate',
+    'rejected'
+]);
+
+/**
+ * One item's outcome.
+ */
+export const zCompetitorBatchItem = z.object({
+    name: z.string().max(300),
+    outcome: zCompetitorBatchOutcome,
+    competitorId: zCompetitorId.optional(),
+    reason: z.string().max(300).optional()
+});
+
+/**
+ * What a batch did.
+ */
+export const zCompetitorBatch = z.object({
+    items: z.array(zCompetitorBatchItem).max(100),
+    scans: z.int().gte(0).lte(100)
+});
+
+/**
  * A company to add.
  */
 export const zNewCompetitor = z.object({
@@ -521,6 +548,28 @@ export const zTermDecision = z.object({
 });
 
 /**
+ * The term the language model would add, as the map would hold it.
+ */
+export const zTermSuggestion = z.object({
+    term: z.string().max(200),
+    language: zLanguage,
+    family: zBeltFamily,
+    tier: zIntentTier
+});
+
+/**
+ * The language model's review of a candidate. A sure verdict is also its decision; an unsure one leaves the candidate waiting for a person, with the term it suggests.
+ */
+export const zTermVerdict = z.object({
+    accept: z.boolean(),
+    sure: z.boolean(),
+    reason: z.string().max(500),
+    term: zTermSuggestion.optional(),
+    model: z.string().max(200),
+    at: z.iso.datetime({ offset: true }).max(64)
+});
+
+/**
  * A phrase finished scans found that the terminology map did not hold, with its evidence across companies and the classifier's suggestion.
  */
 export const zTermCandidate = z.object({
@@ -536,7 +585,17 @@ export const zTermCandidate = z.object({
     suggestedFamily: zBeltFamily.optional(),
     closestTerm: z.string().max(200).optional(),
     lastSeenAt: z.iso.datetime({ offset: true }).max(64),
-    decision: zTermDecision.optional()
+    decision: zTermDecision.optional(),
+    verdict: zTermVerdict.optional()
+});
+
+/**
+ * How far the language model is with the waiting candidates.
+ */
+export const zTermReviewState = z.object({
+    running: z.boolean(),
+    waiting: z.int().gte(0).lte(1000000),
+    problem: z.enum(['noModel', 'failed']).optional()
 });
 
 /**
@@ -549,11 +608,12 @@ export const zTermCandidateCounts = z.object({
 });
 
 /**
- * The candidates with one status.
+ * The candidates with one status, and how far the language model is with them.
  */
 export const zTermCandidateList = z.object({
     items: z.array(zTermCandidate).max(1000),
-    counts: zTermCandidateCounts
+    counts: zTermCandidateCounts,
+    review: zTermReviewState
 });
 
 /**
@@ -660,6 +720,253 @@ export const zAiReadiness = z.object({
     stack: zSiteStack,
     advice: z.array(zReadinessAdvice).max(20),
     gaps: z.int().gte(0).lte(100)
+});
+
+/**
+ * A company the AI search trend follows.
+ */
+export const zFollowedCompany = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole
+});
+
+/**
+ * One Prompt run in the trend.
+ */
+export const zShareTrendPoint = z.object({
+    runStartedAt: z.iso.datetime({ offset: true }).max(64),
+    shares: z.array(z.number().gte(0).lte(1)).max(10)
+});
+
+/**
+ * What a crawler feeds - answers AI assistants give today, or what future models know.
+ */
+export const zCrawlerFeeds = z.enum(['today', 'future']);
+
+/**
+ * A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
+ */
+export const zTribeltCrawler = z.object({
+    bot: z.string().max(40),
+    lab: z.string().max(60),
+    gets: z.string().max(200),
+    feeds: zCrawlerFeeds,
+    access: zCrawlerAccess.optional()
+});
+
+/**
+ * A competitor whose robots.txt keeps crawlers out of the whole site.
+ */
+export const zKeepingOut = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    blocked: z.array(z.string().max(40)).max(20)
+});
+
+/**
+ * A company in the readiness ranking.
+ */
+export const zReadinessRank = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    score: z.number().gte(0).lte(5)
+});
+
+/**
+ * The AI search summary.
+ */
+export const zAiSearchSummary = z.object({
+    goal: z.number().gte(0).lte(1),
+    followed: z.array(zFollowedCompany).max(10),
+    trend: z.array(zShareTrendPoint).max(50),
+    crawlers: z.array(zTribeltCrawler).max(20),
+    keepingOut: z.array(zKeepingOut).max(300),
+    ranking: z.array(zReadinessRank).max(20),
+    sites: z.int().gte(0).lte(1000),
+    questions: z.int().gte(0).lte(1000),
+    providers: z.int().gte(0).lte(100)
+});
+
+/**
+ * One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
+ */
+export const zPlanPart = z.object({
+    name: z.string().max(100),
+    present: z.boolean()
+});
+
+/**
+ * A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt), readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a run citing tribelt.nl).
+ */
+export const zPlanTarget = z.enum([
+    'aiShareOfVoice',
+    'twenteShareOfVoice',
+    'readinessChecks',
+    'termsUsed',
+    'citations'
+]);
+
+/**
+ * A number to watch, now and its target.
+ */
+export const zWatchedNumber = z.object({
+    target: zPlanTarget,
+    now: z.number().gte(0).optional(),
+    goal: z.number().gte(0)
+});
+
+/**
+ * Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
+ */
+export const zEyeOnReason = z.enum([
+    'mostNamed',
+    'bestPrepared',
+    'twente'
+]);
+
+/**
+ * Whether an improvement is done.
+ */
+export const zImprovementTick = z.object({
+    done: z.boolean()
+});
+
+/**
+ * One target to set.
+ */
+export const zPlanTargetValue = z.object({
+    target: zPlanTarget,
+    value: z.number().gte(0).lte(10000)
+});
+
+/**
+ * Targets to set.
+ */
+export const zPlanTargetsChange = z.object({
+    targets: z.array(zPlanTargetValue).min(1).max(10)
+});
+
+/**
+ * A competitor that sells a family, with its own names for it.
+ */
+export const zProductSeller = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    websiteUrl: z.url().max(500).optional(),
+    names: z.array(z.string().max(300)).max(100)
+});
+
+/**
+ * A term of the map for a family.
+ */
+export const zProductTerm = z.object({
+    term: z.string().max(300),
+    language: z.string().max(10).regex(/^[a-z]{2}(-[A-Z]{2})?$/),
+    tier: zIntentTier,
+    usedBy: z.int().gte(0).lte(1000),
+    usedByTribelt: z.boolean()
+});
+
+/**
+ * A company a family's answers name, and the share of them that do.
+ */
+export const zProductMention = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    share: z.number().gte(0).lte(1)
+});
+
+/**
+ * What stands out - crowded (the family the most competitors sell), fewestTerms (whose terms Tribelt uses least) or bestInAI (whose answers name Tribelt most).
+ */
+export const zProductFinding = z.enum([
+    'crowded',
+    'fewestTerms',
+    'bestInAI'
+]);
+
+/**
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+ */
+export const zStandingMeasure = z.enum([
+    'aiShareOfVoice',
+    'citationShare',
+    'readinessChecks',
+    'sitemapPages',
+    'termsUsed'
+]);
+
+/**
+ * The competitor with the best value on a measure.
+ */
+export const zMeasureLeader = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    value: z.number().gte(0)
+});
+
+/**
+ * One improvement of the plan.
+ */
+export const zPlanImprovement = z.object({
+    id: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+    title: z.string().max(200),
+    moves: z.string().max(200),
+    measure: zStandingMeasure,
+    auto: z.boolean(),
+    done: z.boolean(),
+    tickedBy: z.string().max(200).optional(),
+    tickedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    why: z.string().max(500),
+    steps: z.array(z.string().max(300)).max(10),
+    doneWhen: z.string().max(300),
+    parts: z.array(zPlanPart).max(10),
+    tribelt: z.number().gte(0).optional(),
+    leader: zMeasureLeader.optional()
+});
+
+/**
+ * A competitor to keep an eye on.
+ */
+export const zEyeOn = z.object({
+    why: zEyeOnReason,
+    leader: zMeasureLeader
+});
+
+/**
+ * The plan as it stands.
+ */
+export const zPlan = z.object({
+    catalogueVersion: z.int().gte(1).lte(1000),
+    improvements: z.array(zPlanImprovement).max(50),
+    watched: z.array(zWatchedNumber).max(20),
+    eyeOn: z.array(zEyeOn).max(10)
+});
+
+/**
+ * Tribelt against its competitors on one measure.
+ */
+export const zStanding = z.object({
+    measure: zStandingMeasure,
+    tribelt: z.number().gte(0).optional(),
+    median: z.number().gte(0).optional(),
+    leader: zMeasureLeader.optional(),
+    competitors: z.int().gte(0).lte(1000),
+    trails: z.boolean(),
+    leads: z.boolean()
+});
+
+/**
+ * How Tribelt stands against its competitors now.
+ */
+export const zStandings = z.object({
+    measures: z.array(zStanding).max(20),
+    trailing: z.int().gte(0).lte(20),
+    open: z.array(zPlanImprovement).max(10),
+    runStartedAt: z.iso.datetime({ offset: true }).max(64).optional()
 });
 
 /**
@@ -827,6 +1134,14 @@ export const zPromptFamily = z.enum([
 ]);
 
 /**
+ * A finding and the family it is about.
+ */
+export const zProductStandout = z.object({
+    finding: zProductFinding,
+    family: zPromptFamily
+});
+
+/**
  * The kind of question - for a supplier, for a belt for an application, or about a problem.
  */
 export const zPromptKind = z.enum([
@@ -848,9 +1163,50 @@ export const zPromptScope = z.enum([
 ]);
 
 /**
+ * How many of a family's answers in one scope name Tribelt.
+ */
+export const zProductScope = z.object({
+    scope: zPromptScope,
+    answers: z.int().gte(0).lte(100000),
+    named: z.int().gte(0).lte(100000)
+});
+
+/**
+ * One belt family against the field.
+ */
+export const zProduct = z.object({
+    family: zPromptFamily,
+    tribeltNames: z.array(z.string().max(300)).max(100),
+    sellers: z.array(zProductSeller).max(500),
+    terms: z.array(zProductTerm).max(2000),
+    termsUsed: z.int().gte(0).lte(2000),
+    answers: z.int().gte(0).lte(100000),
+    named: z.int().gte(0).lte(100000),
+    byScope: z.array(zProductScope).max(10),
+    mostNamed: z.array(zProductMention).max(10)
+});
+
+/**
+ * Tribelt's belt families against the field.
+ */
+export const zProductsOverview = z.object({
+    items: z.array(zProduct).max(10),
+    standouts: z.array(zProductStandout).max(10)
+});
+
+/**
  * How a prompt is asked - from the model's own knowledge, or with live web search.
  */
 export const zPromptMode = z.enum(['knowledge', 'web']);
+
+/**
+ * What to ask again - every failed answer of the run when empty, or the one question of one provider and mode when all three are given.
+ */
+export const zPromptRetryRequest = z.object({
+    promptId: z.string().max(80).regex(/^[a-z0-9_-]+$/).optional(),
+    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/).optional(),
+    mode: zPromptMode.optional()
+});
 
 /**
  * Where a Prompt run is - running, done, stopped (the month's budget was reached; its answers are kept) or failed.
@@ -928,6 +1284,15 @@ export const zPromptRun = z.object({
     costUsd: zUsd,
     byProvider: z.array(zPromptProviderProgress).max(20),
     cells: z.array(zPromptCell).max(10000)
+});
+
+/**
+ * A run asked again.
+ */
+export const zPromptRetry = z.object({
+    run: zPromptRun,
+    tasks: z.int().gte(1).lte(10000),
+    estimatedCostUsd: zUsd
 });
 
 /**
@@ -1020,6 +1385,8 @@ export const zPromptAnswer = z.object({
     failure: z.string().max(300).optional(),
     at: z.iso.datetime({ offset: true }).max(64),
     costUsd: zUsd,
+    inputTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000)),
+    outputTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000)),
     extraction: zPromptExtraction.optional()
 });
 
@@ -1067,6 +1434,41 @@ export const zPromptSet = z.object({
 });
 
 /**
+ * Where the prices come from - run (the latest run's own costs), catalogue (OpenRouter's price list times typical tokens, before any run) or none (nothing to go by).
+ */
+export const zPromptPriceBasis = z.enum([
+    'run',
+    'catalogue',
+    'none'
+]);
+
+/**
+ * What one provider's answers cost.
+ */
+export const zPromptProviderPrice = z.object({
+    provider: z.string().max(40),
+    model: z.string().max(200),
+    fallback: z.string().max(200).optional(),
+    knowledgeUsd: zUsd,
+    webUsd: zUsd,
+    runUsd: zUsd
+});
+
+/**
+ * What Prompt runs cost, per provider, per run and per month against the budget.
+ */
+export const zPromptPrices = z.object({
+    basis: zPromptPriceBasis,
+    providers: z.array(zPromptProviderPrice).max(20),
+    readingUsd: zUsd,
+    runUsd: zUsd,
+    runsPerMonth: z.number().gte(0).lte(31),
+    monthUsd: zUsd,
+    budgetUsd: zUsd,
+    overBudget: z.boolean()
+});
+
+/**
  * The Prompt test's settings.
  */
 export const zPromptTestSettings = z.object({
@@ -1078,7 +1480,10 @@ export const zPromptTestSettings = z.object({
     nextDueAt: z.iso.datetime({ offset: true }).max(64),
     factSheet: zPromptFactSheet,
     promptSet: zPromptSet,
-    extractorModel: z.string().max(200)
+    extractorModel: z.string().max(200),
+    models: z.array(zPromptModelChoice).max(20),
+    keyWorks: z.boolean(),
+    prices: zPromptPrices
 });
 
 /**
@@ -1096,6 +1501,23 @@ export const zPromptTestSettingsChange = z.object({
  * A competitor candidate's id, made from its name.
  */
 export const zCompetitorCandidateId = z.string().length(16).regex(/^[0-9a-f]{16}$/);
+
+/**
+ * One company of a batch; one without a valid name or website is rejected on its own.
+ */
+export const zNewCompetitorItem = z.object({
+    name: z.string().max(300),
+    url: z.string().max(500).optional(),
+    candidateId: zCompetitorCandidateId.optional()
+});
+
+/**
+ * Companies to add at once.
+ */
+export const zCompetitorBatchRequest = z.object({
+    items: z.array(zNewCompetitorItem).max(100),
+    scan: z.boolean().optional()
+});
 
 /**
  * Where a competitor candidate is in the review.
@@ -1183,6 +1605,50 @@ export const zCompetitorCandidateIdPath = zCompetitorCandidateId;
  */
 export const zCredentialId = zLlmCredentialId;
 
+/**
+ * The summary.
+ */
+export const zGetAiSearchSummaryResponse = zAiSearchSummary;
+
+/**
+ * The plan.
+ */
+export const zGetPlanResponse = zPlan;
+
+/**
+ * Whether it is done.
+ */
+export const zTickImprovementBody = zImprovementTick;
+
+export const zTickImprovementPath = z.object({
+    improvementId: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+});
+
+/**
+ * The plan, with the tick.
+ */
+export const zTickImprovementResponse = zPlan;
+
+/**
+ * The targets to set.
+ */
+export const zSetPlanTargetsBody = zPlanTargetsChange;
+
+/**
+ * The plan, with the targets.
+ */
+export const zSetPlanTargetsResponse = zPlan;
+
+/**
+ * The families.
+ */
+export const zGetProductsResponse = zProductsOverview;
+
+/**
+ * The standings.
+ */
+export const zGetStandingsResponse = zStandings;
+
 export const zSearchTermsQuery = z.object({
     q: z.string().max(100).optional(),
     language: zLanguage.optional(),
@@ -1211,6 +1677,16 @@ export const zAddCompetitorBody = zNewCompetitor;
  * The added company.
  */
 export const zAddCompetitorResponse = zCompetitor;
+
+/**
+ * The companies to add.
+ */
+export const zAddCompetitorsBody = zCompetitorBatchRequest;
+
+/**
+ * What became of each item, and how many scans started.
+ */
+export const zAddCompetitorsResponse = zCompetitorBatch;
 
 export const zDeleteCompetitorPath = z.object({
     competitorId: zCompetitorId
@@ -1290,6 +1766,11 @@ export const zListTermCandidatesQuery = z.object({
  * The candidates and how many have each status.
  */
 export const zListTermCandidatesResponse = zTermCandidateList;
+
+/**
+ * The review is under way.
+ */
+export const zStartTermReviewResponse = zTermReviewState;
 
 /**
  * The term as it joins the map.
@@ -1385,6 +1866,20 @@ export const zListPromptAnswersResponse = zPromptAnswerList;
  * The run, started.
  */
 export const zStartPromptRunResponse = zPromptRun;
+
+/**
+ * Every failed answer when empty, or the one question to ask again.
+ */
+export const zRetryPromptRunBody = zPromptRetryRequest;
+
+export const zRetryPromptRunPath = z.object({
+    runId: z.uuid().max(36)
+});
+
+/**
+ * The run, running again, with how many answers it asks and what they should cost.
+ */
+export const zRetryPromptRunResponse = zPromptRetry;
 
 /**
  * The settings.

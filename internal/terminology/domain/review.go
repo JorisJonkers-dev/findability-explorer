@@ -79,6 +79,10 @@ type Candidate struct {
 	// Source is the start address of the newest scan that found it.
 	Source   string
 	Decision *Decision
+	// Verdict is the language model's review of it, once it has one.
+	Verdict *Verdict
+	// Suggestion is the term the model suggests for a waiting candidate, when the map could take it.
+	Suggestion *Acceptance
 }
 
 // CandidateID is a candidate's id: the first 16 hex characters of the SHA-256 of its folded phrase.
@@ -216,11 +220,13 @@ func keysByCount(counts map[string]int) []string {
 	return out
 }
 
-// Counts is how many candidates have each status.
+// Counts is how many candidates have each status, and how many waiting ones the model has not
+// reviewed.
 type Counts struct {
-	Pending  int
-	Accepted int
-	Rejected int
+	Pending    int
+	Accepted   int
+	Rejected   int
+	Unreviewed int
 }
 
 // Count counts candidates per status, and returns those with status.
@@ -231,6 +237,9 @@ func Count(all []Candidate, status Status) ([]Candidate, Counts) {
 		switch c.Status {
 		case StatusPending:
 			counts.Pending++
+			if c.Verdict == nil {
+				counts.Unreviewed++
+			}
 		case StatusAccepted:
 			counts.Accepted++
 		case StatusRejected:

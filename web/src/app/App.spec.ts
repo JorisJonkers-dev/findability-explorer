@@ -22,7 +22,7 @@ describe('signing in', () => {
     expect(wrapper.find('h1').exists()).toBe(false)
     answer(json(me()))
     await settle()
-    expect(wrapper.get('h1').text()).toBe('Measure first. Then build. Then expand.')
+    expect(wrapper.get('h1').text()).toBe('Check every Monday. Fix one thing a week. Watch the numbers move.')
   })
 
   it('sends the browser to sign in when the session has ended, and back to the same page after', async () => {
@@ -44,19 +44,67 @@ describe('signing in', () => {
     expect(wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
   })
 
-  it('names who is signed in, offers Settings to an administrator only, and signs out with a form', async () => {
+  it('offers Settings to an administrator only, and signs out with a form', async () => {
     const reader = await mountApp(api, '/plan')
-    const account = reader.wrapper.get('nav[aria-label="Account"]')
-    expect(account.text()).toContain('Signed in as Joris Jonkers')
-    expect(account.find('a[href="/settings"]').exists()).toBe(false)
-    const form = account.get('form')
+    const bar = reader.wrapper.get('nav[aria-label="Main"]')
+    expect(bar.find('a[href="/settings"]').exists()).toBe(false)
+    const form = bar.get('form')
     expect(form.attributes('method')).toBe('post')
     expect(form.attributes('action')).toBe('/auth/logout')
     expect(form.get('button[type="submit"]').text()).toBe('Sign out')
     reader.wrapper.unmount()
 
     const admin = await mountApp(routes({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/plan')
-    expect(admin.wrapper.get('nav[aria-label="Account"] a[href="/settings"]').text()).toBe('Settings')
+    expect(admin.wrapper.get('nav[aria-label="Main"] a[href="/settings"]').text()).toBe('Settings')
+  })
+})
+
+describe('the top bar', () => {
+  it('links to every section in order and marks the one shown', async () => {
+    const { wrapper } = await mountApp(api, '/ai-search/prompt-test')
+    const links = wrapper.findAll('nav[aria-label="Main"] a').map((a) => [a.text(), a.attributes('href'), a.attributes('aria-current') ?? ''])
+    expect(links).toEqual([
+      ['Findability Explorer', '/', ''],
+      ['Overview', '/', ''],
+      ['Catching up', '/catching-up', ''],
+      ['AI search', '/ai-search', 'page'],
+      ['Competitors', '/competitors', ''],
+      ['Products', '/products', ''],
+      ['Search terms', '/terms', ''],
+      ['The plan', '/plan', ''],
+      ['Buyers', '/buyers', ''],
+    ])
+  })
+
+  it("marks Settings on a settings page", async () => {
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/settings/terms')
+    expect(wrapper.get('nav[aria-label="Main"] a[href="/settings"]').attributes('aria-current')).toBe('page')
+    expect(wrapper.get('nav[aria-label="Settings"] a[aria-current="page"]').text()).toBe('Term review')
+  })
+
+  it("shows a section's pages as tabs and marks the one shown", async () => {
+    const { wrapper } = await mountApp(api, '/ai-search/prompt-test')
+    const tabs = wrapper.findAll('nav[aria-label="In this section"] a').map((a) => [a.text(), a.attributes('aria-current') ?? ''])
+    expect(tabs).toEqual([
+      ['Summary', ''],
+      ['Prompt test', 'page'],
+      ['AI readiness', ''],
+    ])
+  })
+
+  it('opens the new sections and a page per belt family', async () => {
+    const { wrapper, router } = await mountApp(api, '/catching-up')
+    expect(wrapper.get('h1').text()).toBe('Where Tribelt trails the leaders.')
+    await router.push('/products/open-spiral')
+    await settle()
+    expect(wrapper.get('h1').text()).toBe('Open spiral')
+    expect(wrapper.get('nav[aria-label="In this section"] a[aria-current="page"]').text()).toBe('Open spiral')
+    await router.push('/products/nothing')
+    await settle()
+    expect(wrapper.get('h1').text()).toBe('No such belt family.')
+    await router.push('/competitors/all')
+    await settle()
+    expect(wrapper.get('nav[aria-label="In this section"] a[aria-current="page"]').text()).toBe('All competitors')
   })
 })
 
@@ -97,14 +145,14 @@ describe('the routes', () => {
     expect(router.currentRoute.value.fullPath).toBe('/terms?q=spiral&tier=product')
     await router.push('/keywords?q=mesh')
     expect(router.currentRoute.value.fullPath).toBe('/terms?q=mesh')
-    await router.push('/competitors/twentebelt')
-    expect(router.currentRoute.value.fullPath).toBe('/competitors?company=twentebelt')
     await router.push('/scan?x=1')
     expect(router.currentRoute.value.fullPath).toBe('/competitors?x=1')
     await router.push('/analyses')
     expect(router.currentRoute.value.fullPath).toBe('/competitors')
     await router.push(`/analyses/${ANALYSIS_ID}`)
     expect(router.currentRoute.value.fullPath).toBe(`/scan/${ANALYSIS_ID}`)
+    await router.push('/settings/candidates')
+    expect(router.currentRoute.value.fullPath).toBe('/settings/competitors')
   })
 
   it('keeps the scroll position within a view, and starts a new view at the top', async () => {
@@ -116,5 +164,19 @@ describe('the routes', () => {
     expect(await scroll?.(at(`/scan/${ANALYSIS_ID}`), at('/competitors'), null)).toBe(false)
     expect(await scroll?.(at('/competitors'), at('/terms'), null)).toEqual({ top: 0 })
     expect(await scroll?.(at('/competitors'), at('/terms'), { left: 0, top: 120 })).toEqual({ left: 0, top: 120 })
+  })
+})
+
+describe('the settings menu', () => {
+  it('shows how many terms wait in Term review on every settings page', async () => {
+    const { wrapper } = await mountApp(
+      routes({
+        'GET /api/v1/me': () => json(me({ isAdmin: true })),
+        'GET /api/v1/admin/term-candidates': () => json({ items: [], counts: { pending: 8, accepted: 0, rejected: 0 }, review: { running: false, waiting: 0 } }),
+      }),
+      '/settings/prompt-test',
+    )
+    expect(wrapper.get('nav[aria-label="Settings"] a[href="/settings/terms"]').text()).toBe('Term review 8')
+    expect(wrapper.find('nav[aria-label="Settings"] [aria-label="8 waiting"]').exists()).toBe(true)
   })
 })

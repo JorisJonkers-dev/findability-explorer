@@ -35,6 +35,7 @@ describe('useStage', () => {
     const { stage } = run()
     expect(stage.active.value).toBe(false)
     expect(stage.style.value).toBeUndefined()
+    expect(stage.pageZoom.value).toBeUndefined()
   })
 
   it('fits the stage to the window while it is large enough, following resizes and the breakpoint', () => {
@@ -47,6 +48,8 @@ describe('useStage', () => {
     expect(matchMedia).toHaveBeenCalledWith(STAGE_QUERY)
     expect(stage.active.value).toBe(true)
     expect(stage.style.value).toEqual({ width: '3840px', height: '2400px', transform: 'scale(0.5)' })
+    // A page's own sizes undo the scale: drawn at twice the size, shrunk by half.
+    expect(stage.pageZoom.value).toBe(2)
 
     vi.stubGlobal('innerWidth', 3840)
     vi.stubGlobal('innerHeight', 2160)

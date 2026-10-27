@@ -89,10 +89,11 @@ async function stubHistory(page: Page): Promise<void> {
 test('a company’s search terms, scan history and comparison render', async ({ page }) => {
   await stubHistory(page)
   await page.goto('/competitors?company=twentebelt')
-  await page.getByRole('link', { name: 'Search terms and history' }).click()
+  await page.getByRole('link', { name: 'Over time' }).first().click()
   await expect(page).toHaveURL('/competitors/twentebelt/history')
-  await expect(page).toHaveTitle('Search terms and history · Findability Explorer')
-  await expect(page.getByRole('heading', { level: 1, name: 'Twentebelt: its search terms, scan by scan.' })).toBeVisible()
+  await expect(page).toHaveTitle('Over time · Findability Explorer')
+  await expect(page.getByRole('heading', { level: 1, name: 'How Twentebelt changed, scan by scan.' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'In this section' }).getByRole('link', { name: 'Over time' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByRole('button', { name: 'Tri-Flex (2)' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('table', { name: 'English (1)' })).toContainText('spiral belts')
   await expect(page.getByRole('table', { name: 'Dutch (1)' })).toContainText('new in this scan')
@@ -123,17 +124,18 @@ test('an administrator accepts a candidate into the terminology map', async ({ p
   }
   let accepted: unknown = null
   await page.route('**/api/v1/admin/term-candidates?**', (route) =>
-    route.fulfill({ json: { items: accepted === null ? [candidate] : [], counts: { pending: accepted === null ? 1 : 0, accepted: accepted === null ? 0 : 1, rejected: 0 } } }),
+    route.fulfill({ json: { items: accepted === null ? [candidate] : [], counts: { pending: accepted === null ? 1 : 0, accepted: accepted === null ? 0 : 1, rejected: 0 }, review: { running: false, waiting: 0 } } }),
   )
   await page.route('**/api/v1/admin/term-candidates/3a7bd3e2360a9f01/accept', async (route) => {
     accepted = route.request().postDataJSON()
     await route.fulfill({ json: { ...candidate, status: 'accepted' } })
   })
   await page.goto('/settings')
-  await page.getByRole('link', { name: 'Review the terms scans found' }).click()
+  await page.getByRole('navigation', { name: 'Settings' }).getByRole('link', { name: /^Term review/ }).click()
   await expect(page).toHaveURL('/settings/terms')
   await expect(page.getByRole('heading', { level: 1, name: 'Term review' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: 'spiral freezer belt' })).toBeVisible()
+  await expect(page.getByText('The language model has reviewed every phrase.')).toBeVisible()
   await expectAccessible(page)
   await page.getByRole('button', { name: 'Accept…' }).click()
   const form = page.getByRole('form', { name: 'Accept spiral freezer belt' })

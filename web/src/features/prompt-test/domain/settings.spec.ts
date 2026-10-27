@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { problem } from '../../../testing/mountApp'
-import { candidateTab, candidateWebsite, momentLabel, openRouterKeys, parseBudget, parseCandidateStatus, parseProviders, promptGroups, promptProblem } from './settings'
+import {
+  addProvider,
+  basisLine,
+  candidateTab,
+  candidateWebsite,
+  modelLine,
+  momentLabel,
+  openRouterKeys,
+  parseBudget,
+  parseCandidateStatus,
+  promptGroups,
+  promptProblem,
+} from './settings'
 
 async function parsed(r: Response): Promise<unknown> {
   return JSON.parse(await r.text())
@@ -8,7 +20,6 @@ async function parsed(r: Response): Promise<unknown> {
 
 describe('the Prompt test’s settings', () => {
   it('reads what an administrator types', () => {
-    expect(parseProviders(' OpenAI, google  meta-llama,,openai ')).toEqual(['openai', 'google', 'meta-llama'])
     expect([parseBudget('$12.50'), parseBudget('7,5'), parseBudget('0'), parseBudget('1001'), parseBudget('ten')]).toEqual([12.5, 7.5, null, null, null])
     expect(momentLabel('2026-11-01T06:00:00Z')).toBe('1 Nov 2026, 06:00 UTC')
   })
@@ -46,5 +57,27 @@ describe('the competitor candidates', () => {
     expect(promptProblem(await parsed(problem(403, 'Forbidden')))).toBe('Only administrators can do this.')
     expect(promptProblem(await parsed(problem(500, 'Internal Server Error')))).toContain('Internal Server Error')
     expect(promptProblem(new Error('offline'))).toBe('Something went wrong. Try again.')
+  })
+})
+
+describe('the providers and prices', () => {
+  it('add a provider by its OpenRouter id, once, at most 20', () => {
+    expect(addProvider(['openai'], ' Google ')).toEqual({ list: ['openai', 'google'], problem: null })
+    expect(addProvider(['openai'], 'openai').problem).toBe('openai is on already.')
+    expect(addProvider(['openai'], 'Open AI').problem).toBe('A provider is an OpenRouter id, such as openai or meta-llama.')
+    expect(addProvider(Array.from({ length: 20 }, (_, i) => `p${String(i)}`), 'more').problem).toBe('The Prompt test asks at most 20 providers.')
+  })
+
+  it("say each provider's model from the latest run", () => {
+    const models = [{ provider: 'google', model: 'google/gemma:free', free: true, fallback: 'google/gemini' }, { provider: 'openai', model: 'openai/gpt-oss-20b', free: false }]
+    expect(modelLine(models, 'google')).toBe('google/gemma:free, then google/gemini')
+    expect(modelLine(models, 'openai')).toBe('openai/gpt-oss-20b')
+    expect(modelLine(models, 'deepseek')).toBe('Cheapest model chosen at the next run')
+  })
+
+  it('say where the prices come from', () => {
+    expect(basisLine({ basis: 'run' })).toBe('From what the latest run cost.')
+    expect(basisLine({ basis: 'catalogue' })).toContain('estimate')
+    expect(basisLine({ basis: 'none' })).toContain('No prices yet.')
   })
 })

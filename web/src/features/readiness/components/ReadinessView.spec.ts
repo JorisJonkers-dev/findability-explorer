@@ -1,8 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { AiReadiness } from '../../../infrastructure/api/types.gen'
-import { bots, readiness, readinessRow } from '../../../testing/fixtures'
-import { json, mountApp, problem, routes } from '../../../testing/mountApp'
+import { ANALYSIS_ID, bots, readiness, readinessRow } from '../../../testing/fixtures'
+import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 const gappy: AiReadiness = readiness({
   bots: bots({ GPTBot: 'blocked' }),
@@ -20,26 +20,43 @@ const table = [
   readinessRow('Tribelt B.V.', { competitorId: 'tribelt', role: 'tribelt', readiness: gappy }),
 ]
 
-const api = () => routes({ 'GET /api/v1/ai-readiness': () => json({ items: table }) })
+const api = () =>
+  routes({
+    'GET /api/v1/ai-readiness': () => json({ items: table }),
+    'GET /api/v1/ai-search': () =>
+      json({
+        goal: 0.4,
+        followed: [],
+        trend: [],
+        crawlers: [],
+        keepingOut: [],
+        ranking: [
+          { competitorId: 'esfo', name: 'ESFO', role: 'competitor', score: 5 },
+          { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', score: 3.5 },
+        ],
+        sites: 5,
+        questions: 0,
+        providers: 0,
+      }),
+    [`GET /api/v1/analyses/${ANALYSIS_ID}/readiness-files`]: () =>
+      json({ robotsTxt: 'User-agent: GPTBot\nDisallow: /', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }),
+  })
 
 /** Each band's company names, top to bottom. */
 const bands = (wrapper: VueWrapper) =>
-  wrapper.findAll('tbody').map((b) => `${b.attributes('aria-label') ?? ''}: ${b.findAll('tr th[scope="row"]').map((th) => th.text()).join(', ')}`)
+  wrapper
+    .findAll('section[aria-labelledby="sites-title"] tbody')
+    .map((b) => `${b.attributes('aria-label') ?? ''}: ${b.findAll('th[scope="row"] button').map((n) => n.element.firstChild?.textContent?.trim() ?? '').join(', ')}`)
 
 describe('the AI readiness view', () => {
   it('pins Tribelt and the mirror above the group and the competitors', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     expect(document.title).toBe('AI readiness · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Who lets search engines and AI assistants in.')
     expect(bands(wrapper)).toEqual([
       'Tribelt today, and the target: Tribelt B.V., Mirror of tribelt.nl',
       "Tribelt's group: Lesjöfors",
       'Competitors: Twentebelt, ESFO, Unibelt',
     ])
-    expect(wrapper.text()).toContain('6 of 6 companies')
-    const twente = wrapper.findAll('tbody')[2]?.findAll('tr')[1]
-    expect(twente?.text()).toContain('Blocked, a gap')
-    expect(wrapper.findAll('tbody')[2]?.findAll('tr')[3]?.text()).toContain('Not checked')
   })
 
   it('sorts a band by any column, and back, keeping Tribelt and the mirror on top', async () => {
@@ -63,9 +80,44 @@ describe('the AI readiness view', () => {
       "Tribelt's group: Lesjöfors",
       'Competitors: Twentebelt',
     ])
-    expect(wrapper.text()).toContain('4 of 6 companies')
     await wrapper.get('select').setValue('')
-    expect(wrapper.text()).toContain('6 of 6 companies')
+    expect(bands(wrapper)[2]).toBe('Competitors: Twentebelt, ESFO, Unibelt')
+  })
+
+  it('heads the page with the leader and counts the sites passing each check', async () => {
+    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    expect(wrapper.get('h1').text()).toBe('ESFO leads with 5 of five checks. Tribelt passes 3½.')
+    expect(wrapper.text()).toMatch(/5 sites\.\s*Scanned on 22 October 2026\./)
+    const sum = wrapper.findAll('section[aria-labelledby="sum-title"] tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
+    expect(sum[0]).toEqual(['Lets every AI crawler in', '2', '✕ No'])
+    expect(sum[3]).toEqual(['Has llms.txt', '2', '✕ No'])
+    expect(sum[1]).toEqual(['Has a sitemap', '5', '● Yes'])
+  })
+
+  it('marks each crawler by shape, and opens the site in a new tab', async () => {
+    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const row = wrapper.findAll('section[aria-labelledby="sites-title"] tbody tr').find((r) => r.text().startsWith('Twentebelt'))
+    expect(row?.findAll('td').map((c) => c.text()).slice(0, 6)).toEqual(['●Let in', '●Let in', '●Let in', '●Let in', '●Let in', '✕Blocked'])
+    expect(row?.get('a[target="_blank"]').attributes('href')).toBe('https://www.twentebelt.com')
+    expect(wrapper.text()).toContain('Not scanned yet')
+  })
+
+  it("shows Tribelt's robots.txt and what it means, and another site's when picked", async () => {
+    const { wrapper, router } = await mountApp(api(), '/ai-search/readiness')
+    const panel = wrapper.get('section[aria-labelledby="sites-title"] [aria-live="polite"]')
+    expect(panel.text()).toContain('robots.txt of Tribelt B.V.')
+    expect(panel.get('pre').text()).toContain('Disallow: /')
+    expect(panel.text()).toContain('Blocks GPTBot.')
+    const esfo = wrapper.findAll('th[scope="row"] button').find((b) => b.text().startsWith('ESFO'))
+    await esfo?.trigger('click')
+    await settle()
+    expect(router.currentRoute.value.query.site).toBe('esfo')
+    expect(esfo?.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('section[aria-labelledby="sites-title"] [aria-live="polite"]').text()).toContain('Lets every search and AI crawler in.')
+    const unibelt = wrapper.findAll('th[scope="row"] button').find((b) => b.text().startsWith('Unibelt'))
+    await unibelt?.trigger('click')
+    await settle()
+    expect(wrapper.get('section[aria-labelledby="sites-title"] [aria-live="polite"]').text()).toContain('No scan of it recorded its robots.txt yet.')
   })
 
   it('says when the table cannot load', async () => {

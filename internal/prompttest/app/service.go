@@ -108,9 +108,15 @@ type View struct {
 	PromptSet      domain.PromptSet
 	ExtractorModel string
 	SpentThisMonth domain.Micros
+	// Models are the models the latest run asked, each provider's with its fallback; none before a run.
+	Models []domain.ModelChoice
+	// KeyWorks is true when the chosen OpenRouter key can be read and used.
+	KeyWorks bool
+	Prices   domain.Prices
 }
 
-// Settings returns the settings, the prompt set and this month's spend.
+// Settings returns the settings, the prompt set, this month's spend, the models the latest run
+// asked, whether the key works, and what runs cost.
 func (s *Service) Settings(ctx context.Context) (View, error) {
 	settings, err := s.settings(ctx)
 	if err != nil {
@@ -120,7 +126,68 @@ func (s *Service) Settings(ctx context.Context) (View, error) {
 	if err != nil {
 		return View{}, fmt.Errorf("this month's spend: %w", err)
 	}
-	return View{Settings: settings, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: spent}, nil
+	v := View{
+		Settings: settings, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: spent,
+		Models: []domain.ModelChoice{}, KeyWorks: settings.CredentialID != "" && s.gateways.Check(ctx, settings.CredentialID) == nil,
+	}
+	if err := s.price(ctx, &v); err != nil {
+		return View{}, err
+	}
+	return v, nil
+}
+
+// price fills in the latest run's models and the price overview for the providers set now: each
+// one the latest run asked by what its answers cost, and the others, before any run or added
+// since, by OpenRouter's price list when the key works.
+func (s *Service) price(ctx context.Context, v *View) error {
+	questions := len(v.PromptSet.Prompts)
+	cadence, budget, providers := v.Settings.Cadence, v.Settings.MonthlyBudget, v.Settings.Providers
+	runs, err := s.repo.Runs(ctx, 1)
+	if err != nil {
+		return fmt.Errorf("the latest run: %w", err)
+	}
+	v.Prices = domain.NoPrices(cadence, budget)
+	missing := providers
+	if len(runs) > 0 {
+		v.Models = runs[0].Models
+		answers, err := s.repo.Answers(ctx, runs[0].ID, false)
+		if err != nil {
+			return fmt.Errorf("the latest run's answers: %w", err)
+		}
+		if len(answers) > 0 {
+			var kept []domain.ModelChoice
+			kept, missing = domain.Asked(runs[0].Models, providers)
+			v.Prices = domain.PricesFromRun(answers, kept, questions, cadence, budget)
+		}
+	}
+	if len(missing) == 0 || !v.KeyWorks {
+		return nil
+	}
+	catalogue := s.catalogue(ctx, v.Settings.CredentialID)
+	if catalogue == nil {
+		return nil
+	}
+	estimate := domain.PricesFromCatalogue(catalogue, domain.ChooseModels(catalogue, missing), questions, cadence, budget)
+	if v.Prices.Basis == domain.BasisRun {
+		v.Prices = v.Prices.With(estimate.Providers, questions, cadence)
+		return nil
+	}
+	v.Prices = estimate
+	return nil
+}
+
+// catalogue is OpenRouter's price list, or nil when it cannot be had: the overview then has
+// nothing to go by for the providers it would price.
+func (s *Service) catalogue(ctx context.Context, credentialID string) []domain.CatalogueModel {
+	gw, err := s.gateways.Gateway(ctx, credentialID)
+	if err != nil {
+		return nil
+	}
+	models, err := gw.Models(ctx)
+	if err != nil {
+		return nil
+	}
+	return models
 }
 
 func (s *Service) settings(ctx context.Context) (domain.Settings, error) {

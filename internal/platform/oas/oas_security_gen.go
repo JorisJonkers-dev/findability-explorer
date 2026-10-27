@@ -57,6 +57,7 @@ var operationRolesSessionCookie = map[string][]string{
 	GetLlmKeyUsageOperation:             []string{},
 	GetLlmSettingsOperation:             []string{},
 	GetMeOperation:                      []string{},
+	GetOverviewOperation:                []string{},
 	GetPlanOperation:                    []string{},
 	GetProductsOperation:                []string{},
 	GetPromptTestResultsOperation:       []string{},

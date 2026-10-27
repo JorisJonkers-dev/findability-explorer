@@ -6650,6 +6650,267 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// The figures of the home page.
+// Ref: #/components/schemas/Overview
+type Overview struct {
+	Terms       OverviewTerms       `json:"terms"`
+	Competitors OverviewCompetitors `json:"competitors"`
+	AiSearch    OverviewAiSearch    `json:"aiSearch"`
+}
+
+// GetTerms returns the value of Terms.
+func (s *Overview) GetTerms() OverviewTerms {
+	return s.Terms
+}
+
+// GetCompetitors returns the value of Competitors.
+func (s *Overview) GetCompetitors() OverviewCompetitors {
+	return s.Competitors
+}
+
+// GetAiSearch returns the value of AiSearch.
+func (s *Overview) GetAiSearch() OverviewAiSearch {
+	return s.AiSearch
+}
+
+// SetTerms sets the value of Terms.
+func (s *Overview) SetTerms(val OverviewTerms) {
+	s.Terms = val
+}
+
+// SetCompetitors sets the value of Competitors.
+func (s *Overview) SetCompetitors(val OverviewCompetitors) {
+	s.Competitors = val
+}
+
+// SetAiSearch sets the value of AiSearch.
+func (s *Overview) SetAiSearch(val OverviewAiSearch) {
+	s.AiSearch = val
+}
+
+func (*Overview) getOverviewRes() {}
+
+// The newest Prompt run with answers that count, in figures. Before any such run there are no answers
+// and no companies.
+// Ref: #/components/schemas/OverviewAiSearch
+type OverviewAiSearch struct {
+	// How many of the run's answers count.
+	Answers int32 `json:"answers"`
+	// Tribelt and the four competitors named in the most answers, the most first; Tribelt is listed with
+	// no answers when none names it.
+	Companies []OverviewMention `json:"companies"`
+}
+
+// GetAnswers returns the value of Answers.
+func (s *OverviewAiSearch) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetCompanies returns the value of Companies.
+func (s *OverviewAiSearch) GetCompanies() []OverviewMention {
+	return s.Companies
+}
+
+// SetAnswers sets the value of Answers.
+func (s *OverviewAiSearch) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetCompanies sets the value of Companies.
+func (s *OverviewAiSearch) SetCompanies(val []OverviewMention) {
+	s.Companies = val
+}
+
+// The competitors the desk research found, and which of Tribelt's belt families they offer.
+// Ref: #/components/schemas/OverviewCompetitors
+type OverviewCompetitors struct {
+	// How many competitors the desk research found; a company added later, a group company and the mirror
+	// do not count.
+	Makers int32 `json:"makers"`
+	// Each of Tribelt's belt families, in order, with how many of those competitors offer it.
+	Families []OverviewFamily `json:"families"`
+}
+
+// GetMakers returns the value of Makers.
+func (s *OverviewCompetitors) GetMakers() int32 {
+	return s.Makers
+}
+
+// GetFamilies returns the value of Families.
+func (s *OverviewCompetitors) GetFamilies() []OverviewFamily {
+	return s.Families
+}
+
+// SetMakers sets the value of Makers.
+func (s *OverviewCompetitors) SetMakers(val int32) {
+	s.Makers = val
+}
+
+// SetFamilies sets the value of Families.
+func (s *OverviewCompetitors) SetFamilies(val []OverviewFamily) {
+	s.Families = val
+}
+
+// How many of the competitors the desk research found offer one of Tribelt's belt families.
+// Ref: #/components/schemas/OverviewFamily
+type OverviewFamily struct {
+	Family PromptFamily `json:"family"`
+	// How many of them offer it.
+	Makers int32 `json:"makers"`
+}
+
+// GetFamily returns the value of Family.
+func (s *OverviewFamily) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetMakers returns the value of Makers.
+func (s *OverviewFamily) GetMakers() int32 {
+	return s.Makers
+}
+
+// SetFamily sets the value of Family.
+func (s *OverviewFamily) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetMakers sets the value of Makers.
+func (s *OverviewFamily) SetMakers(val int32) {
+	s.Makers = val
+}
+
+// The terms of one language, and how many of them Tribelt's own site uses.
+// Ref: #/components/schemas/OverviewLanguage
+type OverviewLanguage struct {
+	Language Language `json:"language"`
+	// How many terms are in this language.
+	Terms int32 `json:"terms"`
+	// How many of them Tribelt's own site uses.
+	Tribelt int32 `json:"tribelt"`
+}
+
+// GetLanguage returns the value of Language.
+func (s *OverviewLanguage) GetLanguage() Language {
+	return s.Language
+}
+
+// GetTerms returns the value of Terms.
+func (s *OverviewLanguage) GetTerms() int32 {
+	return s.Terms
+}
+
+// GetTribelt returns the value of Tribelt.
+func (s *OverviewLanguage) GetTribelt() int32 {
+	return s.Tribelt
+}
+
+// SetLanguage sets the value of Language.
+func (s *OverviewLanguage) SetLanguage(val Language) {
+	s.Language = val
+}
+
+// SetTerms sets the value of Terms.
+func (s *OverviewLanguage) SetTerms(val int32) {
+	s.Terms = val
+}
+
+// SetTribelt sets the value of Tribelt.
+func (s *OverviewLanguage) SetTribelt(val int32) {
+	s.Tribelt = val
+}
+
+// How many of the run's answers name one company.
+// Ref: #/components/schemas/OverviewMention
+type OverviewMention struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The name the home page shows; Tribelt goes by Tribelt.
+	Name string      `json:"name"`
+	Role CompanyRole `json:"role"`
+	// How many answers name it.
+	Answers int32 `json:"answers"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *OverviewMention) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *OverviewMention) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *OverviewMention) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetAnswers returns the value of Answers.
+func (s *OverviewMention) GetAnswers() int32 {
+	return s.Answers
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *OverviewMention) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *OverviewMention) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *OverviewMention) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *OverviewMention) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// The terminology map in figures.
+// Ref: #/components/schemas/OverviewTerms
+type OverviewTerms struct {
+	// How many terms the map holds.
+	Total int32 `json:"total"`
+	// How many of them Tribelt's own site uses.
+	Tribelt int32 `json:"tribelt"`
+	// Every language with a term, the most terms first; American English counts as English.
+	Languages []OverviewLanguage `json:"languages"`
+}
+
+// GetTotal returns the value of Total.
+func (s *OverviewTerms) GetTotal() int32 {
+	return s.Total
+}
+
+// GetTribelt returns the value of Tribelt.
+func (s *OverviewTerms) GetTribelt() int32 {
+	return s.Tribelt
+}
+
+// GetLanguages returns the value of Languages.
+func (s *OverviewTerms) GetLanguages() []OverviewLanguage {
+	return s.Languages
+}
+
+// SetTotal sets the value of Total.
+func (s *OverviewTerms) SetTotal(val int32) {
+	s.Total = val
+}
+
+// SetTribelt sets the value of Tribelt.
+func (s *OverviewTerms) SetTribelt(val int32) {
+	s.Tribelt = val
+}
+
+// SetLanguages sets the value of Languages.
+func (s *OverviewTerms) SetLanguages(val []OverviewLanguage) {
+	s.Languages = val
+}
+
 // The plan as it stands.
 // Ref: #/components/schemas/Plan
 type Plan struct {
@@ -7101,6 +7362,7 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 func (*ProblemStatusCode) getAiReadinessRes()       {}
 func (*ProblemStatusCode) getAiSearchSummaryRes()   {}
 func (*ProblemStatusCode) getMeRes()                {}
+func (*ProblemStatusCode) getOverviewRes()          {}
 func (*ProblemStatusCode) getPlanRes()              {}
 func (*ProblemStatusCode) getProductsRes()          {}
 func (*ProblemStatusCode) getPromptTestResultsRes() {}

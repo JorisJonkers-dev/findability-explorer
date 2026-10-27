@@ -151,6 +151,16 @@ type Handler interface {
 	//
 	// GET /api/v1/me
 	GetMe(ctx context.Context) (GetMeRes, error)
+	// GetOverview implements getOverview operation.
+	//
+	// The figures the home page shows, counted on the server so the page fetches a few numbers. The
+	// terminology map's terms, in total and per language (American English counts as English), and how
+	// many of them Tribelt's own site uses. The competitors the desk research found, and how many of them
+	// offer each of Tribelt's belt families. From the newest Prompt run with answers that count, how many
+	// answers there are, and how many name Tribelt and each of the four competitors named most.
+	//
+	// GET /api/v1/overview
+	GetOverview(ctx context.Context) (GetOverviewRes, error)
 	// GetPlan implements getPlan operation.
 	//
 	// The plan's improvements in order, each with whether it is done, the measure it moves and the

@@ -1868,6 +1868,103 @@ export type Standings = {
 };
 
 /**
+ * The figures of the home page.
+ */
+export type Overview = {
+    terms: OverviewTerms;
+    competitors: OverviewCompetitors;
+    aiSearch: OverviewAiSearch;
+};
+
+/**
+ * The terminology map in figures.
+ */
+export type OverviewTerms = {
+    /**
+     * How many terms the map holds.
+     */
+    total: number;
+    /**
+     * How many of them Tribelt's own site uses.
+     */
+    tribelt: number;
+    /**
+     * Every language with a term, the most terms first; American English counts as English.
+     */
+    languages: Array<OverviewLanguage>;
+};
+
+/**
+ * The terms of one language, and how many of them Tribelt's own site uses.
+ */
+export type OverviewLanguage = {
+    language: Language;
+    /**
+     * How many terms are in this language.
+     */
+    terms: number;
+    /**
+     * How many of them Tribelt's own site uses.
+     */
+    tribelt: number;
+};
+
+/**
+ * The competitors the desk research found, and which of Tribelt's belt families they offer.
+ */
+export type OverviewCompetitors = {
+    /**
+     * How many competitors the desk research found; a company added later, a group company and the mirror do not count.
+     */
+    makers: number;
+    /**
+     * Each of Tribelt's belt families, in order, with how many of those competitors offer it.
+     */
+    families: Array<OverviewFamily>;
+};
+
+/**
+ * How many of the competitors the desk research found offer one of Tribelt's belt families.
+ */
+export type OverviewFamily = {
+    family: PromptFamily;
+    /**
+     * How many of them offer it.
+     */
+    makers: number;
+};
+
+/**
+ * The newest Prompt run with answers that count, in figures. Before any such run there are no answers and no companies.
+ */
+export type OverviewAiSearch = {
+    /**
+     * How many of the run's answers count.
+     */
+    answers: number;
+    /**
+     * Tribelt and the four competitors named in the most answers, the most first; Tribelt is listed with no answers when none names it.
+     */
+    companies: Array<OverviewMention>;
+};
+
+/**
+ * How many of the run's answers name one company.
+ */
+export type OverviewMention = {
+    competitorId: CompetitorId;
+    /**
+     * The name the home page shows; Tribelt goes by Tribelt.
+     */
+    name: string;
+    role: CompanyRole;
+    /**
+     * How many answers name it.
+     */
+    answers: number;
+};
+
+/**
  * A scan's AI readiness in brief.
  */
 export type AiReadinessBrief = {
@@ -3021,6 +3118,35 @@ export type GetStandingsResponses = {
 };
 
 export type GetStandingsResponse = GetStandingsResponses[keyof GetStandingsResponses];
+
+export type GetOverviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/overview';
+};
+
+export type GetOverviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetOverviewError = GetOverviewErrors[keyof GetOverviewErrors];
+
+export type GetOverviewResponses = {
+    /**
+     * The figures.
+     */
+    200: Overview;
+};
+
+export type GetOverviewResponse = GetOverviewResponses[keyof GetOverviewResponses];
 
 export type SearchTermsData = {
     body?: never;

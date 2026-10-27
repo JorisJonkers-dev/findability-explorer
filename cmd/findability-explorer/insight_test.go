@@ -6,7 +6,25 @@ import (
 
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 	insightdomain "github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
+	prompttestdomain "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
+
+func TestNamedFirstIsTheCompanyOnTheListAtTheFirstPlace(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		companies []prompttestdomain.Company
+		want      string
+	}{
+		{"first", []prompttestdomain.Company{{CompetitorID: "a", Position: 1}, {CompetitorID: "b", Position: 2}}, "a"},
+		{"off the list", []prompttestdomain.Company{{Name: "Other", Position: 1}, {CompetitorID: "b", Position: 2}}, ""},
+		{"named again", []prompttestdomain.Company{{CompetitorID: "a", Position: 2}, {CompetitorID: "a", Position: 1}}, ""},
+		{"none", nil, ""},
+	} {
+		if got := namedFirst(tc.companies); got != tc.want {
+			t.Errorf("%s: %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
 
 func TestReadinessOfSaysHowFarTheCrawlersAreLetIn(t *testing.T) {
 	at := time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC)

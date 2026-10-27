@@ -172,6 +172,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/me
 	GetMe(ctx context.Context) (GetMeRes, error)
+	// GetOverview invokes getOverview operation.
+	//
+	// The figures the home page shows, counted on the server so the page fetches a few numbers. The
+	// terminology map's terms, in total and per language (American English counts as English), and how
+	// many of them Tribelt's own site uses. The competitors the desk research found, and how many of them
+	// offer each of Tribelt's belt families. From the newest Prompt run with answers that count, how many
+	// answers there are, and how many name Tribelt and each of the four competitors named most.
+	//
+	// GET /api/v1/overview
+	GetOverview(ctx context.Context) (GetOverviewRes, error)
 	// GetPlan invokes getPlan operation.
 	//
 	// The plan's improvements in order, each with whether it is done, the measure it moves and the
@@ -2898,6 +2908,123 @@ func (c *Client) sendGetMe(ctx context.Context) (res GetMeRes, err error) {
 
 	stage = "DecodeResponse"
 	result, err := decodeGetMeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetOverview invokes getOverview operation.
+//
+// The figures the home page shows, counted on the server so the page fetches a few numbers. The
+// terminology map's terms, in total and per language (American English counts as English), and how
+// many of them Tribelt's own site uses. The competitors the desk research found, and how many of them
+// offer each of Tribelt's belt families. From the newest Prompt run with answers that count, how many
+// answers there are, and how many name Tribelt and each of the four competitors named most.
+//
+// GET /api/v1/overview
+func (c *Client) GetOverview(ctx context.Context) (GetOverviewRes, error) {
+	res, err := c.sendGetOverview(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetOverview(ctx context.Context) (res GetOverviewRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getOverview"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/overview"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetOverviewOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/overview"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetOverviewOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetOverviewResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

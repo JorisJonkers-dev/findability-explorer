@@ -212,6 +212,29 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/overview:
+    get:
+      operationId: getOverview
+      summary: Get the home page's figures
+      description: >-
+        The figures the home page shows, counted on the server so the page fetches a few numbers.
+        The terminology map's terms, in total and per language (American English counts as
+        English), and how many of them Tribelt's own site uses. The competitors the desk research
+        found, and how many of them offer each of Tribelt's belt families. From the newest Prompt
+        run with answers that count, how many answers there are, and how many name Tribelt and
+        each of the four competitors named most.
+      tags: [insight]
+      responses:
+        "200":
+          description: The figures.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Overview"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/terms:
     get:
       operationId: searchTerms
@@ -4147,6 +4170,149 @@ components:
           maxLength: 64
           description: When the Prompt run the AI measures come from started; absent before any.
           example: "2026-11-02T06:00:00Z"
+    Overview:
+      description: The figures of the home page.
+      type: object
+      additionalProperties: false
+      required: [terms, competitors, aiSearch]
+      properties:
+        terms:
+          $ref: "#/components/schemas/OverviewTerms"
+        competitors:
+          $ref: "#/components/schemas/OverviewCompetitors"
+        aiSearch:
+          $ref: "#/components/schemas/OverviewAiSearch"
+    OverviewTerms:
+      description: The terminology map in figures.
+      type: object
+      additionalProperties: false
+      required: [total, tribelt, languages]
+      properties:
+        total:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many terms the map holds.
+          example: 387
+        tribelt:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many of them Tribelt's own site uses.
+          example: 30
+        languages:
+          type: array
+          maxItems: 200
+          description: >-
+            Every language with a term, the most terms first; American English counts as
+            English.
+          items:
+            $ref: "#/components/schemas/OverviewLanguage"
+    OverviewLanguage:
+      description: The terms of one language, and how many of them Tribelt's own site uses.
+      type: object
+      additionalProperties: false
+      required: [language, terms, tribelt]
+      properties:
+        language:
+          $ref: "#/components/schemas/Language"
+        terms:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000000
+          description: How many terms are in this language.
+          example: 120
+        tribelt:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many of them Tribelt's own site uses.
+          example: 12
+    OverviewCompetitors:
+      description: The competitors the desk research found, and which of Tribelt's belt families they offer.
+      type: object
+      additionalProperties: false
+      required: [makers, families]
+      properties:
+        makers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: >-
+            How many competitors the desk research found; a company added later, a group
+            company and the mirror do not count.
+          example: 24
+        families:
+          type: array
+          maxItems: 20
+          description: Each of Tribelt's belt families, in order, with how many of those competitors offer it.
+          items:
+            $ref: "#/components/schemas/OverviewFamily"
+    OverviewFamily:
+      description: How many of the competitors the desk research found offer one of Tribelt's belt families.
+      type: object
+      additionalProperties: false
+      required: [family, makers]
+      properties:
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+        makers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many of them offer it.
+          example: 9
+    OverviewAiSearch:
+      description: >-
+        The newest Prompt run with answers that count, in figures. Before any such run there are
+        no answers and no companies.
+      type: object
+      additionalProperties: false
+      required: [answers, companies]
+      properties:
+        answers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many of the run's answers count.
+          example: 1260
+        companies:
+          type: array
+          maxItems: 10
+          description: >-
+            Tribelt and the four competitors named in the most answers, the most first; Tribelt
+            is listed with no answers when none names it.
+          items:
+            $ref: "#/components/schemas/OverviewMention"
+    OverviewMention:
+      description: How many of the run's answers name one company.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role, answers]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The name the home page shows; Tribelt goes by Tribelt.
+          example: Twentebelt
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        answers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many answers name it.
+          example: 412
     AiReadinessBrief:
       description: A scan's AI readiness in brief.
       type: object

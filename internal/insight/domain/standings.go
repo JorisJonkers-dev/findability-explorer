@@ -42,6 +42,8 @@ type Company struct {
 	Role      Role
 	Website   string
 	BeltNames []BeltName
+	// Researched is true for a company the desk research found, not one added since.
+	Researched bool
 }
 
 // Mode is how a Prompt test question was asked: from the model's own knowledge, or with web search.
@@ -61,7 +63,10 @@ type Answer struct {
 	Scope    string
 	Family   string
 	Named    []string
-	Cited    []string
+	// First is the company on the list the answer names first of all; empty when the first
+	// company it names is not on the list.
+	First string
+	Cited []string
 }
 
 // ScopeTwente is the scope of the questions a buyer asks for Twente.

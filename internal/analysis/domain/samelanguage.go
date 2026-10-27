@@ -42,16 +42,22 @@ func (a Analysis) ByTheMap(lex Lexicon) Analysis {
 		languages = append(languages, p.Language)
 	}
 	if a.KnownTerms != nil {
-		a.KnownTerms = slices.DeleteFunc(slices.Clone(a.KnownTerms), func(k KnownTerm) bool { return !inAny(k.Language, languages) })
-		// Whether tribelt.nl uses a term is the map's word now, not the scan's: it follows
-		// tribelt.nl's newest scan. A term the map no longer holds keeps what the scan stored.
-		for i, k := range a.KnownTerms {
-			if g, ok := lex.term(k.Text, k.Language); ok {
-				a.KnownTerms[i].UsedByTribelt = g.UsedByTribelt
-			}
-		}
+		a.KnownTerms = knownByTheMap(a.KnownTerms, languages, lex)
 	}
 	return a
+}
+
+// knownByTheMap keeps the known terms in a language of a page the scan read. Whether tribelt.nl
+// uses a term is the map's word now, not the scan's: it follows tribelt.nl's newest scan. A term
+// the map no longer holds keeps what the scan stored.
+func knownByTheMap(known []KnownTerm, languages []string, lex Lexicon) []KnownTerm {
+	out := slices.DeleteFunc(slices.Clone(known), func(k KnownTerm) bool { return !inAny(k.Language, languages) })
+	for i, k := range out {
+		if g, ok := lex.term(k.Text, k.Language); ok {
+			out[i].UsedByTribelt = g.UsedByTribelt
+		}
+	}
+	return out
 }
 
 // SightedInTheirLanguage keeps the sightings of a term in a language of a page the scan that found

@@ -7,7 +7,9 @@
 #
 # This repo is private and Actions minutes are scarce: CI runs only on pull requests that touch the
 # app's code, and by hand, never on the push to main that merges a checked pull request. Run
-# `task check` and `task e2e` locally before pushing.
+# `task check` and `task e2e` locally before pushing. The caches a pull request starts from are
+# warmed on main by cache.yml, and a pull request's own caches are deleted when it closes
+# (cache-cleanup.yml).
 name: CI
 
 on:
@@ -28,14 +30,33 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      GOCACHE: /home/runner/.cache/go-build
+      GOMODCACHE: /home/runner/go/pkg/mod
+      GOLANGCI_LINT_CACHE: /home/runner/.cache/golangci-lint
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
+      # Reads the toolchain main's "Warm caches" workflow saved under the same key (cache.yml).
       - uses: jdx/mise-action@v5
         with:
           cache: true
+
+      # The Go modules, build and lint caches main's "Warm caches" workflow saved (cache.yml); read
+      # only, so pull requests never add to them.
+      - name: Restore the Go caches from main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+            /home/runner/.cache/golangci-lint
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ runner.os }}-
 
       - name: Check
         run: mise exec -- task check
@@ -50,6 +71,10 @@ jobs:
     name: End-to-end build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      GOCACHE: /home/runner/.cache/go-build
+      GOMODCACHE: /home/runner/go/pkg/mod
+      GOLANGCI_LINT_CACHE: /home/runner/.cache/golangci-lint
     outputs:
       playwright: ${{ steps.playwright.outputs.version }}
     steps:
@@ -70,6 +95,20 @@ jobs:
         with:
           cache: true
           install_args: go node pnpm task
+
+      # The Go modules, build and lint caches main's "Warm caches" workflow saved (cache.yml); read
+      # only, so pull requests never add to them.
+      - name: Restore the Go caches from main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+            /home/runner/.cache/golangci-lint
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ runner.os }}-
 
       - name: Build the binary
         run: task build

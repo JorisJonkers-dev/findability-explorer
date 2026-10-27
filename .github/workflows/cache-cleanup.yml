@@ -1,0 +1,29 @@
+# Deletes a pull request's own caches when it closes: nothing reads them afterwards, and they
+# count towards the repository's 10 GB until GitHub evicts them a week later. The caches every
+# pull request starts from live on main (cache.yml).
+name: Clean up caches
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Delete the pull request's caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Delete the caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REF: refs/pull/${{ github.event.pull_request.number }}/merge
+        run: |
+          set -euo pipefail
+          gh cache list --ref "$REF" --limit 100 --json id --jq '.[].id' |
+            while read -r id; do gh cache delete "$id"; done

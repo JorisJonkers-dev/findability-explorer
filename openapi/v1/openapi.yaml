@@ -2755,7 +2755,10 @@ components:
           description: A sentence describing the event.
           example: Added openrouter key "Course budget key" (3a7bd3e2360a).
     LlmBudget:
-      description: What analyses may spend on the language model.
+      description: >-
+        What every job on the language model may spend in a month together - the scans' product
+        matching, the term review, the competitor review and Claude Haiku's reading of Prompt
+        answers. Each stops when the month's tokens are spent.
       type: object
       additionalProperties: false
       required: [monthlyTokens, usedThisMonth, averageTokensPerScan, scansMatched]
@@ -2765,14 +2768,14 @@ components:
           format: int64
           minimum: 0
           maximum: 1000000000000
-          description: The tokens all analyses of a calendar month (UTC) may use.
+          description: The tokens every job together may use in a calendar month (UTC).
           example: 10000000
         usedThisMonth:
           type: integer
           format: int64
           minimum: 0
           maximum: 1000000000000
-          description: The tokens analyses created this month used so far.
+          description: The tokens every job used this month so far.
           example: 48211
         averageTokensPerScan:
           type: integer
@@ -3324,10 +3327,11 @@ components:
           example: 663
         problem:
           description: >-
-            Why its last review stopped short - noModel (no Anthropic key is set up) or failed
-            (the model or its provider failed). Absent when it went well.
+            Why its last review stopped short - noModel (no Anthropic key is set up), budget (the
+            month's language-model tokens are spent) or failed (the model or its provider failed).
+            Absent when it went well.
           type: string
-          enum: [noModel, failed]
+          enum: [noModel, budget, failed]
     TermCandidateCounts:
       description: How many candidates have each status.
       type: object
@@ -5519,10 +5523,11 @@ components:
           example: false
         problem:
           description: >-
-            Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the
-            model or its provider failed). Absent when it went well.
+            Why its last review stopped short - noKey (no Anthropic key is set up), budget (the
+            month's language-model tokens are spent) or failed (the model or its provider failed).
+            Absent when it went well.
           type: string
-          enum: [noKey, failed]
+          enum: [noKey, budget, failed]
     CandidateDecisions:
       description: Add or dismiss several competitor candidates.
       type: object

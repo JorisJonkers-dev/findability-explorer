@@ -15,7 +15,10 @@ const meter = computed(() => budgetMeter(props.budget))
     <div aria-hidden="true" class="h-5 bg-grey">
       <div class="h-full bg-orange" :style="{ width: percent(meter.fraction) }"></div>
     </div>
-    <p class="m-0 text-ink-2">The month runs in UTC. Once the tokens are used, scans run without product matching until the next month.</p>
+    <p class="m-0 text-ink-2">
+      The tokens count for product matching, the term review, the competitor review and Haiku reading Prompt answers together.
+      The month runs in UTC. Once the tokens are used, scans run without product matching and Haiku stops until the next month.
+    </p>
     <div class="flex flex-col gap-1" data-testid="per-scan">
       <p class="m-0 text-lg font-semibold">{{ meter.perScan }}</p>
       <p v-if="meter.left" class="m-0 text-ink-2">{{ meter.left }}</p>

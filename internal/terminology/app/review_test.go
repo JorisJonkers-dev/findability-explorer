@@ -401,3 +401,64 @@ func waitFor(t *testing.T, ok func() bool) {
 		time.Sleep(5 * time.Millisecond)
 	}
 }
+
+// budget is the month's tokens: spent once the judge was asked after times requests, or failing with err.
+type budget struct {
+	mu    sync.Mutex
+	j     *judge
+	after int
+	err   error
+}
+
+func (b *budget) spent(context.Context) (bool, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.j.mu.Lock()
+	defer b.j.mu.Unlock()
+	return len(b.j.asked) >= b.after, b.err
+}
+
+func (b *budget) set(after int, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.after, b.err = after, err
+}
+
+func TestTheReviewStopsWhenTheMonthsBudgetIsSpent(t *testing.T) {
+	names := make([]string, 0, domain.ReviewBatch+5)
+	for i := range domain.ReviewBatch + 5 {
+		names = append(names, fmt.Sprintf("phrase %02d", i))
+	}
+	j := &judge{rule: accepting}
+	s := &store{}
+	svc := reviewing(phrases(names...), &reviews{}, s, judges{judge: j})
+	b := &budget{j: j, after: 1}
+	svc.WithBudget(b.spent)
+	// The first batch is asked and kept; the budget is spent before the second.
+	if n, err := svc.Review(t.Context()); n != domain.ReviewBatch || !errors.Is(err, app.ErrBudgetSpent) || len(j.asked) != 1 || len(s.verdicts) != domain.ReviewBatch {
+		t.Fatalf("Review = %d, %v; asked %d times", n, err, len(j.asked))
+	}
+	b.set(0, errBoom)
+	if _, err := svc.Review(t.Context()); !errors.Is(err, errBoom) || len(j.asked) != 1 {
+		t.Fatalf("the budget unknown = %v; asked %d times", err, len(j.asked))
+	}
+}
+
+func TestTheLoopSaysWhenTheBudgetIsSpentAndClearsItInANewMonth(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	j := &judge{rule: accepting}
+	svc := reviewing(phrases("contact"), &reviews{}, &store{}, judges{judge: j})
+	b := &budget{j: j, after: 0}
+	svc.WithBudget(b.spent)
+	go svc.ReviewLoop(ctx, time.Hour, func(err error) { t.Errorf("a spent budget reported as %v", err) })
+	waitFor(t, func() bool { st := state(t, svc); return st.Problem == app.ProblemBudget && !st.Running })
+	b.set(0, errBoom) // still unknown: the problem stays
+	if st := state(t, svc); st.Problem != app.ProblemBudget || st.Waiting != 1 {
+		t.Errorf("with the budget unknown = %+v", st)
+	}
+	b.set(1, nil) // a new month
+	if st := state(t, svc); st.Problem != app.ProblemNone || st.Waiting != 1 {
+		t.Errorf("in a new month = %+v", st)
+	}
+}

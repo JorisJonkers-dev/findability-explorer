@@ -24,6 +24,7 @@ type promptTests struct {
 	decided   domain.CandidateStatus
 	reviewing bool
 	checking  bool
+	problem   app.ReviewProblem
 	change    app.Change
 	actor     string
 	filter    app.AnswerFilter
@@ -153,7 +154,10 @@ func (p *promptTests) StartReview(context.Context) bool {
 }
 
 func (p *promptTests) ReviewState() app.ReviewState {
-	return app.ReviewState{Running: p.reviewing, Problem: app.ReviewProblemNoKey}
+	if p.problem == "" {
+		return app.ReviewState{Running: p.reviewing, Problem: app.ReviewProblemNoKey}
+	}
+	return app.ReviewState{Running: p.reviewing, Problem: p.problem}
 }
 
 func (p *promptTests) ListChecks(context.Context) ([]domain.ListCheck, int, error) {
@@ -373,6 +377,11 @@ func TestCandidatesFoldReviewAndAreDecidedTogether(t *testing.T) {
 		r.body["review"].(map[string]any)["problem"] != "noKey" {
 		t.Fatalf("list = %d %v", r.code, r.body)
 	}
+	a.prompts().problem = app.ReviewProblemBudget
+	if r := callAs(t, srv, http.MethodGet, base, "", "admin"); r.body["review"].(map[string]any)["problem"] != "budget" {
+		t.Errorf("a spent budget = %v", r.body["review"])
+	}
+	a.prompts().problem = ""
 	for _, path := range []string{base + "/review", base + "/decisions", base + "/3a7bd3e2360a9f02/split"} {
 		if r := callAs(t, srv, http.MethodPost, path, `{"action":"add","ids":["3a7bd3e2360a9f01"]}`, "tester"); r.code != http.StatusForbidden {
 			t.Errorf("a viewer on %s: %d", path, r.code)

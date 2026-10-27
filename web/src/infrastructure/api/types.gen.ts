@@ -792,15 +792,15 @@ export type LlmEvent = {
 };
 
 /**
- * What analyses may spend on the language model.
+ * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
  */
 export type LlmBudget = {
     /**
-     * The tokens all analyses of a calendar month (UTC) may use.
+     * The tokens every job together may use in a calendar month (UTC).
      */
     monthlyTokens: number;
     /**
-     * The tokens analyses created this month used so far.
+     * The tokens every job used this month so far.
      */
     usedThisMonth: number;
     /**
@@ -1193,9 +1193,9 @@ export type TermReviewState = {
      */
     waiting: number;
     /**
-     * Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's language-model tokens are spent) or failed (the model or its provider failed). Absent when it went well.
      */
-    problem?: 'noModel' | 'failed';
+    problem?: 'noModel' | 'budget' | 'failed';
 };
 
 /**
@@ -2793,9 +2793,9 @@ export type CandidateReviewState = {
      */
     running: boolean;
     /**
-     * Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's language-model tokens are spent) or failed (the model or its provider failed). Absent when it went well.
      */
-    problem?: 'noKey' | 'failed';
+    problem?: 'noKey' | 'budget' | 'failed';
 };
 
 /**

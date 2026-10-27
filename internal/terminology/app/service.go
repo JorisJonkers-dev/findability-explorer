@@ -59,6 +59,8 @@ type Service struct {
 
 	// review is the language model's part of the queue; nil until WithReviewer.
 	review *reviewer
+	// budget stops the review once the month's language-model tokens are spent; nil until WithBudget.
+	budget BudgetSpent
 }
 
 // New returns a Service reading catalogue and, through reviews, the terms accepted from the

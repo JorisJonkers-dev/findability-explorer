@@ -154,8 +154,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	if err != nil {
 		return err
 	}
-	// Haiku reviews the phrases scans find, on an Anthropic key.
+	// Haiku reviews the phrases scans find, on an Anthropic key, until the month's tokens are spent.
 	terminology.WithReviewer(terminologyRepo, judges{llm: llm})
+	terminology.WithBudget(llm.BudgetSpent)
 	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
 	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, limits, now)
 	if err != nil {
@@ -173,7 +174,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		prompttestapp.WithReviewers(reviewers{llm: llm}, homepage.New(homepage.Options{Contact: getenv("CRAWLER_CONTACT")}),
 			func(err error) { logger.WarnContext(ctx, "candidate review", "error", err) }),
 		// Haiku on an Anthropic key reads the answers while one works (ADR-0007).
-		prompttestapp.WithExtractors(extractors{llm: llm}))
+		prompttestapp.WithExtractors(extractors{llm: llm}),
+		// Both stop using Haiku once the month's language-model tokens are spent.
+		prompttestapp.WithBudget(llm.BudgetSpent))
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
 	insight := newInsight(insightpersistence.New(store.Queries()), companies, promptTest, analysis, terminology, now)
 	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
@@ -313,7 +316,7 @@ func limitsOf(getenv func(string) string) (limits, error) {
 }
 
 // spenders are what counts towards the month's tokens: the scans' product matching, the term
-// review, and the review of the competitor candidates.
+// review, the review of the competitor candidates, and Haiku's reading of Prompt answers.
 type spenders struct {
 	analyses   *persistence.Repository
 	terms      *terminologypersistence.Repository
@@ -346,7 +349,11 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp
 		if err != nil {
 			return llmapp.Spending{}, err
 		}
-		month += reviewed + checked
+		read, err := sp.candidates.ReadingTokensSince(ctx, since)
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		month += reviewed + checked + read
 		scans, average, err := sp.analyses.TokensPerScan(ctx)
 		if err != nil {
 			return llmapp.Spending{}, err
@@ -438,6 +445,8 @@ func newAnalysis(ctx context.Context, getenv func(string) string, repo *persiste
 		now,
 		analysisapp.Limits{
 			MonthlyTokens: l.monthly, SiteTextChars: 60_000, Workers: scanWorkers,
+			// Matching stops at the month's tokens of every job together, as the settings show them.
+			BudgetSpent: llm.BudgetSpent,
 		},
 	)
 	if err := svc.Recover(ctx); err != nil {

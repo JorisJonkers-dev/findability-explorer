@@ -223,6 +223,22 @@ func TestSettingsFailures(t *testing.T) {
 	}
 }
 
+func TestBudgetSpentAtTheMonthlyTokens(t *testing.T) {
+	f := setup("", nil)
+	if spent, err := f.svc.BudgetSpent(t.Context()); err != nil || spent {
+		t.Fatalf("1,234 of 2,000,000 = %v, %v", spent, err)
+	}
+	full := app.New(newRepo(), &connector{}, &reporter{}, func(context.Context) (app.Spending, error) {
+		return app.Spending{ThisMonth: 2_000_000}, nil
+	}, app.Config{MonthlyTokens: 2_000_000}, func() time.Time { return now }, func() string { return "id" })
+	if spent, err := full.BudgetSpent(t.Context()); err != nil || !spent {
+		t.Fatalf("2,000,000 of 2,000,000 = %v, %v", spent, err)
+	}
+	if _, err := setup("", errBoom).svc.BudgetSpent(t.Context()); !errors.Is(err, errBoom) {
+		t.Fatalf("spent failing = %v", err)
+	}
+}
+
 func TestAddChooseAndDelete(t *testing.T) {
 	f := setup("sk-ant-vault", nil)
 	c, err := f.svc.Add(t.Context(), "joris", "mistral", " Course ", "good-key-1")

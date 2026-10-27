@@ -2075,6 +2075,8 @@ func (s CandidateReviewStateProblem) Validate() error {
 	switch s {
 	case "noKey":
 		return nil
+	case "budget":
+		return nil
 	case "failed":
 		return nil
 	default:
@@ -14911,6 +14913,8 @@ func (s *TermReviewState) Validate() error {
 func (s TermReviewStateProblem) Validate() error {
 	switch s {
 	case "noModel":
+		return nil
+	case "budget":
 		return nil
 	case "failed":
 		return nil

@@ -176,8 +176,28 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if err := repo.AddAnswer(ctx, read); err == nil {
 		t.Error("the same task answered twice")
 	}
-	if err := repo.SetExtraction(ctx, unread.ID, domain.Extraction{Failed: true, Cost: 7}, at); err != nil {
+	if err := repo.SetExtraction(ctx, unread.ID, domain.Extraction{Failed: true, Cost: 7, InputTokens: 1, HaikuTokens: 1}, at); err != nil {
 		t.Fatal(err)
+	}
+	if answers, _ := repo.Answers(ctx, r.ID, false); answers[1].Extraction == nil || !answers[1].Extraction.Failed {
+		t.Fatalf("a failed reading = %+v", answers[1].Extraction)
+	}
+	// A failed reading is replaced by the next, and what both used counts.
+	again := domain.Extraction{Companies: []domain.Company{{Name: "Twentebelt", CompetitorID: "twentebelt", Position: 1}}, InputTokens: 4, OutputTokens: 5, Cost: 3, HaikuTokens: 9}
+	if err := repo.SetExtraction(ctx, unread.ID, again, at); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetExtraction(ctx, unread.ID, again, at); !errors.Is(err, domain.ErrRead) {
+		t.Fatalf("an answer read twice = %v", err)
+	}
+	if err := repo.SetExtraction(ctx, read.ID, domain.Extraction{}, at); !errors.Is(err, domain.ErrRead) {
+		t.Fatalf("an answer read already = %v", err)
+	}
+	if n, err := repo.ReadingTokensSince(ctx, at); err != nil || n != 10 {
+		t.Errorf("reading tokens = %d, %v", n, err)
+	}
+	if n, _ := repo.ReadingTokensSince(ctx, at.Add(time.Hour)); n != 0 {
+		t.Errorf("reading tokens later = %d", n)
 	}
 	answers, err := repo.Answers(ctx, r.ID, true)
 	if err != nil || len(answers) != 3 {
@@ -189,13 +209,14 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 		!slices.Equal(got.Extraction.WrongClaims, read.Extraction.WrongClaims) || got.Extraction.Cost != 200 {
 		t.Errorf("answer = %+v, extraction %+v", got, got.Extraction)
 	}
-	if answers[1].Extraction == nil || !answers[1].Extraction.Failed || answers[2].Failure != "Rate limited." || answers[2].Extraction != nil {
-		t.Errorf("unread %+v, failed %+v", answers[1].Extraction, answers[2])
+	if x := answers[1].Extraction; x == nil || x.Failed || len(x.Companies) != 1 || x.InputTokens != 5 || x.OutputTokens != 5 || x.Cost != 10 ||
+		answers[2].Failure != "Rate limited." || answers[2].Extraction != nil {
+		t.Errorf("read again %+v, failed %+v", answers[1].Extraction, answers[2])
 	}
 	if bare, _ := repo.Answers(ctx, r.ID, false); bare[0].Text != "" || bare[0].Extraction == nil {
 		t.Errorf("answers without text = %+v", bare[0])
 	}
-	if spent, err := repo.SpentSince(ctx, at); err != nil || spent != 1500+200+7 {
+	if spent, err := repo.SpentSince(ctx, at); err != nil || spent != 1500+200+7+3 {
 		t.Errorf("spent = %d, %v", spent, err)
 	}
 	if spent, _ := repo.SpentSince(ctx, at.Add(time.Hour)); spent != 0 {
@@ -206,8 +227,11 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 		t.Errorf("sightings = %+v, %v", sightings, err)
 	}
 	namings, err := repo.Namings(ctx)
+	// The newest answer first: the one read again names Twentebelt too.
 	if err != nil || !slices.Equal(namings, []domain.Naming{
-		{AnswerID: read.ID, Name: "Twentebelt", CompetitorID: "twentebelt"}, {AnswerID: read.ID, Name: "Ashworth", URL: "https://ashworth.com"},
+		{AnswerID: unread.ID, Name: "Twentebelt", CompetitorID: "twentebelt"},
+		{AnswerID: read.ID, Name: "Twentebelt", CompetitorID: "twentebelt"},
+		{AnswerID: read.ID, Name: "Ashworth", URL: "https://ashworth.com"},
 	}) {
 		t.Errorf("namings = %+v, %v", namings, err)
 	}

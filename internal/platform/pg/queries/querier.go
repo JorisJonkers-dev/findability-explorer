@@ -28,7 +28,9 @@ type Querier interface {
 	AddPromptAnswer(ctx context.Context, arg AddPromptAnswerParams) (uuid.UUID, error)
 	AddPromptAnswerCompany(ctx context.Context, arg AddPromptAnswerCompanyParams) error
 	AddPromptCandidateDecision(ctx context.Context, arg AddPromptCandidateDecisionParams) error
-	AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) error
+	// An extraction, or, for an answer whose reading failed, that reading replaced: what the failed
+	// reading used stays counted. An answer read already keeps its reading, and no row is touched.
+	AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) (int64, error)
 	AddPromptRunModel(ctx context.Context, arg AddPromptRunModelParams) error
 	// Takes over the running run whose holder was last heard of before stale_before.
 	AdoptStalePromptRun(ctx context.Context, arg AdoptStalePromptRunParams) ([]uuid.UUID, error)
@@ -122,6 +124,8 @@ type Querier interface {
 	// Every name an answer gave, matched or not, the newest answer first: what the answers say of a
 	// company on the list.
 	PromptNamings(ctx context.Context) ([]PromptNamingsRow, error)
+	// The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
+	PromptReadingTokensSince(ctx context.Context, since time.Time) (int64, error)
 	PromptReviewTokensSince(ctx context.Context, since time.Time) (int64, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)

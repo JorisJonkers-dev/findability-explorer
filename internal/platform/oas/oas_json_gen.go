@@ -3214,6 +3214,8 @@ func (s *CandidateReviewStateProblem) Decode(d *jx.Decoder) error {
 	switch CandidateReviewStateProblem(v) {
 	case CandidateReviewStateProblemNoKey:
 		*s = CandidateReviewStateProblemNoKey
+	case CandidateReviewStateProblemBudget:
+		*s = CandidateReviewStateProblemBudget
 	case CandidateReviewStateProblemFailed:
 		*s = CandidateReviewStateProblemFailed
 	default:
@@ -23626,6 +23628,8 @@ func (s *TermReviewStateProblem) Decode(d *jx.Decoder) error {
 	switch TermReviewStateProblem(v) {
 	case TermReviewStateProblemNoModel:
 		*s = TermReviewStateProblemNoModel
+	case TermReviewStateProblemBudget:
+		*s = TermReviewStateProblemBudget
 	case TermReviewStateProblemFailed:
 		*s = TermReviewStateProblemFailed
 	default:

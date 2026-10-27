@@ -377,7 +377,7 @@ export const zLlmEvent = z.object({
 });
 
 /**
- * What analyses may spend on the language model.
+ * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
  */
 export const zLlmBudget = z.object({
     monthlyTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
@@ -597,7 +597,11 @@ export const zTermCandidate = z.object({
 export const zTermReviewState = z.object({
     running: z.boolean(),
     waiting: z.int().gte(0).lte(1000000),
-    problem: z.enum(['noModel', 'failed']).optional()
+    problem: z.enum([
+        'noModel',
+        'budget',
+        'failed'
+    ]).optional()
 });
 
 /**
@@ -1665,7 +1669,11 @@ export const zCompetitorCandidate = z.object({
  */
 export const zCandidateReviewState = z.object({
     running: z.boolean(),
-    problem: z.enum(['noKey', 'failed']).optional()
+    problem: z.enum([
+        'noKey',
+        'budget',
+        'failed'
+    ]).optional()
 });
 
 /**

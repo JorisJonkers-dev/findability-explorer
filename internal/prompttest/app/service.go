@@ -67,6 +67,8 @@ type Service struct {
 	review review
 	// extractors read the answers instead of OpenRouter when they hand one out; nil until WithExtractors.
 	extractors Extractors
+	// budget stops Claude Haiku once the month's language-model tokens are spent; nil until WithBudget.
+	budget BudgetSpent
 }
 
 // Option changes how a Service waits and runs work in the background; tests use them.
@@ -87,6 +89,12 @@ func WithReviewers(r Reviewers, pages HomePages, onError func(error)) Option {
 // one, OpenRouter reads them with domain.ExtractorModel.
 func WithExtractors(e Extractors) Option {
 	return func(s *Service) { s.extractors = e }
+}
+
+// WithBudget stops Claude Haiku once the month's language-model tokens are spent: the review of the
+// candidates stops, and OpenRouter reads the answers instead. Without it, Haiku does not stop.
+func WithBudget(spent BudgetSpent) Option {
+	return func(s *Service) { s.budget = spent }
 }
 
 // WithSpawn replaces how a run is started in the background.
@@ -210,25 +218,51 @@ func (s *Service) catalogue(ctx context.Context, credentialID string) []domain.C
 	return models
 }
 
-// extractor is what reads the answers, and its model: Claude Haiku while an Anthropic key works,
-// else OpenRouter through gw with domain.ExtractorModel.
-func (s *Service) extractor(ctx context.Context, gw Gateway) (Extractor, string, error) {
+// reader is what reads the answers: the extractor, its model, and whether it is Claude Haiku,
+// whose tokens count towards the month's language-model tokens.
+type reader struct {
+	extractor Extractor
+	model     string
+	haiku     bool
+}
+
+// extractor is what reads the answers: Claude Haiku while an Anthropic key works and the month's
+// language-model tokens are not spent, else OpenRouter through gw with domain.ExtractorModel.
+func (s *Service) extractor(ctx context.Context, gw Gateway) (reader, error) {
 	if s.extractors != nil {
 		x, model, err := s.extractors.Current(ctx)
 		if err != nil {
-			return nil, "", fmt.Errorf("the extractor: %w", err)
+			return reader{}, fmt.Errorf("the extractor: %w", err)
 		}
 		if x != nil {
-			return x, model, nil
+			spent, err := s.tokensSpent(ctx)
+			if err != nil {
+				return reader{}, err
+			}
+			if !spent {
+				return reader{extractor: x, model: model, haiku: true}, nil
+			}
 		}
 	}
-	return openRouterExtractor{gw: gw}, domain.ExtractorModel, nil
+	return reader{extractor: openRouterExtractor{gw: gw}, model: domain.ExtractorModel}, nil
+}
+
+// tokensSpent reports whether the month's language-model tokens are spent; never without a budget.
+func (s *Service) tokensSpent(ctx context.Context) (bool, error) {
+	if s.budget == nil {
+		return false, nil
+	}
+	spent, err := s.budget(ctx)
+	if err != nil {
+		return false, fmt.Errorf("this month's language-model tokens: %w", err)
+	}
+	return spent, nil
 }
 
 // extractorModel is the model that reads the answers now, as the settings show it.
 func (s *Service) extractorModel(ctx context.Context) (string, error) {
-	_, model, err := s.extractor(ctx, nil) // the gateway is not asked
-	return model, err
+	r, err := s.extractor(ctx, nil) // the gateway is not asked
+	return r.model, err
 }
 
 // openRouterExtractor reads the answers on OpenRouter with domain.ExtractorModel.

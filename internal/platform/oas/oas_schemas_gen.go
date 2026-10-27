@@ -1434,8 +1434,9 @@ func (s *CandidateNameJoined) UnmarshalText(data []byte) error {
 type CandidateReviewState struct {
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
-	// Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its
-	// provider failed). Absent when it went well.
+	// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
+	// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
+	// well.
 	Problem OptCandidateReviewStateProblem `json:"problem"`
 }
 
@@ -1462,12 +1463,14 @@ func (s *CandidateReviewState) SetProblem(val OptCandidateReviewStateProblem) {
 func (*CandidateReviewState) startCandidateReviewRes() {}
 func (*CandidateReviewState) startCompetitorCheckRes() {}
 
-// Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its
-// provider failed). Absent when it went well.
+// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
+// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
+// well.
 type CandidateReviewStateProblem string
 
 const (
 	CandidateReviewStateProblemNoKey  CandidateReviewStateProblem = "noKey"
+	CandidateReviewStateProblemBudget CandidateReviewStateProblem = "budget"
 	CandidateReviewStateProblemFailed CandidateReviewStateProblem = "failed"
 )
 
@@ -1475,6 +1478,7 @@ const (
 func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
 	return []CandidateReviewStateProblem{
 		CandidateReviewStateProblemNoKey,
+		CandidateReviewStateProblemBudget,
 		CandidateReviewStateProblemFailed,
 	}
 }
@@ -1483,6 +1487,8 @@ func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
 func (s CandidateReviewStateProblem) MarshalText() ([]byte, error) {
 	switch s {
 	case CandidateReviewStateProblemNoKey:
+		return []byte(s), nil
+	case CandidateReviewStateProblemBudget:
 		return []byte(s), nil
 	case CandidateReviewStateProblemFailed:
 		return []byte(s), nil
@@ -1496,6 +1502,9 @@ func (s *CandidateReviewStateProblem) UnmarshalText(data []byte) error {
 	switch CandidateReviewStateProblem(data) {
 	case CandidateReviewStateProblemNoKey:
 		*s = CandidateReviewStateProblemNoKey
+		return nil
+	case CandidateReviewStateProblemBudget:
+		*s = CandidateReviewStateProblemBudget
 		return nil
 	case CandidateReviewStateProblemFailed:
 		*s = CandidateReviewStateProblemFailed
@@ -3759,12 +3768,14 @@ type ListTermCandidatesUnauthorized ProblemStatusCode
 
 func (*ListTermCandidatesUnauthorized) listTermCandidatesRes() {}
 
-// What analyses may spend on the language model.
+// What every job on the language model may spend in a month together - the scans' product matching,
+// the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when
+// the month's tokens are spent.
 // Ref: #/components/schemas/LlmBudget
 type LlmBudget struct {
-	// The tokens all analyses of a calendar month (UTC) may use.
+	// The tokens every job together may use in a calendar month (UTC).
 	MonthlyTokens int64 `json:"monthlyTokens"`
-	// The tokens analyses created this month used so far.
+	// The tokens every job used this month so far.
 	UsedThisMonth int64 `json:"usedThisMonth"`
 	// The tokens one scan's product matching used on average, over every scan the language model answered
 	// for; 0 before the first.
@@ -12189,8 +12200,9 @@ type TermReviewState struct {
 	Running bool `json:"running"`
 	// How many waiting candidates it has not reviewed yet.
 	Waiting int32 `json:"waiting"`
-	// Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its
-	// provider failed). Absent when it went well.
+	// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
+	// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
+	// well.
 	Problem OptTermReviewStateProblem `json:"problem"`
 }
 
@@ -12226,12 +12238,14 @@ func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
 
 func (*TermReviewState) startTermReviewRes() {}
 
-// Why its last review stopped short - noModel (no Anthropic key is set up) or failed (the model or its
-// provider failed). Absent when it went well.
+// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
+// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
+// well.
 type TermReviewStateProblem string
 
 const (
 	TermReviewStateProblemNoModel TermReviewStateProblem = "noModel"
+	TermReviewStateProblemBudget  TermReviewStateProblem = "budget"
 	TermReviewStateProblemFailed  TermReviewStateProblem = "failed"
 )
 
@@ -12239,6 +12253,7 @@ const (
 func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
 	return []TermReviewStateProblem{
 		TermReviewStateProblemNoModel,
+		TermReviewStateProblemBudget,
 		TermReviewStateProblemFailed,
 	}
 }
@@ -12247,6 +12262,8 @@ func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
 func (s TermReviewStateProblem) MarshalText() ([]byte, error) {
 	switch s {
 	case TermReviewStateProblemNoModel:
+		return []byte(s), nil
+	case TermReviewStateProblemBudget:
 		return []byte(s), nil
 	case TermReviewStateProblemFailed:
 		return []byte(s), nil
@@ -12260,6 +12277,9 @@ func (s *TermReviewStateProblem) UnmarshalText(data []byte) error {
 	switch TermReviewStateProblem(data) {
 	case TermReviewStateProblemNoModel:
 		*s = TermReviewStateProblemNoModel
+		return nil
+	case TermReviewStateProblemBudget:
+		*s = TermReviewStateProblemBudget
 		return nil
 	case TermReviewStateProblemFailed:
 		*s = TermReviewStateProblemFailed

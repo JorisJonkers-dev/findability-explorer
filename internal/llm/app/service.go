@@ -39,7 +39,9 @@ type Repository interface {
 	LastTests(ctx context.Context) (map[string]domain.Test, error)
 }
 
-// Budget is what analyses may spend on the language model, and what one scan uses on average.
+// Budget is what every job on the language model may spend in a month (the scans' product matching,
+// the term review, the competitor review and Haiku's reading of Prompt answers), and what one scan
+// uses on average.
 type Budget struct {
 	MonthlyTokens int64
 	UsedThisMonth int64
@@ -49,14 +51,14 @@ type Budget struct {
 	ScansMatched   int
 }
 
-// Spending is what the analyses used: this month's tokens, and the average of a scan.
+// Spending is what the jobs used: this month's tokens, all together, and the average of a scan.
 type Spending struct {
 	ThisMonth      int64
 	AveragePerScan int64
 	ScansMatched   int
 }
 
-// Spent returns what analyses used; the analysis context provides it.
+// Spent returns what the jobs used; the composition root sums it from their contexts.
 type Spent func(ctx context.Context) (Spending, error)
 
 // Config is the service's fixed settings.
@@ -135,6 +137,16 @@ func (s *Service) Settings(ctx context.Context) (Settings, error) {
 			AveragePerScan: spent.AveragePerScan, ScansMatched: spent.ScansMatched,
 		},
 	}, nil
+}
+
+// BudgetSpent reports whether this month's tokens, of every job together, reached the monthly
+// budget, as the settings show them. Every job on the language model stops when it has.
+func (s *Service) BudgetSpent(ctx context.Context) (bool, error) {
+	spent, err := s.spent(ctx)
+	if err != nil {
+		return false, fmt.Errorf("sum this month's tokens: %w", err)
+	}
+	return spent.ThisMonth >= s.cfg.MonthlyTokens, nil
 }
 
 // credentials is the Vault credential, when there is one, then the stored ones oldest first,

@@ -32,6 +32,7 @@ export function verdictReason(check: CompetitorCheck | undefined): string {
 export function listCheckLine(state: CandidateReviewState, unchecked: number): string {
   if (state.running) return 'Haiku is checking the companies on the list.'
   if (state.problem === 'noKey') return 'No Anthropic key is set up, so Haiku cannot check the list.'
+  if (state.problem === 'budget') return "This month's language-model budget is used up, so Haiku checks the rest of the list next month."
   if (state.problem === 'failed') return 'Haiku failed on its last try. Try again.'
   if (unchecked === 1) return 'Haiku has not checked 1 company on the list yet.'
   if (unchecked > 0) return `Haiku has not checked ${String(unchecked)} companies on the list yet.`

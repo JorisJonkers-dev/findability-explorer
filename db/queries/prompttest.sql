@@ -105,15 +105,25 @@ SET model = excluded.model, answer = excluded.answer, citations = excluded.citat
 WHERE prompt_answers.failure IS NOT NULL
 RETURNING id;
 
--- name: AddPromptExtraction :exec
+-- name: AddPromptExtraction :execrows
+-- An extraction, or, for an answer whose reading failed, that reading replaced: what the failed
+-- reading used stays counted. An answer read already keeps its reading, and no row is touched.
 INSERT INTO prompt_extractions (
     answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, input_tokens, output_tokens,
-    cost_micros, extracted_at
+    cost_micros, haiku_tokens, extracted_at
 )
 VALUES (
     @answer_id, @failed, @addresses, @names_tribelt, @cites_tribelt, @correctness, @wrong_claims, @input_tokens,
-    @output_tokens, @cost_micros, @extracted_at
-);
+    @output_tokens, @cost_micros, @haiku_tokens, @extracted_at
+)
+ON CONFLICT (answer_id) DO UPDATE
+SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = excluded.names_tribelt,
+    cites_tribelt = excluded.cites_tribelt, correctness = excluded.correctness, wrong_claims = excluded.wrong_claims,
+    input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
+    output_tokens = prompt_extractions.output_tokens + excluded.output_tokens,
+    cost_micros = prompt_extractions.cost_micros + excluded.cost_micros,
+    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at
+WHERE prompt_extractions.failed;
 
 -- name: AddPromptAnswerCompany :exec
 INSERT INTO prompt_answer_companies (answer_id, position, name, url, competitor_id)
@@ -228,3 +238,9 @@ SELECT c.answer_id, c.name, c.url, coalesce(c.competitor_id, '')::text AS compet
 FROM prompt_answer_companies AS c
 JOIN prompt_answers AS a ON a.id = c.answer_id
 ORDER BY a.answered_at DESC, c.answer_id, c.position;
+
+-- name: PromptReadingTokensSince :one
+-- The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
+SELECT coalesce(sum(haiku_tokens), 0)::bigint AS tokens
+FROM prompt_extractions
+WHERE extracted_at >= @since;

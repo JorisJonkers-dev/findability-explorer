@@ -22,14 +22,16 @@ type execution struct {
 	s         *Service
 	run       domain.Run
 	gw        Gateway
-	extractor Extractor
 	directory []domain.DirectoryCompany
 	budget    domain.Micros
 
 	// answered are the answers stored before this execution, as after a restart.
 	answered []domain.Answer
 
-	mu      sync.Mutex
+	mu sync.Mutex
+	// reader reads the answers: Claude Haiku until the month's language-model tokens are spent,
+	// OpenRouter from then on.
+	reader  reader
 	spent   domain.Micros
 	stopped domain.RunStatus // set when the budget is reached; empty otherwise
 	lost    bool             // set when another instance took the run over
@@ -90,7 +92,7 @@ func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.Ta
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	gw, extractor, err := s.models(ctx, settings.CredentialID)
+	gw, reader, err := s.models(ctx, settings.CredentialID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -124,19 +126,19 @@ func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.Ta
 			tasks = append(tasks, t)
 		}
 	}
-	e := &execution{s: s, run: run, gw: gw, extractor: extractor, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
+	e := &execution{s: s, run: run, gw: gw, reader: reader, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
 	return e, tasks, unread, nil
 }
 
 // models is what a run asks through: OpenRouter, reached with the credential, for the providers'
 // answers, and the extractor that reads them.
-func (s *Service) models(ctx context.Context, credentialID string) (Gateway, Extractor, error) {
+func (s *Service) models(ctx context.Context, credentialID string) (Gateway, reader, error) {
 	gw, err := s.gateways.Gateway(ctx, credentialID)
 	if err != nil {
-		return nil, nil, err
+		return nil, reader{}, err
 	}
-	extractor, _, err := s.extractor(ctx, gw)
-	return gw, extractor, err
+	r, err := s.extractor(ctx, gw)
+	return gw, r, err
 }
 
 // fail finishes a run that cannot go on as failed, with why.
@@ -223,22 +225,55 @@ func (e *execution) read(ctx context.Context, a domain.Answer) {
 }
 
 // extract has the extractor read an answer, trying twice; an answer it cannot read is marked
-// failed, never dropped. What every try used is counted.
+// failed, never dropped. What every try used is counted, and what Claude Haiku used counts towards
+// the month's language-model tokens.
 func (e *execution) extract(ctx context.Context, a domain.Answer) domain.Extraction {
 	in := ExtractInput{Prompt: a.Prompt.Text, Answer: a.Text, Citations: a.Citations, FactSheet: e.run.FactSheet}
+	r := e.currentReader(ctx)
 	var used domain.Reply
 	for range 2 {
-		x, usage, err := e.extractor.Extract(ctx, in)
+		x, usage, err := r.extractor.Extract(ctx, in)
 		used.InputTokens += usage.InputTokens
 		used.OutputTokens += usage.OutputTokens
 		used.Cost += usage.Cost
 		if err == nil {
 			read := domain.Read(x, a.Citations, e.directory)
 			read.InputTokens, read.OutputTokens, read.Cost = used.InputTokens, used.OutputTokens, used.Cost
+			read.HaikuTokens = haikuTokens(r, used)
 			return read
 		}
 	}
-	return domain.Extraction{Failed: true, InputTokens: used.InputTokens, OutputTokens: used.OutputTokens, Cost: used.Cost}
+	return domain.Extraction{
+		Failed: true, InputTokens: used.InputTokens, OutputTokens: used.OutputTokens, Cost: used.Cost, HaikuTokens: haikuTokens(r, used),
+	}
+}
+
+// currentReader is the reader for the next answer: Claude Haiku hands over to OpenRouter for the
+// rest of the run once the month's language-model tokens are spent. A budget that cannot be read
+// leaves the reader as it is.
+func (e *execution) currentReader(ctx context.Context) reader {
+	e.mu.Lock()
+	r := e.reader
+	e.mu.Unlock()
+	if !r.haiku {
+		return r
+	}
+	if spent, err := e.s.tokensSpent(ctx); err != nil || !spent {
+		return r
+	}
+	r = reader{extractor: openRouterExtractor{gw: e.gw}, model: domain.ExtractorModel}
+	e.mu.Lock()
+	e.reader = r
+	e.mu.Unlock()
+	return r
+}
+
+// haikuTokens is what a reading used that counts towards the month's language-model tokens.
+func haikuTokens(r reader, used domain.Reply) int64 {
+	if !r.haiku {
+		return 0
+	}
+	return used.InputTokens + used.OutputTokens
 }
 
 // count adds an answer's cost to the month's spend, stops the run at the budget, and tells the

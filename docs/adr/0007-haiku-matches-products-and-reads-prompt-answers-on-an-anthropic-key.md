@@ -43,3 +43,10 @@ settings page hid the switch while an Anthropic key worked. The owner decided th
 
 The switch is about product matching only. The term review, the competitor review and the reading
 of Prompt test answers keep using Haiku while an Anthropic key works.
+
+## Amended: Haiku stops at the month's budget
+
+The tokens Haiku uses reading Prompt answers count towards the month's language-model tokens on the
+settings page, with those of product matching, the term review and the competitor review. Once the
+month's tokens are spent, OpenRouter reads the rest of the answers, as without an Anthropic key, and
+product matching stops for every scan, as it always did at the budget.

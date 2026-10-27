@@ -107,6 +107,7 @@ export function reviewLine(state: CandidateReviewState, unchecked: number): stri
   const companies = (n: number) => (n === 1 ? '1 company' : `${String(n)} companies`)
   if (state.running) return 'Haiku is merging the duplicates and checking the companies.'
   if (state.problem === 'noKey') return 'No Anthropic key is set up, so Haiku cannot check the companies.'
+  if (state.problem === 'budget') return "This month's language-model budget is used up, so Haiku checks the rest next month."
   if (state.problem === 'failed') return 'Haiku failed on its last try. Try again.'
   if (unchecked > 0) return `Haiku has not checked ${companies(unchecked)} yet.`
   return 'Haiku has checked every company.'

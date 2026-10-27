@@ -42,6 +42,10 @@ const MaxHistory = 100
 type Limits struct {
 	// MonthlyTokens is how many language-model tokens all analyses of a calendar month may use.
 	MonthlyTokens int64
+	// BudgetSpent, when set, reports whether the month's language-model tokens of every job
+	// together (the term review, the competitor review and the reading of Prompt answers too) are
+	// spent; matching then stops at that shared total instead of the analyses' own tokens.
+	BudgetSpent func(ctx context.Context) (bool, error)
 	// SiteTextChars is how much site text the language model reads per analysis.
 	SiteTextChars int
 	// Workers is how many analyses run at once, each on its own site; at least one.
@@ -470,10 +474,7 @@ func (s *Service) match(ctx context.Context, pages []domain.Page) (domain.Matchi
 	case matcher == nil:
 		return domain.MatchingDisabled, "", nil, domain.Usage{}
 	}
-	now := s.now().UTC()
-	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-	spent, err := s.repo.TokensSince(ctx, monthStart)
-	if err != nil || spent >= s.limits.MonthlyTokens {
+	if spent, err := s.budgetSpent(ctx); err != nil || spent {
 		return domain.MatchingSkipped, "", nil, domain.Usage{}
 	}
 	text, truncated := domain.SiteText(pages, s.limits.SiteTextChars)
@@ -491,6 +492,17 @@ func (s *Service) match(ctx context.Context, pages []domain.Page) (domain.Matchi
 		}
 	}
 	return domain.MatchingDone, model, eqs, usage
+}
+
+// budgetSpent reports whether the month's tokens are spent: of every job together when the limits
+// say how, else of the analyses alone.
+func (s *Service) budgetSpent(ctx context.Context) (bool, error) {
+	if s.limits.BudgetSpent != nil {
+		return s.limits.BudgetSpent(ctx)
+	}
+	now := s.now().UTC()
+	spent, err := s.repo.TokensSince(ctx, time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC))
+	return spent >= s.limits.MonthlyTokens, err
 }
 
 func (s *Service) fail(ctx context.Context, id uuid.UUID, reason string) error {

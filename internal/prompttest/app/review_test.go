@@ -401,3 +401,39 @@ func TestOneReviewRunsAtATime(t *testing.T) {
 		t.Error("still running")
 	}
 }
+
+func TestTheReviewStopsWhenTheMonthsTokensAreSpent(t *testing.T) {
+	names := make([][2]string, 0, app.CheckBatch+3)
+	for i := range app.CheckBatch + 3 {
+		names = append(names, [2]string{fmt.Sprintf("Company %02d", i), ""})
+	}
+	review := func(spent app.BudgetSpent) (*app.Service, *model, *repo) {
+		r, _ := naming(names...)
+		m := &model{verdicts: competitors}
+		svc := app.New(r, gateways{gw: newGateway()}, &directory{}, func() time.Time { return start }, app.Config{Owner: "a"}, func(uuid.UUID, error) {},
+			app.WithSpawn(func(f func()) { f() }), app.WithReviewers(models{m: m}, &pages{}, func(err error) { t.Errorf("reported %v", err) }),
+			app.WithBudget(spent))
+		return svc, m, r
+	}
+	// Spent from the start: nothing is asked.
+	svc, m, _ := review(func(context.Context) (bool, error) { return true, nil })
+	svc.StartReview(t.Context())
+	if st := svc.ReviewState(); st.Problem != app.ReviewProblemBudget || m.merged != 0 || len(m.checked) != 0 {
+		t.Errorf("spent from the start: state %+v, merged %d, checked %d", st, m.merged, len(m.checked))
+	}
+	// Spent after the first batch: what it checked is kept.
+	var checked *model
+	svc, checked, r := review(func(context.Context) (bool, error) {
+		checked.mu.Lock()
+		defer checked.mu.Unlock()
+		return len(checked.checked) >= 1, nil
+	})
+	if err := svc.Review(t.Context()); !errors.Is(err, app.ErrBudgetSpent) || checked.merged == 0 || len(checked.checked) != 1 || len(r.verdicts) != app.CheckBatch {
+		t.Errorf("spent after a batch = %v; checked %d times, %d verdicts", err, len(checked.checked), len(r.verdicts))
+	}
+	// The budget cannot be read: the review fails.
+	failing, _, _ := review(func(context.Context) (bool, error) { return false, errBoom })
+	if err := failing.Review(t.Context()); !errors.Is(err, errBoom) {
+		t.Errorf("the budget unreadable = %v", err)
+	}
+}

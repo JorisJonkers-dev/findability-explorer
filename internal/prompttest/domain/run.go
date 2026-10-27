@@ -168,6 +168,8 @@ var (
 	ErrNotFound = errors.New("not found")
 	// ErrAnswered is returned when storing an answer to a task the run answered already.
 	ErrAnswered = errors.New("the run answered this question already")
+	// ErrRead is returned when storing the reading of an answer read already.
+	ErrRead = errors.New("the answer was read already")
 	// ErrBudgetReached is returned when asking again while the month's budget is spent.
 	ErrBudgetReached = errors.New("the month's budget for Prompt runs is reached")
 	// ErrCompanyKnown is returned when a candidate is added with a website another company has.

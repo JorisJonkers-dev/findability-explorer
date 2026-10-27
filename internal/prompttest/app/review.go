@@ -32,16 +32,21 @@ const (
 	reviewTimeout = 30 * time.Minute
 )
 
-// ErrNoReviewer is returned by Review when no Anthropic key is set up.
-var ErrNoReviewer = errors.New("no Anthropic key is set up")
+var (
+	// ErrNoReviewer is returned by Review when no Anthropic key is set up.
+	ErrNoReviewer = errors.New("no Anthropic key is set up")
+	// ErrBudgetSpent is returned by Review when the month's language-model tokens are spent.
+	ErrBudgetSpent = errors.New("this month's language-model budget is spent")
+)
 
 // ReviewProblem is why the last review stopped short.
 type ReviewProblem string
 
 const (
-	ReviewProblemNone  ReviewProblem = ""
-	ReviewProblemNoKey ReviewProblem = "noKey"
-	ReviewProblemFails ReviewProblem = "failed"
+	ReviewProblemNone   ReviewProblem = ""
+	ReviewProblemNoKey  ReviewProblem = "noKey"
+	ReviewProblemBudget ReviewProblem = "budget"
+	ReviewProblemFails  ReviewProblem = "failed"
 )
 
 // ReviewState is whether the model is reviewing, and why its last review stopped short.
@@ -93,6 +98,8 @@ func (s *Service) startIn(ctx context.Context, st *runState, work func(context.C
 			st.problem.Store(ReviewProblemNone)
 		case errors.Is(err, ErrNoReviewer):
 			st.problem.Store(ReviewProblemNoKey)
+		case errors.Is(err, ErrBudgetSpent):
+			st.problem.Store(ReviewProblemBudget)
 		default:
 			st.problem.Store(ReviewProblemFails)
 			s.review.onError(err)
@@ -103,10 +110,14 @@ func (s *Service) startIn(ctx context.Context, st *runState, work func(context.C
 
 // Review has the model merge the candidates that are one company, then check each waiting company
 // it has not checked, and records the decisions its sure verdicts make. ErrNoReviewer when no
-// Anthropic key is set up.
+// Anthropic key is set up; ErrBudgetSpent when the month's language-model tokens are spent before
+// the merge or a batch, with what was checked before kept.
 func (s *Service) Review(ctx context.Context) error {
 	r, model, err := s.reviewer(ctx)
 	if err != nil {
+		return err
+	}
+	if err := s.tokensLeft(ctx); err != nil {
 		return err
 	}
 	directory, err := s.directory.Companies(ctx)
@@ -122,6 +133,9 @@ func (s *Service) Review(ctx context.Context) error {
 	}
 	unchecked := domain.Unchecked(all)
 	for len(unchecked) > 0 {
+		if err := s.tokensLeft(ctx); err != nil {
+			return err
+		}
 		batch := unchecked[:min(CheckBatch, len(unchecked))]
 		unchecked = unchecked[len(batch):]
 		if err := s.check(ctx, r, model, batch); err != nil {
@@ -144,6 +158,18 @@ func (s *Service) reviewer(ctx context.Context) (Reviewer, string, error) {
 		return nil, "", ErrNoReviewer
 	}
 	return r, model, nil
+}
+
+// tokensLeft is ErrBudgetSpent once the month's language-model tokens are spent.
+func (s *Service) tokensLeft(ctx context.Context) error {
+	spent, err := s.tokensSpent(ctx)
+	if err != nil {
+		return err
+	}
+	if spent {
+		return ErrBudgetSpent
+	}
+	return nil
 }
 
 // check has the model check batch, stores its verdicts and what asking used, and records the

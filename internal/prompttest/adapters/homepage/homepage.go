@@ -177,7 +177,7 @@ type reader struct {
 
 func (r *reader) walk(n *html.Node) {
 	if n.Type == html.ElementNode {
-		switch n.DataAtom {
+		switch n.DataAtom { //nolint:exhaustive // every other element keeps its text
 		case atom.Script, atom.Style, atom.Noscript, atom.Template, atom.Svg, atom.Nav, atom.Footer, atom.Iframe:
 			return
 		case atom.Title:
@@ -191,7 +191,6 @@ func (r *reader) walk(n *html.Node) {
 			if h := clip(textOf(n), maxHeading); h != "" && len(r.page.Headings) < maxHeadings {
 				r.page.Headings = append(r.page.Headings, h)
 			}
-		default:
 		}
 	}
 	if n.Type == html.TextNode && r.text.Len() < maxText*2 {

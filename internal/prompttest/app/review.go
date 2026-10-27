@@ -157,22 +157,29 @@ func (s *Service) decideByModel(ctx context.Context, batch []domain.Candidate, v
 		if err != nil {
 			continue // decided meanwhile, or gone
 		}
-		competitorID := ""
-		if status == domain.CandidateAdded {
-			id, err := s.directory.Add(ctx, domain.ModelDecider, c.Name, asked.Website)
-			if errors.Is(err, domain.ErrInvalid) || errors.Is(err, domain.ErrCompanyKnown) {
-				continue
-			}
-			if err != nil {
-				return fmt.Errorf("add %s: %w", c.Name, err)
-			}
-			competitorID = id
-		}
-		if _, err := s.decide(ctx, c, status, competitorID, domain.ModelDecider); err != nil {
+		if err := s.decideOneByModel(ctx, c, status, asked.Website); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// decideOneByModel records the language model's decision on c: an added one goes on the list
+// with website first. One the list refuses is left waiting.
+func (s *Service) decideOneByModel(ctx context.Context, c domain.Candidate, status domain.CandidateStatus, website string) error {
+	competitorID := ""
+	if status == domain.CandidateAdded {
+		id, err := s.directory.Add(ctx, domain.ModelDecider, c.Name, website)
+		if errors.Is(err, domain.ErrInvalid) || errors.Is(err, domain.ErrCompanyKnown) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("add %s: %w", c.Name, err)
+		}
+		competitorID = id
+	}
+	_, err := s.decide(ctx, c, status, competitorID, domain.ModelDecider)
+	return err
 }
 
 // dossiers is what the model reads of each company of batch: what the answers say around its

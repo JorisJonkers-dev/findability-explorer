@@ -11,8 +11,9 @@ import (
 )
 
 func TestTheTargetMarketSaysWhoCompetes(t *testing.T) {
+	market := domain.TargetMarket
 	for _, want := range []string{"eyelink", "1,150 °C", "spiral freezers", "A competitor makes metal conveyor belts", "plastic modular belts", "distributor"} {
-		if !strings.Contains(domain.TargetMarket, want) {
+		if !strings.Contains(market, want) {
 			t.Errorf("the target market lacks %q", want)
 		}
 	}

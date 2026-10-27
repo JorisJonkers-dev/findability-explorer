@@ -132,6 +132,6 @@ export function shouldRetry(failures: number, error: unknown): boolean {
 export const REVIEW_POLL_MS = 3000
 
 /** The lists are asked for again while the language model reviews, since it decides as it goes. */
-export function reviewPoll(state: TermReviewState | undefined): number | false {
+export function reviewPoll(state: Pick<TermReviewState, 'running'> | undefined): number | false {
   return state?.running ? REVIEW_POLL_MS : false
 }

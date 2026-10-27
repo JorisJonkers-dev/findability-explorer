@@ -373,6 +373,67 @@ func (r *Repository) Undecide(ctx context.Context, id string) error {
 	return nil
 }
 
+// Merges returns every merge of candidates.
+func (r *Repository) Merges(ctx context.Context) ([]domain.Merge, error) {
+	rows, err := r.store.Queries().ListPromptCandidateMerges(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select candidate merges: %w", err)
+	}
+	out := make([]domain.Merge, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Merge{
+			CandidateID: row.CandidateID, IntoID: row.IntoID, CompetitorID: row.CompetitorID, Separate: row.KeptApart,
+			By: row.MergedBy, At: row.MergedAt.UTC(),
+		})
+	}
+	return out, nil
+}
+
+// SaveMerges stores merges in one transaction, each replacing the one on its candidate.
+func (r *Repository) SaveMerges(ctx context.Context, merges []domain.Merge) error {
+	return r.store.InTx(ctx, func(q *queries.Queries) error {
+		for _, m := range merges {
+			if err := q.SavePromptCandidateMerge(ctx, queries.SavePromptCandidateMergeParams{
+				CandidateID: m.CandidateID, IntoID: optionalText(m.IntoID), CompetitorID: optionalText(m.CompetitorID),
+				KeptApart: m.Separate, MergedBy: clip(m.By, 200), MergedAt: m.At,
+			}); err != nil {
+				return fmt.Errorf("store candidate merge: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
+// CompanyVerdicts returns every check of a candidate by the language model.
+func (r *Repository) CompanyVerdicts(ctx context.Context) ([]domain.CompanyVerdict, error) {
+	rows, err := r.store.Queries().ListPromptCandidateChecks(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select candidate checks: %w", err)
+	}
+	out := make([]domain.CompanyVerdict, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.CompanyVerdict{
+			CandidateID: row.CandidateID, Competitor: row.Competitor, Sure: row.Sure, Reason: row.Reason, Model: row.Model, At: row.CheckedAt.UTC(),
+		})
+	}
+	return out, nil
+}
+
+// SaveCompanyVerdicts stores verdicts in one transaction, each replacing the one on its candidate.
+func (r *Repository) SaveCompanyVerdicts(ctx context.Context, verdicts []domain.CompanyVerdict) error {
+	return r.store.InTx(ctx, func(q *queries.Queries) error {
+		for _, v := range verdicts {
+			if err := q.SavePromptCandidateCheck(ctx, queries.SavePromptCandidateCheckParams{
+				CandidateID: v.CandidateID, Competitor: v.Competitor, Sure: v.Sure, Reason: clip(v.Reason, 500),
+				Model: clip(v.Model, 200), CheckedAt: v.At,
+			}); err != nil {
+				return fmt.Errorf("store candidate check: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
 // optionalText is s, or NULL when s is empty.
 func optionalText(s string) pgtype.Text { return pgtype.Text{String: s, Valid: s != ""} }
 

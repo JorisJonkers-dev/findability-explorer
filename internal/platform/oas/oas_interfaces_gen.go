@@ -29,6 +29,10 @@ type CompareScansRes interface {
 	compareScansRes()
 }
 
+type DecideCompetitorCandidatesRes interface {
+	decideCompetitorCandidatesRes()
+}
+
 type DeleteCompetitorRes interface {
 	deleteCompetitorRes()
 }
@@ -141,8 +145,16 @@ type SetPlanTargetsRes interface {
 	setPlanTargetsRes()
 }
 
+type SplitCompetitorCandidateRes interface {
+	splitCompetitorCandidateRes()
+}
+
 type StartAnalysisRes interface {
 	startAnalysisRes()
+}
+
+type StartCandidateReviewRes interface {
+	startCandidateReviewRes()
 }
 
 type StartPromptRunRes interface {

@@ -55,15 +55,15 @@ func named(mentions []domain.Mention, companies []domain.DirectoryCompany) []Nam
 	return out
 }
 
-// Results reads the latest runs and their answers.
+// Results reads the latest runs and their answers, each named company matched to the list as it is now.
 func (s *Service) Results(ctx context.Context) (Results, error) {
 	runs, err := s.repo.Runs(ctx, MaxRuns)
 	if err != nil {
 		return Results{}, fmt.Errorf("list the runs: %w", err)
 	}
-	companies, err := s.directory.Companies(ctx)
+	m, companies, err := s.matcher(ctx)
 	if err != nil {
-		return Results{}, fmt.Errorf("list the companies: %w", err)
+		return Results{}, err
 	}
 	out := Results{Runs: make([]RunResult, 0, len(runs)), Mentions: []NamedMention{}, WrongClaims: []domain.WrongClaim{}}
 	mentioned := false
@@ -72,6 +72,7 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 		if err != nil {
 			return Results{}, fmt.Errorf("the answers of run %s: %w", r.ID, err)
 		}
+		answers = rematched(answers, m)
 		cells := domain.Cells(answers)
 		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells})
 		if !mentioned && len(cells) > 0 {
@@ -107,6 +108,11 @@ func (s *Service) Answers(ctx context.Context, runID uuid.UUID, filter AnswerFil
 	if err != nil {
 		return RunResult{}, nil, fmt.Errorf("the run's answers: %w", err)
 	}
+	m, _, err := s.matcher(ctx)
+	if err != nil {
+		return RunResult{}, nil, err
+	}
+	answers = rematched(answers, m)
 	kept := make([]domain.Answer, 0, len(answers))
 	for _, a := range answers {
 		if filter.keeps(a) {
@@ -129,6 +135,10 @@ func (s *Service) Counted(ctx context.Context, limit int) ([]RunAnswers, error) 
 	if err != nil {
 		return nil, fmt.Errorf("list the runs: %w", err)
 	}
+	m, _, err := s.matcher(ctx)
+	if err != nil {
+		return nil, err
+	}
 	out := []RunAnswers{}
 	for _, r := range runs {
 		if len(out) == limit {
@@ -138,6 +148,7 @@ func (s *Service) Counted(ctx context.Context, limit int) ([]RunAnswers, error) 
 		if err != nil {
 			return nil, fmt.Errorf("the answers of run %s: %w", r.ID, err)
 		}
+		answers = rematched(answers, m)
 		kept := slices.DeleteFunc(answers, func(a domain.Answer) bool { return !a.Counts() })
 		if len(kept) > 0 {
 			out = append(out, RunAnswers{Run: r, Answers: kept})

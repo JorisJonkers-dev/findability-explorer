@@ -96,4 +96,25 @@ type Repository interface {
 	Decide(ctx context.Context, d domain.CandidateDecision) error
 	// Undecide deletes a decision, or returns domain.ErrNotFound.
 	Undecide(ctx context.Context, id string) error
+	// Merges returns every merge of candidates.
+	Merges(ctx context.Context) ([]domain.Merge, error)
+	// SaveMerges stores merges, each replacing the one on its candidate.
+	SaveMerges(ctx context.Context, merges []domain.Merge) error
+	// CompanyVerdicts returns every check of a candidate by the language model.
+	CompanyVerdicts(ctx context.Context) ([]domain.CompanyVerdict, error)
+	// SaveCompanyVerdicts stores verdicts, each replacing the one on its candidate.
+	SaveCompanyVerdicts(ctx context.Context, verdicts []domain.CompanyVerdict) error
+}
+
+// Reviewer is a language model that reviews the candidates: which are one company, or a company
+// on the list, and which are competitors of Tribelt.
+type Reviewer interface {
+	Merge(ctx context.Context, candidates []domain.Candidate, directory []domain.DirectoryCompany) ([]domain.Cluster, error)
+	Check(ctx context.Context, candidates []domain.Candidate) ([]domain.CompanyVerdict, error)
+}
+
+// Reviewers hands out the reviewer and the model it asks: Claude Haiku on an Anthropic key. A nil
+// Reviewer without an error means no Anthropic key is set up.
+type Reviewers interface {
+	Current(ctx context.Context) (Reviewer, string, error)
 }

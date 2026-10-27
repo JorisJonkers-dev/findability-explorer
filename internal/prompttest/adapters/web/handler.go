@@ -25,10 +25,14 @@ type UseCases interface {
 	Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
-	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, map[domain.CandidateStatus]int, error)
+	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error)
 	AddCandidate(ctx context.Context, actor, id, name, website string) (domain.Candidate, error)
 	DismissCandidate(ctx context.Context, actor, id string) (domain.Candidate, error)
 	UndoCandidate(ctx context.Context, actor, id string) error
+	DecideMany(ctx context.Context, actor string, status domain.CandidateStatus, ids []string) ([]app.Decided, error)
+	Split(ctx context.Context, actor, id string) error
+	StartReview(ctx context.Context) bool
+	ReviewState() app.ReviewState
 }
 
 // Handler implements the prompt-test operations. Business rules stay in the use cases.
@@ -206,10 +210,66 @@ func (h *Handler) ListCompetitorCandidates(ctx context.Context, params oas.ListC
 	for _, c := range list[:min(len(list), maxCandidates)] {
 		items = append(items, toCandidate(c))
 	}
-	return &oas.CompetitorCandidateList{Items: items, Counts: oas.CompetitorCandidateCounts{
-		Pending: int32(counts[domain.CandidatePending]), Added: int32(counts[domain.CandidateAdded]), //nolint:gosec // small counts
-		Dismissed: int32(counts[domain.CandidateDismissed]), //nolint:gosec // small counts
+	return &oas.CompetitorCandidateList{Items: items, Review: toReviewState(h.uc.ReviewState()), Counts: oas.CompetitorCandidateCounts{
+		Pending: int32(counts.Pending), Added: int32(counts.Added), Dismissed: int32(counts.Dismissed), Unchecked: int32(counts.Unchecked), //nolint:gosec // small counts
 	}}, nil
+}
+
+// StartCandidateReview implements startCandidateReview.
+func (h *Handler) StartCandidateReview(ctx context.Context) (oas.StartCandidateReviewRes, error) {
+	h.uc.StartReview(ctx)
+	out := toReviewState(h.uc.ReviewState())
+	return &out, nil
+}
+
+func toReviewState(s app.ReviewState) oas.CandidateReviewState {
+	out := oas.CandidateReviewState{Running: s.Running}
+	if s.Problem != app.ReviewProblemNone {
+		out.Problem = oas.NewOptCandidateReviewStateProblem(oas.CandidateReviewStateProblem(s.Problem))
+	}
+	return out
+}
+
+// DecideCompetitorCandidates implements decideCompetitorCandidates.
+func (h *Handler) DecideCompetitorCandidates(ctx context.Context, req *oas.CandidateDecisions) (oas.DecideCompetitorCandidatesRes, error) {
+	status := domain.CandidateDismissed
+	if req.Action == oas.CandidateDecisionsActionAdd {
+		status = domain.CandidateAdded
+	}
+	ids := make([]string, 0, len(req.Ids))
+	for _, id := range req.Ids {
+		ids = append(ids, string(id))
+	}
+	decided, err := h.uc.DecideMany(ctx, h.actor(ctx), status, ids)
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.CandidateDecisionResults{Items: make([]oas.CandidateDecisionResult, 0, len(decided))}
+	for _, d := range decided {
+		r := oas.CandidateDecisionResult{ID: oas.CompetitorCandidateId(d.ID), Outcome: oas.CandidateDecisionResultOutcome(d.Outcome)}
+		if d.Name != "" {
+			r.Name = oas.NewOptString(d.Name)
+		}
+		if d.Reason != "" {
+			r.Reason = oas.NewOptString(clip(sentence(errors.New(d.Reason)), 300))
+		}
+		out.Items = append(out.Items, r)
+	}
+	return out, nil
+}
+
+// SplitCompetitorCandidate implements splitCompetitorCandidate.
+func (h *Handler) SplitCompetitorCandidate(ctx context.Context, params oas.SplitCompetitorCandidateParams) (oas.SplitCompetitorCandidateRes, error) {
+	err := h.uc.Split(ctx, h.actor(ctx), string(params.CompetitorCandidateId))
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.SplitCompetitorCandidateNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No competitor candidate has this name.")}, nil
+	case errors.Is(err, app.ErrNotMerged):
+		return &oas.SplitCompetitorCandidateConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, sentence(err))}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.SplitCompetitorCandidateNoContent{}, nil
 }
 
 // AddCompetitorCandidate implements addCompetitorCandidate.
@@ -368,6 +428,20 @@ func toCandidate(c domain.Candidate) oas.CompetitorCandidate {
 		}
 		out.Decision = oas.NewOptCompetitorCandidateDecision(dec)
 	}
+	out.Sites = c.Sites[:min(len(c.Sites), 20)]
+	if c.Website != "" {
+		out.Website = oas.NewOptString(c.Website)
+	}
+	for _, m := range c.Members[:min(len(c.Members), 200)] {
+		joined := oas.CandidateNameJoined(m.Joined)
+		if m.Joined == domain.JoinedAsLead {
+			joined = oas.CandidateNameJoinedLead
+		}
+		out.Names = append(out.Names, oas.CandidateName{ID: oas.CompetitorCandidateId(m.ID), Name: clip(m.Name, 200), Answers: int32(m.Answers), Joined: joined}) //nolint:gosec // answers
+	}
+	if v := c.Verdict; v != nil {
+		out.Check = oas.NewOptCandidateCheck(oas.CandidateCheck{Competitor: v.Competitor, Sure: v.Sure, Reason: v.Reason, Model: v.Model, At: v.At})
+	}
 	return out
 }
 
@@ -415,4 +489,12 @@ func toModels(models []domain.ModelChoice) []oas.PromptModelChoice {
 		out = append(out, c)
 	}
 	return out
+}
+
+// clip cuts s to at most n characters, as the contract allows.
+func clip(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n])
+	}
+	return s
 }

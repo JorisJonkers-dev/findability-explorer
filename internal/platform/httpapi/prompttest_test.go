@@ -21,6 +21,8 @@ type promptTests struct {
 	startErr  error
 	updateErr error
 	decideErr error
+	decided   domain.CandidateStatus
+	reviewing bool
 	change    app.Change
 	actor     string
 	filter    app.AnswerFilter
@@ -119,11 +121,38 @@ func (p *promptTests) Update(_ context.Context, actor string, ch app.Change) (ap
 }
 
 func candidate() domain.Candidate {
-	return domain.Candidate{ID: "3a7bd3e2360a9f01", Name: "Ashworth", Answers: 12, Providers: []string{"openai"}, Addresses: []string{"https://ashworth.com"}, LastSeen: answered}
+	return domain.Candidate{
+		ID: "3a7bd3e2360a9f01", Name: "Ashworth", Answers: 12, Providers: []string{"openai"}, Addresses: []string{"https://ashworth.com"}, LastSeen: answered,
+		Sites: []string{"ashworth.com"}, Website: "https://ashworth.com/",
+		Members: []domain.Member{
+			{ID: "3a7bd3e2360a9f01", Name: "Ashworth", Answers: 10},
+			{ID: "3a7bd3e2360a9f02", Name: "Ashworth Bros", Answers: 2, Joined: domain.JoinedByModel},
+		},
+		Verdict: &domain.CompanyVerdict{Competitor: true, Sure: true, Reason: "Makes metal belts.", Model: "anthropic: claude-haiku-5-5", At: answered},
+	}
 }
 
-func (p *promptTests) Candidates(context.Context, domain.CandidateStatus) ([]domain.Candidate, map[domain.CandidateStatus]int, error) {
-	return []domain.Candidate{candidate()}, map[domain.CandidateStatus]int{domain.CandidatePending: 1, domain.CandidateDismissed: 4}, p.err
+func (p *promptTests) Candidates(context.Context, domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error) {
+	return []domain.Candidate{candidate()}, app.CandidateCounts{Pending: 1, Dismissed: 4, Unchecked: 1}, p.err
+}
+
+func (p *promptTests) DecideMany(_ context.Context, actor string, status domain.CandidateStatus, ids []string) ([]app.Decided, error) {
+	p.actor, p.decided = actor, status
+	return []app.Decided{
+		{ID: ids[0], Name: "Ashworth", Outcome: app.OutcomeDone},
+		{ID: "3a7bd3e2360a9f02", Outcome: app.OutcomeSkipped, Reason: "the answers gave no website for it"},
+	}, p.decideErr
+}
+
+func (p *promptTests) Split(context.Context, string, string) error { return p.decideErr }
+
+func (p *promptTests) StartReview(context.Context) bool {
+	p.reviewing = true
+	return true
+}
+
+func (p *promptTests) ReviewState() app.ReviewState {
+	return app.ReviewState{Running: p.reviewing, Problem: app.ReviewProblemNoKey}
 }
 
 func (p *promptTests) AddCandidate(_ context.Context, actor, _, _, _ string) (domain.Candidate, error) {
@@ -308,6 +337,53 @@ func TestCompetitorCandidates(t *testing.T) {
 	a.prompts().err = errors.New("down")
 	if r := callAs(t, srv, http.MethodGet, base, "", "admin"); r.code != http.StatusInternalServerError {
 		t.Errorf("failing list: %d", r.code)
+	}
+}
+
+func TestCandidatesFoldReviewAndAreDecidedTogether(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	base := "/api/v1/admin/competitor-candidates"
+	r := callAs(t, srv, http.MethodGet, base, "", "admin")
+	item := r.body["items"].([]any)[0].(map[string]any)
+	names := item["names"].([]any)
+	if r.code != http.StatusOK || item["website"] != "https://ashworth.com/" || item["sites"].([]any)[0] != "ashworth.com" || len(names) != 2 ||
+		names[0].(map[string]any)["joined"] != "lead" || names[1].(map[string]any)["joined"] != "model" ||
+		item["check"].(map[string]any)["reason"] != "Makes metal belts." || r.body["counts"].(map[string]any)["unchecked"] != float64(1) ||
+		r.body["review"].(map[string]any)["problem"] != "noKey" {
+		t.Fatalf("list = %d %v", r.code, r.body)
+	}
+	for _, path := range []string{base + "/review", base + "/decisions", base + "/3a7bd3e2360a9f02/split"} {
+		if r := callAs(t, srv, http.MethodPost, path, `{"action":"add","ids":["3a7bd3e2360a9f01"]}`, "tester"); r.code != http.StatusForbidden {
+			t.Errorf("a viewer on %s: %d", path, r.code)
+		}
+	}
+	if r := callAs(t, srv, http.MethodPost, base+"/review", "", "admin"); r.code != http.StatusAccepted || r.body["running"] != true {
+		t.Errorf("review = %d %v", r.code, r.body)
+	}
+	r = callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"add","ids":["3a7bd3e2360a9f01","3a7bd3e2360a9f02"]}`, "admin")
+	items := r.body["items"].([]any)
+	if r.code != http.StatusOK || a.prompts().decided != domain.CandidateAdded || len(items) != 2 ||
+		items[0].(map[string]any)["outcome"] != "done" || items[1].(map[string]any)["reason"] != "The answers gave no website for it." {
+		t.Fatalf("decide = %d %v", r.code, r.body)
+	}
+	if r := callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"dismiss","ids":["3a7bd3e2360a9f01"]}`, "admin"); r.code != http.StatusOK || a.prompts().decided != domain.CandidateDismissed {
+		t.Errorf("dismiss several = %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"keep","ids":["3a7bd3e2360a9f01"]}`, "admin"); r.code != http.StatusBadRequest {
+		t.Errorf("an unknown action = %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPost, base+"/3a7bd3e2360a9f02/split", "", "admin"); r.code != http.StatusNoContent {
+		t.Errorf("split = %d", r.code)
+	}
+	for err, want := range map[error]int{domain.ErrNotFound: 404, app.ErrNotMerged: 409, errors.New("down"): 500} {
+		a.prompts().decideErr = err
+		if r := callAs(t, srv, http.MethodPost, base+"/3a7bd3e2360a9f02/split", "", "admin"); r.code != want {
+			t.Errorf("split with %v = %d, want %d", err, r.code, want)
+		}
+	}
+	if r := callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"dismiss","ids":["3a7bd3e2360a9f01"]}`, "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("decide failing = %d", r.code)
 	}
 }
 

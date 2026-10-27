@@ -1539,6 +1539,31 @@ export const zCompetitorCandidateDecision = z.object({
 });
 
 /**
+ * One name a competitor candidate goes by.
+ */
+export const zCandidateName = z.object({
+    id: zCompetitorCandidateId,
+    name: z.string().max(200),
+    answers: z.int().gte(1).lte(1000000),
+    joined: z.enum([
+        'lead',
+        'site',
+        'model'
+    ])
+});
+
+/**
+ * Claude Haiku's check of a candidate. A suggestion; a person decides.
+ */
+export const zCandidateCheck = z.object({
+    competitor: z.boolean(),
+    sure: z.boolean(),
+    reason: z.string().max(500),
+    model: z.string().max(200),
+    at: z.iso.datetime({ offset: true }).max(64)
+});
+
+/**
  * A company the answers name that is not on the company list.
  */
 export const zCompetitorCandidate = z.object({
@@ -1550,22 +1575,61 @@ export const zCompetitorCandidate = z.object({
     models: z.array(z.string().max(200)).max(50),
     addresses: z.array(z.string().max(500)).max(50),
     lastSeenAt: z.iso.datetime({ offset: true }).max(64),
-    decision: zCompetitorCandidateDecision.optional()
+    decision: zCompetitorCandidateDecision.optional(),
+    sites: z.array(z.string().max(253)).max(20).optional(),
+    website: z.string().max(500).optional(),
+    names: z.array(zCandidateName).max(200).optional(),
+    check: zCandidateCheck.optional()
+});
+
+/**
+ * Whether Claude Haiku is reviewing the candidates, and why its last review stopped short.
+ */
+export const zCandidateReviewState = z.object({
+    running: z.boolean(),
+    problem: z.enum(['noKey', 'failed']).optional()
+});
+
+/**
+ * Add or dismiss several competitor candidates.
+ */
+export const zCandidateDecisions = z.object({
+    action: z.enum(['add', 'dismiss']),
+    ids: z.array(zCompetitorCandidateId).min(1).max(1000)
+});
+
+/**
+ * What deciding did to one candidate.
+ */
+export const zCandidateDecisionResult = z.object({
+    id: zCompetitorCandidateId,
+    name: z.string().max(200).optional(),
+    outcome: z.enum(['done', 'skipped']),
+    reason: z.string().max(300).optional()
+});
+
+/**
+ * What deciding on several candidates did to each.
+ */
+export const zCandidateDecisionResults = z.object({
+    items: z.array(zCandidateDecisionResult).max(1000)
 });
 
 /**
  * How many candidates have each status.
  */
 export const zCompetitorCandidateCounts = z.object({
+    unchecked: z.int().gte(0).lte(1000000),
     pending: z.int().gte(0).lte(1000000),
     added: z.int().gte(0).lte(1000000),
     dismissed: z.int().gte(0).lte(1000000)
 });
 
 /**
- * The competitor candidates with one status.
+ * The competitor candidates with one status, and Claude Haiku's review of them.
  */
 export const zCompetitorCandidateList = z.object({
+    review: zCandidateReviewState,
     items: z.array(zCompetitorCandidate).max(1000),
     counts: zCompetitorCandidateCounts
 });
@@ -1904,6 +1968,30 @@ export const zListCompetitorCandidatesQuery = z.object({
  * The candidates and how many have each status.
  */
 export const zListCompetitorCandidatesResponse = zCompetitorCandidateList;
+
+/**
+ * The review is under way.
+ */
+export const zStartCandidateReviewResponse = zCandidateReviewState;
+
+/**
+ * What to do, and to which candidates.
+ */
+export const zDecideCompetitorCandidatesBody = zCandidateDecisions;
+
+/**
+ * What happened to each candidate.
+ */
+export const zDecideCompetitorCandidatesResponse = zCandidateDecisionResults;
+
+export const zSplitCompetitorCandidatePath = z.object({
+    competitorCandidateId: zCompetitorCandidateId
+});
+
+/**
+ * Split off.
+ */
+export const zSplitCompetitorCandidateResponse = z.void();
 
 /**
  * The company to add.

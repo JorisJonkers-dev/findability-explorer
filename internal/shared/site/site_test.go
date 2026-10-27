@@ -35,3 +35,53 @@ func TestHost(t *testing.T) {
 		}
 	}
 }
+
+func TestDomain(t *testing.T) {
+	for raw, want := range map[string]string{
+		"https://www.Ashworth.com/products":         "ashworth.com",
+		"jpconveyors.com/":                          "jpconveyors.com",
+		"www.oramachines.com":                       "oramachines.com",
+		"https://products.bandogrp.com/en/product/": "bandogrp.com",
+		"https://www.dunlopbelting.co.uk/":          "dunlopbelting.co.uk",
+		"https://de.globalmeshbelt.com/spiral":      "globalmeshbelt.com",
+		"http://metiz.tw/product_conveyor_belt.htm": "metiz.tw",
+		"https://tribelt.jorisjonkers.dev/":         "jorisjonkers.dev",
+		"":                                          "",
+		"no address":                                "",
+		"localhost":                                 "",
+		"https://co.uk/":                            "",
+	} {
+		if got := site.Domain(raw); got != want {
+			t.Errorf("Domain(%q) = %q, want %q", raw, got, want)
+		}
+	}
+}
+
+func TestCompanyDomainLeavesOutPlatforms(t *testing.T) {
+	for raw, want := range map[string]string{
+		"https://www.ashworth.com/":                                     "ashworth.com",
+		"https://www.europages.nl/ondernemingen/rothstein":              "",
+		"https://facebook.com/1427195200825384":                         "",
+		"https://m.made-in-china.com/product/Wire-Mesh.html":            "",
+		"https://www.wlw.de/de/firma/industrieofen-und-anlagenbau-gmbh": "",
+		"https://www.linkedin.com/company/x":                            "",
+		"https://en.wikipedia.org/wiki/Conveyor_belt":                   "",
+	} {
+		if got := site.CompanyDomain(raw); got != want {
+			t.Errorf("CompanyDomain(%q) = %q, want %q", raw, got, want)
+		}
+	}
+}
+
+func TestRoot(t *testing.T) {
+	for raw, want := range map[string]string{
+		"https://www.ashworth.com/products?x=1": "https://www.ashworth.com/",
+		"jpconveyors.com/":                      "https://jpconveyors.com/",
+		"http://www.tkf.nl/":                    "http://www.tkf.nl/",
+		"":                                      "",
+	} {
+		if got := site.Root(raw); got != want {
+			t.Errorf("Root(%q) = %q, want %q", raw, got, want)
+		}
+	}
+}

@@ -62,6 +62,13 @@ type Handler interface {
 	//
 	// GET /api/v1/competitors/{competitorId}/scans/compare
 	CompareScans(ctx context.Context, params CompareScansParams) (CompareScansRes, error)
+	// DecideCompetitorCandidates implements decideCompetitorCandidates operation.
+	//
+	// Administrators only. Adds each candidate to the competitor list with its website, or dismisses it.
+	// One without a website, one decided already, and one the list refuses are skipped with the reason.
+	//
+	// POST /api/v1/admin/competitor-candidates/decisions
+	DecideCompetitorCandidates(ctx context.Context, req *CandidateDecisions) (DecideCompetitorCandidatesRes, error)
 	// DeleteCompetitor implements deleteCompetitor operation.
 	//
 	// Administrators only. An added company is deleted with every scan of it. A researched company is the
@@ -205,8 +212,8 @@ type Handler interface {
 	// ListCompetitorCandidates implements listCompetitorCandidates operation.
 	//
 	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
-	// with how often and by which providers' models, and the addresses given; filtered by status, most
-	// answers first.
+	// with how often and by which providers' models, the addresses given and its websites; names on one
+	// website, or merged, are one company. Filtered by status, most answers first.
 	//
 	// GET /api/v1/admin/competitor-candidates
 	ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (ListCompetitorCandidatesRes, error)
@@ -280,6 +287,13 @@ type Handler interface {
 	//
 	// PUT /api/v1/admin/plan/targets
 	SetPlanTargets(ctx context.Context, req *PlanTargetsChange) (SetPlanTargetsRes, error)
+	// SplitCompetitorCandidate implements splitCompetitorCandidate operation.
+	//
+	// Administrators only. Takes a name Claude Haiku or a person merged into a candidate out of it again;
+	// it is not merged again. Names on one website stay one company: 409 for those.
+	//
+	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/split
+	SplitCompetitorCandidate(ctx context.Context, params SplitCompetitorCandidateParams) (SplitCompetitorCandidateRes, error)
 	// StartAnalysis implements startAnalysis operation.
 	//
 	// Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
@@ -290,6 +304,15 @@ type Handler interface {
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, req *NewAnalysis) (StartAnalysisRes, error)
+	// StartCandidateReview implements startCandidateReview operation.
+	//
+	// Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
+	// candidates that are one company, or a company on the list, and then checks each company it has not
+	// checked for whether it is a competitor of Tribelt. Its check is a suggestion; a person adds or
+	// dismisses. Returns the review's state; running already is no error.
+	//
+	// POST /api/v1/admin/competitor-candidates/review
+	StartCandidateReview(ctx context.Context) (StartCandidateReviewRes, error)
 	// StartPromptRun implements startPromptRun operation.
 	//
 	// Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest

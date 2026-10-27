@@ -88,7 +88,8 @@ describe('adding competitors', () => {
       { id: '3a7bd3e2360a9f01', name: 'Intralox', answers: 23, providers: ['openai'], models: [], addresses: ['https://www.intralox.com/en'], lastSeenAt: '2026-11-01T06:00:00Z', status: 'pending' },
       { id: '4b8ce4f3471b0a12', name: 'Habasit', answers: 14, providers: ['google'], models: [], addresses: [], lastSeenAt: '2026-11-01T06:00:00Z', status: 'pending' },
     ],
-    counts: { pending: 2, added: 0, dismissed: 0 },
+    counts: { pending: 2, added: 0, dismissed: 0, unchecked: 0 },
+    review: { running: false },
   }
 
   function admin(extra: Record<string, Handler> = {}) {

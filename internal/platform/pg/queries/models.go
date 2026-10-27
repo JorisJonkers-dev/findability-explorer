@@ -236,6 +236,15 @@ type PromptAnswerCompany struct {
 	CompetitorID pgtype.Text
 }
 
+type PromptCandidateCheck struct {
+	CandidateID string
+	Competitor  bool
+	Sure        bool
+	Reason      string
+	Model       string
+	CheckedAt   time.Time
+}
+
 type PromptCandidateDecision struct {
 	ID           string
 	Name         string
@@ -243,6 +252,15 @@ type PromptCandidateDecision struct {
 	CompetitorID pgtype.Text
 	DecidedBy    string
 	DecidedAt    time.Time
+}
+
+type PromptCandidateMerge struct {
+	CandidateID  string
+	IntoID       pgtype.Text
+	CompetitorID pgtype.Text
+	KeptApart    bool
+	MergedBy     string
+	MergedAt     time.Time
 }
 
 type PromptExtraction struct {

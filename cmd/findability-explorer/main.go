@@ -64,6 +64,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/webui"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/openrouter"
 	prompttestpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/reviewer"
 	prompttestapp "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	prompttestdomain "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/server"
@@ -164,7 +165,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	promptTest := prompttestapp.New(prompttestpersistence.New(store), gateways{llm: llm}, promptDirectory{companies: companies}, now,
 		prompttestapp.Config{}, func(id uuid.UUID, err error) {
 			logger.ErrorContext(ctx, "prompt run could not be recorded", "run", id, "error", err)
-		})
+		},
+		// Haiku on an Anthropic key reviews the competitor candidates (ADR-0006).
+		prompttestapp.WithReviewers(reviewers{llm: llm}, func(err error) { logger.WarnContext(ctx, "candidate review", "error", err) }))
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
 	insight := newInsight(insightpersistence.New(store.Queries()), companies, promptTest, analysis, terminology, now)
 	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
@@ -344,6 +347,20 @@ func monthStart(t time.Time) time.Time {
 
 // termReviewEvery is how often the language model looks for new phrases to review.
 const termReviewEvery = 10 * time.Minute
+
+// reviewers hands the prompt-test context its reviewer of competitor candidates: Haiku on an
+// Anthropic key, as for the term review, since it is cheap there.
+type reviewers struct {
+	llm *llmapp.Service
+}
+
+func (r reviewers) Current(ctx context.Context) (prompttestapp.Reviewer, string, error) {
+	client, model, err := r.llm.Haiku(ctx)
+	if err != nil || client == nil {
+		return nil, "", err
+	}
+	return reviewer.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
+}
 
 // judges hands the terminology context its judge: Haiku on an Anthropic key, whatever model
 // product matching uses, since reviewing hundreds of phrases must stay cheap.

@@ -835,6 +835,94 @@ func encodeCompareScansResponse(response CompareScansRes, w http.ResponseWriter,
 	}
 }
 
+func encodeDecideCompetitorCandidatesResponse(response DecideCompetitorCandidatesRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *CandidateDecisionResults:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *DecideCompetitorCandidatesBadRequest:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *DecideCompetitorCandidatesForbidden:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *DecideCompetitorCandidatesUnauthorized:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeDeleteCompetitorResponse(response DeleteCompetitorRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *DeleteCompetitorNoContent:
@@ -3193,6 +3281,133 @@ func encodeSetPlanTargetsResponse(response SetPlanTargetsRes, w http.ResponseWri
 	}
 }
 
+func encodeSplitCompetitorCandidateResponse(response SplitCompetitorCandidateRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *SplitCompetitorCandidateNoContent:
+		w.WriteHeader(204)
+
+		return nil
+
+	case *SplitCompetitorCandidateBadRequest:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *SplitCompetitorCandidateConflict:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *SplitCompetitorCandidateForbidden:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *SplitCompetitorCandidateNotFound:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *SplitCompetitorCandidateUnauthorized:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeStartAnalysisResponse(response StartAnalysisRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *Analysis:
@@ -3300,6 +3515,71 @@ func encodeStartAnalysisResponse(response StartAnalysisRes, w http.ResponseWrite
 		return nil
 
 	case *StartAnalysisUnprocessableEntity:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
+func encodeStartCandidateReviewResponse(response StartCandidateReviewRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *CandidateReviewState:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(202)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *StartCandidateReviewForbidden:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *StartCandidateReviewUnauthorized:
 		w.Header().Set("Content-Type", "application/problem+json")
 		code := response.StatusCode
 		if code == 0 {

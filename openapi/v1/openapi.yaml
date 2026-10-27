@@ -262,7 +262,7 @@ paths:
             type: integer
             format: int32
             minimum: 1
-            maximum: 200
+            maximum: 10000
             default: 50
       responses:
         "200":
@@ -762,7 +762,7 @@ paths:
             type: integer
             format: int32
             minimum: 1
-            maximum: 300
+            maximum: 10000
             default: 20
       responses:
         "200":
@@ -1639,7 +1639,7 @@ components:
             example: Märtens
         foundBy:
           type: array
-          maxItems: 500
+          maxItems: 10000
           description: >-
             The companies whose newest finished scan found the term on their site, by id. They
             use it too, though the desk research or the review did not name them; absent when no
@@ -1701,7 +1701,7 @@ components:
       properties:
         items:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: The matching terms, best match first.
           items:
             $ref: "#/components/schemas/Term"
@@ -1948,7 +1948,7 @@ components:
       properties:
         items:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: The companies.
           items:
             $ref: "#/components/schemas/Competitor"
@@ -2074,7 +2074,7 @@ components:
       properties:
         items:
           type: array
-          maxItems: 50
+          maxItems: 10000
           description: The analyses.
           items:
             $ref: "#/components/schemas/AnalysisSummary"
@@ -2245,13 +2245,13 @@ components:
             $ref: "#/components/schemas/CrawledPage"
         keywords:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: The site's most prominent phrases, highest score first.
           items:
             $ref: "#/components/schemas/Keyword"
         knownTerms:
           type: array
-          maxItems: 200
+          maxItems: 1000
           description: Terms from the terminology map found on the site, most frequent first.
           items:
             $ref: "#/components/schemas/KnownTerm"
@@ -2543,7 +2543,7 @@ components:
           $ref: "#/components/schemas/LlmFreeRequests"
         models:
           type: array
-          maxItems: 200
+          maxItems: 1000
           description: Anthropic - this month's tokens per model.
           items:
             $ref: "#/components/schemas/LlmModelTokens"
@@ -2737,7 +2737,7 @@ components:
         competitorIds:
           type: array
           minItems: 1
-          maxItems: 200
+          maxItems: 10000
           uniqueItems: true
           description: The companies to scan again.
           items:
@@ -2782,13 +2782,13 @@ components:
       properties:
         queued:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: The queued scans, one per company.
           items:
             $ref: "#/components/schemas/AnalysisSummary"
         skipped:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: The companies left out.
           items:
             $ref: "#/components/schemas/RescanSkip"
@@ -2857,7 +2857,7 @@ components:
           $ref: "#/components/schemas/ProfileGroup"
         terms:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: The terms.
           items:
             $ref: "#/components/schemas/ProfileTerm"
@@ -2957,19 +2957,19 @@ components:
           $ref: "#/components/schemas/ProfileGroup"
         added:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: Terms only the newer scan found, highest score first.
           items:
             $ref: "#/components/schemas/TermChange"
         removed:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: Terms only the older scan found, highest score first.
           items:
             $ref: "#/components/schemas/TermChange"
         moved:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: Terms both found whose score or pages moved beyond the threshold, largest move first.
           items:
             $ref: "#/components/schemas/TermChange"
@@ -3071,7 +3071,7 @@ components:
             example: en
         companies:
           type: array
-          maxItems: 200
+          maxItems: 10000
           description: The companies whose scans found it, by name.
           items:
             $ref: "#/components/schemas/CandidateCompany"
@@ -3224,7 +3224,7 @@ components:
       properties:
         items:
           type: array
-          maxItems: 1000
+          maxItems: 10000
           description: The candidates, most companies and highest score first.
           items:
             $ref: "#/components/schemas/TermCandidate"
@@ -3583,7 +3583,7 @@ components:
             $ref: "#/components/schemas/TribeltCrawler"
         keepingOut:
           type: array
-          maxItems: 300
+          maxItems: 10000
           description: The competitors that keep crawlers out, most crawlers first.
           items:
             $ref: "#/components/schemas/KeepingOut"
@@ -3935,7 +3935,7 @@ components:
             example: Draadogenbanden
         sellers:
           type: array
-          maxItems: 500
+          maxItems: 10000
           description: The competitors that sell it, by name.
           items:
             $ref: "#/components/schemas/ProductSeller"
@@ -4157,7 +4157,7 @@ components:
       properties:
         items:
           type: array
-          maxItems: 300
+          maxItems: 10000
           description: The rows.
           items:
             $ref: "#/components/schemas/AiReadinessRow"
@@ -4603,7 +4603,7 @@ components:
             $ref: "#/components/schemas/PromptRun"
         mentions:
           type: array
-          maxItems: 1000
+          maxItems: 10000
           description: The companies the answers of the newest run with any name, most answers first.
           items:
             $ref: "#/components/schemas/PromptMention"
@@ -4655,7 +4655,7 @@ components:
             $ref: "#/components/schemas/PromptNamedCompany"
         addresses:
           type: array
-          maxItems: 200
+          maxItems: 1000
           description: The addresses cited.
           items:
             type: string
@@ -5114,7 +5114,7 @@ components:
           example: https://www.ashworth.com/
         names:
           type: array
-          maxItems: 200
+          maxItems: 1000
           description: Every name it goes by, the one it is listed under first.
           items:
             $ref: "#/components/schemas/CandidateName"
@@ -5205,7 +5205,7 @@ components:
         ids:
           type: array
           minItems: 1
-          maxItems: 1000
+          maxItems: 10000
           description: The candidates.
           items:
             $ref: "#/components/schemas/CompetitorCandidateId"
@@ -5217,7 +5217,7 @@ components:
       properties:
         items:
           type: array
-          maxItems: 1000
+          maxItems: 10000
           description: One per candidate, in the order asked.
           items:
             $ref: "#/components/schemas/CandidateDecisionResult"
@@ -5287,7 +5287,7 @@ components:
           $ref: "#/components/schemas/CandidateReviewState"
         items:
           type: array
-          maxItems: 1000
+          maxItems: 10000
           description: The candidates, most answers first.
           items:
             $ref: "#/components/schemas/CompetitorCandidate"

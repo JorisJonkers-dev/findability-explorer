@@ -21,7 +21,7 @@ const (
 	DefaultListLimit = 20
 	// MaxListLimit is the most analyses one List returns, so a re-scan of every company can be
 	// followed in one list.
-	MaxListLimit = 300
+	MaxListLimit = 10000
 	// maxFailure is the longest failure reason stored; the contract and the database agree.
 	maxFailure = 500
 )

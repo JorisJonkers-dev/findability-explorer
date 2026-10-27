@@ -38,7 +38,7 @@ const figures = computed<Partial<Record<SectionId, { big: string; text: string }
     'catching-up': catchUpFigure(measures.value, trailing.value),
     'ai-search': aiFigure(results.value),
     competitors: { big: makers > 0 ? String(makers) : '…', text: TILE_TEXT.competitors },
-    terms: { big: terms.length > 0 ? String(map.total.value) : '…', text: terms.length > 0 ? termsText(terms) : 'search terms in the terminology map.' },
+    terms: { big: terms.length > 0 ? String(map.total.value) : '…', text: terms.length > 0 ? termsText(terms, map.languages.value) : 'search terms in the terminology map.' },
     plan: TILE_TEXT.plan,
   }
 })
@@ -129,7 +129,7 @@ onMounted(() => {
               />
               <TileBars
                 v-else-if="section.id === 'terms'"
-                :bars="languageBars(map.terms.value)"
+                :bars="languageBars(map.terms.value, map.languages.value)"
                 fill="orange"
                 :legend="[
                   { label: 'Tribelt uses', fill: 'orange' },

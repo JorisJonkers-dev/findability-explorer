@@ -46,23 +46,28 @@ export function tribeltTermCount(terms: readonly Pick<Term, 'usedBy'>[]): number
   return terms.filter(usedByTribelt).length
 }
 
-/** The languages the poster charts: the eight with the most terms. */
-export const LANGUAGES_SHOWN = 8
+/** The map's term count in one language, as the server counts it over the whole map. */
+export type LanguageCount = { value: string; count: number }
 
 /**
  * The terms per language, the most first, against the largest: the part Tribelt uses first, the
- * part only others use after it. American English counts as English.
+ * part only others use after it. American English counts as English. With the server's counts,
+ * the totals cover the whole map, even terms not loaded.
  */
-export function languageBars(terms: readonly Pick<Term, 'language' | 'usedBy'>[]): TileBar[] {
+export function languageBars(terms: readonly Pick<Term, 'language' | 'usedBy'>[], languages?: readonly LanguageCount[]): TileBar[] {
   const counts = new Map<string, { total: number; tribelt: number }>()
-  for (const term of terms) {
-    const language = term.language === 'en-US' ? 'en' : term.language
+  const add = (raw: string, total: number, tribelt: number) => {
+    const language = raw === 'en-US' ? 'en' : raw
     const count = counts.get(language) ?? { total: 0, tribelt: 0 }
-    count.total += 1
-    if (usedByTribelt(term)) count.tribelt += 1
+    count.total += total
+    count.tribelt += tribelt
     counts.set(language, count)
   }
-  const rows = [...counts.entries()].sort(([a, m], [b, n]) => n.total - m.total || a.localeCompare(b)).slice(0, LANGUAGES_SHOWN)
+  for (const term of terms) add(term.language, languages ? 0 : 1, usedByTribelt(term) ? 1 : 0)
+  for (const l of languages ?? []) add(l.value, l.count, 0)
+  for (const [language, count] of counts) if (count.total === 0) counts.delete(language)
+  // Every language with a term shows; none is cut off.
+  const rows = [...counts.entries()].sort(([a, m], [b, n]) => n.total - m.total || a.localeCompare(b))
   // Every language listed has a term, so the largest is at least one.
   const max = rows[0]?.[1].total ?? 1
   return rows.map(([language, { total, tribelt }]) => ({
@@ -129,12 +134,16 @@ export function originOf(box: { left: number; top: number; width: number; height
   return `${String(box.left + box.width / 2)}px ${String(box.top + box.height / 2)}px`
 }
 
-/** How many languages the map's terms are in, each code once: American English counts on its own. */
-export function languageCount(terms: readonly Pick<Term, 'language'>[]): number {
-  return new Set(terms.map((t) => chartLanguage(t.language))).size // American English is English
+/**
+ * How many languages the map's terms are in, each code once (American English is English): from
+ * the server's counts over the whole map when given, else from the terms loaded.
+ */
+export function languageCount(terms: readonly Pick<Term, 'language'>[], languages?: readonly LanguageCount[]): number {
+  const codes = languages ? languages.filter((l) => l.count > 0).map((l) => l.value) : terms.map((t) => t.language)
+  return new Set(codes.map(chartLanguage)).size
 }
 
 /** The search terms tile's line: "search terms in 3 languages. Tribelt's own website uses 30 of them." */
-export function termsText(terms: readonly Pick<Term, 'language' | 'usedBy'>[]): string {
-  return `search terms in ${String(languageCount(terms))} languages. Tribelt's own website uses ${String(tribeltTermCount(terms))} of them.`
+export function termsText(terms: readonly Pick<Term, 'language' | 'usedBy'>[], languages?: readonly LanguageCount[]): string {
+  return `search terms in ${String(languageCount(terms, languages))} languages. Tribelt's own website uses ${String(tribeltTermCount(terms))} of them.`
 }

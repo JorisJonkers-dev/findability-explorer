@@ -393,6 +393,7 @@ export const zLlmSettings = z.object({
     credentials: z.array(zLlmCredential).max(100),
     choice: zLlmChoice,
     active: zActiveLlm.optional(),
+    haiku: zActiveLlm.optional(),
     matchingEnabled: z.boolean(),
     budget: zLlmBudget,
     events: z.array(zLlmEvent).max(50)

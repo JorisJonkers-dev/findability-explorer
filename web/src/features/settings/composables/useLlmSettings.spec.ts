@@ -141,6 +141,15 @@ describe('the changes', () => {
     expect(state.isSaving.value).toBe(false)
   })
 
+  it('says a chosen model waits behind Haiku while an Anthropic key works', async () => {
+    const haiku = { credentialId: 'vault-anthropic', model: 'claude-haiku-5-5' }
+    const chosen = llmSettings({ haiku, choice: 'chosen', active: { credentialId: STORED_ID, model: 'mistralai/mistral-small' } })
+    const { state } = mountComposable(useActiveModel, routes({ 'PUT /api/v1/admin/llm/active': () => json(chosen) }))
+    state.save({ credentialId: STORED_ID, model: 'mistralai/mistral-small' })
+    await flushPromises()
+    expect(state.notice.value).toBe('Saved. Scans use mistralai/mistral-small when no Anthropic key works.')
+  })
+
   it('says why a model could not be chosen or matching not turned off', async () => {
     const { state } = mountComposable(useActiveModel, routes({
       'PUT /api/v1/admin/llm/active': () => problem(422, 'Unprocessable'),

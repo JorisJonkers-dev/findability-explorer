@@ -1,6 +1,6 @@
 // Package openrouter implements the prompt-test Gateway over OpenRouter's API: its price list, a
 // model's natural answer to a prompt with or without web search, and the fixed extractor's
-// reading of an answer in a strict JSON format.
+// reading of an answer in the strict JSON format of the extractor package.
 package openrouter
 
 import (
@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/extractor"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
@@ -167,92 +168,20 @@ func (c *Client) complete(ctx context.Context, req request) (response, error) {
 	return resp, nil
 }
 
-// extractorSystem tells the extractor how to read an answer.
-const extractorSystem = `You read an AI assistant's answer to a buyer's question about metal conveyor belts and report, in the JSON schema given, exactly what it says:
-- companies: every company the answer names as a maker or supplier, in the order it first names them, with the web address it gives for that company ("" when none).
-- addresses: every web address the answer cites or links to.
-- namesTribelt: whether it names Tribelt (Tribelt B.V.).
-- citesTribelt: whether it cites or links a Tribelt web address.
-- correctness: when it names Tribelt, whether what it says about Tribelt agrees with the fact sheet: "correct", "partly" (some of it wrong) or "wrong"; "none" when it does not name Tribelt.
-- wrongClaims: each claim about Tribelt the fact sheet contradicts, quoted from the answer; empty when there is none.
-Report only what the answer says. Do not add companies it does not name.`
-
-// schema is the strict format the extractor answers in.
-func schema() map[string]any {
-	str := map[string]any{"type": "string"}
-	return map[string]any{
-		"type": "object", "additionalProperties": false,
-		"required": []string{"companies", "addresses", "namesTribelt", "citesTribelt", "correctness", "wrongClaims"},
-		"properties": map[string]any{
-			"companies": map[string]any{"type": "array", "items": map[string]any{
-				"type": "object", "additionalProperties": false, "required": []string{"name", "url"},
-				"properties": map[string]any{"name": str, "url": str},
-			}},
-			"addresses":    map[string]any{"type": "array", "items": str},
-			"namesTribelt": map[string]any{"type": "boolean"},
-			"citesTribelt": map[string]any{"type": "boolean"},
-			"correctness":  map[string]any{"type": "string", "enum": []string{"none", "correct", "partly", "wrong"}},
-			"wrongClaims":  map[string]any{"type": "array", "items": str},
-		},
-	}
-}
-
-// Limits on what one extraction keeps.
-const (
-	maxCompanies = 30
-	maxAddresses = 50
-	maxClaims    = 10
-	maxText      = 500
-)
-
 // Extract has model read an answer in the strict format.
 func (c *Client) Extract(ctx context.Context, model string, in app.ExtractInput) (domain.Extracted, domain.Reply, error) {
-	user := "Fact sheet about Tribelt:\n" + in.FactSheet + "\n\nThe buyer's question:\n" + in.Prompt + "\n\nThe answer:\n" + in.Answer
-	if len(in.Citations) > 0 {
-		user += "\n\nThe answer's cited sources:\n" + strings.Join(in.Citations, "\n")
-	}
 	req := request{
-		Model: model, Messages: []message{{Role: "system", Content: extractorSystem}, {Role: "user", Content: user}},
+		Model: model, Messages: []message{{Role: "system", Content: extractor.System}, {Role: "user", Content: extractor.User(in)}},
 		MaxTokens: maxExtracted, Usage: map[string]bool{"include": true},
-		ResponseFormat: map[string]any{"type": "json_schema", "json_schema": map[string]any{"name": "answer_reading", "strict": true, "schema": schema()}},
+		ResponseFormat: map[string]any{"type": "json_schema", "json_schema": map[string]any{"name": extractor.SchemaName, "strict": true, "schema": extractor.Schema()}},
 	}
 	resp, err := c.complete(ctx, req)
 	usage := domain.Reply{InputTokens: resp.Usage.PromptTokens, OutputTokens: resp.Usage.CompletionTokens, Cost: domain.MicrosOf(resp.Usage.Cost)}
 	if err != nil {
 		return domain.Extracted{}, usage, err
 	}
-	var raw struct {
-		Companies []struct {
-			Name string `json:"name"`
-			URL  string `json:"url"`
-		} `json:"companies"`
-		Addresses    []string `json:"addresses"`
-		NamesTribelt bool     `json:"namesTribelt"`
-		CitesTribelt bool     `json:"citesTribelt"`
-		Correctness  string   `json:"correctness"`
-		WrongClaims  []string `json:"wrongClaims"`
-	}
-	if err := json.Unmarshal([]byte(strings.TrimSpace(resp.Choices[0].Message.Content)), &raw); err != nil {
-		return domain.Extracted{}, usage, fmt.Errorf("the extractor's answer is not the format asked: %w", err)
-	}
-	x := domain.Extracted{NamesTribelt: raw.NamesTribelt, CitesTribelt: raw.CitesTribelt}
-	for _, co := range raw.Companies[:min(len(raw.Companies), maxCompanies)] {
-		if name := strings.TrimSpace(co.Name); name != "" {
-			x.Companies = append(x.Companies, domain.Named{Name: clip(name, 200), URL: clip(strings.TrimSpace(co.URL), maxText)})
-		}
-	}
-	for _, a := range raw.Addresses[:min(len(raw.Addresses), maxAddresses)] {
-		x.Addresses = append(x.Addresses, clip(a, maxText))
-	}
-	switch c := domain.Correctness(raw.Correctness); c {
-	case domain.CorrectnessCorrect, domain.CorrectnessPartly, domain.CorrectnessWrong:
-		x.Correctness = c
-	case domain.CorrectnessNone:
-	}
-	for _, claim := range raw.WrongClaims[:min(len(raw.WrongClaims), maxClaims)] {
-		x.WrongClaims = append(x.WrongClaims, clip(claim, maxText))
-	}
-	return x, usage, nil
+	x, err := extractor.Parse(resp.Choices[0].Message.Content)
+	return x, usage, err
 }
 
 // do sends one request with the key and decodes a 2xx answer into out; a 429 is

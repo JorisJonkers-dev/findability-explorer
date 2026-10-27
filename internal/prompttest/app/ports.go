@@ -26,6 +26,19 @@ type Gateway interface {
 	Extract(ctx context.Context, model string, in ExtractInput) (domain.Extracted, domain.Reply, error)
 }
 
+// Extractor reads an answer in the strict format, as Gateway.Extract does, on a model of its own.
+type Extractor interface {
+	// Extract reads an answer. A reading that failed still counts what it used.
+	Extract(ctx context.Context, in ExtractInput) (domain.Extracted, domain.Reply, error)
+}
+
+// Extractors hands out the extractor and the model it asks: Claude Haiku on an Anthropic key. A
+// nil Extractor without an error means no Anthropic key works, and OpenRouter reads the answers
+// with domain.ExtractorModel.
+type Extractors interface {
+	Current(ctx context.Context) (Extractor, string, error)
+}
+
 // ExtractInput is what the extractor reads.
 type ExtractInput struct {
 	Prompt    string

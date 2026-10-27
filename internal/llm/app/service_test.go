@@ -200,11 +200,12 @@ func TestSettingsByDefault(t *testing.T) {
 	}
 	if len(s.Credentials) != 1 || s.Credentials[0].ID != domain.VaultID || s.Choice != domain.ChoiceDefault ||
 		s.Active == nil || s.Active.Model != domain.DefaultModel || !s.MatchingEnabled ||
+		s.Haiku == nil || *s.Haiku != (domain.Active{CredentialID: domain.VaultID, Model: domain.DefaultModel}) ||
 		s.Budget != (app.Budget{MonthlyTokens: 2_000_000, UsedThisMonth: 1234, AveragePerScan: 617, ScansMatched: 2}) {
 		t.Fatalf("settings = %+v", s)
 	}
 	f = setup("", nil)
-	if s, _ := f.svc.Settings(t.Context()); len(s.Credentials) != 0 || s.Active != nil || s.MatchingEnabled {
+	if s, _ := f.svc.Settings(t.Context()); len(s.Credentials) != 0 || s.Active != nil || s.Haiku != nil || s.MatchingEnabled {
 		t.Fatalf("settings without Vault = %+v", s)
 	}
 }
@@ -374,16 +375,18 @@ func TestClearActiveAndCurrent(t *testing.T) {
 		t.Fatalf("default current = %v %s %s, %v", client, provider, model, err)
 	}
 	s, err := f.svc.ClearActive(t.Context(), "j")
-	if err != nil || s.Choice != domain.ChoiceOff || s.Active != nil || s.MatchingEnabled || f.repo.events[0].Action != domain.ActionActiveCleared {
+	// Haiku on the Vault key still matches products with the chosen model off.
+	if err != nil || s.Choice != domain.ChoiceOff || s.Active != nil || s.Haiku == nil || !s.MatchingEnabled || f.repo.events[0].Action != domain.ActionActiveCleared {
 		t.Fatalf("clear = %+v, %v", s, err)
 	}
 	if client, _, _, err := f.svc.Current(t.Context()); client != nil || err != nil {
 		t.Fatalf("current when off = %v, %v", client, err)
 	}
+	f = setup("", nil) // no Anthropic key, so no Haiku
 	f.repo.creds = append(f.repo.creds, domain.Credential{ID: "c-gone", Provider: domain.Mistral})
 	f.repo.setting = domain.Setting{Mode: domain.ModeChosen, Active: domain.Active{CredentialID: "c-gone", Model: "m"}}
 	f.repo.unreadable["c-gone"] = true
-	if s, _ := f.svc.Settings(t.Context()); s.MatchingEnabled {
+	if s, _ := f.svc.Settings(t.Context()); s.MatchingEnabled || s.Haiku != nil {
 		t.Fatal("matching is enabled with an unreadable key")
 	}
 	if _, _, _, err := f.svc.Current(t.Context()); !errors.Is(err, domain.ErrUnreadable) {

@@ -22,6 +22,7 @@ type execution struct {
 	s         *Service
 	run       domain.Run
 	gw        Gateway
+	extractor Extractor
 	directory []domain.DirectoryCompany
 	budget    domain.Micros
 
@@ -89,7 +90,7 @@ func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.Ta
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	gw, err := s.gateways.Gateway(ctx, settings.CredentialID)
+	gw, extractor, err := s.models(ctx, settings.CredentialID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -123,8 +124,19 @@ func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.Ta
 			tasks = append(tasks, t)
 		}
 	}
-	e := &execution{s: s, run: run, gw: gw, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
+	e := &execution{s: s, run: run, gw: gw, extractor: extractor, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
 	return e, tasks, unread, nil
+}
+
+// models is what a run asks through: OpenRouter, reached with the credential, for the providers'
+// answers, and the extractor that reads them.
+func (s *Service) models(ctx context.Context, credentialID string) (Gateway, Extractor, error) {
+	gw, err := s.gateways.Gateway(ctx, credentialID)
+	if err != nil {
+		return nil, nil, err
+	}
+	extractor, _, err := s.extractor(ctx, gw)
+	return gw, extractor, err
 }
 
 // fail finishes a run that cannot go on as failed, with why.
@@ -211,12 +223,12 @@ func (e *execution) read(ctx context.Context, a domain.Answer) {
 }
 
 // extract has the extractor read an answer, trying twice; an answer it cannot read is marked
-// failed, never dropped.
+// failed, never dropped. What every try used is counted.
 func (e *execution) extract(ctx context.Context, a domain.Answer) domain.Extraction {
 	in := ExtractInput{Prompt: a.Prompt.Text, Answer: a.Text, Citations: a.Citations, FactSheet: e.run.FactSheet}
 	var used domain.Reply
 	for range 2 {
-		x, usage, err := e.gw.Extract(ctx, domain.ExtractorModel, in)
+		x, usage, err := e.extractor.Extract(ctx, in)
 		used.InputTokens += usage.InputTokens
 		used.OutputTokens += usage.OutputTokens
 		used.Cost += usage.Cost

@@ -62,6 +62,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpapi"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/webui"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/extractor"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/openrouter"
 	prompttestpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/reviewer"
@@ -167,7 +168,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 			logger.ErrorContext(ctx, "prompt run could not be recorded", "run", id, "error", err)
 		},
 		// Haiku on an Anthropic key reviews the competitor candidates (ADR-0006).
-		prompttestapp.WithReviewers(reviewers{llm: llm}, func(err error) { logger.WarnContext(ctx, "candidate review", "error", err) }))
+		prompttestapp.WithReviewers(reviewers{llm: llm}, func(err error) { logger.WarnContext(ctx, "candidate review", "error", err) }),
+		// Haiku on an Anthropic key reads the answers while one works (ADR-0007).
+		prompttestapp.WithExtractors(extractors{llm: llm}))
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
 	insight := newInsight(insightpersistence.New(store.Queries()), companies, promptTest, analysis, terminology, now)
 	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
@@ -316,7 +319,7 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 	}
 	vault := getenv("ANTHROPIC_API_KEY")
 	if vault == "" {
-		logger.Info("ANTHROPIC_API_KEY is not set: product matching is off until an admin adds a key and chooses a model")
+		logger.Info("ANTHROPIC_API_KEY is not set: product matching is off until an admin adds an Anthropic key or chooses a model")
 	}
 	spent := func(ctx context.Context) (llmapp.Spending, error) {
 		month, err := analyses.TokensSince(ctx, monthStart(now()))
@@ -376,12 +379,34 @@ func (j judges) Current(ctx context.Context) (terminologyapp.Judge, string, erro
 	return judge.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
 }
 
-// matchers hands the analysis context the matcher the language-model settings name now.
+// extractors hands the prompt-test context its reader of the answers: Haiku on an Anthropic key,
+// whose usage is subsidised (ADR-0007). Without one, OpenRouter reads them as before.
+type extractors struct {
+	llm *llmapp.Service
+}
+
+func (x extractors) Current(ctx context.Context) (prompttestapp.Extractor, string, error) {
+	client, model, err := x.llm.Haiku(ctx)
+	if err != nil || client == nil {
+		return nil, "", err
+	}
+	return extractor.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
+}
+
+// matchers hands the analysis context its matcher: Haiku on an Anthropic key while one works
+// (ADR-0007), else the model the language-model settings name now.
 type matchers struct {
 	llm *llmapp.Service
 }
 
 func (m matchers) Current(ctx context.Context) (analysisdomain.Matcher, string, error) {
+	haiku, model, err := m.llm.Haiku(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	if haiku != nil {
+		return matcher.New(haiku, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
+	}
 	client, provider, model, err := m.llm.Current(ctx)
 	if err != nil || client == nil {
 		return nil, "", err

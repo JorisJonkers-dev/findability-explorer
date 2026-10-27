@@ -51,6 +51,24 @@ describe('the active model', () => {
     const state = activeState(llmSettings({ choice: 'chosen', matchingEnabled: false, active: { credentialId: 'vault-anthropic', model: 'm' }, credentials: [] }))
     expect(state).toEqual({ kind: 'active', model: 'm', credential: 'a key that no longer exists', isDefault: false, working: false })
   })
+
+  it('is Haiku on an Anthropic key while one works, with the chosen model behind it', () => {
+    const haiku = { credentialId: 'vault-anthropic', model: 'claude-haiku-5-5' }
+    const chosen = { credentialId: 'or-1', model: 'mistralai/mistral-small' }
+    const unreadable = storedCredential({ id: 'or-1', readable: false })
+    expect(activeState(llmSettings({ haiku, choice: 'chosen', active: chosen, credentials: [vaultCredential(), unreadable] }))).toEqual({
+      kind: 'haiku',
+      model: 'claude-haiku-5-5',
+      credential: 'Vault key (Anthropic (Claude))',
+      otherwise: { kind: 'active', model: 'mistralai/mistral-small', credential: 'Course budget key (OpenRouter)', isDefault: false, working: false },
+    })
+    expect(activeState(llmSettings({ haiku: { credentialId: 'gone', model: 'claude-haiku-5-5' }, choice: 'off', active: undefined }))).toEqual({
+      kind: 'haiku',
+      model: 'claude-haiku-5-5',
+      credential: 'a key that no longer exists',
+      otherwise: { kind: 'off' },
+    })
+  })
 })
 
 describe('a new key', () => {

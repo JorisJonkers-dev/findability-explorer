@@ -641,8 +641,9 @@ paths:
       summary: List the search terms scans found outside the map
       description: >-
         Administrators only. Every phrase a finished scan found that the terminology map did not
-        hold, across companies, with its evidence and the classifier's suggestion; filtered by
-        review status, most companies and highest score first.
+        hold in its language, across companies, with its evidence and the classifier's suggestion;
+        filtered by review status, most companies and highest score first. The same phrase in
+        another language is another candidate.
       tags: [admin]
       parameters:
         - name: status
@@ -3053,7 +3054,7 @@ components:
           items:
             $ref: "#/components/schemas/ReadinessChange"
     TermCandidateId:
-      description: A candidate's id, made from its phrase.
+      description: A candidate's id, made from its phrase and its language.
       type: string
       minLength: 16
       maxLength: 16
@@ -3117,7 +3118,9 @@ components:
         languages:
           type: array
           maxItems: 20
-          description: The languages of the pages it was found on, most often first.
+          description: >-
+            The language it was found in, its only one: the same phrase in another language is
+            another candidate, and it joins the map only in this language.
           items:
             type: string
             maxLength: 16
@@ -3156,7 +3159,7 @@ components:
         closestTerm:
           type: string
           maxLength: 200
-          description: The map term the classifier found closest.
+          description: The map term in its language the classifier found closest.
           example: spiral belt
         lastSeenAt:
           type: string

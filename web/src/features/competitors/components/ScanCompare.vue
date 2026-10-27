@@ -2,7 +2,9 @@
 import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, ref, toRef, watch } from 'vue'
 import type { AnalysisSummary } from '../../../infrastructure/api/types.gen'
+import LanguageFilter from '../../../shared/ui/LanguageFilter.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
+import { languageChoices } from '../../terminology/domain/languages'
 import { changeLabel } from '../../readiness/domain/readiness'
 import { useScanComparison } from '../composables/useCompanyHistory'
 import {
@@ -10,6 +12,8 @@ import {
   changeCounts,
   changeDetail,
   changedGroups,
+  changeLanguages,
+  changesIn,
   defaultPair,
   finishedScans,
   groupLabel,
@@ -34,8 +38,11 @@ watch(
   { immediate: true },
 )
 const { comparison, isLoading, error } = useScanComparison(toRef(() => props.companyId), from, to)
-const counts = computed(() => (comparison.value ? changeCounts(comparison.value.groups) : null))
-const groups = computed(() => (comparison.value ? changedGroups(comparison.value.groups) : []))
+const language = ref<string | null>(null)
+const languages = computed(() => languageChoices(changeLanguages(comparison.value?.groups ?? [])))
+const inLanguage = computed(() => changesIn(comparison.value?.groups ?? [], language.value))
+const counts = computed(() => (comparison.value ? changeCounts(inLanguage.value) : null))
+const groups = computed(() => changedGroups(inLanguage.value))
 
 const KINDS: ChangeKind[] = ['added', 'removed', 'moved']
 /** Each kind's colour: added orange, removed grey and struck through, moved blue-grey. The word says it too. */
@@ -71,6 +78,7 @@ const PHRASE: Record<ChangeKind, string> = { added: 'font-semibold', removed: 't
             <span aria-hidden="true" class="size-3 rounded-full stage:size-5" :class="MARK[kind]"></span>{{ counts[kind] }} {{ kindLabel(kind).toLowerCase() }}
           </span>
         </p>
+        <LanguageFilter :choices="languages" :selected="language" @select="(l) => (language = l)" />
         <p v-if="groups.length === 0" class="m-0 text-ink-2 stage:text-[28px]">The two scans found the same terms.</p>
         <section aria-label="AI readiness" class="flex flex-col gap-2 stage:gap-3" data-testid="readiness-changes">
           <h3 class="m-0 text-base font-semibold stage:text-[32px]">AI readiness</h3>

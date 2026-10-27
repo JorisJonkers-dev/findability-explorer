@@ -226,7 +226,7 @@ func TestRejectStaysRejected(t *testing.T) {
 func TestReviewFailures(t *testing.T) {
 	ctx := t.Context()
 	accept := domain.Acceptance{Text: "x", Language: "en", Family: "other", Tier: "broad"}
-	id := domain.CandidateID("belt cleaning")
+	id := domain.CandidateID("belt cleaning", "en")
 	failing := func(r *reviews, e app.Evidence) *app.Service {
 		return app.New(catalogue{}, r, e, sightings(nil, nil), func() time.Time { return now })
 	}
@@ -277,5 +277,27 @@ func TestReviewFailures(t *testing.T) {
 		if err := check(); err == nil {
 			t.Errorf("%s did not fail", name)
 		}
+	}
+}
+
+// A decision made on a phrase before candidates were kept apart by language is undone by its own
+// id, through the candidate it applies to.
+func TestUndoRemovesAnOldDecisionOnThePhrase(t *testing.T) {
+	r := &reviews{decisions: []domain.Decision{{CandidateID: domain.PhraseID("belt cleaning"), Phrase: "belt cleaning", Status: domain.StatusRejected}}}
+	svc := review(r)
+	c, err := svc.Undo(t.Context(), domain.CandidateID("belt cleaning", "en"))
+	if err != nil || c.Status != domain.StatusPending || len(r.decisions) != 0 {
+		t.Fatalf("Undo = %+v, %v; decisions left %+v", c, err, r.decisions)
+	}
+}
+
+// A candidate becomes a term only in the language it was found in.
+func TestAcceptKeepsToTheCandidatesLanguage(t *testing.T) {
+	svc := review(&reviews{})
+	_, err := svc.Accept(t.Context(), "joris", domain.CandidateID("belt cleaning", "en"), domain.Acceptance{
+		Text: "belt cleaning", Language: "de", Family: "all", Tier: "broad",
+	})
+	if !errors.Is(err, domain.ErrOtherLanguage) {
+		t.Fatalf("Accept in German = %v", err)
 	}
 }

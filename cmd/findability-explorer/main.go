@@ -540,10 +540,10 @@ func (d promptDirectory) Remove(ctx context.Context, user, id string) error {
 	return err
 }
 
-// observations hands the review queue the phrases finished scans found outside the map, with the
-// names of the companies scanned, by value.
+// observations hands the review queue the phrases finished scans found, with the names of the
+// companies scanned, by value; the review decides which the map holds in their language.
 func observations(ctx context.Context, repo *persistence.Repository, companies *companiesapp.Service) ([]terminologydomain.Observation, error) {
-	findings, err := repo.UnmappedFindings(ctx)
+	findings, err := repo.Findings(ctx)
 	if err != nil {
 		return nil, err
 	}

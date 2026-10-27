@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import type { TermAcceptance, TermCandidate } from '../../../infrastructure/api/types.gen'
-import { FAMILIES, familyLabel, LANGUAGES, languageLabel, TIERS, tierLabel } from '../../../shared/vocabulary'
+import { FAMILIES, familyLabel, languageLabel, TIERS, tierLabel } from '../../../shared/vocabulary'
 import { atLabel } from '../../settings/domain/time'
-import { type AcceptDraft, checkDraft, decisionLine, draftOf, evidenceLine, suggestionLine, verdictLine } from '../domain/candidates'
+import { type AcceptDraft, checkDraft, decisionLine, draftLanguages, draftOf, evidenceLine, suggestionLine, verdictLine } from '../domain/candidates'
 
 const props = defineProps<{ candidate: TermCandidate; busy: boolean }>()
 const emit = defineEmits<{ accept: [body: TermAcceptance]; reject: []; undo: [] }>()
@@ -15,6 +15,8 @@ const draftError = ref<string | null>(null)
 const termInput = useTemplateRef<HTMLInputElement>('termInput')
 const decided = computed(() => decisionLine(props.candidate))
 const verdict = computed(() => verdictLine(props.candidate))
+// A phrase joins the map only in the language it was found in.
+const languages = computed(() => draftLanguages(props.candidate))
 // The term the language model suggests, ready to accept in one step.
 const suggested = computed(() => (props.candidate.verdict?.term ? draftOf(props.candidate) : null))
 
@@ -90,7 +92,7 @@ function submit(): void {
         <label class="flex flex-col gap-1.5 text-sm font-medium">
           Language
           <select v-model="draft.language" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base font-normal">
-            <option v-for="l in LANGUAGES" :key="l" :value="l">{{ languageLabel(l) }}</option>
+            <option v-for="l in languages" :key="l" :value="l">{{ languageLabel(l) }}</option>
           </select>
         </label>
         <label class="flex flex-col gap-1.5 text-sm font-medium">

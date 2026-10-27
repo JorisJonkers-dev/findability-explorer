@@ -10,8 +10,10 @@ import type {
 } from '../../../infrastructure/api/types.gen'
 import { zProblem } from '../../../infrastructure/api/zod.gen'
 import { describeError } from '../../../shared/describeError'
-import { familyLabel, isLanguage, languageLabel, tierLabel } from '../../../shared/vocabulary'
+import { familyLabel, isLanguage, languageLabel, LANGUAGES, tierLabel } from '../../../shared/vocabulary'
 import { atLabel } from '../../settings/domain/time'
+import { chartLanguage } from '../../terminology/domain/filters'
+import { inLanguage } from '../../terminology/domain/languages'
 
 const STATUS_LABELS: Record<TermCandidateStatus, string> = { pending: 'To review', accepted: 'Accepted', rejected: 'Rejected' }
 
@@ -53,6 +55,21 @@ export function draftOf(candidate: TermCandidate): AcceptDraft {
     tier: candidate.suggestedTier,
     usedBy,
   }
+}
+
+/**
+ * The languages a candidate can join the map in: the one it was found in, English as English or
+ * American English. A phrase is never made a term in another language.
+ */
+export function draftLanguages(candidate: Pick<TermCandidate, 'languages'>): Language[] {
+  const found = candidate.languages.map(chartLanguage)
+  const own = LANGUAGES.filter((l) => found.includes(chartLanguage(l)))
+  return own.length > 0 ? own : [...LANGUAGES]
+}
+
+/** The candidates found in the chosen language, in their order; all of them when none is chosen. */
+export function candidatesIn<T extends Pick<TermCandidate, 'languages'>>(candidates: readonly T[], language: string | null): T[] {
+  return candidates.filter((c) => language === null || c.languages.some((l) => inLanguage(l, language)))
 }
 
 /** A draft checked: the body to send, or what is wrong with it. */

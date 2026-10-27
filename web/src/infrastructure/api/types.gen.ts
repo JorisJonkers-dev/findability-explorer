@@ -1044,7 +1044,7 @@ export type ScanComparison = {
 };
 
 /**
- * A candidate's id, made from its phrase.
+ * A candidate's id, made from its phrase and its language.
  */
 export type TermCandidateId = string;
 
@@ -1091,7 +1091,7 @@ export type TermCandidate = {
     phrase: string;
     status: TermCandidateStatus;
     /**
-     * The languages of the pages it was found on, most often first.
+     * The language it was found in, its only one: the same phrase in another language is another candidate, and it joins the map only in this language.
      */
     languages: Array<string>;
     /**
@@ -1113,7 +1113,7 @@ export type TermCandidate = {
     suggestedTier: IntentTier;
     suggestedFamily?: BeltFamily;
     /**
-     * The map term the classifier found closest.
+     * The map term in its language the classifier found closest.
      */
     closestTerm?: string;
     /**

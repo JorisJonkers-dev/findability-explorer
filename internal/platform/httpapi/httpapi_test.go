@@ -430,7 +430,7 @@ type verdictStore struct{}
 
 func (verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, error) {
 	return []terminologydomain.Verdict{{
-		CandidateID: terminologydomain.CandidateID("belt news"), Phrase: "belt news", Accept: true, Reason: "Could go either way.",
+		CandidateID: terminologydomain.CandidateID("belt news", "en"), Phrase: "belt news", Accept: true, Reason: "Could go either way.",
 		Term:  terminologydomain.Acceptance{Text: "belt news", Language: "en", Family: "all", Tier: "broad"},
 		Model: "claude-haiku-5-5", At: time.Date(2026, 10, 27, 9, 0, 0, 0, time.UTC),
 	}}, nil

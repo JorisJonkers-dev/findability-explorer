@@ -9,6 +9,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/spelling"
 )
 
 // Page is one crawled page as the extraction reads it.
@@ -86,15 +87,15 @@ const (
 func Summarise(p Page, lex Lexicon) PageSummary {
 	return PageSummary{
 		URL: p.URL, Title: p.Title, Description: p.Description,
-		Language: PageLanguage(p), WordCount: len(Tokens(p.Text)), Family: lex.PageFamily(p),
+		Language: PageLanguage(p), WordCount: len(spelling.Tokens(p.Text)), Family: lex.PageFamily(p),
 	}
 }
 
 // PageLanguage is the declared language's primary subtag ("de-DE" is "de"), or else the language
 // whose stopwords are most frequent in the page, or UnknownLanguage.
 func PageLanguage(p Page) string {
-	if lang, _, _ := strings.Cut(strings.ToLower(strings.TrimSpace(p.Language)), "-"); lang != "" {
-		return lang
+	if declared := lang.Primary(p.Language); declared != "" {
+		return declared
 	}
 	return DetectLanguage(p.Title + " " + p.Description + " " + p.Text)
 }
@@ -102,7 +103,7 @@ func PageLanguage(p Page) string {
 // DetectLanguage returns the language with the most stopwords in text, if at least three are found.
 func DetectLanguage(text string) string {
 	counts := map[string]int{}
-	for _, tok := range Tokens(text) {
+	for _, tok := range spelling.Tokens(text) {
 		for _, lang := range stopwordLanguages {
 			if _, ok := stopwords[lang][tok]; ok {
 				counts[lang]++
@@ -116,32 +117,6 @@ func DetectLanguage(text string) string {
 		}
 	}
 	return best
-}
-
-// Tokens splits text into lower-case words. A word is a run of letters and digits; a hyphen or a
-// dot between two such characters stays inside the word, so "tri-flex" and "1.4301" are one word.
-func Tokens(text string) []string {
-	runes := []rune(strings.ToLower(text))
-	var out []string
-	start := -1
-	for i, r := range runes {
-		inWord := unicode.IsLetter(r) || unicode.IsDigit(r)
-		joiner := (r == '-' || r == '.') && start >= 0 && i+1 < len(runes) &&
-			(unicode.IsLetter(runes[i+1]) || unicode.IsDigit(runes[i+1]))
-		switch {
-		case inWord || joiner:
-			if start < 0 {
-				start = i
-			}
-		case start >= 0:
-			out = append(out, string(runes[start:i]))
-			start = -1
-		}
-	}
-	if start >= 0 {
-		out = append(out, string(runes[start:]))
-	}
-	return out
 }
 
 // Segments splits text where a phrase cannot continue: at line breaks, at sentence and clause
@@ -251,7 +226,7 @@ func pageScores(p Page) map[string]pageHit {
 	add := func(text string, weight float64) {
 		counts := map[string]int{}
 		for _, segment := range Segments(text) {
-			for _, ph := range phrases(Tokens(segment)) {
+			for _, ph := range phrases(spelling.Tokens(segment)) {
 				if counts[ph] < maxCountPerField {
 					counts[ph]++
 					h, seen := hits[ph]
@@ -403,26 +378,20 @@ const fragmentShare = 0.8
 // ("eye-link belt / eyelink belt", "metal conveyor belt(s)") counts every alternative, and each
 // alternative also matches with a plural s. Terms that do not appear are left out; the rest come
 // most frequent first.
+//
+// A term counts only on the pages in its language (see lang.Same; PageLanguage tells a page's): a
+// German term on an English page is not the English site using it, and a page whose language
+// could not be told counts no term at all.
 func FindKnownTerms(pages []Page, glossary []GlossaryTerm) []KnownTerm {
-	var corpus strings.Builder
-	for _, p := range pages {
-		for _, part := range append([]string{p.Title, p.Description, p.Text}, p.Headings...) {
-			for _, segment := range Segments(part) {
-				corpus.WriteString(" " + fold.Fold(strings.Join(Tokens(segment), " ")) + " ")
-			}
-		}
-	}
-	text := corpus.String()
+	corpora := corporaByLanguage(pages)
 	var out []KnownTerm
 	for _, g := range glossary {
-		n := 0
-		for _, alt := range Alternatives(g.Text) {
-			needle := fold.Fold(strings.Join(Tokens(alt), " "))
-			if needle != "" {
-				n += strings.Count(text, " "+needle+" ") + strings.Count(text, " "+needle+"s ")
-			}
+		language := lang.Primary(g.Language)
+		corpus, ok := corpora[language]
+		if !ok || language == UnknownLanguage {
+			continue // no page in the term's language; pages not told match no term
 		}
-		if n > 0 {
+		if n := occurrences(corpus, g.Text); n > 0 {
 			out = append(out, KnownTerm{GlossaryTerm: g, Occurrences: n})
 		}
 	}
@@ -430,36 +399,39 @@ func FindKnownTerms(pages []Page, glossary []GlossaryTerm) []KnownTerm {
 	return out[:min(len(out), MaxKnownTerms)]
 }
 
-// Alternatives splits a glossary entry into the spellings it stands for: "a / b" is a and b, and
-// every parenthesised remark is dropped, so "belt(s)" is belt (FindKnownTerms adds the plural).
-func Alternatives(term string) []string {
-	var out []string
-	add := func(s string) {
-		if s = strings.Join(strings.Fields(s), " "); s != "" && !slices.Contains(out, s) {
-			out = append(out, s)
+// corporaByLanguage is the folded text of the pages in each language PageLanguage tells, each
+// segment between spaces so a term matches only whole words.
+func corporaByLanguage(pages []Page) map[string]string {
+	builders := map[string]*strings.Builder{}
+	for _, p := range pages {
+		language := PageLanguage(p)
+		corpus, ok := builders[language]
+		if !ok {
+			corpus = &strings.Builder{}
+			builders[language] = corpus
+		}
+		for _, part := range append([]string{p.Title, p.Description, p.Text}, p.Headings...) {
+			for _, segment := range Segments(part) {
+				corpus.WriteString(" " + fold.Fold(strings.Join(spelling.Tokens(segment), " ")) + " ")
+			}
 		}
 	}
-	for _, part := range strings.Split(term, " / ") {
-		add(dropRemarks(part))
+	out := make(map[string]string, len(builders))
+	for language, b := range builders {
+		out[language] = b.String()
 	}
 	return out
 }
 
-// dropRemarks removes every "(…)" from s.
-func dropRemarks(s string) string {
-	var b strings.Builder
-	depth := 0
-	for _, r := range s {
-		switch {
-		case r == '(':
-			depth++
-		case r == ')' && depth > 0:
-			depth--
-		case depth == 0:
-			b.WriteRune(r)
+// occurrences counts each alternative of term in corpus, singular or with a plural s.
+func occurrences(corpus, term string) int {
+	n := 0
+	for _, alt := range spelling.Alternatives(term) {
+		if needle := fold.Fold(strings.Join(spelling.Tokens(alt), " ")); needle != "" {
+			n += strings.Count(corpus, " "+needle+" ") + strings.Count(corpus, " "+needle+"s ")
 		}
 	}
-	return b.String()
+	return n
 }
 
 // SiteText is the text the language model reads: each page's address, title, headings and text,

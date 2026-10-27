@@ -5,7 +5,9 @@ import type { Analysis } from '../../../infrastructure/api/types.gen'
 import { percent } from '../../../shared/percent'
 import { tierFill } from '../../../shared/tiers'
 import { tierLabel } from '../../../shared/vocabulary'
+import LanguageFilter from '../../../shared/ui/LanguageFilter.vue'
 import PillButton from '../../../shared/ui/PillButton.vue'
+import { languageChoices, ofLanguage } from '../../terminology/domain/languages'
 import {
   equivalentRows,
   matchedBy,
@@ -26,9 +28,12 @@ const props = defineProps<{ scan: Analysis }>()
 const MISSING_SHOWN = 8
 
 const kind = ref<PhraseKind>('all')
+// The language the terms are shown in; a page around the result may follow it too.
+const language = defineModel<string | null>('language', { default: null })
+const languages = computed(() => languageChoices([...props.scan.keywords, ...props.scan.knownTerms].map((t) => t.language)))
 const summary = computed(() => props.scan.summary)
-const missing = computed(() => missingTerms(props.scan.knownTerms).slice(0, MISSING_SHOWN))
-const ranked = computed(() => phrases(props.scan.keywords, { language: '', singleWords: true, kind: kind.value }))
+const missing = computed(() => missingTerms(ofLanguage(props.scan.knownTerms, language.value)).slice(0, MISSING_SHOWN))
+const ranked = computed(() => phrases(ofLanguage(props.scan.keywords, language.value), { language: '', singleWords: true, kind: kind.value }))
 const equivalents = computed(() => equivalentRows(props.scan.equivalents))
 const matching = computed(() => matchingText(props.scan.matching))
 const model = computed(() => matchedBy(props.scan.matchingModel))
@@ -41,6 +46,7 @@ const model = computed(() => matchedBy(props.scan.matchingModel))
       <span class="text-sm text-muted stage:text-[24px]">{{ resultLine(scan.pages.length, newTermCount(scan.keywords)) }}</span>
     </div>
     <p class="m-0 -mt-2 text-sm text-muted stage:-mt-3 stage:text-[24px]">Scanned {{ scannedAt(summary.finishedAt ?? summary.createdAt) }}</p>
+    <LanguageFilter :choices="languages" :selected="language" @select="(l) => (language = l)" />
 
     <div class="flex flex-wrap items-center gap-2 stage:gap-2.5">
       <span class="text-sm text-muted stage:text-[24px]">{{ missing.length > 0 ? 'Tribelt is missing:' : 'Tribelt uses every map term this site uses.' }}</span>

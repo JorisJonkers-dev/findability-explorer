@@ -11484,7 +11484,8 @@ type TermCandidate struct {
 	// The phrase, in lower case.
 	Phrase string              `json:"phrase"`
 	Status TermCandidateStatus `json:"status"`
-	// The languages of the pages it was found on, most often first.
+	// The language it was found in, its only one: the same phrase in another language is another
+	// candidate, and it joins the map only in this language.
 	Languages []string `json:"languages"`
 	// The companies whose scans found it, by name.
 	Companies []CandidateCompany `json:"companies"`
@@ -11496,7 +11497,7 @@ type TermCandidate struct {
 	MaxPages        int32         `json:"maxPages"`
 	SuggestedTier   IntentTier    `json:"suggestedTier"`
 	SuggestedFamily OptBeltFamily `json:"suggestedFamily"`
-	// The map term the classifier found closest.
+	// The map term in its language the classifier found closest.
 	ClosestTerm OptString `json:"closestTerm"`
 	// When the newest scan that found it was started.
 	LastSeenAt time.Time       `json:"lastSeenAt"`

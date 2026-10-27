@@ -44,7 +44,9 @@ func TestClassify(t *testing.T) {
 		want         domain.Classification
 	}{
 		{"eyelink belts", "en", domain.Classification{Tier: "product", Family: "eyelink", Closest: "eye-link belt / eyelink belt", InMap: true}},
-		{"eyelink belt", "sv", domain.Classification{Tier: "product", Family: "eyelink", Closest: "Eyelink-band", InMap: true}},
+		// An English spelling is not in the map for a Swedish phrase; the Swedish term is closest.
+		{"eyelink belt", "sv", domain.Classification{Tier: "product", Family: "eyelink", Closest: "Eyelink-band"}},
+		{"eyelink belts", "en-US", domain.Classification{Tier: "product", Family: "eyelink", Closest: "eye-link belt / eyelink belt", InMap: true}},
 		{"spiral belt", "en", domain.Classification{Tier: "product", Family: "tri_flex_turn_curve", Closest: "spiral belt / spiral conveyor belt", InMap: true}},
 		{"wire diameter", "en", domain.Classification{Tier: "spec", Family: "spec_all", Closest: "wire diameter / cross rod diameter", InMap: true}},
 		{"belt options", "en", domain.Classification{Tier: "broad"}},
@@ -109,6 +111,61 @@ func TestClassifyNamesAFamilyOnlyWithEvidence(t *testing.T) {
 	for phrase, want := range cases {
 		if got := lex.Classify(splitWords(phrase), "en"); got != want {
 			t.Errorf("Classify(%q) = %+v, want %+v", phrase, got, want)
+		}
+	}
+}
+
+// A phrase matches, and is closest to, only terms in its own language: a Dutch phrase spelled like
+// a German term is not in the map, a phrase whose language was not told matches nothing, and a
+// spelling inside a phrase counts only in the term's language.
+func TestClassifyKeepsToThePhrasesLanguage(t *testing.T) {
+	lex := domain.NewLexicon([]domain.GlossaryTerm{
+		{Text: "Transportband", Language: "de", Family: "all", Tier: "broad"},
+		{Text: "spiral belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product"},
+		{Text: "Spiralband", Language: "de", Family: "tri_flex_turn_curve", Tier: "product"},
+		{Text: "baking band", Language: "en", Family: "closed_spiral", Tier: "application"},
+		{Text: "metal conveyor belt(s)", Language: "en", Family: "all", Tier: "broad"},
+	})
+	cases := []struct {
+		phrase, lang string
+		want         domain.Classification
+	}{
+		{"transportband", "de", domain.Classification{Tier: "broad", Family: "all", Closest: "Transportband", InMap: true}},
+		{"transportband", "nl", domain.Classification{Tier: "broad"}},
+		{"transportband", "und", domain.Classification{Tier: "broad"}},
+		{"spiral belt", "de", domain.Classification{Tier: "broad"}},
+		{"spiral belts", "en-US", domain.Classification{Tier: "product", Family: "tri_flex_turn_curve", Closest: "spiral belt", InMap: true}},
+		{"cb5 baking band", "en", domain.Classification{Tier: "application", Family: "closed_spiral", Closest: "baking band"}},
+		{"cb5 baking band", "de", domain.Classification{Tier: "broad"}},
+	}
+	for _, c := range cases {
+		if got := lex.Classify(splitWords(c.phrase), c.lang); got != c.want {
+			t.Errorf("Classify(%q, %s) = %+v, want %+v", c.phrase, c.lang, got, c.want)
+		}
+	}
+}
+
+// Words that point at two families alike name neither, so the closest term decides when its
+// family is one of them; a word the map's languages use for different families points at none,
+// and a phrase whose only close term is a product of a family it does not name is broad.
+func TestClassifyWithoutALeadingFamily(t *testing.T) {
+	lex := domain.NewLexicon([]domain.GlossaryTerm{
+		{Text: "eyelink belt", Language: "en", Family: "eyelink", Tier: "product"},
+		{Text: "honeycomb belt", Language: "en", Family: "other", Tier: "product"},
+		{Text: "spiral belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product"},
+		{Text: "spiral", Language: "de", Family: "open_spiral", Tier: "product"},
+	})
+	cases := []struct {
+		phrase, lang string
+		want         domain.Classification
+	}{
+		{"eyelink honeycomb", "en", domain.Classification{Tier: "product", Family: "eyelink", Closest: "eyelink belt"}},
+		{"spiral", "en", domain.Classification{Tier: "broad", Closest: "spiral belt"}},
+		{"spiral", "de", domain.Classification{Tier: "product", Family: "open_spiral", Closest: "spiral", InMap: true}},
+	}
+	for _, c := range cases {
+		if got := lex.Classify(splitWords(c.phrase), c.lang); got != c.want {
+			t.Errorf("Classify(%q, %s) = %+v, want %+v", c.phrase, c.lang, got, c.want)
 		}
 	}
 }

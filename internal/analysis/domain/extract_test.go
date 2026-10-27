@@ -9,17 +9,6 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 )
 
-func TestTokens(t *testing.T) {
-	got := domain.Tokens("Tri-Flex belts in 1.4301, up to 1.150 °C! Edelstahl-Förderbänder -x. end-")
-	want := []string{"tri-flex", "belts", "in", "1.4301", "up", "to", "1.150", "c", "edelstahl-förderbänder", "x", "end"}
-	if !slices.Equal(got, want) {
-		t.Fatalf("Tokens = %q, want %q", got, want)
-	}
-	if got := domain.Tokens("Ofenband"); !slices.Equal(got, []string{"ofenband"}) {
-		t.Fatalf("Tokens(single word) = %q", got)
-	}
-}
-
 func TestDetectLanguage(t *testing.T) {
 	cases := map[string]string{
 		"The belt is made of stainless steel and it runs in the oven for the bakery.": "en",
@@ -210,8 +199,8 @@ func TestFindKnownTerms(t *testing.T) {
 		{Text: "°", Language: "en", Family: "spec_all", Tier: "spec"},
 	}
 	pages := []domain.Page{
-		{Title: "Drahtosengliederband", Headings: []string{"Balanced-weave belt"}, Text: "A balanced weave belt. Spirals."},
-		{Description: "drahtösengliederband und spiral", Text: "balanced weave belts"},
+		{Language: "en", Title: "Drahtosengliederband", Headings: []string{"Balanced-weave belt"}, Text: "A balanced weave belt. Spirals. A spiral. Balanced weave belts."},
+		{Language: "de-DE", Title: "Drahtösengliederband", Description: "drahtösengliederband und spiral", Text: "balanced weave belts"},
 	}
 	got := domain.FindKnownTerms(pages, glossary)
 	if len(got) != 3 {
@@ -230,15 +219,35 @@ func TestFindKnownTerms(t *testing.T) {
 	}
 }
 
+// A term counts only on the pages in its language: the German term on the English page, and the
+// English terms on the German page, do not count, and a page in a language not told counts none.
+// American English is English.
+func TestFindKnownTermsKeepsToTheTermsLanguage(t *testing.T) {
+	glossary := []domain.GlossaryTerm{
+		{Text: "Transportband", Language: "de"},
+		{Text: "conveyor belt", Language: "en-US"},
+		{Text: "spiral", Language: "und"},
+	}
+	pages := []domain.Page{
+		{Language: "nl", Text: "Transportband"},                // Dutch, spelled like the German term
+		{Language: "en", Text: "Transportband. Conveyor belt"}, // the English page counts only its English term
+		{Text: "Spiral"}, // not told: counts nothing, not even an und term
+	}
+	got := domain.FindKnownTerms(pages, glossary)
+	if len(got) != 1 || got[0].Text != "conveyor belt" || got[0].Occurrences != 1 {
+		t.Fatalf("found %+v, want only conveyor belt once", got)
+	}
+}
+
 func TestFindKnownTermsKeepsAtMostMaxKnownTerms(t *testing.T) {
 	var glossary []domain.GlossaryTerm
 	var text []string
 	for i := range domain.MaxKnownTerms + 20 {
 		w := "term" + string(rune('a'+i%26)) + string(rune('a'+i/26))
-		glossary = append(glossary, domain.GlossaryTerm{Text: w})
+		glossary = append(glossary, domain.GlossaryTerm{Text: w, Language: "en"})
 		text = append(text, w)
 	}
-	if got := domain.FindKnownTerms([]domain.Page{{Text: strings.Join(text, " ")}}, glossary); len(got) != domain.MaxKnownTerms {
+	if got := domain.FindKnownTerms([]domain.Page{{Language: "en", Text: strings.Join(text, " ")}}, glossary); len(got) != domain.MaxKnownTerms {
 		t.Fatalf("%d known terms, want %d", len(got), domain.MaxKnownTerms)
 	}
 }
@@ -275,25 +284,9 @@ func TestKeywordsNeverCrossASegment(t *testing.T) {
 	}
 }
 
-func TestAlternatives(t *testing.T) {
-	cases := map[string][]string{
-		"eye-link belt / eyelink belt":         {"eye-link belt", "eyelink belt"},
-		"metal conveyor belt(s)":               {"metal conveyor belt"},
-		"Eye-Link OGBL (Ashworth)":             {"Eye-Link OGBL"},
-		"spiraaltorens / vries- en koeltorens": {"spiraaltorens", "vries- en koeltorens"},
-		"a / a / (only a remark)":              {"a"},
-		"odd ) bracket":                        {"odd ) bracket"},
-	}
-	for in, want := range cases {
-		if got := domain.Alternatives(in); !slices.Equal(got, want) {
-			t.Errorf("Alternatives(%q) = %q, want %q", in, got, want)
-		}
-	}
-}
-
 func TestFindKnownTermsCountsAlternativesAndPlurals(t *testing.T) {
 	glossary := []domain.GlossaryTerm{{Text: "eye-link belt / eyelink belt", Language: "en"}, {Text: "metal conveyor belt(s)", Language: "en"}}
-	pages := []domain.Page{{Title: "Eyelink belts", Text: "An eye-link belt.\nMetal conveyor belts and one metal conveyor belt."}}
+	pages := []domain.Page{{Language: "en", Title: "Eyelink belts", Text: "An eye-link belt.\nMetal conveyor belts and one metal conveyor belt."}}
 	got := domain.FindKnownTerms(pages, glossary)
 	if len(got) != 2 || got[0].Occurrences != 2 || got[1].Occurrences != 2 {
 		t.Fatalf("found %+v, want both terms twice", got)

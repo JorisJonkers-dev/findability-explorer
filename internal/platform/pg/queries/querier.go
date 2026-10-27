@@ -33,7 +33,9 @@ type Querier interface {
 	// Takes over the running run whose holder was last heard of before stale_before.
 	AdoptStalePromptRun(ctx context.Context, arg AdoptStalePromptRunParams) ([]uuid.UUID, error)
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
-	// Every phrase a finished scan of a company found outside the terminology map.
+	// Every phrase a finished scan of a company found. Whether the map holds it is the review's to
+	// say, in the phrase's own language: scans made before that rule stored in_map through a term in
+	// another language.
 	CandidateEvidence(ctx context.Context) ([]CandidateEvidenceRow, error)
 	CountActiveAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) (int64, error)
 	// A company's scan takes the next number among its scans; the unique index refuses a duplicate.
@@ -72,7 +74,8 @@ type Querier interface {
 	InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error
 	// The number of the first finished scan of a company that found each phrase.
 	KeywordFirstScans(ctx context.Context, competitorID pgtype.Text) ([]KeywordFirstScansRow, error)
-	// The map terms each company's newest finished scan found, once per company.
+	// The map terms each company's newest finished scan found, once per company, with the languages
+	// of the pages that scan read.
 	KnownTermSightings(ctx context.Context) ([]KnownTermSightingsRow, error)
 	LatestAnalysisPerCompetitor(ctx context.Context) ([]LatestAnalysisPerCompetitorRow, error)
 	LatestLlmTests(ctx context.Context) ([]LatestLlmTestsRow, error)

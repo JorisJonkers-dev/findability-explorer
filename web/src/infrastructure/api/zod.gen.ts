@@ -517,7 +517,7 @@ export const zComparisonGroup = z.object({
 });
 
 /**
- * A candidate's id, made from its phrase.
+ * A candidate's id, made from its phrase and its language.
  */
 export const zTermCandidateId = z.string().length(16).regex(/^[0-9a-f]{16}$/);
 

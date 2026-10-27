@@ -28,3 +28,25 @@ func TestOtherLanguagePath(t *testing.T) {
 		}
 	}
 }
+
+func TestSame(t *testing.T) {
+	for _, c := range []struct {
+		a, b string
+		want bool
+	}{
+		{"en", "en-US", true},
+		{"en-US", "EN", true},
+		{"de", "de-DE", true},
+		{"nl", "nl", true},
+		{"nl", "de", false},
+		{"en", "de", false},
+		{"und", "und", false},
+		{"", "", false},
+		{"und", "en", false},
+		{"en", "", false},
+	} {
+		if got := lang.Same(c.a, c.b); got != c.want {
+			t.Errorf("Same(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
+		}
+	}
+}

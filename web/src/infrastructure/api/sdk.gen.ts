@@ -447,7 +447,7 @@ export const startRescans = <ThrowOnError extends boolean = false>(options: Opti
 /**
  * List the search terms scans found outside the map
  *
- * Administrators only. Every phrase a finished scan found that the terminology map did not hold, across companies, with its evidence and the classifier's suggestion; filtered by review status, most companies and highest score first.
+ * Administrators only. Every phrase a finished scan found that the terminology map did not hold in its language, across companies, with its evidence and the classifier's suggestion; filtered by review status, most companies and highest score first. The same phrase in another language is another candidate.
  */
 export const listTermCandidates = <ThrowOnError extends boolean = false>(options?: Options<ListTermCandidatesData, ThrowOnError>): RequestResult<ListTermCandidatesResponses, ListTermCandidatesErrors, ThrowOnError> => (options?.client ?? client).get<ListTermCandidatesResponses, ListTermCandidatesErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

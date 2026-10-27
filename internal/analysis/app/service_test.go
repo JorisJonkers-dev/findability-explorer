@@ -265,7 +265,44 @@ func limits() app.Limits {
 }
 
 func glossary() []domain.GlossaryTerm {
-	return []domain.GlossaryTerm{{Text: "spiral belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product"}}
+	return []domain.GlossaryTerm{
+		{Text: "spiral belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product"},
+		{Text: "eyelink belt", Language: "en", Family: "eyelink", Tier: "product"},
+		{Text: "Transportband", Language: "de", Family: "all", Tier: "broad"},
+	}
+}
+
+// A scan stored before a phrase was paired only with terms in its own language is read by that
+// rule: a Dutch phrase spelled like a German term is not in the map, and a known term in a
+// language the scan read no page in is left out.
+func TestAStoredScanIsReadByTheSameLanguageRule(t *testing.T) {
+	r := newRepo()
+	id := uuid.New()
+	r.analyses[id] = &domain.Analysis{
+		ID: id, Status: domain.StatusDone,
+		Pages: []domain.PageSummary{{URL: "https://x.test/", Language: "nl"}, {URL: "https://x.test/en", Language: "en"}},
+		Keywords: []domain.Keyword{
+			{Phrase: "transportband", Language: "nl", Classification: domain.Classification{Tier: "broad", Family: "all", Closest: "Transportband", InMap: true}},
+			{Phrase: "eyelink belts", Language: "en", Classification: domain.Classification{Tier: "broad"}},
+		},
+		KnownTerms: []domain.KnownTerm{
+			{GlossaryTerm: domain.GlossaryTerm{Text: "Transportband", Language: "de"}, Occurrences: 2},
+			{GlossaryTerm: domain.GlossaryTerm{Text: "eyelink belt", Language: "en"}, Occurrences: 1},
+		},
+	}
+	got, err := service(r, crawler{}, nil, limits()).Get(t.Context(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if k := got.Keywords[0].Classification; k.InMap || k.Closest != "" {
+		t.Errorf("Dutch transportband = %+v", k)
+	}
+	if k := got.Keywords[1].Classification; !k.InMap || k.Family != "eyelink" || k.Closest != "eyelink belt" {
+		t.Errorf("eyelink belts = %+v", k)
+	}
+	if len(got.KnownTerms) != 1 || got.KnownTerms[0].Text != "eyelink belt" {
+		t.Errorf("known terms = %+v", got.KnownTerms)
+	}
 }
 
 func pages() []domain.Page {

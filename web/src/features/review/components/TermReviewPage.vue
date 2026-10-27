@@ -2,21 +2,30 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TermCandidateStatus } from '../../../infrastructure/api/types.gen'
+import LanguageFilter from '../../../shared/ui/LanguageFilter.vue'
 import SettingsShell from '../../shell/components/SettingsShell.vue'
+import { languageChoices, parseLanguage, withLanguage } from '../../terminology/domain/languages'
 import { useStartReview, useTermCandidates, useTermDecision } from '../composables/useTermReview'
-import { parseStatus, reviewLine, STATUSES, statusTab } from '../domain/candidates'
+import { candidatesIn, parseStatus, reviewLine, STATUSES, statusTab } from '../domain/candidates'
 import CandidateItem from './CandidateItem.vue'
 
 const route = useRoute()
 const router = useRouter()
-// The tab lives in the address, so a reload or a link shows the same one.
+// The tab and the language live in the address, so a reload or a link shows the same list.
 const status = computed<TermCandidateStatus>(() => parseStatus(route.query.status))
+const language = computed(() => parseLanguage(route.query.language))
 const { candidates, counts, review, isLoading, forbidden, error } = useTermCandidates(status)
 const { isStarting, error: startError, start } = useStartReview()
 const { isDeciding, notice, error: decisionError, accept, reject, undo } = useTermDecision()
+const languages = computed(() => languageChoices(candidates.value.flatMap((c) => c.languages)))
+const shown = computed(() => candidatesIn(candidates.value, language.value))
+
+function go(next: TermCandidateStatus, lang: string | null): void {
+  void router.replace({ query: withLanguage(next === 'pending' ? {} : { status: next }, lang) })
+}
 
 function show(next: TermCandidateStatus): void {
-  void router.replace({ query: next === 'pending' ? {} : { status: next } })
+  go(next, language.value)
 }
 
 const FORBIDDEN = 'Only administrators can review terms.'
@@ -64,14 +73,15 @@ const FORBIDDEN = 'Only administrators can review terms.'
           {{ statusTab(s, counts) }}
         </button>
       </div>
+      <LanguageFilter :choices="languages" :selected="language" @select="(l) => go(status, l)" />
       <p class="m-0 font-medium" aria-live="polite">{{ notice }}</p>
       <p v-if="decisionError" role="alert" class="m-0 font-medium text-orange-ink">{{ decisionError }}</p>
       <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>
       <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the candidates…</p>
-      <p v-else-if="candidates.length === 0" class="m-0 text-lg text-ink-2">Nothing here.</p>
+      <p v-else-if="shown.length === 0" class="m-0 text-lg text-ink-2">Nothing here.</p>
       <ul v-else aria-label="Candidates" class="m-0 flex list-none flex-col gap-4 p-0">
         <CandidateItem
-          v-for="c in candidates"
+          v-for="c in shown"
           :key="c.id"
           :candidate="c"
           :busy="isDeciding"

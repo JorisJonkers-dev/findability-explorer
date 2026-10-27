@@ -3,6 +3,8 @@ package domain
 import (
 	"net/url"
 	"slices"
+
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/spelling"
 )
 
 // Field weights for telling what a page is about: its title says most, then its address, then its
@@ -29,12 +31,12 @@ func tribeltFamilyIDs() []string {
 // at a family when most map terms holding it are of that family. It is empty when no family leads.
 func (l Lexicon) PageFamily(p Page) string {
 	scores := map[string]float64{}
-	l.addFamilyScores(scores, foldedWords(p.Title), familyWeightTitle)
+	l.addFamilyScores(scores, spelling.Words(p.Title), familyWeightTitle)
 	if u, err := url.Parse(p.URL); err == nil {
 		l.addFamilyScores(scores, linkWords(u, ""), familyWeightURL)
 	}
 	if len(p.Headings) > 0 {
-		l.addFamilyScores(scores, foldedWords(p.Headings[0]), familyWeightHeading)
+		l.addFamilyScores(scores, spelling.Words(p.Headings[0]), familyWeightHeading)
 	}
 	return leader(scores)
 }

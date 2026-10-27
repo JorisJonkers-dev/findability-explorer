@@ -1,7 +1,39 @@
 import { describe, expect, it } from 'vitest'
 import type { TermCandidate } from '../../../infrastructure/api/types.gen'
 import { term } from '../../../testing/fixtures'
-import { checkDraft, decisionLine, draftOf, evidenceLine, parseStatus, reviewLine, reviewPoll, reviewProblem, shouldRetry, STATUSES, statusTab, suggestionLine, verdictLine } from './candidates'
+import {
+  candidatesIn,
+  checkDraft,
+  decisionLine,
+  draftLanguages,
+  draftOf,
+  evidenceLine,
+  parseStatus,
+  reviewLine,
+  reviewPoll,
+  reviewProblem,
+  shouldRetry,
+  STATUSES,
+  statusTab,
+  suggestionLine,
+  verdictLine,
+} from './candidates'
+
+describe('the language of a candidate', () => {
+  const of = (id: string, languages: string[]): TermCandidate => candidate({ id, languages })
+
+  it('is the only one it can join the map in, English also as American English', () => {
+    expect(draftLanguages(of('a', ['de']))).toEqual(['de'])
+    expect(draftLanguages(of('a', ['en']))).toEqual(['en', 'en-US'])
+    expect(draftLanguages(of('a', []))).toEqual(['nl', 'de', 'en', 'en-US'])
+  })
+
+  it('filters the list', () => {
+    const list = [of('a', ['nl']), of('b', ['en']), of('c', [])]
+    expect(candidatesIn(list, 'en').map((c) => c.id)).toEqual(['b'])
+    expect(candidatesIn(list, null).map((c) => c.id)).toEqual(['a', 'b', 'c'])
+  })
+})
 
 const candidate = (overrides: Partial<TermCandidate> = {}): TermCandidate => ({
   id: '3a7bd3e2360a9f01',

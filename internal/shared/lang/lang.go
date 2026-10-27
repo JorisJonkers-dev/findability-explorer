@@ -21,6 +21,19 @@ func Primary(tag string) string {
 // InFocus reports whether tag is Dutch, German or English, in any region (en-US is English).
 func InFocus(tag string) bool { return slices.Contains(Focus(), Primary(tag)) }
 
+// Unknown is the tag of a language that could not be told.
+const Unknown = "und"
+
+// Same reports whether two language tags name the same language: their primary subtags agree, so
+// American English (en-US) is English (en). A tag that names no language, empty or Unknown, is
+// the same as none, not even itself: text in a language not told matches nothing. This is the one
+// rule for pairing a phrase with a term; a phrase never matches, is never closest to and is never
+// merged with a term in another language.
+func Same(a, b string) bool {
+	p := Primary(a)
+	return p != "" && p != Unknown && p == Primary(b)
+}
+
 // others are language codes a site's address may start with (/fr/, /es-es/) that are not in
 // focus. "uk" is left out: sites use /uk/ for the United Kingdom far more than for Ukrainian.
 //

@@ -6,6 +6,8 @@ import {
   changeCounts,
   changeDetail,
   changedGroups,
+  changeLanguages,
+  changesIn,
   defaultPair,
   finishedScans,
   firstGroupWithTerms,
@@ -106,6 +108,19 @@ describe('a comparison', () => {
     ]
     expect(changeCounts(groups)).toEqual({ added: 2, removed: 1, moved: 1 })
     expect(changedGroups(groups).map((g) => g.group)).toEqual(['eyelink', 'spec'])
+  })
+
+  it('keeps only the changes in the chosen language', () => {
+    const german = { ...change, phrase: 'q', language: 'de' }
+    const groups: ComparisonGroup[] = [
+      { group: 'eyelink', added: [change, german], removed: [german], moved: [change] },
+      { group: 'spec', added: [], removed: [change], moved: [] },
+    ]
+    expect(changeLanguages(groups)).toEqual(['en', 'de', 'de', 'en', 'en'])
+    const inGerman = changesIn(groups, 'de')
+    expect(changeCounts(inGerman)).toEqual({ added: 1, removed: 1, moved: 0 })
+    expect(changedGroups(inGerman).map((g) => g.group)).toEqual(['eyelink'])
+    expect(changesIn(groups, null)).toEqual(groups)
   })
 })
 

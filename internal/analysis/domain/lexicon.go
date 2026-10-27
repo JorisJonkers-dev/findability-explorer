@@ -5,7 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/spelling"
 )
 
 // Lexicon is the vocabulary of metal conveyor belts the analysis judges a site's phrases by: every
@@ -51,7 +52,7 @@ func NewLexicon(glossary []GlossaryTerm) Lexicon {
 		t := newLexiconTerm(g)
 		counted := map[string]bool{}
 		for _, w := range t.words {
-			if s := singular(w); !counted[s] {
+			if s := spelling.Singular(w); !counted[s] {
 				docs[s], counted[s] = docs[s]+1, true
 			}
 		}
@@ -68,14 +69,9 @@ func NewLexicon(glossary []GlossaryTerm) Lexicon {
 
 // newLexiconTerm folds a glossary term's spellings, and collects its distinct content words.
 func newLexiconTerm(g GlossaryTerm) lexiconTerm {
-	var alts [][]string
+	alts := spelling.Forms(g.Text)
 	var words []string
-	for _, alt := range Alternatives(g.Text) {
-		ws := foldedWords(alt)
-		if len(ws) == 0 {
-			continue
-		}
-		alts = append(alts, ws)
+	for _, ws := range alts {
 		for _, w := range ws {
 			if !slices.Contains(words, w) && !isStopword(w) && len([]rune(w)) >= 3 {
 				words = append(words, w)
@@ -99,27 +95,15 @@ func wordWeights(docs map[string]int, termCount int) map[string]float64 {
 		}
 	}
 	for _, w := range applicationWords() {
-		if _, ok := weight[singular(w)]; !ok {
-			weight[singular(w)] = math.Log(1 + float64(termCount))
+		if _, ok := weight[spelling.Singular(w)]; !ok {
+			weight[spelling.Singular(w)] = math.Log(1 + float64(termCount))
 		}
 	}
 	return weight
 }
 
-func foldedWords(s string) []string {
-	return strings.Fields(fold.Fold(strings.Join(Tokens(s), " ")))
-}
-
-// singular drops a plural s, so "belts" weighs as "belt".
-func singular(w string) string {
-	if len(w) > 3 && strings.HasSuffix(w, "s") && !strings.HasSuffix(w, "ss") {
-		return w[:len(w)-1]
-	}
-	return w
-}
-
 func (l Lexicon) wordWeight(w string) float64 {
-	if v, ok := l.weight[singular(w)]; ok {
+	if v, ok := l.weight[spelling.Singular(w)]; ok {
 		return v
 	}
 	return l.compoundWeight(w)
@@ -164,13 +148,20 @@ func (l Lexicon) Relevant(words []string) bool {
 type Classification struct {
 	Tier   string
 	Family string
-	// Closest is the map term that shares the most specific words with the phrase.
+	// Closest is the map term in the phrase's language that shares the most specific words with
+	// the phrase.
 	Closest string
-	// InMap is true when the phrase is one of the map's own spellings, plural or not.
+	// InMap is true when the phrase is one of the spellings of a map term in its language, plural
+	// or not.
 	InMap bool
 }
 
 // Classify finds the map term closest to the phrase and takes its tier and family.
+//
+// Only the terms in the phrase's language count (see lang.Same): a Dutch phrase spelled like a
+// German term is not in the map, and is never closest to an English term. A phrase in a language
+// not told matches no term and is broad. The words' weights and the families they point at are
+// counted over the whole map, as they say how specific a word is, not which term it is.
 //
 // A phrase that is one of the map's own spellings takes that term's family and tier. Otherwise only the phrase's words
 // that point at a family decide its family (see familyOf): a phrase of generic words, such as
@@ -178,13 +169,12 @@ type Classification struct {
 // most of its words is of one. The closest term is the one of the family the phrase's words
 // point at most clearly; or the closest of all when a word points at its family; or else the
 // closest of no family (broad terms, and specification terms for a phrase with a specification
-// word). Closest is the term sharing the most specific words; on a tie a term in the phrase's
-// language, then the term with fewer words of its own wins. A phrase whose only close terms are
+// word). Closest is the term sharing the most specific words; on a tie the term with fewer words
+// of its own wins. A phrase whose only close terms are
 // of a family it does not name is broad, keeping a specification, application or problem tier.
 func (l Lexicon) Classify(words []string, language string) Classification {
-	if i, ok := l.spelling(words); ok {
-		// The spelling's family and tier; the closest term of them, so one in the phrase's
-		// language if the map has it.
+	if i, ok := l.spelt(words, language); ok {
+		// The spelling's family and tier; the closest term of them.
 		spelt := l.terms[i].term
 		if j := l.closest(words, language, func(t GlossaryTerm) bool { return t.Family == spelt.Family && t.Tier == spelt.Tier }); j >= 0 {
 			i = j
@@ -212,7 +202,7 @@ func (l Lexicon) ofFamily(words []string, language string) (int, bool) {
 	if i := l.closest(words, language, func(GlossaryTerm) bool { return true }); i >= 0 && scores[l.terms[i].term.Family] > 0 {
 		return i, true
 	}
-	return l.containedSpelling(words)
+	return l.containedSpelling(words, language)
 }
 
 // withoutFamily classifies a phrase that names no family by the closest term of no family. A
@@ -245,14 +235,17 @@ func (l Lexicon) withoutFamily(words []string, language string) Classification {
 	return Classification{Tier: tier, Closest: t.Text}
 }
 
-// containedSpelling is the index of the term with the longest spelling of two words or more that
-// the phrase holds word for word, plural or not.
-func (l Lexicon) containedSpelling(words []string) (int, bool) {
-	plain := singularAll(words)
+// containedSpelling is the index of the term in language with the longest spelling of two words
+// or more that the phrase holds word for word, plural or not.
+func (l Lexicon) containedSpelling(words []string, language string) (int, bool) {
+	plain := spelling.SingularAll(words)
 	best, length := -1, 1
 	for i, t := range l.terms {
+		if !lang.Same(t.term.Language, language) {
+			continue
+		}
 		for _, alt := range t.alts {
-			if len(alt) > length && holds(plain, singularAll(alt)) {
+			if len(alt) > length && holds(plain, spelling.SingularAll(alt)) {
 				best, length = i, len(alt)
 			}
 		}
@@ -276,7 +269,7 @@ func holds(words, part []string) bool {
 func (l Lexicon) specWord(w string) bool {
 	spec, total := 0, 0
 	for _, t := range l.terms {
-		if slices.Contains(t.words, w) || slices.Contains(t.words, singular(w)) {
+		if slices.Contains(t.words, w) || slices.Contains(t.words, spelling.Singular(w)) {
 			total++
 			if t.term.Tier == "spec" {
 				spec++
@@ -291,12 +284,12 @@ func (l Lexicon) from(i int, inMap bool) Classification {
 	return Classification{Tier: t.Tier, Family: t.Family, Closest: t.Text, InMap: inMap}
 }
 
-// closest is the index of the term keep accepts that shares the most specific words with the
-// phrase, by the tie-breaks Classify names, or -1 when none shares a specific word.
+// closest is the index of the term in language keep accepts that shares the most specific words
+// with the phrase, by the tie-breaks Classify names, or -1 when none shares a specific word.
 func (l Lexicon) closest(words []string, language string, keep func(GlossaryTerm) bool) int {
 	best, bestScore := -1, 0.0
 	for i, t := range l.terms {
-		if !keep(t.term) {
+		if !lang.Same(t.term.Language, language) || !keep(t.term) {
 			continue
 		}
 		score := 0.0
@@ -308,12 +301,9 @@ func (l Lexicon) closest(words []string, language string, keep func(GlossaryTerm
 		if score == 0 {
 			continue // the term shares no specific word with the phrase
 		}
-		// A tenth of a word's weight per word of the term breaks ties, and a fifth for a term in
-		// the phrase's own language.
-		score -= 0.1 * l.specific * float64(len(t.words))
-		if sameLanguage(t.term.Language, language) {
-			score += 0.2 * l.specific
-		}
+		// A tenth of a word's weight per word of the term breaks ties. Every term here is in the
+		// phrase's language, which is worth a fifth, so a long term sharing one word still counts.
+		score += 0.2*l.specific - 0.1*l.specific*float64(len(t.words))
 		if score > bestScore {
 			best, bestScore = i, score
 		}
@@ -327,36 +317,25 @@ func isTribeltFamily(family string) bool { return slices.Contains(tribeltFamilyI
 // minCompoundPart letters inside w, as "drahtgliedergurt" holds the term's "gliedergurt".
 func (t lexiconTerm) shares(w string) bool {
 	return slices.ContainsFunc(t.words, func(tw string) bool {
-		return tw == w || tw == singular(w) || (len(tw) >= minCompoundPart && strings.Contains(w, tw))
+		return tw == w || tw == spelling.Singular(w) || (len(tw) >= minCompoundPart && strings.Contains(w, tw))
 	})
 }
 
-// sameLanguage compares primary subtags, so en-US terms count for an English page.
-func sameLanguage(a, b string) bool {
-	pa, _, _ := strings.Cut(a, "-")
-	pb, _, _ := strings.Cut(b, "-")
-	return pa != "" && pa == pb
-}
-
-// spelling is the index of the term the phrase is one of the spellings of, plural or not.
-func (l Lexicon) spelling(words []string) (int, bool) {
-	plain := singularAll(words)
+// spelt is the index of the term in language the phrase is one of the spellings of, plural or
+// not.
+func (l Lexicon) spelt(words []string, language string) (int, bool) {
+	key := spelling.Key(words)
 	for i, t := range l.terms {
+		if !lang.Same(t.term.Language, language) {
+			continue
+		}
 		for _, alt := range t.alts {
-			if slices.Equal(alt, words) || slices.Equal(alt, plain) || slices.Equal(singularAll(alt), plain) {
+			if spelling.Key(alt) == key {
 				return i, true
 			}
 		}
 	}
 	return -1, false
-}
-
-func singularAll(words []string) []string {
-	out := make([]string, 0, len(words))
-	for _, w := range words {
-		out = append(out, singular(w))
-	}
-	return out
 }
 
 // BrandWords are the words that only name the site itself: the labels of its host before the
@@ -366,7 +345,7 @@ func BrandWords(host string) []string {
 	labels := strings.Split(strings.TrimPrefix(strings.ToLower(host), "www."), ".")
 	var out []string
 	for _, l := range labels[:max(len(labels)-1, 0)] {
-		for _, w := range foldedWords(strings.ReplaceAll(l, "-", " ")) {
+		for _, w := range spelling.Words(strings.ReplaceAll(l, "-", " ")) {
 			if len(w) >= 4 {
 				out = append(out, w)
 			}

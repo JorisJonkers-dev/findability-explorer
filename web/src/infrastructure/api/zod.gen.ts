@@ -1311,6 +1311,28 @@ export const zPromptTrigger = z.enum(['manual', 'schedule']);
 export const zUsd = z.number().gte(0).lte(1000000);
 
 /**
+ * What asking one provider's answer again in one mode should cost, reading included.
+ */
+export const zPromptAnswerCost = z.object({
+    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/),
+    mode: zPromptMode,
+    costUsd: zUsd
+});
+
+/**
+ * What asking a run again would ask and read, and what it should cost, with reading priced at the model that reads the answers now.
+ */
+export const zPromptRetryPlan = z.object({
+    askTasks: z.int().gte(0).lte(10000),
+    askCostUsd: zUsd,
+    unknownTasks: z.int().gte(0).lte(10000),
+    readTasks: z.int().gte(0).lte(10000),
+    readCostUsd: zUsd,
+    readingCostUsd: zUsd,
+    answerCosts: z.array(zPromptAnswerCost).max(40)
+});
+
+/**
  * The model a run asks for one provider, and the paid fallback of a free one.
  */
 export const zPromptModelChoice = z.object({
@@ -2061,6 +2083,29 @@ export const zRetryPromptRunPath = z.object({
  * The run, running again, with how many answers it asks and what they should cost.
  */
 export const zRetryPromptRunResponse = zPromptRetry;
+
+export const zGetPromptRetryPlanPath = z.object({
+    runId: z.uuid().max(36)
+});
+
+/**
+ * What asking the run again would ask, read and cost.
+ */
+export const zGetPromptRetryPlanResponse = zPromptRetryPlan;
+
+/**
+ * Every failed reading when empty, or the one answer to read again.
+ */
+export const zRereadPromptRunBody = zPromptRetryRequest;
+
+export const zRereadPromptRunPath = z.object({
+    runId: z.uuid().max(36)
+});
+
+/**
+ * The run, running again, with how many answers it reads and what reading them should cost.
+ */
+export const zRereadPromptRunResponse = zPromptRetry;
 
 /**
  * The settings.

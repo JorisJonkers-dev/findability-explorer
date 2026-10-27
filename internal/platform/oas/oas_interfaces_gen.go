@@ -89,6 +89,10 @@ type GetProductsRes interface {
 	getProductsRes()
 }
 
+type GetPromptRetryPlanRes interface {
+	getPromptRetryPlanRes()
+}
+
 type GetPromptTestResultsRes interface {
 	getPromptTestResultsRes()
 }
@@ -135,6 +139,10 @@ type ListTermCandidatesRes interface {
 
 type RejectTermCandidateRes interface {
 	rejectTermCandidateRes()
+}
+
+type RereadPromptRunRes interface {
+	rereadPromptRunRes()
 }
 
 type RetryPromptRunRes interface {

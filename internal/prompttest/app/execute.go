@@ -46,9 +46,29 @@ func (s *Service) Execute(ctx context.Context, run domain.Run) error {
 	return s.execute(ctx, run, nil)
 }
 
-// execute carries out a run as Execute does; with only, it asks those tasks and no other.
-func (s *Service) execute(ctx context.Context, run domain.Run, only map[domain.TaskKey]bool) error {
-	e, tasks, unread, err := s.resume(ctx, run, only)
+// redo is what running a finished run again does: ask the tasks of ask and no other, and read
+// the answers of read again besides the ones not read yet.
+type redo struct {
+	ask  map[domain.TaskKey]bool
+	read map[uuid.UUID]bool
+}
+
+// asks reports whether the run asks a task: one not answered yet, or, with r, one r names.
+func (r *redo) asks(t domain.TaskKey, answered bool) bool {
+	if r == nil {
+		return !answered
+	}
+	return r.ask[t]
+}
+
+// reads reports whether the run reads an answer: one given but not read yet, or one r names.
+func (r *redo) reads(a domain.Answer) bool {
+	return a.Failure == "" && (a.Extraction == nil || (r != nil && r.read[a.ID]))
+}
+
+// execute carries out a run as Execute does; with r, it does only what r names.
+func (s *Service) execute(ctx context.Context, run domain.Run, r *redo) error {
+	e, tasks, unread, err := s.resume(ctx, run, r)
 	if err != nil {
 		return s.fail(ctx, run.ID, err)
 	}
@@ -86,13 +106,14 @@ func (s *Service) execute(ctx context.Context, run domain.Run, only map[domain.T
 }
 
 // resume loads what a run has done: the tasks still to ask of the questions it asked, or the ones
-// only names, and the answers stored without being read, as when a restart came between the two.
-func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.TaskKey]bool) (*execution, []domain.Task, []domain.Answer, error) {
+// r names, and the answers stored without being read, as when a restart came between the two, with
+// the ones r names to read again.
+func (s *Service) resume(ctx context.Context, run domain.Run, r *redo) (*execution, []domain.Task, []domain.Answer, error) {
 	settings, err := s.settings(ctx)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	gw, reader, err := s.models(ctx, settings.CredentialID)
+	gw, rd, err := s.models(ctx, settings.CredentialID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -114,17 +135,17 @@ func (s *Service) resume(ctx context.Context, run domain.Run, only map[domain.Ta
 	var unread []domain.Answer
 	for _, a := range done {
 		answered[a.Key()] = true
-		if a.Failure == "" && a.Extraction == nil {
+		if r.reads(a) {
 			unread = append(unread, a)
 		}
 	}
 	var tasks []domain.Task
 	for _, t := range domain.Tasks(set, run.Models) {
-		if (only == nil && !answered[t.Key()]) || only[t.Key()] {
+		if r.asks(t.Key(), answered[t.Key()]) {
 			tasks = append(tasks, t)
 		}
 	}
-	e := &execution{s: s, run: run, gw: gw, reader: reader, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
+	e := &execution{s: s, run: run, gw: gw, reader: rd, directory: directory, budget: settings.MonthlyBudget, spent: spent, answered: done}
 	return e, tasks, unread, nil
 }
 

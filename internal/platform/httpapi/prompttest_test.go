@@ -18,6 +18,8 @@ type promptTests struct {
 	err       error
 	retryErr  error
 	retried   *domain.TaskKey
+	reread    *domain.TaskKey
+	planErr   error
 	startErr  error
 	updateErr error
 	decideErr error
@@ -103,6 +105,26 @@ func (p *promptTests) Retry(_ context.Context, id uuid.UUID, task *domain.TaskKe
 	return app.Retry{Run: r, Tasks: 7, Estimate: 84_000}, p.retryErr
 }
 
+func (p *promptTests) Reread(_ context.Context, id uuid.UUID, task *domain.TaskKey) (app.Retry, error) {
+	if id != runID {
+		return app.Retry{}, domain.ErrNotFound
+	}
+	p.reread = task
+	r := promptRun()
+	r.Status, r.FinishedAt = domain.RunRunning, time.Time{}
+	return app.Retry{Run: r, Tasks: 2, Estimate: 300}, p.retryErr
+}
+
+func (p *promptTests) RetryPlan(_ context.Context, id uuid.UUID) (app.Plan, error) {
+	if id != runID {
+		return app.Plan{}, domain.ErrNotFound
+	}
+	return app.Plan{
+		Ask: 7, AskCost: 84_000, Unknown: 3, Read: 2, ReadCost: 300, Reading: 150,
+		Costs: []domain.ModeCost{{Provider: "openai", Mode: domain.ModeWeb, Cost: 20_150}},
+	}, p.planErr
+}
+
 func view() app.View {
 	s := domain.DefaultSettings(answered)
 	s.CredentialID = "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f"
@@ -111,7 +133,7 @@ func view() app.View {
 	return app.View{
 		Settings: s, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000,
 		Models: models, KeyWorks: true,
-		Prices: domain.PricesFromRun([]domain.Answer{{Provider: "google", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 1000}}}, models, 20, domain.CadenceWeekly, 10_000_000),
+		Prices: domain.PricesFromRun([]domain.Answer{{Provider: "google", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 1000}}}, models, 20, domain.CadenceWeekly, 10_000_000, nil),
 	}
 }
 
@@ -476,5 +498,63 @@ func TestHaikuChecksTheCompetitorList(t *testing.T) {
 	a.prompts().err = errors.New("down")
 	if r := callAs(t, srv, http.MethodGet, base, "", "admin"); r.code != http.StatusInternalServerError {
 		t.Errorf("failing list: %d", r.code)
+	}
+}
+
+func TestReadingAgainIsForAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	path := "/api/v1/admin/prompt-runs/" + runID.String() + "/reread"
+	if r := callAs(t, srv, http.MethodPost, path, `{}`, "tester"); r.code != http.StatusForbidden {
+		t.Errorf("a viewer read again: %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPost, path, `{}`, "admin")
+	if r.code != http.StatusAccepted || r.body["tasks"].(float64) != 2 || r.body["estimatedCostUsd"].(float64) != 0.0003 ||
+		r.body["run"].(map[string]any)["status"] != "running" || a.prompts().reread != nil {
+		t.Fatalf("read all again = %d %v", r.code, r.body)
+	}
+	r = callAs(t, srv, http.MethodPost, path, `{"promptId":"eyelink-application-twente","provider":"openai","mode":"web"}`, "admin")
+	if want := (domain.TaskKey{PromptID: "eyelink-application-twente", Provider: "openai", Mode: domain.ModeWeb}); r.code != http.StatusAccepted || *a.prompts().reread != want {
+		t.Errorf("read one again = %d, %+v", r.code, a.prompts().reread)
+	}
+	if r := callAs(t, srv, http.MethodPost, path, `{"mode":"web"}`, "admin"); r.code != http.StatusUnprocessableEntity {
+		t.Errorf("half an answer = %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-runs/"+uuid.NewString()+"/reread", `{}`, "admin"); r.code != http.StatusNotFound {
+		t.Errorf("no such run = %d", r.code)
+	}
+	for err, want := range map[error]int{
+		domain.ErrRunActive:     http.StatusConflict,
+		domain.ErrBudgetReached: http.StatusConflict,
+		app.ErrNothingUnread:    http.StatusUnprocessableEntity,
+		errors.New("broken"):    http.StatusInternalServerError,
+	} {
+		a.prompts().retryErr = err
+		if r := callAs(t, srv, http.MethodPost, path, `{}`, "admin"); r.code != want {
+			t.Errorf("%v: %d", err, r.code)
+		}
+	}
+}
+
+func TestThePlanOfAskingAgainIsForAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	path := "/api/v1/admin/prompt-runs/" + runID.String() + "/retry-plan"
+	if r := callAs(t, srv, http.MethodGet, path, "", "tester"); r.code != http.StatusForbidden {
+		t.Errorf("a viewer read the plan: %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodGet, path, "", "admin")
+	costs, _ := r.body["answerCosts"].([]any)
+	if r.code != http.StatusOK || r.body["askTasks"].(float64) != 7 || r.body["askCostUsd"].(float64) != 0.084 || r.body["unknownTasks"].(float64) != 3 ||
+		r.body["readTasks"].(float64) != 2 || r.body["readCostUsd"].(float64) != 0.0003 || r.body["readingCostUsd"].(float64) != 0.00015 || len(costs) != 1 ||
+		costs[0].(map[string]any)["mode"] != "web" || costs[0].(map[string]any)["costUsd"].(float64) != 0.02015 {
+		t.Fatalf("plan = %d %v", r.code, r.body)
+	}
+	if r := callAs(t, srv, http.MethodGet, "/api/v1/admin/prompt-runs/"+uuid.NewString()+"/retry-plan", "", "admin"); r.code != http.StatusNotFound {
+		t.Errorf("no such run = %d", r.code)
+	}
+	a.prompts().planErr = errors.New("broken")
+	if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("a failing plan = %d", r.code)
 	}
 }

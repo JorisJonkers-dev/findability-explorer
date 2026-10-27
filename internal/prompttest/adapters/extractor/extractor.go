@@ -103,13 +103,6 @@ func Parse(text string) (domain.Extracted, error) {
 	return x, nil
 }
 
-// Claude Haiku 5.5's list price on Anthropic's API, in dollars per token, for prompts up to
-// 100,000 tokens; an answer to read is far shorter.
-const (
-	haikuInput  = 0.10 / 1e6
-	haikuOutput = 0.50 / 1e6
-)
-
 // maxTokens leaves Haiku room to think before it answers.
 const maxTokens = 8000
 
@@ -127,14 +120,15 @@ func New(client llm.Client, model string) *Extractor {
 }
 
 // Extract has Haiku read an answer in the strict format. What it used is priced at Haiku's list
-// price, also when the reading failed.
+// price (domain.HaikuPrice), also when the reading failed; an answer to read is far shorter than
+// the 100,000 tokens that price holds for.
 func (e *Extractor) Extract(ctx context.Context, in app.ExtractInput) (domain.Extracted, domain.Reply, error) {
 	resp, err := e.client.Complete(ctx, llm.Prompt{
 		Model: e.model, System: System, User: User(in), SchemaName: SchemaName, Schema: Schema(), MaxTokens: maxTokens,
 	})
 	usage := domain.Reply{
 		InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens,
-		Cost: domain.MicrosOf(float64(resp.InputTokens)*haikuInput + float64(resp.OutputTokens)*haikuOutput),
+		Cost: domain.HaikuPrice().Of(resp.InputTokens, resp.OutputTokens),
 	}
 	if err != nil {
 		return domain.Extracted{}, usage, err

@@ -181,6 +181,16 @@ type Handler interface {
 	//
 	// GET /api/v1/products
 	GetProducts(ctx context.Context) (GetProductsRes, error)
+	// GetPromptRetryPlan implements getPromptRetryPlan operation.
+	//
+	// Administrators only. Says how many of a run's failed and missing answers asking again would ask, how
+	// many it cannot ask because no answer of a run of an earlier prompt set kept their question, how many
+	// answers whose reading failed could be read again, and what each should cost - each provider's
+	// answers by their own cost, a web search's fee included, and reading at the price of the model that
+	// reads the answers now. 404 for a run nobody knows.
+	//
+	// GET /api/v1/admin/prompt-runs/{runId}/retry-plan
+	GetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (GetPromptRetryPlanRes, error)
 	// GetPromptTestResults implements getPromptTestResults operation.
 	//
 	// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
@@ -274,6 +284,17 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/term-candidates/{candidateId}/reject
 	RejectTermCandidate(ctx context.Context, params RejectTermCandidateParams) (RejectTermCandidateRes, error)
+	// RereadPromptRun implements rereadPromptRun operation.
+	//
+	// Administrators only. Reads a finished run's answers whose reading failed again, or only the one
+	// answer of one question, provider and mode named, in the same run: the stored answer is read again by
+	// the model that reads the answers now, and the provider is not asked again. Each new reading replaces
+	// the failed one, what the failed reading cost still counted. It runs in the background and stops at
+	// the month's budget like any run. 404 for a run nobody knows; 409 while a run is running or once the
+	// month's budget is spent; 422 when no reading failed or no OpenRouter key is chosen.
+	//
+	// POST /api/v1/admin/prompt-runs/{runId}/reread
+	RereadPromptRun(ctx context.Context, req *PromptRetryRequest, params RereadPromptRunParams) (RereadPromptRunRes, error)
 	// RetryPromptRun implements retryPromptRun operation.
 	//
 	// Administrators only. Asks a finished run's failed and missing answers again, or only the one

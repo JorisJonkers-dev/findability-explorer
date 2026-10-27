@@ -26,7 +26,7 @@ func server(t *testing.T, reply func(w http.ResponseWriter, body map[string]any)
 		switch r.URL.Path {
 		case "/models":
 			_, _ = io.WriteString(w, `{"data":[
-				{"id":"openai/gpt-oss-20b","name":"gpt-oss","architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{"prompt":"0.00000003","completion":"0.00000014"}},
+				{"id":"openai/gpt-oss-20b","name":"gpt-oss","architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{"prompt":"0.00000003","completion":"0.00000014","web_search":"0.01"}},
 				{"id":"openrouter/auto","architecture":{},"pricing":{"prompt":"-1","completion":"-1"}},
 				{"id":"broken","pricing":{"prompt":"x","completion":"0"}},
 				{"id":"","pricing":{"prompt":"0","completion":"0"}}]}`)
@@ -49,10 +49,10 @@ func TestModelsReadsThePriceList(t *testing.T) {
 	if err != nil || len(models) != 2 {
 		t.Fatalf("models = %+v, %v", models, err)
 	}
-	if m := models[0]; m.ID != "openai/gpt-oss-20b" || m.PromptPrice != 0.00000003 || !slices.Equal(m.OutputModalities, []string{"text"}) {
+	if m := models[0]; m.ID != "openai/gpt-oss-20b" || m.PromptPrice != 0.00000003 || m.WebSearchPrice != 0.01 || !slices.Equal(m.OutputModalities, []string{"text"}) {
 		t.Errorf("model = %+v", m)
 	}
-	if models[1].PromptPrice != -1 {
+	if models[1].PromptPrice != -1 || models[1].WebSearchPrice != 0 {
 		t.Errorf("router = %+v", models[1])
 	}
 }

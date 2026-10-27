@@ -217,36 +217,64 @@ func Unanswered(set PromptSet, models []ModelChoice, answers []Answer) []Task {
 	return out
 }
 
-// Estimate is what asking tasks again should cost: for each, the average cost of an answer of its
-// provider in answers, reading included, or of any answer when its provider has none; nothing
-// when no answer was given at all.
-func Estimate(answers []Answer, tasks []Task) Micros {
-	type sum struct {
-		cost Micros
-		n    int64
-	}
-	byProvider := map[string]sum{}
-	var all sum
-	for _, a := range answers {
-		if a.Failure != "" {
-			continue
-		}
-		cost := a.Cost
-		if a.Extraction != nil {
-			cost += a.Extraction.Cost
-		}
-		p := byProvider[a.Provider]
-		byProvider[a.Provider] = sum{cost: p.cost + cost, n: p.n + 1}
-		all = sum{cost: all.cost + cost, n: all.n + 1}
-	}
+// Estimate is what asking tasks again should cost: for each, what an answer of its provider and
+// mode cost on average in answers (AnswerCost), and reading it at reading.
+func Estimate(answers []Answer, tasks []Task, reading Micros) Micros {
 	var out Micros
 	for _, t := range tasks {
-		s := byProvider[t.Provider]
-		if s.n == 0 {
-			s = all
+		out += AnswerCost(answers, t.Provider, t.Mode) + reading
+	}
+	return out
+}
+
+// AnswerCost is what an answer of provider in mode cost on average in answers, a web search's fee
+// included; of any provider in that mode when provider gave none; nothing when no answer in that
+// mode was given at all. Reading it is not included.
+func AnswerCost(answers []Answer, provider string, mode Mode) Micros {
+	var mine, theirs, n, all Micros
+	for _, a := range answers {
+		if a.Failure != "" || a.Mode != mode {
+			continue
 		}
-		if s.n > 0 {
-			out += s.cost / Micros(s.n)
+		theirs, all = theirs+a.Cost, all+1
+		if a.Provider == provider {
+			mine, n = mine+a.Cost, n+1
+		}
+	}
+	switch {
+	case n > 0:
+		return mine / n
+	case all > 0:
+		return theirs / all
+	}
+	return 0
+}
+
+// ModeCost is what asking one provider again in one mode should cost.
+type ModeCost struct {
+	Provider string
+	Mode     Mode
+	Cost     Micros
+}
+
+// AnswerCosts is what asking each provider of models again should cost in each mode, reading at
+// reading included.
+func AnswerCosts(answers []Answer, models []ModelChoice, reading Micros) []ModeCost {
+	out := make([]ModeCost, 0, len(models)*len(Modes()))
+	for _, m := range models {
+		for _, mode := range Modes() {
+			out = append(out, ModeCost{Provider: m.Provider, Mode: mode, Cost: AnswerCost(answers, m.Provider, mode) + reading})
+		}
+	}
+	return out
+}
+
+// Unread are the answers whose reading failed, which can be read again without asking again.
+func Unread(answers []Answer) []Answer {
+	var out []Answer
+	for _, a := range answers {
+		if a.Failure == "" && a.Extraction != nil && a.Extraction.Failed {
+			out = append(out, a)
 		}
 	}
 	return out

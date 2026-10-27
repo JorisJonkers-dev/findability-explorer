@@ -1074,6 +1074,83 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-runs/{runId}/retry-plan:
+    get:
+      operationId: getPromptRetryPlan
+      summary: What asking a Prompt run again would cost
+      description: >-
+        Administrators only. Says how many of a run's failed and missing answers asking again
+        would ask, how many it cannot ask because no answer of a run of an earlier prompt set kept
+        their question, how many answers whose reading failed could be read again, and what each
+        should cost - each provider's answers by their own cost, a web search's fee included, and
+        reading at the price of the model that reads the answers now. 404 for a run nobody knows.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: What asking the run again would ask, read and cost.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptRetryPlan"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-runs/{runId}/reread:
+    post:
+      operationId: rereadPromptRun
+      summary: Read a Prompt run's answers again whose reading failed
+      description: >-
+        Administrators only. Reads a finished run's answers whose reading failed again, or only
+        the one answer of one question, provider and mode named, in the same run: the stored
+        answer is read again by the model that reads the answers now, and the provider is not
+        asked again. Each new reading replaces the failed one, what the failed reading cost still
+        counted. It runs in the background and stops at the month's budget like any run. 404 for
+        a run nobody knows; 409 while a run is running or once the month's budget is spent; 422
+        when no reading failed or no OpenRouter key is chosen.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        description: Every failed reading when empty, or the one answer to read again.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptRetryRequest"
+            example:
+              promptId: eyelink-application-twente
+              provider: openai
+              mode: web
+      responses:
+        "202":
+          description: The run, running again, with how many answers it reads and what reading them should cost.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptRetry"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/prompt-test:
     get:
       operationId: getPromptTestSettings
@@ -4595,6 +4672,65 @@ components:
           description: How many answers it asks again.
           example: 7
         estimatedCostUsd:
+          $ref: "#/components/schemas/Usd"
+    PromptRetryPlan:
+      description: >-
+        What asking a run again would ask and read, and what it should cost, with reading priced
+        at the model that reads the answers now.
+      type: object
+      additionalProperties: false
+      required: [askTasks, askCostUsd, unknownTasks, readTasks, readCostUsd, readingCostUsd, answerCosts]
+      properties:
+        askTasks:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: How many failed and missing answers asking again would ask.
+          example: 7
+        askCostUsd:
+          $ref: "#/components/schemas/Usd"
+        unknownTasks:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: >-
+            How many missing answers of a run of an earlier prompt set cannot be asked again,
+            because no answer kept their question.
+          example: 0
+        readTasks:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: How many answers whose reading failed could be read again, without asking again.
+          example: 2
+        readCostUsd:
+          $ref: "#/components/schemas/Usd"
+        readingCostUsd:
+          $ref: "#/components/schemas/Usd"
+        answerCosts:
+          type: array
+          maxItems: 40
+          description: What asking one answer again should cost, per provider of the run and mode, reading included.
+          items:
+            $ref: "#/components/schemas/PromptAnswerCost"
+    PromptAnswerCost:
+      description: What asking one provider's answer again in one mode should cost, reading included.
+      type: object
+      additionalProperties: false
+      required: [provider, mode, costUsd]
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+          pattern: "^[a-z0-9][a-z0-9-]*$"
+          description: The provider, by its OpenRouter id prefix.
+          example: openai
+        mode:
+          $ref: "#/components/schemas/PromptMode"
+        costUsd:
           $ref: "#/components/schemas/Usd"
     PromptMode:
       description: How a prompt is asked - from the model's own knowledge, or with live web search.

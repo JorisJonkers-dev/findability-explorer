@@ -28,8 +28,9 @@ Without an Anthropic key, each job behaves exactly as before.
   and what takes over without one, with the switch to turn matching off. The Prompt test settings show the model that reads the answers.
 - As ADR-0004 warns, a different reader makes later runs less comparable with earlier ones. Runs
   read by Haiku and runs read on OpenRouter are not told apart in the results.
-- The price estimate before any run still prices reading at the OpenRouter model's price, which is
-  close to Haiku's.
+- The price estimates price reading at the model that will read: Haiku's list price while an
+  Anthropic key works and the month's tokens last, else the OpenRouter model's price (amended
+  below; at first they always used the OpenRouter model's price).
 
 ## Amended: turning matching off wins
 
@@ -50,3 +51,12 @@ The tokens Haiku uses reading Prompt answers count towards the month's language-
 settings page, with those of product matching, the term review and the competitor review. Once the
 month's tokens are spent, OpenRouter reads the rest of the answers, as without an Anthropic key, and
 product matching stops for every scan, as it always did at the budget.
+
+## Amended: the estimates price what will really be paid
+
+The Prompt test's estimates (the settings before a run, and "Ask … again, about $X") price reading
+at the model that will read the answers, Haiku or OpenRouter's, by the tokens a reading used on
+average. An answer with web search includes the search's fee: the model's own search at its price
+on OpenRouter's list, else OpenRouter's search at five results for $4 per 1,000. An answer whose
+reading failed can be read again on its own, by the model that reads now, without asking the
+provider again.

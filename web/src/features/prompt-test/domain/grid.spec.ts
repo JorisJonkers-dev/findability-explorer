@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { promptAnswer, promptRun } from '../../../testing/fixtures'
 import {
   answerCost,
-  averageCost,
-  retryPlan,
   byKey,
   cellLabel,
   columnsOf,
@@ -18,6 +16,7 @@ import {
   markOf,
   MODE_COLUMNS,
   MODE_FILTERS,
+  modeCost,
   mostNamed,
   ordinal,
   parseFilter,
@@ -31,6 +30,8 @@ import {
   squareOf,
   toCsv,
   tribeltPosition,
+  unknownLine,
+  unread,
 } from './grid'
 
 /** An answer that puts Tribelt at a place in its list, from 1. */
@@ -206,20 +207,23 @@ describe('a cost', () => {
 })
 
 describe('asking again', () => {
-  it('counts the failed and missing answers per provider and prices them by its average answer', () => {
-    const run = promptRun({ tasks: 4 })
-    const answers = [
-      promptAnswer({ provider: 'openai', costUsd: 0.002 }),
-      promptAnswer({ provider: 'openai', mode: 'web', costUsd: 0.004 }),
-      promptAnswer({ provider: 'google', failure: 'Rate limited.', extraction: undefined, costUsd: 0.0001 }),
-    ]
-    expect(averageCost(answers, 'openai')).toBeCloseTo(0.003)
-    // Google has no answer to go by: the average of every answer.
-    expect(averageCost(answers, 'google')).toBeCloseTo(0.003)
-    expect(averageCost([], 'google')).toBe(0)
-    const plan = retryPlan(run, answers)
-    expect(plan.count).toBe(2)
-    expect(plan.estimate).toBeCloseTo(0.006)
-    expect(retryPlan(promptRun({ models: [] }), answers)).toEqual({ count: 0, estimate: 0 })
+  it('reads what one answer costs per provider and mode from the plan', () => {
+    const plan = { answerCosts: [{ provider: 'openai', mode: 'web' as const, costUsd: 0.021 }] }
+    expect(modeCost(plan, 'openai', 'web')).toBe(0.021)
+    expect(modeCost(plan, 'openai', 'knowledge')).toBe(0)
+    expect(modeCost(undefined, 'openai', 'web')).toBe(0)
+  })
+
+  it('says when missing answers cannot be asked again', () => {
+    expect(unknownLine(0)).toBeNull()
+    expect(unknownLine(1)).toBe('1 missing answer cannot be asked again. This run asked an earlier set of questions, and no answer kept them.')
+    expect(unknownLine(70)).toBe('70 missing answers cannot be asked again. This run asked an earlier set of questions, and no answer kept them.')
+  })
+
+  it('knows an answer that was given but not read', () => {
+    expect(unread(promptAnswer({}, [], { failed: true }))).toBe(true)
+    expect(unread(promptAnswer())).toBe(false)
+    expect(unread(promptAnswer({ failure: 'Rate limited.', extraction: undefined }))).toBe(false)
+    expect(unread(undefined)).toBe(false)
   })
 })

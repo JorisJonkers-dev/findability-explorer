@@ -1980,6 +1980,117 @@ func encodeGetProductsResponse(response GetProductsRes, w http.ResponseWriter, s
 	}
 }
 
+func encodeGetPromptRetryPlanResponse(response GetPromptRetryPlanRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *PromptRetryPlan:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *GetPromptRetryPlanBadRequest:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *GetPromptRetryPlanForbidden:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *GetPromptRetryPlanNotFound:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *GetPromptRetryPlanUnauthorized:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeGetPromptTestResultsResponse(response GetPromptTestResultsRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *PromptTestResults:
@@ -2917,6 +3028,163 @@ func encodeRejectTermCandidateResponse(response RejectTermCandidateRes, w http.R
 		return nil
 
 	case *RejectTermCandidateUnauthorized:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
+func encodeRereadPromptRunResponse(response RereadPromptRunRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *PromptRetry:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(202)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *RereadPromptRunBadRequest:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *RereadPromptRunConflict:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *RereadPromptRunForbidden:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *RereadPromptRunNotFound:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *RereadPromptRunUnauthorized:
+		w.Header().Set("Content-Type", "application/problem+json")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	case *RereadPromptRunUnprocessableEntity:
 		w.Header().Set("Content-Type", "application/problem+json")
 		code := response.StatusCode
 		if code == 0 {

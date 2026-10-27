@@ -2132,6 +2132,43 @@ export type PromptRetry = {
 };
 
 /**
+ * What asking a run again would ask and read, and what it should cost, with reading priced at the model that reads the answers now.
+ */
+export type PromptRetryPlan = {
+    /**
+     * How many failed and missing answers asking again would ask.
+     */
+    askTasks: number;
+    askCostUsd: Usd;
+    /**
+     * How many missing answers of a run of an earlier prompt set cannot be asked again, because no answer kept their question.
+     */
+    unknownTasks: number;
+    /**
+     * How many answers whose reading failed could be read again, without asking again.
+     */
+    readTasks: number;
+    readCostUsd: Usd;
+    readingCostUsd: Usd;
+    /**
+     * What asking one answer again should cost, per provider of the run and mode, reading included.
+     */
+    answerCosts: Array<PromptAnswerCost>;
+};
+
+/**
+ * What asking one provider's answer again in one mode should cost, reading included.
+ */
+export type PromptAnswerCost = {
+    /**
+     * The provider, by its OpenRouter id prefix.
+     */
+    provider: string;
+    mode: PromptMode;
+    costUsd: Usd;
+};
+
+/**
  * How a prompt is asked - from the model's own knowledge, or with live web search.
  */
 export type PromptMode = 'knowledge' | 'web';
@@ -4304,6 +4341,109 @@ export type RetryPromptRunResponses = {
 };
 
 export type RetryPromptRunResponse = RetryPromptRunResponses[keyof RetryPromptRunResponses];
+
+export type GetPromptRetryPlanData = {
+    body?: never;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/prompt-runs/{runId}/retry-plan';
+};
+
+export type GetPromptRetryPlanErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptRetryPlanError = GetPromptRetryPlanErrors[keyof GetPromptRetryPlanErrors];
+
+export type GetPromptRetryPlanResponses = {
+    /**
+     * What asking the run again would ask, read and cost.
+     */
+    200: PromptRetryPlan;
+};
+
+export type GetPromptRetryPlanResponse = GetPromptRetryPlanResponses[keyof GetPromptRetryPlanResponses];
+
+export type RereadPromptRunData = {
+    /**
+     * Every failed reading when empty, or the one answer to read again.
+     */
+    body: PromptRetryRequest;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/prompt-runs/{runId}/reread';
+};
+
+export type RereadPromptRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RereadPromptRunError = RereadPromptRunErrors[keyof RereadPromptRunErrors];
+
+export type RereadPromptRunResponses = {
+    /**
+     * The run, running again, with how many answers it reads and what reading them should cost.
+     */
+    202: PromptRetry;
+};
+
+export type RereadPromptRunResponse = RereadPromptRunResponses[keyof RereadPromptRunResponses];
 
 export type GetPromptTestSettingsData = {
     body?: never;

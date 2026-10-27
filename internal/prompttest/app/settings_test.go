@@ -304,6 +304,10 @@ func TestTheSettingsPriceRunsBeforeAndAfterTheFirst(t *testing.T) {
 	if err != nil || !before.KeyWorks || before.Prices.Basis != domain.BasisCatalogue || len(before.Prices.Providers) != 2 || len(before.Models) != 0 {
 		t.Fatalf("before any run = %+v, %v", before.Prices, err)
 	}
+	// An answer with web search costs the search too.
+	if openai := before.Prices.Providers[0]; openai.Web != openai.Knowledge+20_000 {
+		t.Errorf("before any run, with the web = %+v", openai)
+	}
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)
 	}

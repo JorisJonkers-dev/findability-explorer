@@ -61,9 +61,9 @@ describe('the review tabs', () => {
 })
 
 describe('a draft', () => {
-  it('starts from the candidate: its first known language, else English, and other belts without a family', () => {
+  it('starts from the candidate: its language, none for one not told, and other belts without a family', () => {
     expect(draftOf(candidate())).toEqual({ term: 'spiral freezer belt', language: 'de', family: 'other', tier: 'broad', usedBy: 'Twentebelt' })
-    expect(draftOf(candidate({ languages: ['und'], suggestedFamily: 'eyelink' }))).toMatchObject({ language: 'en', family: 'eyelink' })
+    expect(draftOf(candidate({ languages: ['und'], suggestedFamily: 'eyelink' }))).toMatchObject({ language: '', family: 'eyelink' })
   })
 
   it('is checked before it is sent', () => {
@@ -72,6 +72,7 @@ describe('a draft', () => {
     expect(checkDraft({ ...draft, term: 'x'.repeat(201) })).toEqual({ kind: 'invalid', message: 'A term has at most 200 characters.' })
     const many = Array.from({ length: 21 }, (_, i) => `C${String(i)}`).join(',')
     expect(checkDraft({ ...draft, usedBy: many })).toEqual({ kind: 'invalid', message: 'Name at most 20 companies.' })
+    expect(checkDraft({ ...draft, language: '' })).toEqual({ kind: 'invalid', message: 'Choose the language the phrase is in.' })
     expect(checkDraft({ ...draft, usedBy: ' A, ,B,A ' })).toEqual({
       kind: 'ok',
       body: { term: 'spiral freezer belt', language: 'de', family: 'other', tier: 'broad', usedBy: ['A', 'B'] },
@@ -84,6 +85,7 @@ describe('the evidence', () => {
     expect(evidenceLine(candidate())).toBe('1 company, 1 scan, in Portuguese and German')
     expect(evidenceLine(candidate({ languages: ['en'], scans: 2, companies: [] }))).toBe('0 companies, 2 scans, in English')
     expect(evidenceLine(candidate({ languages: [] }))).toBe('1 company, 1 scan')
+    expect(evidenceLine(candidate({ languages: ['und'] }))).toBe('1 company, 1 scan, language not told')
     expect(evidenceLine(candidate({ languages: ['en', 'de', 'nl'] }))).toBe('1 company, 1 scan, in English, German and Dutch')
   })
 

@@ -137,8 +137,9 @@ func (s *Service) candidates(ctx context.Context) ([]domain.Candidate, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read the scans' findings: %w", err)
 	}
-	// Only phrases in Dutch, German or English are candidates for the map.
-	obs = slices.DeleteFunc(obs, func(o domain.Observation) bool { return !lang.InFocus(o.Language) })
+	// Only phrases in Dutch, German or English are candidates for the map, and those in no language
+	// that could be told: a person sets their language (ADR-0011).
+	obs = slices.DeleteFunc(obs, func(o domain.Observation) bool { return lang.Told(o.Language) && !lang.InFocus(o.Language) })
 	decisions, err := s.reviews.Decisions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load decisions: %w", err)

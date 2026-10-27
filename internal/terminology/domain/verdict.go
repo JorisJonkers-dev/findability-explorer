@@ -67,10 +67,11 @@ func Complete(asked []Candidate, answered []Verdict, model string, at time.Time)
 }
 
 // Decision is the decision a sure verdict makes on candidate c, by the model. An unsure verdict,
-// or an accepted term the map cannot take or that is not in c's language, makes none: the
-// candidate waits for a person.
+// an accepted term the map cannot take or that is not in c's language, or an acceptance of a
+// candidate in no language that could be told, makes none: the candidate waits for a person, who
+// sets its language.
 func (v Verdict) Decision(c Candidate, terms []Term) (Decision, bool) {
-	if !v.Sure {
+	if !v.Sure || (v.Accept && !focus.Told(c.Language)) {
 		return Decision{}, false
 	}
 	d := Decision{CandidateID: c.ID, Phrase: c.Phrase, Status: StatusRejected, By: ModelReviewer, At: v.At}
@@ -99,8 +100,8 @@ func (v Verdict) AppliesTo(c Candidate) bool {
 
 // WithVerdicts attaches the model's verdict to each candidate it reviewed, and to a waiting one
 // the term it suggests when the map, holding terms, could take it in the candidate's language.
-// A verdict given on the phrase alone, before candidates were kept apart by language, counts
-// where it applies (Verdict.AppliesTo).
+// A verdict given on the phrase alone, before candidates were kept apart by language, or while its
+// language was not told, counts where it applies (Verdict.AppliesTo).
 func WithVerdicts(candidates []Candidate, verdicts []Verdict, terms []Term) []Candidate {
 	byID := map[string]Verdict{}
 	for _, v := range verdicts {
@@ -108,9 +109,11 @@ func WithVerdicts(candidates []Candidate, verdicts []Verdict, terms []Term) []Ca
 	}
 	for i, c := range candidates {
 		v, ok := byID[c.ID]
-		if !ok {
-			v, ok = byID[PhraseID(c.Phrase)]
-			ok = ok && v.AppliesTo(c)
+		for _, id := range earlierIDs(c.Phrase) {
+			if !ok {
+				v, ok = byID[id]
+				ok = ok && v.AppliesTo(c)
+			}
 		}
 		if !ok {
 			continue

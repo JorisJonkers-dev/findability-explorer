@@ -18,6 +18,8 @@ type Lexicon struct {
 	// specific is the least weight of a word that tells belt types apart: a word in at most one
 	// term in ten.
 	specific float64
+	// vocabulary tells a phrase's own language from its words and the map's terms.
+	vocabulary lang.Vocabulary
 }
 
 type lexiconTerm struct {
@@ -48,7 +50,9 @@ func applicationWords() []string {
 func NewLexicon(glossary []GlossaryTerm) Lexicon {
 	docs := map[string]int{}
 	terms := make([]lexiconTerm, 0, len(glossary))
+	texts := make([]lang.Text, 0, len(glossary))
 	for _, g := range glossary {
+		texts = append(texts, lang.Text{Text: g.Text, Language: g.Language})
 		t := newLexiconTerm(g)
 		counted := map[string]bool{}
 		for _, w := range t.words {
@@ -64,7 +68,7 @@ func NewLexicon(glossary []GlossaryTerm) Lexicon {
 	if len(glossary) >= specificShare {
 		specific = math.Log(1 + specificShare)
 	}
-	return Lexicon{weight: wordWeights(docs, len(glossary)), terms: terms, specific: specific}
+	return Lexicon{weight: wordWeights(docs, len(glossary)), terms: terms, specific: specific, vocabulary: lang.NewVocabulary(texts)}
 }
 
 // newLexiconTerm folds a glossary term's spellings, and collects its distinct content words.

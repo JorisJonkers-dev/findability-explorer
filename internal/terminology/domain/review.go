@@ -121,19 +121,15 @@ type spelt struct {
 // reason. They come with the most companies first, then the highest score, then by phrase and
 // language.
 func Candidates(obs []Observation, decisions []Decision, terms []Term) []Candidate {
-	inMap := map[spelt]bool{}
-	termLanguages := map[string][]string{}
-	for _, t := range terms {
-		language := focus.Primary(string(t.Language))
-		for _, form := range spelling.Forms(t.Text) {
-			inMap[spelt{spelling.Key(form), language}] = true
-		}
-		termLanguages[t.Text] = append(termLanguages[t.Text], language)
-	}
+	inMap, termLanguages, vocabulary := index(terms)
 	byID := map[string]*tally{}
 	var order []string
 	for _, o := range obs {
 		o.Language = focus.Primary(o.Language)
+		if !focus.Told(o.Language) {
+			// Stored before a phrase's own words were asked: they may tell it now (ADR-0011).
+			o.Language = vocabulary.Phrase(o.Phrase)
+		}
 		if langs, known := termLanguages[o.Closest]; known && !slices.Contains(langs, o.Language) {
 			o.Closest = ""
 		}
@@ -167,14 +163,43 @@ func Candidates(obs []Observation, decisions []Decision, terms []Term) []Candida
 	return out
 }
 
+// index is what Candidates reads the map by: its spellings in each language, the languages of each
+// term's text, and the vocabulary that tells a phrase's language.
+func index(terms []Term) (map[spelt]bool, map[string][]string, focus.Vocabulary) {
+	inMap := map[spelt]bool{}
+	termLanguages := map[string][]string{}
+	texts := make([]focus.Text, 0, len(terms))
+	for _, t := range terms {
+		texts = append(texts, focus.Text{Text: t.Text, Language: string(t.Language)})
+		language := focus.Primary(string(t.Language))
+		for _, form := range spelling.Forms(t.Text) {
+			inMap[spelt{spelling.Key(form), language}] = true
+		}
+		termLanguages[t.Text] = append(termLanguages[t.Text], language)
+	}
+	return inMap, termLanguages, focus.NewVocabulary(texts)
+}
+
 // decisionOn is the decision on c: the one made on its id, or else one made on its phrase before
-// candidates were kept apart by language, when that one applies to c's language.
+// candidates were kept apart by language, or while its language was not told, when that one
+// applies to c's language.
 func decisionOn(c Candidate, decided map[string]Decision) (Decision, bool) {
 	if d, ok := decided[c.ID]; ok {
 		return d, true
 	}
-	d, ok := decided[PhraseID(c.Phrase)]
-	return d, ok && d.AppliesTo(c)
+	for _, id := range earlierIDs(c.Phrase) {
+		if d, ok := decided[id]; ok && d.AppliesTo(c) {
+			return d, true
+		}
+	}
+	return Decision{}, false
+}
+
+// earlierIDs are the ids a candidate for phrase may have had before: its phrase's id, from before
+// candidates were kept apart by language, and its id in no language, from before its own words
+// told its language.
+func earlierIDs(phrase string) []string {
+	return []string{PhraseID(phrase), CandidateID(phrase, focus.Unknown)}
 }
 
 // AppliesTo reports whether a decision made on c's phrase, before candidates were kept apart by
@@ -190,9 +215,10 @@ var ErrOtherLanguage = fmt.Errorf("%w: language; a candidate becomes a term only
 
 // NewTerm checks the term a would make of c against the map's terms and returns it, sourced from
 // the newest scan that found c. The term must be in c's language: a phrase is never merged with
-// a term in another language.
+// a term in another language. A candidate in no language that could be told takes the language
+// the reviewer sets.
 func (c Candidate) NewTerm(a Acceptance, terms []Term) (Term, error) {
-	if !focus.Same(a.Language, c.Language) {
+	if focus.Told(c.Language) && !focus.Same(a.Language, c.Language) {
 		return Term{}, ErrOtherLanguage
 	}
 	return NewTerm(a, c.Source, terms)

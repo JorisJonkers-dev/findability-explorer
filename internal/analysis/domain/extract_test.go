@@ -16,6 +16,8 @@ func TestDetectLanguage(t *testing.T) {
 		"De band is van roestvrij staal en loopt in de oven voor de bakkerij met u.":  "nl",
 		"Le tapis est en acier et il est pour les fours avec une grande largeur.":     "fr",
 		"Edelstahl Ofenband 1.4301": domain.UnknownLanguage,
+		// As many English stopwords as German: no language, not the first in some order.
+		"the and of und der die": domain.UnknownLanguage,
 	}
 	for text, want := range cases {
 		if got := domain.DetectLanguage(text); got != want {
@@ -303,5 +305,61 @@ func TestKeywordsKeepToTheFocusLanguages(t *testing.T) {
 	got := phrasesOf(domain.Keywords(pages, testLexicon(), nil))
 	if slices.Contains(got, "spiral belts") || !slices.Contains(got, "eyelink belts") || !slices.Contains(got, "balanced weave belts") {
 		t.Fatalf("keywords %q", got)
+	}
+}
+
+// languageLexicon is a terminology map with terms in each focus language and in Spanish.
+func languageLexicon() domain.Lexicon {
+	return domain.NewLexicon([]domain.GlossaryTerm{
+		{Text: "metalen transportband", Language: "nl", Family: "all", Tier: "broad"},
+		{Text: "Transportband", Language: "de", Family: "all", Tier: "broad"},
+		{Text: "eye-link belt", Language: "en", Family: "eyelink", Tier: "product"},
+		{Text: "1.4301 stainless steel", Language: "en", Family: "spec_all", Tier: "spec"},
+		{Text: "Inconel belt", Language: "en", Family: "spec_all", Tier: "spec"},
+		{Text: "cinta transportadora", Language: "es", Family: "all", Tier: "broad"},
+	})
+}
+
+// A phrase is in the language of its pages when they are all in one; else in the one its own
+// words tell; else in the one most of its pages are in, among those its words allow; else, on a
+// tie, in the site's when it is one of the tied ones; else in none. A tie never goes to the first
+// language in some order.
+func TestKeywordsTellAPhrasesLanguage(t *testing.T) {
+	page := func(language, title string) domain.Page {
+		return domain.Page{URL: "https://belts.test/" + language, Language: language, Title: title}
+	}
+	cases := []struct {
+		name   string
+		pages  []domain.Page
+		phrase string
+		want   string
+	}{
+		{"its pages' one language", []domain.Page{page("de", "Eye link belts")}, "eye link belts", "de"},
+		{"Dutch words on a tie", []domain.Page{page("de", "Metalen banden"), page("nl", "Metalen banden")}, "metalen banden", "nl"},
+		{"English words on a tie", []domain.Page{page("de", "Eye link belts"), page("en", "Eye link belts")}, "eye link belts", "en"},
+		{"English words on mostly German pages", []domain.Page{page("de", "Eye link belts"), page("de", "Eye link belts"), page("en", "Eye link belts")}, "eye link belts", "en"},
+		{"the most pages its words allow", []domain.Page{page("en", "Transportband"), page("en", "Transportband"), page("de", "Transportband")}, "transportband", "de"},
+		{"the site's on a tie", []domain.Page{page("nl", "Transportband"), page("de", "Transportband")}, "transportband", "nl"},
+		{"not the site's when its words rule it out", []domain.Page{page("en", "Home"), page("nl", "Transportband"), page("de", "Transportband")}, "transportband", domain.UnknownLanguage},
+		{"the site's when nothing tells", []domain.Page{page("de", "Inconel"), page("en", "Inconel")}, "inconel", "de"},
+		{"not the site's when it is not tied", []domain.Page{page("nl", "Home"), page("de", "Inconel"), page("en", "Inconel")}, "inconel", domain.UnknownLanguage},
+		{"the most pages when nothing tells", []domain.Page{page("de", "Inconel"), page("de", "Inconel"), page("en", "Inconel")}, "inconel", "de"},
+		{"a bare number takes no site's", []domain.Page{page("nl", "1.4301"), page("de", "1.4301")}, "1.4301", domain.UnknownLanguage},
+		{"its words on a page in no language", []domain.Page{{Title: "Eye link belts"}}, "eye link belts", "en"},
+		{"the site's on a page in no language", []domain.Page{page("nl", "Home"), {Title: "Transportband"}}, "transportband", "nl"},
+		{"none on pages in no language", []domain.Page{{Title: "Transportband"}}, "transportband", domain.UnknownLanguage},
+		{"none for another language's words", []domain.Page{page("es", "Cinta transportadora"), page("en", "Cinta transportadora")}, "cinta transportadora", domain.UnknownLanguage},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			kws := domain.Keywords(c.pages, languageLexicon(), nil)
+			i := slices.IndexFunc(kws, func(k domain.Keyword) bool { return k.Phrase == c.phrase })
+			if i < 0 {
+				t.Fatalf("no keyword %q in %q", c.phrase, phrasesOf(kws))
+			}
+			if kws[i].Language != c.want {
+				t.Errorf("language of %q = %q, want %q", c.phrase, kws[i].Language, c.want)
+			}
+		})
 	}
 }

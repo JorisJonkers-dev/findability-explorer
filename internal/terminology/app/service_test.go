@@ -146,7 +146,8 @@ func review(r *reviews) *app.Service {
 	return app.New(catalogue{terms: many(3)}, r, evidence(observations(), nil), sightings(nil, nil), func() time.Time { return now })
 }
 
-// The map holds only Dutch, German and English terms, and only phrases in them are candidates.
+// The map holds only Dutch, German and English terms, and only phrases in them are candidates,
+// and those in no language that could be told, for a person to set it.
 func TestTheMapKeepsToTheFocusLanguages(t *testing.T) {
 	terms := []domain.Term{
 		{Text: "Gliederband", Language: domain.LanguageDe},
@@ -154,7 +155,9 @@ func TestTheMapKeepsToTheFocusLanguages(t *testing.T) {
 		{Text: "spiral belt", Language: "en-US"},
 		{Text: "draadogenband", Language: domain.LanguageNl},
 	}
-	obs := append(observations(), domain.Observation{ScanID: "s3", CompanyID: "x", Phrase: "nastro a spirale", Language: "it", Score: 9, Pages: 2})
+	obs := append(observations(),
+		domain.Observation{ScanID: "s3", CompanyID: "x", Phrase: "nastro a spirale", Language: "it", Score: 9, Pages: 2},
+		domain.Observation{ScanID: "s3", CompanyID: "x", Phrase: "1.4301", Language: "und", Score: 9, Pages: 2})
 	svc := app.New(catalogue{terms: terms}, &reviews{}, evidence(obs, nil), sightings(nil, nil), func() time.Time { return now })
 	var got []string
 	for _, term := range svc.Terms() {
@@ -164,7 +167,8 @@ func TestTheMapKeepsToTheFocusLanguages(t *testing.T) {
 		t.Fatalf("Terms = %q", got)
 	}
 	candidates, _, err := svc.Candidates(t.Context(), domain.StatusPending)
-	if err != nil || slices.ContainsFunc(candidates, func(c domain.Candidate) bool { return c.Phrase == "nastro a spirale" }) {
+	if err != nil || slices.ContainsFunc(candidates, func(c domain.Candidate) bool { return c.Phrase == "nastro a spirale" }) ||
+		!slices.ContainsFunc(candidates, func(c domain.Candidate) bool { return c.Phrase == "1.4301" && c.Language == "und" }) {
 		t.Fatalf("Candidates = %+v, %v", candidates, err)
 	}
 }

@@ -1,16 +1,20 @@
 import type { AiReadiness, AiReadinessRow, ReadinessCheckState, ReadinessRank } from '../../../infrastructure/api/types.gen'
+import { nameList } from '../../ai-search/domain/summary'
 import { formatValue } from '../../catching-up/domain/standings'
 
-/** The checks the summary counts, and whether a site passes each. */
-export const CHECKS: readonly { label: string; passes: (r: AiReadiness) => boolean }[] = [
-  { label: 'Lets every AI crawler in', passes: (r) => r.robots !== 'unreachable' && r.bots.length > 0 && r.bots.every((b) => b.access !== 'blocked') },
-  { label: 'Has a sitemap', passes: (r) => r.sitemap.files > 0 },
-  { label: 'Sitemap in Dutch, German and English', passes: (r) => r.advice.some((a) => a.check === 'sitemapLanguages' && a.ok) },
-  { label: 'Has llms.txt', passes: (r) => r.llmsTxt.present },
-  { label: 'Has llms-full.txt', passes: (r) => r.llmsFullTxt },
-  { label: 'Has Markdown pages', passes: (r) => r.markdown },
-  { label: 'Organization structured data', passes: (r) => r.advice.some((a) => a.check === 'organization' && a.ok) },
-  { label: 'Product structured data', passes: (r) => r.advice.some((a) => a.check === 'product' && a.ok) },
+/**
+ * The checks the summary lists, and whether a site passes each. The five counted ones are the
+ * checks the ranking and the headline score (the crawlers count half when only some are kept out).
+ */
+export const CHECKS: readonly { label: string; counted: boolean; passes: (r: AiReadiness) => boolean }[] = [
+  { label: 'Lets every AI crawler in', counted: true, passes: (r) => r.robots !== 'unreachable' && r.bots.length > 0 && r.bots.every((b) => b.access !== 'blocked') },
+  { label: 'Has a sitemap', counted: true, passes: (r) => r.sitemap.files > 0 },
+  { label: 'Has llms.txt', counted: true, passes: (r) => r.llmsTxt.present },
+  { label: 'Has llms-full.txt', counted: true, passes: (r) => r.llmsFullTxt },
+  { label: 'Has Markdown pages', counted: true, passes: (r) => r.markdown },
+  { label: 'Sitemap in Dutch, German and English', counted: false, passes: (r) => r.advice.some((a) => a.check === 'sitemapLanguages' && a.ok) },
+  { label: 'Organization structured data', counted: false, passes: (r) => r.advice.some((a) => a.check === 'organization' && a.ok) },
+  { label: 'Product structured data', counted: false, passes: (r) => r.advice.some((a) => a.check === 'product' && a.ok) },
 ]
 
 /** The rows a scan has read: the sites the page counts. */
@@ -19,26 +23,37 @@ export function scanned(rows: readonly AiReadinessRow[]): (AiReadinessRow & { re
 }
 
 /** Per check, how many of the scanned sites pass it, and whether Tribelt does (null when not scanned). */
-export function checkSummary(rows: readonly AiReadinessRow[]): { label: string; passing: number; sites: number; tribelt: boolean | null }[] {
+export function checkSummary(rows: readonly AiReadinessRow[]): { label: string; counted: boolean; passing: number; sites: number; tribelt: boolean | null }[] {
   const sites = scanned(rows)
   const tribelt = sites.find((r) => r.role === 'tribelt')
   return CHECKS.map((c) => ({
     label: c.label,
+    counted: c.counted,
     passing: sites.filter((r) => c.passes(r.readiness)).length,
     sites: sites.length,
     tribelt: tribelt ? c.passes(tribelt.readiness) : null,
   }))
 }
 
-/** A crawler's access as a mark that differs in shape as well as colour, with what it means. */
-export function accessMark(r: AiReadiness | undefined, bot: string): { mark: string; text: string; tone: 'ok' | 'partly' | 'blocked' | 'unknown' } {
-  if (!r) return { mark: '–', text: 'Not scanned', tone: 'unknown' }
-  if (r.robots === 'unreachable') return { mark: '?', text: 'robots.txt could not be read', tone: 'unknown' }
+/** What each word in the crawler columns means, for the legend. */
+export const ACCESS_LEGEND: readonly { mark: string; tone: AccessTone; meaning: string }[] = [
+  { mark: 'Allowed', tone: 'ok', meaning: 'robots.txt lets the crawler read every page.' },
+  { mark: 'Partly', tone: 'partly', meaning: 'robots.txt closes some pages to it, often only admin, login or checkout pages.' },
+  { mark: 'Blocked', tone: 'blocked', meaning: 'robots.txt closes the whole site to it.' },
+  { mark: 'Unknown', tone: 'unknown', meaning: 'robots.txt could not be read.' },
+]
+
+export type AccessTone = 'ok' | 'partly' | 'blocked' | 'unknown'
+
+/** A crawler's access as a word, with a sentence saying what it means for that crawler. */
+export function accessMark(r: AiReadiness | undefined, bot: string): { mark: string; text: string; tone: AccessTone } {
+  if (!r) return { mark: '–', text: 'Not scanned yet.', tone: 'unknown' }
+  if (r.robots === 'unreachable') return { mark: 'Unknown', text: 'robots.txt could not be read.', tone: 'unknown' }
   const rule = r.bots.find((b) => b.bot === bot)
-  if (!rule) return { mark: '?', text: 'Not checked', tone: 'unknown' }
-  if (rule.access === 'blocked') return { mark: '✕', text: 'Blocked', tone: 'blocked' }
-  if (rule.access === 'partly') return { mark: '◐', text: 'Partly kept out', tone: 'partly' }
-  return { mark: '●', text: 'Let in', tone: 'ok' }
+  if (!rule) return { mark: 'Unknown', text: `${bot} was not checked.`, tone: 'unknown' }
+  if (rule.access === 'blocked') return { mark: 'Blocked', text: `${bot} may not read any page.`, tone: 'blocked' }
+  if (rule.access === 'partly') return { mark: 'Partly', text: `${bot} may read the site, except some pages robots.txt closes.`, tone: 'partly' }
+  return { mark: 'Allowed', text: `${bot} may read every page.`, tone: 'ok' }
 }
 
 /** The first and last day the scans shown were made, or null before any scan. */
@@ -78,11 +93,21 @@ export function readinessCheckLine(check: ReadinessCheckState | undefined): stri
     : `${done} ${String(check.failed)} sites could not be read and keep their scan's result.`
 }
 
-/** The page's headline, from the readiness ranking the AI search summary serves: who leads, and Tribelt's checks. */
+/**
+ * The page's headline, from the readiness ranking the AI search summary serves: who leads on the
+ * five checks, every company tied for the lead, and where Tribelt stands. Tribelt tied with the
+ * best competitors shares the lead.
+ */
 export function readinessHeadline(ranking: readonly ReadinessRank[]): string {
-  const leader = ranking.find((r) => r.role === 'competitor')
+  const competitors = ranking.filter((r) => r.role === 'competitor')
   const tribelt = ranking.find((r) => r.role === 'tribelt')
-  if (!leader) return 'Who lets search engines and AI assistants in.'
-  const lead = `${leader.name} leads with ${formatValue('readinessChecks', leader.score)} of five checks.`
-  return tribelt ? `${lead} Tribelt passes ${formatValue('readinessChecks', tribelt.score)}.` : lead
+  if (competitors.length === 0) return 'Who lets search engines and AI assistants in.'
+  const top = Math.max(...competitors.map((r) => r.score))
+  const leaders = nameList(competitors.filter((r) => r.score === top).map((r) => r.name))
+  const checks = (score: number) => formatValue('readinessChecks', score)
+  const many = competitors.filter((r) => r.score === top).length > 1
+  if (tribelt && tribelt.score > top) return `Tribelt leads with ${checks(tribelt.score)} of five checks. Next is ${leaders} with ${checks(top)}.`
+  if (tribelt && tribelt.score === top) return `Tribelt shares the lead with ${leaders}, at ${checks(top)} of five checks.`
+  const lead = `${leaders} ${many ? 'lead' : 'leads'} with ${checks(top)} of five checks.`
+  return tribelt ? `${lead} Tribelt passes ${checks(tribelt.score)}.` : lead
 }

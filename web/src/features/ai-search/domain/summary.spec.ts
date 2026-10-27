@@ -75,8 +75,8 @@ describe("Tribelt's figure", () => {
 })
 
 describe('the crawlers', () => {
-  it('mark access by shape as well as colour', () => {
-    expect(new Set(Object.values(ACCESS).map((a) => a.mark)).size).toBe(4)
+  it('say each access in a word of its own', () => {
+    expect(Object.values(ACCESS).map((a) => a.text)).toEqual(['Allowed', 'Partly', 'Blocked', 'Not checked'])
   })
 
   it('say what tribelt.nl does with them', () => {

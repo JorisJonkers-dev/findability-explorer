@@ -6,9 +6,9 @@ const ALL = Object.fromEntries(bots().map((b) => [b.bot, 'blocked' as const]))
 
 describe('the readiness chips', () => {
   it('mark the five checks by shape', () => {
-    expect(chipsOf(readiness()).map((c) => `${c.label}${c.mark}`)).toEqual(['crawlers●', 'sitemap●', 'llms.txt●', 'llms-full●', 'Markdown●'])
+    expect(chipsOf(readiness()).map((c) => `${c.label}${c.mark}`)).toEqual(['crawlers✓', 'sitemap✓', 'llms.txt✓', 'llms-full✓', 'Markdown✓'])
     const some = chipsOf(readiness({ bots: bots({ GPTBot: 'blocked' }), markdown: false, llmsFullTxt: false }))
-    expect(some.map((c) => c.mark)).toEqual(['◐', '●', '●', '–', '–'])
+    expect(some.map((c) => c.mark)).toEqual(['Some', '✓', '✓', '✕', '✕'])
     expect(some[0]?.tip).toBe('Keeps some AI crawlers out')
     expect(chipsOf(readiness({ bots: bots(ALL) }))[0]?.tip).toBe('Keeps every AI crawler out')
     expect(chipsOf(readiness({ robots: 'unreachable', bots: [] }))[0]?.tip).toBe('robots.txt could not be read')

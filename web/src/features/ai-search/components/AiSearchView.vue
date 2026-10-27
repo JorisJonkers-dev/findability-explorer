@@ -110,7 +110,7 @@ const promptCard = computed(() => {
                   </span>
                 </td>
                 <td class="py-2 pl-4 text-right font-semibold whitespace-nowrap stage:py-3.5 stage:pl-5" :class="ACCESS[c.access ?? 'unknown'].ok === false ? 'text-orange-ink' : ''">
-                  <span aria-hidden="true" class="mr-1.5">{{ ACCESS[c.access ?? 'unknown'].mark }}</span>{{ ACCESS[c.access ?? 'unknown'].text }}
+                  {{ ACCESS[c.access ?? 'unknown'].text }}
                 </td>
               </tr>
             </tbody>

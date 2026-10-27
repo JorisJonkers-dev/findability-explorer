@@ -11,15 +11,15 @@ describe('the summary', () => {
       readinessRow('Never', { readiness: undefined, scan: undefined }),
     ]
     expect(scanned(rows)).toHaveLength(3)
-    expect(checkSummary(rows).map((c) => [c.label, c.passing, c.sites, c.tribelt])).toEqual([
-      ['Lets every AI crawler in', 2, 3, true],
-      ['Has a sitemap', 3, 3, true],
-      ['Sitemap in Dutch, German and English', 2, 3, true],
-      ['Has llms.txt', 2, 3, false],
-      ['Has llms-full.txt', 3, 3, true],
-      ['Has Markdown pages', 3, 3, true],
-      ['Organization structured data', 2, 3, true],
-      ['Product structured data', 2, 3, true],
+    expect(checkSummary(rows).map((c) => [c.label, c.counted, c.passing, c.sites, c.tribelt])).toEqual([
+      ['Lets every AI crawler in', true, 2, 3, true],
+      ['Has a sitemap', true, 3, 3, true],
+      ['Has llms.txt', true, 2, 3, false],
+      ['Has llms-full.txt', true, 3, 3, true],
+      ['Has Markdown pages', true, 3, 3, true],
+      ['Sitemap in Dutch, German and English', false, 2, 3, true],
+      ['Organization structured data', false, 2, 3, true],
+      ['Product structured data', false, 2, 3, true],
     ])
     expect(checkSummary([readinessRow('Märtens')])[0]?.tribelt).toBeNull()
   })
@@ -28,9 +28,13 @@ describe('the summary', () => {
 describe('the access marks', () => {
   it('differ in shape as well as colour', () => {
     const r = readiness({ bots: bots({ GPTBot: 'blocked', CCBot: 'partly' }) })
-    expect(['Googlebot', 'GPTBot', 'CCBot', 'Nobody'].map((b) => accessMark(r, b).mark)).toEqual(['●', '✕', '◐', '?'])
-    expect(accessMark(readiness({ robots: 'unreachable' }), 'GPTBot').text).toBe('robots.txt could not be read')
-    expect(accessMark(undefined, 'GPTBot')).toEqual({ mark: '–', text: 'Not scanned', tone: 'unknown' })
+    expect(['Googlebot', 'GPTBot', 'CCBot', 'Nobody'].map((b) => accessMark(r, b).mark)).toEqual(['Allowed', 'Blocked', 'Partly', 'Unknown'])
+    expect(accessMark(r, 'CCBot').text).toBe('CCBot may read the site, except some pages robots.txt closes.')
+    expect(accessMark(r, 'GPTBot').text).toBe('GPTBot may not read any page.')
+    expect(accessMark(r, 'Googlebot').text).toBe('Googlebot may read every page.')
+    expect(accessMark(r, 'Nobody').text).toBe('Nobody was not checked.')
+    expect(accessMark(readiness({ robots: 'unreachable' }), 'GPTBot')).toEqual({ mark: 'Unknown', text: 'robots.txt could not be read.', tone: 'unknown' })
+    expect(accessMark(undefined, 'GPTBot')).toEqual({ mark: '–', text: 'Not scanned yet.', tone: 'unknown' })
   })
 })
 
@@ -50,6 +54,13 @@ describe('the scans and the headline', () => {
     expect(readinessHeadline(ranking)).toBe('Märtens leads with 5 of five checks. Tribelt passes 3½.')
     expect(readinessHeadline(ranking.slice(0, 1))).toBe('Märtens leads with 5 of five checks.')
     expect(readinessHeadline(ranking.slice(1))).toBe('Who lets search engines and AI assistants in.')
+    const costacurta = { competitorId: 'costacurta', name: 'Costacurta', role: 'competitor' as const, score: 3 }
+    const tribelt = (score: number) => ({ competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt' as const, score })
+    expect(readinessHeadline([costacurta, tribelt(3)])).toBe('Tribelt shares the lead with Costacurta, at 3 of five checks.')
+    expect(readinessHeadline([costacurta, tribelt(4)])).toBe('Tribelt leads with 4 of five checks. Next is Costacurta with 3.')
+    expect(readinessHeadline([costacurta, { ...costacurta, competitorId: 'audubon', name: 'Audubon' }, tribelt(2)])).toBe(
+      'Costacurta and Audubon lead with 3 of five checks. Tribelt passes 2.',
+    )
   })
 
 })

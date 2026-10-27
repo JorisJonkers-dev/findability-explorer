@@ -12,7 +12,7 @@ import { AI_SEARCH_TABS, companyPath } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
 import { useMe } from '../../shell/composables/useMe'
 import { useReadinessCheck, useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
-import { accessMark, checkedAgain, checkSummary, readinessCheckLine, readinessHeadline, scanned, scanRange } from '../domain/overview'
+import { ACCESS_LEGEND, accessMark, checkedAgain, checkSummary, readinessCheckLine, readinessHeadline, scanned, scanRange } from '../domain/overview'
 import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary, type ReadinessColumn, tableRows } from '../domain/readiness'
 
 const route = useRoute()
@@ -42,6 +42,11 @@ const HEADS: { key: ReadinessColumn; label: string }[] = [
   { key: 'product', label: 'Structured data and platform' },
 ]
 const summary = computed(() => checkSummary(rows.value))
+/** The five checks the headline and the ranking score, then the ones listed beside them. */
+const SUMMARY_PARTS = [
+  { title: 'The five checks the ranking counts', counted: true },
+  { title: 'Also checked', counted: false },
+] as const
 const sites = computed(() => scanned(rows.value).length)
 // The site picked lives in the address; Tribelt's own until another is picked.
 const selected = computed<AiReadinessRow | undefined>(
@@ -53,7 +58,12 @@ const { files, isLoading: filesLoading, missing } = useReadinessFiles(
 )
 const robots = computed(() => markedLines(files.value?.robotsTxt ?? ''))
 
-const TONE = { ok: 'text-orange-ink', partly: 'text-orange-ink', blocked: 'font-bold text-black', unknown: 'text-muted' } as const
+const TONE = {
+  ok: 'bg-orange-pale text-orange-ink',
+  partly: 'border border-orange-soft bg-white text-orange-ink',
+  blocked: 'bg-black text-white',
+  unknown: 'text-muted',
+} as const
 
 function hostOfRow(r: AiReadinessRow): string | undefined {
   return r.scan ? hostOf(r.scan.url) : undefined
@@ -100,8 +110,13 @@ function pick(r: AiReadinessRow): void {
               <th scope="col" class="py-2 pl-3 text-right font-medium text-muted">Tribelt</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="c in summary" :key="c.label" class="border-b border-grey">
+          <tbody v-for="part in SUMMARY_PARTS" :key="part.title" :aria-label="part.title">
+            <tr>
+              <th colspan="3" scope="colgroup" class="bg-mist px-2 py-1.5 text-left text-xs font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[20px]">
+                {{ part.title }}
+              </th>
+            </tr>
+            <tr v-for="c in summary.filter((s) => s.counted === part.counted)" :key="c.label" class="border-b border-grey">
               <th scope="row" class="py-2 text-left font-normal stage:py-3">
                 {{ c.label }}
                 <span aria-hidden="true" class="mt-1 block h-2 bg-mist stage:h-3">
@@ -110,7 +125,7 @@ function pick(r: AiReadinessRow): void {
               </th>
               <td class="py-2 pl-3 text-right font-semibold stage:py-3">{{ c.passing }}</td>
               <td class="py-2 pl-3 text-right font-semibold stage:py-3" :class="c.tribelt === false ? 'text-orange-ink' : ''">
-                {{ c.tribelt === null ? 'Not scanned' : c.tribelt ? '● Yes' : '✕ No' }}
+                {{ c.tribelt === null ? 'Not scanned' : c.tribelt ? '✓ Yes' : '✕ No' }}
               </td>
             </tr>
           </tbody>
@@ -120,11 +135,11 @@ function pick(r: AiReadinessRow): void {
       <section aria-labelledby="sites-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
         <div class="flex flex-wrap items-baseline justify-between gap-4">
           <h2 id="sites-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Site by site</h2>
-          <ul aria-label="Legend" class="m-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 text-sm text-ink-2 stage:gap-x-8 stage:text-[24px]">
-            <li><span aria-hidden="true" class="text-orange-ink">●</span> let in</li>
-            <li><span aria-hidden="true" class="text-orange-ink">◐</span> partly kept out</li>
-            <li><span aria-hidden="true" class="font-bold">✕</span> blocked</li>
-            <li><span aria-hidden="true" class="text-muted">?</span> robots.txt could not be read</li>
+          <ul aria-label="What the crawler columns say" class="m-0 flex list-none flex-col gap-1 p-0 text-sm text-ink-2 stage:gap-2 stage:text-[22px]">
+            <li v-for="l in ACCESS_LEGEND" :key="l.mark" class="flex items-baseline gap-2">
+              <span class="inline-block min-w-[5.5em] rounded-full px-2 text-center text-xs font-semibold stage:text-[18px]" :class="TONE[l.tone]">{{ l.mark }}</span>
+              <span>{{ l.meaning }}</span>
+            </li>
           </ul>
         </div>
         <label class="flex flex-col gap-1.5 self-start text-sm text-ink-2 stage:gap-2 stage:text-[24px]">
@@ -172,8 +187,12 @@ function pick(r: AiReadinessRow): void {
                     </a>
                   </span>
                 </th>
-                <td v-for="b in BOTS" :key="b.token" class="px-1 py-1.5 text-center" :class="TONE[accessMark(r.readiness, b.token).tone]">
-                  <span aria-hidden="true">{{ accessMark(r.readiness, b.token).mark }}</span><span class="sr-only">{{ accessMark(r.readiness, b.token).text }}</span>
+                <td v-for="b in BOTS" :key="b.token" class="px-1 py-1.5 text-center" :title="accessMark(r.readiness, b.token).text">
+                  <span
+                    aria-hidden="true"
+                    class="inline-block rounded-full px-2 text-xs font-semibold whitespace-nowrap stage:text-[18px]"
+                    :class="TONE[accessMark(r.readiness, b.token).tone]"
+                  >{{ accessMark(r.readiness, b.token).mark }}</span><span class="sr-only">{{ accessMark(r.readiness, b.token).text }}</span>
                 </td>
                 <template v-if="r.readiness">
                   <td class="px-2 py-1.5 whitespace-nowrap">

@@ -43,6 +43,13 @@ func (a Analysis) ByTheMap(lex Lexicon) Analysis {
 	}
 	if a.KnownTerms != nil {
 		a.KnownTerms = slices.DeleteFunc(slices.Clone(a.KnownTerms), func(k KnownTerm) bool { return !inAny(k.Language, languages) })
+		// Whether tribelt.nl uses a term is the map's word now, not the scan's: it follows
+		// tribelt.nl's newest scan. A term the map no longer holds keeps what the scan stored.
+		for i, k := range a.KnownTerms {
+			if g, ok := lex.term(k.Text, k.Language); ok {
+				a.KnownTerms[i].UsedByTribelt = g.UsedByTribelt
+			}
+		}
 	}
 	return a
 }

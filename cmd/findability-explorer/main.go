@@ -32,7 +32,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -134,6 +133,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		},
 		func(ctx context.Context) ([]terminologydomain.Sighting, error) { return sightings(ctx, analysisRepo) },
 		now)
+	terminology.WithTribeltScans(func(ctx context.Context) (bool, error) { return tribeltScanned(ctx, analysisRepo) })
 	if err := terminology.Load(ctx); err != nil {
 		return err
 	}
@@ -441,7 +441,14 @@ func newAnalysis(ctx context.Context, getenv func(string) string, repo *persiste
 		directory,
 		crawler.New(crawler.Options{Contact: getenv("CRAWLER_CONTACT")}),
 		matchers{llm: llm},
-		func() []analysisdomain.GlossaryTerm { return glossary(terminology.Terms()) },
+		func(ctx context.Context) []analysisdomain.GlossaryTerm {
+			// Without the scans' sightings, the research's credits say which terms tribelt.nl uses.
+			use, err := terminology.SiteUse(ctx)
+			if err != nil {
+				use = terminologydomain.SiteUse{}
+			}
+			return glossary(terminology.Terms(), use.TribeltUses)
+		},
 		now,
 		analysisapp.Limits{
 			MonthlyTokens: l.monthly, SiteTextChars: 60_000, Workers: scanWorkers,
@@ -673,13 +680,24 @@ func sightings(ctx context.Context, repo *persistence.Repository) ([]terminology
 	return out, nil
 }
 
-// glossary hands the terminology map to the analysis context by value.
-func glossary(terms []terminologydomain.Term) []analysisdomain.GlossaryTerm {
+// tribeltScanned tells the terminology context whether tribelt.nl has a finished scan, the scan
+// its sightings come from.
+func tribeltScanned(ctx context.Context, repo *persistence.Repository) (bool, error) {
+	scans, err := repo.ListByCompetitor(ctx, terminologydomain.TribeltID, analysisapp.MaxHistory)
+	if err != nil {
+		return false, err
+	}
+	return len(analysisdomain.Finished(scans)) > 0, nil
+}
+
+// glossary hands the terminology map to the analysis context by value, each term with whether
+// tribelt.nl uses it (terminology's SiteUse.TribeltUses).
+func glossary(terms []terminologydomain.Term, tribeltUses func(terminologydomain.Term) bool) []analysisdomain.GlossaryTerm {
 	out := make([]analysisdomain.GlossaryTerm, 0, len(terms))
 	for _, t := range terms {
 		out = append(out, analysisdomain.GlossaryTerm{
 			Text: t.Text, Language: string(t.Language), Family: string(t.Family), Tier: string(t.Tier),
-			UsedByTribelt: slices.ContainsFunc(t.UsedBy, func(u string) bool { return strings.HasPrefix(u, "Tribelt") }),
+			UsedByTribelt: tribeltUses(t),
 		})
 	}
 	return out

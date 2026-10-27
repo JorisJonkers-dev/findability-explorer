@@ -185,12 +185,18 @@ export function headlineNumbers(answers: readonly PromptAnswer[]): {
 /** One company and the share of a run's answers that name it. */
 export type Named = { id: string; share: number; tribelt: boolean }
 
-/** Every company the answers name, as a share of the answers that count, most first; Tribelt is always in it. */
+/**
+ * Every company the answers name, as a share of the answers that count, most first; Tribelt is
+ * always in it. An answer names Tribelt when its reading says so, as the headline and every other
+ * page count it, also when no name in it matched Tribelt.
+ */
 export function ranked(answers: readonly PromptAnswer[]): Named[] {
   const counted = answers.filter(counts)
   const tally = new Map<string, number>([[TRIBELT_ID, 0]])
   for (const a of counted) {
-    for (const id of new Set(a.extraction.companies.flatMap((c) => (c.competitorId ? [c.competitorId] : [])))) tally.set(id, (tally.get(id) ?? 0) + 1)
+    const ids = new Set(a.extraction.companies.flatMap((c) => (c.competitorId ? [c.competitorId] : [])))
+    if (a.extraction.namesTribelt) ids.add(TRIBELT_ID)
+    for (const id of ids) tally.set(id, (tally.get(id) ?? 0) + 1)
   }
   return [...tally.entries()]
     .map(([id, n]) => ({ id, share: counted.length > 0 ? n / counted.length : 0, tribelt: id === TRIBELT_ID }))

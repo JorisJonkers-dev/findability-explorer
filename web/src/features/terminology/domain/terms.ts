@@ -1,4 +1,4 @@
-import type { BeltFamily, IntentTier, Term } from '../../../infrastructure/api/types.gen'
+import type { BeltFamily, IntentTier, OverviewTerms, Term } from '../../../infrastructure/api/types.gen'
 import type { SortValue } from '../../../shared/sort'
 import { familyLabel, languageLabel, tierLabel } from '../../../shared/vocabulary'
 import { chartLanguage, companyName, type TermGroup, type TermView } from './filters'
@@ -19,9 +19,9 @@ export function groupOf(tier: IntentTier): TermGroup {
 
 export const GROUP_LABELS: Record<TermGroup, string> = { marketing: 'Marketing', technical: 'Technical' }
 
-/** Whether Tribelt's own website uses the term. */
-export function tribeltUses(term: Pick<Term, 'usedBy'>): boolean {
-  return term.usedBy.some((u) => companyName(u) === TRIBELT)
+/** Whether tribelt.nl uses the term, as the server decides it for every page: its newest scan found it, or the research credits it before a scan. */
+export function tribeltUses(term: Pick<Term, 'tribeltUses'>): boolean {
+  return term.tribeltUses === true
 }
 
 /** The other companies that use the term, each once, in the map's order. */
@@ -43,37 +43,39 @@ export type ChartRow = {
   description: string
 }
 
-function chartRows(groups: { value: string; label: string; terms: Term[] }[]): ChartRow[] {
-  const longest = Math.max(1, ...groups.map((g) => g.terms.length))
-  return groups.map(({ value, label, terms }) => {
-    const tribelt = terms.filter(tribeltUses).length
-    return {
-      value,
-      label,
-      count: terms.length,
-      tribelt,
-      tribeltShare: tribelt / longest,
-      otherShare: (terms.length - tribelt) / longest,
-      description: `${label}: ${String(terms.length)} ${terms.length === 1 ? 'term' : 'terms'}, Tribelt uses ${String(tribelt)}`,
-    }
-  })
+function chartRows(groups: { value: string; label: string; count: number; tribelt: number }[]): ChartRow[] {
+  const longest = Math.max(1, ...groups.map((g) => g.count))
+  return groups.map(({ value, label, count, tribelt }) => ({
+    value,
+    label,
+    count,
+    tribelt,
+    tribeltShare: tribelt / longest,
+    otherShare: (count - tribelt) / longest,
+    description: `${label}: ${String(count)} ${count === 1 ? 'term' : 'terms'}, tribelt.nl uses ${String(tribelt)}`,
+  }))
 }
 
-/** The terms per language, the most first; American English counts as English. */
-export function languageRows(terms: readonly Term[]): ChartRow[] {
-  const byLanguage = new Map<string, Term[]>()
-  for (const term of terms) {
-    const code = chartLanguage(term.language)
-    byLanguage.set(code, [...(byLanguage.get(code) ?? []), term])
-  }
-  const groups = [...byLanguage.entries()].map(([value, list]) => ({ value, label: languageLabel(value), terms: list }))
-  groups.sort((a, b) => b.terms.length - a.terms.length || a.label.localeCompare(b.label))
-  return chartRows(groups)
+/** The terms per language as the server counts them, the most first; American English counts as English. */
+export function languageRows(terms: OverviewTerms | undefined): ChartRow[] {
+  return chartRows((terms?.languages ?? []).map((l) => ({ value: l.language, label: languageLabel(l.language), count: l.terms, tribelt: l.tribelt })))
 }
 
-/** The terms per kind of search, in the charts' order. */
-export function tierRows(terms: readonly Term[]): ChartRow[] {
-  return chartRows(CHART_TIERS.map((tier) => ({ value: tier, label: tierLabel(tier), terms: terms.filter((t) => t.tier === tier) })))
+/** The terms per kind of search as the server counts them, in the charts' order. */
+export function tierRows(terms: OverviewTerms | undefined): ChartRow[] {
+  return chartRows(
+    CHART_TIERS.map((tier) => {
+      const row = terms?.tiers?.find((t) => t.tier === tier)
+      return { value: tier, label: tierLabel(tier), count: row?.terms ?? 0, tribelt: row?.tribelt ?? 0 }
+    }),
+  )
+}
+
+/** How many of the map's terms tribelt.nl uses, and how that is known, as the server counts it. */
+export function usedLine(terms: OverviewTerms | undefined): string {
+  if (!terms || terms.total === 0) return ''
+  const of = `${String(terms.tribelt)} of the ${String(terms.total)} terms`
+  return terms.from === 'research' ? `The desk research credits Tribelt with ${of}.` : `The newest scan of tribelt.nl found ${of}.`
 }
 
 /** One cell of the heatmap: a company's terms of one kind. */

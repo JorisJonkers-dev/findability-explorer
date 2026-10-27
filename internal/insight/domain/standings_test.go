@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
@@ -73,6 +74,17 @@ func TestSharesCountAnswersAndWebAnswers(t *testing.T) {
 	}
 	if _, ok := domain.CitationShare(answers[:1], "tribelt"); ok {
 		t.Error("a run without web answers has no citation share")
+	}
+	// The count the plan watches is the count the share is a share of.
+	if n := domain.Citations(answers, "tribelt"); n != 1 || domain.Citations(answers[:1], "tribelt") != 0 {
+		t.Errorf("citations = %d", n)
+	}
+	answers[1].Scope, answers[2].Scope = domain.ScopeTwente, domain.ScopeTwente
+	if v, ok := domain.TwenteShare(domain.Run{Answers: answers}, "tribelt"); v != 0.5 || !ok {
+		t.Errorf("Twente share = %v %v", v, ok)
+	}
+	if _, ok := domain.TwenteShare(domain.Run{Answers: answers[:1]}, "tribelt"); ok {
+		t.Error("no answer about Twente, no Twente share")
 	}
 	if _, ok := domain.ShareOfVoice(nil, "tribelt"); ok {
 		t.Error("no answers, no share of voice")
@@ -194,5 +206,25 @@ func TestAccessOfCountsTheCrawlersKeptOut(t *testing.T) {
 		if got := domain.AccessOf(tc.readable, tc.blocked, tc.crawler); got != tc.want {
 			t.Errorf("AccessOf(%v, %d, %d) = %s, want %s", tc.readable, tc.blocked, tc.crawler, got, tc.want)
 		}
+	}
+}
+
+func TestTermsUsedCountsEachScannedCompanyAndAlwaysTribelt(t *testing.T) {
+	m := domain.TermMap{
+		Scanned: []string{"tribelt", "martens", "quiet"},
+		Terms: []domain.MapTerm{
+			{Text: "spiral belt", UsedByTribelt: true, FoundBy: []string{"martens", "tribelt", "martens"}},
+			{Text: "Spiralband", FoundBy: []string{"martens", "ashworth"}},
+			{Text: "Gliederband", UsedByTribelt: true},
+		},
+	}
+	// Tribelt counts what UsedByTribelt marks; a company a scan found a term at was scanned, even
+	// when the scanned list misses it; one scanned without finds counts none.
+	want := map[string]int{"tribelt": 2, "martens": 2, "ashworth": 1, "quiet": 0}
+	if got := m.TermsUsed(); !reflect.DeepEqual(got, want) {
+		t.Errorf("terms used = %v", got)
+	}
+	if got := (domain.TermMap{}).TermsUsed(); !reflect.DeepEqual(got, map[string]int{"tribelt": 0}) {
+		t.Errorf("an empty map = %v", got)
 	}
 }

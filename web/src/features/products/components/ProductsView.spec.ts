@@ -32,12 +32,12 @@ describe('the products', () => {
     expect(cards.map((c) => c.attributes('href'))).toEqual(['/products/eyelink', '/products/open-spiral'])
     const eye = cards[0]?.text() ?? ''
     expect(eye).toContain('30%of AI answers about it name Tribelt')
-    expect(eye).toContain('Competitors selling it1')
-    expect(eye).toContain('Search terms Tribelt uses1 of 4')
+    expect(eye).toContain('Competitors on the list selling it1')
+    expect(eye).toContain('Search terms tribelt.nl uses1 of 4')
     expect(eye).toContain('Most used namedraadogenband')
     expect(cards[1]?.text()).toContain('–of AI answers')
     expect(cards[1]?.text()).toContain('Tribelt names none')
-    expect(wrapper.get('section[aria-label="What stands out"]').text()).toBe('Most competitors sell Eyelink. 1 competitor sells it. Tribelt uses 1 of its 4 search terms.')
+    expect(wrapper.get('section[aria-label="What stands out"]').text()).toBe('Most competitors sell Eyelink. 1 competitor sells it. tribelt.nl uses 1 of its 4 search terms.')
   })
 
   it('opens a family on its own page, with the terms, the sellers and the answers', async () => {

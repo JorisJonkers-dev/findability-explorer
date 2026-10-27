@@ -409,7 +409,10 @@ func (m Matcher) Rematch(x Extraction) Extraction {
 		if c.CompetitorID != "" {
 			continue
 		}
-		companies[i].CompetitorID = m.Match(c.Name, c.URL)
+		id := m.Match(c.Name, c.URL)
+		companies[i].CompetitorID = id
+		// A name the list holds now as Tribelt's names Tribelt, as Read counts it.
+		x.NamesTribelt = x.NamesTribelt || slices.ContainsFunc(m.directory, func(d DirectoryCompany) bool { return d.ID == id && d.Role == RoleTribelt })
 	}
 	x.Companies = companies
 	return x

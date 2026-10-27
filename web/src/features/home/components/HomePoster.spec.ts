@@ -20,8 +20,8 @@ const api = routes({
       aiSearch: {
         answers: 4,
         companies: [
-          { competitorId: 'twentebelt', name: 'Twentebelt', role: 'competitor', answers: 3 },
-          { competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 1 },
+          { competitorId: 'twentebelt', name: 'Twentebelt', role: 'competitor', answers: 3, share: 0.75 },
+          { competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 1, share: 0.25 },
         ],
       },
     }),
@@ -68,9 +68,9 @@ describe('the poster', () => {
     const { wrapper } = await mountApp(api, '/')
     expect(tiles(wrapper).map((a) => [a.attributes('href'), a.attributes('aria-label')])).toEqual([
       ['/catching-up', 'Catching up: 1 measure where Tribelt trails the leader. Zoom in.'],
-      ['/ai-search', 'AI search: 25% of AI answers name Tribelt. Twentebelt is named in 75%. Zoom in.'],
-      ['/competitors', 'Competitors: 2 competitors sell the same belts in Europe, each under its own names. Zoom in.'],
-      ['/terms', "Search terms: 3 search terms in 2 languages. Tribelt's own website uses 1 of them. Zoom in."],
+      ['/ai-search', 'AI search: 25% of the AI answers in the newest Prompt run name Tribelt. Twentebelt is named in 75%. Zoom in.'],
+      ['/competitors', 'Competitors: 2 competitors found by the desk research sell the same belts in Europe, each under its own names. Zoom in.'],
+      ['/terms', 'Search terms: 3 search terms in 2 languages. The newest scan of tribelt.nl found 1 of them. Zoom in.'],
       ['/plan', 'The plan: 52 weekly checks a year. Every fix shows up in the numbers the week after. Zoom in.'],
     ])
     expect(tiles(wrapper)[0]?.text()).toContain('AI answers24%')

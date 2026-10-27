@@ -12,7 +12,7 @@ import (
 func TestAStoredScanIsReadByTheMap(t *testing.T) {
 	lex := domain.NewLexicon([]domain.GlossaryTerm{
 		{Text: "Transportband", Language: "de", Family: "all", Tier: "broad"},
-		{Text: "spiral belt", Language: "en-US", Family: "tri_flex_turn_curve", Tier: "product"},
+		{Text: "spiral belt", Language: "en-US", Family: "tri_flex_turn_curve", Tier: "product", UsedByTribelt: true},
 	})
 	stored := domain.Analysis{
 		Pages: []domain.PageSummary{{Language: "nl"}, {Language: "en"}, {Language: "und"}},
@@ -29,6 +29,8 @@ func TestAStoredScanIsReadByTheMap(t *testing.T) {
 		KnownTerms: []domain.KnownTerm{
 			{GlossaryTerm: domain.GlossaryTerm{Text: "Transportband", Language: "de"}},
 			{GlossaryTerm: domain.GlossaryTerm{Text: "spiral belt", Language: "en-US"}},
+			// The map no longer holds it: it keeps what the scan stored.
+			{GlossaryTerm: domain.GlossaryTerm{Text: "eyelink belt", Language: "en", UsedByTribelt: true}},
 		},
 	}
 	got := stored.ByTheMap(lex)
@@ -46,10 +48,11 @@ func TestAStoredScanIsReadByTheMap(t *testing.T) {
 			t.Errorf("keyword %d = %+v, want %+v", i, got.Keywords[i], w)
 		}
 	}
-	if len(got.KnownTerms) != 1 || got.KnownTerms[0].Text != "spiral belt" {
+	// Whether tribelt.nl uses a term is the map's word now.
+	if len(got.KnownTerms) != 2 || got.KnownTerms[0].Text != "spiral belt" || !got.KnownTerms[0].UsedByTribelt || !got.KnownTerms[1].UsedByTribelt {
 		t.Errorf("known terms = %+v", got.KnownTerms)
 	}
-	if !stored.Keywords[0].InMap || len(stored.KnownTerms) != 2 {
+	if !stored.Keywords[0].InMap || len(stored.KnownTerms) != 3 || stored.KnownTerms[1].UsedByTribelt {
 		t.Error("ByTheMap changed the stored analysis")
 	}
 	// A scan without results stays without them.

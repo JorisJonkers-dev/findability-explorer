@@ -13,6 +13,7 @@ import { useRescan } from '../composables/useCompanyAdmin'
 import AddCompetitors from './AddCompetitors.vue'
 import { useCompetitorChecks, useListDecision } from '../composables/useCompetitorChecks'
 import { useCompetitors } from '../composables/useCompetitors'
+import { useOverview } from '../../home/composables/useOverview'
 import { rescanSummary, unscannedCandidates } from '../domain/admin'
 import { haikuArchived, isFlagged, listCheckLine, verdictLabel, verdictReason } from '../domain/checks'
 import { hostOf } from '../domain/company'
@@ -50,7 +51,9 @@ const archived = computed(() => haikuArchived(competitors.value))
 const counts = computed<Partial<Record<RosterFilter, number>>>(() => ({ unsure: active.value.filter(flagged).length, archived: archived.value.length }))
 const most = computed(() => Math.max(0.01, ...active.value.map((c) => share(c) ?? 0)))
 const never = computed(() => unscannedCandidates(active.value).length)
-const competitorCount = computed(() => active.value.filter((c) => c.role === 'competitor').length)
+// The server counts the competitors on the list, as the home page does.
+const { overview } = useOverview()
+const competitorCount = computed(() => overview.value?.competitors.listed ?? 0)
 
 function show(f: RosterFilter): void {
   void router.replace({ query: f === 'all' ? {} : { show: f } })
@@ -60,7 +63,7 @@ function show(f: RosterFilter): void {
 <template>
   <SectionView
     section="competitors"
-    :title="competitorCount > 0 ? `${String(competitorCount)} competitors, and Tribelt among them.` : 'Every competitor.'"
+    :title="competitorCount > 0 ? `${String(competitorCount)} competitors on the list, and Tribelt among them.` : 'Every competitor.'"
     :tabs="COMPETITOR_TABS"
   >
     <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :class="isAdmin ? 'stage:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]' : 'stage:grid-cols-1'">

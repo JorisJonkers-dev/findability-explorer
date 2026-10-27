@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -21,9 +22,7 @@ type world struct {
 	companies    []domain.Company
 	runs         []domain.Run
 	readiness    map[string]domain.Readiness
-	terms        map[string]int
-	mapTerms     []domain.MapTerm
-	mapErr       error
+	terms        domain.TermMap
 	ticks        []domain.Tick
 	set          map[domain.Target]float64
 	ticksErr     error
@@ -49,9 +48,21 @@ func (w *world) Readiness(context.Context) (map[string]domain.Readiness, error) 
 	return w.readiness, w.readyErr
 }
 
-func (w *world) TermsUsed(context.Context) (map[string]int, error) { return w.terms, w.termsErr }
+func (w *world) TermMap(context.Context) (domain.TermMap, error) { return w.terms, w.termsErr }
 
-func (w *world) MapTerms(context.Context) ([]domain.MapTerm, error) { return w.mapTerms, w.mapErr }
+// termMap is a map of n terms, all found by Ashworth's newest scan, the first used of them
+// tribelt.nl's newest scan found.
+func termMap(n, used int) domain.TermMap {
+	m := domain.TermMap{TribeltFrom: domain.TermsFromScan, Scanned: []string{"tribelt", "ashworth"}}
+	for i := range n {
+		t := domain.MapTerm{Text: fmt.Sprintf("term %d", i), Language: "en", Family: "eyelink", Tier: "product", FoundBy: []string{"ashworth"}}
+		if i < used {
+			t.UsedByTribelt, t.FoundBy = true, []string{"ashworth", "tribelt"}
+		}
+		m.Terms = append(m.Terms, t)
+	}
+	return m
+}
 
 func (w *world) Ticks(context.Context) ([]domain.Tick, error) { return w.ticks, w.ticksErr }
 
@@ -101,7 +112,7 @@ func newWorld() *world {
 			"tribelt": {Crawlers: domain.AccessOpen, SitemapPages: 10},
 			"martens": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, SitemapPages: 40},
 		},
-		terms: map[string]int{"tribelt": 3, "ashworth": 9},
+		terms: termMap(9, 3),
 		set:   map[domain.Target]float64{},
 	}
 }

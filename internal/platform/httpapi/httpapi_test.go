@@ -225,6 +225,10 @@ func TestSearchTerms(t *testing.T) {
 	if len(first) == 0 || fmt.Sprint(first[0].(map[string]any)["foundBy"]) != "[pelger]" {
 		t.Fatalf("foundBy = %v", found.body)
 	}
+	// Before any scan of tribelt.nl, the research's credits say which terms it uses.
+	if uses, ok := first[0].(map[string]any)["tribeltUses"].(bool); !ok || !uses || found.body["tribeltFrom"] != "research" {
+		t.Fatalf("tribelt.nl's use = %v, from %v", first[0], found.body["tribeltFrom"])
+	}
 	facets, _ := r.body["facets"].(map[string]any)
 	if langs, _ := facets["languages"].([]any); len(langs) != 10 {
 		t.Fatalf("language facets = %v", facets["languages"])

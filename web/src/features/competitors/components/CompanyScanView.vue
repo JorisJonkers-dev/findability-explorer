@@ -103,8 +103,8 @@ const title = computed(() => {
             </tr>
           </tbody>
         </table>
-        <h3 class="m-0 text-sm font-semibold tracking-[0.04em] text-orange-ink uppercase stage:text-[24px]">Terms from the map used on the site</h3>
-        <span class="text-sm text-muted stage:text-[24px]">{{ termsTitle(used.length) }}</span>
+        <h3 class="m-0 text-sm font-semibold tracking-[0.04em] text-orange-ink uppercase stage:text-[24px]">Terms from the map the site uses</h3>
+        <span class="text-sm text-muted stage:text-[24px]">{{ termsTitle(used.length, company.shortName === 'Tribelt' ? (map.tribeltFrom.value ?? 'scan') : undefined) }}</span>
         <ul v-if="used.length > 0" aria-label="Its terms in the terminology map" class="m-0 flex list-none flex-wrap gap-2 p-0">
           <li
             v-for="t in used"

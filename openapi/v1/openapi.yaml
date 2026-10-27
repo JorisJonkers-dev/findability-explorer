@@ -1824,6 +1824,12 @@ components:
             scan found it.
           items:
             $ref: "#/components/schemas/CompetitorId"
+        tribeltUses:
+          type: boolean
+          description: >-
+            Whether tribelt.nl uses the term - its newest finished scan found it in the term's
+            language, or, before any finished scan of tribelt.nl, the desk research credits Tribelt
+            with it. The search sets it; every count of the terms tribelt.nl uses counts this.
         source:
           type: string
           maxLength: 500
@@ -1892,6 +1898,8 @@ components:
           example: 14
         facets:
           $ref: "#/components/schemas/Facets"
+        tribeltFrom:
+          $ref: "#/components/schemas/TermsSource"
     BeltName:
       description: A company's own name for a belt, and the Tribelt family it corresponds to.
       type: object
@@ -3961,6 +3969,11 @@ components:
           minimum: 0
           description: Its target.
           example: 0.4
+        met:
+          type: boolean
+          description: >-
+            Whether the value now has reached the target. A met target is no goal any more until
+            an administrator raises it.
     EyeOnReason:
       description: Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
       type: string
@@ -4006,6 +4019,8 @@ components:
           description: The competitors to keep an eye on.
           items:
             $ref: "#/components/schemas/EyeOn"
+        tribeltTermsFrom:
+          $ref: "#/components/schemas/TermsSource"
     ImprovementTick:
       description: Whether an improvement is done.
       type: object
@@ -4240,6 +4255,8 @@ components:
           description: What stands out among them.
           items:
             $ref: "#/components/schemas/ProductStandout"
+        tribeltTermsFrom:
+          $ref: "#/components/schemas/TermsSource"
     StandingMeasure:
       description: >-
         A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the
@@ -4337,6 +4354,8 @@ components:
           maxLength: 64
           description: When the Prompt run the AI measures come from started; absent before any.
           example: "2026-11-02T06:00:00Z"
+        tribeltTermsFrom:
+          $ref: "#/components/schemas/TermsSource"
     Overview:
       description: The figures of the home page.
       type: object
@@ -4377,6 +4396,14 @@ components:
             English.
           items:
             $ref: "#/components/schemas/OverviewLanguage"
+        from:
+          $ref: "#/components/schemas/TermsSource"
+        tiers:
+          type: array
+          maxItems: 20
+          description: Every kind of search with a term, from the most specific to the broadest.
+          items:
+            $ref: "#/components/schemas/OverviewTier"
     OverviewLanguage:
       description: The terms of one language, and how many of them Tribelt's own site uses.
       type: object
@@ -4420,6 +4447,15 @@ components:
           description: Each of Tribelt's belt families, in order, with how many of those competitors offer it.
           items:
             $ref: "#/components/schemas/OverviewFamily"
+        listed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: >-
+            How many competitors the list holds now, not archived, those added since the desk
+            research included; a group company and the mirror do not count.
+          example: 61
     OverviewFamily:
       description: How many of the competitors the desk research found offer one of Tribelt's belt families.
       type: object
@@ -4480,6 +4516,43 @@ components:
           maximum: 1000000
           description: How many answers name it.
           example: 412
+        share:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: >-
+            The share of the run's answers that name it, from 0 to 1; the same share the
+            standings and the plan show.
+          example: 0.33
+    TermsSource:
+      description: >-
+        What says which of the map's terms tribelt.nl uses - scan (its newest finished scan) or
+        research (the desk research's credits, before any finished scan of tribelt.nl).
+      type: string
+      enum: [scan, research]
+    OverviewTier:
+      description: The terms of one kind of search, and how many of them tribelt.nl uses.
+      type: object
+      additionalProperties: false
+      required: [tier, terms, tribelt]
+      properties:
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        terms:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000000
+          description: How many terms are of this kind.
+          example: 80
+        tribelt:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many of them tribelt.nl uses.
+          example: 9
     AiReadinessBrief:
       description: A scan's AI readiness in brief.
       type: object

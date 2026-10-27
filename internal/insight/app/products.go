@@ -13,6 +13,8 @@ type Products struct {
 	Products  []domain.Product
 	Standouts []domain.Standout
 	Companies []domain.Company
+	// TermsFrom says where the terms tribelt.nl uses come from.
+	TermsFrom domain.TermsSource
 }
 
 // Products compares each belt family from the companies' names for it, the terminology map and
@@ -22,7 +24,7 @@ func (s *Service) Products(ctx context.Context) (Products, error) {
 	if err != nil {
 		return Products{}, fmt.Errorf("list the companies: %w", err)
 	}
-	terms, err := s.ports.Terms.MapTerms(ctx)
+	terms, err := s.ports.Terms.TermMap(ctx)
 	if err != nil {
 		return Products{}, fmt.Errorf("the terminology map: %w", err)
 	}
@@ -34,6 +36,6 @@ func (s *Service) Products(ctx context.Context) (Products, error) {
 	if len(runs) > 0 {
 		run = &runs[0]
 	}
-	products := domain.Products(companies, terms, run)
-	return Products{Products: products, Standouts: domain.Standouts(products), Companies: companies}, nil
+	products := domain.Products(companies, terms.Terms, run)
+	return Products{Products: products, Standouts: domain.Standouts(products), Companies: companies, TermsFrom: terms.TribeltFrom}, nil
 }

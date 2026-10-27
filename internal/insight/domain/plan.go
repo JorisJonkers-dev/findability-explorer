@@ -229,6 +229,8 @@ type Watched struct {
 	Target Target
 	Now    *float64
 	Goal   float64
+	// Met is whether the value now has reached the target: it is no goal any more until raised.
+	Met bool
 }
 
 // Watch is each target's value now, from the newest run and Tribelt's latest scan, against the goal.
@@ -237,33 +239,31 @@ func Watch(targets map[Target]float64, f Facts) []Watched {
 	for _, t := range Targets() {
 		w := Watched{Target: t, Goal: targets[t]}
 		if v, ok := f.watched(t); ok {
-			w.Now = &v
+			w.Now, w.Met = &v, v >= w.Goal
 		}
 		out = append(out, w)
 	}
 	return out
 }
 
+// watched is a target's value now, by the same functions the standings and the overview use.
 func (f Facts) watched(t Target) (float64, bool) {
 	switch t {
 	case TargetShareOfVoice:
 		return f.Value(MeasureShareOfVoice, TribeltID)
-	case TargetTwenteShareOfVoice:
-		if f.Run == nil {
-			return 0, false
-		}
-		return ShareOfVoice(f.Run.Keep(func(a Answer) bool { return a.Scope == ScopeTwente }), TribeltID)
 	case TargetReadiness:
 		return f.Value(MeasureReadiness, TribeltID)
 	case TargetTermsUsed:
 		return f.Value(MeasureTermsUsed, TribeltID)
-	case TargetCitations:
+	case TargetTwenteShareOfVoice, TargetCitations:
 	}
-	// The web answers of the run that cite tribelt.nl.
 	if f.Run == nil {
 		return 0, false
 	}
-	return float64(len(f.Run.Keep(func(a Answer) bool { return a.Mode == ModeWeb && slices.Contains(a.Cited, TribeltID) }))), true
+	if t == TargetTwenteShareOfVoice {
+		return TwenteShare(*f.Run, TribeltID)
+	}
+	return float64(Citations(f.Run.Answers, TribeltID)), true
 }
 
 // Watchout is a competitor to keep an eye on, and why.

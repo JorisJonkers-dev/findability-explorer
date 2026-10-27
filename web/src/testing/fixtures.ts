@@ -7,6 +7,7 @@ import type {
   BotRule,
   Competitor,
   Me,
+  Overview,
   PromptAnswer,
   PromptExtraction,
   PromptRun,
@@ -27,6 +28,34 @@ export function term(overrides: Partial<Term> = {}): Term {
     usedBy: ['Twentebelt'],
     source: 'https://www.twentebelt.com/conveyor-belts/',
     origin: 'research',
+    ...overrides,
+  }
+}
+
+/** The home page's figures as the server counts them: the map, the competitors and the newest Prompt run. */
+export function overview(overrides: Partial<Overview> = {}): Overview {
+  return {
+    terms: {
+      total: 3,
+      tribelt: 1,
+      from: 'scan',
+      languages: [
+        { language: 'en', terms: 2, tribelt: 1 },
+        { language: 'de', terms: 1, tribelt: 0 },
+      ],
+      tiers: [
+        { tier: 'product', terms: 2, tribelt: 1 },
+        { tier: 'broad', terms: 1, tribelt: 0 },
+      ],
+    },
+    competitors: { makers: 3, listed: 4, families: [{ family: 'eyelink', makers: 1 }] },
+    aiSearch: {
+      answers: 4,
+      companies: [
+        { competitorId: 'twentebelt', name: 'Twentebelt', role: 'competitor', answers: 3, share: 0.75 },
+        { competitorId: 'tribelt', name: 'Tribelt', role: 'tribelt', answers: 1, share: 0.25 },
+      ],
+    },
     ...overrides,
   }
 }

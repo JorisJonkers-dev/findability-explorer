@@ -28,8 +28,9 @@ import {
   rankTerms,
   summary,
   tierRows,
-  tribeltUses,
+  usedLine,
 } from '../domain/terms'
+import { useOverview } from '../../home/composables/useOverview'
 
 const { terms, total, error } = useTermMap()
 const { view, draft, toggle, clear, toggleGap } = useTermView()
@@ -40,9 +41,10 @@ const columns = useColumnLayout('terms', [0.85, 1.1, 1.25])
 function columnProps(i: number) {
   return { title: COLUMNS[i] ?? '', state: columns.states.value[i] ?? 'normal', canMinimise: columns.canMinimise(i) }
 }
-const languages = computed(() => languageRows(terms.value))
-const tribeltTotal = computed(() => terms.value.filter(tribeltUses).length)
-const tiers = computed(() => tierRows(terms.value))
+// The charts and the count of what tribelt.nl uses are the server's, as on the home page.
+const { overview } = useOverview()
+const languages = computed(() => languageRows(overview.value?.terms))
+const tiers = computed(() => tierRows(overview.value?.terms))
 const heat = computed(() => heatmap(terms.value))
 const ranked = computed(() => rankTerms(filterTerms(terms.value, view.value), terms.value))
 
@@ -101,11 +103,11 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_190px_150px_minmax(0,0.7fr
       <StageColumn v-bind="columnProps(0)" @widen="columns.widen(0)" @minimise="columns.minimise(0)" @restore="columns.restore(0)">
         <section aria-labelledby="terms-charts-title" class="flex flex-col gap-6 stage:min-h-0 stage:gap-8">
           <SectionHeading id="terms-charts-title">Where Tribelt's words fall short</SectionHeading>
-          <p v-if="terms.length > 0" class="m-0 text-base font-semibold stage:text-[30px]">
-            {{ tribeltTotal }}/{{ terms.length }} terms are used by Tribelt
+          <p v-if="usedLine(overview?.terms)" class="m-0 text-base font-semibold stage:text-[30px]">
+            {{ usedLine(overview?.terms) }}
           </p>
           <span class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted stage:gap-8 stage:text-2xl">
-            <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-orange stage:size-6"></span>Tribelt's site uses it</span>
+            <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-orange stage:size-6"></span>tribelt.nl uses it</span>
             <span class="inline-flex items-center gap-2 stage:gap-3"><span aria-hidden="true" class="size-4 bg-silver stage:size-6"></span>Only others use it</span>
           </span>
 
@@ -125,12 +127,12 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_190px_150px_minmax(0,0.7fr
               <span aria-hidden="true" class="relative flex h-4 stage:h-7">
                 <span class="h-full bg-orange" :style="{ width: percent(row.tribeltShare) }"></span>
                 <span class="h-full bg-silver" :style="{ width: percent(row.otherShare) }"></span>
-                <!-- Above the bar while it is hovered or focused: what Tribelt uses, and what only others still have. -->
+                <!-- Above the bar while it is hovered or focused: what tribelt.nl uses, and what only others still have. -->
                 <span
                   class="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 hidden whitespace-nowrap rounded-lg bg-black px-2.5 py-1.5 text-xs font-medium text-white shadow group-hover:block group-focus-visible:block stage:mb-3 stage:rounded-xl stage:px-5 stage:py-3 stage:text-[24px]"
                   data-testid="bar-info"
                 >
-                  Tribelt uses {{ row.tribelt }} · only others use {{ row.count - row.tribelt }}
+                  tribelt.nl uses {{ row.tribelt }}, only others use {{ row.count - row.tribelt }}
                 </span>
               </span>
               <span class="text-right font-semibold">{{ row.tribelt }}/{{ row.count }}</span>

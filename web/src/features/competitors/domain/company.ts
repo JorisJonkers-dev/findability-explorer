@@ -177,13 +177,13 @@ export function scanCompany(
 }
 
 /**
- * The terminology map's terms a company uses, the most specific tier first: those whose used-by
- * list names the company, with or without a product line in brackets.
+ * The terminology map's terms a company uses, the most specific tier first. Tribelt's are those the
+ * server marks as used on tribelt.nl, the same terms every page counts; another company's are those
+ * whose used-by list names it, with or without a product line in brackets.
  */
-export function companyTerms<T extends Pick<Term, 'term' | 'tier' | 'usedBy'>>(terms: readonly T[], shortName: string): T[] {
-  return terms
-    .filter((t) => t.usedBy.some((u) => companyName(u) === shortName))
-    .sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.term.localeCompare(b.term))
+export function companyTerms<T extends Pick<Term, 'term' | 'tier' | 'usedBy' | 'tribeltUses'>>(terms: readonly T[], shortName: string): T[] {
+  const uses = shortName === 'Tribelt' ? (t: T) => t.tribeltUses === true : (t: T) => t.usedBy.some((u) => companyName(u) === shortName)
+  return terms.filter(uses).sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.term.localeCompare(b.term))
 }
 
 /** How a company's scan ended, for its list of scans: "12 pages read", "Scanning", "Blocked by its site", "Failed". */

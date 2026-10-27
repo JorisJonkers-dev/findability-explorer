@@ -7,22 +7,27 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
 )
 
-func TestTermsOfCountsEachLanguageAndWhatTribeltUses(t *testing.T) {
-	got := domain.TermsOf([]domain.MapTerm{
-		{Text: "spiral belt", Language: "en", UsedByTribelt: true},
-		{Text: "conveyor belt", Language: "en-US"},
-		{Text: "Spiralband", Language: "de", UsedByTribelt: true},
-		{Text: "Gliederband", Language: "de"},
-		{Text: "spiraalband", Language: "nl"},
-		{Text: "bande", Language: "fr"},
-	})
-	want := domain.TermsOverview{Total: 6, Tribelt: 2, Languages: []domain.LanguageTerms{
-		{Language: "de", Terms: 2, Tribelt: 1}, {Language: "en", Terms: 2, Tribelt: 1}, {Language: "fr", Terms: 1}, {Language: "nl", Terms: 1},
-	}}
+func TestTermsOfCountsEachLanguageKindAndWhatTribeltUses(t *testing.T) {
+	got := domain.TermsOf(domain.TermMap{TribeltFrom: domain.TermsFromScan, Terms: []domain.MapTerm{
+		{Text: "spiral belt", Language: "en", Tier: "broad", UsedByTribelt: true},
+		{Text: "conveyor belt", Language: "en-US", Tier: "broad"},
+		{Text: "Spiralband", Language: "de", Tier: "product", UsedByTribelt: true},
+		{Text: "Gliederband", Language: "de", Tier: "product"},
+		{Text: "spiraalband", Language: "nl", Tier: "unheard of"},
+		{Text: "bande", Language: "fr", Tier: "spec"},
+	}})
+	want := domain.TermsOverview{
+		Total: 6, Tribelt: 2, From: domain.TermsFromScan,
+		Languages: []domain.LanguageTerms{
+			{Language: "de", Terms: 2, Tribelt: 1}, {Language: "en", Terms: 2, Tribelt: 1}, {Language: "fr", Terms: 1}, {Language: "nl", Terms: 1},
+		},
+		// The map's order, from the most specific; a kind the map does not know goes last.
+		Tiers: []domain.TierTerms{{Tier: "spec", Terms: 1}, {Tier: "product", Terms: 2, Tribelt: 1}, {Tier: "broad", Terms: 2, Tribelt: 1}, {Tier: "unheard of", Terms: 1}},
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("terms = %+v", got)
 	}
-	if empty := domain.TermsOf(nil); empty.Total != 0 || empty.Languages == nil || len(empty.Languages) != 0 {
+	if empty := domain.TermsOf(domain.TermMap{}); empty.Total != 0 || empty.Tribelt != 0 || empty.Languages == nil || len(empty.Languages) != 0 || empty.Tiers == nil {
 		t.Errorf("an empty map = %+v", empty)
 	}
 }
@@ -35,7 +40,8 @@ func TestCompetitorsOfCountsTheResearchedCompetitorsPerFamily(t *testing.T) {
 		{ID: "added", Role: domain.RoleCompetitor, BeltNames: []domain.BeltName{{Family: "eyelink"}}},
 		{ID: "sister", Role: domain.RoleGroup, Researched: true, BeltNames: []domain.BeltName{{Family: "eyelink"}}},
 	})
-	want := domain.CompetitorsOverview{Makers: 2, Families: []domain.FamilyMakers{
+	// The research found two competitors; the list holds three, the one added since included.
+	want := domain.CompetitorsOverview{Makers: 2, Listed: 3, Families: []domain.FamilyMakers{
 		{Family: "eyelink", Makers: 1}, {Family: "open_spiral"}, {Family: "closed_spiral"}, {Family: "tri_flex_turn_curve"}, {Family: "other", Makers: 1},
 	}}
 	if !reflect.DeepEqual(got, want) {
@@ -60,17 +66,17 @@ func TestAiSearchOfListsTribeltAndTheFourCompetitorsNamedMost(t *testing.T) {
 		{Named: []string{"e", "d", "tribelt", "sister"}, First: "e"},
 		{Named: []string{"d", "c", "tribelt", "gone"}, First: "d"},
 		{Named: []string{"b", "c", "gone"}},
-		{Named: []string{"a", "b", "c"}},
+		{Named: []string{"a", "b", "c", "c"}}, // a company named twice in one answer counts once
 	}}
 	got := domain.AiSearchOf(run, voiceCompanies())
 	// c is named most. b, d and tribelt tie on two: d was named first once, and Tribelt follows
 	// the competitors it ties with. a and e tie on one; e was named first, so a is left out.
 	want := domain.AiSearchOverview{Answers: 4, Companies: []domain.Mentioned{
-		{CompanyID: "c", Name: "C", Role: domain.RoleCompetitor, Answers: 3},
-		{CompanyID: "d", Name: "D", Role: domain.RoleCompetitor, Answers: 2},
-		{CompanyID: "b", Name: "B", Role: domain.RoleCompetitor, Answers: 2},
-		{CompanyID: "tribelt", Name: "Tribelt", Role: domain.RoleTribelt, Answers: 2},
-		{CompanyID: "e", Name: "E", Role: domain.RoleCompetitor, Answers: 1},
+		{CompanyID: "c", Name: "C", Role: domain.RoleCompetitor, Answers: 3, Share: 0.75},
+		{CompanyID: "d", Name: "D", Role: domain.RoleCompetitor, Answers: 2, Share: 0.5},
+		{CompanyID: "b", Name: "B", Role: domain.RoleCompetitor, Answers: 2, Share: 0.5},
+		{CompanyID: "tribelt", Name: "Tribelt", Role: domain.RoleTribelt, Answers: 2, Share: 0.5},
+		{CompanyID: "e", Name: "E", Role: domain.RoleCompetitor, Answers: 1, Share: 0.25},
 	}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("ai search = %+v", got)
@@ -80,8 +86,8 @@ func TestAiSearchOfListsTribeltAndTheFourCompetitorsNamedMost(t *testing.T) {
 func TestAiSearchOfListsTribeltWithNoAnswersWhenNoneNamesIt(t *testing.T) {
 	got := domain.AiSearchOf(&domain.Run{Answers: []domain.Answer{{Named: []string{"b"}}, {Named: []string{"a", "b"}}}}, voiceCompanies())
 	want := domain.AiSearchOverview{Answers: 2, Companies: []domain.Mentioned{
-		{CompanyID: "b", Name: "B", Role: domain.RoleCompetitor, Answers: 2},
-		{CompanyID: "a", Name: "A", Role: domain.RoleCompetitor, Answers: 1},
+		{CompanyID: "b", Name: "B", Role: domain.RoleCompetitor, Answers: 2, Share: 1},
+		{CompanyID: "a", Name: "A", Role: domain.RoleCompetitor, Answers: 1, Share: 0.5},
 		{CompanyID: "tribelt", Name: "Tribelt", Role: domain.RoleTribelt},
 	}}
 	if !reflect.DeepEqual(got, want) {
@@ -100,31 +106,10 @@ func TestAiSearchOfIsEmptyBeforeAnyAnswer(t *testing.T) {
 func TestOverviewOfCountsEveryTile(t *testing.T) {
 	got := domain.OverviewOf(
 		[]domain.Company{{ID: "a", Name: "A", Role: domain.RoleCompetitor, Researched: true}},
-		[]domain.MapTerm{{Text: "spiral belt", Language: "en", UsedByTribelt: true}},
+		domain.TermMap{Terms: []domain.MapTerm{{Text: "spiral belt", Language: "en", UsedByTribelt: true}}},
 		&domain.Run{Answers: []domain.Answer{{Named: []string{"a"}}}},
 	)
 	if got.Terms.Total != 1 || got.Competitors.Makers != 1 || got.AiSearch.Answers != 1 || len(got.AiSearch.Companies) != 2 {
 		t.Errorf("overview = %+v", got)
-	}
-}
-
-func TestCreditsTribeltNamesTribeltOrOneOfItsProductLines(t *testing.T) {
-	for credits, want := range map[string]bool{
-		"Tribelt":                            true,
-		"Tribelt (Tri-Flex)":                 true,
-		"  Tribelt  (variabler Spaltweite) ": true,
-		"Tribelt B.V.":                       false,
-		"Tribeltech":                         false,
-		"Märtens (Tribelt)":                  false,
-		"Tribelt (a) b)":                     false,
-		"(Tribelt)":                          false,
-		"Tribelt)":                           false,
-	} {
-		if got := domain.CreditsTribelt([]string{"Märtens", credits}); got != want {
-			t.Errorf("%q: %v", credits, got)
-		}
-	}
-	if domain.CreditsTribelt(nil) {
-		t.Error("no credits name Tribelt")
 	}
 }

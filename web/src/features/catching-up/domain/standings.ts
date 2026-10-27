@@ -1,12 +1,17 @@
-import type { Standing, StandingMeasure } from '../../../infrastructure/api/types.gen'
+import type { Standing, StandingMeasure, TermsSource } from '../../../infrastructure/api/types.gen'
 
 /** What each measure is called on the page, and how its values read. */
 export const MEASURES: Record<StandingMeasure, { label: string; short: string; unit: 'share' | 'score' | 'count' }> = {
-  aiShareOfVoice: { label: 'How often AI answers name the company', short: 'AI answers', unit: 'share' },
-  citationShare: { label: 'How often web answers cite its website', short: 'Citations', unit: 'share' },
-  readinessChecks: { label: 'AI readiness checks passed out of five', short: 'AI readiness', unit: 'score' },
-  sitemapPages: { label: 'Pages in the sitemap', short: 'Sitemap', unit: 'count' },
-  termsUsed: { label: 'Search terms from the map used on the site', short: 'Search terms', unit: 'count' },
+  aiShareOfVoice: { label: 'Share of AI answers in the newest Prompt run that name the company', short: 'AI answers', unit: 'share' },
+  citationShare: { label: 'Share of web answers in the newest Prompt run that cite its website', short: 'Citations', unit: 'share' },
+  readinessChecks: { label: 'AI readiness checks passed out of five, on the newest scan', short: 'AI readiness', unit: 'score' },
+  sitemapPages: { label: 'Pages in the sitemap, on the newest scan', short: 'Sitemap', unit: 'count' },
+  termsUsed: { label: 'Search terms from the map found on the site by its newest scan', short: 'Search terms', unit: 'count' },
+}
+
+/** A note under the search terms when tribelt.nl has no scan yet and the desk research counts Tribelt's terms; empty otherwise. */
+export function termsSourceLine(from: TermsSource | undefined): string {
+  return from === 'research' ? "tribelt.nl has not been scanned yet. Tribelt's bar counts the terms the desk research credits it with." : ''
 }
 
 /** A value as the page writes it: "24%", "3½", "2,140". */

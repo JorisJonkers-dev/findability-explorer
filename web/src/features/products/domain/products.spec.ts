@@ -33,11 +33,11 @@ describe('what stands out', () => {
   it('is written from the data', () => {
     expect(standoutText({ finding: 'crowded', family: 'eyelink' }, products)).toEqual({
       lead: 'Most competitors sell Eyelink.',
-      rest: '1 competitor sells it. Tribelt uses 1 of its 4 search terms.',
+      rest: '1 competitor sells it. tribelt.nl uses 1 of its 4 search terms.',
     })
     expect(standoutText({ finding: 'fewestTerms', family: 'other' }, products)).toEqual({
-      lead: 'Tribelt uses the fewest search terms for Other belts.',
-      rest: 'Tribelt uses none of its 4 search terms.',
+      lead: 'tribelt.nl uses the fewest search terms for Other belts.',
+      rest: 'tribelt.nl uses none of its 4 search terms.',
     })
     expect(standoutText({ finding: 'bestInAI', family: 'eyelink' }, products)).toEqual({ lead: 'AI answers name Tribelt most for Eyelink.', rest: '30% of the answers about it name Tribelt.' })
     expect(standoutText({ finding: 'bestInAI', family: 'closed_spiral' }, products).rest).toBe('– of the answers about it name Tribelt.')

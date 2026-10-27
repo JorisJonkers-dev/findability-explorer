@@ -14,6 +14,8 @@ type Plan struct {
 	Items   []domain.PlanItem
 	Watched []domain.Watched
 	EyeOn   []domain.EyeOn
+	// TermsFrom says where Tribelt's search terms come from.
+	TermsFrom domain.TermsSource
 }
 
 // Plan reads the plan from the ticks, the targets, Tribelt's latest scan and the standings.
@@ -32,9 +34,10 @@ func (s *Service) Plan(ctx context.Context) (Plan, error) {
 	}
 	st := domain.Standings(companies, f)
 	return Plan{
-		Items:   domain.PlanItems(ticks, tribeltReadiness(f), st),
-		Watched: domain.Watch(targets, f),
-		EyeOn:   domain.KeepAnEyeOn(companies, f, st),
+		Items:     domain.PlanItems(ticks, tribeltReadiness(f), st),
+		Watched:   domain.Watch(targets, f),
+		EyeOn:     domain.KeepAnEyeOn(companies, f, st),
+		TermsFrom: f.TermsFrom,
 	}, nil
 }
 

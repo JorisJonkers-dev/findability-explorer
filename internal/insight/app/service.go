@@ -27,13 +27,10 @@ type Readiness interface {
 	Readiness(ctx context.Context) (map[string]domain.Readiness, error)
 }
 
-// Terms is the port to the terminology context: how many map terms each company's newest scan
-// found, by id, for every company a scan read.
+// Terms is the port to the terminology context: the map's terms, each with whether tribelt.nl uses
+// it and the companies whose newest scan found it, and the companies a finished scan read.
 type Terms interface {
-	TermsUsed(ctx context.Context) (map[string]int, error)
-	// MapTerms are the terms of the map, each with how many companies use it and whether
-	// Tribelt's site does.
-	MapTerms(ctx context.Context) ([]domain.MapTerm, error)
+	TermMap(ctx context.Context) (domain.TermMap, error)
 }
 
 // Store keeps what the insight context owns: the improvements ticked off by hand, and the
@@ -90,6 +87,8 @@ type Standings struct {
 	Companies []domain.Company
 	// Open are the first improvements of the plan not done yet.
 	Open []domain.PlanItem
+	// TermsFrom says where Tribelt's search terms come from.
+	TermsFrom domain.TermsSource
 }
 
 // OpenShown is how many open improvements the standings list.
@@ -109,11 +108,11 @@ func (s *Service) facts(ctx context.Context) ([]domain.Company, domain.Facts, er
 	if err != nil {
 		return nil, domain.Facts{}, fmt.Errorf("the AI readiness: %w", err)
 	}
-	terms, err := s.ports.Terms.TermsUsed(ctx)
+	terms, err := s.ports.Terms.TermMap(ctx)
 	if err != nil {
-		return nil, domain.Facts{}, fmt.Errorf("the terms used: %w", err)
+		return nil, domain.Facts{}, fmt.Errorf("the terminology map: %w", err)
 	}
-	f := domain.Facts{Readiness: readiness, TermsUsed: terms}
+	f := domain.Facts{Readiness: readiness, TermsUsed: terms.TermsUsed(), TermsFrom: terms.TribeltFrom}
 	if len(runs) > 0 {
 		f.Run = &runs[0]
 	}
@@ -132,7 +131,9 @@ func (s *Service) Standings(ctx context.Context) (Standings, error) {
 		return Standings{}, fmt.Errorf("the ticked improvements: %w", err)
 	}
 	items := domain.PlanItems(ticks, tribeltReadiness(f), st)
-	return Standings{Standings: st, Trailing: domain.Trailing(st), Run: f.Run, Companies: companies, Open: domain.Open(items, OpenShown)}, nil
+	return Standings{
+		Standings: st, Trailing: domain.Trailing(st), Run: f.Run, Companies: companies, Open: domain.Open(items, OpenShown), TermsFrom: f.TermsFrom,
+	}, nil
 }
 
 // tribeltReadiness is Tribelt's latest readiness, or nil before a scan read it.

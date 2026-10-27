@@ -305,3 +305,23 @@ func TestAcceptKeepsToTheCandidatesLanguage(t *testing.T) {
 		t.Fatalf("Accept in German = %v", err)
 	}
 }
+
+// Once tribelt.nl has a finished scan, the scan says which terms it uses; before, the research.
+func TestSiteUseKnowsWhetherTribeltWasScanned(t *testing.T) {
+	seen := []domain.Sighting{{Text: "spiral belt", Language: "en", CompanyID: domain.TribeltID}}
+	never := app.New(catalogue{}, &reviews{}, evidence(nil, nil), sightings(seen, nil), func() time.Time { return now })
+	if u, err := never.SiteUse(t.Context()); err != nil || u.TribeltScanned || len(u.FoundBy) != 1 {
+		t.Fatalf("SiteUse without scans = %+v, %v", u, err)
+	}
+	scanned := never.WithTribeltScans(func(context.Context) (bool, error) { return true, nil })
+	if u, err := scanned.SiteUse(t.Context()); err != nil || !u.TribeltScanned || u.Source() != domain.UsageScan {
+		t.Fatalf("SiteUse after a scan = %+v, %v", u, err)
+	}
+	if _, err := scanned.WithTribeltScans(func(context.Context) (bool, error) { return false, errBoom }).SiteUse(t.Context()); !errors.Is(err, errBoom) {
+		t.Fatalf("a failing scan list = %v", err)
+	}
+	failing := app.New(catalogue{}, &reviews{}, evidence(nil, nil), sightings(nil, errBoom), func() time.Time { return now })
+	if _, err := failing.SiteUse(t.Context()); !errors.Is(err, errBoom) {
+		t.Fatalf("failing sightings = %v", err)
+	}
+}

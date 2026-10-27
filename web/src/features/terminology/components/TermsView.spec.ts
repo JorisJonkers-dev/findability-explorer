@@ -1,19 +1,41 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Term } from '../../../infrastructure/api/types.gen'
-import { term, termSearch } from '../../../testing/fixtures'
+import { overview, term, termSearch } from '../../../testing/fixtures'
 import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { SEARCH_DELAY_MS } from '../composables/useTermView'
 
 const MAP: Term[] = [
-  term({ term: 'Eyelink belt', language: 'en', family: 'eyelink', tier: 'product', usedBy: ['Twentebelt', 'Ashworth', 'Tribelt'] }),
+  term({ term: 'Eyelink belt', language: 'en', family: 'eyelink', tier: 'product', usedBy: ['Twentebelt', 'Ashworth', 'Tribelt'], tribeltUses: true }),
   term({ term: 'eye link belt', language: 'en-US', family: 'eyelink', tier: 'broad', usedBy: ['Ashworth'] }),
-  term({ term: 'Drahtösengliederband', language: 'de', family: 'eyelink', tier: 'product', usedBy: ['Märtens', 'Tribelt (Drahtösengliederbänder)'] }),
+  term({ term: 'Drahtösengliederband', language: 'de', family: 'eyelink', tier: 'product', usedBy: ['Märtens', 'Tribelt (Drahtösengliederbänder)'], tribeltUses: true }),
   term({ term: 'AISI 304', language: 'de', family: 'spec_all', tier: 'spec', usedBy: ['Märtens', 'Twentebelt'] }),
   term({ term: 'belt tracking', language: 'en', family: 'all', tier: 'problem', usedBy: [] }),
 ]
 
-const api = routes({ 'GET /api/v1/terms': () => json(termSearch(MAP, { total: MAP.length })) })
+// The server's figures for the same map: the charts and the count of what tribelt.nl uses are its.
+const FIGURES = overview({
+  terms: {
+    total: 5,
+    tribelt: 2,
+    from: 'scan',
+    languages: [
+      { language: 'en', terms: 3, tribelt: 1 },
+      { language: 'de', terms: 2, tribelt: 1 },
+    ],
+    tiers: [
+      { tier: 'spec', terms: 1, tribelt: 0 },
+      { tier: 'product', terms: 2, tribelt: 2 },
+      { tier: 'problem', terms: 1, tribelt: 0 },
+      { tier: 'broad', terms: 1, tribelt: 0 },
+    ],
+  },
+})
+
+const api = routes({
+  'GET /api/v1/terms': () => json(termSearch(MAP, { total: MAP.length, tribeltFrom: 'scan' })),
+  'GET /api/v1/overview': () => json(FIGURES),
+})
 
 /** The terms in the ranked list, in order. */
 const ranked = (wrapper: VueWrapper) =>
@@ -43,20 +65,20 @@ describe('the search terms view', () => {
   it('charts the languages and kinds, with what Tribelt uses', async () => {
     const { wrapper } = await mountApp(api, '/terms')
     const languages = wrapper.get('[role="group"][aria-label="By language"]').findAll('button')
-    expect(languages.map((b) => b.attributes('aria-label'))).toEqual(['English: 3 terms, Tribelt uses 1', 'German: 2 terms, Tribelt uses 1'])
+    expect(languages.map((b) => b.attributes('aria-label'))).toEqual(['English: 3 terms, tribelt.nl uses 1', 'German: 2 terms, tribelt.nl uses 1'])
     expect(languages[0]?.findAll('[aria-hidden="true"] span[style]').map((s) => s.attributes('style'))).toEqual([
       'width: 33.33%;',
       'width: 66.67%;',
     ])
     // Above a bar, on hover: what Tribelt uses and what only others still have; at its end, a fraction.
-    expect(languages[0]?.get('[data-testid="bar-info"]').text()).toBe('Tribelt uses 1 · only others use 2')
+    expect(languages[0]?.get('[data-testid="bar-info"]').text()).toBe('tribelt.nl uses 1, only others use 2')
     const tiers = wrapper.get('[role="group"][aria-label="By kind of search"]').findAll('button')
     const ends = (b: (typeof tiers)[number]) => {
       const parts = b.findAll(':scope > span')
       return `${parts[0]?.text() ?? ''} ${parts[2]?.text() ?? ''}`
     }
     expect(tiers.map(ends)).toEqual(['Broad 0/1', 'Product 2/2', 'Application 0/0', 'Specification 0/1', 'Problem 0/1'])
-    expect(wrapper.text()).toContain('2/5 terms are used by Tribelt')
+    expect(wrapper.text()).toContain('The newest scan of tribelt.nl found 2 of the 5 terms.')
   })
 
   it("filters the ranking by language from above it, and names Tribelt's term for each", async () => {

@@ -3,7 +3,7 @@ import { vScrollHint } from '../../../shared/scrollHint'
 import { computed, toRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import eyelink from '../../../assets/eyelink.webp'
-import type { Term } from '../../../infrastructure/api/types.gen'
+import type { Term, TermsSource } from '../../../infrastructure/api/types.gen'
 import { tierFill } from '../../../shared/tiers'
 import { tierLabel } from '../../../shared/vocabulary'
 import ProgressBar from '../../../shared/ui/ProgressBar.vue'
@@ -18,7 +18,7 @@ import { type Company, companyTerms, lastScanLabel, scanCountLabel, scanLinkLabe
 import { archivedByHaiku } from '../domain/checks'
 import { beltRows, companyKind, termsTitle, whereLine } from '../domain/list'
 
-const props = defineProps<{ company: Company; terms: readonly Term[]; isAdmin: boolean }>()
+const props = defineProps<{ company: Company; terms: readonly Term[]; isAdmin: boolean; termsFrom?: TermsSource }>()
 const emit = defineEmits<{ scan: [url: string]; removed: [] }>()
 
 /** How many of its scans are listed; every one of its terms is, in a list that scrolls. */
@@ -118,7 +118,7 @@ const mentioned = computed(() => mentionLine(prompts.value, props.company.id))
     </table>
 
     <div class="flex flex-col gap-3 stage:gap-4">
-      <span class="text-sm text-muted stage:text-[26px]">{{ termsTitle(used.length) }}</span>
+      <span class="text-sm text-muted stage:text-[26px]">{{ termsTitle(used.length, company.shortName === 'Tribelt' ? (termsFrom ?? 'scan') : undefined) }}</span>
       <ul
         v-if="used.length > 0"
         v-scroll-hint

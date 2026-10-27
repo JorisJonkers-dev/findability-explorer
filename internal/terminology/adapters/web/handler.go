@@ -17,7 +17,7 @@ import (
 // UseCases is what the adapter needs from the application layer.
 type UseCases interface {
 	Search(q domain.Query) domain.Result
-	FoundBy(ctx context.Context) (map[domain.TermKey][]string, error)
+	SiteUse(ctx context.Context) (domain.SiteUse, error)
 	Candidates(ctx context.Context, status domain.Status) ([]domain.Candidate, domain.Counts, error)
 	Accept(ctx context.Context, user, id string, a domain.Acceptance) (domain.Candidate, error)
 	Reject(ctx context.Context, user, id string) (domain.Candidate, error)
@@ -181,7 +181,7 @@ func toCandidate(c domain.Candidate) oas.TermCandidate {
 // SearchTerms implements searchTerms. ogen has already checked every enum against the contract,
 // whose values are the domain's.
 func (h *Handler) SearchTerms(ctx context.Context, params oas.SearchTermsParams) (oas.SearchTermsRes, error) {
-	foundBy, err := h.uc.FoundBy(ctx)
+	use, err := h.uc.SiteUse(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -196,9 +196,10 @@ func (h *Handler) SearchTerms(ctx context.Context, params oas.SearchTermsParams)
 	items := make([]oas.Term, 0, len(result.Items))
 	for _, t := range result.Items {
 		term := ToTerm(t)
-		for _, id := range foundBy[t.Key()] {
+		for _, id := range use.FoundBy[t.Key()] {
 			term.FoundBy = append(term.FoundBy, oas.CompetitorId(id))
 		}
+		term.TribeltUses = oas.NewOptBool(use.TribeltUses(t))
 		items = append(items, term)
 	}
 	return &oas.TermSearch{
@@ -209,6 +210,7 @@ func (h *Handler) SearchTerms(ctx context.Context, params oas.SearchTermsParams)
 			Tiers:     toCounts(result.Facets.Tiers),
 			Families:  toCounts(result.Facets.Families),
 		},
+		TribeltFrom: oas.NewOptTermsSource(oas.TermsSource(use.Source())),
 	}, nil
 }
 

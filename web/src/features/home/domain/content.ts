@@ -7,6 +7,6 @@ export const COURSE_LINE = 'A student project for Tribelt B.V. in Digital Strate
 export const TEAM_LINE = '[GROUP MEMBERS]. Supervised by [SUPERVISOR]. October 2026.'
 
 export const TILE_TEXT = {
-  competitors: 'competitors sell the same belts in Europe, each under its own names.',
+  competitors: 'competitors found by the desk research sell the same belts in Europe, each under its own names.',
   plan: { big: '52', text: 'weekly checks a year. Every fix shows up in the numbers the week after.' },
 } as const

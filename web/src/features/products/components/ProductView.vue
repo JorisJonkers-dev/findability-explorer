@@ -35,7 +35,7 @@ const terms = computed(() => ofLanguage(product.value?.terms ?? [], language.val
       <section aria-labelledby="terms-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
         <div class="flex flex-wrap items-baseline justify-between gap-3">
           <h2 id="terms-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">How buyers search for it</h2>
-          <span class="stage:text-[28px]">Tribelt uses <strong class="text-orange-ink">{{ product.termsUsed }} of {{ product.terms.length }}</strong></span>
+          <span class="stage:text-[28px]">tribelt.nl uses <strong class="text-orange-ink">{{ product.termsUsed }} of {{ product.terms.length }}</strong></span>
         </div>
         <LanguageFilter :choices="languages" :selected="language" @select="(l) => (language = l)" />
         <div class="relative overflow-auto stage:min-h-0 stage:flex-1">
@@ -46,7 +46,7 @@ const terms = computed(() => ofLanguage(product.value?.terms ?? [], language.val
                 <th scope="col" class="py-2 text-left font-medium text-muted">Term</th>
                 <th scope="col" class="py-2 pl-3 text-left font-medium text-muted">Language</th>
                 <th scope="col" class="py-2 pl-3 text-right font-medium text-muted">Used by</th>
-                <th scope="col" class="py-2 pl-3 text-right font-medium text-muted">Tribelt</th>
+                <th scope="col" class="py-2 pl-3 text-right font-medium text-muted">tribelt.nl</th>
               </tr>
             </thead>
             <tbody>

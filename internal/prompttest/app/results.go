@@ -76,7 +76,7 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 		cells := domain.Cells(answers)
 		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells})
 		if !mentioned && len(cells) > 0 {
-			out.Mentions, mentioned = named(domain.Mentions(answers), companies), true
+			out.Mentions, mentioned = named(domain.WithTribelt(domain.Mentions(answers), answers, companies), companies), true
 		}
 		out.WrongClaims = append(out.WrongClaims, domain.WrongClaims(answers)...)
 	}

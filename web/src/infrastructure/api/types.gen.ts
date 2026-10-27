@@ -40,6 +40,10 @@ export type Term = {
      */
     foundBy?: Array<CompetitorId>;
     /**
+     * Whether tribelt.nl uses the term - its newest finished scan found it in the term's language, or, before any finished scan of tribelt.nl, the desk research credits Tribelt with it. The search sets it; every count of the terms tribelt.nl uses counts this.
+     */
+    tribeltUses?: boolean;
+    /**
      * The page the term was taken from.
      */
     source: string;
@@ -90,6 +94,7 @@ export type TermSearch = {
      */
     total: number;
     facets: Facets;
+    tribeltFrom?: TermsSource;
 };
 
 /**
@@ -1606,6 +1611,10 @@ export type WatchedNumber = {
      * Its target.
      */
     goal: number;
+    /**
+     * Whether the value now has reached the target. A met target is no goal any more until an administrator raises it.
+     */
+    met?: boolean;
 };
 
 /**
@@ -1641,6 +1650,7 @@ export type Plan = {
      * The competitors to keep an eye on.
      */
     eyeOn: Array<EyeOn>;
+    tribeltTermsFrom?: TermsSource;
 };
 
 /**
@@ -1811,6 +1821,7 @@ export type ProductsOverview = {
      * What stands out among them.
      */
     standouts: Array<ProductStandout>;
+    tribeltTermsFrom?: TermsSource;
 };
 
 /**
@@ -1881,6 +1892,7 @@ export type Standings = {
      * When the Prompt run the AI measures come from started; absent before any.
      */
     runStartedAt?: string;
+    tribeltTermsFrom?: TermsSource;
 };
 
 /**
@@ -1908,6 +1920,11 @@ export type OverviewTerms = {
      * Every language with a term, the most terms first; American English counts as English.
      */
     languages: Array<OverviewLanguage>;
+    from?: TermsSource;
+    /**
+     * Every kind of search with a term, from the most specific to the broadest.
+     */
+    tiers?: Array<OverviewTier>;
 };
 
 /**
@@ -1937,6 +1954,10 @@ export type OverviewCompetitors = {
      * Each of Tribelt's belt families, in order, with how many of those competitors offer it.
      */
     families: Array<OverviewFamily>;
+    /**
+     * How many competitors the list holds now, not archived, those added since the desk research included; a group company and the mirror do not count.
+     */
+    listed?: number;
 };
 
 /**
@@ -1978,6 +1999,30 @@ export type OverviewMention = {
      * How many answers name it.
      */
     answers: number;
+    /**
+     * The share of the run's answers that name it, from 0 to 1; the same share the standings and the plan show.
+     */
+    share?: number;
+};
+
+/**
+ * What says which of the map's terms tribelt.nl uses - scan (its newest finished scan) or research (the desk research's credits, before any finished scan of tribelt.nl).
+ */
+export type TermsSource = 'scan' | 'research';
+
+/**
+ * The terms of one kind of search, and how many of them tribelt.nl uses.
+ */
+export type OverviewTier = {
+    tier: IntentTier;
+    /**
+     * How many terms are of this kind.
+     */
+    terms: number;
+    /**
+     * How many of them tribelt.nl uses.
+     */
+    tribelt: number;
 };
 
 /**

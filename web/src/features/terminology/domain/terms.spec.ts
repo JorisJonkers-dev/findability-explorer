@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Term } from '../../../infrastructure/api/types.gen'
+import type { OverviewTerms, Term } from '../../../infrastructure/api/types.gen'
 import { term } from '../../../testing/fixtures'
 import { NO_VIEW } from './filters'
 import {
@@ -18,19 +18,22 @@ import {
   tierRows,
   tribeltTerm,
   tribeltUses,
+  usedLine,
 } from './terms'
 
 const MAP: Term[] = [
-  term({ term: 'Eyelink belt', language: 'en', family: 'eyelink', tier: 'product', usedBy: ['Twentebelt', 'Ashworth', 'Tribelt'] }),
+  term({ term: 'Eyelink belt', language: 'en', family: 'eyelink', tier: 'product', usedBy: ['Twentebelt', 'Ashworth', 'Tribelt'], tribeltUses: true }),
   term({ term: 'eye link belt', language: 'en-US', family: 'eyelink', tier: 'broad', usedBy: ['Ashworth'] }),
-  term({ term: 'Drahtösengliederband', language: 'de', family: 'eyelink', tier: 'product', usedBy: ['Märtens', 'Tribelt (Drahtösengliederbänder)'] }),
+  term({ term: 'Drahtösengliederband', language: 'de', family: 'eyelink', tier: 'product', usedBy: ['Märtens', 'Tribelt (Drahtösengliederbänder)'], tribeltUses: true }),
   term({ term: 'AISI 304', language: 'de', family: 'spec_all', tier: 'spec', usedBy: ['Märtens', 'Märtens (Typ 2)', 'Twentebelt'] }),
   term({ term: 'belt tracking', language: 'en', family: 'all', tier: 'problem', usedBy: [] }),
 ]
 
 describe('who uses a term', () => {
-  it("knows Tribelt's own terms, with or without a note in brackets", () => {
+  it('knows the terms tribelt.nl uses from the server, whatever the research credits', () => {
     expect(MAP.map(tribeltUses)).toEqual([true, false, true, false, false])
+    // The research credits Tribelt, but tribelt.nl's newest scan did not find it.
+    expect(tribeltUses(term({ usedBy: ['Tribelt'], tribeltUses: false }))).toBe(false)
   })
 
   it('counts each other company once', () => {
@@ -55,20 +58,31 @@ describe('who uses a term', () => {
 })
 
 describe('the charts', () => {
-  it('counts terms per language, American English as English, the most first', () => {
-    expect(languageRows(MAP)).toEqual([
-      { value: 'en', label: 'English', count: 3, tribelt: 1, tribeltShare: 1 / 3, otherShare: 2 / 3, description: 'English: 3 terms, Tribelt uses 1' },
-      { value: 'de', label: 'German', count: 2, tribelt: 1, tribeltShare: 1 / 3, otherShare: 1 / 3, description: 'German: 2 terms, Tribelt uses 1' },
+  const OVERVIEW: OverviewTerms = {
+    total: 5,
+    tribelt: 2,
+    from: 'scan',
+    languages: [
+      { language: 'en', terms: 3, tribelt: 1 },
+      { language: 'de', terms: 2, tribelt: 1 },
+    ],
+    tiers: [
+      { tier: 'product', terms: 2, tribelt: 2 },
+      { tier: 'spec', terms: 1, tribelt: 0 },
+      { tier: 'problem', terms: 1, tribelt: 0 },
+      { tier: 'broad', terms: 1, tribelt: 0 },
+    ],
+  }
+
+  it('draws the terms per language as the server counts them', () => {
+    expect(languageRows(OVERVIEW)).toEqual([
+      { value: 'en', label: 'English', count: 3, tribelt: 1, tribeltShare: 1 / 3, otherShare: 2 / 3, description: 'English: 3 terms, tribelt.nl uses 1' },
+      { value: 'de', label: 'German', count: 2, tribelt: 1, tribeltShare: 1 / 3, otherShare: 1 / 3, description: 'German: 2 terms, tribelt.nl uses 1' },
     ])
   })
 
-  it('breaks a tie by name', () => {
-    const rows = languageRows([term({ language: 'nl' }), term({ language: 'da' })])
-    expect(rows.map((r) => r.label)).toEqual(['Danish', 'Dutch'])
-  })
-
-  it('counts terms per kind of search, in the charts order, empty ones too', () => {
-    const rows = tierRows(MAP)
+  it('draws the terms per kind of search in the charts order, empty ones too', () => {
+    const rows = tierRows(OVERVIEW)
     expect(rows.map((r) => [r.value, r.count, r.tribelt])).toEqual([
       ['broad', 1, 0],
       ['product', 2, 2],
@@ -77,13 +91,21 @@ describe('the charts', () => {
       ['problem', 1, 0],
     ])
     expect(rows[1]?.tribeltShare).toBe(1)
-    expect(rows[2]?.description).toBe('Application: 0 terms, Tribelt uses 0')
-    expect(rows[0]?.description).toBe('Broad: 1 term, Tribelt uses 0')
+    expect(rows[2]?.description).toBe('Application: 0 terms, tribelt.nl uses 0')
+    expect(rows[0]?.description).toBe('Broad: 1 term, tribelt.nl uses 0')
   })
 
-  it('draws nothing for an empty map', () => {
-    expect(languageRows([])).toEqual([])
-    expect(tierRows([]).every((r) => r.otherShare === 0)).toBe(true)
+  it('draws nothing before the figures load', () => {
+    expect(languageRows(undefined)).toEqual([])
+    expect(tierRows(undefined).every((r) => r.count === 0 && r.otherShare === 0)).toBe(true)
+    expect(tierRows({ ...OVERVIEW, tiers: undefined }).every((r) => r.count === 0)).toBe(true)
+  })
+
+  it('says how many terms tribelt.nl uses, and how that is known', () => {
+    expect(usedLine(OVERVIEW)).toBe('The newest scan of tribelt.nl found 2 of the 5 terms.')
+    expect(usedLine({ ...OVERVIEW, from: 'research' })).toBe('The desk research credits Tribelt with 2 of the 5 terms.')
+    expect(usedLine(undefined)).toBe('')
+    expect(usedLine({ ...OVERVIEW, total: 0 })).toBe('')
   })
 })
 
@@ -232,19 +254,19 @@ describe("Tribelt's term", () => {
     // A term is never paired with Tribelt's term in another language.
     const dutch = term({ term: 'draadogenband', language: 'nl', family: 'eyelink', tier: 'product', usedBy: ['ESFO'] })
     expect(tribeltTerm(dutch, [...MAP, dutch])).toBe('Lacks it')
-    const own = term({ term: 'oogjesband', language: 'nl', family: 'eyelink', tier: 'broad', usedBy: ['Tribelt'] })
+    const own = term({ term: 'oogjesband', language: 'nl', family: 'eyelink', tier: 'broad', usedBy: ['Tribelt'], tribeltUses: true })
     expect(tribeltTerm(dutch, [...MAP, dutch, own])).toBe('oogjesband')
     // The owner's case: Tribelt's German "kurvengängig" is no stand-in for the English "flex-turn belt".
     const flexTurn = term({ term: 'flex-turn belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'product', usedBy: ['Ashworth'] })
-    const kurvengaengig = term({ term: 'kurvengängig', language: 'de', family: 'tri_flex_turn_curve', tier: 'application', usedBy: ['Tribelt'] })
+    const kurvengaengig = term({ term: 'kurvengängig', language: 'de', family: 'tri_flex_turn_curve', tier: 'application', usedBy: ['Tribelt'], tribeltUses: true })
     expect(tribeltTerm(flexTurn, [flexTurn, kurvengaengig])).toBe('Lacks it')
     expect(rankTerms([flexTurn], [flexTurn, kurvengaengig])[0]?.tribeltTerm).toBe('Lacks it')
     // A specification is its own thing: Tribelt's other specification is no stand-in for it.
     const pitch = term({ term: 'belt pitch', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Ashworth'] })
-    const steel = term({ term: 'AISI 316', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Tribelt'] })
+    const steel = term({ term: 'AISI 316', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Tribelt'], tribeltUses: true })
     expect(tribeltTerm(pitch, [pitch, steel])).toBe('Lacks it')
     // Nor is a specification a stand-in for a product name of the same family.
-    const ratio = term({ term: 'turn ratio', language: 'en', family: 'tri_flex_turn_curve', tier: 'spec', usedBy: ['Tribelt'] })
+    const ratio = term({ term: 'turn ratio', language: 'en', family: 'tri_flex_turn_curve', tier: 'spec', usedBy: ['Tribelt'], tribeltUses: true })
     const spiral = term({ term: 'spiral belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'product', usedBy: ['Ashworth'] })
     expect(tribeltTerm(spiral, [spiral, ratio])).toBe('Lacks it')
   })

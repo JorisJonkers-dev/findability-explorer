@@ -1,0 +1,85 @@
+# Warms the caches every pull request starts from. GitHub lets a pull request read the caches of
+# its own branch and of main, and CI never runs on main, so without this each new pull request (a
+# release PR too) installs the toolchain from scratch, about five minutes, and compiles and lints
+# all Go code cold. This job does that once on main instead: after each merge, weekly so the
+# caches outlive GitHub's seven-day eviction, and by hand. It then deletes the main caches it
+# replaced, so only the newest of each kind stays.
+name: Warm caches
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: warm-caches
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    name: Warm caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: write # to delete the caches this run replaced
+    env:
+      GOCACHE: /home/runner/.cache/go-build
+      GOMODCACHE: /home/runner/go/pkg/mod
+      GOLANGCI_LINT_CACHE: /home/runner/.cache/golangci-lint
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The same setup as CI's Check job, so the key it saves is the one Check reads.
+      - uses: jdx/mise-action@v5
+        with:
+          cache: true
+
+      - name: Restore the Go caches
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+            /home/runner/.cache/golangci-lint
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ runner.os }}-
+
+      # What CI compiles and lints, with its flags, so the build cache holds its packages.
+      - name: Compile and lint as CI does
+        run: |
+          set -euo pipefail
+          mise exec -- go mod download
+          mise exec -- golangci-lint run ./...
+          mise exec -- go test -race -count=1 -covermode=atomic -coverpkg=./... -run '^$' ./... > /dev/null
+          mise exec -- task build
+
+      - name: Save the Go caches
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+            /home/runner/.cache/golangci-lint
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+
+      # Keep the newest cache of each kind on main; older ones only take up the repository's 10 GB.
+      - name: Delete the main caches this run replaced
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for prefix in go- mise-v1-; do
+            gh cache list --ref refs/heads/main --key "$prefix" --sort created_at --order desc --limit 100 --json id --jq '.[1:][].id' |
+              while read -r id; do gh cache delete "$id"; done
+          done

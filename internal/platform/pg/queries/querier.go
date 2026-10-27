@@ -69,6 +69,7 @@ type Querier interface {
 	HeartbeatPromptRun(ctx context.Context, arg HeartbeatPromptRunParams) (int64, error)
 	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
+	InsertPromptReviewUsage(ctx context.Context, arg InsertPromptReviewUsageParams) error
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
 	InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error
 	InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error
@@ -101,9 +102,11 @@ type Querier interface {
 	ListPlanTargets(ctx context.Context) ([]PlanTarget, error)
 	ListPlanTicks(ctx context.Context) ([]PlanTick, error)
 	ListPromptAnswerCompanies(ctx context.Context, runID uuid.UUID) ([]ListPromptAnswerCompaniesRow, error)
+	// The text of some answers, to quote what they say around a company's name.
+	ListPromptAnswerTexts(ctx context.Context, ids []uuid.UUID) ([]ListPromptAnswerTextsRow, error)
 	// A run's answers with how they were read; the answer's text only when with_text is true.
 	ListPromptAnswers(ctx context.Context, arg ListPromptAnswersParams) ([]ListPromptAnswersRow, error)
-	ListPromptCandidateChecks(ctx context.Context) ([]PromptCandidateCheck, error)
+	ListPromptCandidateChecks(ctx context.Context) ([]ListPromptCandidateChecksRow, error)
 	ListPromptCandidateDecisions(ctx context.Context) ([]ListPromptCandidateDecisionsRow, error)
 	ListPromptCandidateMerges(ctx context.Context) ([]ListPromptCandidateMergesRow, error)
 	ListPromptRunModels(ctx context.Context, ids []uuid.UUID) ([]ListPromptRunModelsRow, error)
@@ -115,6 +118,7 @@ type Querier interface {
 	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
 	MarkAnalysisRunning(ctx context.Context, id uuid.UUID) error
 	MovePromptSchedule(ctx context.Context, nextDue time.Time) error
+	PromptReviewTokensSince(ctx context.Context, since time.Time) (int64, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)
 	// What answers and extractions cost since a moment, in millionths of a dollar.

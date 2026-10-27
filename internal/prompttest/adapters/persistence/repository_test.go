@@ -202,8 +202,15 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 		t.Errorf("spent later = %d", spent)
 	}
 	sightings, err := repo.Sightings(ctx)
-	if err != nil || len(sightings) != 1 || sightings[0] != (domain.Sighting{Name: "Ashworth", URL: "https://ashworth.com", Provider: "openai", Model: "openai/gpt-oss-20b", At: at}) {
+	if err != nil || len(sightings) != 1 || sightings[0] != (domain.Sighting{AnswerID: read.ID, Name: "Ashworth", URL: "https://ashworth.com", Provider: "openai", Model: "openai/gpt-oss-20b", At: at}) {
 		t.Errorf("sightings = %+v, %v", sightings, err)
+	}
+	texts, err := repo.AnswerTexts(ctx, []uuid.UUID{read.ID, unread.ID, uuid.New()})
+	if err != nil || len(texts) != 2 || texts[read.ID] != "Twentebelt and Ashworth." || texts[unread.ID] != "No idea." {
+		t.Errorf("texts = %+v, %v", texts, err)
+	}
+	if none, err := repo.AnswerTexts(ctx, nil); err != nil || len(none) != 0 {
+		t.Errorf("no texts = %+v, %v", none, err)
 	}
 
 	d := domain.CandidateDecision{ID: domain.CandidateID("ashworth"), Name: "Ashworth", Status: domain.CandidateAdded, CompetitorID: "ashworth", By: "joris", At: at}
@@ -304,8 +311,8 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 	}
 
 	checks := []domain.CompanyVerdict{
-		{CandidateID: "00000000000000a1", Competitor: true, Sure: true, Reason: "Makes metal belts.", Model: "anthropic: claude-haiku-5-5", At: at},
-		{CandidateID: "00000000000000b1", Model: "anthropic: claude-haiku-5-5", At: at},
+		{CandidateID: "00000000000000a1", Competitor: true, Sure: true, Reason: "Makes metal belts.", Model: "anthropic: claude-haiku-5-5", Version: 1, At: at},
+		{CandidateID: "00000000000000b1", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: at},
 	}
 	if err := r.SaveCompanyVerdicts(ctx, checks); err != nil {
 		t.Fatal(err)
@@ -321,5 +328,16 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 	}
 	if err := r.SaveCompanyVerdicts(ctx, []domain.CompanyVerdict{{CandidateID: "not-an-id", Model: "m", At: at}}); err == nil {
 		t.Error("a check on a bad id was stored")
+	}
+
+	// What the review used counts towards the month.
+	if err := r.SaveReviewUsage(ctx, []domain.ReviewUsage{{InputTokens: 900, OutputTokens: 100, At: at}, {InputTokens: 5, OutputTokens: 5, At: at.Add(time.Hour)}}); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := r.ReviewTokensSince(ctx, at); err != nil || n != 1010 {
+		t.Errorf("tokens = %d, %v", n, err)
+	}
+	if n, _ := r.ReviewTokensSince(ctx, at.Add(time.Minute)); n != 10 {
+		t.Errorf("tokens later = %d", n)
 	}
 }

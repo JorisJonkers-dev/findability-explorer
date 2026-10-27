@@ -329,7 +329,7 @@ func (r *Repository) Sightings(ctx context.Context) ([]domain.Sighting, error) {
 	}
 	out := make([]domain.Sighting, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, domain.Sighting{Name: row.Name, URL: row.Url, Provider: row.Provider, Model: row.Model, At: row.AnsweredAt.UTC()})
+		out = append(out, domain.Sighting{AnswerID: row.AnswerID, Name: row.Name, URL: row.Url, Provider: row.Provider, Model: row.Model, At: row.AnsweredAt.UTC()})
 	}
 	return out, nil
 }
@@ -413,7 +413,8 @@ func (r *Repository) CompanyVerdicts(ctx context.Context) ([]domain.CompanyVerdi
 	out := make([]domain.CompanyVerdict, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, domain.CompanyVerdict{
-			CandidateID: row.CandidateID, Competitor: row.Competitor, Sure: row.Sure, Reason: row.Reason, Model: row.Model, At: row.CheckedAt.UTC(),
+			CandidateID: row.CandidateID, Competitor: row.Competitor, Sure: row.Sure, Reason: row.Reason, Model: row.Model,
+			Version: int(row.CheckVersion), At: row.CheckedAt.UTC(),
 		})
 	}
 	return out, nil
@@ -425,13 +426,52 @@ func (r *Repository) SaveCompanyVerdicts(ctx context.Context, verdicts []domain.
 		for _, v := range verdicts {
 			if err := q.SavePromptCandidateCheck(ctx, queries.SavePromptCandidateCheckParams{
 				CandidateID: v.CandidateID, Competitor: v.Competitor, Sure: v.Sure, Reason: clip(v.Reason, 500),
-				Model: clip(v.Model, 200), CheckedAt: v.At,
+				Model: clip(v.Model, 200), CheckVersion: int64(max(v.Version, 1)), CheckedAt: v.At,
 			}); err != nil {
 				return fmt.Errorf("store candidate check: %w", err)
 			}
 		}
 		return nil
 	})
+}
+
+// AnswerTexts returns the text of each answer of ids there is, by id.
+func (r *Repository) AnswerTexts(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
+	out := map[uuid.UUID]string{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := r.store.Queries().ListPromptAnswerTexts(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("select answer texts: %w", err)
+	}
+	for _, row := range rows {
+		out[row.ID] = row.Answer
+	}
+	return out, nil
+}
+
+// SaveReviewUsage stores what requests to the language model for the review consumed.
+func (r *Repository) SaveReviewUsage(ctx context.Context, usage []domain.ReviewUsage) error {
+	return r.store.InTx(ctx, func(q *queries.Queries) error {
+		for _, u := range usage {
+			if err := q.InsertPromptReviewUsage(ctx, queries.InsertPromptReviewUsageParams{
+				InputTokens: max(u.InputTokens, 0), OutputTokens: max(u.OutputTokens, 0), UsedAt: u.At,
+			}); err != nil {
+				return fmt.Errorf("store review usage: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
+// ReviewTokensSince is how many tokens the review of the candidates used since t.
+func (r *Repository) ReviewTokensSince(ctx context.Context, t time.Time) (int64, error) {
+	n, err := r.store.Queries().PromptReviewTokensSince(ctx, t)
+	if err != nil {
+		return 0, fmt.Errorf("sum review tokens: %w", err)
+	}
+	return n, nil
 }
 
 // optionalText is s, or NULL when s is empty.

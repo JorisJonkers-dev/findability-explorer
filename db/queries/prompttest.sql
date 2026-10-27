@@ -150,7 +150,7 @@ SELECT (
 
 -- name: PromptSightings :many
 -- Every name an answer gave that was not matched to a company.
-SELECT c.name, c.url, a.provider, a.model, a.answered_at
+SELECT c.answer_id, c.name, c.url, a.provider, a.model, a.answered_at
 FROM prompt_answer_companies AS c
 JOIN prompt_answers AS a ON a.id = c.answer_id
 WHERE c.competitor_id IS NULL
@@ -183,13 +183,28 @@ ON CONFLICT (candidate_id) DO UPDATE SET
     merged_by = excluded.merged_by, merged_at = excluded.merged_at;
 
 -- name: ListPromptCandidateChecks :many
-SELECT candidate_id, competitor, sure, reason, model, checked_at
+SELECT candidate_id, competitor, sure, reason, model, check_version, checked_at
 FROM prompt_candidate_checks
 ORDER BY checked_at, candidate_id;
 
 -- name: SavePromptCandidateCheck :exec
-INSERT INTO prompt_candidate_checks (candidate_id, competitor, sure, reason, model, checked_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO prompt_candidate_checks (candidate_id, competitor, sure, reason, model, check_version, checked_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (candidate_id) DO UPDATE SET
     competitor = excluded.competitor, sure = excluded.sure, reason = excluded.reason,
-    model = excluded.model, checked_at = excluded.checked_at;
+    model = excluded.model, check_version = excluded.check_version, checked_at = excluded.checked_at;
+
+-- name: ListPromptAnswerTexts :many
+-- The text of some answers, to quote what they say around a company's name.
+SELECT id, answer
+FROM prompt_answers
+WHERE id = ANY(sqlc.arg(ids)::uuid []);
+
+-- name: InsertPromptReviewUsage :exec
+INSERT INTO prompt_review_usage (input_tokens, output_tokens, used_at)
+VALUES (@input_tokens, @output_tokens, @used_at);
+
+-- name: PromptReviewTokensSince :one
+SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+FROM prompt_review_usage
+WHERE used_at >= @since;

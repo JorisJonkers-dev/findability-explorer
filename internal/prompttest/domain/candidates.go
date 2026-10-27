@@ -7,11 +7,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/site"
 )
 
 // Sighting is one name an answer gave that the extractor could not match to the company list.
 type Sighting struct {
+	// AnswerID is the answer that gave the name.
+	AnswerID uuid.UUID
 	Name     string
 	URL      string
 	Provider string
@@ -93,8 +97,11 @@ type Candidate struct {
 	Website  string
 	Members  []Member
 	LastSeen time.Time
+	// Quoted are a few of the answers that name it, to quote what they say around its name.
+	Quoted   []uuid.UUID
 	Decision *CandidateDecision
-	// Verdict is the language model's check of it, once it has one: a suggestion, never a decision.
+	// Verdict is the language model's check of it, once it has one with the current CheckVersion,
+	// or, for a decided candidate, with any version.
 	Verdict *CompanyVerdict
 }
 
@@ -151,6 +158,7 @@ type name struct {
 	models    []string
 	addresses []string
 	sites     map[string]int
+	quoted    []uuid.UUID
 	lastSeen  time.Time
 	// known is true when the list holds the name or its website, or it was merged into a company on it.
 	known bool
@@ -195,6 +203,9 @@ func (n *name) add(s Sighting, directory []DirectoryCompany) {
 	}
 	if d := site.CompanyDomain(s.URL); d != "" {
 		n.sites[d]++
+	}
+	if len(n.quoted) < MaxQuoted && !slices.Contains(n.quoted, s.AnswerID) {
+		n.quoted = append(n.quoted, s.AnswerID)
 	}
 	if s.At.After(n.lastSeen) {
 		n.lastSeen = s.At
@@ -269,6 +280,7 @@ func combine(g []*name, decided map[string]CandidateDecision) (Candidate, bool) 
 			sites[d] += count
 		}
 		c.LastSeen = later(c.LastSeen, n.lastSeen)
+		c.Quoted = quote(c.Quoted, n.quoted)
 		c.Members = append(c.Members, member(n, i, g))
 		c.Decision = newest(c.Decision, decided, n.id)
 	}
@@ -290,6 +302,16 @@ func member(n *name, i int, g []*name) Member {
 		m.Joined = JoinedByModel
 	}
 	return m
+}
+
+// quote is quoted with the answers of more it lacks, up to MaxQuoted.
+func quote(quoted, more []uuid.UUID) []uuid.UUID {
+	for _, id := range more {
+		if len(quoted) < MaxQuoted && !slices.Contains(quoted, id) {
+			quoted = append(quoted, id)
+		}
+	}
+	return quoted
 }
 
 // newest is the newer of current and the decision on id, if there is one.
@@ -439,17 +461,21 @@ func MergesOf(clusters []Cluster, asked []Candidate, directory []DirectoryCompan
 }
 
 // CompanyVerdict is the language model's check of a candidate: whether it is a competitor of
-// Tribelt, whether it is sure, and why. It suggests; a person decides.
+// Tribelt, whether it is sure, and why (ADR-0009). A sure one decides the candidate; an unsure one
+// leaves it to a person.
 type CompanyVerdict struct {
 	CandidateID string
 	Competitor  bool
 	Sure        bool
 	Reason      string
 	Model       string
-	At          time.Time
+	// Version is the CheckVersion that made it.
+	Version int
+	At      time.Time
 }
 
-// WithVerdicts attaches to each candidate the newest verdict on any of its names.
+// WithVerdicts attaches to each candidate the newest verdict on any of its names. A waiting
+// candidate's verdict of an older CheckVersion is left off, so the candidate is checked again.
 func WithVerdicts(candidates []Candidate, verdicts []CompanyVerdict) []Candidate {
 	byID := map[string]CompanyVerdict{}
 	for _, v := range verdicts {
@@ -457,7 +483,11 @@ func WithVerdicts(candidates []Candidate, verdicts []CompanyVerdict) []Candidate
 	}
 	for i, c := range candidates {
 		for _, id := range c.MemberIDs() {
-			if v, ok := byID[id]; ok && (candidates[i].Verdict == nil || v.At.After(candidates[i].Verdict.At)) {
+			v, ok := byID[id]
+			if !ok || (c.Decision == nil && v.Version < CheckVersion) {
+				continue
+			}
+			if candidates[i].Verdict == nil || v.At.After(candidates[i].Verdict.At) {
 				candidates[i].Verdict = &v
 			}
 		}
@@ -477,7 +507,7 @@ func Unchecked(candidates []Candidate) []Candidate {
 }
 
 // CompleteVerdicts keeps the model's verdicts on the candidates it was asked about, one each, in
-// their order, stamped with the model and the time. A candidate it gave none on gets an unsure
+// their order, stamped with the model, the CheckVersion and the time. A candidate it gave none on gets an unsure
 // one without a reason, so it is not asked about again.
 func CompleteVerdicts(asked []Candidate, answered []CompanyVerdict, model string, at time.Time) []CompanyVerdict {
 	out := make([]CompanyVerdict, 0, len(asked))
@@ -486,7 +516,7 @@ func CompleteVerdicts(asked []Candidate, answered []CompanyVerdict, model string
 		if i := slices.IndexFunc(answered, func(a CompanyVerdict) bool { return a.CandidateID == c.ID }); i >= 0 {
 			v = answered[i]
 		}
-		v.Model, v.At = model, at
+		v.Model, v.Version, v.At = model, CheckVersion, at
 		out = append(out, v)
 	}
 	return out

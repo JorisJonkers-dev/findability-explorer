@@ -26,6 +26,7 @@ type repo struct {
 	decisions []domain.CandidateDecision
 	merges    []domain.Merge
 	verdicts  []domain.CompanyVerdict
+	usage     []domain.ReviewUsage
 	failOn    map[string]bool
 	// heartbeatsLeft, when not negative, is how many heartbeats succeed before the run is
 	// taken over by another instance.
@@ -274,7 +275,7 @@ func (r *repo) Sightings(context.Context) ([]domain.Sighting, error) {
 		}
 		for _, c := range a.Extraction.Companies {
 			if c.CompetitorID == "" {
-				out = append(out, domain.Sighting{Name: c.Name, URL: c.URL, Provider: a.Provider, Model: a.Model, At: a.At})
+				out = append(out, domain.Sighting{AnswerID: a.ID, Name: c.Name, URL: c.URL, Provider: a.Provider, Model: a.Model, At: a.At})
 			}
 		}
 	}
@@ -329,6 +330,28 @@ func (r *repo) SaveCompanyVerdicts(_ context.Context, vs []domain.CompanyVerdict
 		return err
 	}
 	r.verdicts = append(r.verdicts, vs...)
+	return nil
+}
+
+func (r *repo) AnswerTexts(_ context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := map[uuid.UUID]string{}
+	for _, a := range r.answers {
+		if slices.Contains(ids, a.ID) {
+			out[a.ID] = a.Text
+		}
+	}
+	return out, r.err("AnswerTexts")
+}
+
+func (r *repo) SaveReviewUsage(_ context.Context, usage []domain.ReviewUsage) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("SaveReviewUsage"); err != nil {
+		return err
+	}
+	r.usage = append(r.usage, usage...)
 	return nil
 }
 

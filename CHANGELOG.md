@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.8.0...v1.9.0) (2026-10-27)
+
+
+### Features
+
+* fold competitor candidates by website, and let Haiku merge and check them ([#65](https://github.com/JorisJonkers-dev/findability-explorer/issues/65)) ([5e74730](https://github.com/JorisJonkers-dev/findability-explorer/commit/5e7473020ceeabd8f0492ce0e7099d6b92bcaddb))
+
 ## [1.8.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.7.0...v1.8.0) (2026-10-27)
 
 

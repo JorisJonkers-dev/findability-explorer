@@ -148,6 +148,10 @@ type Company struct {
 	Host       string
 	AddedBy    string
 	AddedAt    time.Time
+	ArchivedBy pgtype.Text
+	ArchivedAt pgtype.Timestamptz
+	KeptBy     pgtype.Text
+	KeptAt     pgtype.Timestamptz
 }
 
 type CompanyOverride struct {
@@ -159,6 +163,8 @@ type CompanyOverride struct {
 	ArchivedAt pgtype.Timestamptz
 	UpdatedBy  string
 	UpdatedAt  time.Time
+	KeptBy     pgtype.Text
+	KeptAt     pgtype.Timestamptz
 }
 
 type LlmActive struct {
@@ -263,6 +269,16 @@ type PromptCandidateMerge struct {
 	KeptApart    bool
 	MergedBy     string
 	MergedAt     time.Time
+}
+
+type PromptCompanyCheck struct {
+	CompanyID    string
+	Competitor   bool
+	Sure         bool
+	Reason       string
+	Model        string
+	CheckVersion int64
+	CheckedAt    time.Time
 }
 
 type PromptExtraction struct {

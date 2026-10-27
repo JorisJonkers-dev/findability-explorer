@@ -33,6 +33,9 @@ type UseCases interface {
 	Split(ctx context.Context, actor, id string) error
 	StartReview(ctx context.Context) bool
 	ReviewState() app.ReviewState
+	ListChecks(ctx context.Context) ([]domain.ListCheck, int, error)
+	StartListCheck(ctx context.Context) bool
+	ListCheckState() app.ReviewState
 }
 
 // Handler implements the prompt-test operations. Business rules stay in the use cases.
@@ -219,6 +222,31 @@ func (h *Handler) ListCompetitorCandidates(ctx context.Context, params oas.ListC
 func (h *Handler) StartCandidateReview(ctx context.Context) (oas.StartCandidateReviewRes, error) {
 	h.uc.StartReview(ctx)
 	out := toReviewState(h.uc.ReviewState())
+	return &out, nil
+}
+
+// ListCompetitorChecks implements listCompetitorChecks.
+func (h *Handler) ListCompetitorChecks(ctx context.Context) (oas.ListCompetitorChecksRes, error) {
+	checks, unchecked, err := h.uc.ListChecks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]oas.CompetitorCheck, 0, min(len(checks), maxCandidates))
+	for _, c := range checks[:min(len(checks), maxCandidates)] {
+		items = append(items, oas.CompetitorCheck{
+			CompetitorId: oas.CompetitorId(c.CompanyID), Competitor: c.Competitor, Sure: c.Sure, Reason: clip(c.Reason, 500),
+			Model: clip(c.Model, 200), At: c.At,
+		})
+	}
+	return &oas.CompetitorCheckList{
+		Items: items, Unchecked: int32(min(unchecked, 100000)), Review: toReviewState(h.uc.ListCheckState()), //nolint:gosec // at most 100,000
+	}, nil
+}
+
+// StartCompetitorCheck implements startCompetitorCheck.
+func (h *Handler) StartCompetitorCheck(ctx context.Context) (oas.StartCompetitorCheckRes, error) {
+	h.uc.StartListCheck(ctx)
+	out := toReviewState(h.uc.ListCheckState())
 	return &out, nil
 }
 

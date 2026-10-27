@@ -56,14 +56,17 @@ type Gateways interface {
 	Gateway(ctx context.Context, credentialID string) (Gateway, error)
 }
 
-// Directory is the port to the companies context: the companies names are matched to, and
-// adding or removing a competitor candidate's company.
+// Directory is the port to the companies context: the companies names are matched to, adding or
+// removing a competitor candidate's company, and archiving a company on the list.
 type Directory interface {
 	Companies(ctx context.Context) ([]domain.DirectoryCompany, error)
 	// Add adds a company by name and website and returns its id.
 	Add(ctx context.Context, user, name, website string) (string, error)
 	// Remove removes a company Add added.
 	Remove(ctx context.Context, user, id string) error
+	// ArchiveUnlessKept archives a competitor by user and reports whether it did: not when it is
+	// archived already, a person kept it, or it is gone.
+	ArchiveUnlessKept(ctx context.Context, user, id string) (bool, error)
 }
 
 // Repository stores the settings, the runs, their answers and the candidate decisions. The run
@@ -117,6 +120,12 @@ type Repository interface {
 	CompanyVerdicts(ctx context.Context) ([]domain.CompanyVerdict, error)
 	// SaveCompanyVerdicts stores verdicts, each replacing the one on its candidate.
 	SaveCompanyVerdicts(ctx context.Context, verdicts []domain.CompanyVerdict) error
+	// ListChecks returns every check of a company on the list by the language model.
+	ListChecks(ctx context.Context) ([]domain.ListCheck, error)
+	// SaveListChecks stores checks, each replacing the one on its company.
+	SaveListChecks(ctx context.Context, checks []domain.ListCheck) error
+	// Namings returns every name an answer gave, matched or not, the newest answer first.
+	Namings(ctx context.Context) ([]domain.Naming, error)
 	// AnswerTexts returns the text of each answer of ids there is, by id.
 	AnswerTexts(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error)
 	// SaveReviewUsage stores what requests to the language model for the review consumed.

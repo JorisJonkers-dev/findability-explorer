@@ -1428,7 +1428,8 @@ func (s *CandidateNameJoined) UnmarshalText(data []byte) error {
 	}
 }
 
-// Whether Claude Haiku is reviewing the candidates, and why its last review stopped short.
+// Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last
+// run stopped short.
 // Ref: #/components/schemas/CandidateReviewState
 type CandidateReviewState struct {
 	// Whether it is reviewing now.
@@ -1459,6 +1460,7 @@ func (s *CandidateReviewState) SetProblem(val OptCandidateReviewStateProblem) {
 }
 
 func (*CandidateReviewState) startCandidateReviewRes() {}
+func (*CandidateReviewState) startCompetitorCheckRes() {}
 
 // Why its last review stopped short - noKey (no Anthropic key is set up) or failed (the model or its
 // provider failed). Absent when it went well.
@@ -1638,11 +1640,19 @@ func (s *ComparisonGroup) SetMoved(val []TermChange) {
 // Ref: #/components/schemas/Competitor
 type Competitor struct {
 	Role CompanyRole `json:"role"`
-	// True for a researched company an administrator archived: it is left out of the re-scans and the web
-	// app hides it.
-	Archived bool             `json:"archived"`
-	ID       CompetitorId     `json:"id"`
-	Source   CompetitorSource `json:"source"`
+	// True for a company an administrator or Claude Haiku archived: it is left out of the re-scans, its
+	// scans stay, and the web app hides it.
+	Archived bool `json:"archived"`
+	// Who archived it: an administrator, or `language model` for Claude Haiku, which archives a company it
+	// is sure does not compete with Tribelt. Absent unless archived.
+	ArchivedBy OptString `json:"archivedBy"`
+	// When it was archived. Absent unless archived.
+	ArchivedAt OptDateTime `json:"archivedAt"`
+	// The administrator who restored the company or kept it on the list; Claude Haiku never archives it
+	// then. Absent when nobody did.
+	KeptBy OptString        `json:"keptBy"`
+	ID     CompetitorId     `json:"id"`
+	Source CompetitorSource `json:"source"`
 	// The website to visit and to scan; absent when the research found none.
 	WebsiteUrl OptURI `json:"websiteUrl"`
 	// The website's host without "www.", by which scans are matched to the company.
@@ -1677,6 +1687,21 @@ func (s *Competitor) GetRole() CompanyRole {
 // GetArchived returns the value of Archived.
 func (s *Competitor) GetArchived() bool {
 	return s.Archived
+}
+
+// GetArchivedBy returns the value of ArchivedBy.
+func (s *Competitor) GetArchivedBy() OptString {
+	return s.ArchivedBy
+}
+
+// GetArchivedAt returns the value of ArchivedAt.
+func (s *Competitor) GetArchivedAt() OptDateTime {
+	return s.ArchivedAt
+}
+
+// GetKeptBy returns the value of KeptBy.
+func (s *Competitor) GetKeptBy() OptString {
+	return s.KeptBy
 }
 
 // GetID returns the value of ID.
@@ -1757,6 +1782,21 @@ func (s *Competitor) SetRole(val CompanyRole) {
 // SetArchived sets the value of Archived.
 func (s *Competitor) SetArchived(val bool) {
 	s.Archived = val
+}
+
+// SetArchivedBy sets the value of ArchivedBy.
+func (s *Competitor) SetArchivedBy(val OptString) {
+	s.ArchivedBy = val
+}
+
+// SetArchivedAt sets the value of ArchivedAt.
+func (s *Competitor) SetArchivedAt(val OptDateTime) {
+	s.ArchivedAt = val
+}
+
+// SetKeptBy sets the value of KeptBy.
+func (s *Competitor) SetKeptBy(val OptString) {
+	s.KeptBy = val
 }
 
 // SetID sets the value of ID.
@@ -2350,6 +2390,125 @@ func (s *CompetitorCandidateStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Claude Haiku's check of a company on the competitor list against Tribelt's target market. A sure
+// "not a competitor" archives the company unless an administrator kept it.
+// Ref: #/components/schemas/CompetitorCheck
+type CompetitorCheck struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// Whether it takes the company for a competitor of Tribelt.
+	Competitor bool `json:"competitor"`
+	// Whether it was sure.
+	Sure bool `json:"sure"`
+	// Why, in one sentence; empty when it gave no answer for it.
+	Reason string `json:"reason"`
+	// The model that checked it.
+	Model string `json:"model"`
+	// When.
+	At time.Time `json:"at"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CompetitorCheck) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetCompetitor returns the value of Competitor.
+func (s *CompetitorCheck) GetCompetitor() bool {
+	return s.Competitor
+}
+
+// GetSure returns the value of Sure.
+func (s *CompetitorCheck) GetSure() bool {
+	return s.Sure
+}
+
+// GetReason returns the value of Reason.
+func (s *CompetitorCheck) GetReason() string {
+	return s.Reason
+}
+
+// GetModel returns the value of Model.
+func (s *CompetitorCheck) GetModel() string {
+	return s.Model
+}
+
+// GetAt returns the value of At.
+func (s *CompetitorCheck) GetAt() time.Time {
+	return s.At
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CompetitorCheck) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetCompetitor sets the value of Competitor.
+func (s *CompetitorCheck) SetCompetitor(val bool) {
+	s.Competitor = val
+}
+
+// SetSure sets the value of Sure.
+func (s *CompetitorCheck) SetSure(val bool) {
+	s.Sure = val
+}
+
+// SetReason sets the value of Reason.
+func (s *CompetitorCheck) SetReason(val string) {
+	s.Reason = val
+}
+
+// SetModel sets the value of Model.
+func (s *CompetitorCheck) SetModel(val string) {
+	s.Model = val
+}
+
+// SetAt sets the value of At.
+func (s *CompetitorCheck) SetAt(val time.Time) {
+	s.At = val
+}
+
+// Claude Haiku's checks of the companies on the competitor list, and the state of its check.
+// Ref: #/components/schemas/CompetitorCheckList
+type CompetitorCheckList struct {
+	// The checks, one per company.
+	Items []CompetitorCheck `json:"items"`
+	// How many competitors on the list the next check takes.
+	Unchecked int32                `json:"unchecked"`
+	Review    CandidateReviewState `json:"review"`
+}
+
+// GetItems returns the value of Items.
+func (s *CompetitorCheckList) GetItems() []CompetitorCheck {
+	return s.Items
+}
+
+// GetUnchecked returns the value of Unchecked.
+func (s *CompetitorCheckList) GetUnchecked() int32 {
+	return s.Unchecked
+}
+
+// GetReview returns the value of Review.
+func (s *CompetitorCheckList) GetReview() CandidateReviewState {
+	return s.Review
+}
+
+// SetItems sets the value of Items.
+func (s *CompetitorCheckList) SetItems(val []CompetitorCheck) {
+	s.Items = val
+}
+
+// SetUnchecked sets the value of Unchecked.
+func (s *CompetitorCheckList) SetUnchecked(val int32) {
+	s.Unchecked = val
+}
+
+// SetReview sets the value of Review.
+func (s *CompetitorCheckList) SetReview(val CandidateReviewState) {
+	s.Review = val
+}
+
+func (*CompetitorCheckList) listCompetitorChecksRes() {}
+
 // A company with its most recent scans.
 // Ref: #/components/schemas/CompetitorDetail
 type CompetitorDetail struct {
@@ -2517,8 +2676,12 @@ type CompetitorUpdate struct {
 	Name OptString `json:"name"`
 	// The company's new website. Only http and https on a public host.
 	URL OptURI `json:"url"`
-	// True archives a researched company, false restores it.
+	// True archives the company: it leaves the list and the re-scans, and its scans stay. False restores
+	// it, and keeps it: Claude Haiku never archives it again.
 	Archived OptBool `json:"archived"`
+	// True records that the administrator keeps the company on the list, so Claude Haiku never archives
+	// it; false takes that back.
+	Kept OptBool `json:"kept"`
 }
 
 // GetName returns the value of Name.
@@ -2536,6 +2699,11 @@ func (s *CompetitorUpdate) GetArchived() OptBool {
 	return s.Archived
 }
 
+// GetKept returns the value of Kept.
+func (s *CompetitorUpdate) GetKept() OptBool {
+	return s.Kept
+}
+
 // SetName sets the value of Name.
 func (s *CompetitorUpdate) SetName(val OptString) {
 	s.Name = val
@@ -2549,6 +2717,11 @@ func (s *CompetitorUpdate) SetURL(val OptURI) {
 // SetArchived sets the value of Archived.
 func (s *CompetitorUpdate) SetArchived(val OptBool) {
 	s.Archived = val
+}
+
+// SetKept sets the value of Kept.
+func (s *CompetitorUpdate) SetKept(val OptBool) {
+	s.Kept = val
 }
 
 // One page the crawl fetched, with the belt family it is about when that is clear.
@@ -3529,6 +3702,14 @@ func (*ListCompetitorCandidatesForbidden) listCompetitorCandidatesRes() {}
 type ListCompetitorCandidatesUnauthorized ProblemStatusCode
 
 func (*ListCompetitorCandidatesUnauthorized) listCompetitorCandidatesRes() {}
+
+type ListCompetitorChecksForbidden ProblemStatusCode
+
+func (*ListCompetitorChecksForbidden) listCompetitorChecksRes() {}
+
+type ListCompetitorChecksUnauthorized ProblemStatusCode
+
+func (*ListCompetitorChecksUnauthorized) listCompetitorChecksRes() {}
 
 type ListLlmModelsBadGateway ProblemStatusCode
 
@@ -11268,6 +11449,14 @@ func (*StartCandidateReviewForbidden) startCandidateReviewRes() {}
 type StartCandidateReviewUnauthorized ProblemStatusCode
 
 func (*StartCandidateReviewUnauthorized) startCandidateReviewRes() {}
+
+type StartCompetitorCheckForbidden ProblemStatusCode
+
+func (*StartCompetitorCheckForbidden) startCompetitorCheckRes() {}
+
+type StartCompetitorCheckUnauthorized ProblemStatusCode
+
+func (*StartCompetitorCheckUnauthorized) startCompetitorCheckRes() {}
 
 type StartPromptRunConflict ProblemStatusCode
 

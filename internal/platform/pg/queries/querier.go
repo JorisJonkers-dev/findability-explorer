@@ -96,7 +96,7 @@ type Querier interface {
 	ListAnalysisKnownTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKnownTermsRow, error)
 	ListAnalysisPages(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPagesRow, error)
 	ListCompanies(ctx context.Context) ([]Company, error)
-	ListCompanyOverrides(ctx context.Context) ([]CompanyOverride, error)
+	ListCompanyOverrides(ctx context.Context) ([]ListCompanyOverridesRow, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
 	ListPlanTargets(ctx context.Context) ([]PlanTarget, error)
@@ -109,6 +109,7 @@ type Querier interface {
 	ListPromptCandidateChecks(ctx context.Context) ([]ListPromptCandidateChecksRow, error)
 	ListPromptCandidateDecisions(ctx context.Context) ([]ListPromptCandidateDecisionsRow, error)
 	ListPromptCandidateMerges(ctx context.Context) ([]ListPromptCandidateMergesRow, error)
+	ListPromptCompanyChecks(ctx context.Context) ([]PromptCompanyCheck, error)
 	ListPromptRunModels(ctx context.Context, ids []uuid.UUID) ([]ListPromptRunModelsRow, error)
 	ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRunsRow, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
@@ -118,6 +119,9 @@ type Querier interface {
 	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
 	MarkAnalysisRunning(ctx context.Context, id uuid.UUID) error
 	MovePromptSchedule(ctx context.Context, nextDue time.Time) error
+	// Every name an answer gave, matched or not, the newest answer first: what the answers say of a
+	// company on the list.
+	PromptNamings(ctx context.Context) ([]PromptNamingsRow, error)
 	PromptReviewTokensSince(ctx context.Context, since time.Time) (int64, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)
@@ -129,6 +133,7 @@ type Querier interface {
 	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
 	SavePromptCandidateCheck(ctx context.Context, arg SavePromptCandidateCheckParams) error
 	SavePromptCandidateMerge(ctx context.Context, arg SavePromptCandidateMergeParams) error
+	SavePromptCompanyCheck(ctx context.Context, arg SavePromptCompanyCheckParams) error
 	SavePromptSettings(ctx context.Context, arg SavePromptSettingsParams) error
 	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
@@ -142,6 +147,7 @@ type Querier interface {
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UntickPlanImprovement(ctx context.Context, improvementID string) error
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error
+	// An added company's name and website, whether it is archived, and whether a person kept it.
 	UpdateCompany(ctx context.Context, arg UpdateCompanyParams) (int64, error)
 	UpsertAccount(ctx context.Context, arg UpsertAccountParams) (int64, error)
 	UpsertCompanyOverride(ctx context.Context, arg UpsertCompanyOverrideParams) error

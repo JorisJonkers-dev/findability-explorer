@@ -409,14 +409,18 @@ func (m Matcher) Rematch(x Extraction) Extraction {
 		if c.CompetitorID != "" {
 			continue
 		}
-		id := Match(Named{Name: c.Name, URL: c.URL}, m.directory)
-		if id == "" {
-			id = m.aliases[CandidateID(NameKey(c.Name))]
-		}
-		companies[i].CompetitorID = id
+		companies[i].CompetitorID = m.Match(c.Name, c.URL)
 	}
 	x.Companies = companies
 	return x
+}
+
+// Match is the id of the company on the list that name, given with url, is, or "".
+func (m Matcher) Match(name, url string) string {
+	if id := Match(Named{Name: name, URL: url}, m.directory); id != "" {
+		return id
+	}
+	return m.aliases[CandidateID(NameKey(name))]
 }
 
 // Cluster is what the language model found of some candidates: one company, and the company on

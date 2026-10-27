@@ -92,9 +92,10 @@ type Invoker interface {
 	DecideCompetitorCandidates(ctx context.Context, request *CandidateDecisions) (DecideCompetitorCandidatesRes, error)
 	// DeleteCompetitor invokes deleteCompetitor operation.
 	//
-	// Administrators only. An added company is deleted with every scan of it. A researched company is the
-	// desk research's record and is archived instead: it leaves the list and the re-scans, its scans stay,
-	// and updateCompetitor restores it. Refused with 409 while a scan of the company is queued or running.
+	// Administrators only. An added company is deleted with every scan of it; updateCompetitor archives
+	// one and keeps its scans instead. A researched company is the desk research's record and is archived:
+	// it leaves the list and the re-scans, its scans stay, and updateCompetitor restores it. Refused with
+	// 409 while a scan of the company is queued or running.
 	//
 	// DELETE /api/v1/competitors/{competitorId}
 	DeleteCompetitor(ctx context.Context, params DeleteCompetitorParams) (DeleteCompetitorRes, error)
@@ -248,6 +249,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/admin/competitor-candidates
 	ListCompetitorCandidates(ctx context.Context, params ListCompetitorCandidatesParams) (ListCompetitorCandidatesRes, error)
+	// ListCompetitorChecks invokes listCompetitorChecks operation.
+	//
+	// Administrators only. Claude Haiku's check of each competitor on the list against Tribelt's target
+	// market, as for a candidate. A check made before the current version of the check is left out for a
+	// company still on the list and not kept, since the next check makes it again. With how many companies
+	// wait for a check, and whether a check runs.
+	//
+	// GET /api/v1/admin/competitor-checks
+	ListCompetitorChecks(ctx context.Context) (ListCompetitorChecksRes, error)
 	// ListCompetitors invokes listCompetitors operation.
 	//
 	// Returns every company the research studied and every company added since, with its names for each
@@ -347,6 +357,17 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/competitor-candidates/review
 	StartCandidateReview(ctx context.Context) (StartCandidateReviewRes, error)
+	// StartCompetitorCheck invokes startCompetitorCheck operation.
+	//
+	// Administrators only. In the background, Claude Haiku on an Anthropic key checks each competitor on
+	// the list that is not archived, that no administrator kept, and that it has not checked with the
+	// current version of the check, against Tribelt's target market, from its names, its website, its home
+	// page and what the answers say of it. A company it is sure does not compete is archived by
+	// `language model`; an unsure one stays on the list for an administrator; Tribelt, the mirror and
+	// group companies are never checked. Returns the check's state; running already is no error.
+	//
+	// POST /api/v1/admin/competitor-checks
+	StartCompetitorCheck(ctx context.Context) (StartCompetitorCheckRes, error)
 	// StartPromptRun invokes startPromptRun operation.
 	//
 	// Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
@@ -416,9 +437,11 @@ type Invoker interface {
 	UndoTermDecision(ctx context.Context, params UndoTermDecisionParams) (UndoTermDecisionRes, error)
 	// UpdateCompetitor invokes updateCompetitor operation.
 	//
-	// Administrators only. Changes the name or website of a company, or archives or restores a researched
-	// one. A researched company keeps the research's record; the change is stored beside it. A website
-	// whose host another company has is refused with 409.
+	// Administrators only. Changes the name or website of a company, archives or restores it, or records
+	// that an administrator keeps it on the list. An archived company leaves the list and the re-scans and
+	// keeps its scans. A restored or kept company is never archived by Claude Haiku. A researched company
+	// keeps the research's record; the change is stored beside it. A website whose host another company
+	// has is refused with 409.
 	//
 	// PATCH /api/v1/competitors/{competitorId}
 	UpdateCompetitor(ctx context.Context, request *CompetitorUpdate, params UpdateCompetitorParams) (UpdateCompetitorRes, error)
@@ -1514,9 +1537,10 @@ func (c *Client) sendDecideCompetitorCandidates(ctx context.Context, request *Ca
 
 // DeleteCompetitor invokes deleteCompetitor operation.
 //
-// Administrators only. An added company is deleted with every scan of it. A researched company is the
-// desk research's record and is archived instead: it leaves the list and the re-scans, its scans stay,
-// and updateCompetitor restores it. Refused with 409 while a scan of the company is queued or running.
+// Administrators only. An added company is deleted with every scan of it; updateCompetitor archives
+// one and keeps its scans instead. A researched company is the desk research's record and is archived:
+// it leaves the list and the re-scans, its scans stay, and updateCompetitor restores it. Refused with
+// 409 while a scan of the company is queued or running.
 //
 // DELETE /api/v1/competitors/{competitorId}
 func (c *Client) DeleteCompetitor(ctx context.Context, params DeleteCompetitorParams) (DeleteCompetitorRes, error) {
@@ -4018,6 +4042,122 @@ func (c *Client) sendListCompetitorCandidates(ctx context.Context, params ListCo
 	return result, nil
 }
 
+// ListCompetitorChecks invokes listCompetitorChecks operation.
+//
+// Administrators only. Claude Haiku's check of each competitor on the list against Tribelt's target
+// market, as for a candidate. A check made before the current version of the check is left out for a
+// company still on the list and not kept, since the next check makes it again. With how many companies
+// wait for a check, and whether a check runs.
+//
+// GET /api/v1/admin/competitor-checks
+func (c *Client) ListCompetitorChecks(ctx context.Context) (ListCompetitorChecksRes, error) {
+	res, err := c.sendListCompetitorChecks(ctx)
+	return res, err
+}
+
+func (c *Client) sendListCompetitorChecks(ctx context.Context) (res ListCompetitorChecksRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listCompetitorChecks"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-checks"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCompetitorChecksOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/competitor-checks"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListCompetitorChecksOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCompetitorChecksResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListCompetitors invokes listCompetitors operation.
 //
 // Returns every company the research studied and every company added since, with its names for each
@@ -5716,6 +5856,124 @@ func (c *Client) sendStartCandidateReview(ctx context.Context) (res StartCandida
 	return result, nil
 }
 
+// StartCompetitorCheck invokes startCompetitorCheck operation.
+//
+// Administrators only. In the background, Claude Haiku on an Anthropic key checks each competitor on
+// the list that is not archived, that no administrator kept, and that it has not checked with the
+// current version of the check, against Tribelt's target market, from its names, its website, its home
+// page and what the answers say of it. A company it is sure does not compete is archived by
+// `language model`; an unsure one stays on the list for an administrator; Tribelt, the mirror and
+// group companies are never checked. Returns the check's state; running already is no error.
+//
+// POST /api/v1/admin/competitor-checks
+func (c *Client) StartCompetitorCheck(ctx context.Context) (StartCompetitorCheckRes, error) {
+	res, err := c.sendStartCompetitorCheck(ctx)
+	return res, err
+}
+
+func (c *Client) sendStartCompetitorCheck(ctx context.Context) (res StartCompetitorCheckRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("startCompetitorCheck"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-checks"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StartCompetitorCheckOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/competitor-checks"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, StartCompetitorCheckOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStartCompetitorCheckResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // StartPromptRun invokes startPromptRun operation.
 //
 // Administrators only. Starts a Prompt run: every prompt of the prompt set, asked of the cheapest
@@ -6731,9 +6989,11 @@ func (c *Client) sendUndoTermDecision(ctx context.Context, params UndoTermDecisi
 
 // UpdateCompetitor invokes updateCompetitor operation.
 //
-// Administrators only. Changes the name or website of a company, or archives or restores a researched
-// one. A researched company keeps the research's record; the change is stored beside it. A website
-// whose host another company has is refused with 409.
+// Administrators only. Changes the name or website of a company, archives or restores it, or records
+// that an administrator keeps it on the list. An archived company leaves the list and the re-scans and
+// keeps its scans. A restored or kept company is never archived by Claude Haiku. A researched company
+// keeps the research's record; the change is stored beside it. A website whose host another company
+// has is refused with 409.
 //
 // PATCH /api/v1/competitors/{competitorId}
 func (c *Client) UpdateCompetitor(ctx context.Context, request *CompetitorUpdate, params UpdateCompetitorParams) (UpdateCompetitorRes, error) {

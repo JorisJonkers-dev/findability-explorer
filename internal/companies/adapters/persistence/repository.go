@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -40,6 +41,8 @@ func (r *Repository) List(ctx context.Context) ([]domain.Company, error) {
 		out = append(out, domain.Company{
 			ID: row.ID, Source: domain.SourceAdded, Name: row.Name, Website: row.WebsiteUrl, URL: u,
 			Host: row.Host, AddedBy: row.AddedBy, AddedAt: row.AddedAt.UTC(),
+			Archived: row.ArchivedAt.Valid, ArchivedBy: row.ArchivedBy.String, ArchivedAt: at(row.ArchivedAt),
+			KeptBy: row.KeptBy.String, KeptAt: at(row.KeptAt),
 		})
 	}
 	return out, nil
@@ -55,9 +58,17 @@ func (r *Repository) Add(ctx context.Context, c domain.Company) error {
 	return nil
 }
 
-// Update stores an added company's new name and website.
+// Update stores an added company's name and website, whether it is archived, and who kept it.
 func (r *Repository) Update(ctx context.Context, c domain.Company) error {
-	n, err := r.q.UpdateCompany(ctx, queries.UpdateCompanyParams{ID: c.ID, Name: c.Name, WebsiteUrl: c.URL.String(), Host: c.Host})
+	archivedBy, archivedAt := "", time.Time{}
+	if c.Archived {
+		archivedBy, archivedAt = c.ArchivedBy, c.ArchivedAt
+	}
+	n, err := r.q.UpdateCompany(ctx, queries.UpdateCompanyParams{
+		ID: c.ID, Name: c.Name, WebsiteUrl: c.URL.String(), Host: c.Host,
+		ArchivedBy: optional(archivedBy), ArchivedAt: timestamp(archivedAt),
+		KeptBy: optional(c.KeptBy), KeptAt: timestamp(c.KeptAt),
+	})
 	if err != nil {
 		return fmt.Errorf("update company: %w", err)
 	}
@@ -89,15 +100,13 @@ func (r *Repository) Overrides(ctx context.Context) ([]domain.Override, error) {
 	for _, row := range rows {
 		o := domain.Override{
 			ID: row.ID, Name: row.Name.String, Host: row.Host.String, ArchivedBy: row.ArchivedBy.String,
+			ArchivedAt: at(row.ArchivedAt), KeptBy: row.KeptBy.String, KeptAt: at(row.KeptAt),
 			UpdatedBy: row.UpdatedBy, UpdatedAt: row.UpdatedAt.UTC(),
 		}
 		if row.WebsiteUrl.Valid {
 			if o.Website, err = url.Parse(row.WebsiteUrl.String); err != nil {
 				return nil, fmt.Errorf("company change %s: website: %w", row.ID, err)
 			}
-		}
-		if row.ArchivedAt.Valid {
-			o.ArchivedAt = row.ArchivedAt.Time.UTC()
 		}
 		out = append(out, o)
 	}
@@ -112,7 +121,8 @@ func (r *Repository) SaveOverride(ctx context.Context, o domain.Override) error 
 	}
 	if err := r.q.UpsertCompanyOverride(ctx, queries.UpsertCompanyOverrideParams{
 		ID: o.ID, Name: optional(o.Name), WebsiteUrl: optional(website), Host: optional(o.Host),
-		ArchivedBy: optional(o.ArchivedBy), ArchivedAt: pgtype.Timestamptz{Time: o.ArchivedAt, Valid: !o.ArchivedAt.IsZero()},
+		ArchivedBy: optional(o.ArchivedBy), ArchivedAt: timestamp(o.ArchivedAt),
+		KeptBy: optional(o.KeptBy), KeptAt: timestamp(o.KeptAt),
 		UpdatedBy: o.UpdatedBy, UpdatedAt: o.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("upsert company change: %w", err)
@@ -121,3 +131,16 @@ func (r *Repository) SaveOverride(ctx context.Context, o domain.Override) error 
 }
 
 func optional(s string) pgtype.Text { return pgtype.Text{String: s, Valid: s != ""} }
+
+// timestamp is t, or NULL for the zero time.
+func timestamp(t time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: t, Valid: !t.IsZero()}
+}
+
+// at is a stored time in UTC, or the zero time for NULL.
+func at(t pgtype.Timestamptz) time.Time {
+	if !t.Valid {
+		return time.Time{}
+	}
+	return t.Time.UTC()
+}

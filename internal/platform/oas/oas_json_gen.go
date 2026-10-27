@@ -3473,6 +3473,24 @@ func (s *Competitor) encodeFields(e *jx.Encoder) {
 		e.Bool(s.Archived)
 	}
 	{
+		if s.ArchivedBy.Set {
+			e.FieldStart("archivedBy")
+			s.ArchivedBy.Encode(e)
+		}
+	}
+	{
+		if s.ArchivedAt.Set {
+			e.FieldStart("archivedAt")
+			s.ArchivedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.KeptBy.Set {
+			e.FieldStart("keptBy")
+			s.KeptBy.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("id")
 		s.ID.Encode(e)
 	}
@@ -3546,23 +3564,26 @@ func (s *Competitor) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCompetitor = [16]string{
+var jsonFieldsNameOfCompetitor = [19]string{
 	0:  "role",
 	1:  "archived",
-	2:  "id",
-	3:  "source",
-	4:  "websiteUrl",
-	5:  "host",
-	6:  "scans",
-	7:  "lastScan",
-	8:  "addedAt",
-	9:  "name",
-	10: "country",
-	11: "website",
-	12: "languages",
-	13: "groupCompany",
-	14: "beltNames",
-	15: "homepageTitle",
+	2:  "archivedBy",
+	3:  "archivedAt",
+	4:  "keptBy",
+	5:  "id",
+	6:  "source",
+	7:  "websiteUrl",
+	8:  "host",
+	9:  "scans",
+	10: "lastScan",
+	11: "addedAt",
+	12: "name",
+	13: "country",
+	14: "website",
+	15: "languages",
+	16: "groupCompany",
+	17: "beltNames",
+	18: "homepageTitle",
 }
 
 // Decode decodes Competitor from json.
@@ -3570,7 +3591,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode Competitor to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [3]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -3596,8 +3617,38 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"archived\"")
 			}
+		case "archivedBy":
+			if err := func() error {
+				s.ArchivedBy.Reset()
+				if err := s.ArchivedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"archivedBy\"")
+			}
+		case "archivedAt":
+			if err := func() error {
+				s.ArchivedAt.Reset()
+				if err := s.ArchivedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"archivedAt\"")
+			}
+		case "keptBy":
+			if err := func() error {
+				s.KeptBy.Reset()
+				if err := s.KeptBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"keptBy\"")
+			}
 		case "id":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.ID.Decode(d); err != nil {
 					return err
@@ -3607,7 +3658,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "source":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Source.Decode(d); err != nil {
 					return err
@@ -3637,7 +3688,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"host\"")
 			}
 		case "scans":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Int32()
 				s.Scans = int32(v)
@@ -3669,7 +3720,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"addedAt\"")
 			}
 		case "name":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -3681,7 +3732,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "country":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := d.Str()
 				s.Country = string(v)
@@ -3693,7 +3744,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"country\"")
 			}
 		case "website":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.Website = string(v)
@@ -3705,7 +3756,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"website\"")
 			}
 		case "languages":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				s.Languages = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3725,7 +3776,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"languages\"")
 			}
 		case "groupCompany":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := d.Bool()
 				s.GroupCompany = bool(v)
@@ -3737,7 +3788,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"groupCompany\"")
 			}
 		case "beltNames":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				s.BeltNames = make([]BeltName, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3755,7 +3806,7 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"beltNames\"")
 			}
 		case "homepageTitle":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.HomepageTitle = string(v)
@@ -3775,9 +3826,10 @@ func (s *Competitor) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
-		0b01001111,
-		0b11111110,
+	for i, mask := range [3]uint8{
+		0b01100011,
+		0b11110010,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5124,6 +5176,323 @@ func (s *CompetitorCandidateStatus) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *CompetitorCheck) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *CompetitorCheck) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("competitorId")
+		s.CompetitorId.Encode(e)
+	}
+	{
+		e.FieldStart("competitor")
+		e.Bool(s.Competitor)
+	}
+	{
+		e.FieldStart("sure")
+		e.Bool(s.Sure)
+	}
+	{
+		e.FieldStart("reason")
+		e.Str(s.Reason)
+	}
+	{
+		e.FieldStart("model")
+		e.Str(s.Model)
+	}
+	{
+		e.FieldStart("at")
+		json.EncodeDateTime(e, s.At)
+	}
+}
+
+var jsonFieldsNameOfCompetitorCheck = [6]string{
+	0: "competitorId",
+	1: "competitor",
+	2: "sure",
+	3: "reason",
+	4: "model",
+	5: "at",
+}
+
+// Decode decodes CompetitorCheck from json.
+func (s *CompetitorCheck) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CompetitorCheck to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "competitorId":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.CompetitorId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"competitorId\"")
+			}
+		case "competitor":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Bool()
+				s.Competitor = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"competitor\"")
+			}
+		case "sure":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.Sure = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"sure\"")
+			}
+		case "reason":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Reason = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reason\"")
+			}
+		case "model":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.Model = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"model\"")
+			}
+		case "at":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.At = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CompetitorCheck")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfCompetitorCheck) {
+					name = jsonFieldsNameOfCompetitorCheck[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *CompetitorCheck) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CompetitorCheck) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *CompetitorCheckList) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *CompetitorCheckList) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("items")
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("unchecked")
+		e.Int32(s.Unchecked)
+	}
+	{
+		e.FieldStart("review")
+		s.Review.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfCompetitorCheckList = [3]string{
+	0: "items",
+	1: "unchecked",
+	2: "review",
+}
+
+// Decode decodes CompetitorCheckList from json.
+func (s *CompetitorCheckList) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CompetitorCheckList to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "items":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Items = make([]CompetitorCheck, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem CompetitorCheck
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"items\"")
+			}
+		case "unchecked":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int32()
+				s.Unchecked = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"unchecked\"")
+			}
+		case "review":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Review.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"review\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CompetitorCheckList")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfCompetitorCheckList) {
+					name = jsonFieldsNameOfCompetitorCheckList[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *CompetitorCheckList) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CompetitorCheckList) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *CompetitorDetail) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -5641,12 +6010,19 @@ func (s *CompetitorUpdate) encodeFields(e *jx.Encoder) {
 			s.Archived.Encode(e)
 		}
 	}
+	{
+		if s.Kept.Set {
+			e.FieldStart("kept")
+			s.Kept.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCompetitorUpdate = [3]string{
+var jsonFieldsNameOfCompetitorUpdate = [4]string{
 	0: "name",
 	1: "url",
 	2: "archived",
+	3: "kept",
 }
 
 // Decode decodes CompetitorUpdate from json.
@@ -5688,6 +6064,16 @@ func (s *CompetitorUpdate) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"archived\"")
+			}
+		case "kept":
+			if err := func() error {
+				s.Kept.Reset()
+				if err := s.Kept.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"kept\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

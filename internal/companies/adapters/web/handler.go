@@ -134,6 +134,9 @@ func (h *Handler) UpdateCompetitor(ctx context.Context, req *oas.CompetitorUpdat
 	if v, ok := req.Archived.Get(); ok {
 		ch.Archived = &v
 	}
+	if v, ok := req.Kept.Get(); ok {
+		ch.Kept = &v
+	}
 	l, err := h.uc.Update(ctx, httpx.Subject(ctx), string(params.CompetitorId), ch)
 	var known domain.AlreadyKnownError
 	switch {
@@ -141,7 +144,7 @@ func (h *Handler) UpdateCompetitor(ctx context.Context, req *oas.CompetitorUpdat
 		return &oas.UpdateCompetitorNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No company has this id.")}, nil
 	case errors.As(err, &known):
 		return &oas.UpdateCompetitorConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, known.Error()+".")}, nil
-	case errors.Is(err, domain.ErrInvalidName), errors.Is(err, domain.ErrInvalidWebsite), errors.Is(err, domain.ErrNotArchivable):
+	case errors.Is(err, domain.ErrInvalidName), errors.Is(err, domain.ErrInvalidWebsite):
 		return &oas.UpdateCompetitorUnprocessableEntity{
 			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, sentence(err)),
 		}, nil
@@ -168,7 +171,7 @@ func (h *Handler) DeleteCompetitor(ctx context.Context, params oas.DeleteCompeti
 
 // sentence is the first rule err breaks, as a sentence: the domain's errors are lower case.
 func sentence(err error) string {
-	for _, known := range []error{domain.ErrInvalidName, domain.ErrInvalidWebsite, domain.ErrNotArchivable, app.ErrScanActive} {
+	for _, known := range []error{domain.ErrInvalidName, domain.ErrInvalidWebsite, app.ErrScanActive} {
 		if errors.Is(err, known) {
 			msg := known.Error()
 			return strings.ToUpper(msg[:1]) + msg[1:] + "."
@@ -208,6 +211,13 @@ func toCompetitor(l domain.Listed) oas.Competitor {
 	}
 	if !l.AddedAt.IsZero() {
 		c.AddedAt = oas.NewOptDateTime(l.AddedAt)
+	}
+	if l.Archived {
+		c.ArchivedBy = oas.NewOptString(l.ArchivedBy)
+		c.ArchivedAt = oas.NewOptDateTime(l.ArchivedAt)
+	}
+	if l.KeptBy != "" {
+		c.KeptBy = oas.NewOptString(l.KeptBy)
 	}
 	return c
 }

@@ -222,8 +222,52 @@ func TestUpdateAnAddedCompany(t *testing.T) {
 	if err != nil || l.Name != "Example Belts" || l.Host != "example-belts.com" || r.added[0].Host != "example-belts.com" {
 		t.Fatalf("Update = %+v, %v", l, err)
 	}
-	if _, err := service(added(), scans{}).Update(t.Context(), "admin", "example", domain.Change{Archived: ptr(true)}); !errors.Is(err, domain.ErrNotArchivable) {
-		t.Fatalf("archiving an added company = %v", err)
+	// An added company is archived in its row, and keeps its scans; restoring it keeps it.
+	r = added()
+	l, err = service(r, scans{}).Update(t.Context(), "admin", "example", domain.Change{Archived: ptr(true)})
+	if err != nil || !l.Archived || !r.added[0].Archived || r.added[0].ArchivedBy != "admin" || len(r.deleted) != 0 {
+		t.Fatalf("archiving an added company = %+v, %v, %+v", l, err, r)
+	}
+	l, err = service(r, scans{}).Update(t.Context(), "joris", "example", domain.Change{Archived: ptr(false)})
+	if err != nil || l.Archived || r.added[0].KeptBy != "joris" {
+		t.Fatalf("restoring an added company = %+v, %v", l, err)
+	}
+}
+
+func TestArchiveUnlessKept(t *testing.T) {
+	r := added()
+	svc := service(r, scans{})
+	if ok, err := svc.ArchiveUnlessKept(t.Context(), "language model", "example"); err != nil || !ok || r.added[0].ArchivedBy != "language model" {
+		t.Fatalf("ArchiveUnlessKept(added) = %v, %v, %+v", ok, err, r.added)
+	}
+	if ok, err := svc.ArchiveUnlessKept(t.Context(), "language model", "example"); err != nil || ok {
+		t.Fatalf("ArchiveUnlessKept(archived) = %v, %v", ok, err)
+	}
+	if ok, err := svc.ArchiveUnlessKept(t.Context(), "language model", "tribelt"); err != nil || ok {
+		t.Fatalf("ArchiveUnlessKept(Tribelt) = %v, %v", ok, err)
+	}
+	research := &repo{}
+	if ok, err := service(research, scans{}).ArchiveUnlessKept(t.Context(), "language model", "twentebelt"); err != nil || !ok ||
+		research.overrides[0].ArchivedBy != "language model" {
+		t.Fatalf("ArchiveUnlessKept(researched) = %v, %v, %+v", ok, err, research.overrides)
+	}
+	kept := &repo{overrides: []domain.Override{{ID: "twentebelt", KeptBy: "joris", KeptAt: now}}}
+	if ok, err := service(kept, scans{}).ArchiveUnlessKept(t.Context(), "language model", "twentebelt"); err != nil || ok {
+		t.Fatalf("ArchiveUnlessKept(kept) = %v, %v", ok, err)
+	}
+	cases := map[string]struct {
+		repo *repo
+		id   string
+		want error
+	}{
+		"an unknown company": {added(), "nobody", domain.ErrNotFound},
+		"a failing list":     {&repo{listErrAfter: 1}, "example", errBoom},
+		"a failing update":   {&repo{added: added().added, changeErr: errBoom}, "example", errBoom},
+	}
+	for name, c := range cases {
+		if _, err := service(c.repo, scans{}).ArchiveUnlessKept(t.Context(), "u", c.id); !errors.Is(err, c.want) {
+			t.Errorf("%s: ArchiveUnlessKept = %v, want %v", name, err, c.want)
+		}
 	}
 }
 

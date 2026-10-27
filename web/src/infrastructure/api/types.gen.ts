@@ -123,9 +123,21 @@ export type CompetitorSource = 'research' | 'added';
 export type Competitor = {
     role: CompanyRole;
     /**
-     * True for a researched company an administrator archived: it is left out of the re-scans and the web app hides it.
+     * True for a company an administrator or Claude Haiku archived: it is left out of the re-scans, its scans stay, and the web app hides it.
      */
     archived: boolean;
+    /**
+     * Who archived it: an administrator, or `language model` for Claude Haiku, which archives a company it is sure does not compete with Tribelt. Absent unless archived.
+     */
+    archivedBy?: string;
+    /**
+     * When it was archived. Absent unless archived.
+     */
+    archivedAt?: string;
+    /**
+     * The administrator who restored the company or kept it on the list; Claude Haiku never archives it then. Absent when nobody did.
+     */
+    keptBy?: string;
     id: CompetitorId;
     source: CompetitorSource;
     /**
@@ -844,9 +856,13 @@ export type CompetitorUpdate = {
      */
     url?: string;
     /**
-     * True archives a researched company, false restores it.
+     * True archives the company: it leaves the list and the re-scans, and its scans stay. False restores it, and keeps it: Claude Haiku never archives it again.
      */
     archived?: boolean;
+    /**
+     * True records that the administrator keeps the company on the list, so Claude Haiku never archives it; false takes that back.
+     */
+    kept?: boolean;
 };
 
 /**
@@ -2769,7 +2785,7 @@ export type CandidateCheck = {
 };
 
 /**
- * Whether Claude Haiku is reviewing the candidates, and why its last review stopped short.
+ * Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last run stopped short.
  */
 export type CandidateReviewState = {
     /**
@@ -2845,6 +2861,48 @@ export type CompetitorCandidateCounts = {
      * Dismissed ones.
      */
     dismissed: number;
+};
+
+/**
+ * Claude Haiku's check of a company on the competitor list against Tribelt's target market. A sure "not a competitor" archives the company unless an administrator kept it.
+ */
+export type CompetitorCheck = {
+    competitorId: CompetitorId;
+    /**
+     * Whether it takes the company for a competitor of Tribelt.
+     */
+    competitor: boolean;
+    /**
+     * Whether it was sure.
+     */
+    sure: boolean;
+    /**
+     * Why, in one sentence; empty when it gave no answer for it.
+     */
+    reason: string;
+    /**
+     * The model that checked it.
+     */
+    model: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * Claude Haiku's checks of the companies on the competitor list, and the state of its check.
+ */
+export type CompetitorCheckList = {
+    /**
+     * The checks, one per company.
+     */
+    items: Array<CompetitorCheck>;
+    /**
+     * How many competitors on the list the next check takes.
+     */
+    unchecked: number;
+    review: CandidateReviewState;
 };
 
 /**
@@ -4398,6 +4456,72 @@ export type StartCandidateReviewResponses = {
 };
 
 export type StartCandidateReviewResponse = StartCandidateReviewResponses[keyof StartCandidateReviewResponses];
+
+export type ListCompetitorChecksData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-checks';
+};
+
+export type ListCompetitorChecksErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListCompetitorChecksError = ListCompetitorChecksErrors[keyof ListCompetitorChecksErrors];
+
+export type ListCompetitorChecksResponses = {
+    /**
+     * The checks.
+     */
+    200: CompetitorCheckList;
+};
+
+export type ListCompetitorChecksResponse = ListCompetitorChecksResponses[keyof ListCompetitorChecksResponses];
+
+export type StartCompetitorCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-checks';
+};
+
+export type StartCompetitorCheckErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartCompetitorCheckError = StartCompetitorCheckErrors[keyof StartCompetitorCheckErrors];
+
+export type StartCompetitorCheckResponses = {
+    /**
+     * The check is under way.
+     */
+    202: CandidateReviewState;
+};
+
+export type StartCompetitorCheckResponse = StartCompetitorCheckResponses[keyof StartCompetitorCheckResponses];
 
 export type DecideCompetitorCandidatesData = {
     /**

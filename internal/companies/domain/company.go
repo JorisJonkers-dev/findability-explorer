@@ -42,8 +42,6 @@ var (
 	ErrInvalidWebsite = errors.New("a company's website is an http or https address on a public host")
 	// ErrNotFound is returned for a company id nobody knows.
 	ErrNotFound = errors.New("no such company")
-	// ErrNotArchivable is returned when archiving an added company, which is removed instead.
-	ErrNotArchivable = errors.New("only a researched company is archived; an added one is removed")
 )
 
 // AlreadyKnownError is returned when a website's host belongs to a known company.
@@ -85,14 +83,20 @@ type Company struct {
 	AddedAt       time.Time // zero for a researched company
 	// Mirror is true for the group's mirror of tribelt.nl (Mirror).
 	Mirror bool
-	// Archived is true for a researched company an administrator archived.
+	// Archived is true for a company an administrator or the language model archived: it leaves
+	// the list and the re-scans, and its scans stay.
 	Archived   bool
 	ArchivedBy string
 	ArchivedAt time.Time
+	// KeptBy is the person who restored the company or kept it on the list, so it is never
+	// archived automatically (ArchiveUnlessKept); "" when nobody did.
+	KeptBy string
+	KeptAt time.Time
 }
 
 // Override is an administrator's change to a researched company, which the binary embeds and
-// never changes: another name or website, or archived. Empty fields keep the research's value.
+// never changes: another name or website, archived, or kept by a person. Empty fields keep the
+// research's value.
 type Override struct {
 	ID         string
 	Name       string
@@ -100,6 +104,8 @@ type Override struct {
 	Host       string
 	ArchivedBy string
 	ArchivedAt time.Time // zero unless archived
+	KeptBy     string
+	KeptAt     time.Time // zero unless kept
 	UpdatedBy  string
 	UpdatedAt  time.Time
 }
@@ -115,6 +121,9 @@ func NewOverride(original, changed Company, by string, at time.Time) Override {
 	}
 	if changed.Archived {
 		o.ArchivedBy, o.ArchivedAt = changed.ArchivedBy, changed.ArchivedAt
+	}
+	if changed.KeptBy != "" {
+		o.KeptBy, o.KeptAt = changed.KeptBy, changed.KeptAt
 	}
 	return o
 }
@@ -134,22 +143,26 @@ func ApplyOverrides(research []Company, overrides []Override) []Company {
 				c.URL, c.Website, c.Host = o.Website, o.Website.String(), o.Host
 			}
 			c.Archived, c.ArchivedBy, c.ArchivedAt = !o.ArchivedAt.IsZero(), o.ArchivedBy, o.ArchivedAt
+			c.KeptBy, c.KeptAt = o.KeptBy, o.KeptAt
 		}
 		out = append(out, c)
 	}
 	return out
 }
 
-// Change is what an administrator changes about a company; a nil field stays as it is.
+// Change is what an administrator changes about a company; a nil field stays as it is. Kept true
+// records that the administrator keeps the company on the list, so it is never archived
+// automatically; false takes that back.
 type Change struct {
 	Name     *string
 	URL      *string
 	Archived *bool
+	Kept     *bool
 }
 
-// Apply returns c with ch applied by user at at, checked: the name's length, the website's
-// address and that no other company in d has its host, and that only a researched company is
-// archived.
+// Apply returns c with ch applied by user at at, checked: the name's length, and the website's
+// address and that no other company in d has its host. Restoring an archived company keeps it,
+// by user, so it is never archived automatically again.
 func (d Directory) Apply(c Company, ch Change, user string, at time.Time) (Company, error) {
 	if ch.Name != nil {
 		name, err := CheckName(*ch.Name)
@@ -170,15 +183,38 @@ func (d Directory) Apply(c Company, ch Change, user string, at time.Time) (Compa
 		c.URL, c.Website, c.Host = website, website.String(), host
 	}
 	if ch.Archived != nil {
-		if c.Source != SourceResearch {
-			return Company{}, ErrNotArchivable
-		}
-		c.Archived, c.ArchivedBy, c.ArchivedAt = *ch.Archived, "", time.Time{}
-		if c.Archived {
-			c.ArchivedBy, c.ArchivedAt = user, at
+		c = c.archived(*ch.Archived, user, at)
+	}
+	if ch.Kept != nil {
+		c.KeptBy, c.KeptAt = "", time.Time{}
+		if *ch.Kept {
+			c.KeptBy, c.KeptAt = user, at
 		}
 	}
 	return c, nil
+}
+
+// archived is c archived by user at at, or restored and kept by user when it was archived.
+func (c Company) archived(archived bool, user string, at time.Time) Company {
+	if c.Archived && !archived {
+		c.KeptBy, c.KeptAt = user, at
+	}
+	c.Archived, c.ArchivedBy, c.ArchivedAt = archived, "", time.Time{}
+	if archived {
+		c.ArchivedBy, c.ArchivedAt = user, at
+	}
+	return c
+}
+
+// ArchiveUnlessKept returns c archived by by at at, and true; or c as it is, and false, when it is
+// no competitor (Tribelt, the mirror or a group company), is archived already, or a person kept it.
+// It is how a language model archives a company it is sure does not compete (ADR-0010).
+func (c Company) ArchiveUnlessKept(by string, at time.Time) (Company, bool) {
+	if c.Role() != RoleCompetitor || c.Archived || c.KeptBy != "" {
+		return c, false
+	}
+	c.Archived, c.ArchivedBy, c.ArchivedAt = true, by, at
+	return c, true
 }
 
 // Scan is what the companies context knows of one analysis of a company's website.

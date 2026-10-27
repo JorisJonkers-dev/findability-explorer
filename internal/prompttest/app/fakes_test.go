@@ -26,6 +26,7 @@ type repo struct {
 	decisions []domain.CandidateDecision
 	merges    []domain.Merge
 	verdicts  []domain.CompanyVerdict
+	checks    []domain.ListCheck
 	usage     []domain.ReviewUsage
 	failOn    map[string]bool
 	// heartbeatsLeft, when not negative, is how many heartbeats succeed before the run is
@@ -333,6 +334,41 @@ func (r *repo) SaveCompanyVerdicts(_ context.Context, vs []domain.CompanyVerdict
 	return nil
 }
 
+func (r *repo) ListChecks(context.Context) ([]domain.ListCheck, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.checks), r.err("ListChecks")
+}
+
+func (r *repo) SaveListChecks(_ context.Context, cs []domain.ListCheck) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("SaveListChecks"); err != nil {
+		return err
+	}
+	for _, c := range cs {
+		r.checks = slices.DeleteFunc(r.checks, func(old domain.ListCheck) bool { return old.CompanyID == c.CompanyID })
+		r.checks = append(r.checks, c)
+	}
+	return nil
+}
+
+// Namings are the names of every answer, newest first.
+func (r *repo) Namings(context.Context) ([]domain.Naming, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var out []domain.Naming
+	for _, a := range slices.Backward(r.answers) {
+		if a.Extraction == nil {
+			continue
+		}
+		for _, c := range a.Extraction.Companies {
+			out = append(out, domain.Naming{AnswerID: a.ID, Name: c.Name, URL: c.URL, CompetitorID: c.CompetitorID})
+		}
+	}
+	return out, r.err("Namings")
+}
+
 func (r *repo) AnswerTexts(_ context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -463,13 +499,16 @@ func (g gateways) Gateway(_ context.Context, id string) (app.Gateway, error) {
 	return g.gw, nil
 }
 
-// directory is the company list: Tribelt and Twentebelt, and the companies added since.
+// directory is the company list: Tribelt and Twentebelt, and the companies added since. archived
+// are the ids it archived.
 type directory struct {
-	mu        sync.Mutex
-	added     []domain.DirectoryCompany
-	err       error
-	addErr    error
-	removeErr error
+	mu         sync.Mutex
+	added      []domain.DirectoryCompany
+	err        error
+	addErr     error
+	removeErr  error
+	archiveErr error
+	archived   []string
 }
 
 func (d *directory) Companies(context.Context) ([]domain.DirectoryCompany, error) {
@@ -490,6 +529,22 @@ func (d *directory) Add(_ context.Context, _, name, website string) (string, err
 	id := strings.ToLower(strings.Fields(name)[0])
 	d.added = append(d.added, domain.DirectoryCompany{ID: id, Name: name, Host: strings.TrimPrefix(website, "https://"), Role: domain.RoleCompetitor})
 	return id, nil
+}
+
+func (d *directory) ArchiveUnlessKept(_ context.Context, user, id string) (bool, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.archiveErr != nil {
+		return false, d.archiveErr
+	}
+	for i, c := range d.added {
+		if c.ID == id && user == domain.ModelDecider && !c.Archived && !c.Kept {
+			d.added[i].Archived = true
+			d.archived = append(d.archived, id)
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (d *directory) Remove(_ context.Context, _, id string) error {

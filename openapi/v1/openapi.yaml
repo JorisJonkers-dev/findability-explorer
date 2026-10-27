@@ -419,11 +419,13 @@ paths:
           $ref: "#/components/responses/Problem"
     patch:
       operationId: updateCompetitor
-      summary: Change a company's name or website, or archive it
+      summary: Change a company's name or website, archive it, or keep it
       description: >-
-        Administrators only. Changes the name or website of a company, or archives or restores a
-        researched one. A researched company keeps the research's record; the change is stored
-        beside it. A website whose host another company has is refused with 409.
+        Administrators only. Changes the name or website of a company, archives or restores it, or
+        records that an administrator keeps it on the list. An archived company leaves the list and
+        the re-scans and keeps its scans. A restored or kept company is never archived by Claude
+        Haiku. A researched company keeps the research's record; the change is stored beside it. A
+        website whose host another company has is refused with 409.
       tags: [competitors]
       parameters:
         - $ref: "#/components/parameters/CompetitorIdPath"
@@ -462,10 +464,11 @@ paths:
       operationId: deleteCompetitor
       summary: Remove a company
       description: >-
-        Administrators only. An added company is deleted with every scan of it. A researched
-        company is the desk research's record and is archived instead: it leaves the list and the
-        re-scans, its scans stay, and updateCompetitor restores it. Refused with 409 while a scan
-        of the company is queued or running.
+        Administrators only. An added company is deleted with every scan of it; updateCompetitor
+        archives one and keeps its scans instead. A researched company is the desk research's
+        record and is archived: it leaves the list and the re-scans, its scans stay, and
+        updateCompetitor restores it. Refused with 409 while a scan of the company is queued or
+        running.
       tags: [competitors]
       parameters:
         - $ref: "#/components/parameters/CompetitorIdPath"
@@ -1184,6 +1187,54 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-checks:
+    get:
+      operationId: listCompetitorChecks
+      summary: List Claude Haiku's checks of the companies on the competitor list
+      description: >-
+        Administrators only. Claude Haiku's check of each competitor on the list against Tribelt's
+        target market, as for a candidate. A check made before the current version of the check is
+        left out for a company still on the list and not kept, since the next check makes it again.
+        With how many companies wait for a check, and whether a check runs.
+      tags: [admin]
+      responses:
+        "200":
+          description: The checks.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorCheckList"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: startCompetitorCheck
+      summary: Let Claude Haiku check the companies on the competitor list
+      description: >-
+        Administrators only. In the background, Claude Haiku on an Anthropic key checks each
+        competitor on the list that is not archived, that no administrator kept, and that it has
+        not checked with the current version of the check, against Tribelt's target market, from
+        its names, its website, its home page and what the answers say of it. A company it is sure
+        does not compete is archived by `language model`; an unsure one stays on the list for an
+        administrator; Tribelt, the mirror and group companies are never checked. Returns the
+        check's state; running already is no error.
+      tags: [admin]
+      responses:
+        "202":
+          description: The check is under way.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateReviewState"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/competitor-candidates/decisions:
     post:
       operationId: decideCompetitorCandidates
@@ -1802,8 +1853,28 @@ components:
         archived:
           type: boolean
           description: >-
-            True for a researched company an administrator archived: it is left out of the
-            re-scans and the web app hides it.
+            True for a company an administrator or Claude Haiku archived: it is left out of the
+            re-scans, its scans stay, and the web app hides it.
+        archivedBy:
+          type: string
+          maxLength: 200
+          description: >-
+            Who archived it: an administrator, or `language model` for Claude Haiku, which archives
+            a company it is sure does not compete with Tribelt. Absent unless archived.
+          example: language model
+        archivedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it was archived. Absent unless archived.
+          example: "2026-10-27T09:30:00Z"
+        keptBy:
+          type: string
+          maxLength: 200
+          description: >-
+            The administrator who restored the company or kept it on the list; Claude Haiku never
+            archives it then. Absent when nobody did.
+          example: joris
         id:
           $ref: "#/components/schemas/CompetitorId"
         source:
@@ -2781,7 +2852,14 @@ components:
           example: https://www.example-belts.com
         archived:
           type: boolean
-          description: True archives a researched company, false restores it.
+          description: >-
+            True archives the company: it leaves the list and the re-scans, and its scans stay.
+            False restores it, and keeps it: Claude Haiku never archives it again.
+        kept:
+          type: boolean
+          description: >-
+            True records that the administrator keeps the company on the list, so Claude Haiku
+            never archives it; false takes that back.
     RescanRequest:
       description: >-
         Which companies to scan - the ones named; with `all` every company that is not archived,
@@ -5425,7 +5503,9 @@ components:
           description: When.
           example: "2026-10-27T09:30:00Z"
     CandidateReviewState:
-      description: Whether Claude Haiku is reviewing the candidates, and why its last review stopped short.
+      description: >-
+        Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why
+        its last run stopped short.
       type: object
       additionalProperties: false
       required: [running]
@@ -5525,6 +5605,61 @@ components:
           maximum: 1000000
           description: Dismissed ones.
           example: 5
+    CompetitorCheck:
+      description: >-
+        Claude Haiku's check of a company on the competitor list against Tribelt's target market. A
+        sure "not a competitor" archives the company unless an administrator kept it.
+      type: object
+      additionalProperties: false
+      required: [competitorId, competitor, sure, reason, model, at]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        competitor:
+          type: boolean
+          description: Whether it takes the company for a competitor of Tribelt.
+          example: false
+        sure:
+          type: boolean
+          description: Whether it was sure.
+          example: true
+        reason:
+          type: string
+          maxLength: 500
+          description: Why, in one sentence; empty when it gave no answer for it.
+          example: Makes rubber belting for quarries.
+        model:
+          type: string
+          maxLength: 200
+          description: The model that checked it.
+          example: "anthropic: claude-haiku-5-5"
+        at:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-10-27T09:30:00Z"
+    CompetitorCheckList:
+      description: Claude Haiku's checks of the companies on the competitor list, and the state of its check.
+      type: object
+      additionalProperties: false
+      required: [items, unchecked, review]
+      properties:
+        items:
+          type: array
+          maxItems: 10000
+          description: The checks, one per company.
+          items:
+            $ref: "#/components/schemas/CompetitorCheck"
+        unchecked:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many competitors on the list the next check takes.
+          example: 12
+        review:
+          $ref: "#/components/schemas/CandidateReviewState"
     CompetitorCandidateList:
       description: The competitor candidates with one status, and Claude Haiku's review of them.
       type: object

@@ -148,6 +148,8 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.DecideCompetitorCandidatesOperation: domain.NeedAdminChange,
 	oas.SplitCompetitorCandidateOperation:   domain.NeedAdminChange,
 	oas.StartCandidateReviewOperation:       domain.NeedAdminChange,
+	oas.ListCompetitorChecksOperation:       domain.NeedAdminView,
+	oas.StartCompetitorCheckOperation:       domain.NeedAdminChange,
 	// The plan: everyone signed in reads it, only administrators tick it off and set its targets.
 	oas.TickImprovementOperation: domain.NeedAdminChange,
 	oas.SetPlanTargetsOperation:  domain.NeedAdminChange,

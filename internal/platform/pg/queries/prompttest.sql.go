@@ -741,6 +741,40 @@ func (q *Queries) ListPromptCandidateMerges(ctx context.Context) ([]ListPromptCa
 	return items, nil
 }
 
+const listPromptCompanyChecks = `-- name: ListPromptCompanyChecks :many
+SELECT company_id, competitor, sure, reason, model, check_version, checked_at
+FROM prompt_company_checks
+ORDER BY checked_at, company_id
+`
+
+func (q *Queries) ListPromptCompanyChecks(ctx context.Context) ([]PromptCompanyCheck, error) {
+	rows, err := q.db.Query(ctx, listPromptCompanyChecks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptCompanyCheck{}
+	for rows.Next() {
+		var i PromptCompanyCheck
+		if err := rows.Scan(
+			&i.CompanyID,
+			&i.Competitor,
+			&i.Sure,
+			&i.Reason,
+			&i.Model,
+			&i.CheckVersion,
+			&i.CheckedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPromptRunModels = `-- name: ListPromptRunModels :many
 SELECT run_id, provider, model, free, fallback
 FROM prompt_run_models
@@ -872,6 +906,47 @@ WHERE singleton
 func (q *Queries) MovePromptSchedule(ctx context.Context, nextDue time.Time) error {
 	_, err := q.db.Exec(ctx, movePromptSchedule, nextDue)
 	return err
+}
+
+const promptNamings = `-- name: PromptNamings :many
+SELECT c.answer_id, c.name, c.url, coalesce(c.competitor_id, '')::text AS competitor_id
+FROM prompt_answer_companies AS c
+JOIN prompt_answers AS a ON a.id = c.answer_id
+ORDER BY a.answered_at DESC, c.answer_id, c.position
+`
+
+type PromptNamingsRow struct {
+	AnswerID     uuid.UUID
+	Name         string
+	Url          string
+	CompetitorID string
+}
+
+// Every name an answer gave, matched or not, the newest answer first: what the answers say of a
+// company on the list.
+func (q *Queries) PromptNamings(ctx context.Context) ([]PromptNamingsRow, error) {
+	rows, err := q.db.Query(ctx, promptNamings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptNamingsRow{}
+	for rows.Next() {
+		var i PromptNamingsRow
+		if err := rows.Scan(
+			&i.AnswerID,
+			&i.Name,
+			&i.Url,
+			&i.CompetitorID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const promptReviewTokensSince = `-- name: PromptReviewTokensSince :one
@@ -1024,6 +1099,37 @@ func (q *Queries) SavePromptCandidateMerge(ctx context.Context, arg SavePromptCa
 		arg.KeptApart,
 		arg.MergedBy,
 		arg.MergedAt,
+	)
+	return err
+}
+
+const savePromptCompanyCheck = `-- name: SavePromptCompanyCheck :exec
+INSERT INTO prompt_company_checks (company_id, competitor, sure, reason, model, check_version, checked_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (company_id) DO UPDATE SET
+    competitor = excluded.competitor, sure = excluded.sure, reason = excluded.reason,
+    model = excluded.model, check_version = excluded.check_version, checked_at = excluded.checked_at
+`
+
+type SavePromptCompanyCheckParams struct {
+	CompanyID    string
+	Competitor   bool
+	Sure         bool
+	Reason       string
+	Model        string
+	CheckVersion int64
+	CheckedAt    time.Time
+}
+
+func (q *Queries) SavePromptCompanyCheck(ctx context.Context, arg SavePromptCompanyCheckParams) error {
+	_, err := q.db.Exec(ctx, savePromptCompanyCheck,
+		arg.CompanyID,
+		arg.Competitor,
+		arg.Sure,
+		arg.Reason,
+		arg.Model,
+		arg.CheckVersion,
+		arg.CheckedAt,
 	)
 	return err
 }

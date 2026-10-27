@@ -513,8 +513,9 @@ func (g gateways) key(ctx context.Context, id string) (string, error) {
 	return key, nil
 }
 
-// promptDirectory hands the prompt-test context the companies to match names to, and adds or
-// removes a competitor candidate's company, by value.
+// promptDirectory hands the prompt-test context the companies to match names to and to check,
+// adds or removes a competitor candidate's company, and archives a company Claude Haiku is sure
+// does not compete, by value.
 type promptDirectory struct {
 	companies *companiesapp.Service
 }
@@ -526,7 +527,14 @@ func (d promptDirectory) Companies(ctx context.Context) ([]prompttestdomain.Dire
 	}
 	out := make([]prompttestdomain.DirectoryCompany, 0, len(listed))
 	for _, l := range listed {
-		out = append(out, prompttestdomain.DirectoryCompany{ID: l.ID, Name: l.Name, OtherNames: l.OtherNames, Host: l.Host, Role: prompttestdomain.Role(l.Role())})
+		website := ""
+		if l.URL != nil {
+			website = l.URL.String()
+		}
+		out = append(out, prompttestdomain.DirectoryCompany{
+			ID: l.ID, Name: l.Name, OtherNames: l.OtherNames, Host: l.Host, Role: prompttestdomain.Role(l.Role()),
+			Website: website, Archived: l.Archived, Kept: l.KeptBy != "",
+		})
 	}
 	return out, nil
 }
@@ -543,6 +551,14 @@ func (d promptDirectory) Add(ctx context.Context, user, name, website string) (s
 		return "", err
 	}
 	return c.ID, nil
+}
+
+func (d promptDirectory) ArchiveUnlessKept(ctx context.Context, user, id string) (bool, error) {
+	archived, err := d.companies.ArchiveUnlessKept(ctx, user, id)
+	if errors.Is(err, companiesdomain.ErrNotFound) {
+		return false, nil // removed meanwhile
+	}
+	return archived, err
 }
 
 func (d promptDirectory) Remove(ctx context.Context, user, id string) error {

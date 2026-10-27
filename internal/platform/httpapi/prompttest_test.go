@@ -23,6 +23,7 @@ type promptTests struct {
 	decideErr error
 	decided   domain.CandidateStatus
 	reviewing bool
+	checking  bool
 	change    app.Change
 	actor     string
 	filter    app.AnswerFilter
@@ -153,6 +154,25 @@ func (p *promptTests) StartReview(context.Context) bool {
 
 func (p *promptTests) ReviewState() app.ReviewState {
 	return app.ReviewState{Running: p.reviewing, Problem: app.ReviewProblemNoKey}
+}
+
+func (p *promptTests) ListChecks(context.Context) ([]domain.ListCheck, int, error) {
+	return []domain.ListCheck{
+		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting for quarries.", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: answered},
+		{CompanyID: "intralox", Competitor: true, Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: answered},
+	}, 3, p.err
+}
+
+func (p *promptTests) StartListCheck(context.Context) bool {
+	p.checking = true
+	return true
+}
+
+func (p *promptTests) ListCheckState() app.ReviewState {
+	if p.checking {
+		return app.ReviewState{Running: true}
+	}
+	return app.ReviewState{Problem: app.ReviewProblemFails}
 }
 
 func (p *promptTests) AddCandidate(_ context.Context, actor, _, _, _ string) (domain.Candidate, error) {
@@ -419,5 +439,33 @@ func TestAskingAgainIsForAdministrators(t *testing.T) {
 		if r := callAs(t, srv, http.MethodPost, path, `{}`, "admin"); r.code != want {
 			t.Errorf("%v: %d", err, r.code)
 		}
+	}
+}
+
+func TestHaikuChecksTheCompetitorList(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	base := "/api/v1/admin/competitor-checks"
+	for method, want := range map[string]int{http.MethodGet: http.StatusForbidden, http.MethodPost: http.StatusForbidden} {
+		if r := callAs(t, srv, method, base, "", "tester"); r.code != want {
+			t.Errorf("a viewer's %s: %d", method, r.code)
+		}
+	}
+	r := callAs(t, srv, http.MethodGet, base, "", "admin")
+	items, _ := r.body["items"].([]any)
+	if r.code != http.StatusOK || len(items) != 2 || r.body["unchecked"] != float64(3) || r.body["review"].(map[string]any)["problem"] != "failed" {
+		t.Fatalf("list = %d %v", r.code, r.body)
+	}
+	first := items[0].(map[string]any)
+	if first["competitorId"] != "fenner-dunlop" || first["sure"] != true || first["competitor"] != false ||
+		first["reason"] != "Makes rubber belting for quarries." || first["at"] == nil {
+		t.Errorf("first check = %v", first)
+	}
+	if r := callAs(t, srv, http.MethodPost, base, "", "admin"); r.code != http.StatusAccepted || r.body["running"] != true || !a.prompts().checking {
+		t.Errorf("start = %d %v", r.code, r.body)
+	}
+	a.prompts().err = errors.New("down")
+	if r := callAs(t, srv, http.MethodGet, base, "", "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("failing list: %d", r.code)
 	}
 }

@@ -11,8 +11,8 @@ is the one ADR-0005 uses for the term review: the Vault key, else a stored Anthr
 latest test did not fail, never OpenRouter. Each job asks for it when it starts, a scan's matching
 or a Prompt run, so a key added or removed takes effect from the next one.
 
-- Product matching takes Haiku before the chosen model, and before the choice to turn matching off.
-  The chosen model, or no matching, applies only when no Anthropic key works.
+- Product matching takes Haiku before the chosen model. The chosen model applies only when no
+  Anthropic key works. (Amended below: turning matching off wins over Haiku.)
 - The Prompt test reads its answers with Haiku in the same strict format, with the same
   instructions, and tries each answer twice, as before. Its tokens are priced at Haiku's list price
   ($0.10 and $0.50 per million input and output tokens), whatever the subsidy, so the run's cost and
@@ -25,8 +25,21 @@ Without an Anthropic key, each job behaves exactly as before.
 ## Consequences
 
 - The language-model settings page shows Haiku as the model in use while an Anthropic key works,
-  and what takes over without one. The Prompt test settings show the model that reads the answers.
+  and what takes over without one, with the switch to turn matching off. The Prompt test settings show the model that reads the answers.
 - As ADR-0004 warns, a different reader makes later runs less comparable with earlier ones. Runs
   read by Haiku and runs read on OpenRouter are not told apart in the results.
 - The price estimate before any run still prices reading at the OpenRouter model's price, which is
   close to Haiku's.
+
+## Amended: turning matching off wins
+
+At first Haiku matched products even when an administrator had turned matching off, and the
+settings page hid the switch while an Anthropic key worked. The owner decided the switch must win:
+
+- Turned off, product matching is off for every scan, Haiku or not. Choosing a model turns it on again.
+- Turned on, Haiku is still preferred while an Anthropic key works, and the chosen model or the
+  default takes over without one.
+- The Language models page shows the switch whenever matching is on, Haiku included.
+
+The switch is about product matching only. The term review, the competitor review and the reading
+of Prompt test answers keep using Haiku while an Anthropic key works.

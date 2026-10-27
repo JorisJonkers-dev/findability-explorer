@@ -40,7 +40,7 @@ export function matchingText(matching: MatchingStatus): string | null {
     case 'pending':
       return 'Matching starts when the pages are read.'
     case 'disabled':
-      return 'Product matching is off: no language model is configured on this server.'
+      return 'Product matching is off: an administrator turned it off, or no language model is set up.'
     case 'skipped':
       return "Skipped: this month's language-model budget is used up, or the pages had no text."
     case 'failed':

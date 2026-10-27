@@ -375,8 +375,8 @@ func TestClearActiveAndCurrent(t *testing.T) {
 		t.Fatalf("default current = %v %s %s, %v", client, provider, model, err)
 	}
 	s, err := f.svc.ClearActive(t.Context(), "j")
-	// Haiku on the Vault key still matches products with the chosen model off.
-	if err != nil || s.Choice != domain.ChoiceOff || s.Active != nil || s.Haiku == nil || !s.MatchingEnabled || f.repo.events[0].Action != domain.ActionActiveCleared {
+	// Turned off, matching stays off, though Haiku on the Vault key still reads Prompt answers.
+	if err != nil || s.Choice != domain.ChoiceOff || s.Active != nil || s.Haiku == nil || s.MatchingEnabled || f.repo.events[0].Action != domain.ActionActiveCleared {
 		t.Fatalf("clear = %+v, %v", s, err)
 	}
 	if client, _, _, err := f.svc.Current(t.Context()); client != nil || err != nil {
@@ -395,6 +395,36 @@ func TestClearActiveAndCurrent(t *testing.T) {
 	f.repo.failOn["Setting"] = true
 	if _, _, _, err := f.svc.Current(t.Context()); !errors.Is(err, errBoom) {
 		t.Fatalf("current with the store down: %v", err)
+	}
+}
+
+func TestMatcherPrefersHaikuUnlessMatchingIsOff(t *testing.T) {
+	f := setup("sk-ant-vault", nil)
+	f.repo.setting = domain.Setting{Mode: domain.ModeChosen, Active: domain.Active{CredentialID: "c-1", Model: "m"}}
+	client, provider, model, err := f.svc.Matcher(t.Context())
+	if err != nil || client == nil || provider != domain.Anthropic || model != domain.DefaultModel {
+		t.Fatalf("with an Anthropic key = %v %s %s, %v", client, provider, model, err)
+	}
+	f.repo.setting = domain.Setting{Mode: domain.ModeOff}
+	if client, provider, model, err := f.svc.Matcher(t.Context()); client != nil || provider != "" || model != "" || err != nil {
+		t.Fatalf("turned off = %v %s %s, %v", client, provider, model, err)
+	}
+
+	without := setup("", nil)
+	if _, err := without.svc.Add(t.Context(), "joris", "mistral", "Matching", "mk-stored"); err != nil {
+		t.Fatal(err)
+	}
+	without.repo.setting = domain.Setting{Mode: domain.ModeChosen, Active: domain.Active{CredentialID: without.repo.creds[0].ID, Model: "mistral-small"}}
+	if client, provider, model, err := without.svc.Matcher(t.Context()); client == nil || provider != domain.Mistral || model != "mistral-small" || err != nil {
+		t.Fatalf("without an Anthropic key = %v %s %s, %v", client, provider, model, err)
+	}
+	without.repo.failOn["List"] = true
+	if _, _, _, err := without.svc.Matcher(t.Context()); !errors.Is(err, errBoom) {
+		t.Fatalf("keys that cannot be listed = %v", err)
+	}
+	without.repo.failOn["Setting"] = true
+	if _, _, _, err := without.svc.Matcher(t.Context()); !errors.Is(err, errBoom) {
+		t.Fatalf("the store down = %v", err)
 	}
 }
 

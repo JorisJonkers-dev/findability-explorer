@@ -58,19 +58,19 @@ function submit(): void {
         <p v-if="!state.working" class="m-0 font-medium text-orange-ink">
           Its key can no longer be read, so scans run without product matching until another key is chosen.
         </p>
-        <div>
-          <button
-            type="button"
-            :disabled="isSaving"
-            class="min-h-11 rounded-full border-2 border-black bg-white px-5 font-medium text-black hover:bg-black hover:text-white disabled:opacity-70"
-            @click="turnOff"
-          >
-            Turn matching off
-          </button>
-        </div>
       </template>
-      <p v-else-if="state.kind === 'off'" class="m-0 text-lg">Product matching is off. Scans run without it.</p>
+      <p v-else-if="state.kind === 'off'" class="m-0 text-lg">Product matching is off. Scans run without it until a model is chosen below.</p>
       <p v-else class="m-0 text-lg">No model is chosen, so scans run without product matching.</p>
+      <div v-if="state.kind === 'haiku' || state.kind === 'active'">
+        <button
+          type="button"
+          :disabled="isSaving"
+          class="min-h-11 rounded-full border-2 border-black bg-white px-5 font-medium text-black hover:bg-black hover:text-white disabled:opacity-70"
+          @click="turnOff"
+        >
+          Turn matching off
+        </button>
+      </div>
     </div>
 
     <form aria-labelledby="model-title" class="flex flex-col gap-4" @submit.prevent="submit">

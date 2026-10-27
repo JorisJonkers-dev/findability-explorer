@@ -4553,10 +4553,11 @@ type LlmSettings struct {
 	Active      OptActiveLlm    `json:"active"`
 	// The Anthropic key and Claude Haiku model that match products and read Prompt test answers, instead
 	// of the active model, while an Anthropic key works - the Vault key, else a stored Anthropic key whose
-	// latest test did not fail. Absent when no Anthropic key works.
+	// latest test did not fail. Product matching turned off stays off on it. Absent when no Anthropic key
+	// works.
 	Haiku OptActiveLlm `json:"haiku"`
-	// True when the next analysis will match products: on Haiku, or on the active model when its
-	// credential is readable.
+	// True when the next analysis will match products: matching is not turned off, and Haiku works or the
+	// active model's credential is readable.
 	MatchingEnabled bool      `json:"matchingEnabled"`
 	Budget          LlmBudget `json:"budget"`
 	// The latest changes and tests, newest first.

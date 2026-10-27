@@ -409,21 +409,15 @@ func (x extractors) Current(ctx context.Context) (prompttestapp.Extractor, strin
 	return extractor.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
 }
 
-// matchers hands the analysis context its matcher: Haiku on an Anthropic key while one works
-// (ADR-0007), else the model the language-model settings name now.
+// matchers hands the analysis context its matcher: none when an administrator turned matching
+// off, else Haiku on an Anthropic key while one works (ADR-0007), else the model the
+// language-model settings name now.
 type matchers struct {
 	llm *llmapp.Service
 }
 
 func (m matchers) Current(ctx context.Context) (analysisdomain.Matcher, string, error) {
-	haiku, model, err := m.llm.Haiku(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	if haiku != nil {
-		return matcher.New(haiku, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
-	}
-	client, provider, model, err := m.llm.Current(ctx)
+	client, provider, model, err := m.llm.Matcher(ctx)
 	if err != nil || client == nil {
 		return nil, "", err
 	}

@@ -324,13 +324,14 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (domain.Analysis, error
 	return s.load(ctx, id)
 }
 
-// load reads an analysis with only what is in Dutch, German or English (domain.Analysis.InFocus).
+// load reads an analysis with only what is in Dutch, German or English (domain.Analysis.InFocus),
+// as the map judges it now, by the same-language rule (domain.Analysis.ByTheMap).
 func (s *Service) load(ctx context.Context, id uuid.UUID) (domain.Analysis, error) {
 	a, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return domain.Analysis{}, err
 	}
-	return a.InFocus(), nil
+	return a.InFocus().ByTheMap(domain.NewLexicon(s.glossary())), nil
 }
 
 // List returns up to limit analyses, newest first. A limit below 1 means DefaultListLimit.

@@ -38,6 +38,30 @@ func TestCandidatesKeepLanguagesApart(t *testing.T) {
 	}
 }
 
+// Whether the map holds a phrase is decided by the scans' own spelling rule, in the phrase's
+// language, whatever the scan stored: a Dutch phrase a scan stored as in the map through the
+// German term comes back as a candidate, and every word of a phrase may be plural.
+func TestTheMapHoldsAPhraseByTheScansSpellingRule(t *testing.T) {
+	terms := []domain.Term{
+		{Text: "Gliederband", Language: domain.LanguageDe},
+		{Text: "belt conveyor (s) / nid d'abeilles", Language: domain.LanguageEn},
+	}
+	observed := []domain.Observation{
+		obs("s1", "alpha", "gliederband", "nl", 3, 1, "product", "eyelink", "Gliederband", at), // stored in the map
+		obs("s1", "alpha", "gliederbander", "de", 3, 1, "product", "eyelink", "", at),
+		obs("s1", "alpha", "belts conveyors", "en", 2, 1, "broad", "", "", at),
+		obs("s1", "alpha", "nid d abeilles", "en", 1, 1, "product", "", "", at),
+	}
+	got := domain.Candidates(observed, nil, terms)
+	phrases := make([]string, 0, len(got))
+	for _, c := range got {
+		phrases = append(phrases, c.Phrase+" "+c.Language)
+	}
+	if len(phrases) != 2 || phrases[0] != "gliederband nl" || phrases[1] != "gliederbander de" {
+		t.Fatalf("candidates %q", phrases)
+	}
+}
+
 // Decisions made on a phrase before candidates were kept apart by language still count: a
 // rejection in every language, an acceptance only in its term's language. One made on the
 // candidate's own id comes first.

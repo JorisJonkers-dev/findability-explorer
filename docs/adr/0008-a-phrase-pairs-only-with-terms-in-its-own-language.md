@@ -28,11 +28,21 @@ place this rule lives.
 
 ## Consequences
 
-- Stored results are not rewritten. Scans made before this rule keep the `in_map` and
-  `closest_term` their keywords were given, and the known terms they found, and the scan pages show
-  them as stored. The review queue corrects what it can when it reads them: it drops a closest term
-  the map holds only in another language. A keyword stored as in the map through another
-  language's term stays out of the queue until the company is scanned again.
+- Stored results are not rewritten; they are read by the rule instead.
+  - One rule says when a phrase is a term's spelling (`internal/shared/spelling`), and both the
+    scans and the review queue use it.
+  - The review queue reads every keyword of the finished scans, not only those stored outside the
+    map. It decides itself whether the map holds each phrase in its language, so a keyword stored
+    as in the map through another language's term comes back as a candidate. It also drops a
+    closest term the map holds only in another language. The tier and family it suggests stay as
+    the scan stored them; classifying every finding again on each read of the queue costs too much.
+  - A scan's page, its company's profile and the comparison of two scans classify each stored
+    keyword again from its phrase and language, by the map as it is now. Tier, family, closest term
+    and "in the map" so follow the rule, and also any terms the map gained since.
+  - Known terms are stored without the page they were counted on, only with the scan's pages and
+    their languages. A known term, and the company it credits as using the term, is left out when
+    the scan read no page in the term's language. One counted on a German page and also on an
+    English one cannot be told apart from one counted on the German page alone, so it stays.
 - Decisions and verdicts made before carry the phrase's old id. They still count where they apply:
   a rejection for the phrase in every language, an acceptance only in the language of the term it
   made. A candidate an old acceptance does not apply to waits for review again, and the language

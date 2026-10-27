@@ -193,6 +193,8 @@ type Sighting struct {
 	CompetitorID string
 	Term         string
 	Language     string
+	// PageLanguages are the languages of the pages the scan read (PageLanguage).
+	PageLanguages []string
 }
 
 // MatchedProduct is a product the language model matched to a Tribelt family on a company's

@@ -77,12 +77,13 @@ func (r *Repository) FirstScans(ctx context.Context, competitorID string) (map[d
 	return out, nil
 }
 
-// UnmappedFindings returns every keyword a finished scan of a company found outside the
-// terminology map, oldest scan first.
-func (r *Repository) UnmappedFindings(ctx context.Context) ([]domain.Finding, error) {
+// Findings returns every keyword a finished scan of a company found, oldest scan first. Whether
+// the terminology map holds it is for the review to say: a scan made before a phrase was paired
+// only with terms in its own language stored it as in the map through another language's term.
+func (r *Repository) Findings(ctx context.Context) ([]domain.Finding, error) {
 	rows, err := r.store.Queries().CandidateEvidence(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("select unmapped findings: %w", err)
+		return nil, fmt.Errorf("select findings: %w", err)
 	}
 	out := make([]domain.Finding, 0, len(rows))
 	for _, row := range rows {
@@ -196,9 +197,9 @@ func (r *Repository) Sightings(ctx context.Context) ([]domain.Sighting, error) {
 	}
 	out := make([]domain.Sighting, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, domain.Sighting{CompetitorID: row.CompetitorID, Term: row.Term, Language: row.Language})
+		out = append(out, domain.Sighting{CompetitorID: row.CompetitorID, Term: row.Term, Language: row.Language, PageLanguages: row.PageLanguages})
 	}
-	return out, nil
+	return domain.SightedInTheirLanguage(out), nil
 }
 
 // MatchedProducts returns the products matched on each company's newest finished scan whose

@@ -2,6 +2,7 @@ package persistence_test
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -98,8 +99,10 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 	if n, err := repo.TokensSince(ctx, created); err != nil || n != 1000 {
 		t.Fatalf("TokensSince = %d, %v", n, err)
 	}
-	// What the company's newest finished scan found: the map term, and the matched products.
-	if s, err := repo.Sightings(ctx); err != nil || len(s) != 1 || s[0] != (domain.Sighting{CompetitorID: "example", Term: "spiral belt", Language: "en"}) {
+	// What the company's newest finished scan found: the map term, with the languages of the pages
+	// it read, and the matched products.
+	if s, err := repo.Sightings(ctx); err != nil || len(s) != 1 || s[0].CompetitorID != "example" || s[0].Term != "spiral belt" ||
+		s[0].Language != "en" || !slices.Equal(s[0].PageLanguages, []string{"de", "en"}) {
 		t.Fatalf("Sightings = %+v, %v", s, err)
 	}
 	if p, err := repo.MatchedProducts(ctx); err != nil || len(p) != 2 ||
@@ -279,7 +282,8 @@ func TestDeepScansHistoryAndFindings(t *testing.T) {
 		firstScans[domain.PhraseKey{Phrase: "spiral freezer", Language: "en"}] != 2 {
 		t.Fatalf("FirstScans = %+v, %v", firstScans, err)
 	}
-	findings, err := repo.UnmappedFindings(ctx)
+	// Every keyword, in the map or not: the review decides that in the phrase's own language.
+	findings, err := repo.Findings(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,9 +293,12 @@ func TestDeepScansHistoryAndFindings(t *testing.T) {
 			mine = append(mine, f)
 		}
 	}
-	if len(mine) != 1 || mine[0].Phrase != "spiral freezer" || mine[0].Closest != "spiral belt" || mine[0].AnalysisID != second.ID ||
-		!mine[0].StartedAt.Equal(second.CreatedAt) || mine[0].URL != "https://deep.test/" {
+	if len(mine) != 3 || mine[0].Phrase != "eyelink belts" || mine[0].AnalysisID != first.ID {
 		t.Fatalf("findings %+v", mine)
+	}
+	if f := mine[2]; f.Phrase != "spiral freezer" || f.Closest != "spiral belt" || f.AnalysisID != second.ID ||
+		!f.StartedAt.Equal(second.CreatedAt) || f.URL != "https://deep.test/" {
+		t.Fatalf("spiral freezer %+v", f)
 	}
 	if n, err := repo.CountActive(ctx, "deep"); err != nil || n != 0 {
 		t.Fatalf("CountActive = %d, %v", n, err)

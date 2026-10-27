@@ -306,7 +306,7 @@ SELECT a.id AS analysis_id, a.competitor_id::text AS competitor_id, a.url, a.cre
     coalesce(k.closest_term, '')::text AS closest_term
 FROM analysis_keywords AS k
 JOIN analyses AS a ON a.id = k.analysis_id
-WHERE a.status = 'done' AND a.competitor_id IS NOT NULL AND NOT coalesce(k.in_map, false)
+WHERE a.status = 'done' AND a.competitor_id IS NOT NULL
 ORDER BY a.created_at, a.id, k.position
 `
 
@@ -324,7 +324,9 @@ type CandidateEvidenceRow struct {
 	ClosestTerm  string
 }
 
-// Every phrase a finished scan of a company found outside the terminology map.
+// Every phrase a finished scan of a company found. Whether the map holds it is the review's to
+// say, in the phrase's own language: scans made before that rule stored in_map through a term in
+// another language.
 func (q *Queries) CandidateEvidence(ctx context.Context) ([]CandidateEvidenceRow, error) {
 	rows, err := q.db.Query(ctx, candidateEvidence)
 	if err != nil {
@@ -640,19 +642,24 @@ WITH latest AS (
     WHERE competitor_id IS NOT NULL AND status = 'done'
     ORDER BY competitor_id, created_at DESC, id
 )
-SELECT DISTINCT latest.competitor_id::text AS competitor_id, k.term, k.language
+SELECT DISTINCT latest.competitor_id::text AS competitor_id, k.term, k.language,
+    array(
+        SELECT DISTINCT p.language FROM analysis_pages AS p WHERE p.analysis_id = latest.id ORDER BY p.language
+    )::text [] AS page_languages
 FROM analysis_known_terms k
 JOIN latest ON latest.id = k.analysis_id
 ORDER BY competitor_id, k.term, k.language
 `
 
 type KnownTermSightingsRow struct {
-	CompetitorID string
-	Term         string
-	Language     string
+	CompetitorID  string
+	Term          string
+	Language      string
+	PageLanguages []string
 }
 
-// The map terms each company's newest finished scan found, once per company.
+// The map terms each company's newest finished scan found, once per company, with the languages
+// of the pages that scan read.
 func (q *Queries) KnownTermSightings(ctx context.Context) ([]KnownTermSightingsRow, error) {
 	rows, err := q.db.Query(ctx, knownTermSightings)
 	if err != nil {
@@ -662,7 +669,12 @@ func (q *Queries) KnownTermSightings(ctx context.Context) ([]KnownTermSightingsR
 	items := []KnownTermSightingsRow{}
 	for rows.Next() {
 		var i KnownTermSightingsRow
-		if err := rows.Scan(&i.CompetitorID, &i.Term, &i.Language); err != nil {
+		if err := rows.Scan(
+			&i.CompetitorID,
+			&i.Term,
+			&i.Language,
+			&i.PageLanguages,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

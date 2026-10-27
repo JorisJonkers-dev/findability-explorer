@@ -123,14 +123,18 @@ WHERE analysis_id = $1
 ORDER BY equivalent_position, position;
 
 -- name: KnownTermSightings :many
--- The map terms each company's newest finished scan found, once per company.
+-- The map terms each company's newest finished scan found, once per company, with the languages
+-- of the pages that scan read.
 WITH latest AS (
     SELECT DISTINCT ON (competitor_id) id, competitor_id
     FROM analyses
     WHERE competitor_id IS NOT NULL AND status = 'done'
     ORDER BY competitor_id, created_at DESC, id
 )
-SELECT DISTINCT latest.competitor_id::text AS competitor_id, k.term, k.language
+SELECT DISTINCT latest.competitor_id::text AS competitor_id, k.term, k.language,
+    array(
+        SELECT DISTINCT p.language FROM analysis_pages AS p WHERE p.analysis_id = latest.id ORDER BY p.language
+    )::text [] AS page_languages
 FROM analysis_known_terms k
 JOIN latest ON latest.id = k.analysis_id
 ORDER BY competitor_id, k.term, k.language;
@@ -188,13 +192,15 @@ WHERE a.competitor_id = $1 AND a.status = 'done' AND a.scan_number IS NOT NULL
 GROUP BY k.phrase, k.language;
 
 -- name: CandidateEvidence :many
--- Every phrase a finished scan of a company found outside the terminology map.
+-- Every phrase a finished scan of a company found. Whether the map holds it is the review's to
+-- say, in the phrase's own language: scans made before that rule stored in_map through a term in
+-- another language.
 SELECT a.id AS analysis_id, a.competitor_id::text AS competitor_id, a.url, a.created_at, k.phrase, k.language, k.score,
     k.pages, coalesce(k.tier, 'broad')::text AS tier, coalesce(k.family, '')::text AS family,
     coalesce(k.closest_term, '')::text AS closest_term
 FROM analysis_keywords AS k
 JOIN analyses AS a ON a.id = k.analysis_id
-WHERE a.status = 'done' AND a.competitor_id IS NOT NULL AND NOT coalesce(k.in_map, false)
+WHERE a.status = 'done' AND a.competitor_id IS NOT NULL
 ORDER BY a.created_at, a.id, k.position;
 
 -- name: AddAnalysisReadiness :exec

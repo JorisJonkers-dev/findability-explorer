@@ -9,6 +9,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/spelling"
 )
 
 // Page is one crawled page as the extraction reads it.
@@ -86,7 +87,7 @@ const (
 func Summarise(p Page, lex Lexicon) PageSummary {
 	return PageSummary{
 		URL: p.URL, Title: p.Title, Description: p.Description,
-		Language: PageLanguage(p), WordCount: len(Tokens(p.Text)), Family: lex.PageFamily(p),
+		Language: PageLanguage(p), WordCount: len(spelling.Tokens(p.Text)), Family: lex.PageFamily(p),
 	}
 }
 
@@ -102,7 +103,7 @@ func PageLanguage(p Page) string {
 // DetectLanguage returns the language with the most stopwords in text, if at least three are found.
 func DetectLanguage(text string) string {
 	counts := map[string]int{}
-	for _, tok := range Tokens(text) {
+	for _, tok := range spelling.Tokens(text) {
 		for _, lang := range stopwordLanguages {
 			if _, ok := stopwords[lang][tok]; ok {
 				counts[lang]++
@@ -116,32 +117,6 @@ func DetectLanguage(text string) string {
 		}
 	}
 	return best
-}
-
-// Tokens splits text into lower-case words. A word is a run of letters and digits; a hyphen or a
-// dot between two such characters stays inside the word, so "tri-flex" and "1.4301" are one word.
-func Tokens(text string) []string {
-	runes := []rune(strings.ToLower(text))
-	var out []string
-	start := -1
-	for i, r := range runes {
-		inWord := unicode.IsLetter(r) || unicode.IsDigit(r)
-		joiner := (r == '-' || r == '.') && start >= 0 && i+1 < len(runes) &&
-			(unicode.IsLetter(runes[i+1]) || unicode.IsDigit(runes[i+1]))
-		switch {
-		case inWord || joiner:
-			if start < 0 {
-				start = i
-			}
-		case start >= 0:
-			out = append(out, string(runes[start:i]))
-			start = -1
-		}
-	}
-	if start >= 0 {
-		out = append(out, string(runes[start:]))
-	}
-	return out
 }
 
 // Segments splits text where a phrase cannot continue: at line breaks, at sentence and clause
@@ -251,7 +226,7 @@ func pageScores(p Page) map[string]pageHit {
 	add := func(text string, weight float64) {
 		counts := map[string]int{}
 		for _, segment := range Segments(text) {
-			for _, ph := range phrases(Tokens(segment)) {
+			for _, ph := range phrases(spelling.Tokens(segment)) {
 				if counts[ph] < maxCountPerField {
 					counts[ph]++
 					h, seen := hits[ph]
@@ -437,7 +412,7 @@ func corporaByLanguage(pages []Page) map[string]string {
 		}
 		for _, part := range append([]string{p.Title, p.Description, p.Text}, p.Headings...) {
 			for _, segment := range Segments(part) {
-				corpus.WriteString(" " + fold.Fold(strings.Join(Tokens(segment), " ")) + " ")
+				corpus.WriteString(" " + fold.Fold(strings.Join(spelling.Tokens(segment), " ")) + " ")
 			}
 		}
 	}
@@ -451,44 +426,12 @@ func corporaByLanguage(pages []Page) map[string]string {
 // occurrences counts each alternative of term in corpus, singular or with a plural s.
 func occurrences(corpus, term string) int {
 	n := 0
-	for _, alt := range Alternatives(term) {
-		if needle := fold.Fold(strings.Join(Tokens(alt), " ")); needle != "" {
+	for _, alt := range spelling.Alternatives(term) {
+		if needle := fold.Fold(strings.Join(spelling.Tokens(alt), " ")); needle != "" {
 			n += strings.Count(corpus, " "+needle+" ") + strings.Count(corpus, " "+needle+"s ")
 		}
 	}
 	return n
-}
-
-// Alternatives splits a glossary entry into the spellings it stands for: "a / b" is a and b, and
-// every parenthesised remark is dropped, so "belt(s)" is belt (FindKnownTerms adds the plural).
-func Alternatives(term string) []string {
-	var out []string
-	add := func(s string) {
-		if s = strings.Join(strings.Fields(s), " "); s != "" && !slices.Contains(out, s) {
-			out = append(out, s)
-		}
-	}
-	for _, part := range strings.Split(term, " / ") {
-		add(dropRemarks(part))
-	}
-	return out
-}
-
-// dropRemarks removes every "(…)" from s.
-func dropRemarks(s string) string {
-	var b strings.Builder
-	depth := 0
-	for _, r := range s {
-		switch {
-		case r == '(':
-			depth++
-		case r == ')' && depth > 0:
-			depth--
-		case depth == 0:
-			b.WriteRune(r)
-		}
-	}
-	return b.String()
 }
 
 // SiteText is the text the language model reads: each page's address, title, headings and text,

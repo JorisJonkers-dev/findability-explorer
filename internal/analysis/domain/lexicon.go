@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/spelling"
 )
 
 // Lexicon is the vocabulary of metal conveyor belts the analysis judges a site's phrases by: every
@@ -52,7 +52,7 @@ func NewLexicon(glossary []GlossaryTerm) Lexicon {
 		t := newLexiconTerm(g)
 		counted := map[string]bool{}
 		for _, w := range t.words {
-			if s := singular(w); !counted[s] {
+			if s := spelling.Singular(w); !counted[s] {
 				docs[s], counted[s] = docs[s]+1, true
 			}
 		}
@@ -69,14 +69,9 @@ func NewLexicon(glossary []GlossaryTerm) Lexicon {
 
 // newLexiconTerm folds a glossary term's spellings, and collects its distinct content words.
 func newLexiconTerm(g GlossaryTerm) lexiconTerm {
-	var alts [][]string
+	alts := spelling.Forms(g.Text)
 	var words []string
-	for _, alt := range Alternatives(g.Text) {
-		ws := foldedWords(alt)
-		if len(ws) == 0 {
-			continue
-		}
-		alts = append(alts, ws)
+	for _, ws := range alts {
 		for _, w := range ws {
 			if !slices.Contains(words, w) && !isStopword(w) && len([]rune(w)) >= 3 {
 				words = append(words, w)
@@ -100,27 +95,15 @@ func wordWeights(docs map[string]int, termCount int) map[string]float64 {
 		}
 	}
 	for _, w := range applicationWords() {
-		if _, ok := weight[singular(w)]; !ok {
-			weight[singular(w)] = math.Log(1 + float64(termCount))
+		if _, ok := weight[spelling.Singular(w)]; !ok {
+			weight[spelling.Singular(w)] = math.Log(1 + float64(termCount))
 		}
 	}
 	return weight
 }
 
-func foldedWords(s string) []string {
-	return strings.Fields(fold.Fold(strings.Join(Tokens(s), " ")))
-}
-
-// singular drops a plural s, so "belts" weighs as "belt".
-func singular(w string) string {
-	if len(w) > 3 && strings.HasSuffix(w, "s") && !strings.HasSuffix(w, "ss") {
-		return w[:len(w)-1]
-	}
-	return w
-}
-
 func (l Lexicon) wordWeight(w string) float64 {
-	if v, ok := l.weight[singular(w)]; ok {
+	if v, ok := l.weight[spelling.Singular(w)]; ok {
 		return v
 	}
 	return l.compoundWeight(w)
@@ -190,7 +173,7 @@ type Classification struct {
 // of its own wins. A phrase whose only close terms are
 // of a family it does not name is broad, keeping a specification, application or problem tier.
 func (l Lexicon) Classify(words []string, language string) Classification {
-	if i, ok := l.spelling(words, language); ok {
+	if i, ok := l.spelt(words, language); ok {
 		// The spelling's family and tier; the closest term of them.
 		spelt := l.terms[i].term
 		if j := l.closest(words, language, func(t GlossaryTerm) bool { return t.Family == spelt.Family && t.Tier == spelt.Tier }); j >= 0 {
@@ -255,14 +238,14 @@ func (l Lexicon) withoutFamily(words []string, language string) Classification {
 // containedSpelling is the index of the term in language with the longest spelling of two words
 // or more that the phrase holds word for word, plural or not.
 func (l Lexicon) containedSpelling(words []string, language string) (int, bool) {
-	plain := singularAll(words)
+	plain := spelling.SingularAll(words)
 	best, length := -1, 1
 	for i, t := range l.terms {
 		if !lang.Same(t.term.Language, language) {
 			continue
 		}
 		for _, alt := range t.alts {
-			if len(alt) > length && holds(plain, singularAll(alt)) {
+			if len(alt) > length && holds(plain, spelling.SingularAll(alt)) {
 				best, length = i, len(alt)
 			}
 		}
@@ -286,7 +269,7 @@ func holds(words, part []string) bool {
 func (l Lexicon) specWord(w string) bool {
 	spec, total := 0, 0
 	for _, t := range l.terms {
-		if slices.Contains(t.words, w) || slices.Contains(t.words, singular(w)) {
+		if slices.Contains(t.words, w) || slices.Contains(t.words, spelling.Singular(w)) {
 			total++
 			if t.term.Tier == "spec" {
 				spec++
@@ -334,33 +317,25 @@ func isTribeltFamily(family string) bool { return slices.Contains(tribeltFamilyI
 // minCompoundPart letters inside w, as "drahtgliedergurt" holds the term's "gliedergurt".
 func (t lexiconTerm) shares(w string) bool {
 	return slices.ContainsFunc(t.words, func(tw string) bool {
-		return tw == w || tw == singular(w) || (len(tw) >= minCompoundPart && strings.Contains(w, tw))
+		return tw == w || tw == spelling.Singular(w) || (len(tw) >= minCompoundPart && strings.Contains(w, tw))
 	})
 }
 
-// spelling is the index of the term in language the phrase is one of the spellings of, plural or
+// spelt is the index of the term in language the phrase is one of the spellings of, plural or
 // not.
-func (l Lexicon) spelling(words []string, language string) (int, bool) {
-	plain := singularAll(words)
+func (l Lexicon) spelt(words []string, language string) (int, bool) {
+	key := spelling.Key(words)
 	for i, t := range l.terms {
 		if !lang.Same(t.term.Language, language) {
 			continue
 		}
 		for _, alt := range t.alts {
-			if slices.Equal(alt, words) || slices.Equal(alt, plain) || slices.Equal(singularAll(alt), plain) {
+			if spelling.Key(alt) == key {
 				return i, true
 			}
 		}
 	}
 	return -1, false
-}
-
-func singularAll(words []string) []string {
-	out := make([]string, 0, len(words))
-	for _, w := range words {
-		out = append(out, singular(w))
-	}
-	return out
 }
 
 // BrandWords are the words that only name the site itself: the labels of its host before the
@@ -370,7 +345,7 @@ func BrandWords(host string) []string {
 	labels := strings.Split(strings.TrimPrefix(strings.ToLower(host), "www."), ".")
 	var out []string
 	for _, l := range labels[:max(len(labels)-1, 0)] {
-		for _, w := range foldedWords(strings.ReplaceAll(l, "-", " ")) {
+		for _, w := range spelling.Words(strings.ReplaceAll(l, "-", " ")) {
 			if len(w) >= 4 {
 				out = append(out, w)
 			}

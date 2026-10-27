@@ -234,6 +234,11 @@ describe("Tribelt's term", () => {
     expect(tribeltTerm(dutch, [...MAP, dutch])).toBe('Lacks it')
     const own = term({ term: 'oogjesband', language: 'nl', family: 'eyelink', tier: 'broad', usedBy: ['Tribelt'] })
     expect(tribeltTerm(dutch, [...MAP, dutch, own])).toBe('oogjesband')
+    // The owner's case: Tribelt's German "kurvengängig" is no stand-in for the English "flex-turn belt".
+    const flexTurn = term({ term: 'flex-turn belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'product', usedBy: ['Ashworth'] })
+    const kurvengaengig = term({ term: 'kurvengängig', language: 'de', family: 'tri_flex_turn_curve', tier: 'application', usedBy: ['Tribelt'] })
+    expect(tribeltTerm(flexTurn, [flexTurn, kurvengaengig])).toBe('Lacks it')
+    expect(rankTerms([flexTurn], [flexTurn, kurvengaengig])[0]?.tribeltTerm).toBe('Lacks it')
     // A specification is its own thing: Tribelt's other specification is no stand-in for it.
     const pitch = term({ term: 'belt pitch', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Ashworth'] })
     const steel = term({ term: 'AISI 316', language: 'en', family: 'spec_all', tier: 'spec', usedBy: ['Tribelt'] })

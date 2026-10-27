@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	focus "github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/spelling"
 )
 
 // The review queue: phrases finished scans found that the map does not hold are candidates, and
@@ -106,24 +107,26 @@ func PhraseID(phrase string) string {
 	return hex.EncodeToString(sum[:])[:16]
 }
 
-// spelt is a folded spelling of a map term in one language.
+// spelt is a spelling of a map term in one language, by its spelling.Key.
 type spelt struct {
-	text     string
+	key      string
 	language string
 }
 
 // Candidates aggregates observations by phrase and language. A candidate with a decision takes
-// its status; one without is pending, unless the map has the phrase in its language by now (the
-// map grew since the scan). A closest term the scan named in another language is dropped, as scans
-// before the language rule paired phrases across languages. They come with the most companies
-// first, then the highest score, then by phrase and language.
+// its status; one without is pending, unless the map has the phrase in its language, by the
+// spelling rule the scans use (package spelling). The scan's own word on that is not taken: scans
+// before the language rule judged a phrase in the map through a term in another language, and the
+// map grows after a scan. A closest term the scan named in another language is dropped for the same
+// reason. They come with the most companies first, then the highest score, then by phrase and
+// language.
 func Candidates(obs []Observation, decisions []Decision, terms []Term) []Candidate {
 	inMap := map[spelt]bool{}
 	termLanguages := map[string][]string{}
 	for _, t := range terms {
 		language := focus.Primary(string(t.Language))
-		for _, alt := range spellings(t.Text) {
-			inMap[spelt{alt, language}] = true
+		for _, form := range spelling.Forms(t.Text) {
+			inMap[spelt{spelling.Key(form), language}] = true
 		}
 		termLanguages[t.Text] = append(termLanguages[t.Text], language)
 	}
@@ -150,10 +153,9 @@ func Candidates(obs []Observation, decisions []Decision, terms []Term) []Candida
 	out := make([]Candidate, 0, len(order))
 	for _, id := range order {
 		c := byID[id].result()
-		phrase := Fold(c.Phrase)
 		if d, ok := decisionOn(c, decided); ok {
 			c.Status, c.Decision = d.Status, &d
-		} else if inMap[spelt{phrase, c.Language}] || inMap[spelt{singular(phrase), c.Language}] {
+		} else if inMap[spelt{spelling.Key(spelling.Words(c.Phrase)), c.Language}] {
 			continue
 		}
 		out = append(out, c)
@@ -194,27 +196,6 @@ func (c Candidate) NewTerm(a Acceptance, terms []Term) (Term, error) {
 		return Term{}, ErrOtherLanguage
 	}
 	return NewTerm(a, c.Source, terms)
-}
-
-// spellings are the folded forms a term stands for: each " / " alternative without remarks in
-// brackets, and its singular.
-func spellings(text string) []string {
-	var out []string
-	for _, part := range strings.Split(text, " / ") {
-		base, _, _ := strings.Cut(part, "(")
-		if f := Fold(strings.Join(strings.Fields(base), " ")); f != "" {
-			out = append(out, f, singular(f))
-		}
-	}
-	return out
-}
-
-// singular drops a final plural s of the last word, as "belts" for "belt".
-func singular(s string) string {
-	if len(s) > 3 && strings.HasSuffix(s, "s") && !strings.HasSuffix(s, "ss") {
-		return s[:len(s)-1]
-	}
-	return s
 }
 
 type judgement struct {

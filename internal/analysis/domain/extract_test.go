@@ -9,17 +9,6 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 )
 
-func TestTokens(t *testing.T) {
-	got := domain.Tokens("Tri-Flex belts in 1.4301, up to 1.150 °C! Edelstahl-Förderbänder -x. end-")
-	want := []string{"tri-flex", "belts", "in", "1.4301", "up", "to", "1.150", "c", "edelstahl-förderbänder", "x", "end"}
-	if !slices.Equal(got, want) {
-		t.Fatalf("Tokens = %q, want %q", got, want)
-	}
-	if got := domain.Tokens("Ofenband"); !slices.Equal(got, []string{"ofenband"}) {
-		t.Fatalf("Tokens(single word) = %q", got)
-	}
-}
-
 func TestDetectLanguage(t *testing.T) {
 	cases := map[string]string{
 		"The belt is made of stainless steel and it runs in the oven for the bakery.": "en",
@@ -291,22 +280,6 @@ func TestKeywordsNeverCrossASegment(t *testing.T) {
 	for _, k := range kws {
 		if k.Phrase == "belts eyelink" || k.Phrase == "belts rod" || k.Phrase == "spiral belts eyelink" {
 			t.Fatalf("phrase %q crosses a segment", k.Phrase)
-		}
-	}
-}
-
-func TestAlternatives(t *testing.T) {
-	cases := map[string][]string{
-		"eye-link belt / eyelink belt":         {"eye-link belt", "eyelink belt"},
-		"metal conveyor belt(s)":               {"metal conveyor belt"},
-		"Eye-Link OGBL (Ashworth)":             {"Eye-Link OGBL"},
-		"spiraaltorens / vries- en koeltorens": {"spiraaltorens", "vries- en koeltorens"},
-		"a / a / (only a remark)":              {"a"},
-		"odd ) bracket":                        {"odd ) bracket"},
-	}
-	for in, want := range cases {
-		if got := domain.Alternatives(in); !slices.Equal(got, want) {
-			t.Errorf("Alternatives(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

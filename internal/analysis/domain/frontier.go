@@ -9,6 +9,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/fold"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/spelling"
 )
 
 // Link is an address the crawl found: in an anchor, as a language version a page declares, or in
@@ -114,7 +115,7 @@ func linkWords(u *url.URL, anchor string) []string {
 	p = strings.TrimSuffix(p, path.Ext(p))
 	raw := strings.FieldsFunc(p, func(r rune) bool { return r == '/' || r == '-' || r == '_' || r == '.' })
 	var out []string
-	for _, w := range append(strings.Fields(fold.Fold(strings.Join(raw, " "))), foldedWords(anchor)...) {
+	for _, w := range append(strings.Fields(fold.Fold(strings.Join(raw, " "))), spelling.Words(anchor)...) {
 		for _, part := range strings.Split(fold.Fold(w), "-") {
 			if part != "" && !slices.Contains(out, part) {
 				out = append(out, part)

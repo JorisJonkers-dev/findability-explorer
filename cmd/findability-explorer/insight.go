@@ -18,7 +18,7 @@ import (
 
 // newInsight builds the insight use cases on the other contexts, each reached through a port
 // that hands its data over by value.
-func newInsight(companies *companiesapp.Service, prompts *prompttestapp.Service, analysis *analysisapp.Service,
+func newInsight(store insightapp.Store, companies *companiesapp.Service, prompts *prompttestapp.Service, analysis *analysisapp.Service,
 	terminology *terminologyapp.Service, now func() time.Time,
 ) *insightapp.Service {
 	return insightapp.New(insightapp.Ports{
@@ -26,6 +26,7 @@ func newInsight(companies *companiesapp.Service, prompts *prompttestapp.Service,
 		PromptRuns: promptRuns{prompts: prompts, directory: promptDirectory{companies: companies}},
 		Readiness:  readiness{analysis: analysis},
 		Terms:      termsUsed{terminology: terminology, analysis: analysis},
+		Store:      store,
 	}, now)
 }
 

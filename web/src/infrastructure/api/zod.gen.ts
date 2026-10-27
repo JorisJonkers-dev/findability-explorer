@@ -757,6 +757,57 @@ export const zAiSearchSummary = z.object({
 });
 
 /**
+ * A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt), readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a run citing tribelt.nl).
+ */
+export const zPlanTarget = z.enum([
+    'aiShareOfVoice',
+    'twenteShareOfVoice',
+    'readinessChecks',
+    'termsUsed',
+    'citations'
+]);
+
+/**
+ * A number to watch, now and its target.
+ */
+export const zWatchedNumber = z.object({
+    target: zPlanTarget,
+    now: z.number().gte(0).optional(),
+    goal: z.number().gte(0)
+});
+
+/**
+ * Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
+ */
+export const zEyeOnReason = z.enum([
+    'mostNamed',
+    'bestPrepared',
+    'twente'
+]);
+
+/**
+ * Whether an improvement is done.
+ */
+export const zImprovementTick = z.object({
+    done: z.boolean()
+});
+
+/**
+ * One target to set.
+ */
+export const zPlanTargetValue = z.object({
+    target: zPlanTarget,
+    value: z.number().gte(0).lte(10000)
+});
+
+/**
+ * Targets to set.
+ */
+export const zPlanTargetsChange = z.object({
+    targets: z.array(zPlanTargetValue).min(1).max(10)
+});
+
+/**
  * A competitor that sells a family, with its own names for it.
  */
 export const zProductSeller = z.object({
@@ -817,6 +868,39 @@ export const zMeasureLeader = z.object({
 });
 
 /**
+ * One improvement of the plan.
+ */
+export const zPlanImprovement = z.object({
+    id: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+    title: z.string().max(200),
+    moves: z.string().max(200),
+    measure: zStandingMeasure,
+    auto: z.boolean(),
+    done: z.boolean(),
+    tickedBy: z.string().max(200).optional(),
+    tickedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    leader: zMeasureLeader.optional()
+});
+
+/**
+ * A competitor to keep an eye on.
+ */
+export const zEyeOn = z.object({
+    why: zEyeOnReason,
+    leader: zMeasureLeader
+});
+
+/**
+ * The plan as it stands.
+ */
+export const zPlan = z.object({
+    catalogueVersion: z.int().gte(1).lte(1000),
+    improvements: z.array(zPlanImprovement).max(50),
+    watched: z.array(zWatchedNumber).max(20),
+    eyeOn: z.array(zEyeOn).max(10)
+});
+
+/**
  * Tribelt against its competitors on one measure.
  */
 export const zStanding = z.object({
@@ -835,6 +919,7 @@ export const zStanding = z.object({
 export const zStandings = z.object({
     measures: z.array(zStanding).max(20),
     trailing: z.int().gte(0).lte(20),
+    open: z.array(zPlanImprovement).max(10),
     runStartedAt: z.iso.datetime({ offset: true }).max(64).optional()
 });
 
@@ -1440,6 +1525,35 @@ export const zCredentialId = zLlmCredentialId;
  * The summary.
  */
 export const zGetAiSearchSummaryResponse = zAiSearchSummary;
+
+/**
+ * The plan.
+ */
+export const zGetPlanResponse = zPlan;
+
+/**
+ * Whether it is done.
+ */
+export const zTickImprovementBody = zImprovementTick;
+
+export const zTickImprovementPath = z.object({
+    improvementId: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+});
+
+/**
+ * The plan, with the tick.
+ */
+export const zTickImprovementResponse = zPlan;
+
+/**
+ * The targets to set.
+ */
+export const zSetPlanTargetsBody = zPlanTargetsChange;
+
+/**
+ * The plan, with the targets.
+ */
+export const zSetPlanTargetsResponse = zPlan;
 
 /**
  * The families.

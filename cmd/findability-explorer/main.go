@@ -54,6 +54,7 @@ import (
 	identityweb "github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/web"
 	identityapp "github.com/JorisJonkers-dev/findability-explorer/internal/identity/app"
 	identitydomain "github.com/JorisJonkers-dev/findability-explorer/internal/identity/domain"
+	insightpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/persistence"
 	llmpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/providers"
 	llmapp "github.com/JorisJonkers-dev/findability-explorer/internal/llm/app"
@@ -160,7 +161,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 			logger.ErrorContext(ctx, "prompt run could not be recorded", "run", id, "error", err)
 		})
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
-	insight := newInsight(companies, promptTest, analysis, terminology, now)
+	insight := newInsight(insightpersistence.New(store.Queries()), companies, promptTest, analysis, terminology, now)
 	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
 
 	gate, err := newGate(ctx, logger, getenv, store, secret, now)

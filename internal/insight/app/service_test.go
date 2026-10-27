@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -23,6 +24,11 @@ type world struct {
 	terms        map[string]int
 	mapTerms     []domain.MapTerm
 	mapErr       error
+	ticks        []domain.Tick
+	set          map[domain.Target]float64
+	ticksErr     error
+	targetsErr   error
+	writeErr     error
 	companiesErr error
 	runsErr      error
 	readyErr     error
@@ -47,6 +53,36 @@ func (w *world) TermsUsed(context.Context) (map[string]int, error) { return w.te
 
 func (w *world) MapTerms(context.Context) ([]domain.MapTerm, error) { return w.mapTerms, w.mapErr }
 
+func (w *world) Ticks(context.Context) ([]domain.Tick, error) { return w.ticks, w.ticksErr }
+
+func (w *world) Tick(_ context.Context, t domain.Tick) error {
+	if w.writeErr != nil {
+		return w.writeErr
+	}
+	w.ticks = append(w.ticks, t)
+	return nil
+}
+
+func (w *world) Untick(_ context.Context, id string) error {
+	if w.writeErr != nil {
+		return w.writeErr
+	}
+	w.ticks = slices.DeleteFunc(w.ticks, func(t domain.Tick) bool { return t.ImprovementID == id })
+	return nil
+}
+
+func (w *world) Targets(context.Context) (map[domain.Target]float64, error) {
+	return w.set, w.targetsErr
+}
+
+func (w *world) SetTarget(_ context.Context, t domain.Target, v float64, _ string, _ time.Time) error {
+	if w.writeErr != nil {
+		return w.writeErr
+	}
+	w.set[t] = v
+	return nil
+}
+
 func newWorld() *world {
 	return &world{
 		companies: []domain.Company{
@@ -66,11 +102,12 @@ func newWorld() *world {
 			"martens": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, SitemapPages: 40},
 		},
 		terms: map[string]int{"tribelt": 3, "ashworth": 9},
+		set:   map[domain.Target]float64{},
 	}
 }
 
 func service(w *world) *app.Service {
-	return app.New(app.Ports{Directory: w, PromptRuns: w, Readiness: w, Terms: w}, func() time.Time { return today })
+	return app.New(app.Ports{Directory: w, PromptRuns: w, Readiness: w, Terms: w, Store: w}, func() time.Time { return today })
 }
 
 func TestStandingsComeFromTheNewestRunAndScans(t *testing.T) {
@@ -107,8 +144,9 @@ func TestStandingsComeFromTheNewestRunAndScans(t *testing.T) {
 func TestStandingsBeforeAnyRun(t *testing.T) {
 	w := newWorld()
 	w.runs = nil
+	delete(w.readiness, "tribelt")
 	got, err := service(w).Standings(context.Background())
-	if err != nil || got.Run != nil || got.Standings[0].Tribelt != nil {
+	if err != nil || got.Run != nil || got.Standings[0].Tribelt != nil || len(got.Open) != app.OpenShown {
 		t.Fatalf("standings = %+v, %v", got, err)
 	}
 }
@@ -122,6 +160,7 @@ func TestStandingsSayWhichSourceFailed(t *testing.T) {
 		{"runs", func(w *world) { w.runsErr = errDown }},
 		{"readiness", func(w *world) { w.readyErr = errDown }},
 		{"terms", func(w *world) { w.termsErr = errDown }},
+		{"ticks", func(w *world) { w.ticksErr = errDown }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			w := newWorld()

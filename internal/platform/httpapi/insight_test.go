@@ -13,8 +13,14 @@ import (
 
 // insightCases is a stand-in for the insight use cases, so these tests exercise the contract.
 type insightCases struct {
-	err error
-	run *domain.Run
+	err     error
+	run     *domain.Run
+	tickErr error
+	ticked  string
+	done    bool
+	actor   string
+	targets map[domain.Target]float64
+	planErr error
 }
 
 func (a *analyses) insights() *insightCases {
@@ -33,6 +39,7 @@ func (c *insightCases) Standings(context.Context) (app.Standings, error) {
 		},
 		Trailing: 1,
 		Run:      c.run,
+		Open:     plan().Items[:1],
 	}, c.err
 }
 
@@ -121,6 +128,96 @@ func TestProductsAreForEveryoneSignedIn(t *testing.T) {
 	}
 }
 
+func plan() app.Plan {
+	at := time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC)
+	share := 0.24
+	return app.Plan{
+		Items: []domain.PlanItem{
+			{Improvement: domain.Improvements()[0], Done: true, Tick: &domain.Tick{By: "joris", At: at}, Leader: &domain.Leader{CompanyID: "ashworth", Name: "Ashworth", Value: 0.57}},
+			{Improvement: domain.Improvements()[2], Auto: true},
+		},
+		Watched: []domain.Watched{{Target: domain.TargetShareOfVoice, Now: &share, Goal: 0.4}, {Target: domain.TargetCitations, Goal: 20}},
+		EyeOn:   []domain.EyeOn{{Why: domain.WatchTwente, Leader: domain.Leader{CompanyID: "twentebelt", Name: "Twentebelt", Value: 0.6}}},
+	}
+}
+
+func (c *insightCases) Plan(context.Context) (app.Plan, error) { return plan(), c.planErr }
+
+func (c *insightCases) Tick(_ context.Context, actor, id string, done bool) error {
+	c.actor, c.ticked, c.done = actor, id, done
+	return c.tickErr
+}
+
+func (c *insightCases) SetTargets(_ context.Context, actor string, targets map[domain.Target]float64) error {
+	c.actor, c.targets = actor, targets
+	return c.tickErr
+}
+
+func TestThePlanIsForEveryoneAndTickedByAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	r := callAs(t, srv, http.MethodGet, "/api/v1/plan", "", "tester")
+	items, _ := r.body["improvements"].([]any)
+	if r.code != http.StatusOK || len(items) != 2 || r.body["catalogueVersion"].(float64) != 1 {
+		t.Fatalf("plan = %d %v", r.code, r.body)
+	}
+	first := items[0].(map[string]any)
+	if first["id"] != "submit-search-engines" || first["done"] != true || first["tickedBy"] != "joris" || first["leader"].(map[string]any)["name"] != "Ashworth" {
+		t.Errorf("first = %v", first)
+	}
+	if second := items[1].(map[string]any); second["auto"] != true || second["leader"] != nil || second["tickedAt"] != nil {
+		t.Errorf("second = %v", second)
+	}
+	watched := r.body["watched"].([]any)
+	if watched[0].(map[string]any)["now"].(float64) != 0.24 || watched[1].(map[string]any)["now"] != nil {
+		t.Errorf("watched = %v", watched)
+	}
+	if eye := r.body["eyeOn"].([]any)[0].(map[string]any); eye["why"] != "twente" || eye["leader"].(map[string]any)["competitorId"] != "twentebelt" {
+		t.Errorf("eye on = %v", eye)
+	}
+
+	path := "/api/v1/admin/plan/improvements/listings"
+	if r := callAs(t, srv, http.MethodPut, path, `{"done":true}`, "tester"); r.code != http.StatusForbidden {
+		t.Errorf("a viewer ticked: %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPut, path, `{"done":false}`, "admin"); r.code != http.StatusOK || a.insights().ticked != "listings" || a.insights().done || a.insights().actor != "Admin" {
+		t.Errorf("untick = %d, %+v", r.code, a.insights())
+	}
+	for err, want := range map[error]int{
+		domain.ErrUnknownImprovement: http.StatusNotFound,
+		domain.ErrCheckedByScan:      http.StatusUnprocessableEntity,
+		errors.New("down"):           http.StatusInternalServerError,
+	} {
+		a.insights().tickErr = err
+		if r := callAs(t, srv, http.MethodPut, path, `{"done":true}`, "admin"); r.code != want {
+			t.Errorf("%v: %d", err, r.code)
+		}
+	}
+	a.insights().tickErr = nil
+
+	targets := "/api/v1/admin/plan/targets"
+	if r := callAs(t, srv, http.MethodPut, targets, `{"targets":[{"target":"termsUsed","value":40}]}`, "tester"); r.code != http.StatusForbidden {
+		t.Errorf("a viewer set targets: %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPut, targets, `{"targets":[{"target":"termsUsed","value":40}]}`, "admin"); r.code != http.StatusOK || a.insights().targets[domain.TargetTermsUsed] != 40 {
+		t.Errorf("set targets = %d, %v", r.code, a.insights().targets)
+	}
+	a.insights().tickErr = domain.ErrInvalid
+	if r := callAs(t, srv, http.MethodPut, targets, `{"targets":[{"target":"termsUsed","value":40.5}]}`, "admin"); r.code != http.StatusUnprocessableEntity {
+		t.Errorf("a bad target = %d", r.code)
+	}
+	a.insights().tickErr = errors.New("down")
+	if r := callAs(t, srv, http.MethodPut, targets, `{"targets":[{"target":"termsUsed","value":40}]}`, "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("a failing store = %d", r.code)
+	}
+	a.insights().tickErr, a.insights().planErr = nil, errors.New("down")
+	for _, call := range [][3]string{{http.MethodGet, "/api/v1/plan", ""}, {http.MethodPut, path, `{"done":true}`}, {http.MethodPut, targets, `{"targets":[{"target":"citations","value":20}]}`}} {
+		if r := callAs(t, srv, call[0], call[1], call[2], "admin"); r.code != http.StatusInternalServerError {
+			t.Errorf("%s with a failing plan = %d", call[1], r.code)
+		}
+	}
+}
+
 func TestStandingsAreForEveryoneSignedIn(t *testing.T) {
 	a := &analyses{}
 	srv := serve(t, a)
@@ -134,6 +231,9 @@ func TestStandingsAreForEveryoneSignedIn(t *testing.T) {
 	if voice["measure"] != "aiShareOfVoice" || voice["tribelt"].(float64) != 0.24 || voice["median"].(float64) != 0.17 ||
 		leader["name"] != "Ashworth" || leader["competitorId"] != "ashworth" || voice["trails"] != true || voice["leads"] != false {
 		t.Errorf("share of voice = %v", voice)
+	}
+	if open := r.body["open"].([]any); len(open) != 1 {
+		t.Errorf("open = %v", open)
 	}
 	empty := measures[1].(map[string]any)
 	if _, ok := empty["tribelt"]; ok || empty["leader"] != nil || empty["trails"] != false {

@@ -91,6 +91,8 @@ type Querier interface {
 	ListCompanyOverrides(ctx context.Context) ([]CompanyOverride, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
+	ListPlanTargets(ctx context.Context) ([]PlanTarget, error)
+	ListPlanTicks(ctx context.Context) ([]PlanTick, error)
 	ListPromptAnswerCompanies(ctx context.Context, runID uuid.UUID) ([]ListPromptAnswerCompaniesRow, error)
 	// A run's answers with how they were read; the answer's text only when with_text is true.
 	ListPromptAnswers(ctx context.Context, arg ListPromptAnswersParams) ([]ListPromptAnswersRow, error)
@@ -115,10 +117,13 @@ type Querier interface {
 	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
+	SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) error
+	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
 	// How many scans the language model answered for, and the tokens one of them used on average.
 	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)
 	TokensSince(ctx context.Context, createdAt time.Time) (int64, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
+	UntickPlanImprovement(ctx context.Context, improvementID string) error
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error
 	UpdateCompany(ctx context.Context, arg UpdateCompanyParams) (int64, error)
 	UpsertAccount(ctx context.Context, arg UpsertAccountParams) (int64, error)

@@ -8,6 +8,10 @@ const standings = {
     { measure: 'sitemapPages', competitors: 0, trails: false, leads: false },
   ],
   trailing: 1,
+  open: [
+    { id: 'sitemap-per-language', title: 'A sitemap for each language', moves: 'the pages search engines know of', measure: 'sitemapPages', auto: true, done: false, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 2140 } },
+    { id: 'listings', title: 'Get listed where answers find sources', moves: 'how often web answers cite tribelt.nl', measure: 'citationShare', auto: false, done: false },
+  ],
 }
 
 describe('Catching up', () => {
@@ -23,6 +27,19 @@ describe('Catching up', () => {
     expect(figures[0]?.findAll('figcaption ~ div').map((d) => d.text())).toEqual(['Tribelt24%', 'Typical competitor17%', 'Ashworth57%'])
     expect(figures[1]?.text()).toContain('Märtens30')
     expect(wrapper.get('ul[aria-label="Legend"]').text()).toBe('TribeltTypical competitorThe leader')
+  })
+
+  it('ends with the open improvements in order, each with the competitor to look at', async () => {
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/standings': () => json(standings) }), '/catching-up')
+    const todo = wrapper.get('section[aria-labelledby="todo-title"]')
+    expect(todo.findAll('li').map((l) => l.text())).toEqual([
+      '1A sitemap for each languageMoves the pages search engines know of.Look atAshworth',
+      '2Get listed where answers find sourcesMoves how often web answers cite tribelt.nl.',
+    ])
+    expect(todo.get('li a').attributes('href')).toBe('/competitors/ashworth')
+    wrapper.unmount()
+    const all = await mountApp(routes({ 'GET /api/v1/standings': () => json({ ...standings, open: [] }) }), '/catching-up')
+    expect(all.wrapper.text()).toContain('Every improvement of the plan is done.')
   })
 
   it('says when the comparison cannot be loaded', async () => {

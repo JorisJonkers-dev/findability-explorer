@@ -73,6 +73,10 @@ type GetMeRes interface {
 	getMeRes()
 }
 
+type GetPlanRes interface {
+	getPlanRes()
+}
+
 type GetProductsRes interface {
 	getProductsRes()
 }
@@ -133,6 +137,10 @@ type SetActiveLlmRes interface {
 	setActiveLlmRes()
 }
 
+type SetPlanTargetsRes interface {
+	setPlanTargetsRes()
+}
+
 type StartAnalysisRes interface {
 	startAnalysisRes()
 }
@@ -147,6 +155,10 @@ type StartRescansRes interface {
 
 type TestLlmCredentialRes interface {
 	testLlmCredentialRes()
+}
+
+type TickImprovementRes interface {
+	tickImprovementRes()
 }
 
 type UndoCompetitorCandidateRes interface {

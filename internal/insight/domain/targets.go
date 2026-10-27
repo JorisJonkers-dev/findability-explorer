@@ -11,43 +11,43 @@ type Target string
 const (
 	TargetShareOfVoice       Target = "aiShareOfVoice"
 	TargetTwenteShareOfVoice Target = "twenteShareOfVoice"
-	TargetCitationShare      Target = "citationShare"
+	TargetCitations          Target = "citations"
 	TargetReadiness          Target = "readinessChecks"
 	TargetTermsUsed          Target = "termsUsed"
 )
 
 // Targets lists them in the order the plan shows them.
 func Targets() []Target {
-	return []Target{TargetShareOfVoice, TargetTwenteShareOfVoice, TargetCitationShare, TargetReadiness, TargetTermsUsed}
+	return []Target{TargetShareOfVoice, TargetTwenteShareOfVoice, TargetReadiness, TargetTermsUsed, TargetCitations}
 }
 
 // DefaultTargets are the targets until an administrator sets them: named in 40% of answers and
-// 75% of answers about Twente, cited in 20% of web answers, five of five readiness checks, and 35
-// terms from the map used on the site.
+// 75% of answers about Twente, five of five readiness checks, 35 terms from the map used on the
+// site, and tribelt.nl cited in 20 web answers of a run.
 func DefaultTargets() map[Target]float64 {
 	return map[Target]float64{
-		TargetShareOfVoice: 0.40, TargetTwenteShareOfVoice: 0.75, TargetCitationShare: 0.20,
-		TargetReadiness: 5, TargetTermsUsed: 35,
+		TargetShareOfVoice: 0.40, TargetTwenteShareOfVoice: 0.75, TargetReadiness: 5, TargetTermsUsed: 35,
+		TargetCitations: 20,
 	}
 }
 
 // ErrInvalid wraps every rule a change breaks.
 var ErrInvalid = errors.New("invalid")
 
-// maxTermsTarget is the most terms a target may ask for.
-const maxTermsTarget = 10_000
+// maxCountTarget is the most terms or citations a target may ask for.
+const maxCountTarget = 10_000
 
 // CheckTarget checks a target's value: a share from 0 to 1, a readiness score from 0 to 5 in
-// halves, or a count of terms.
+// halves, or a count of terms or citations.
 func CheckTarget(t Target, v float64) (float64, error) {
 	ok := false
 	switch t {
-	case TargetShareOfVoice, TargetTwenteShareOfVoice, TargetCitationShare:
+	case TargetShareOfVoice, TargetTwenteShareOfVoice:
 		ok = v > 0 && v <= 1
 	case TargetReadiness:
 		ok = v > 0 && v <= 5 && v*2 == float64(int(v*2))
-	case TargetTermsUsed:
-		ok = v > 0 && v <= maxTermsTarget && v == float64(int(v))
+	case TargetTermsUsed, TargetCitations:
+		ok = v > 0 && v <= maxCountTarget && v == float64(int(v))
 	default:
 		return 0, fmt.Errorf("%w: no target is called %q", ErrInvalid, t)
 	}

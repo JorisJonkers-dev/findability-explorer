@@ -108,6 +108,20 @@ func encodeSetActiveLlmRequest(
 	return nil
 }
 
+func encodeSetPlanTargetsRequest(
+	req *PlanTargetsChange,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeStartAnalysisRequest(
 	req *NewAnalysis,
 	r *http.Request,
@@ -124,6 +138,20 @@ func encodeStartAnalysisRequest(
 
 func encodeStartRescansRequest(
 	req *RescanRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeTickImprovementRequest(
+	req *ImprovementTick,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

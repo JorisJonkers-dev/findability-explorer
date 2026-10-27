@@ -1,5 +1,3 @@
-import { type Phase, PHASES, type PhaseTone } from '../../plan/domain/content'
-
 /** The poster's own words, as the approved design has them. */
 export const EYEBROW = 'Digital strategy · Tribelt B.V. · 2026'
 export const LEAD =
@@ -12,13 +10,5 @@ export const TILE_TEXT = {
   buyers: { big: '43×', text: 'Organic visitors contact Tribelt 43 times more often than paid ones.' },
   aiSearch: { big: '0', text: 'Googlebot visits to our mirror in more than three weeks. AI crawlers read every page.' },
   competitors: 'competitors sell the same belts in Europe, each under its own names.',
-  plan: { big: '12', text: 'months in three phases, with a decision at the end of each.' },
+  plan: { big: '52', text: 'weekly checks a year. Every fix shows up in the numbers the week after.' },
 } as const
-
-/** The phases on the plan tile's twelve-month bar, by their short names. */
-const SHORT_PHASE_NAMES = ['Measure', 'Build', 'Expand and learn'] as const
-
-export const PLAN_BARS: readonly { label: string; start: number; span: number; tone: PhaseTone }[] = SHORT_PHASE_NAMES.map((label, index) => {
-  const phase = PHASES[index] as Phase
-  return { label, start: phase.start, span: phase.span, tone: phase.tone }
-})

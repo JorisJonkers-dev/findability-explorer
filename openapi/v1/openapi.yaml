@@ -64,6 +64,110 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/plan:
+    get:
+      operationId: getPlan
+      summary: Get the plan
+      description: >-
+        The plan's improvements in order, each with whether it is done, the measure it moves and
+        the competitor to look at (the leader of that measure). An improvement a scan of
+        tribelt.nl can check is done by the latest scan; the others are ticked off by hand. Also
+        the numbers to watch against their targets, and the competitors to keep an eye on.
+      tags: [insight]
+      responses:
+        "200":
+          description: The plan.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/plan/improvements/{improvementId}:
+    put:
+      operationId: tickImprovement
+      summary: Tick an improvement off, or undo the tick
+      description: >-
+        Administrators only. Marks an improvement no scan can check as done, recording who and
+        when, or as not done again. 404 for an unknown improvement; 422 for one a scan of
+        tribelt.nl checks.
+      tags: [admin]
+      parameters:
+        - name: improvementId
+          in: path
+          required: true
+          description: The improvement's id.
+          schema:
+            type: string
+            maxLength: 60
+            pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      requestBody:
+        required: true
+        description: Whether it is done.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImprovementTick"
+            example:
+              done: true
+      responses:
+        "200":
+          description: The plan, with the tick.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/plan/targets:
+    put:
+      operationId: setPlanTargets
+      summary: Set the plan's targets
+      description: >-
+        Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions
+        from 0 to 1, readiness checks 0 to 5 in halves, terms and citations whole numbers. 422
+        when one is out of range, and nothing is stored.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The targets to set.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanTargetsChange"
+            example:
+              targets:
+                - target: termsUsed
+                  value: 40
+      responses:
+        "200":
+          description: The plan, with the targets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/products:
     get:
       operationId: getProducts
@@ -3329,6 +3433,161 @@ components:
           maximum: 100
           description: How many providers the newest run asked; 0 before any run.
           example: 5
+    PlanImprovement:
+      description: One improvement of the plan.
+      type: object
+      additionalProperties: false
+      required: [id, title, moves, measure, auto, done]
+      properties:
+        id:
+          type: string
+          maxLength: 60
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+          description: Its id.
+          example: llms-files
+        title:
+          type: string
+          maxLength: 200
+          description: What to do.
+          example: Add llms.txt and llms-full.txt
+        moves:
+          type: string
+          maxLength: 200
+          description: What it moves, in words.
+          example: AI readiness
+        measure:
+          $ref: "#/components/schemas/StandingMeasure"
+        auto:
+          type: boolean
+          description: Whether the latest scan of tribelt.nl decides that it is done.
+          example: true
+        done:
+          type: boolean
+          description: Whether it is done.
+          example: false
+        tickedBy:
+          type: string
+          maxLength: 200
+          description: Who ticked it off; only for one ticked by hand.
+          example: joris
+        tickedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When.
+          example: "2026-11-02T09:00:00Z"
+        leader:
+          $ref: "#/components/schemas/MeasureLeader"
+    PlanTarget:
+      description: >-
+        A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming
+        Tribelt), readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations
+        (web answers of a run citing tribelt.nl).
+      type: string
+      enum: [aiShareOfVoice, twenteShareOfVoice, readinessChecks, termsUsed, citations]
+    WatchedNumber:
+      description: A number to watch, now and its target.
+      type: object
+      additionalProperties: false
+      required: [target, goal]
+      properties:
+        target:
+          $ref: "#/components/schemas/PlanTarget"
+        now:
+          type: number
+          format: double
+          minimum: 0
+          description: Its value now; absent without data.
+          example: 0.24
+        goal:
+          type: number
+          format: double
+          minimum: 0
+          description: Its target.
+          example: 0.4
+    EyeOnReason:
+      description: Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
+      type: string
+      enum: [mostNamed, bestPrepared, twente]
+    EyeOn:
+      description: A competitor to keep an eye on.
+      type: object
+      additionalProperties: false
+      required: [why, leader]
+      properties:
+        why:
+          $ref: "#/components/schemas/EyeOnReason"
+        leader:
+          $ref: "#/components/schemas/MeasureLeader"
+    Plan:
+      description: The plan as it stands.
+      type: object
+      additionalProperties: false
+      required: [catalogueVersion, improvements, watched, eyeOn]
+      properties:
+        catalogueVersion:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000
+          description: The version of the improvements catalogue.
+          example: 1
+        improvements:
+          type: array
+          maxItems: 50
+          description: The improvements, in order.
+          items:
+            $ref: "#/components/schemas/PlanImprovement"
+        watched:
+          type: array
+          maxItems: 20
+          description: The numbers to watch.
+          items:
+            $ref: "#/components/schemas/WatchedNumber"
+        eyeOn:
+          type: array
+          maxItems: 10
+          description: The competitors to keep an eye on.
+          items:
+            $ref: "#/components/schemas/EyeOn"
+    ImprovementTick:
+      description: Whether an improvement is done.
+      type: object
+      additionalProperties: false
+      required: [done]
+      properties:
+        done:
+          type: boolean
+          description: Done, or not done again.
+          example: true
+    PlanTargetValue:
+      description: One target to set.
+      type: object
+      additionalProperties: false
+      required: [target, value]
+      properties:
+        target:
+          $ref: "#/components/schemas/PlanTarget"
+        value:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10000
+          description: Its new value.
+          example: 40
+    PlanTargetsChange:
+      description: Targets to set.
+      type: object
+      additionalProperties: false
+      required: [targets]
+      properties:
+        targets:
+          type: array
+          minItems: 1
+          maxItems: 10
+          description: The targets.
+          items:
+            $ref: "#/components/schemas/PlanTargetValue"
     ProductSeller:
       description: A competitor that sells a family, with its own names for it.
       type: object
@@ -3595,7 +3854,7 @@ components:
       description: How Tribelt stands against its competitors now.
       type: object
       additionalProperties: false
-      required: [measures, trailing]
+      required: [measures, trailing, open]
       properties:
         measures:
           type: array
@@ -3610,6 +3869,12 @@ components:
           maximum: 20
           description: How many measures Tribelt trails the leader on.
           example: 4
+        open:
+          type: array
+          maxItems: 10
+          description: The first improvements of the plan not done yet, in order.
+          items:
+            $ref: "#/components/schemas/PlanImprovement"
         runStartedAt:
           type: string
           format: date-time

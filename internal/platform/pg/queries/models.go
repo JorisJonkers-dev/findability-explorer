@@ -192,6 +192,20 @@ type LlmEvent struct {
 	Message      string
 }
 
+type PlanTarget struct {
+	Target string
+	Value  float64
+	SetBy  string
+	SetAt  time.Time
+}
+
+type PlanTick struct {
+	ImprovementID    string
+	CatalogueVersion int64
+	TickedBy         string
+	TickedAt         time.Time
+}
+
 type PromptAnswer struct {
 	ID               uuid.UUID
 	RunID            uuid.UUID

@@ -22,7 +22,7 @@ describe('signing in', () => {
     expect(wrapper.find('h1').exists()).toBe(false)
     answer(json(me()))
     await settle()
-    expect(wrapper.get('h1').text()).toBe('Measure first. Then build. Then expand.')
+    expect(wrapper.get('h1').text()).toBe('Check every Monday. Fix one thing a week. Watch the numbers move.')
   })
 
   it('sends the browser to sign in when the session has ended, and back to the same page after', async () => {

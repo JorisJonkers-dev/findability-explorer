@@ -57,8 +57,12 @@ func (s *Service) AiSearch(ctx context.Context) (AiSearch, error) {
 	if err != nil {
 		return AiSearch{}, fmt.Errorf("the AI readiness: %w", err)
 	}
+	targets, err := s.targets(ctx)
+	if err != nil {
+		return AiSearch{}, err
+	}
 	out := AiSearch{
-		Goal: s.targets()[domain.TargetShareOfVoice], KeepingOut: domain.KeepOut(companies, readiness),
+		Goal: targets[domain.TargetShareOfVoice], KeepingOut: domain.KeepOut(companies, readiness),
 		Ranking: domain.Ranking(companies, readiness, RankingRows), Sites: len(readiness),
 	}
 	byID := map[string]domain.Company{}

@@ -144,6 +144,15 @@ type Handler interface {
 	//
 	// GET /api/v1/me
 	GetMe(ctx context.Context) (GetMeRes, error)
+	// GetPlan implements getPlan operation.
+	//
+	// The plan's improvements in order, each with whether it is done, the measure it moves and the
+	// competitor to look at (the leader of that measure). An improvement a scan of tribelt.nl can check is
+	// done by the latest scan; the others are ticked off by hand. Also the numbers to watch against their
+	// targets, and the competitors to keep an eye on.
+	//
+	// GET /api/v1/plan
+	GetPlan(ctx context.Context) (GetPlanRes, error)
 	// GetProducts implements getProducts operation.
 	//
 	// For each of Tribelt's belt families: Tribelt's own names for it, the competitors that sell it with
@@ -263,6 +272,14 @@ type Handler interface {
 	//
 	// PUT /api/v1/admin/llm/active
 	SetActiveLlm(ctx context.Context, req *ActiveLlm) (SetActiveLlmRes, error)
+	// SetPlanTargets implements setPlanTargets operation.
+	//
+	// Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1,
+	// readiness checks 0 to 5 in halves, terms and citations whole numbers. 422 when one is out of range,
+	// and nothing is stored.
+	//
+	// PUT /api/v1/admin/plan/targets
+	SetPlanTargets(ctx context.Context, req *PlanTargetsChange) (SetPlanTargetsRes, error)
 	// StartAnalysis implements startAnalysis operation.
 	//
 	// Administrators only. Queues a crawl of the site behind `url`: at most `maxPages` pages on the same
@@ -300,6 +317,13 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/llm/credentials/{credentialId}/test
 	TestLlmCredential(ctx context.Context, params TestLlmCredentialParams) (TestLlmCredentialRes, error)
+	// TickImprovement implements tickImprovement operation.
+	//
+	// Administrators only. Marks an improvement no scan can check as done, recording who and when, or as
+	// not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+	//
+	// PUT /api/v1/admin/plan/improvements/{improvementId}
+	TickImprovement(ctx context.Context, req *ImprovementTick, params TickImprovementParams) (TickImprovementRes, error)
 	// UndoCompetitorCandidate implements undoCompetitorCandidate operation.
 	//
 	// Administrators only. Puts the candidate back among the pending ones; an added candidate's company is

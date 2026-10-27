@@ -36,12 +36,24 @@ type Terms interface {
 	MapTerms(ctx context.Context) ([]domain.MapTerm, error)
 }
 
-// Ports are the other contexts the insight context reads.
+// Store keeps what the insight context owns: the improvements ticked off by hand, and the
+// targets an administrator set.
+type Store interface {
+	Ticks(ctx context.Context) ([]domain.Tick, error)
+	Tick(ctx context.Context, t domain.Tick) error
+	Untick(ctx context.Context, improvementID string) error
+	// Targets returns the targets an administrator set; one never set is absent.
+	Targets(ctx context.Context) (map[domain.Target]float64, error)
+	SetTarget(ctx context.Context, t domain.Target, value float64, by string, at time.Time) error
+}
+
+// Ports are the other contexts the insight context reads, and its own store.
 type Ports struct {
 	Directory  Directory
 	PromptRuns PromptRuns
 	Readiness  Readiness
 	Terms      Terms
+	Store      Store
 }
 
 // Service runs the insight use cases.
@@ -55,9 +67,17 @@ func New(ports Ports, now func() time.Time) *Service {
 	return &Service{ports: ports, now: now}
 }
 
-// targets are the plan's targets now.
-func (s *Service) targets() map[domain.Target]float64 {
-	return domain.DefaultTargets()
+// targets are the plan's targets now: the ones set, and the defaults for the rest.
+func (s *Service) targets(ctx context.Context) (map[domain.Target]float64, error) {
+	set, err := s.ports.Store.Targets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("the targets: %w", err)
+	}
+	out := domain.DefaultTargets()
+	for t, v := range set {
+		out[t] = v
+	}
+	return out, nil
 }
 
 // Standings is how Tribelt stands against its competitors now.
@@ -68,7 +88,12 @@ type Standings struct {
 	// Run is the Prompt run the AI measures come from; nil before any.
 	Run       *domain.Run
 	Companies []domain.Company
+	// Open are the first improvements of the plan not done yet.
+	Open []domain.PlanItem
 }
+
+// OpenShown is how many open improvements the standings list.
+const OpenShown = 5
 
 // facts gathers what the other contexts know now.
 func (s *Service) facts(ctx context.Context) ([]domain.Company, domain.Facts, error) {
@@ -102,5 +127,18 @@ func (s *Service) Standings(ctx context.Context) (Standings, error) {
 		return Standings{}, err
 	}
 	st := domain.Standings(companies, f)
-	return Standings{Standings: st, Trailing: domain.Trailing(st), Run: f.Run, Companies: companies}, nil
+	ticks, err := s.ports.Store.Ticks(ctx)
+	if err != nil {
+		return Standings{}, fmt.Errorf("the ticked improvements: %w", err)
+	}
+	items := domain.PlanItems(ticks, tribeltReadiness(f), st)
+	return Standings{Standings: st, Trailing: domain.Trailing(st), Run: f.Run, Companies: companies, Open: domain.Open(items, OpenShown)}, nil
+}
+
+// tribeltReadiness is Tribelt's latest readiness, or nil before a scan read it.
+func tribeltReadiness(f domain.Facts) *domain.Readiness {
+	if r, ok := f.Readiness[domain.TribeltID]; ok {
+		return &r
+	}
+	return nil
 }

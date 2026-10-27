@@ -44,13 +44,13 @@ describe('the poster', () => {
       ['/ai-search', 'AI search: 0 Googlebot visits to our mirror in more than three weeks. AI crawlers read every page. Zoom in.'],
       ['/competitors', 'Competitors: 2 competitors sell the same belts in Europe, each under its own names. Zoom in.'],
       ['/terms', "Search terms: 3 search terms in 2 languages. Tribelt's own website uses 1 of them. Zoom in."],
-      ['/plan', 'The plan: 12 months in three phases, with a decision at the end of each. Zoom in.'],
+      ['/plan', 'The plan: 52 weekly checks a year. Every fix shows up in the numbers the week after. Zoom in.'],
     ])
     const competitors = tiles(wrapper)[2]
     expect(competitors?.text()).toContain('Competitors offering each Tribelt family, of 2')
     expect(competitors?.text()).toContain('Eyelink1')
     expect(tiles(wrapper)[3]?.text()).toContain('English2')
-    expect(tiles(wrapper)[4]?.text()).toContain('Expand and learn')
+    expect(tiles(wrapper)[4]?.text()).toContain('Read the Monday report')
   })
 
   it('shows a placeholder until the live figures load', async () => {

@@ -5,7 +5,7 @@ const SECTIONS = [
   { path: '/ai-search', title: 'AI search', heading: 'An AI assistant can only recommend what it has read.' },
   { path: '/competitors', title: 'Competitors', heading: /competitors, the same belts, other names\.$/ },
   { path: '/terms', title: 'Search terms', heading: /ways to search for a metal belt\.$/ },
-  { path: '/plan', title: 'The plan', heading: 'Measure first. Then build. Then expand.' },
+  { path: '/plan', title: 'The plan', heading: 'Check every Monday. Fix one thing a week. Watch the numbers move.' },
 ] as const
 
 test('the poster renders and is accessible', async ({ page }) => {
@@ -33,7 +33,7 @@ test('a tile zooms into its section, and Overview zooms back out', async ({ page
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: /^The plan:/ }).click()
   await expect(page).toHaveURL('/plan')
-  await expect(page.getByRole('heading', { level: 1, name: 'Measure first. Then build. Then expand.' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Check every Monday. Fix one thing a week. Watch the numbers move.' })).toBeVisible()
 
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Overview' }).click()
   await expect(page).toHaveURL('/')

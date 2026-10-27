@@ -5,10 +5,13 @@ package web
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"net/url"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
 )
 
@@ -17,6 +20,9 @@ type UseCases interface {
 	Standings(ctx context.Context) (app.Standings, error)
 	AiSearch(ctx context.Context) (app.AiSearch, error)
 	Products(ctx context.Context) (app.Products, error)
+	Plan(ctx context.Context) (app.Plan, error)
+	Tick(ctx context.Context, actor, id string, done bool) error
+	SetTargets(ctx context.Context, actor string, targets map[domain.Target]float64) error
 }
 
 // Handler implements the insight operations. Business rules stay in the use cases.
@@ -36,7 +42,7 @@ func (h *Handler) GetStandings(ctx context.Context) (oas.GetStandingsRes, error)
 	if err != nil {
 		return nil, err
 	}
-	out := &oas.Standings{Measures: toStandings(s.Standings), Trailing: int32(s.Trailing)} //nolint:gosec // at most five measures
+	out := &oas.Standings{Measures: toStandings(s.Standings), Trailing: int32(s.Trailing), Open: toImprovements(s.Open)} //nolint:gosec // at most five measures
 	if s.Run != nil {
 		out.RunStartedAt = oas.NewOptDateTime(s.Run.StartedAt)
 	}
@@ -57,7 +63,7 @@ func toStandings(in []domain.Standing) []oas.Standing {
 			o.Median = oas.NewOptFloat64(*s.Median)
 		}
 		if s.Leader != nil {
-			o.Leader = oas.NewOptMeasureLeader(oas.MeasureLeader{CompetitorId: oas.CompetitorId(s.Leader.CompanyID), Name: s.Leader.Name, Value: s.Leader.Value})
+			o.Leader = oas.NewOptMeasureLeader(toLeader(*s.Leader))
 		}
 		out = append(out, o)
 	}
@@ -146,4 +152,96 @@ func toProduct(p domain.Product, companies map[string]domain.Company) oas.Produc
 		o.MostNamed = append(o.MostNamed, oas.ProductMention{CompetitorId: oas.CompetitorId(m.CompanyID), Name: c.Name, Role: oas.CompanyRole(c.Role), Share: m.Share})
 	}
 	return o
+}
+
+// GetPlan implements getPlan.
+func (h *Handler) GetPlan(ctx context.Context) (oas.GetPlanRes, error) {
+	p, err := h.uc.Plan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toPlan(p), nil
+}
+
+// TickImprovement implements tickImprovement.
+func (h *Handler) TickImprovement(ctx context.Context, req *oas.ImprovementTick, params oas.TickImprovementParams) (oas.TickImprovementRes, error) {
+	err := h.uc.Tick(ctx, h.actor(ctx), params.ImprovementId, req.Done)
+	switch {
+	case errors.Is(err, domain.ErrUnknownImprovement):
+		return &oas.TickImprovementNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No improvement has this id.")}, nil
+	case app.IsInputError(err):
+		return &oas.TickImprovementUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, "A scan of tribelt.nl checks this improvement."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	p, err := h.uc.Plan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toPlan(p), nil
+}
+
+// SetPlanTargets implements setPlanTargets.
+func (h *Handler) SetPlanTargets(ctx context.Context, req *oas.PlanTargetsChange) (oas.SetPlanTargetsRes, error) {
+	targets := make(map[domain.Target]float64, len(req.Targets))
+	for _, t := range req.Targets {
+		targets[domain.Target(t.Target)] = t.Value
+	}
+	err := h.uc.SetTargets(ctx, h.actor(ctx), targets)
+	switch {
+	case app.IsInputError(err):
+		return &oas.SetPlanTargetsUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity,
+			Response: httpx.Problem(http.StatusUnprocessableEntity,
+				"A share is from 0 to 1, readiness checks from 0 to 5 in halves, and terms and citations are whole numbers."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	p, err := h.uc.Plan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toPlan(p), nil
+}
+
+func toPlan(p app.Plan) *oas.Plan {
+	out := &oas.Plan{
+		CatalogueVersion: domain.ImprovementsVersion, Improvements: toImprovements(p.Items),
+		Watched: make([]oas.WatchedNumber, 0, len(p.Watched)), EyeOn: make([]oas.EyeOn, 0, len(p.EyeOn)),
+	}
+	for _, w := range p.Watched {
+		n := oas.WatchedNumber{Target: oas.PlanTarget(w.Target), Goal: w.Goal}
+		if w.Now != nil {
+			n.Now = oas.NewOptFloat64(*w.Now)
+		}
+		out.Watched = append(out.Watched, n)
+	}
+	for _, e := range p.EyeOn {
+		out.EyeOn = append(out.EyeOn, oas.EyeOn{Why: oas.EyeOnReason(e.Why), Leader: toLeader(e.Leader)})
+	}
+	return out
+}
+
+func toImprovements(items []domain.PlanItem) []oas.PlanImprovement {
+	out := make([]oas.PlanImprovement, 0, len(items))
+	for _, it := range items {
+		o := oas.PlanImprovement{
+			ID: it.ID, Title: it.Title, Moves: it.Moves, Measure: oas.StandingMeasure(it.Measure), Auto: it.Auto, Done: it.Done,
+		}
+		if it.Tick != nil {
+			o.TickedBy, o.TickedAt = oas.NewOptString(it.Tick.By), oas.NewOptDateTime(it.Tick.At)
+		}
+		if it.Leader != nil {
+			o.Leader = oas.NewOptMeasureLeader(toLeader(*it.Leader))
+		}
+		out = append(out, o)
+	}
+	return out
+}
+
+func toLeader(l domain.Leader) oas.MeasureLeader {
+	return oas.MeasureLeader{CompetitorId: oas.CompetitorId(l.CompanyID), Name: l.Name, Value: l.Value}
 }

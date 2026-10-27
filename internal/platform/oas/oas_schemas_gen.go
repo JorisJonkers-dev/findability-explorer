@@ -2321,6 +2321,83 @@ func (s *Equivalent) SetSearchTerms(val []SearchTerm) {
 	s.SearchTerms = val
 }
 
+// A competitor to keep an eye on.
+// Ref: #/components/schemas/EyeOn
+type EyeOn struct {
+	Why    EyeOnReason   `json:"why"`
+	Leader MeasureLeader `json:"leader"`
+}
+
+// GetWhy returns the value of Why.
+func (s *EyeOn) GetWhy() EyeOnReason {
+	return s.Why
+}
+
+// GetLeader returns the value of Leader.
+func (s *EyeOn) GetLeader() MeasureLeader {
+	return s.Leader
+}
+
+// SetWhy sets the value of Why.
+func (s *EyeOn) SetWhy(val EyeOnReason) {
+	s.Why = val
+}
+
+// SetLeader sets the value of Leader.
+func (s *EyeOn) SetLeader(val MeasureLeader) {
+	s.Leader = val
+}
+
+// Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
+// Ref: #/components/schemas/EyeOnReason
+type EyeOnReason string
+
+const (
+	EyeOnReasonMostNamed    EyeOnReason = "mostNamed"
+	EyeOnReasonBestPrepared EyeOnReason = "bestPrepared"
+	EyeOnReasonTwente       EyeOnReason = "twente"
+)
+
+// AllValues returns all EyeOnReason values.
+func (EyeOnReason) AllValues() []EyeOnReason {
+	return []EyeOnReason{
+		EyeOnReasonMostNamed,
+		EyeOnReasonBestPrepared,
+		EyeOnReasonTwente,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s EyeOnReason) MarshalText() ([]byte, error) {
+	switch s {
+	case EyeOnReasonMostNamed:
+		return []byte(s), nil
+	case EyeOnReasonBestPrepared:
+		return []byte(s), nil
+	case EyeOnReasonTwente:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *EyeOnReason) UnmarshalText(data []byte) error {
+	switch EyeOnReason(data) {
+	case EyeOnReasonMostNamed:
+		*s = EyeOnReasonMostNamed
+		return nil
+	case EyeOnReasonBestPrepared:
+		*s = EyeOnReasonBestPrepared
+		return nil
+	case EyeOnReasonTwente:
+		*s = EyeOnReasonTwente
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // How many matching terms have one value of a facet.
 // Ref: #/components/schemas/FacetCount
 type FacetCount struct {
@@ -2509,6 +2586,23 @@ func (*GetReadinessFilesNotFound) getReadinessFilesRes() {}
 type GetReadinessFilesUnauthorized ProblemStatusCode
 
 func (*GetReadinessFilesUnauthorized) getReadinessFilesRes() {}
+
+// Whether an improvement is done.
+// Ref: #/components/schemas/ImprovementTick
+type ImprovementTick struct {
+	// Done, or not done again.
+	Done bool `json:"done"`
+}
+
+// GetDone returns the value of Done.
+func (s *ImprovementTick) GetDone() bool {
+	return s.Done
+}
+
+// SetDone sets the value of Done.
+func (s *ImprovementTick) SetDone(val bool) {
+	s.Done = val
+}
 
 // The kind of search a term represents.
 // Ref: #/components/schemas/IntentTier
@@ -5779,6 +5873,285 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// The plan as it stands.
+// Ref: #/components/schemas/Plan
+type Plan struct {
+	// The version of the improvements catalogue.
+	CatalogueVersion int32 `json:"catalogueVersion"`
+	// The improvements, in order.
+	Improvements []PlanImprovement `json:"improvements"`
+	// The numbers to watch.
+	Watched []WatchedNumber `json:"watched"`
+	// The competitors to keep an eye on.
+	EyeOn []EyeOn `json:"eyeOn"`
+}
+
+// GetCatalogueVersion returns the value of CatalogueVersion.
+func (s *Plan) GetCatalogueVersion() int32 {
+	return s.CatalogueVersion
+}
+
+// GetImprovements returns the value of Improvements.
+func (s *Plan) GetImprovements() []PlanImprovement {
+	return s.Improvements
+}
+
+// GetWatched returns the value of Watched.
+func (s *Plan) GetWatched() []WatchedNumber {
+	return s.Watched
+}
+
+// GetEyeOn returns the value of EyeOn.
+func (s *Plan) GetEyeOn() []EyeOn {
+	return s.EyeOn
+}
+
+// SetCatalogueVersion sets the value of CatalogueVersion.
+func (s *Plan) SetCatalogueVersion(val int32) {
+	s.CatalogueVersion = val
+}
+
+// SetImprovements sets the value of Improvements.
+func (s *Plan) SetImprovements(val []PlanImprovement) {
+	s.Improvements = val
+}
+
+// SetWatched sets the value of Watched.
+func (s *Plan) SetWatched(val []WatchedNumber) {
+	s.Watched = val
+}
+
+// SetEyeOn sets the value of EyeOn.
+func (s *Plan) SetEyeOn(val []EyeOn) {
+	s.EyeOn = val
+}
+
+func (*Plan) getPlanRes()         {}
+func (*Plan) setPlanTargetsRes()  {}
+func (*Plan) tickImprovementRes() {}
+
+// One improvement of the plan.
+// Ref: #/components/schemas/PlanImprovement
+type PlanImprovement struct {
+	// Its id.
+	ID string `json:"id"`
+	// What to do.
+	Title string `json:"title"`
+	// What it moves, in words.
+	Moves   string          `json:"moves"`
+	Measure StandingMeasure `json:"measure"`
+	// Whether the latest scan of tribelt.nl decides that it is done.
+	Auto bool `json:"auto"`
+	// Whether it is done.
+	Done bool `json:"done"`
+	// Who ticked it off; only for one ticked by hand.
+	TickedBy OptString `json:"tickedBy"`
+	// When.
+	TickedAt OptDateTime      `json:"tickedAt"`
+	Leader   OptMeasureLeader `json:"leader"`
+}
+
+// GetID returns the value of ID.
+func (s *PlanImprovement) GetID() string {
+	return s.ID
+}
+
+// GetTitle returns the value of Title.
+func (s *PlanImprovement) GetTitle() string {
+	return s.Title
+}
+
+// GetMoves returns the value of Moves.
+func (s *PlanImprovement) GetMoves() string {
+	return s.Moves
+}
+
+// GetMeasure returns the value of Measure.
+func (s *PlanImprovement) GetMeasure() StandingMeasure {
+	return s.Measure
+}
+
+// GetAuto returns the value of Auto.
+func (s *PlanImprovement) GetAuto() bool {
+	return s.Auto
+}
+
+// GetDone returns the value of Done.
+func (s *PlanImprovement) GetDone() bool {
+	return s.Done
+}
+
+// GetTickedBy returns the value of TickedBy.
+func (s *PlanImprovement) GetTickedBy() OptString {
+	return s.TickedBy
+}
+
+// GetTickedAt returns the value of TickedAt.
+func (s *PlanImprovement) GetTickedAt() OptDateTime {
+	return s.TickedAt
+}
+
+// GetLeader returns the value of Leader.
+func (s *PlanImprovement) GetLeader() OptMeasureLeader {
+	return s.Leader
+}
+
+// SetID sets the value of ID.
+func (s *PlanImprovement) SetID(val string) {
+	s.ID = val
+}
+
+// SetTitle sets the value of Title.
+func (s *PlanImprovement) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetMoves sets the value of Moves.
+func (s *PlanImprovement) SetMoves(val string) {
+	s.Moves = val
+}
+
+// SetMeasure sets the value of Measure.
+func (s *PlanImprovement) SetMeasure(val StandingMeasure) {
+	s.Measure = val
+}
+
+// SetAuto sets the value of Auto.
+func (s *PlanImprovement) SetAuto(val bool) {
+	s.Auto = val
+}
+
+// SetDone sets the value of Done.
+func (s *PlanImprovement) SetDone(val bool) {
+	s.Done = val
+}
+
+// SetTickedBy sets the value of TickedBy.
+func (s *PlanImprovement) SetTickedBy(val OptString) {
+	s.TickedBy = val
+}
+
+// SetTickedAt sets the value of TickedAt.
+func (s *PlanImprovement) SetTickedAt(val OptDateTime) {
+	s.TickedAt = val
+}
+
+// SetLeader sets the value of Leader.
+func (s *PlanImprovement) SetLeader(val OptMeasureLeader) {
+	s.Leader = val
+}
+
+// A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt),
+// readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a
+// run citing tribelt.nl).
+// Ref: #/components/schemas/PlanTarget
+type PlanTarget string
+
+const (
+	PlanTargetAiShareOfVoice     PlanTarget = "aiShareOfVoice"
+	PlanTargetTwenteShareOfVoice PlanTarget = "twenteShareOfVoice"
+	PlanTargetReadinessChecks    PlanTarget = "readinessChecks"
+	PlanTargetTermsUsed          PlanTarget = "termsUsed"
+	PlanTargetCitations          PlanTarget = "citations"
+)
+
+// AllValues returns all PlanTarget values.
+func (PlanTarget) AllValues() []PlanTarget {
+	return []PlanTarget{
+		PlanTargetAiShareOfVoice,
+		PlanTargetTwenteShareOfVoice,
+		PlanTargetReadinessChecks,
+		PlanTargetTermsUsed,
+		PlanTargetCitations,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PlanTarget) MarshalText() ([]byte, error) {
+	switch s {
+	case PlanTargetAiShareOfVoice:
+		return []byte(s), nil
+	case PlanTargetTwenteShareOfVoice:
+		return []byte(s), nil
+	case PlanTargetReadinessChecks:
+		return []byte(s), nil
+	case PlanTargetTermsUsed:
+		return []byte(s), nil
+	case PlanTargetCitations:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PlanTarget) UnmarshalText(data []byte) error {
+	switch PlanTarget(data) {
+	case PlanTargetAiShareOfVoice:
+		*s = PlanTargetAiShareOfVoice
+		return nil
+	case PlanTargetTwenteShareOfVoice:
+		*s = PlanTargetTwenteShareOfVoice
+		return nil
+	case PlanTargetReadinessChecks:
+		*s = PlanTargetReadinessChecks
+		return nil
+	case PlanTargetTermsUsed:
+		*s = PlanTargetTermsUsed
+		return nil
+	case PlanTargetCitations:
+		*s = PlanTargetCitations
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One target to set.
+// Ref: #/components/schemas/PlanTargetValue
+type PlanTargetValue struct {
+	Target PlanTarget `json:"target"`
+	// Its new value.
+	Value float64 `json:"value"`
+}
+
+// GetTarget returns the value of Target.
+func (s *PlanTargetValue) GetTarget() PlanTarget {
+	return s.Target
+}
+
+// GetValue returns the value of Value.
+func (s *PlanTargetValue) GetValue() float64 {
+	return s.Value
+}
+
+// SetTarget sets the value of Target.
+func (s *PlanTargetValue) SetTarget(val PlanTarget) {
+	s.Target = val
+}
+
+// SetValue sets the value of Value.
+func (s *PlanTargetValue) SetValue(val float64) {
+	s.Value = val
+}
+
+// Targets to set.
+// Ref: #/components/schemas/PlanTargetsChange
+type PlanTargetsChange struct {
+	// The targets.
+	Targets []PlanTargetValue `json:"targets"`
+}
+
+// GetTargets returns the value of Targets.
+func (s *PlanTargetsChange) GetTargets() []PlanTargetValue {
+	return s.Targets
+}
+
+// SetTargets sets the value of Targets.
+func (s *PlanTargetsChange) SetTargets(val []PlanTargetValue) {
+	s.Targets = val
+}
+
 // An RFC 9457 problem detail.
 // Ref: #/components/schemas/Problem
 type Problem struct {
@@ -5861,6 +6234,7 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 func (*ProblemStatusCode) getAiReadinessRes()       {}
 func (*ProblemStatusCode) getAiSearchSummaryRes()   {}
 func (*ProblemStatusCode) getMeRes()                {}
+func (*ProblemStatusCode) getPlanRes()              {}
 func (*ProblemStatusCode) getProductsRes()          {}
 func (*ProblemStatusCode) getPromptTestResultsRes() {}
 func (*ProblemStatusCode) getStandingsRes()         {}
@@ -9050,6 +9424,22 @@ type SetActiveLlmUnprocessableEntity ProblemStatusCode
 
 func (*SetActiveLlmUnprocessableEntity) setActiveLlmRes() {}
 
+type SetPlanTargetsBadRequest ProblemStatusCode
+
+func (*SetPlanTargetsBadRequest) setPlanTargetsRes() {}
+
+type SetPlanTargetsForbidden ProblemStatusCode
+
+func (*SetPlanTargetsForbidden) setPlanTargetsRes() {}
+
+type SetPlanTargetsUnauthorized ProblemStatusCode
+
+func (*SetPlanTargetsUnauthorized) setPlanTargetsRes() {}
+
+type SetPlanTargetsUnprocessableEntity ProblemStatusCode
+
+func (*SetPlanTargetsUnprocessableEntity) setPlanTargetsRes() {}
+
 // One Prompt run in the trend.
 // Ref: #/components/schemas/ShareTrendPoint
 type ShareTrendPoint struct {
@@ -9335,6 +9725,8 @@ type Standings struct {
 	Measures []Standing `json:"measures"`
 	// How many measures Tribelt trails the leader on.
 	Trailing int32 `json:"trailing"`
+	// The first improvements of the plan not done yet, in order.
+	Open []PlanImprovement `json:"open"`
 	// When the Prompt run the AI measures come from started; absent before any.
 	RunStartedAt OptDateTime `json:"runStartedAt"`
 }
@@ -9347,6 +9739,11 @@ func (s *Standings) GetMeasures() []Standing {
 // GetTrailing returns the value of Trailing.
 func (s *Standings) GetTrailing() int32 {
 	return s.Trailing
+}
+
+// GetOpen returns the value of Open.
+func (s *Standings) GetOpen() []PlanImprovement {
+	return s.Open
 }
 
 // GetRunStartedAt returns the value of RunStartedAt.
@@ -9362,6 +9759,11 @@ func (s *Standings) SetMeasures(val []Standing) {
 // SetTrailing sets the value of Trailing.
 func (s *Standings) SetTrailing(val int32) {
 	s.Trailing = val
+}
+
+// SetOpen sets the value of Open.
+func (s *Standings) SetOpen(val []PlanImprovement) {
+	s.Open = val
 }
 
 // SetRunStartedAt sets the value of RunStartedAt.
@@ -10136,6 +10538,26 @@ type TestLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*TestLlmCredentialUnprocessableEntity) testLlmCredentialRes() {}
 
+type TickImprovementBadRequest ProblemStatusCode
+
+func (*TickImprovementBadRequest) tickImprovementRes() {}
+
+type TickImprovementForbidden ProblemStatusCode
+
+func (*TickImprovementForbidden) tickImprovementRes() {}
+
+type TickImprovementNotFound ProblemStatusCode
+
+func (*TickImprovementNotFound) tickImprovementRes() {}
+
+type TickImprovementUnauthorized ProblemStatusCode
+
+func (*TickImprovementUnauthorized) tickImprovementRes() {}
+
+type TickImprovementUnprocessableEntity ProblemStatusCode
+
+func (*TickImprovementUnprocessableEntity) tickImprovementRes() {}
+
 // A crawler, the lab behind it, what letting it in gets Tribelt, and how far tribelt.nl lets it in.
 // Ref: #/components/schemas/TribeltCrawler
 type TribeltCrawler struct {
@@ -10285,3 +10707,43 @@ type UpdatePromptTestSettingsUnprocessableEntity ProblemStatusCode
 func (*UpdatePromptTestSettingsUnprocessableEntity) updatePromptTestSettingsRes() {}
 
 type Usd float64
+
+// A number to watch, now and its target.
+// Ref: #/components/schemas/WatchedNumber
+type WatchedNumber struct {
+	Target PlanTarget `json:"target"`
+	// Its value now; absent without data.
+	Now OptFloat64 `json:"now"`
+	// Its target.
+	Goal float64 `json:"goal"`
+}
+
+// GetTarget returns the value of Target.
+func (s *WatchedNumber) GetTarget() PlanTarget {
+	return s.Target
+}
+
+// GetNow returns the value of Now.
+func (s *WatchedNumber) GetNow() OptFloat64 {
+	return s.Now
+}
+
+// GetGoal returns the value of Goal.
+func (s *WatchedNumber) GetGoal() float64 {
+	return s.Goal
+}
+
+// SetTarget sets the value of Target.
+func (s *WatchedNumber) SetTarget(val PlanTarget) {
+	s.Target = val
+}
+
+// SetNow sets the value of Now.
+func (s *WatchedNumber) SetNow(val OptFloat64) {
+	s.Now = val
+}
+
+// SetGoal sets the value of Goal.
+func (s *WatchedNumber) SetGoal(val float64) {
+	s.Goal = val
+}

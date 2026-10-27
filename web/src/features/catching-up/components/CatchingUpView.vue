@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { percent } from '../../../shared/percent'
+import { RouterLink } from 'vue-router'
 import SectionView from '../../shell/components/SectionView.vue'
+import { companyPath } from '../../shell/domain/sections'
 import { useStandings } from '../composables/useStandings'
 import { barsOf, headline, MEASURES, noteOf } from '../domain/standings'
 
-const { measures, trailing, isLoading, error } = useStandings()
+const { measures, trailing, open, isLoading, error } = useStandings()
 const title = computed(() => (isLoading.value || error.value ? 'Where Tribelt trails the leaders.' : headline(measures.value, trailing.value)))
 
 const FILL = { tribelt: 'bg-orange', typical: 'bg-blue-grey', leader: 'bg-black' } as const
@@ -57,6 +59,29 @@ const LEGEND = [
             <span class="text-right text-sm font-semibold stage:text-[28px]" :class="b.tone === 'tribelt' ? 'text-orange-ink' : ''">{{ b.value }}</span>
           </div>
         </figure>
+      </section>
+
+      <section aria-labelledby="todo-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-7">
+        <h2 id="todo-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">What to do, in order</h2>
+        <p v-if="!isLoading && !error && open.length === 0" class="m-0 text-ink-2">Every improvement of the plan is done.</p>
+        <ol v-else class="m-0 flex list-none flex-col p-0">
+          <li
+            v-for="(it, i) in open"
+            :key="it.id"
+            class="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] gap-3 border-t-2 border-grey py-4 stage:grid-cols-[96px_minmax(0,1fr)_240px] stage:gap-6 stage:py-7"
+          >
+            <span class="font-display text-3xl leading-none font-semibold text-orange-ink stage:text-[72px]">{{ i + 1 }}</span>
+            <span class="flex flex-col gap-1">
+              <strong class="font-semibold stage:text-[36px]">{{ it.title }}</strong>
+              <span class="text-sm text-ink-2 stage:text-[28px]">Moves {{ it.moves }}.</span>
+            </span>
+            <RouterLink v-if="it.leader" :to="companyPath(it.leader.competitorId)" class="flex flex-col text-right no-underline">
+              <span class="text-xs text-muted stage:text-[22px]">Look at</span>
+              <span class="font-semibold stage:text-[28px]">{{ it.leader.name }}</span>
+            </RouterLink>
+          </li>
+        </ol>
+        <RouterLink to="/plan" class="self-start font-semibold stage:text-[28px]">The whole plan</RouterLink>
       </section>
     </div>
   </SectionView>

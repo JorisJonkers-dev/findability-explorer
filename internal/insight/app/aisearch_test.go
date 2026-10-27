@@ -55,6 +55,7 @@ func TestAiSearchSaysWhichSourceFailed(t *testing.T) {
 		func(w *world) { w.companiesErr = errDown },
 		func(w *world) { w.runsErr = errDown },
 		func(w *world) { w.readyErr = errDown },
+		func(w *world) { w.targetsErr = errDown },
 	} {
 		w := newWorld()
 		breaks(w)

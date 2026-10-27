@@ -1435,6 +1435,128 @@ export type AiSearchSummary = {
 };
 
 /**
+ * One improvement of the plan.
+ */
+export type PlanImprovement = {
+    /**
+     * Its id.
+     */
+    id: string;
+    /**
+     * What to do.
+     */
+    title: string;
+    /**
+     * What it moves, in words.
+     */
+    moves: string;
+    measure: StandingMeasure;
+    /**
+     * Whether the latest scan of tribelt.nl decides that it is done.
+     */
+    auto: boolean;
+    /**
+     * Whether it is done.
+     */
+    done: boolean;
+    /**
+     * Who ticked it off; only for one ticked by hand.
+     */
+    tickedBy?: string;
+    /**
+     * When.
+     */
+    tickedAt?: string;
+    leader?: MeasureLeader;
+};
+
+/**
+ * A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt), readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a run citing tribelt.nl).
+ */
+export type PlanTarget = 'aiShareOfVoice' | 'twenteShareOfVoice' | 'readinessChecks' | 'termsUsed' | 'citations';
+
+/**
+ * A number to watch, now and its target.
+ */
+export type WatchedNumber = {
+    target: PlanTarget;
+    /**
+     * Its value now; absent without data.
+     */
+    now?: number;
+    /**
+     * Its target.
+     */
+    goal: number;
+};
+
+/**
+ * Why to watch a competitor - mostNamed in AI answers, bestPrepared site, or strongest in twente.
+ */
+export type EyeOnReason = 'mostNamed' | 'bestPrepared' | 'twente';
+
+/**
+ * A competitor to keep an eye on.
+ */
+export type EyeOn = {
+    why: EyeOnReason;
+    leader: MeasureLeader;
+};
+
+/**
+ * The plan as it stands.
+ */
+export type Plan = {
+    /**
+     * The version of the improvements catalogue.
+     */
+    catalogueVersion: number;
+    /**
+     * The improvements, in order.
+     */
+    improvements: Array<PlanImprovement>;
+    /**
+     * The numbers to watch.
+     */
+    watched: Array<WatchedNumber>;
+    /**
+     * The competitors to keep an eye on.
+     */
+    eyeOn: Array<EyeOn>;
+};
+
+/**
+ * Whether an improvement is done.
+ */
+export type ImprovementTick = {
+    /**
+     * Done, or not done again.
+     */
+    done: boolean;
+};
+
+/**
+ * One target to set.
+ */
+export type PlanTargetValue = {
+    target: PlanTarget;
+    /**
+     * Its new value.
+     */
+    value: number;
+};
+
+/**
+ * Targets to set.
+ */
+export type PlanTargetsChange = {
+    /**
+     * The targets.
+     */
+    targets: Array<PlanTargetValue>;
+};
+
+/**
  * A competitor that sells a family, with its own names for it.
  */
 export type ProductSeller = {
@@ -1633,6 +1755,10 @@ export type Standings = {
      * How many measures Tribelt trails the leader on.
      */
     trailing: number;
+    /**
+     * The first improvements of the plan not done yet, in order.
+     */
+    open: Array<PlanImprovement>;
     /**
      * When the Prompt run the AI measures come from started; absent before any.
      */
@@ -2408,6 +2534,132 @@ export type GetAiSearchSummaryResponses = {
 };
 
 export type GetAiSearchSummaryResponse = GetAiSearchSummaryResponses[keyof GetAiSearchSummaryResponses];
+
+export type GetPlanData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/plan';
+};
+
+export type GetPlanErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPlanError = GetPlanErrors[keyof GetPlanErrors];
+
+export type GetPlanResponses = {
+    /**
+     * The plan.
+     */
+    200: Plan;
+};
+
+export type GetPlanResponse = GetPlanResponses[keyof GetPlanResponses];
+
+export type TickImprovementData = {
+    /**
+     * Whether it is done.
+     */
+    body: ImprovementTick;
+    path: {
+        /**
+         * The improvement's id.
+         */
+        improvementId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/plan/improvements/{improvementId}';
+};
+
+export type TickImprovementErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type TickImprovementError = TickImprovementErrors[keyof TickImprovementErrors];
+
+export type TickImprovementResponses = {
+    /**
+     * The plan, with the tick.
+     */
+    200: Plan;
+};
+
+export type TickImprovementResponse = TickImprovementResponses[keyof TickImprovementResponses];
+
+export type SetPlanTargetsData = {
+    /**
+     * The targets to set.
+     */
+    body: PlanTargetsChange;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/plan/targets';
+};
+
+export type SetPlanTargetsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SetPlanTargetsError = SetPlanTargetsErrors[keyof SetPlanTargetsErrors];
+
+export type SetPlanTargetsResponses = {
+    /**
+     * The plan, with the targets.
+     */
+    200: Plan;
+};
+
+export type SetPlanTargetsResponse = SetPlanTargetsResponses[keyof SetPlanTargetsResponses];
 
 export type GetProductsData = {
     body?: never;

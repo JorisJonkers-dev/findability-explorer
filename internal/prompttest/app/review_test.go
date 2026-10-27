@@ -421,14 +421,15 @@ func TestTheReviewStopsWhenTheMonthsTokensAreSpent(t *testing.T) {
 	if st := svc.ReviewState(); st.Problem != app.ReviewProblemBudget || m.merged != 0 || len(m.checked) != 0 {
 		t.Errorf("spent from the start: state %+v, merged %d, checked %d", st, m.merged, len(m.checked))
 	}
-	// Spent after the first batch: what it checked is kept.
+	// Spent after the first batch: what it checked is kept (the model says nothing about the last
+	// company of a batch, which is not stored).
 	var checked *model
 	svc, checked, r := review(func(context.Context) (bool, error) {
 		checked.mu.Lock()
 		defer checked.mu.Unlock()
 		return len(checked.checked) >= 1, nil
 	})
-	if err := svc.Review(t.Context()); !errors.Is(err, app.ErrBudgetSpent) || checked.merged == 0 || len(checked.checked) != 1 || len(r.verdicts) != app.CheckBatch {
+	if err := svc.Review(t.Context()); !errors.Is(err, app.ErrBudgetSpent) || checked.merged == 0 || len(checked.checked) != 1 || len(r.verdicts) != app.CheckBatch-1 {
 		t.Errorf("spent after a batch = %v; checked %d times, %d verdicts", err, len(checked.checked), len(r.verdicts))
 	}
 	// The budget cannot be read: the review fails.

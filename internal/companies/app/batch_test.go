@@ -51,6 +51,7 @@ func TestAddManyAddsSkipsAndRejects(t *testing.T) {
 		{Name: "Lumsden Belting"},
 		{Name: "Bad", Website: "ftp://bad.example"},
 		{Name: " ", Website: "https://x.example"},
+		{Name: "Habasit"}, // a duplicate by name, without a website
 	}, true)
 	if err != nil {
 		t.Fatal(err)
@@ -66,6 +67,7 @@ func TestAddManyAddsSkipsAndRejects(t *testing.T) {
 		{app.OutcomeRejected, ""},
 		{app.OutcomeRejected, ""},
 		{app.OutcomeRejected, ""},
+		{app.OutcomeDuplicate, "habasit"},
 	}
 	for i, w := range want {
 		if g := got.Items[i]; g.Outcome != w.outcome || g.CompanyID != w.id {

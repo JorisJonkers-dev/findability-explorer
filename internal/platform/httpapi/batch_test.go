@@ -16,7 +16,7 @@ func (batchPorts) Scan(_ context.Context, _ string, ids []string) (int, error) {
 func TestAddingSeveralCompetitorsIsForAdministrators(t *testing.T) {
 	srv := serve(t, &analyses{})
 	body := `{"items":[{"name":"Intralox","url":"https://www.intralox.com","candidateId":"3a7bd3e2360a9f01"},` +
-		`{"name":"Twente","url":"https://www.twentebelt.com"},{"name":"Lumsden Belting"}],"scan":true}`
+		`{"name":"Twente","url":"https://www.twentebelt.com"},{"name":"Example Belts"}],"scan":true}`
 	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/competitors/batch", body, "tester"); r.code != http.StatusForbidden {
 		t.Errorf("a viewer added companies: %d", r.code)
 	}

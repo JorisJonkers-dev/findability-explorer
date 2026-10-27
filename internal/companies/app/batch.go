@@ -96,6 +96,11 @@ func (s *Service) AddMany(ctx context.Context, user string, items []NewItem, sca
 	return out, nil
 }
 
+// duplicate is the result for an item the list has as known already.
+func duplicate(name string, known domain.Company) ItemResult {
+	return ItemResult{Name: name, Outcome: OutcomeDuplicate, CompanyID: known.ID, Reason: known.Name + " is a competitor already."}
+}
+
 // addOne adds one item of a batch, or says why not; err is for a failure to record it.
 func (s *Service) addOne(ctx context.Context, user string, d domain.Directory, item NewItem) (ItemResult, domain.Company, error) {
 	r := ItemResult{Name: item.Name, Outcome: OutcomeRejected}
@@ -105,6 +110,10 @@ func (s *Service) addOne(ctx context.Context, user string, d domain.Directory, i
 		return r, domain.Company{}, nil //nolint:nilerr // the reason is the outcome
 	}
 	r.Name = name
+	// A company on the list by name is a duplicate, website or not.
+	if known, ok := d.Duplicate(name, ""); ok {
+		return duplicate(name, known), domain.Company{}, nil
+	}
 	if item.Website == "" {
 		r.Reason = "Add its website first."
 		return r, domain.Company{}, nil
@@ -115,7 +124,7 @@ func (s *Service) addOne(ctx context.Context, user string, d domain.Directory, i
 		return r, domain.Company{}, nil //nolint:nilerr // the reason is the outcome
 	}
 	if known, ok := d.Duplicate(name, site.Host(website)); ok {
-		return ItemResult{Name: name, Outcome: OutcomeDuplicate, CompanyID: known.ID, Reason: known.Name + " is a competitor already."}, domain.Company{}, nil
+		return duplicate(name, known), domain.Company{}, nil
 	}
 	c := d.Fresh(name, website, user, s.now())
 	if err := s.repo.Add(ctx, c); err != nil {

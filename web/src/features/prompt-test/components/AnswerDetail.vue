@@ -37,9 +37,11 @@ const NUMBER = new Intl.NumberFormat('en-GB')
   <div aria-live="polite" class="flex flex-col gap-3 rounded-2xl bg-mist p-5 stage:gap-5 stage:rounded-[28px] stage:p-10">
     <p v-if="!answer" class="m-0 text-ink-2 stage:text-[28px]">Pick a square to read its answer.</p>
     <template v-else>
-      <span class="text-sm font-semibold tracking-[0.04em] text-orange-ink uppercase stage:text-[22px]">
-        {{ providerName(answer.provider) }} {{ modeName(answer.mode).toLowerCase() }}. {{ familyName(answer.family) }}, {{ scopeName(answer.scope) }}
-      </span>
+      <p class="m-0 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold tracking-[0.04em] text-orange-ink uppercase stage:gap-x-8 stage:text-[22px]">
+        <span>{{ providerName(answer.provider) }} {{ modeName(answer.mode).toLowerCase() }}</span>
+        <span>{{ familyName(answer.family) }}</span>
+        <span>{{ scopeName(answer.scope) }}</span>
+      </p>
       <p class="m-0 font-medium stage:text-[28px]">{{ answer.prompt }}</p>
       <p v-if="!read" class="m-0 font-semibold text-orange-ink stage:text-[28px]">
         No answer to read. {{ answer.failure ?? 'The answer could not be read.' }}

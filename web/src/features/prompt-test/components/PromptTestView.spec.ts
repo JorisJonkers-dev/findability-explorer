@@ -80,7 +80,7 @@ describe('the Prompt test grid', () => {
     expect(router.currentRoute.value.query.answer).toBe('eyelink-application-twente|openai|web')
     expect(squares(wrapper)[1]?.attributes('aria-pressed')).toBe('true')
     const d = detail(wrapper)
-    expect(d.text()).toContain('OpenAI with web search. Eyelink, Twente (Dutch)')
+    expect(d.get('p.uppercase').findAll('span').map((s) => s.text())).toEqual(['OpenAI with web search', 'Eyelink', 'Twente (Dutch)'])
     const names = d.findAll('ol[aria-label="Companies named"] li')
     expect(names.map((n) => n.text())).toEqual(['1Twentebeltits page', '2Ashworthnot a competitor yet', '3Tribelt B.V.'])
     expect(names[0]?.get('a[target="_blank"]').attributes('href')).toBe('https://www.twentebelt.com/')

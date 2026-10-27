@@ -1,5 +1,6 @@
 import type { EyeOn, PlanImprovement, PlanPart, PlanTarget, StandingMeasure, WatchedNumber } from '../../../infrastructure/api/types.gen'
 import { formatValue } from '../../catching-up/domain/standings'
+import { joinWords } from '../../../shared/words'
 
 /** One step of the weekly routine: what to do, when, what to look for, and the page to open. */
 export type Step = { number: string; title: string; when: string; what: string; look: string; link: { label: string; path: string } }
@@ -104,18 +105,12 @@ export function statusLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'le
   return foundLine(it.parts) || standingLine(it)
 }
 
-/** "a", "a and b", "a, b and c". */
-function listOf(names: readonly string[], word: 'and' | 'or'): string {
-  const last = names.slice(-1).join('')
-  return names.length < 2 ? last : `${names.slice(0, -1).join(', ')} ${word} ${last}`
-}
-
 /** What the latest scan of tribelt.nl found of an improvement it checks, and what it did not. */
 export function foundLine(parts: readonly PlanPart[]): string {
   const found = parts.filter((p) => p.present).map((p) => p.name)
   const missing = parts.filter((p) => !p.present).map((p) => p.name)
   if (found.length === 0 && missing.length === 0) return ''
-  if (found.length === 0) return `The latest scan did not find ${listOf(missing, 'or')}.`
-  if (missing.length === 0) return `The latest scan found ${listOf(found, 'and')}.`
-  return `The latest scan found ${listOf(found, 'and')}, but not ${listOf(missing, 'or')}.`
+  if (found.length === 0) return `The latest scan did not find ${joinWords(missing, 'or')}.`
+  if (missing.length === 0) return `The latest scan found ${joinWords(found)}.`
+  return `The latest scan found ${joinWords(found)}, but not ${joinWords(missing, 'or')}.`
 }

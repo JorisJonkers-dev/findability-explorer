@@ -14,8 +14,9 @@ import (
 type Verdicts interface {
 	// Verdicts returns every verdict.
 	Verdicts(ctx context.Context) ([]domain.Verdict, error)
-	// SaveVerdicts stores the verdicts of one request and what it consumed.
-	SaveVerdicts(ctx context.Context, verdicts []domain.Verdict, usage domain.Usage) error
+	// SaveReview stores a batch's verdicts, the decisions its sure ones make, and what asking used,
+	// in one transaction; a decision on a candidate decided meanwhile is left out.
+	SaveReview(ctx context.Context, verdicts []domain.Verdict, decisions []domain.Decision, usage []domain.Usage) error
 }
 
 // Judge is a language model that reviews candidates, given terms the map holds as examples. On an
@@ -30,8 +31,13 @@ type Judges interface {
 	Current(ctx context.Context) (Judge, string, error)
 }
 
-// ErrNoModel is returned by Review when there is no model to ask: no Anthropic key is set up.
-var ErrNoModel = errors.New("no Anthropic key is set up")
+var (
+	// ErrNoModel is returned by Review when there is no model to ask: no Anthropic key is set up.
+	ErrNoModel = errors.New("no Anthropic key is set up")
+	// ErrBadAnswer is what a Judge returns when the model answered but not usably: it declined, its
+	// answer was cut off, or it could not be read. Asking again the same way gets the same.
+	ErrBadAnswer = errors.New("the language model gave no usable answer")
+)
 
 // Problem is why the last review stopped short.
 type Problem string
@@ -85,6 +91,16 @@ func (s *Service) verdicts(ctx context.Context) ([]domain.Verdict, error) {
 // time, and records its sure verdicts as its decisions. It returns how many it reviewed;
 // ErrNoModel when no model is set up.
 func (s *Service) Review(ctx context.Context) (int, error) {
+	n, err := s.reviewAll(ctx)
+	if n > 0 { // the accepted terms join the map
+		if loadErr := s.Load(ctx); loadErr != nil {
+			return n, errors.Join(err, loadErr)
+		}
+	}
+	return n, err
+}
+
+func (s *Service) reviewAll(ctx context.Context) (int, error) {
 	if s.review == nil {
 		return 0, ErrNoModel
 	}
@@ -95,74 +111,88 @@ func (s *Service) Review(ctx context.Context) (int, error) {
 	if judge == nil {
 		return 0, ErrNoModel
 	}
+	all, err := s.candidates(ctx)
+	if err != nil {
+		return 0, err
+	}
+	waiting := domain.Unreviewed(all)
+	terms := s.Terms()
 	reviewed := 0
-	for {
-		all, err := s.candidates(ctx)
+	for len(waiting) > 0 {
+		batch := waiting[:min(domain.ReviewBatch, len(waiting))]
+		waiting = waiting[len(batch):]
+		var usage []domain.Usage
+		verdicts, err := s.ask(ctx, judge, model, batch, terms, &usage)
 		if err != nil {
-			return reviewed, err
+			// What the failed requests consumed still counts.
+			return reviewed, errors.Join(fmt.Errorf("ask the language model: %w", err), s.review.verdicts.SaveReview(ctx, nil, nil, usage))
 		}
-		batch := domain.Unreviewed(all)
-		if len(batch) == 0 {
-			return reviewed, nil
-		}
-		batch = batch[:min(domain.ReviewBatch, len(batch))]
-		if err := s.judge(ctx, judge, model, batch); err != nil {
-			return reviewed, err
+		var decisions []domain.Decision
+		decisions, terms = decide(batch, verdicts, terms)
+		if err := s.review.verdicts.SaveReview(ctx, verdicts, decisions, usage); err != nil {
+			return reviewed, fmt.Errorf("store the language model's review: %w", err)
 		}
 		reviewed += len(batch)
 	}
+	return reviewed, nil
 }
 
-// judge asks about one batch, stores the verdicts and records the sure ones as decisions.
-func (s *Service) judge(ctx context.Context, judge Judge, model string, batch []domain.Candidate) error {
-	answered, usage, err := judge.Judge(ctx, batch, domain.Examples(s.Terms(), examplesPerTier))
-	usage.At = s.now()
-	if err != nil {
-		// What a failed request consumed still counts.
-		if saveErr := s.review.verdicts.SaveVerdicts(ctx, nil, usage); saveErr != nil {
-			return errors.Join(err, saveErr)
-		}
-		return fmt.Errorf("ask the language model: %w", err)
-	}
-	verdicts := domain.Complete(batch, answered, model, s.now())
-	if err := s.review.verdicts.SaveVerdicts(ctx, verdicts, usage); err != nil {
-		return fmt.Errorf("store the language model's verdicts: %w", err)
-	}
-	terms := s.Terms()
+// decide is the decisions the sure verdicts on batch make, and the map with the terms they accept;
+// a term accepted earlier in the review counts, so the same term is not accepted twice.
+func decide(batch []domain.Candidate, verdicts []domain.Verdict, terms []domain.Term) ([]domain.Decision, []domain.Term) {
+	var decisions []domain.Decision
 	for i, v := range verdicts {
-		d, ok := v.Decision(batch[i], terms)
-		if !ok {
-			continue
-		}
-		if err := s.reviews.Decide(ctx, d); err != nil {
-			if errors.Is(err, domain.ErrDecided) { // a person decided meanwhile
-				continue
+		if d, ok := v.Decision(batch[i], terms); ok {
+			decisions = append(decisions, d)
+			if d.Term != nil {
+				terms = append(terms, *d.Term)
 			}
-			return fmt.Errorf("record the language model's decision: %w", err)
-		}
-		if d.Term != nil {
-			terms = append(terms, *d.Term)
 		}
 	}
-	return s.Load(ctx)
+	return decisions, terms
 }
 
-// ReviewState says whether the model is reviewing, how many candidates wait for it, and why its
-// last review stopped short.
-func (s *Service) ReviewState(ctx context.Context) (ReviewState, error) {
-	if s.review == nil {
-		return ReviewState{Problem: ProblemNoModel}, nil
+// ask asks the model about batch and returns a verdict per candidate, in order. When it gives no
+// usable answer, each half is asked apart, so one phrase it cannot answer does not hold up the
+// rest; that phrase gets an unsure verdict and waits for a person. Any other failure stops it.
+func (s *Service) ask(ctx context.Context, judge Judge, model string, batch []domain.Candidate, terms []domain.Term, usage *[]domain.Usage) ([]domain.Verdict, error) {
+	answered, u, err := judge.Judge(ctx, batch, domain.Examples(terms, examplesPerTier))
+	u.At = s.now()
+	*usage = append(*usage, u)
+	switch {
+	case err == nil:
+		return domain.Complete(batch, answered, model, s.now()), nil
+	case !errors.Is(err, ErrBadAnswer):
+		return nil, err
+	case len(batch) == 1:
+		return domain.Complete(batch, nil, model, s.now()), nil
 	}
-	all, err := s.candidates(ctx)
+	half := len(batch) / 2
+	first, err := s.ask(ctx, judge, model, batch[:half], terms, usage)
 	if err != nil {
-		return ReviewState{}, err
+		return nil, err
+	}
+	second, err := s.ask(ctx, judge, model, batch[half:], terms, usage)
+	if err != nil {
+		return nil, err
+	}
+	return append(first, second...), nil
+}
+
+// ReviewState says whether the model is reviewing, how many candidates wait for it (from counts),
+// and why its last review stopped short. That no model was set up is checked again, so a key added
+// since shows at once.
+func (s *Service) ReviewState(ctx context.Context, counts domain.Counts) ReviewState {
+	if s.review == nil {
+		return ReviewState{Waiting: counts.Unreviewed, Problem: ProblemNoModel}
 	}
 	problem, _ := s.review.problem.Load().(Problem)
-	return ReviewState{
-		Running: s.review.running.Load() || len(s.review.kick) > 0,
-		Waiting: len(domain.Unreviewed(all)),
-		Problem: problem,
-	}, nil
+	if problem == ProblemNoModel {
+		if judge, _, err := s.review.judges.Current(ctx); err == nil && judge != nil {
+			problem = ProblemNone
+		}
+	}
+	return ReviewState{Running: s.review.running.Load() || len(s.review.kick) > 0, Waiting: counts.Unreviewed, Problem: problem}
 }
 
 // StartReview asks the review loop to review the waiting candidates now.

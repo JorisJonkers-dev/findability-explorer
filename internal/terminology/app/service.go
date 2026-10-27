@@ -147,7 +147,8 @@ func (s *Service) candidates(ctx context.Context) ([]domain.Candidate, error) {
 	if err != nil {
 		return nil, err
 	}
-	return domain.WithVerdicts(domain.Candidates(obs, decisions, s.Terms()), verdicts), nil
+	terms := s.Terms()
+	return domain.WithVerdicts(domain.Candidates(obs, decisions, terms), verdicts, terms), nil
 }
 
 // candidate returns the candidate with id, or domain.ErrCandidateNotFound.

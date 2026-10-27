@@ -80,11 +80,18 @@ func (a *anthropicClient) Complete(ctx context.Context, p domain.Prompt) (domain
 }
 
 var (
-	// ErrDeclined is returned when the model declines the request.
-	ErrDeclined = errors.New("the model declined the request")
-	// ErrCutOff is returned when the model's answer hit the token limit.
-	ErrCutOff = errors.New("the model's answer was cut off")
+	// ErrDeclined is returned when the model declines the request; it is a domain.ErrNoAnswer.
+	ErrDeclined error = noAnswerError("the model declined the request")
+	// ErrCutOff is returned when the model's answer hit the token limit; it is a domain.ErrNoAnswer.
+	ErrCutOff error = noAnswerError("the model's answer was cut off")
 )
+
+// noAnswerError is an unusable answer, which errors.Is matches to domain.ErrNoAnswer.
+type noAnswerError string
+
+func (e noAnswerError) Error() string { return string(e) }
+
+func (noAnswerError) Is(target error) bool { return target == domain.ErrNoAnswer } //nolint:errorlint // a sentinel compared by identity
 
 // describeAnthropic turns an SDK error into a reason that names the status and the API's
 // message but never echoes the request.

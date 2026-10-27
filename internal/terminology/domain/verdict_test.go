@@ -82,11 +82,45 @@ func TestASureVerdictIsADecisionByTheModel(t *testing.T) {
 	}
 }
 
-func TestCandidatesCarryTheModelsVerdict(t *testing.T) {
-	a, b := waiting("spiral freezer belt"), waiting("wire mesh belt")
-	got := domain.WithVerdicts([]domain.Candidate{a, b}, []domain.Verdict{{CandidateID: b.ID, Reason: "Unsure."}})
+func TestCandidatesCarryTheModelsVerdictAndATermTheMapCouldTake(t *testing.T) {
+	term := func(text string) domain.Acceptance {
+		return domain.Acceptance{Text: text, Language: "en", Family: "tri_flex_turn_curve", Tier: "application"}
+	}
+	a, b, c, d := waiting("spiral freezer belt"), waiting("wire mesh belt"), waiting("spiral belts"), waiting("chain belt")
+	d.Status = domain.StatusRejected
+	verdicts := []domain.Verdict{
+		{CandidateID: b.ID, Accept: true, Reason: "Unsure.", Term: term("wire mesh belt")},
+		{CandidateID: c.ID, Accept: true, Term: term("spiral belt")}, // the map has it
+		{CandidateID: d.ID, Accept: true, Term: term("chain belt")},  // decided already
+	}
+	inMap := []domain.Term{{Text: "spiral belt", Language: "en"}}
+	got := domain.WithVerdicts([]domain.Candidate{a, b, c, d}, verdicts, inMap)
 	if got[0].Verdict != nil || got[1].Verdict == nil || got[1].Verdict.Reason != "Unsure." {
-		t.Errorf("WithVerdicts = %+v", got)
+		t.Errorf("verdicts = %+v", got)
+	}
+	if got[1].Suggestion == nil || got[1].Suggestion.Text != "wire mesh belt" || got[2].Suggestion != nil || got[3].Suggestion != nil {
+		t.Errorf("suggestions = %+v, %+v, %+v", got[1].Suggestion, got[2].Suggestion, got[3].Suggestion)
+	}
+}
+
+func TestADecisionNamesAtMostTwentyCompanies(t *testing.T) {
+	names := make([]string, 0, 25)
+	for i := range 25 {
+		names = append(names, string(rune('a'+i)))
+	}
+	c := waiting("wire mesh belt", names...)
+	v := domain.Verdict{Accept: true, Sure: true, Term: domain.Acceptance{Text: "wire mesh belt", Language: "en", Family: "all", Tier: "broad"}}
+	if d, ok := v.Decision(c, nil); !ok || len(d.Term.UsedBy) != 20 {
+		t.Errorf("a phrase at 25 companies = %+v, %v", d.Term, ok)
+	}
+}
+
+func TestCountsSayHowManyWaitForTheModel(t *testing.T) {
+	seen, fresh := waiting("a"), waiting("b")
+	seen.Verdict = &domain.Verdict{}
+	_, counts := domain.Count([]domain.Candidate{seen, fresh}, domain.StatusPending)
+	if counts.Pending != 2 || counts.Unreviewed != 1 {
+		t.Errorf("counts = %+v", counts)
 	}
 }
 
@@ -100,19 +134,5 @@ func TestExamplesAreAFewTermsOfEachTier(t *testing.T) {
 	got := domain.Examples(terms, 2)
 	if len(got) != 3 || got[0].Text != "a" || got[1].Text != "b" || got[2].Text != "d" {
 		t.Errorf("Examples = %+v", got)
-	}
-}
-
-func TestAVerdictSuggestsATermTheMapCouldHold(t *testing.T) {
-	v := domain.Verdict{Accept: true, Term: domain.Acceptance{Text: "spiral freezer belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "application"}}
-	if !v.Suggests() {
-		t.Error("a good term is no suggestion")
-	}
-	odd := v
-	odd.Term.Language = "fr"
-	rejected := v
-	rejected.Accept = false
-	if odd.Suggests() || rejected.Suggests() {
-		t.Error("a French term or a rejection is a suggestion")
 	}
 }

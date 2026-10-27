@@ -4,6 +4,7 @@ package persistence
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -62,32 +63,35 @@ func (r *Repository) Decisions(ctx context.Context) ([]domain.Decision, error) {
 
 // Decide stores d and, for an accepted candidate, its term, in one transaction.
 func (r *Repository) Decide(ctx context.Context, d domain.Decision) error {
-	return r.store.InTx(ctx, func(q *queries.Queries) error {
-		n, err := q.InsertTermDecision(ctx, queries.InsertTermDecisionParams{
-			CandidateID: d.CandidateID, Phrase: d.Phrase, Status: string(d.Status), DecidedBy: d.By, DecidedAt: d.At,
-		})
-		if err != nil {
-			return fmt.Errorf("insert decision: %w", err)
-		}
-		if n == 0 {
-			return domain.ErrDecided
-		}
-		if d.Term == nil {
-			return nil
-		}
-		t := d.Term
-		usedBy := t.UsedBy
-		if usedBy == nil {
-			usedBy = []string{}
-		}
-		if err := q.InsertAcceptedTerm(ctx, queries.InsertAcceptedTermParams{
-			CandidateID: d.CandidateID, Term: t.Text, Language: string(t.Language), Family: string(t.Family),
-			Tier: string(t.Tier), UsedBy: usedBy, Source: t.Source,
-		}); err != nil {
-			return fmt.Errorf("insert accepted term: %w", err)
-		}
-		return nil
+	return r.store.InTx(ctx, func(q *queries.Queries) error { return decide(ctx, q, d) })
+}
+
+// decide stores d and its term; domain.ErrDecided when the candidate was decided already.
+func decide(ctx context.Context, q *queries.Queries, d domain.Decision) error {
+	n, err := q.InsertTermDecision(ctx, queries.InsertTermDecisionParams{
+		CandidateID: d.CandidateID, Phrase: d.Phrase, Status: string(d.Status), DecidedBy: d.By, DecidedAt: d.At,
 	})
+	if err != nil {
+		return fmt.Errorf("insert decision: %w", err)
+	}
+	if n == 0 {
+		return domain.ErrDecided
+	}
+	if d.Term == nil {
+		return nil
+	}
+	t := d.Term
+	usedBy := t.UsedBy
+	if usedBy == nil {
+		usedBy = []string{}
+	}
+	if err := q.InsertAcceptedTerm(ctx, queries.InsertAcceptedTermParams{
+		CandidateID: d.CandidateID, Term: t.Text, Language: string(t.Language), Family: string(t.Family),
+		Tier: string(t.Tier), UsedBy: usedBy, Source: t.Source,
+	}); err != nil {
+		return fmt.Errorf("insert accepted term: %w", err)
+	}
+	return nil
 }
 
 // Undo deletes the decision on a candidate and, with it, its term.
@@ -118,25 +122,43 @@ func (r *Repository) Verdicts(ctx context.Context) ([]domain.Verdict, error) {
 	return out, nil
 }
 
-// SaveVerdicts stores the verdicts of one request and what it consumed, in one transaction. A
-// candidate with a verdict already keeps it.
-func (r *Repository) SaveVerdicts(ctx context.Context, verdicts []domain.Verdict, usage domain.Usage) error {
+// SaveReview stores a batch's verdicts, the decisions its sure ones make and what asking used, in
+// one transaction. A candidate with a verdict keeps it; one decided meanwhile keeps that decision.
+func (r *Repository) SaveReview(ctx context.Context, verdicts []domain.Verdict, decisions []domain.Decision, usage []domain.Usage) error {
 	return r.store.InTx(ctx, func(q *queries.Queries) error {
-		for _, v := range verdicts {
-			if err := q.InsertTermVerdict(ctx, queries.InsertTermVerdictParams{
-				CandidateID: v.CandidateID, Phrase: v.Phrase, Accept: v.Accept, Sure: v.Sure, Reason: v.Reason,
-				Term: v.Term.Text, Language: v.Term.Language, Family: v.Term.Family, Tier: v.Term.Tier, Model: v.Model, ReviewedAt: v.At,
-			}); err != nil {
-				return fmt.Errorf("insert verdict: %w", err)
+		if err := insertVerdicts(ctx, q, verdicts); err != nil {
+			return err
+		}
+		for _, d := range decisions {
+			if err := decide(ctx, q, d); err != nil && !errors.Is(err, domain.ErrDecided) {
+				return err
 			}
 		}
+		return insertUsage(ctx, q, usage)
+	})
+}
+
+func insertVerdicts(ctx context.Context, q *queries.Queries, verdicts []domain.Verdict) error {
+	for _, v := range verdicts {
+		if err := q.InsertTermVerdict(ctx, queries.InsertTermVerdictParams{
+			CandidateID: v.CandidateID, Phrase: v.Phrase, Accept: v.Accept, Sure: v.Sure, Reason: v.Reason,
+			Term: v.Term.Text, Language: v.Term.Language, Family: v.Term.Family, Tier: v.Term.Tier, Model: v.Model, ReviewedAt: v.At,
+		}); err != nil {
+			return fmt.Errorf("insert verdict: %w", err)
+		}
+	}
+	return nil
+}
+
+func insertUsage(ctx context.Context, q *queries.Queries, usage []domain.Usage) error {
+	for _, u := range usage {
 		if err := q.InsertTermReviewUsage(ctx, queries.InsertTermReviewUsageParams{
-			InputTokens: usage.InputTokens, OutputTokens: usage.OutputTokens, UsedAt: usage.At,
+			InputTokens: u.InputTokens, OutputTokens: u.OutputTokens, UsedAt: u.At,
 		}); err != nil {
 			return fmt.Errorf("insert usage: %w", err)
 		}
-		return nil
-	})
+	}
+	return nil
 }
 
 // TokensSince is how many tokens asking the language model for verdicts used since t.

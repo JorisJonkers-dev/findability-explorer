@@ -22,7 +22,7 @@ type UseCases interface {
 	Accept(ctx context.Context, user, id string, a domain.Acceptance) (domain.Candidate, error)
 	Reject(ctx context.Context, user, id string) (domain.Candidate, error)
 	Undo(ctx context.Context, id string) (domain.Candidate, error)
-	ReviewState(ctx context.Context) (app.ReviewState, error)
+	ReviewState(ctx context.Context, counts domain.Counts) app.ReviewState
 	StartReview()
 }
 
@@ -55,11 +55,7 @@ func (h *Handler) ListTermCandidates(ctx context.Context, params oas.ListTermCan
 	for _, c := range list {
 		items = append(items, toCandidate(c))
 	}
-	state, err := h.uc.ReviewState(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &oas.TermCandidateList{Items: items, Review: toReviewState(state), Counts: oas.TermCandidateCounts{
+	return &oas.TermCandidateList{Items: items, Review: toReviewState(h.uc.ReviewState(ctx, counts)), Counts: oas.TermCandidateCounts{
 		Pending: int32(counts.Pending), Accepted: int32(counts.Accepted), Rejected: int32(counts.Rejected), //nolint:gosec // small counts
 	}}, nil
 }
@@ -67,11 +63,11 @@ func (h *Handler) ListTermCandidates(ctx context.Context, params oas.ListTermCan
 // StartTermReview implements startTermReview.
 func (h *Handler) StartTermReview(ctx context.Context) (oas.StartTermReviewRes, error) {
 	h.uc.StartReview()
-	state, err := h.uc.ReviewState(ctx)
+	_, counts, err := h.uc.Candidates(ctx, domain.StatusPending)
 	if err != nil {
 		return nil, err
 	}
-	out := toReviewState(state)
+	out := toReviewState(h.uc.ReviewState(ctx, counts))
 	return &out, nil
 }
 
@@ -172,9 +168,9 @@ func toCandidate(c domain.Candidate) oas.TermCandidate {
 	}
 	if v := c.Verdict; v != nil {
 		verdict := oas.TermVerdict{Accept: v.Accept, Sure: v.Sure, Reason: v.Reason, Model: v.Model, At: v.At}
-		if v.Suggests() {
+		if t := c.Suggestion; t != nil {
 			verdict.Term = oas.NewOptTermSuggestion(oas.TermSuggestion{
-				Term: v.Term.Text, Language: oas.Language(v.Term.Language), Family: oas.BeltFamily(v.Term.Family), Tier: oas.IntentTier(v.Term.Tier),
+				Term: t.Text, Language: oas.Language(t.Language), Family: oas.BeltFamily(t.Family), Tier: oas.IntentTier(t.Tier),
 			})
 		}
 		out.Verdict = oas.NewOptTermVerdict(verdict)

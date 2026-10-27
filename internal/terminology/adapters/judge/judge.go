@@ -7,6 +7,7 @@ package judge
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -16,11 +17,12 @@ import (
 )
 
 const (
-	maxTokens  = 8000
-	schemaName = "term_verdicts"
-	maxReason  = 300
-	maxTerm    = 200
-	maxCode    = 30
+	maxTokens   = 8000
+	schemaName  = "term_verdicts"
+	maxReason   = 300
+	maxTerm     = 200
+	maxLanguage = 16
+	maxCode     = 30
 )
 
 const system = `You review search phrases for the terminology map of Tribelt, a Dutch maker of metal conveyor belts. The map holds the words buyers use when they look for belts like Tribelt's, in Dutch, German and English, so Tribelt can use the same words on its website.
@@ -85,19 +87,22 @@ func (j *Judge) Judge(ctx context.Context, candidates []domain.Candidate, exampl
 		SchemaName: schemaName, Schema: schema(), MaxTokens: maxTokens,
 	})
 	usage := domain.Usage{InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens}
+	if errors.Is(err, llm.ErrNoAnswer) {
+		return nil, usage, fmt.Errorf("%w: %w", app.ErrBadAnswer, err)
+	}
 	if err != nil {
 		return nil, usage, err
 	}
 	var a answer
 	if err := json.Unmarshal([]byte(unfence(resp.Text)), &a); err != nil {
-		return nil, usage, fmt.Errorf("read the model's answer: %w", err)
+		return nil, usage, fmt.Errorf("%w: read it: %w", app.ErrBadAnswer, err)
 	}
 	out := make([]domain.Verdict, 0, len(a.Verdicts))
 	for _, v := range a.Verdicts {
 		out = append(out, domain.Verdict{
 			CandidateID: v.ID, Accept: v.Accept, Sure: v.Sure, Reason: clip(v.Reason, maxReason),
 			Term: domain.Acceptance{
-				Text: clip(v.Term, maxTerm), Language: clip(v.Language, maxCode), Family: clip(v.Family, maxCode), Tier: clip(v.Tier, maxCode),
+				Text: clip(v.Term, maxTerm), Language: clip(v.Language, maxLanguage), Family: clip(v.Family, maxCode), Tier: clip(v.Tier, maxCode),
 			},
 		})
 	}

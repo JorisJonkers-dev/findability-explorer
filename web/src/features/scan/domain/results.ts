@@ -7,6 +7,7 @@ import type {
   KnownTerm,
 } from '../../../infrastructure/api/types.gen'
 import { languageLabel, TIERS, tierLabel, tribeltProduct } from '../../../shared/vocabulary'
+import { joinWords } from '../../../shared/words'
 
 /** A site's host without www.: "twentebelt.com". An address that does not parse shows as itself. */
 export function siteHost(url: string): string {
@@ -24,12 +25,6 @@ const TIME = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digi
 export function scannedAt(iso: string): string {
   const date = new Date(iso)
   return `${DAY.format(date)} at ${TIME.format(date)}`
-}
-
-/** A list for a sentence: "English", "English and German", "English, German and Dutch". */
-export function joinWords(words: readonly string[]): string {
-  if (words.length <= 1) return words.join('')
-  return `${words.slice(0, -1).join(', ')} and ${String(words.at(-1))}`
 }
 
 /** The pages' languages, the most used first: ["English", "German"]. */

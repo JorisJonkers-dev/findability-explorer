@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -12,9 +13,10 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
-// store is an in-memory Verdicts; the err fields make a method fail.
+// store is an in-memory Verdicts that records decisions in reviews; the err fields make a method fail.
 type store struct {
 	mu               sync.Mutex
+	reviews          *reviews
 	verdicts         []domain.Verdict
 	usage            []domain.Usage
 	listErr, saveErr error
@@ -26,14 +28,20 @@ func (s *store) Verdicts(context.Context) ([]domain.Verdict, error) {
 	return s.verdicts, s.listErr
 }
 
-func (s *store) SaveVerdicts(_ context.Context, v []domain.Verdict, u domain.Usage) error {
+func (s *store) SaveReview(ctx context.Context, v []domain.Verdict, ds []domain.Decision, u []domain.Usage) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.saveErr != nil {
 		return s.saveErr
 	}
 	s.verdicts = append(s.verdicts, v...)
-	s.usage = append(s.usage, u)
+	s.usage = append(s.usage, u...)
+	for _, d := range ds {
+		decided, _ := s.reviews.Decisions(ctx)
+		if !slices.ContainsFunc(decided, func(x domain.Decision) bool { return x.CandidateID == d.CandidateID }) {
+			_ = s.reviews.Decide(ctx, d)
+		}
+	}
 	return nil
 }
 
@@ -42,6 +50,7 @@ type judge struct {
 	mu       sync.Mutex
 	rule     func(domain.Candidate) (domain.Verdict, bool)
 	err      error
+	fail     func([]domain.Candidate) error // fails a request when set and non-nil
 	asked    [][]string
 	examples int
 }
@@ -60,6 +69,11 @@ func (j *judge) Judge(_ context.Context, cs []domain.Candidate, examples []domai
 	}
 	j.asked = append(j.asked, phrases)
 	j.examples = len(examples)
+	if j.fail != nil {
+		if err := j.fail(cs); err != nil {
+			return nil, domain.Usage{InputTokens: 100}, err
+		}
+	}
 	return out, domain.Usage{InputTokens: 100, OutputTokens: 10}, j.err
 }
 
@@ -99,8 +113,19 @@ func phrases(names ...string) []domain.Observation {
 
 func reviewing(obs []domain.Observation, r *reviews, s *store, j app.Judges) *app.Service {
 	svc := app.New(catalogue{terms: many(3)}, r, evidence(obs, nil), sightings(nil, nil), func() time.Time { return now })
+	s.reviews = r
 	svc.WithReviewer(s, j)
 	return svc
+}
+
+// state is the review's state, with the waiting candidates counted.
+func state(t *testing.T, svc *app.Service) app.ReviewState {
+	t.Helper()
+	_, counts, err := svc.Candidates(t.Context(), domain.StatusPending)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return svc.ReviewState(t.Context(), counts)
 }
 
 func TestTheModelDecidesWhatItIsSureOf(t *testing.T) {
@@ -139,9 +164,8 @@ func TestTheModelDecidesWhatItIsSureOf(t *testing.T) {
 	if n, err := svc.Review(t.Context()); n != 0 || err != nil || len(j.asked) != 1 {
 		t.Errorf("a second Review = %d, %v; asked %v", n, err, j.asked)
 	}
-	state, err := svc.ReviewState(t.Context())
-	if err != nil || state != (app.ReviewState{}) {
-		t.Errorf("ReviewState = %+v, %v", state, err)
+	if st := state(t, svc); st != (app.ReviewState{}) {
+		t.Errorf("ReviewState = %+v", st)
 	}
 }
 
@@ -152,8 +176,8 @@ func TestTheModelIsAskedInBatches(t *testing.T) {
 	}
 	j := &judge{rule: accepting}
 	svc := reviewing(phrases(names...), &reviews{}, &store{}, judges{judge: j})
-	if state, _ := svc.ReviewState(t.Context()); state.Waiting != domain.ReviewBatch+5 {
-		t.Errorf("waiting = %d", state.Waiting)
+	if st := state(t, svc); st.Waiting != domain.ReviewBatch+5 {
+		t.Errorf("waiting = %d", st.Waiting)
 	}
 	if n, err := svc.Review(t.Context()); n != domain.ReviewBatch+5 || err != nil || len(j.asked) != 2 || len(j.asked[1]) != 5 {
 		t.Errorf("Review = %d, %v; asked %d times", n, err, len(j.asked))
@@ -161,10 +185,53 @@ func TestTheModelIsAskedInBatches(t *testing.T) {
 }
 
 func TestAPersonsDecisionMeanwhileStands(t *testing.T) {
-	r := &reviews{decideErr: domain.ErrDecided}
-	svc := reviewing(phrases("spiral freezer belts"), r, &store{}, judges{judge: &judge{rule: accepting}})
+	r := &reviews{}
+	j := &judge{rule: accepting}
+	svc := reviewing(phrases("spiral freezer belts"), r, &store{}, judges{judge: j})
+	// While the model thinks, a person rejects the phrase.
+	j.fail = func(cs []domain.Candidate) error {
+		return r.Decide(t.Context(), domain.Decision{CandidateID: cs[0].ID, Phrase: cs[0].Phrase, Status: domain.StatusRejected, By: "joris", At: now})
+	}
 	if n, err := svc.Review(t.Context()); n != 1 || err != nil {
-		t.Errorf("Review = %d, %v", n, err)
+		t.Fatalf("Review = %d, %v", n, err)
+	}
+	if len(r.decisions) != 1 || r.decisions[0].By != "joris" {
+		t.Errorf("decisions = %+v", r.decisions)
+	}
+}
+
+func TestAnUnusableAnswerIsAskedAgainInHalves(t *testing.T) {
+	j := &judge{rule: accepting, fail: func(cs []domain.Candidate) error {
+		if slices.ContainsFunc(cs, func(c domain.Candidate) bool { return c.Phrase == "poison" }) {
+			return fmt.Errorf("%w: cut off", app.ErrBadAnswer)
+		}
+		return nil
+	}}
+	s := &store{}
+	svc := reviewing(phrases("contact", "poison", "spiral freezer belts", "freezing"), &reviews{}, s, judges{judge: j})
+	if n, err := svc.Review(t.Context()); n != 4 || err != nil {
+		t.Fatalf("Review = %d, %v", n, err)
+	}
+	// All four, then each half, then each phrase of the half with the poison.
+	if len(j.asked) != 5 || len(s.usage) != 5 || len(s.verdicts) != 4 {
+		t.Fatalf("asked %v; usage %d, verdicts %d", j.asked, len(s.usage), len(s.verdicts))
+	}
+	for _, v := range s.verdicts {
+		if v.Phrase == "poison" && (v.Sure || v.Reason != "") {
+			t.Errorf("the phrase it could not answer = %+v", v)
+		}
+	}
+}
+
+func TestAFailingProviderStopsTheReviewAndKeepsThePhrasesForIt(t *testing.T) {
+	j := &judge{rule: accepting, fail: func([]domain.Candidate) error { return errBoom }}
+	s := &store{}
+	svc := reviewing(phrases("contact", "freezing"), &reviews{}, s, judges{judge: j})
+	if _, err := svc.Review(t.Context()); !errors.Is(err, errBoom) {
+		t.Fatalf("Review = %v", err)
+	}
+	if len(j.asked) != 1 || len(s.usage) != 1 || len(s.verdicts) != 0 || state(t, svc).Waiting != 2 {
+		t.Errorf("asked %v; usage %d, verdicts %d", j.asked, len(s.usage), len(s.verdicts))
 	}
 }
 
@@ -173,8 +240,8 @@ func TestReviewWithoutAModel(t *testing.T) {
 	if _, err := plain.Review(t.Context()); !errors.Is(err, app.ErrNoModel) {
 		t.Errorf("without a reviewer = %v", err)
 	}
-	if state, err := plain.ReviewState(t.Context()); err != nil || state.Problem != app.ProblemNoModel {
-		t.Errorf("ReviewState without a reviewer = %+v, %v", state, err)
+	if st := plain.ReviewState(t.Context(), domain.Counts{Unreviewed: 2}); st.Problem != app.ProblemNoModel || st.Waiting != 2 {
+		t.Errorf("ReviewState without a reviewer = %+v", st)
 	}
 	plain.StartReview()                                                // nothing to start
 	plain.ReviewLoop(t.Context(), time.Hour, func(error) { t.Fail() }) // returns at once
@@ -192,38 +259,74 @@ func TestReviewFailuresStopIt(t *testing.T) {
 		e app.Evidence
 	}{
 		"the settings":      {&reviews{}, &store{}, judges{err: errBoom}, evidence(phrases("contact"), nil)},
-		"the model":         {&reviews{}, &store{}, judges{judge: &judge{rule: accepting, err: errBoom}}, evidence(phrases("contact"), nil)},
 		"saving the usage":  {&reviews{}, &store{saveErr: errBoom}, judges{judge: &judge{rule: accepting, err: errBoom}}, evidence(phrases("contact"), nil)},
-		"saving verdicts":   {&reviews{}, &store{saveErr: errBoom}, judges{judge: &judge{rule: accepting}}, evidence(phrases("contact"), nil)},
-		"a decision":        {&reviews{decideErr: errBoom}, &store{}, judges{judge: &judge{rule: accepting}}, evidence(phrases("contact"), nil)},
+		"saving the review": {&reviews{}, &store{saveErr: errBoom}, judges{judge: &judge{rule: accepting}}, evidence(phrases("contact"), nil)},
 		"reading verdicts":  {&reviews{}, &store{listErr: errBoom}, judges{judge: &judge{rule: accepting}}, evidence(phrases("contact"), nil)},
 		"reading the scans": {&reviews{}, &store{}, judges{judge: &judge{rule: accepting}}, evidence(nil, errBoom)},
-		"loading the map":   {&reviews{listErrAfter: 3}, &store{}, judges{judge: &judge{rule: accepting}}, evidence(phrases("contact"), nil)},
+		"loading the map":   {&reviews{listErrAfter: 3}, &store{}, judges{judge: &judge{rule: accepting}}, evidence(phrases("spiral freezer belts"), nil)},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			svc := app.New(catalogue{}, tc.r, tc.e, sightings(nil, nil), func() time.Time { return now })
+			tc.s.reviews = tc.r
 			svc.WithReviewer(tc.s, tc.j)
 			if _, err := svc.Review(t.Context()); !errors.Is(err, errBoom) {
 				t.Errorf("Review = %v", err)
 			}
 		})
 	}
-	// A failed request's usage still counts.
-	s := &store{}
-	svc := reviewing(phrases("contact"), &reviews{}, s, judges{judge: &judge{rule: accepting, err: errBoom}})
-	_, _ = svc.Review(t.Context())
-	if len(s.usage) != 1 || len(s.verdicts) != 0 {
-		t.Errorf("after a failed request: usage %+v, verdicts %+v", s.usage, s.verdicts)
+	// A second half that fails stops it too.
+	calls := 0
+	j := &judge{rule: accepting, fail: func([]domain.Candidate) error {
+		calls++
+		switch calls {
+		case 1:
+			return app.ErrBadAnswer
+		case 3:
+			return errBoom
+		}
+		return nil
+	}}
+	svc := reviewing(phrases("contact", "freezing"), &reviews{}, &store{}, judges{judge: j})
+	if _, err := svc.Review(t.Context()); !errors.Is(err, errBoom) {
+		t.Errorf("a failing second half = %v", err)
 	}
-	broken := reviewing(phrases("contact"), &reviews{}, &store{listErr: errBoom}, judges{})
-	if _, err := broken.ReviewState(t.Context()); !errors.Is(err, errBoom) {
-		t.Errorf("ReviewState reading verdicts = %v", err)
+	first := &judge{rule: accepting, fail: func(cs []domain.Candidate) error {
+		if len(cs) == 2 {
+			return app.ErrBadAnswer
+		}
+		return errBoom
+	}}
+	svc = reviewing(phrases("contact", "freezing"), &reviews{}, &store{}, judges{judge: first})
+	if _, err := svc.Review(t.Context()); !errors.Is(err, errBoom) {
+		t.Errorf("a failing first half = %v", err)
 	}
-	unread := app.New(catalogue{}, &reviews{}, evidence(nil, errBoom), sightings(nil, nil), func() time.Time { return now })
-	unread.WithReviewer(&store{}, judges{})
-	if _, err := unread.ReviewState(t.Context()); !errors.Is(err, errBoom) {
-		t.Errorf("ReviewState reading the scans = %v", err)
+}
+
+// A key added after a review found none shows at once.
+type switchable struct {
+	mu sync.Mutex
+	j  app.Judge
+}
+
+func (s *switchable) Current(context.Context) (app.Judge, string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.j, "m", nil
+}
+
+func TestAKeyAddedSinceShowsAtOnce(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	sw := &switchable{}
+	svc := reviewing(phrases("contact"), &reviews{}, &store{}, sw)
+	go svc.ReviewLoop(ctx, time.Hour, func(err error) { t.Errorf("reported %v", err) })
+	waitFor(t, func() bool { return state(t, svc).Problem == app.ProblemNoModel })
+	sw.mu.Lock()
+	sw.j = &judge{rule: accepting}
+	sw.mu.Unlock()
+	if st := state(t, svc); st.Problem != app.ProblemNone || st.Waiting != 1 {
+		t.Errorf("after adding a key = %+v", st)
 	}
 }
 
@@ -257,7 +360,7 @@ func TestTheLoopReviewsWhenAskedAndSaysWhyItStopped(t *testing.T) {
 	if err := <-errs; !errors.Is(err, errBoom) {
 		t.Fatalf("the loop's error = %v", err)
 	}
-	waitFor(t, func() bool { st, _ := svc.ReviewState(ctx); return st.Problem == app.ProblemFailed && !st.Running })
+	waitFor(t, func() bool { st := state(t, svc); return st.Problem == app.ProblemFailed && !st.Running })
 
 	f.mu.Lock()
 	f.fails = false
@@ -265,13 +368,13 @@ func TestTheLoopReviewsWhenAskedAndSaysWhyItStopped(t *testing.T) {
 	svc.StartReview()
 	svc.StartReview() // asked for already
 	waitFor(t, func() bool {
-		st, _ := svc.ReviewState(ctx)
+		st := state(t, svc)
 		return st.Problem == app.ProblemNone && st.Waiting == 0 && !st.Running
 	})
 
 	noModel := reviewing(phrases("contact"), &reviews{}, &store{}, judges{})
 	go noModel.ReviewLoop(ctx, time.Hour, func(err error) { t.Errorf("no model reported as %v", err) })
-	waitFor(t, func() bool { st, _ := noModel.ReviewState(ctx); return st.Problem == app.ProblemNoModel })
+	waitFor(t, func() bool { return state(t, noModel).Problem == app.ProblemNoModel })
 
 	cancel()
 	<-done
@@ -283,7 +386,7 @@ func TestAReviewStoppedByShutdownIsNoProblem(t *testing.T) {
 	j := &judge{rule: func(domain.Candidate) (domain.Verdict, bool) { cancel(); return domain.Verdict{}, false }, err: context.Canceled}
 	svc := reviewing(phrases("contact"), &reviews{}, &store{}, judges{judge: j})
 	svc.ReviewLoop(ctx, time.Hour, func(err error) { t.Errorf("reported %v", err) })
-	if st, _ := svc.ReviewState(t.Context()); st.Problem != app.ProblemNone {
+	if st := state(t, svc); st.Problem != app.ProblemNone {
 		t.Errorf("problem = %q", st.Problem)
 	}
 }

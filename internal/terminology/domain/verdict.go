@@ -75,8 +75,8 @@ func (v Verdict) Decision(c Candidate, terms []Term) (Decision, bool) {
 		return d, true
 	}
 	a := v.Term
-	a.UsedBy = make([]string, 0, len(c.Companies))
-	for _, co := range c.Companies {
+	a.UsedBy = make([]string, 0, min(len(c.Companies), maxUsedBy))
+	for _, co := range c.Companies[:min(len(c.Companies), maxUsedBy)] {
 		a.UsedBy = append(a.UsedBy, co.Name)
 	}
 	term, err := NewTerm(a, c.Source, terms)
@@ -87,15 +87,22 @@ func (v Verdict) Decision(c Candidate, terms []Term) (Decision, bool) {
 	return d, true
 }
 
-// WithVerdicts attaches the model's verdict to each candidate it reviewed.
-func WithVerdicts(candidates []Candidate, verdicts []Verdict) []Candidate {
+// WithVerdicts attaches the model's verdict to each candidate it reviewed, and to a waiting one
+// the term it suggests when the map, holding terms, could take it.
+func WithVerdicts(candidates []Candidate, verdicts []Verdict, terms []Term) []Candidate {
 	byID := map[string]Verdict{}
 	for _, v := range verdicts {
 		byID[v.CandidateID] = v
 	}
 	for i, c := range candidates {
-		if v, ok := byID[c.ID]; ok {
-			candidates[i].Verdict = &v
+		v, ok := byID[c.ID]
+		if !ok {
+			continue
+		}
+		candidates[i].Verdict = &v
+		if _, err := NewTerm(v.Term, "", terms); c.Status == StatusPending && v.Accept && err == nil {
+			s := v.Term
+			candidates[i].Suggestion = &s
 		}
 	}
 	return candidates
@@ -112,13 +119,4 @@ func Examples(terms []Term, perTier int) []Term {
 		}
 	}
 	return out
-}
-
-// Suggests reports whether the verdict accepts the candidate with a term the map could hold.
-func (v Verdict) Suggests() bool {
-	if !v.Accept {
-		return false
-	}
-	_, err := NewTerm(v.Term, "", nil)
-	return err == nil
 }

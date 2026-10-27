@@ -21,7 +21,14 @@ const suggested = computed(() => (props.candidate.verdict?.term ? draftOf(props.
 function acceptSuggested(): void {
   if (!suggested.value) return
   const check = checkDraft(suggested.value)
-  if (check.kind === 'ok') emit('accept', check.body)
+  if (check.kind === 'ok') {
+    emit('accept', check.body)
+    return
+  }
+  // Something about it needs a person: show it in the form.
+  void openForm().then(() => {
+    draftError.value = check.message
+  })
 }
 
 async function openForm(): Promise<void> {

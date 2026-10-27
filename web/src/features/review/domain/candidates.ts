@@ -28,6 +28,9 @@ export function parseStatus(raw: unknown): TermCandidateStatus {
   return typeof raw === 'string' && Object.hasOwn(STATUS_LABELS, raw) ? (raw as TermCandidateStatus) : 'pending'
 }
 
+export const MAX_TERM_LENGTH = 200
+export const MAX_USED_BY = 20
+
 /** The fields an administrator edits before a candidate joins the map. */
 export type AcceptDraft = { term: string; language: Language; family: BeltFamily; tier: IntentTier; usedBy: string }
 
@@ -37,7 +40,8 @@ export type AcceptDraft = { term: string; language: Language; family: BeltFamily
  * the companies that use it.
  */
 export function draftOf(candidate: TermCandidate): AcceptDraft {
-  const usedBy = candidate.companies.map((c) => c.name).join(', ')
+  // The map names at most MAX_USED_BY companies per term.
+  const usedBy = candidate.companies.slice(0, MAX_USED_BY).map((c) => c.name).join(', ')
   // The language model's suggestion, when it made one, is the better start.
   const suggested = candidate.verdict?.term
   if (suggested) return { ...suggested, usedBy }
@@ -47,12 +51,9 @@ export function draftOf(candidate: TermCandidate): AcceptDraft {
     language,
     family: candidate.suggestedFamily ?? 'other',
     tier: candidate.suggestedTier,
-    usedBy: candidate.companies.map((c) => c.name).join(', '),
+    usedBy,
   }
 }
-
-export const MAX_TERM_LENGTH = 200
-export const MAX_USED_BY = 20
 
 /** A draft checked: the body to send, or what is wrong with it. */
 export function checkDraft(draft: AcceptDraft): { kind: 'ok'; body: TermAcceptance } | { kind: 'invalid'; message: string } {
@@ -95,7 +96,11 @@ export function decisionLine(candidate: TermCandidate): string | null {
 export function verdictLine(candidate: TermCandidate): string | null {
   const v = candidate.verdict
   if (!v) return null
-  return v.sure ? v.reason : `The language model was unsure. ${v.reason}`
+  if (v.reason === '') return 'The language model gave no verdict on it.'
+  if (!v.sure) return `The language model was unsure. ${v.reason}`
+  // Sure, yet still waiting: its decision was undone, or the map could not take its term.
+  if (candidate.status === 'pending') return `The language model would ${v.accept ? 'accept' : 'reject'} it. ${v.reason}`
+  return v.reason
 }
 
 /** How far the language model is with the waiting phrases. */

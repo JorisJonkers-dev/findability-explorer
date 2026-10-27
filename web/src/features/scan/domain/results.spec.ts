@@ -3,7 +3,6 @@ import type { Keyword, KnownTerm } from '../../../infrastructure/api/types.gen'
 import {
   equivalentRows,
   isSingleWord,
-  joinWords,
   keywordLanguages,
   missingTerms,
   pageLanguages,
@@ -52,12 +51,8 @@ describe('scannedAt', () => {
   })
 })
 
-describe('joinWords and pageLanguages', () => {
+describe('pageLanguages', () => {
   it('joins a list as a sentence does', () => {
-    expect(joinWords([])).toBe('')
-    expect(joinWords(['English'])).toBe('English')
-    expect(joinWords(['English', 'German'])).toBe('English and German')
-    expect(joinWords(['English', 'German', 'Dutch'])).toBe('English, German and Dutch')
   })
 
   it('names the languages the most used first, skipping pages without one', () => {

@@ -433,7 +433,7 @@ func (verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, erro
 	}}, nil
 }
 
-func (verdictStore) SaveVerdicts(context.Context, []terminologydomain.Verdict, terminologydomain.Usage) error {
+func (verdictStore) SaveReview(context.Context, []terminologydomain.Verdict, []terminologydomain.Decision, []terminologydomain.Usage) error {
 	return nil
 }
 

@@ -107,7 +107,12 @@ describe('the language model\'s review', () => {
   it('says what it made of a phrase', () => {
     expect(verdictLine(candidate())).toBeNull()
     expect(verdictLine(candidate({ verdict }))).toBe('The language model was unsure. Could go either way.')
-    expect(verdictLine(candidate({ verdict: { ...verdict, sure: true, reason: 'A belt buyers search for.' } }))).toBe('A belt buyers search for.')
+    expect(verdictLine(candidate({ verdict: { ...verdict, reason: '' } }))).toBe('The language model gave no verdict on it.')
+    const sure = { ...verdict, sure: true, reason: 'A belt buyers search for.' }
+    expect(verdictLine(candidate({ status: 'accepted', verdict: sure }))).toBe('A belt buyers search for.')
+    // Sure, but waiting: its decision was undone, or the map could not take its term.
+    expect(verdictLine(candidate({ verdict: sure }))).toBe('The language model would accept it. A belt buyers search for.')
+    expect(verdictLine(candidate({ verdict: { ...sure, accept: false, reason: 'Navigation.' } }))).toBe('The language model would reject it. Navigation.')
   })
 
   it('names itself as who decided', () => {
@@ -119,5 +124,8 @@ describe('the language model\'s review', () => {
   it('starts a person\'s draft from the term it suggests', () => {
     const suggested = candidate({ verdict: { ...verdict, term: { term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'application' } } })
     expect(draftOf(suggested)).toEqual({ term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'application', usedBy: 'Twentebelt' })
+    // The map names at most twenty companies.
+    const many = Array.from({ length: 25 }, (_, i) => ({ competitorId: `c${String(i)}`, name: `C${String(i)}` }))
+    expect(draftOf(candidate({ companies: many })).usedBy.split(', ')).toHaveLength(20)
   })
 })

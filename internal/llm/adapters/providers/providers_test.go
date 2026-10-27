@@ -3,6 +3,7 @@ package providers_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -298,5 +299,16 @@ func TestChatErrors(t *testing.T) {
 	_, err := connector(srv).Connect(domain.Mistral, "k").Complete(t.Context(), prompt("m"))
 	if err == nil || len([]rune(err.Error())) > 260 || !strings.HasSuffix(err.Error(), "…)") {
 		t.Fatalf("a long message after the fallback: %v", err)
+	}
+}
+
+func TestAnUnusableAnswerIsNoAnswer(t *testing.T) {
+	for _, err := range []error{providers.ErrDeclined, providers.ErrCutOff} {
+		if !errors.Is(fmt.Errorf("ask: %w", err), domain.ErrNoAnswer) || err.Error() == "" {
+			t.Errorf("%v is no ErrNoAnswer", err)
+		}
+	}
+	if errors.Is(providers.ErrDeclined, providers.ErrCutOff) {
+		t.Error("declining is being cut off")
 	}
 }

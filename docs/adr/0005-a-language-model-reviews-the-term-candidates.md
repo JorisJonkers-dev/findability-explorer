@@ -18,8 +18,12 @@ term it becomes: the text, language, family and tier.
 - An unsure verdict, or an accepted term the map cannot take, leaves the candidate waiting. The
   Term review page shows the model's reason and its suggestion, which an administrator accepts in
   one step or edits first.
-- Each verdict is kept in `term_verdicts`. The model is asked about a candidate once, so an
-  undone decision does not come back, and a candidate it skipped counts as unsure.
+- Each verdict is kept in `term_verdicts`, in the same transaction as the decisions it makes. The
+  model is asked about a candidate once, so an undone decision does not come back, and a candidate
+  it skipped counts as unsure.
+- When the model gives no usable answer (it declines, is cut off, or writes something unreadable),
+  each half of the batch is asked apart, down to single phrases; a phrase it still cannot answer
+  waits for a person. A failing provider only stops the review until its next run.
 
 The review runs in the background every ten minutes and when an administrator asks for it on the
 Term review page. Without an Anthropic key, nothing is asked and every phrase waits for a person,

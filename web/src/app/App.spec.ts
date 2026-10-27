@@ -145,8 +145,6 @@ describe('the routes', () => {
     expect(router.currentRoute.value.fullPath).toBe('/terms?q=spiral&tier=product')
     await router.push('/keywords?q=mesh')
     expect(router.currentRoute.value.fullPath).toBe('/terms?q=mesh')
-    await router.push('/competitors/twentebelt')
-    expect(router.currentRoute.value.fullPath).toBe('/competitors?company=twentebelt')
     await router.push('/scan?x=1')
     expect(router.currentRoute.value.fullPath).toBe('/competitors?x=1')
     await router.push('/analyses')

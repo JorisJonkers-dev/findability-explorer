@@ -12,7 +12,7 @@ test('an account that is no administrator sees the companies and scans, but no c
   await expect(page.getByRole('button', { name: 'Re-scan all companies with data' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Add a company' })).toHaveCount(0)
   await expect(page.getByRole('group', { name: 'Manage this company' })).toHaveCount(0)
-  await expect(page.getByRole('link', { name: 'Search terms and history' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Over time' })).toBeVisible()
   await expectAccessible(page)
 })
 

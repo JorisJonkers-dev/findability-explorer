@@ -32,3 +32,15 @@ test('an administrator picks companies into the tray and adds them in one go', a
   await expect(page.getByText('Added 1 competitor.')).toBeVisible()
   expect(sent).toEqual({ items: [{ name: 'Example Belts', url: 'https://example-belts.de/' }], scan: false })
 })
+
+test("a company's latest scan page shows its belts and AI readiness, with tabs to its history", async ({ page }) => {
+  await page.goto('/competitors/all?show=competitor')
+  await page.getByRole('region', { name: 'All competitors' }).getByRole('rowheader').first().getByRole('link').click()
+  await expect(page).toHaveTitle('Latest scan · Findability Explorer')
+  const path = new URL(page.url()).pathname
+  await expect(page.getByRole('region', { name: 'Which Tribelt belts it sells' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Ready for AI' })).toBeVisible()
+  await expectAccessible(page)
+  await page.getByRole('navigation', { name: 'In this section' }).getByRole('link', { name: 'Over time' }).click()
+  await expect(page).toHaveURL(`${path}/history`)
+})

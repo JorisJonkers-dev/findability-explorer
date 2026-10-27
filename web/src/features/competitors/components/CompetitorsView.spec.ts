@@ -446,7 +446,8 @@ describe('for an account that is no administrator', () => {
     expect(wrapper.find('[aria-label="Manage this company"]').exists()).toBe(false)
     expect(wrapper.find('#admin-title').exists()).toBe(false)
     expect(wrapper.findAll('button').some((b) => b.text() === 'Scan this website')).toBe(false)
-    expect(wrapper.get('a[href="/competitors/martens/history"]').text()).toBe('Search terms and history')
+    expect(wrapper.get('a[href="/competitors/martens/history"]').text()).toBe('Over time')
+    expect(wrapper.get('a[href="/competitors/martens"]').text()).toBe('Latest scan')
     expect(wrapper.get('section[aria-labelledby="recent-title"]').text()).toContain('Twentebelt')
   })
 

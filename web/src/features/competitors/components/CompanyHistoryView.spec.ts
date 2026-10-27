@@ -66,8 +66,8 @@ const group = (wrapper: VueWrapper, label: string) => {
 describe('a company’s search terms and history', () => {
   it('shows the latest scan’s terms by family and language, the scans, and the latest two compared', async () => {
     const { wrapper, requests } = await mountApp(api(), '/competitors/twentebelt/history')
-    expect(document.title).toBe('Search terms and history · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Twentebelt: its search terms, scan by scan.')
+    expect(document.title).toBe('Over time · Findability Explorer')
+    expect(wrapper.get('h1').text()).toBe('How Twentebelt changed, scan by scan.')
     expect(wrapper.text()).toContain('From Scan 3 of 23 Oct 2026, the latest of 2 finished scans.')
     expect(group(wrapper, 'Eyelink (3)').attributes('aria-pressed')).toBe('true')
     const tables = wrapper.findAll('section[aria-labelledby="profile-title"] table')
@@ -194,7 +194,7 @@ describe('a company’s AI readiness over time', () => {
     expect(marked).toEqual(['User-agent: GPTBot'])
   })
 
-  it('tells administrators when no scan recorded the files, and hides them from others', async () => {
+  it('says when no scan recorded the files, and shows them to every account', async () => {
     const admin = await mountApp(
       api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })), 'GET /api/v1/ai-readiness': () => json({ items: [] }) }),
       '/competitors/twentebelt/history',
@@ -211,8 +211,8 @@ describe('a company’s AI readiness over time', () => {
     )
     expect(failing.wrapper.get('section[aria-labelledby="files-title"] [role="alert"]').text()).toContain('Down.')
     failing.wrapper.unmount()
+    // The files are public on the site, so an account without the admin role reads them too.
     const viewer = await mountApp(api(), '/competitors/twentebelt/history')
-    expect(viewer.wrapper.find('section[aria-labelledby="files-title"]').exists()).toBe(false)
-    expect(viewer.requests().some((r) => r.includes('readiness-files'))).toBe(false)
+    expect(viewer.wrapper.find('section[aria-labelledby="files-title"]').exists()).toBe(true)
   })
 })

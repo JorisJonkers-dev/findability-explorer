@@ -76,7 +76,8 @@ const mentioned = computed(() => mentionLine(prompts.value, props.company.id))
         </button>
       </template>
       <p v-else class="m-0 text-muted stage:text-[30px]">The research found no website for this company.</p>
-      <RouterLink :to="`/competitors/${company.id}/history`" class="font-medium stage:text-[30px]">Search terms and history</RouterLink>
+      <RouterLink :to="`/competitors/${company.id}`" class="font-medium stage:text-[30px]">Latest scan</RouterLink>
+      <RouterLink :to="`/competitors/${company.id}/history`" class="font-medium stage:text-[30px]">Over time</RouterLink>
     </div>
     <div class="flex flex-col gap-0.5 border-l-4 border-orange pl-3 stage:gap-1 stage:border-l-[6px] stage:pl-6" data-testid="scan-stats">
       <p class="m-0 font-display text-xl font-semibold stage:text-[44px]">{{ scanCountLabel(company.scans, running !== undefined) }}</p>

@@ -44,13 +44,20 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         meta: { title: 'All competitors' },
       },
       { path: '/scan/:id', name: 'scan', component: competitors, props: (to) => ({ scanId: String(to.params.id) }), meta: { title: 'Scan' } },
+      {
+        path: '/competitors/:id',
+        name: 'company',
+        component: () => import('../features/competitors/components/CompanyScanView.vue'),
+        props: (to) => ({ companyId: String(to.params.id) }),
+        meta: { title: 'Latest scan' },
+      },
       // A company's search terms and scan history, a section view of its own: the stage has no room beside the list.
       {
         path: '/competitors/:id/history',
         name: 'company-history',
         component: () => import('../features/competitors/components/CompanyHistoryView.vue'),
         props: (to) => ({ companyId: String(to.params.id) }),
-        meta: { title: 'Search terms and history' },
+        meta: { title: 'Over time' },
       },
       { path: '/products', name: 'products', component: () => import('../features/products/components/ProductsView.vue'), meta: { title: 'Products' } },
       {
@@ -69,7 +76,6 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       { path: '/settings/candidates', redirect: '/competitors/all' },
       { path: '/terminology', redirect: (to) => ({ path: '/terms', query: to.query }) },
       { path: '/keywords', redirect: (to) => ({ path: '/terms', query: to.query }) },
-      { path: '/competitors/:id', redirect: (to) => ({ path: '/competitors', query: { company: String(to.params.id) } }) },
       { path: '/scan', redirect: (to) => ({ path: '/competitors', query: to.query }) },
       { path: '/analyses', redirect: (to) => ({ path: '/competitors', query: to.query }) },
       { path: '/analyses/:id', redirect: (to) => ({ path: `/scan/${String(to.params.id)}`, query: to.query }) },

@@ -107,8 +107,6 @@ test('unknown routes go to the poster, and old addresses to their new views', as
   await expect(page).toHaveURL('/')
   await page.goto('/terminology?q=spiral')
   await expect(page).toHaveURL('/terms?q=spiral')
-  await page.goto('/competitors/twentebelt')
-  await expect(page).toHaveURL('/competitors?company=twentebelt')
   await page.goto('/analyses')
   await expect(page).toHaveURL('/competitors')
 })

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { percent } from '../../../shared/percent'
 import { tierFill } from '../../../shared/tiers'
 import { familyLabel, languageLabel, tierLabel } from '../../../shared/vocabulary'
+import LanguageFilter from '../../../shared/ui/LanguageFilter.vue'
+import { languageChoices, ofLanguage } from '../../terminology/domain/languages'
 import { scopeName } from '../../prompt-test/domain/results'
 import SectionView from '../../shell/components/SectionView.vue'
 import { companyPath, familyOfSlug, PRODUCT_TABS } from '../../shell/domain/sections'
@@ -19,6 +21,9 @@ const title = computed(() => {
   return product.value ? productHeadline(product.value) : familyLabel(family.value)
 })
 const TIERS = ['product', 'spec', 'application', 'problem', 'broad'] as const
+const language = ref<string | null>(null)
+const languages = computed(() => languageChoices(product.value?.terms.map((t) => t.language) ?? []))
+const terms = computed(() => ofLanguage(product.value?.terms ?? [], language.value))
 </script>
 
 <template>
@@ -32,6 +37,7 @@ const TIERS = ['product', 'spec', 'application', 'problem', 'broad'] as const
           <h2 id="terms-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">How buyers search for it</h2>
           <span class="stage:text-[28px]">Tribelt uses <strong class="text-orange-ink">{{ product.termsUsed }} of {{ product.terms.length }}</strong></span>
         </div>
+        <LanguageFilter :choices="languages" :selected="language" @select="(l) => (language = l)" />
         <div class="relative overflow-auto stage:min-h-0 stage:flex-1">
           <table class="w-full border-collapse text-sm stage:text-[26px]">
             <caption class="sr-only">Search terms for {{ familyLabel(product.family) }}, the most used first</caption>
@@ -44,7 +50,7 @@ const TIERS = ['product', 'spec', 'application', 'problem', 'broad'] as const
               </tr>
             </thead>
             <tbody>
-              <tr v-for="t in product.terms" :key="`${t.term}-${t.language}`" class="border-b border-grey">
+              <tr v-for="t in terms" :key="`${t.term}-${t.language}`" class="border-b border-grey">
                 <th scope="row" class="py-2 text-left font-medium stage:py-3">
                   <span class="inline-flex items-center gap-2"><span aria-hidden="true" class="size-3 flex-none rounded-full stage:size-4" :class="tierFill(t.tier)"></span>{{ t.term }}</span>
                   <span class="sr-only">, {{ tierLabel(t.tier) }}</span>

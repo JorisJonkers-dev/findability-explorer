@@ -149,6 +149,28 @@ describe('the term review', () => {
     expect(router.currentRoute.value.fullPath).toBe('/settings/terms')
   })
 
+  it('filters the candidates by language, kept in the address, and offers only their own language to accept in', async () => {
+    const german = candidate({ id: 'aaaaaaaaaaaaaaaa', phrase: 'transportband', languages: ['de'] })
+    const list = (): Response => json({ items: [candidate(), german], counts, review: { running: false, waiting: 0 } } satisfies TermCandidateList)
+    const { wrapper, router } = await mountApp(api([], { 'GET /api/v1/admin/term-candidates': list }), '/settings/terms')
+    const group = wrapper.get('[role="group"][aria-label="Language"]')
+    expect(group.findAll('button').map((b) => b.text())).toEqual(['All languages', 'German', 'English', 'Portuguese'])
+    await button(wrapper, 'German').trigger('click')
+    await settle()
+    expect(router.currentRoute.value.fullPath).toBe('/settings/terms?language=de')
+    expect(wrapper.findAll('ul[aria-label="Candidates"] h3').map((h) => h.text())).toEqual(['transportband'])
+    await button(wrapper, 'Accept…').trigger('click')
+    await settle()
+    const [language] = wrapper.get('form[aria-label="Accept transportband"]').findAll('select')
+    expect(language?.findAll('option').map((o) => o.text())).toEqual(['German'])
+    await button(wrapper, 'Accepted (1)').trigger('click')
+    await settle()
+    expect(router.currentRoute.value.fullPath).toBe('/settings/terms?status=accepted&language=de')
+    await button(wrapper, 'All languages').trigger('click')
+    await settle()
+    expect(router.currentRoute.value.fullPath).toBe('/settings/terms?status=accepted')
+  })
+
   it('says why a decision failed', async () => {
     const { wrapper } = await mountApp(
       api([], { [`POST /api/v1/admin/term-candidates/${ID}/reject`]: () => problem(409, 'Conflict', 'This candidate was decided already.') }),

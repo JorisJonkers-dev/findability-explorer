@@ -92,6 +92,8 @@ const LANGUAGE_NAMES = new Intl.DisplayNames(['en'], { type: 'language', fallbac
  */
 export function languageLabel(code: string): string {
   if (isLanguage(code)) return LANGUAGE_LABELS[code]
+  // A scan marks a page whose language it could not tell und, which the browser calls "root".
+  if (code === 'und') return 'Unknown language'
   try {
     return LANGUAGE_NAMES.of(code) ?? code
   } catch {

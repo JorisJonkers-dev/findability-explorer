@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ANALYSIS_ID, analysis, competitor, me, readinessRow, summary, termSearch, readinessTable } from '../../../testing/fixtures'
+import { ANALYSIS_ID, analysis, competitor, me, readinessRow, summary, term, termSearch, readinessTable } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 const martens = competitor('Märtens', {
@@ -53,6 +53,21 @@ describe("a company's latest scan", () => {
     await wrapper.findAll('button').find((b) => b.text() === 'Scan again')?.trigger('click')
     await settle()
     expect(sent).toEqual({ competitorIds: ['martens'] })
+  })
+
+  it('filters its phrases, and the map terms it uses, by one language', async () => {
+    const terms = [term({ term: 'Förderband', language: 'de', usedBy: ['Märtens'] }), term({ term: 'conveyor belt', language: 'en-US', usedBy: ['Märtens'] })]
+    const { wrapper } = await mountApp(api(false, { 'GET /api/v1/terms': () => json(termSearch(terms)) }), '/competitors/martens')
+    const used = () => wrapper.findAll('ul[aria-label="Its terms in the terminology map"] li').map((li) => li.text())
+    const ranked = () => wrapper.findAll('ol[aria-label="Ranked phrases"] li').length
+    expect(ranked()).toBe(3)
+    expect(used()).toHaveLength(2)
+    const group = wrapper.get('[role="group"][aria-label="Language"]')
+    expect(group.findAll('button').map((b) => b.text())).toEqual(['All languages', 'German', 'English'])
+    await group.findAll('button').find((b) => b.text() === 'English')?.trigger('click')
+    await settle()
+    expect(ranked()).toBe(2)
+    expect(used()).toEqual([expect.stringContaining('conveyor belt')])
   })
 
   it('says when no company has the id', async () => {

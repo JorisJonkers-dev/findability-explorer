@@ -36,6 +36,7 @@ describe('the vocabulary', () => {
     expect(languageLabel('pt')).toBe('Portuguese')
     expect(languageLabel('en-GB')).toBe('British English')
     expect(languageLabel('not a code')).toBe('not a code')
+    expect(languageLabel('und')).toBe('Unknown language')
     expect(familyLabel('tri_flex_turn_curve')).toBe('Tri-Flex')
     expect(familyLabel('spec_all')).toBe('Specification')
     expect(tierLabel('spec')).toBe('Specification')

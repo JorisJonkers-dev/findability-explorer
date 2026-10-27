@@ -9,6 +9,7 @@ import type {
 } from '../../../infrastructure/api/types.gen'
 import { languageLabel, tierLabel } from '../../../shared/vocabulary'
 import { isInProgress } from '../../scan/domain/status'
+import { ofLanguage } from '../../terminology/domain/languages'
 
 const GROUP_LABELS: Record<ProfileGroup, string> = {
   eyelink: 'Eyelink',
@@ -146,6 +147,21 @@ export function changeCounts(groups: readonly ComparisonGroup[]): Record<ChangeK
     counts.moved += g.moved.length
   }
   return counts
+}
+
+/** Each group with only the changes to terms in the chosen language; every change when none is chosen. */
+export function changesIn(groups: readonly ComparisonGroup[], language: string | null): ComparisonGroup[] {
+  return groups.map((g) => ({
+    ...g,
+    added: ofLanguage(g.added, language),
+    removed: ofLanguage(g.removed, language),
+    moved: ofLanguage(g.moved, language),
+  }))
+}
+
+/** The languages of the terms a comparison changed, for its language filter. */
+export function changeLanguages(groups: readonly ComparisonGroup[]): string[] {
+  return groups.flatMap((g) => [...g.added, ...g.removed, ...g.moved].map((c) => c.language))
 }
 
 /** The groups with any change, which the compare view lists. */

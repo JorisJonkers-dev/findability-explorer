@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { tierFill } from '../../../shared/tiers'
 import { tierLabel } from '../../../shared/vocabulary'
@@ -13,6 +13,7 @@ import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { companyTabs } from '../../shell/domain/sections'
 import { useTermMap } from '../../terminology/composables/useTermSearch'
+import { ofLanguage } from '../../terminology/domain/languages'
 import { useCompanies } from '../composables/useCompanies'
 import { useRescan } from '../composables/useCompanyAdmin'
 import { useCompany } from '../composables/useCompany'
@@ -31,7 +32,9 @@ const { byId, isLoading } = useCompanies()
 const company = computed(() => byId(props.companyId))
 const { detail, notFound, error } = useCompany(id)
 const map = useTermMap()
-const used = computed(() => (company.value ? companyTerms(map.terms.value, company.value.shortName) : []))
+// The scan's language filter narrows the map terms the site uses too.
+const language = ref<string | null>(null)
+const used = computed(() => (company.value ? ofLanguage(companyTerms(map.terms.value, company.value.shortName), language.value) : []))
 const latest = computed(() => detail.value?.scans.find((s) => s.status === 'done'))
 const { scan } = useScan(computed(() => latest.value?.id ?? ''))
 const { results } = usePromptResults()
@@ -84,7 +87,7 @@ const title = computed(() => {
         <p v-if="rescanError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ rescanError }}</p>
         <p class="m-0 text-ink-2 stage:text-[28px]">{{ lastScanLabel(company.lastScan) ?? 'No scan of its website has run yet.' }}</p>
         <div class="flex flex-col stage:min-h-0 stage:overflow-y-auto">
-          <ScanResult v-if="scan" :scan="scan" />
+          <ScanResult v-if="scan" v-model:language="language" :scan="scan" />
           <p v-else-if="latest" class="m-0 text-muted">Loading the scan…</p>
         </div>
       </section>

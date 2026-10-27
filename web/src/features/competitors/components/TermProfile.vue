@@ -4,7 +4,9 @@ import { computed, ref, watch } from 'vue'
 import type { CompetitorProfile, ProfileGroup } from '../../../infrastructure/api/types.gen'
 import { tierFill } from '../../../shared/tiers'
 import { tierLabel } from '../../../shared/vocabulary'
+import LanguageFilter from '../../../shared/ui/LanguageFilter.vue'
 import PillButton from '../../../shared/ui/PillButton.vue'
+import { languageChoices, ofLanguage } from '../../terminology/domain/languages'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
 import { directionOf, nextSort, type Sort, type SortDirection, sortRows } from '../../../shared/sort'
 import SortButton from '../../../shared/ui/SortButton.vue'
@@ -31,7 +33,10 @@ watch(
   },
 )
 const group = computed(() => props.profile.groups.find((g) => g.group === picked.value))
-const languages = computed(() => byLanguage(group.value?.terms ?? []))
+// The language filter offers every language of the profile, so it holds as the family changes.
+const language = ref<string | null>(null)
+const choices = computed(() => languageChoices(props.profile.groups.flatMap((g) => g.terms.map((t) => t.language))))
+const languages = computed(() => byLanguage(ofLanguage(group.value?.terms ?? [], language.value)))
 const latest = computed(() => props.profile.scan?.number)
 
 // The tables sort by a column while one is picked; each language's table keeps its own rows.
@@ -69,6 +74,7 @@ const PROFILE_COLUMNS: readonly { key: ProfileColumn; label: string; first: Sort
           {{ groupTabLabel(g) }}
         </PillButton>
       </div>
+      <LanguageFilter :choices="choices" :selected="language" @select="(l) => (language = l)" />
       <div v-scroll-hint class="scroll-hint flex flex-col gap-5 stage:min-h-0 stage:flex-1 stage:gap-8 stage:overflow-y-auto">
         <p v-if="languages.length === 0" class="m-0 text-ink-2 stage:text-[30px]">
           The scan found no {{ group ? groupLabel(group.group).toLowerCase() : '' }} terms.

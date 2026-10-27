@@ -238,12 +238,13 @@ type PromptAnswerCompany struct {
 }
 
 type PromptCandidateCheck struct {
-	CandidateID string
-	Competitor  bool
-	Sure        bool
-	Reason      string
-	Model       string
-	CheckedAt   time.Time
+	CandidateID  string
+	Competitor   bool
+	Sure         bool
+	Reason       string
+	Model        string
+	CheckedAt    time.Time
+	CheckVersion int64
 }
 
 type PromptCandidateDecision struct {
@@ -276,6 +277,13 @@ type PromptExtraction struct {
 	OutputTokens int64
 	CostMicros   int64
 	ExtractedAt  time.Time
+}
+
+type PromptReviewUsage struct {
+	ID           int64
+	InputTokens  int64
+	OutputTokens int64
+	UsedAt       time.Time
 }
 
 type PromptRun struct {

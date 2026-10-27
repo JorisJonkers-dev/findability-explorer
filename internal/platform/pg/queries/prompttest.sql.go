@@ -421,6 +421,22 @@ func (q *Queries) HeartbeatPromptRun(ctx context.Context, arg HeartbeatPromptRun
 	return result.RowsAffected(), nil
 }
 
+const insertPromptReviewUsage = `-- name: InsertPromptReviewUsage :exec
+INSERT INTO prompt_review_usage (input_tokens, output_tokens, used_at)
+VALUES ($1, $2, $3)
+`
+
+type InsertPromptReviewUsageParams struct {
+	InputTokens  int64
+	OutputTokens int64
+	UsedAt       time.Time
+}
+
+func (q *Queries) InsertPromptReviewUsage(ctx context.Context, arg InsertPromptReviewUsageParams) error {
+	_, err := q.db.Exec(ctx, insertPromptReviewUsage, arg.InputTokens, arg.OutputTokens, arg.UsedAt)
+	return err
+}
+
 const listPromptAnswerCompanies = `-- name: ListPromptAnswerCompanies :many
 SELECT c.answer_id, c.position, c.name, c.url, coalesce(c.competitor_id, '')::text AS competitor_id
 FROM prompt_answer_companies AS c
@@ -453,6 +469,38 @@ func (q *Queries) ListPromptAnswerCompanies(ctx context.Context, runID uuid.UUID
 			&i.Url,
 			&i.CompetitorID,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptAnswerTexts = `-- name: ListPromptAnswerTexts :many
+SELECT id, answer
+FROM prompt_answers
+WHERE id = ANY($1::uuid [])
+`
+
+type ListPromptAnswerTextsRow struct {
+	ID     uuid.UUID
+	Answer string
+}
+
+// The text of some answers, to quote what they say around a company's name.
+func (q *Queries) ListPromptAnswerTexts(ctx context.Context, ids []uuid.UUID) ([]ListPromptAnswerTextsRow, error) {
+	rows, err := q.db.Query(ctx, listPromptAnswerTexts, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPromptAnswerTextsRow{}
+	for rows.Next() {
+		var i ListPromptAnswerTextsRow
+		if err := rows.Scan(&i.ID, &i.Answer); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -565,26 +613,37 @@ func (q *Queries) ListPromptAnswers(ctx context.Context, arg ListPromptAnswersPa
 }
 
 const listPromptCandidateChecks = `-- name: ListPromptCandidateChecks :many
-SELECT candidate_id, competitor, sure, reason, model, checked_at
+SELECT candidate_id, competitor, sure, reason, model, check_version, checked_at
 FROM prompt_candidate_checks
 ORDER BY checked_at, candidate_id
 `
 
-func (q *Queries) ListPromptCandidateChecks(ctx context.Context) ([]PromptCandidateCheck, error) {
+type ListPromptCandidateChecksRow struct {
+	CandidateID  string
+	Competitor   bool
+	Sure         bool
+	Reason       string
+	Model        string
+	CheckVersion int64
+	CheckedAt    time.Time
+}
+
+func (q *Queries) ListPromptCandidateChecks(ctx context.Context) ([]ListPromptCandidateChecksRow, error) {
 	rows, err := q.db.Query(ctx, listPromptCandidateChecks)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []PromptCandidateCheck{}
+	items := []ListPromptCandidateChecksRow{}
 	for rows.Next() {
-		var i PromptCandidateCheck
+		var i ListPromptCandidateChecksRow
 		if err := rows.Scan(
 			&i.CandidateID,
 			&i.Competitor,
 			&i.Sure,
 			&i.Reason,
 			&i.Model,
+			&i.CheckVersion,
 			&i.CheckedAt,
 		); err != nil {
 			return nil, err
@@ -815,8 +874,21 @@ func (q *Queries) MovePromptSchedule(ctx context.Context, nextDue time.Time) err
 	return err
 }
 
+const promptReviewTokensSince = `-- name: PromptReviewTokensSince :one
+SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+FROM prompt_review_usage
+WHERE used_at >= $1
+`
+
+func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) (int64, error) {
+	row := q.db.QueryRow(ctx, promptReviewTokensSince, since)
+	var tokens int64
+	err := row.Scan(&tokens)
+	return tokens, err
+}
+
 const promptSightings = `-- name: PromptSightings :many
-SELECT c.name, c.url, a.provider, a.model, a.answered_at
+SELECT c.answer_id, c.name, c.url, a.provider, a.model, a.answered_at
 FROM prompt_answer_companies AS c
 JOIN prompt_answers AS a ON a.id = c.answer_id
 WHERE c.competitor_id IS NULL
@@ -824,6 +896,7 @@ ORDER BY a.answered_at, c.answer_id, c.position
 `
 
 type PromptSightingsRow struct {
+	AnswerID   uuid.UUID
 	Name       string
 	Url        string
 	Provider   string
@@ -842,6 +915,7 @@ func (q *Queries) PromptSightings(ctx context.Context) ([]PromptSightingsRow, er
 	for rows.Next() {
 		var i PromptSightingsRow
 		if err := rows.Scan(
+			&i.AnswerID,
 			&i.Name,
 			&i.Url,
 			&i.Provider,
@@ -895,20 +969,21 @@ func (q *Queries) ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams
 }
 
 const savePromptCandidateCheck = `-- name: SavePromptCandidateCheck :exec
-INSERT INTO prompt_candidate_checks (candidate_id, competitor, sure, reason, model, checked_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO prompt_candidate_checks (candidate_id, competitor, sure, reason, model, check_version, checked_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (candidate_id) DO UPDATE SET
     competitor = excluded.competitor, sure = excluded.sure, reason = excluded.reason,
-    model = excluded.model, checked_at = excluded.checked_at
+    model = excluded.model, check_version = excluded.check_version, checked_at = excluded.checked_at
 `
 
 type SavePromptCandidateCheckParams struct {
-	CandidateID string
-	Competitor  bool
-	Sure        bool
-	Reason      string
-	Model       string
-	CheckedAt   time.Time
+	CandidateID  string
+	Competitor   bool
+	Sure         bool
+	Reason       string
+	Model        string
+	CheckVersion int64
+	CheckedAt    time.Time
 }
 
 func (q *Queries) SavePromptCandidateCheck(ctx context.Context, arg SavePromptCandidateCheckParams) error {
@@ -918,6 +993,7 @@ func (q *Queries) SavePromptCandidateCheck(ctx context.Context, arg SavePromptCa
 		arg.Sure,
 		arg.Reason,
 		arg.Model,
+		arg.CheckVersion,
 		arg.CheckedAt,
 	)
 	return err

@@ -1070,7 +1070,7 @@ export type CandidateCompany = {
 export type TermDecision = {
     status: TermCandidateStatus;
     /**
-     * Who decided.
+     * Who decided; `language model` for Claude Haiku.
      */
     by: string;
     /**
@@ -2662,7 +2662,7 @@ export type CompetitorCandidateId = string;
 export type CompetitorCandidateStatus = 'pending' | 'added' | 'dismissed';
 
 /**
- * An administrator's decision on a competitor candidate.
+ * A decision on a competitor candidate, by an administrator or by Claude Haiku.
  */
 export type CompetitorCandidateDecision = {
     status: CompetitorCandidateStatus;
@@ -2743,7 +2743,7 @@ export type CandidateName = {
 };
 
 /**
- * Claude Haiku's check of a candidate. A suggestion; a person decides.
+ * Claude Haiku's check of a candidate against Tribelt's target market. A sure one decides the candidate; an unsure one is a suggestion for a person.
  */
 export type CandidateCheck = {
     /**

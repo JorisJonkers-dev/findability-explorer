@@ -117,13 +117,24 @@ type Repository interface {
 	CompanyVerdicts(ctx context.Context) ([]domain.CompanyVerdict, error)
 	// SaveCompanyVerdicts stores verdicts, each replacing the one on its candidate.
 	SaveCompanyVerdicts(ctx context.Context, verdicts []domain.CompanyVerdict) error
+	// AnswerTexts returns the text of each answer of ids there is, by id.
+	AnswerTexts(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error)
+	// SaveReviewUsage stores what requests to the language model for the review consumed.
+	SaveReviewUsage(ctx context.Context, usage []domain.ReviewUsage) error
 }
 
 // Reviewer is a language model that reviews the candidates: which are one company, or a company
-// on the list, and which are competitors of Tribelt.
+// on the list, and which are competitors of Tribelt by domain.TargetMarket, judged from each
+// company's dossier. On an error the usage still counts what was consumed.
 type Reviewer interface {
-	Merge(ctx context.Context, candidates []domain.Candidate, directory []domain.DirectoryCompany) ([]domain.Cluster, error)
-	Check(ctx context.Context, candidates []domain.Candidate) ([]domain.CompanyVerdict, error)
+	Merge(ctx context.Context, candidates []domain.Candidate, directory []domain.DirectoryCompany) ([]domain.Cluster, domain.ReviewUsage, error)
+	Check(ctx context.Context, dossiers []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error)
+}
+
+// HomePages fetches a company's home page, politely and once: what it says of the company, or,
+// in Problem, why it could not be read.
+type HomePages interface {
+	Fetch(ctx context.Context, website string) domain.HomePage
 }
 
 // Reviewers hands out the reviewer and the model it asks: Claude Haiku on an Anthropic key. A nil

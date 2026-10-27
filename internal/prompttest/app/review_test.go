@@ -26,6 +26,7 @@ func naming(names ...[2]string) (*repo, uuid.UUID) {
 		r.answers = append(r.answers, domain.Answer{
 			ID: uuid.New(), RunID: run.ID, Provider: "openai", Model: "openai/gpt-oss-20b", At: start.Add(time.Duration(i) * time.Minute),
 			Prompt: domain.Prompt{ID: "p"}, Mode: domain.ModeWeb,
+			Reply:      domain.Reply{Text: "Try " + n[0] + " for oven belts."},
 			Extraction: &domain.Extraction{Companies: []domain.Company{{Name: n[0], URL: n[1], Position: 1}}},
 		})
 	}
@@ -35,7 +36,7 @@ func naming(names ...[2]string) (*repo, uuid.UUID) {
 // reviewing is a Service on r whose language model is rv; started reviews run in place.
 func reviewing(r *repo, d *directory, rv app.Reviewers, onError func(error)) *app.Service {
 	return app.New(r, gateways{gw: newGateway()}, d, func() time.Time { return start }, app.Config{Owner: "a"}, func(uuid.UUID, error) {},
-		app.WithSpawn(func(f func()) { f() }), app.WithReviewers(rv, onError))
+		app.WithSpawn(func(f func()) { f() }), app.WithReviewers(rv, &pages{}, onError))
 }
 
 func TestACompanyIsDecidedAsOne(t *testing.T) {
@@ -195,7 +196,8 @@ func TestAnswersCountACompanyAddedSince(t *testing.T) {
 	}
 }
 
-// model is a language model that merges and checks by the rules given.
+// model is a language model that merges and checks by the rules given; each request uses 100
+// tokens.
 type model struct {
 	mu       sync.Mutex
 	clusters []domain.Cluster
@@ -204,27 +206,55 @@ type model struct {
 	checkErr error
 	merged   int
 	checked  [][]string
+	dossiers []domain.Dossier
+	// free uses no tokens, as a provider that reports none.
+	free bool
 }
 
-func (m *model) Merge(_ context.Context, cs []domain.Candidate, _ []domain.DirectoryCompany) ([]domain.Cluster, error) {
+func (m *model) usage() domain.ReviewUsage {
+	if m.free {
+		return domain.ReviewUsage{}
+	}
+	return used
+}
+
+var used = domain.ReviewUsage{InputTokens: 90, OutputTokens: 10}
+
+func (m *model) Merge(_ context.Context, cs []domain.Candidate, _ []domain.DirectoryCompany) ([]domain.Cluster, domain.ReviewUsage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.merged = len(cs)
-	return m.clusters, m.mergeErr
+	return m.clusters, m.usage(), m.mergeErr
 }
 
-func (m *model) Check(_ context.Context, cs []domain.Candidate) ([]domain.CompanyVerdict, error) {
+func (m *model) Check(_ context.Context, ds []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	var ids []string
-	for _, c := range cs {
-		ids = append(ids, c.ID)
+	var cs []domain.Candidate
+	for _, d := range ds {
+		ids = append(ids, d.Candidate.ID)
+		cs = append(cs, d.Candidate)
 	}
 	m.checked = append(m.checked, ids)
+	m.dossiers = append(m.dossiers, ds...)
 	if m.checkErr != nil {
-		return nil, m.checkErr
+		return nil, m.usage(), m.checkErr
 	}
-	return m.verdicts(cs), nil
+	return m.verdicts(cs), m.usage(), nil
+}
+
+// pages serves every home page with the website as its title.
+type pages struct {
+	mu      sync.Mutex
+	fetched []string
+}
+
+func (p *pages) Fetch(_ context.Context, website string) domain.HomePage {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.fetched = append(p.fetched, website)
+	return domain.HomePage{URL: website, Title: website}
 }
 
 type models struct {
@@ -344,17 +374,17 @@ type hook struct {
 	after func()
 }
 
-func (h hook) Merge(ctx context.Context, cs []domain.Candidate, d []domain.DirectoryCompany) ([]domain.Cluster, error) {
-	out, err := h.model.Merge(ctx, cs, d)
+func (h hook) Merge(ctx context.Context, cs []domain.Candidate, d []domain.DirectoryCompany) ([]domain.Cluster, domain.ReviewUsage, error) {
+	out, u, err := h.model.Merge(ctx, cs, d)
 	h.after()
-	return out, err
+	return out, u, err
 }
 
 func TestOneReviewRunsAtATime(t *testing.T) {
 	r, _ := naming([2]string{"Kienzle GmbH", ""})
 	var later func()
 	svc := app.New(r, gateways{gw: newGateway()}, &directory{}, func() time.Time { return start }, app.Config{Owner: "a"}, func(uuid.UUID, error) {},
-		app.WithSpawn(func(f func()) { later = f }), app.WithReviewers(models{m: &model{verdicts: competitors}}, func(error) {}))
+		app.WithSpawn(func(f func()) { later = f }), app.WithReviewers(models{m: &model{verdicts: competitors}}, &pages{}, func(error) {}))
 	if !svc.StartReview(t.Context()) || svc.StartReview(t.Context()) || !svc.ReviewState().Running {
 		t.Fatal("a second review started")
 	}

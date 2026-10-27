@@ -10,8 +10,9 @@ import CandidateRow from './CandidateRow.vue'
 
 /**
  * The companies AI answers name that are not on the competitor list, one per company: names on one
- * website, and names Haiku merged, are one. Haiku checks each; a person adds or dismisses, one at
- * a time, by keyboard, or several at once.
+ * website, and names Haiku merged, are one. Haiku checks each against Tribelt's market and adds or
+ * dismisses the ones it is sure about; a person decides the rest, one at a time, by keyboard, or
+ * several at once, and can undo any decision.
  */
 const id = useId()
 const route = useRoute()
@@ -99,8 +100,8 @@ function onKey(event: KeyboardEvent): void {
     <template #lead>
       <p class="m-0 max-w-[62ch] text-lg text-ink-2">
         Companies the AI answers name that are not on the competitor list yet, the most named first. Names on one website
-        are one company, and Haiku merges the other duplicates and checks which are competitors. You decide what joins the
-        list.
+        are one company, and Haiku merges the other duplicates. Haiku adds the companies it is sure make metal process belts
+        like Tribelt's, and dismisses the ones it is sure do not. You decide the rest, and you can undo any of its decisions.
       </p>
     </template>
 

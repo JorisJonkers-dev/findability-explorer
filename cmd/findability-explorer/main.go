@@ -63,6 +63,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/webui"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/extractor"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/homepage"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/openrouter"
 	prompttestpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/reviewer"
@@ -148,7 +149,8 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	if err != nil {
 		return err
 	}
-	llm, err := newLLM(logger, getenv, store, analysisRepo, terminologyRepo, secret, limits, now)
+	promptRepo := prompttestpersistence.New(store)
+	llm, err := newLLM(logger, getenv, store, spenders{analysisRepo, terminologyRepo, promptRepo}, secret, limits, now)
 	if err != nil {
 		return err
 	}
@@ -163,12 +165,13 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		logger.ErrorContext(ctx, "analysis could not be recorded", "analysis", id, "error", err)
 	})
 
-	promptTest := prompttestapp.New(prompttestpersistence.New(store), gateways{llm: llm}, promptDirectory{companies: companies}, now,
+	promptTest := prompttestapp.New(promptRepo, gateways{llm: llm}, promptDirectory{companies: companies}, now,
 		prompttestapp.Config{}, func(id uuid.UUID, err error) {
 			logger.ErrorContext(ctx, "prompt run could not be recorded", "run", id, "error", err)
 		},
-		// Haiku on an Anthropic key reviews the competitor candidates (ADR-0006).
-		prompttestapp.WithReviewers(reviewers{llm: llm}, func(err error) { logger.WarnContext(ctx, "candidate review", "error", err) }),
+		// Haiku on an Anthropic key reviews the competitor candidates, reading their home pages (ADR-0006, ADR-0009).
+		prompttestapp.WithReviewers(reviewers{llm: llm}, homepage.New(homepage.Options{Contact: getenv("CRAWLER_CONTACT")}),
+			func(err error) { logger.WarnContext(ctx, "candidate review", "error", err) }),
 		// Haiku on an Anthropic key reads the answers while one works (ADR-0007).
 		prompttestapp.WithExtractors(extractors{llm: llm}))
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
@@ -309,9 +312,17 @@ func limitsOf(getenv func(string) string) (limits, error) {
 	return limits{monthly: int64(monthly)}, nil
 }
 
+// spenders are what counts towards the month's tokens: the scans' product matching, the term
+// review, and the review of the competitor candidates.
+type spenders struct {
+	analyses   *persistence.Repository
+	terms      *terminologypersistence.Repository
+	candidates *prompttestpersistence.Repository
+}
+
 // newLLM builds the language-model settings: the Vault key, the keys admins add, and the active model.
-func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, analyses *persistence.Repository,
-	reviews *terminologypersistence.Repository, secret string, l limits, now func() time.Time,
+func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp spenders, secret string, l limits,
+	now func() time.Time,
 ) (*llmapp.Service, error) {
 	sealer, err := seal.NewSealer(secret, llmpersistence.HKDFInfo)
 	if err != nil {
@@ -322,16 +333,21 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, an
 		logger.Info("ANTHROPIC_API_KEY is not set: product matching is off until an admin adds an Anthropic key or chooses a model")
 	}
 	spent := func(ctx context.Context) (llmapp.Spending, error) {
-		month, err := analyses.TokensSince(ctx, monthStart(now()))
+		since := monthStart(now())
+		month, err := sp.analyses.TokensSince(ctx, since)
 		if err != nil {
 			return llmapp.Spending{}, err
 		}
-		reviewed, err := reviews.TokensSince(ctx, monthStart(now()))
+		reviewed, err := sp.terms.TokensSince(ctx, since)
 		if err != nil {
 			return llmapp.Spending{}, err
 		}
-		month += reviewed
-		scans, average, err := analyses.TokensPerScan(ctx)
+		checked, err := sp.candidates.ReviewTokensSince(ctx, since)
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		month += reviewed + checked
+		scans, average, err := sp.analyses.TokensPerScan(ctx)
 		if err != nil {
 			return llmapp.Spending{}, err
 		}

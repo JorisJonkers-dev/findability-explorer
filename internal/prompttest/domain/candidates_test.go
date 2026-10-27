@@ -167,11 +167,14 @@ func TestTheModelsCheckAttachesToTheWholeCompany(t *testing.T) {
 		{ID: "c", Members: []domain.Member{{ID: "c"}}, Decision: &domain.CandidateDecision{Status: domain.CandidateDismissed}},
 	}
 	got := domain.WithVerdicts(cs, []domain.CompanyVerdict{
-		{CandidateID: "a", Competitor: true, At: early},
-		{CandidateID: "a2", Reason: "Plastic belts.", At: late},
+		{CandidateID: "a", Competitor: true, Version: domain.CheckVersion, At: early},
+		{CandidateID: "a2", Reason: "Plastic belts.", Version: domain.CheckVersion, At: late},
+		// An older check: a waiting candidate is checked again, a decided one keeps it.
+		{CandidateID: "b", Reason: "By name alone.", Version: 1, At: late},
+		{CandidateID: "c", Reason: "By name alone.", Version: 1, At: late},
 	})
-	if got[0].Verdict == nil || got[0].Verdict.Reason != "Plastic belts." || got[1].Verdict != nil {
-		t.Errorf("verdicts = %+v, %+v", got[0].Verdict, got[1].Verdict)
+	if got[0].Verdict == nil || got[0].Verdict.Reason != "Plastic belts." || got[1].Verdict != nil || got[2].Verdict == nil {
+		t.Errorf("verdicts = %+v, %+v, %+v", got[0].Verdict, got[1].Verdict, got[2].Verdict)
 	}
 	if u := domain.Unchecked(got); len(u) != 1 || u[0].ID != "b" {
 		t.Errorf("unchecked = %+v", u)
@@ -182,7 +185,8 @@ func TestEveryCheckedCandidateGetsAVerdict(t *testing.T) {
 	at := time.Date(2026, 10, 27, 9, 0, 0, 0, time.UTC)
 	got := domain.CompleteVerdicts([]domain.Candidate{{ID: "a"}, {ID: "b"}},
 		[]domain.CompanyVerdict{{CandidateID: "b", Competitor: true, Sure: true, Reason: "Makes mesh belts."}, {CandidateID: "zz", Sure: true}}, "m", at)
-	if len(got) != 2 || got[0].CandidateID != "a" || got[0].Sure || got[0].Reason != "" || !got[1].Competitor || got[1].Model != "m" || !got[0].At.Equal(at) {
+	if len(got) != 2 || got[0].CandidateID != "a" || got[0].Sure || got[0].Reason != "" || !got[1].Competitor || got[1].Model != "m" ||
+		!got[0].At.Equal(at) || got[0].Version != domain.CheckVersion || got[1].Version != domain.CheckVersion {
 		t.Errorf("verdicts = %+v", got)
 	}
 }

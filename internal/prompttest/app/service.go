@@ -77,10 +77,10 @@ func WithSleep(sleep func(context.Context, time.Duration) error) Option {
 	return func(s *Service) { s.sleep = sleep }
 }
 
-// WithReviewers lets a language model review the competitor candidates; onError hears why a
-// review failed, which only the logs can report.
-func WithReviewers(r Reviewers, onError func(error)) Option {
-	return func(s *Service) { s.review.reviewers, s.review.onError = r, onError }
+// WithReviewers lets a language model review the competitor candidates, reading their home pages
+// through pages; onError hears why a review failed, which only the logs can report.
+func WithReviewers(r Reviewers, pages HomePages, onError func(error)) Option {
+	return func(s *Service) { s.review.reviewers, s.review.pages, s.review.onError = r, pages, onError }
 }
 
 // WithExtractors lets Claude Haiku on an Anthropic key read the answers while one works; without

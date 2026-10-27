@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  ARCHIVE_ACTION,
+  canRemove,
   checkCompanyForm,
   companyProblem,
   leftOut,
@@ -11,18 +13,16 @@ import {
   unscannedCandidates,
 } from "./admin";
 
-describe("removing a company", () => {
-  it("archives a researched one, and deletes an added one with its scans", () => {
-    expect(removeAction({ source: "research", scans: 3 }).button).toBe(
-      "Archive",
-    );
-    expect(removeAction({ source: "added", scans: 1 })).toEqual({
+describe("archiving or removing a company", () => {
+  it("archives any company, and deletes only an added one with its scans", () => {
+    expect(ARCHIVE_ACTION.button).toBe("Archive");
+    expect(canRemove({ source: "research" })).toBe(false);
+    expect(canRemove({ source: "added" })).toBe(true);
+    expect(removeAction({ scans: 1 })).toEqual({
       button: "Delete with its 1 scan",
       question: "Delete this company with its 1 scan? This cannot be undone.",
     });
-    expect(removeAction({ source: "added", scans: 0 }).button).toBe(
-      "Delete with its 0 scans",
-    );
+    expect(removeAction({ scans: 0 }).button).toBe("Delete with its 0 scans");
   });
 });
 

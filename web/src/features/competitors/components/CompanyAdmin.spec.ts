@@ -37,6 +37,7 @@ function api(sent: Sent[], extra: Record<string, Handler> = {}) {
     'GET /api/v1/competitors/example-belts': () => json({ competitor: added, scans: [] }),
     'GET /api/v1/analyses': () => json({ items: [] }),
     'PATCH /api/v1/competitors/example-belts': record(() => json({ ...added, name: 'Example Belts B.V.' })),
+    'PATCH /api/v1/competitors/twentebelt': record(() => json({ ...twentebelt, archived: true })),
     'DELETE /api/v1/competitors/example-belts': record(() => new Response(null, { status: 204 })),
     'DELETE /api/v1/competitors/twentebelt': record(() => new Response(null, { status: 204 })),
     'POST /api/v1/competitors': record(() => json(competitor('New Belts', { id: 'new-belts', source: 'added' }), 201)),
@@ -109,6 +110,20 @@ describe('managing a company', () => {
     expect(wrapper.get('section[aria-labelledby="company-name"] [role="alert"]').text()).toBe('Twentebelt already has this website.')
   })
 
+  it('archives an added company by default, keeping its scans, after confirming', async () => {
+    const sent: Sent[] = []
+    const { wrapper, router } = await mountApp(api(sent), '/competitors?company=example-belts')
+    await button(wrapper, 'Archive').trigger('click')
+    await settle()
+    const confirm = wrapper.get('[role="group"][aria-label="Archive Example Belts?"]')
+    expect(confirm.text()).toContain('Archive this company? It leaves the list and the re-scans. Its scans stay, and it can be restored.')
+    expect(document.activeElement?.textContent.trim()).toBe('Cancel')
+    await button(wrapper, 'Archive').trigger('click')
+    await settle()
+    expect(sent).toEqual([{ method: 'PATCH', path: '/api/v1/competitors/example-belts', body: { archived: true } }])
+    expect(router.currentRoute.value.fullPath).toBe('/competitors?company=example-belts')
+  })
+
   it('deletes an added company with its scans after confirming, and shows the first company again', async () => {
     const sent: Sent[] = []
     const { wrapper, router } = await mountApp(api(sent), '/competitors?company=example-belts')
@@ -127,12 +142,13 @@ describe('managing a company', () => {
     expect(router.currentRoute.value.fullPath).toBe('/competitors')
   })
 
-  it('archives a researched company instead of deleting it, and says when it is refused', async () => {
+  it('only archives a researched company, and says when it is refused', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent, { 'DELETE /api/v1/competitors/twentebelt': () => problem(403, 'Forbidden') }), '/competitors')
+    const { wrapper } = await mountApp(api(sent, { 'PATCH /api/v1/competitors/twentebelt': () => problem(403, 'Forbidden') }), '/competitors')
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Remove')).toBe(false)
     await button(wrapper, 'Archive').trigger('click')
     await settle()
-    expect(wrapper.text()).toContain('Archive this researched company?')
+    expect(wrapper.text()).toContain('Archive this company?')
     await button(wrapper, 'Archive').trigger('click')
     await settle()
     expect(wrapper.get('section[aria-labelledby="company-name"] [role="alert"]').text()).toBe('Only administrators can change the companies.')

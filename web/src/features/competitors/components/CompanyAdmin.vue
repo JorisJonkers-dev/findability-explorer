@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { useRemoveCompany, useUpdateCompany } from '../composables/useCompanyAdmin'
-import { checkCompanyForm, removeAction } from '../domain/admin'
+import { ARCHIVE_ACTION, canRemove, checkCompanyForm, removeAction } from '../domain/admin'
 import type { Company } from '../domain/company'
 
 const props = defineProps<{ company: Company }>()
@@ -9,13 +9,14 @@ const emit = defineEmits<{ removed: [] }>()
 
 const { isSaving, error: saveError, update, reset } = useUpdateCompany()
 const { isRemoving, error: removeError, remove } = useRemoveCompany()
-const mode = ref<'idle' | 'edit' | 'confirm'>('idle')
+// Archive is the default for every company; an added one can also be deleted with its scans.
+const mode = ref<'idle' | 'edit' | 'archive' | 'remove'>('idle')
 const name = ref('')
 const website = ref('')
 const formError = ref<string | null>(null)
 const nameInput = useTemplateRef<HTMLInputElement>('nameInput')
 const cancelButton = useTemplateRef<HTMLButtonElement>('cancelButton')
-const action = computed(() => removeAction(props.company))
+const action = computed(() => (mode.value === 'remove' ? removeAction(props.company) : ARCHIVE_ACTION))
 
 const BUTTON = 'min-h-11 rounded-full border-2 px-5 font-medium stage:min-h-[76px] stage:border-[3px] stage:px-8 stage:text-[26px]'
 const FIELD = 'h-11 min-w-0 rounded-xl border-2 border-grey bg-white px-3 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-5 stage:text-[28px]'
@@ -30,8 +31,8 @@ async function edit(): Promise<void> {
   nameInput.value?.focus()
 }
 
-async function askToRemove(): Promise<void> {
-  mode.value = 'confirm'
+async function ask(what: 'archive' | 'remove'): Promise<void> {
+  mode.value = what
   await nextTick()
   // Cancel is the safe default, so it takes the focus.
   cancelButton.value?.focus()
@@ -63,7 +64,13 @@ function restore(): void {
   })
 }
 
-function confirmRemove(): void {
+function confirm(): void {
+  if (mode.value === 'archive') {
+    update(props.company.id, { archived: true }, () => {
+      mode.value = 'idle'
+    })
+    return
+  }
   remove(props.company.id, () => {
     mode.value = 'idle'
     emit('removed')
@@ -98,10 +105,21 @@ function confirmRemove(): void {
         <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="mode = 'idle'">Cancel</button>
       </div>
     </form>
-    <div v-else-if="mode === 'confirm'" role="group" :aria-label="`Remove ${company.name}?`" class="flex flex-wrap items-center gap-3 stage:gap-4">
+    <div
+      v-else-if="mode === 'archive' || mode === 'remove'"
+      role="group"
+      :aria-label="`${mode === 'archive' ? 'Archive' : 'Remove'} ${company.name}?`"
+      class="flex flex-wrap items-center gap-3 stage:gap-4"
+    >
       <span class="font-medium stage:text-[26px]">{{ action.question }}</span>
-      <button type="button" :disabled="isRemoving" :class="BUTTON" class="border-black bg-black text-white hover:bg-ink-2 disabled:opacity-70" @click="confirmRemove">
-        {{ isRemoving ? 'Removing…' : action.button }}
+      <button
+        type="button"
+        :disabled="isRemoving || isSaving"
+        :class="BUTTON"
+        class="border-black bg-black text-white hover:bg-ink-2 disabled:opacity-70"
+        @click="confirm"
+      >
+        {{ isRemoving ? 'Removing…' : isSaving ? 'Archiving…' : action.button }}
       </button>
       <button ref="cancelButton" type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="mode = 'idle'">Cancel</button>
     </div>
@@ -111,8 +129,9 @@ function confirmRemove(): void {
       </button>
       <template v-else>
         <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="edit">Edit</button>
-        <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="askToRemove">
-          {{ company.source === 'research' ? 'Archive' : 'Remove' }}
+        <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="ask('archive')">Archive</button>
+        <button v-if="canRemove(company)" type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="ask('remove')">
+          Remove
         </button>
       </template>
     </div>

@@ -114,7 +114,7 @@ export function useUpdateCompany() {
   }
 }
 
-/** Deletes an added company with its scans, or archives a researched one; administrators only. */
+/** Deletes an added company with its scans; administrators only. Archiving goes through useUpdateCompany. */
 export function useRemoveCompany() {
   const refresh = useRefresh()
   const remove = useMutation(deleteCompetitorMutation())

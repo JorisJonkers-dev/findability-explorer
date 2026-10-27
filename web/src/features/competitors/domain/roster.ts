@@ -31,8 +31,8 @@ export function shareOf(results: Pick<PromptTestResults, 'runs' | 'mentions'> | 
   return (results.mentions.find((m) => m.competitorId === id)?.answers ?? 0) / answers
 }
 
-/** What the list can be narrowed to. */
-export type RosterFilter = 'all' | 'competitor' | 'ours' | 'never'
+/** What the list can be narrowed to; administrators also see what Haiku made of it. */
+export type RosterFilter = 'all' | 'competitor' | 'ours' | 'never' | 'unsure' | 'archived'
 
 export const ROSTER_FILTERS: readonly { value: RosterFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -41,12 +41,23 @@ export const ROSTER_FILTERS: readonly { value: RosterFilter; label: string }[] =
   { value: 'never', label: 'Never scanned' },
 ]
 
-export function parseRosterFilter(raw: unknown): RosterFilter {
-  return ROSTER_FILTERS.find((f) => f.value === raw)?.value ?? 'all'
+/** The filters only administrators see: the companies Haiku is unsure of, and the ones it archived. */
+export const ADMIN_FILTERS: readonly { value: RosterFilter; label: string }[] = [
+  { value: 'unsure', label: 'Haiku is unsure' },
+  { value: 'archived', label: 'Archived by Haiku' },
+]
+
+/** The filter in the address; an administrator's own only for an administrator. */
+export function parseRosterFilter(raw: unknown, admin = false): RosterFilter {
+  const filters = admin ? [...ROSTER_FILTERS, ...ADMIN_FILTERS] : ROSTER_FILTERS
+  return filters.find((f) => f.value === raw)?.value ?? 'all'
 }
 
-/** Whether a company stays in the list under a filter. */
-export function keeps(c: Pick<Competitor, 'role' | 'scans'>, filter: RosterFilter): boolean {
+/**
+ * Whether a company stays in the list under a filter; flagged says Haiku is unsure of it. The
+ * archived companies are not in the list, so that filter keeps none of it.
+ */
+export function keeps(c: Pick<Competitor, 'role' | 'scans'>, filter: RosterFilter, flagged = false): boolean {
   switch (filter) {
     case 'all':
       return true
@@ -56,6 +67,10 @@ export function keeps(c: Pick<Competitor, 'role' | 'scans'>, filter: RosterFilte
       return c.role === 'tribelt' || c.role === 'group'
     case 'never':
       return c.scans === 0
+    case 'unsure':
+      return flagged
+    case 'archived':
+      return false
   }
 }
 

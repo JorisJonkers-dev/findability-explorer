@@ -2,7 +2,7 @@ import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { competitor } from '../../../testing/fixtures'
-import { json } from '../../../testing/mountApp'
+import { json, problem } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { useCompany } from './useCompany'
 import { useRemoveCompany } from './useCompanyAdmin'
@@ -25,5 +25,14 @@ describe('useRemoveCompany', () => {
     expect(sent).toContain('DELETE /api/v1/competitors/gone')
     expect(sent).toContain('GET /api/v1/competitors/kept')
     expect(sent).not.toContain('GET /api/v1/competitors/gone')
+  })
+
+  it('says why the server refused to delete a company', async () => {
+    const { state } = mountComposable(useRemoveCompany, () => problem(409, 'Conflict', 'A scan of this company is still queued or running.'))
+    const onRemoved = vi.fn()
+    state.remove('busy', onRemoved)
+    await flushPromises()
+    expect(onRemoved).not.toHaveBeenCalled()
+    expect(state.error.value).toBe('A scan of this company is still queued or running.')
   })
 })

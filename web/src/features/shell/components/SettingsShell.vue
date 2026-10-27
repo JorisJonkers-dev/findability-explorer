@@ -1,17 +1,18 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { useTermCandidates } from '../../review/composables/useTermReview'
 import { useMe } from '../composables/useMe'
 import SectionEyebrow from './SectionEyebrow.vue'
 import TopBar from './TopBar.vue'
 
 /** A settings page's frame: the top bar, the settings menu, the eyebrow, the title and the lead. */
-defineProps<{
-  title: string
-  /** How many terms wait in Term review, once known. */
-  waiting?: number | undefined
-}>()
+defineProps<{ title: string }>()
 const route = useRoute()
 const { me } = useMe()
+// How many terms wait in Term review: the menu shows it on every settings page.
+const { counts } = useTermCandidates(ref('pending'))
+const waiting = computed(() => counts.value?.pending)
 
 const PAGES = [
   { label: 'Language models', path: '/settings' },

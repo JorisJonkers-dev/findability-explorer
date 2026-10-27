@@ -1388,6 +1388,41 @@ export const zPromptSet = z.object({
 });
 
 /**
+ * Where the prices come from - run (the latest run's own costs), catalogue (OpenRouter's price list times typical tokens, before any run) or none (nothing to go by).
+ */
+export const zPromptPriceBasis = z.enum([
+    'run',
+    'catalogue',
+    'none'
+]);
+
+/**
+ * What one provider's answers cost.
+ */
+export const zPromptProviderPrice = z.object({
+    provider: z.string().max(40),
+    model: z.string().max(200),
+    fallback: z.string().max(200).optional(),
+    knowledgeUsd: zUsd,
+    webUsd: zUsd,
+    runUsd: zUsd
+});
+
+/**
+ * What Prompt runs cost, per provider, per run and per month against the budget.
+ */
+export const zPromptPrices = z.object({
+    basis: zPromptPriceBasis,
+    providers: z.array(zPromptProviderPrice).max(20),
+    readingUsd: zUsd,
+    runUsd: zUsd,
+    runsPerMonth: z.number().gte(0).lte(31),
+    monthUsd: zUsd,
+    budgetUsd: zUsd,
+    overBudget: z.boolean()
+});
+
+/**
  * The Prompt test's settings.
  */
 export const zPromptTestSettings = z.object({
@@ -1399,7 +1434,10 @@ export const zPromptTestSettings = z.object({
     nextDueAt: z.iso.datetime({ offset: true }).max(64),
     factSheet: zPromptFactSheet,
     promptSet: zPromptSet,
-    extractorModel: z.string().max(200)
+    extractorModel: z.string().max(200),
+    models: z.array(zPromptModelChoice).max(20),
+    keyWorks: z.boolean(),
+    prices: zPromptPrices
 });
 
 /**

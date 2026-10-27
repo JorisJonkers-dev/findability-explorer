@@ -166,3 +166,17 @@ describe('the routes', () => {
     expect(await scroll?.(at('/competitors'), at('/terms'), { left: 0, top: 120 })).toEqual({ left: 0, top: 120 })
   })
 })
+
+describe('the settings menu', () => {
+  it('shows how many terms wait in Term review on every settings page', async () => {
+    const { wrapper } = await mountApp(
+      routes({
+        'GET /api/v1/me': () => json(me({ isAdmin: true })),
+        'GET /api/v1/admin/term-candidates': () => json({ items: [], counts: { pending: 8, accepted: 0, rejected: 0 } }),
+      }),
+      '/settings/prompt-test',
+    )
+    expect(wrapper.get('nav[aria-label="Settings"] a[href="/settings/terms"]').text()).toBe('Term review 8')
+    expect(wrapper.find('nav[aria-label="Settings"] [aria-label="8 waiting"]').exists()).toBe(true)
+  })
+})

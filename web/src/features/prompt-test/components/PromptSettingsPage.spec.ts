@@ -22,6 +22,24 @@ function settings(overrides: Partial<PromptTestSettings> = {}): PromptTestSettin
       ],
     },
     extractorModel: 'google/gemini-2.5-flash-lite',
+    models: [
+      { provider: 'openai', model: 'openai/gpt-oss-20b', free: false },
+      { provider: 'google', model: 'google/gemma:free', free: true, fallback: 'google/gemini-2.5-flash-lite' },
+    ],
+    keyWorks: true,
+    prices: {
+      basis: 'run',
+      providers: [
+        { provider: 'openai', model: 'openai/gpt-oss-20b', knowledgeUsd: 0.0012, webUsd: 0.0061, runUsd: 0.15 },
+        { provider: 'google', model: 'google/gemma:free', fallback: 'google/gemini-2.5-flash-lite', knowledgeUsd: 0, webUsd: 0.004, runUsd: 0.08 },
+      ],
+      readingUsd: 0.0002,
+      runUsd: 0.25,
+      runsPerMonth: 1,
+      monthUsd: 0.25,
+      budgetUsd: 10,
+      overBudget: false,
+    },
     ...overrides,
   }
 }
@@ -51,29 +69,56 @@ describe('the Prompt test settings', () => {
     const { wrapper } = await mountApp(server().handle, '/settings/prompt-test')
     expect(document.title).toBe('Prompt test settings · Findability Explorer')
     expect(wrapper.text()).toContain('$2.50 of $10.00 spent this month. The next scheduled run starts 1 Nov 2026, 06:00 UTC.')
-    expect(wrapper.get('table').text()).toContain('40,000 / 90,000')
-    expect(wrapper.get('table').text()).toContain('$0.42')
+    expect(wrapper.get('section[aria-labelledby="run-title"] table').text()).toContain('40,000 / 90,000')
+    expect(wrapper.get('section[aria-labelledby="run-title"] table').text()).toContain('$0.42')
     const choice = form(wrapper, 'choice-title')
     expect(choice.get('select').findAll('option').map((o) => o.text())).toEqual(['Choose a key', 'OpenRouter · Course budget key'])
-    expect((choice.get('input').element as HTMLInputElement).value).toBe('openai, google')
+    expect(choice.findAll('ul[aria-label="Providers"] li').map((l) => l.find('span').text())).toEqual([
+      'OpenAIopenai/gpt-oss-20b',
+      'Googlegoogle/gemma:free, then google/gemini-2.5-flash-lite',
+    ])
     expect(form(wrapper, 'facts-title').text()).toContain('Version 2, by joris on 26 Oct 2026, 09:00 UTC.')
     expect(wrapper.findAll('details summary').map((s) => s.text())).toEqual(['Eyelink (1)', 'Other metal belts (1)'])
-    expect(wrapper.text()).toContain('Every answer is read by google/gemini-2.5-flash-lite.')
+    expect(wrapper.get('#set-title').text()).toBe('The 2 buyer questions')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('shows what a run and a month cost, per provider and against the budget', async () => {
+    const { wrapper } = await mountApp(server().handle, '/settings/prompt-test')
+    const prices = wrapper.get('section[aria-labelledby="price-title"]')
+    expect(prices.text()).toContain('From what the latest run cost.')
+    const rows = prices.findAll('tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
+    expect(rows[0]).toEqual(['OpenAIopenai/gpt-oss-20b', '$0.0012', '$0.0061', '$0.15'])
+    expect(rows[2]).toEqual(['Reading every answergoogle/gemini-2.5-flash-lite', '$0.0002', '', ''])
+    expect(prices.get('tfoot').text()).toContain('A month of monthly runs, against the budget of $10.00$0.25')
+  })
+
+  it('warns when a month of runs passes the budget, and when the key does not work', async () => {
+    const over = settings({ keyWorks: false, cadence: 'weekly', prices: { ...settings().prices, monthUsd: 13.7, runUsd: 3.15, runsPerMonth: 4.33, overBudget: true } })
+    const { wrapper } = await mountApp(server({ 'GET /api/v1/admin/prompt-test': () => json(over) }).handle, '/settings/prompt-test')
+    const alerts = wrapper.findAll('[role="alert"]').map((a) => a.text())
+    expect(alerts[0]).toContain('The OpenRouter key does not work, so no Prompt run can start.')
+    expect(wrapper.get('[role="alert"] a').attributes('href')).toBe('/settings')
+    expect(alerts[1]).toContain('A month of runs costs more than the budget')
+    expect(wrapper.get('tfoot').text()).toContain('A month of weekly runs')
   })
 
   it('saves the key, providers, budget and schedule, after checking them', async () => {
     const { handle, bodies } = server()
     const { wrapper } = await mountApp(handle, '/settings/prompt-test')
     const choice = form(wrapper, 'choice-title')
-    const [providers, budget] = choice.findAll('input')
+    const [newProvider, budget] = choice.findAll('input')
     await budget?.setValue('nothing')
     await choice.trigger('submit')
     expect(choice.get('[role="alert"]').text()).toBe('The budget is an amount in dollars above $0 and at most $1,000.')
     await budget?.setValue('12,50')
-    await providers?.setValue(' , ')
-    await choice.trigger('submit')
-    expect(choice.get('[role="alert"]').text()).toBe('Name at least one provider, such as openai.')
-    await providers?.setValue('OpenAI, x-ai')
+    await newProvider?.setValue('Open AI')
+    await choice.findAll('button').find((b) => b.text() === 'Add')?.trigger('click')
+    expect(choice.get('[role="alert"]').text()).toBe('A provider is an OpenRouter id, such as openai or meta-llama.')
+    await newProvider?.setValue('x-ai')
+    await newProvider?.trigger('keydown', { key: 'Enter' })
+    expect((newProvider?.element as HTMLInputElement).value).toBe('')
+    await choice.findAll('ul[aria-label="Providers"] button')[1]?.trigger('click')
     await choice.findAll('select')[1]?.setValue('weekly')
     await choice.trigger('submit')
     await settle()

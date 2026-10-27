@@ -297,3 +297,50 @@ func TestACandidateAddedFromAListIsRecorded(t *testing.T) {
 		t.Errorf("Decide failing: %v", err)
 	}
 }
+
+func TestTheSettingsPriceRunsBeforeAndAfterTheFirst(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	before, err := e.svc.Settings(t.Context())
+	if err != nil || !before.KeyWorks || before.Prices.Basis != domain.BasisCatalogue || len(before.Prices.Providers) != 2 || len(before.Models) != 0 {
+		t.Fatalf("before any run = %+v, %v", before.Prices, err)
+	}
+	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	after, err := e.svc.Settings(t.Context())
+	// Every answer cost 10 and reading it 2.
+	if err != nil || after.Prices.Basis != domain.BasisRun || len(after.Models) != 2 || after.Prices.Providers[0].Knowledge != 10 || after.Prices.Reading != 2 {
+		t.Fatalf("after a run = %+v, %v", after.Prices, err)
+	}
+}
+
+func TestTheSettingsHaveNoPricesWithoutAKeyOrAPriceList(t *testing.T) {
+	r := newRepo()
+	s := domain.DefaultSettings(start)
+	r.settings = &s
+	e := newEnv(t, r, "a")
+	if v, err := e.svc.Settings(t.Context()); err != nil || v.KeyWorks || v.Prices.Basis != domain.BasisNone {
+		t.Errorf("no key = %+v, %v", v.Prices, err)
+	}
+	e = newEnv(t, newRepo(), "a")
+	e.gw.modelsErr = errBoom
+	if v, err := e.svc.Settings(t.Context()); err != nil || v.Prices.Basis != domain.BasisNone {
+		t.Errorf("no price list = %+v, %v", v.Prices, err)
+	}
+	e = newEnv(t, newRepo(), "a")
+	svc := app.New(e.repo, gateways{gw: e.gw, gatewayErr: errBoom}, e.dir, e.clock.Now, app.Config{}, func(uuid.UUID, error) {})
+	if v, err := svc.Settings(t.Context()); err != nil || v.Prices.Basis != domain.BasisNone {
+		t.Errorf("no gateway = %+v, %v", v.Prices, err)
+	}
+	for _, op := range []string{"Runs", "Answers"} {
+		e := newEnv(t, newRepo(), "a")
+		e.repo.settings.Providers = []string{"openai"}
+		if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
+			t.Fatal(err)
+		}
+		e.repo.failOn[op] = true
+		if _, err := e.svc.Settings(t.Context()); !errors.Is(err, errBoom) {
+			t.Errorf("%s failing: %v", op, err)
+		}
+	}
+}

@@ -4638,11 +4638,77 @@ components:
           description: The prompts.
           items:
             $ref: "#/components/schemas/PromptQuestion"
+    PromptPriceBasis:
+      description: >-
+        Where the prices come from - run (the latest run's own costs), catalogue (OpenRouter's
+        price list times typical tokens, before any run) or none (nothing to go by).
+      type: string
+      enum: [run, catalogue, none]
+    PromptProviderPrice:
+      description: What one provider's answers cost.
+      type: object
+      additionalProperties: false
+      required: [provider, model, knowledgeUsd, webUsd, runUsd]
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+          description: The provider.
+          example: openai
+        model:
+          type: string
+          maxLength: 200
+          description: The model it asks.
+          example: openai/gpt-oss-20b
+        fallback:
+          type: string
+          maxLength: 200
+          description: The paid model asked when the free one cannot answer.
+          example: google/gemini-2.5-flash-lite
+        knowledgeUsd:
+          $ref: "#/components/schemas/Usd"
+        webUsd:
+          $ref: "#/components/schemas/Usd"
+        runUsd:
+          $ref: "#/components/schemas/Usd"
+    PromptPrices:
+      description: What Prompt runs cost, per provider, per run and per month against the budget.
+      type: object
+      additionalProperties: false
+      required: [basis, providers, readingUsd, runUsd, runsPerMonth, monthUsd, budgetUsd, overBudget]
+      properties:
+        basis:
+          $ref: "#/components/schemas/PromptPriceBasis"
+        providers:
+          type: array
+          maxItems: 20
+          description: Per provider, one answer from its own knowledge, one with web search, and a run.
+          items:
+            $ref: "#/components/schemas/PromptProviderPrice"
+        readingUsd:
+          $ref: "#/components/schemas/Usd"
+        runUsd:
+          $ref: "#/components/schemas/Usd"
+        runsPerMonth:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 31
+          description: How many scheduled runs the cadence starts in an average month.
+          example: 4.33
+        monthUsd:
+          $ref: "#/components/schemas/Usd"
+        budgetUsd:
+          $ref: "#/components/schemas/Usd"
+        overBudget:
+          type: boolean
+          description: Whether a month of runs would cost more than the budget.
+          example: true
     PromptTestSettings:
       description: The Prompt test's settings.
       type: object
       additionalProperties: false
-      required: [providers, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel]
+      required: [providers, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel, models, keyWorks, prices]
       properties:
         credentialId:
           $ref: "#/components/schemas/LlmCredentialId"
@@ -4675,6 +4741,18 @@ components:
           maxLength: 200
           description: The one model that reads every answer, fixed in this release.
           example: google/gemini-2.5-flash-lite
+        models:
+          type: array
+          maxItems: 20
+          description: The models the latest run asked, each provider's with its fallback; empty before any run.
+          items:
+            $ref: "#/components/schemas/PromptModelChoice"
+        keyWorks:
+          type: boolean
+          description: Whether the chosen OpenRouter key can be read and used.
+          example: true
+        prices:
+          $ref: "#/components/schemas/PromptPrices"
     PromptTestSettingsChange:
       description: The settings to change; at least one.
       type: object

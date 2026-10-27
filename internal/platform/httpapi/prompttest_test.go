@@ -103,7 +103,12 @@ func view() app.View {
 	s := domain.DefaultSettings(answered)
 	s.CredentialID = "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f"
 	s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt = "joris", answered
-	return app.View{Settings: s, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000}
+	models := []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini"}}
+	return app.View{
+		Settings: s, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000,
+		Models: models, KeyWorks: true,
+		Prices: domain.PricesFromRun([]domain.Answer{{Provider: "google", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 1000}}}, models, 20, domain.CadenceWeekly, 10_000_000),
+	}
 }
 
 func (p *promptTests) Settings(context.Context) (app.View, error) { return view(), p.err }
@@ -224,8 +229,15 @@ func TestPromptTestSettings(t *testing.T) {
 	r := callAs(t, srv, http.MethodGet, "/api/v1/admin/prompt-test", "", "admin")
 	if r.code != http.StatusOK || r.body["monthlyBudgetUsd"].(float64) != 10 || r.body["spentThisMonthUsd"].(float64) != 2.5 ||
 		len(r.body["promptSet"].(map[string]any)["prompts"].([]any)) != 20 || r.body["factSheet"].(map[string]any)["updatedBy"] != "joris" ||
-		r.body["credentialId"] != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" {
+		r.body["credentialId"] != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" || r.body["keyWorks"] != true ||
+		r.body["models"].([]any)[0].(map[string]any)["fallback"] != "google/gemini" {
 		t.Fatalf("settings = %d %v", r.code, r.body)
+	}
+	prices := r.body["prices"].(map[string]any)
+	provider := prices["providers"].([]any)[0].(map[string]any)
+	if prices["basis"] != "run" || prices["runUsd"].(float64) != 0.02 || prices["overBudget"] != false || prices["budgetUsd"].(float64) != 10 ||
+		provider["knowledgeUsd"].(float64) != 0.001 || provider["fallback"] != "google/gemini" {
+		t.Errorf("prices = %v", prices)
 	}
 	body := `{"credentialId":"3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f","providers":["openai"],"monthlyBudgetUsd":12.5,"cadence":"weekly","factSheet":"Tribelt makes belts in Haaksbergen."}`
 	if r := callAs(t, srv, http.MethodPatch, "/api/v1/admin/prompt-test", body, "admin"); r.code != http.StatusOK {

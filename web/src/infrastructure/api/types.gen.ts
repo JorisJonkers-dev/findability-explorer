@@ -2328,6 +2328,55 @@ export type PromptSet = {
 };
 
 /**
+ * Where the prices come from - run (the latest run's own costs), catalogue (OpenRouter's price list times typical tokens, before any run) or none (nothing to go by).
+ */
+export type PromptPriceBasis = 'run' | 'catalogue' | 'none';
+
+/**
+ * What one provider's answers cost.
+ */
+export type PromptProviderPrice = {
+    /**
+     * The provider.
+     */
+    provider: string;
+    /**
+     * The model it asks.
+     */
+    model: string;
+    /**
+     * The paid model asked when the free one cannot answer.
+     */
+    fallback?: string;
+    knowledgeUsd: Usd;
+    webUsd: Usd;
+    runUsd: Usd;
+};
+
+/**
+ * What Prompt runs cost, per provider, per run and per month against the budget.
+ */
+export type PromptPrices = {
+    basis: PromptPriceBasis;
+    /**
+     * Per provider, one answer from its own knowledge, one with web search, and a run.
+     */
+    providers: Array<PromptProviderPrice>;
+    readingUsd: Usd;
+    runUsd: Usd;
+    /**
+     * How many scheduled runs the cadence starts in an average month.
+     */
+    runsPerMonth: number;
+    monthUsd: Usd;
+    budgetUsd: Usd;
+    /**
+     * Whether a month of runs would cost more than the budget.
+     */
+    overBudget: boolean;
+};
+
+/**
  * The Prompt test's settings.
  */
 export type PromptTestSettings = {
@@ -2349,6 +2398,15 @@ export type PromptTestSettings = {
      * The one model that reads every answer, fixed in this release.
      */
     extractorModel: string;
+    /**
+     * The models the latest run asked, each provider's with its fallback; empty before any run.
+     */
+    models: Array<PromptModelChoice>;
+    /**
+     * Whether the chosen OpenRouter key can be read and used.
+     */
+    keyWorks: boolean;
+    prices: PromptPrices;
 };
 
 /**

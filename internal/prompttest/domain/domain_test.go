@@ -357,3 +357,49 @@ func TestUnansweredAndWhatAskingAgainCosts(t *testing.T) {
 		t.Errorf("no answers = %d", got)
 	}
 }
+
+func TestPricesFromARun(t *testing.T) {
+	p := domain.CurrentPromptSet().Prompts[0]
+	answers := []domain.Answer{
+		{Prompt: p, Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 100}, Extraction: &domain.Extraction{Cost: 10}},
+		{Prompt: p, Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 300}, Extraction: &domain.Extraction{Cost: 30}},
+		{Prompt: p, Provider: "openai", Mode: domain.ModeWeb, Reply: domain.Reply{Cost: 1000}, Extraction: &domain.Extraction{Cost: 20}},
+		{Prompt: p, Provider: "google", Mode: domain.ModeWeb, Failure: "Rate limited.", Reply: domain.Reply{Cost: 5}},
+	}
+	models := []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}, {Provider: "google", Model: "google/gemma:free", Fallback: "google/gemini"}}
+	got := domain.PricesFromRun(answers, models, 20, domain.CadenceWeekly, 10_000_000)
+	if got.Basis != domain.BasisRun || got.Reading != 20 || len(got.Providers) != 2 {
+		t.Fatalf("prices = %+v", got)
+	}
+	openai, google := got.Providers[0], got.Providers[1]
+	if openai.Knowledge != 200 || openai.Web != 1000 || openai.PerRun != 24_000 || google.Knowledge != 0 || google.Fallback != "google/gemini" {
+		t.Errorf("providers = %+v", got.Providers)
+	}
+	// Each provider's 40 answers are read too: 2 × 40 × 20.
+	if got.Run != 24_000+1600 || got.RunsPerMonth != 52.0/12.0 || got.Month != domain.MicrosOf(25_600.0/1e6*52/12) || got.OverBudget() {
+		t.Errorf("run %d, month %d, over %v", got.Run, got.Month, got.OverBudget())
+	}
+	if domain.PricesFromRun(nil, models, 20, domain.CadenceMonthly, 1).Reading != 0 {
+		t.Error("no answers, no reading cost")
+	}
+}
+
+func TestPricesBeforeAnyRun(t *testing.T) {
+	catalogue := []domain.CatalogueModel{
+		{ID: "openai/gpt-oss-20b", PromptPrice: 0.0000001, CompletionPrice: 0.0000004},
+		{ID: domain.ExtractorModel, PromptPrice: 0.0000001, CompletionPrice: 0.0000004},
+	}
+	models := []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}, {Provider: "x", Model: "x/unknown"}}
+	got := domain.PricesFromCatalogue(catalogue, models, 20, domain.CadenceMonthly, 1)
+	// 300 × 0.1 µ$ + 900 × 0.4 µ$ = 390 µ$ an answer; reading 1500 × 0.1 + 250 × 0.4 = 250 µ$.
+	if got.Basis != domain.BasisCatalogue || got.Providers[0].Knowledge != 390 || got.Providers[0].Web != 390 || got.Providers[1].Knowledge != 0 || got.Reading != 250 {
+		t.Errorf("estimate = %+v", got)
+	}
+	if got.RunsPerMonth != 1 || got.Month != got.Run || !got.OverBudget() {
+		t.Errorf("month = %+v", got)
+	}
+	none := domain.NoPrices(domain.CadenceMonthly, 10_000_000)
+	if none.Basis != domain.BasisNone || none.Run != 0 || none.OverBudget() {
+		t.Errorf("no prices = %+v", none)
+	}
+}

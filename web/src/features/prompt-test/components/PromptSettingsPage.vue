@@ -5,8 +5,9 @@ import type { PromptCadence } from '../../../infrastructure/api/types.gen'
 import { useLlmSettings } from '../../settings/composables/useLlmSettings'
 import { credentialName } from '../../settings/domain/credentials'
 import { useStartRun, usePromptResults, usePromptSettings, useUpdatePromptSettings } from '../composables/usePromptTest'
-import { costLabel, progressLabel, runDate, statusName } from '../domain/results'
-import { momentLabel, openRouterKeys, parseBudget, parseProviders, promptGroups } from '../domain/settings'
+import { answerCost } from '../domain/grid'
+import { costLabel, progressLabel, providerName, runDate, statusName } from '../domain/results'
+import { addProvider, basisLine, modelLine, momentLabel, openRouterKeys, parseBudget, promptGroups } from '../domain/settings'
 import SettingsShell from '../../shell/components/SettingsShell.vue'
 
 const { settings, isLoading, forbidden, error } = usePromptSettings()
@@ -17,7 +18,8 @@ const { isStarting, notice: startNotice, error: startError, start } = useStartRu
 
 const keys = computed(() => openRouterKeys(llm.settings.value?.credentials ?? []))
 const credentialId = ref('')
-const providers = ref('')
+const providers = ref<string[]>([])
+const newProvider = ref('')
 const budget = ref('')
 const cadence = ref<PromptCadence>('monthly')
 const factSheet = ref('')
@@ -29,7 +31,7 @@ watch(
   (s) => {
     if (!s) return
     credentialId.value = s.credentialId ?? ''
-    providers.value = s.providers.join(', ')
+    providers.value = [...s.providers]
     budget.value = String(s.monthlyBudgetUsd)
     cadence.value = s.cadence
     factSheet.value = s.factSheet.text
@@ -40,15 +42,18 @@ watch(
 const groups = computed(() => (settings.value ? promptGroups(settings.value.promptSet.prompts) : []))
 const runs = computed(() => results.value?.runs ?? [])
 
+function add(): void {
+  const next = addProvider(providers.value, newProvider.value)
+  formError.value = next.problem
+  providers.value = next.list
+  if (next.problem === null) newProvider.value = ''
+}
+
 function saveRuns(): void {
   const amount = parseBudget(budget.value)
-  const list = parseProviders(providers.value)
+  const list = providers.value
   if (amount === null) {
     formError.value = 'The budget is an amount in dollars above $0 and at most $1,000.'
-    return
-  }
-  if (list.length === 0) {
-    formError.value = 'Name at least one provider, such as openai.'
     return
   }
   formError.value = null
@@ -67,13 +72,10 @@ function saveFactSheet(): void {
   <SettingsShell title="Prompt test">
     <template #lead>
       <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-        Prompt runs ask the cheapest model of each provider every prompt, from its own knowledge and with web search, through
-        OpenRouter, within their own monthly budget. One fixed model reads every answer against the fact sheet.
+        What every Prompt run asks, of which providers, and what it costs. The questions stay the same, so each run compares with
+        the ones before.
       </p>
-      <p class="m-0 flex flex-wrap gap-x-6 gap-y-1">
-        <RouterLink to="/ai-search/prompt-test" class="font-medium">The results</RouterLink>
-        <RouterLink to="/settings/candidates" class="font-medium">Competitor candidates</RouterLink>
-      </p>
+      <p class="m-0"><RouterLink to="/ai-search/prompt-test" class="font-medium">The results</RouterLink></p>
     </template>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
@@ -82,6 +84,60 @@ function saveFactSheet(): void {
     <p v-else-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the settings…</p>
     <template v-else-if="settings">
+      <div v-if="!settings.keyWorks" role="alert" class="flex flex-col gap-1 rounded-2xl border-2 border-orange-ink bg-orange-pale p-5">
+        <p class="m-0 font-semibold">The OpenRouter key does not work, so no Prompt run can start.</p>
+        <p class="m-0">Choose a working key below, or add one in <RouterLink to="/settings" class="underline underline-offset-4">Language models</RouterLink>.</p>
+      </div>
+
+      <section aria-labelledby="price-title" class="flex flex-col gap-4">
+        <h2 id="price-title" class="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">What runs cost</h2>
+        <p class="m-0 text-ink-2">{{ basisLine(settings.prices) }}</p>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <caption class="sr-only">The cost of one answer per provider, with and without web search, and of a run</caption>
+            <thead>
+              <tr class="border-b-2 border-black text-left text-muted">
+                <th scope="col" class="py-1.5 font-medium">Provider and model</th>
+                <th scope="col" class="px-2 py-1.5 text-right font-medium">One answer</th>
+                <th scope="col" class="px-2 py-1.5 text-right font-medium">With web search</th>
+                <th scope="col" class="px-2 py-1.5 text-right font-medium">A run</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="p in settings.prices.providers" :key="p.provider" class="border-b border-grey">
+                <th scope="row" class="py-2 text-left font-medium">
+                  {{ providerName(p.provider) }}<span class="block text-xs font-normal text-muted">{{ p.fallback ? `${p.model}, then ${p.fallback}` : p.model }}</span>
+                </th>
+                <td class="px-2 py-2 text-right">{{ answerCost(p.knowledgeUsd) }}</td>
+                <td class="px-2 py-2 text-right">{{ answerCost(p.webUsd) }}</td>
+                <td class="px-2 py-2 text-right font-semibold">{{ costLabel(p.runUsd) }}</td>
+              </tr>
+              <tr class="border-b border-grey">
+                <th scope="row" class="py-2 text-left font-medium">Reading every answer<span class="block text-xs font-normal text-muted">{{ settings.extractorModel }}</span></th>
+                <td class="px-2 py-2 text-right">{{ answerCost(settings.prices.readingUsd) }}</td>
+                <td class="px-2 py-2"></td>
+                <td class="px-2 py-2"></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="border-b-2 border-black">
+                <th scope="row" colspan="3" class="py-2 text-left">One run</th>
+                <td class="px-2 py-2 text-right font-semibold">{{ costLabel(settings.prices.runUsd) }}</td>
+              </tr>
+              <tr>
+                <th scope="row" colspan="3" class="py-2 text-left">
+                  A month of {{ settings.cadence === 'weekly' ? 'weekly' : 'monthly' }} runs, against the budget of {{ costLabel(settings.prices.budgetUsd) }}
+                </th>
+                <td class="px-2 py-2 text-right font-semibold" :class="settings.prices.overBudget ? 'text-orange-ink' : ''">{{ costLabel(settings.prices.monthUsd) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p v-if="settings.prices.overBudget" role="alert" class="m-0 font-semibold text-orange-ink">
+          A month of runs costs more than the budget, so runs would stop before the month ends. Raise the budget or run less often.
+        </p>
+      </section>
+
       <section aria-labelledby="run-title" class="flex flex-col gap-4">
         <h2 id="run-title" class="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">Runs</h2>
         <p class="m-0 text-ink-2">
@@ -135,10 +191,40 @@ function saveFactSheet(): void {
             Add an OpenRouter key in <RouterLink to="/settings" class="underline underline-offset-4">the language-model settings</RouterLink> first.
           </span>
         </label>
-        <label class="flex flex-col gap-1.5 font-medium">
-          Providers (OpenRouter ids, comma separated)
-          <input v-model="providers" type="text" spellcheck="false" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base" />
-        </label>
+        <fieldset class="m-0 flex flex-col gap-2 border-0 p-0">
+          <legend class="mb-1.5 font-medium">Providers to ask</legend>
+          <ul aria-label="Providers" class="m-0 flex list-none flex-col gap-1.5 p-0">
+            <li v-for="p in providers" :key="p" class="flex flex-wrap items-center gap-3 rounded-xl bg-white px-3 py-2">
+              <span class="min-w-32 flex-1">
+                <span class="font-medium">{{ providerName(p) }}</span>
+                <span class="block text-xs text-muted">{{ modelLine(settings.models, p) }}</span>
+              </span>
+              <button
+                type="button"
+                class="min-h-10 border-0 bg-transparent px-2 text-sm font-medium text-ink-2 underline underline-offset-4 disabled:opacity-50"
+                :disabled="providers.length === 1"
+                @click="providers = providers.filter((x) => x !== p)"
+              >
+                Remove<span class="sr-only"> {{ providerName(p) }}</span>
+              </button>
+            </li>
+          </ul>
+          <div class="flex flex-wrap items-end gap-2">
+            <label class="flex flex-col gap-1 text-sm font-medium">
+              Add a provider by its OpenRouter id
+              <input
+                v-model="newProvider"
+                type="text"
+                spellcheck="false"
+                placeholder="meta-llama"
+                class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base"
+                @keydown.enter.prevent="add"
+              />
+            </label>
+            <button type="button" class="min-h-11 rounded-full border-2 border-black bg-white px-5 font-semibold hover:bg-mist" @click="add">Add</button>
+          </div>
+          <p class="m-0 text-sm text-ink-2">Each provider's cheapest model answers, with a paid one when a free model cannot.</p>
+        </fieldset>
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="flex flex-col gap-1.5 font-medium">
             Monthly budget, in dollars
@@ -180,14 +266,12 @@ function saveFactSheet(): void {
       <p v-if="saveError" role="alert" class="m-0 font-medium text-orange-ink">{{ saveError }}</p>
 
       <section aria-labelledby="set-title" class="flex flex-col gap-4">
-        <h2 id="set-title" class="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">The prompt set, version {{ settings.promptSet.version }}</h2>
-        <p class="m-0 text-ink-2">
-          {{ settings.promptSet.prompts.length }} prompts. Every answer is read by {{ settings.extractorModel }}.
-        </p>
+        <h2 id="set-title" class="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">The {{ settings.promptSet.prompts.length }} buyer questions</h2>
+        <p class="m-0 text-ink-2">Question set {{ settings.promptSet.version }}. Every run asks these, so each compares with the ones before.</p>
         <details v-for="g in groups" :key="g.family" class="rounded-2xl bg-mist p-4">
           <summary class="cursor-pointer font-semibold">{{ g.family }} ({{ g.prompts.length }})</summary>
           <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0 text-sm">
-            <li v-for="p in g.prompts" :key="p.id"><span class="text-muted">{{ p.scope }}:</span> {{ p.text }}</li>
+            <li v-for="p in g.prompts" :key="p.id" class="flex flex-col"><span class="text-xs text-muted">{{ p.scope }}</span>{{ p.text }}</li>
           </ul>
         </details>
       </section>

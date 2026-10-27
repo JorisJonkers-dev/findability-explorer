@@ -7814,6 +7814,227 @@ func (s *PromptNamedCompany) SetPosition(val int32) {
 	s.Position = val
 }
 
+// Where the prices come from - run (the latest run's own costs), catalogue (OpenRouter's price list
+// times typical tokens, before any run) or none (nothing to go by).
+// Ref: #/components/schemas/PromptPriceBasis
+type PromptPriceBasis string
+
+const (
+	PromptPriceBasisRun       PromptPriceBasis = "run"
+	PromptPriceBasisCatalogue PromptPriceBasis = "catalogue"
+	PromptPriceBasisNone      PromptPriceBasis = "none"
+)
+
+// AllValues returns all PromptPriceBasis values.
+func (PromptPriceBasis) AllValues() []PromptPriceBasis {
+	return []PromptPriceBasis{
+		PromptPriceBasisRun,
+		PromptPriceBasisCatalogue,
+		PromptPriceBasisNone,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptPriceBasis) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptPriceBasisRun:
+		return []byte(s), nil
+	case PromptPriceBasisCatalogue:
+		return []byte(s), nil
+	case PromptPriceBasisNone:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptPriceBasis) UnmarshalText(data []byte) error {
+	switch PromptPriceBasis(data) {
+	case PromptPriceBasisRun:
+		*s = PromptPriceBasisRun
+		return nil
+	case PromptPriceBasisCatalogue:
+		*s = PromptPriceBasisCatalogue
+		return nil
+	case PromptPriceBasisNone:
+		*s = PromptPriceBasisNone
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What Prompt runs cost, per provider, per run and per month against the budget.
+// Ref: #/components/schemas/PromptPrices
+type PromptPrices struct {
+	Basis PromptPriceBasis `json:"basis"`
+	// Per provider, one answer from its own knowledge, one with web search, and a run.
+	Providers  []PromptProviderPrice `json:"providers"`
+	ReadingUsd Usd                   `json:"readingUsd"`
+	RunUsd     Usd                   `json:"runUsd"`
+	// How many scheduled runs the cadence starts in an average month.
+	RunsPerMonth float64 `json:"runsPerMonth"`
+	MonthUsd     Usd     `json:"monthUsd"`
+	BudgetUsd    Usd     `json:"budgetUsd"`
+	// Whether a month of runs would cost more than the budget.
+	OverBudget bool `json:"overBudget"`
+}
+
+// GetBasis returns the value of Basis.
+func (s *PromptPrices) GetBasis() PromptPriceBasis {
+	return s.Basis
+}
+
+// GetProviders returns the value of Providers.
+func (s *PromptPrices) GetProviders() []PromptProviderPrice {
+	return s.Providers
+}
+
+// GetReadingUsd returns the value of ReadingUsd.
+func (s *PromptPrices) GetReadingUsd() Usd {
+	return s.ReadingUsd
+}
+
+// GetRunUsd returns the value of RunUsd.
+func (s *PromptPrices) GetRunUsd() Usd {
+	return s.RunUsd
+}
+
+// GetRunsPerMonth returns the value of RunsPerMonth.
+func (s *PromptPrices) GetRunsPerMonth() float64 {
+	return s.RunsPerMonth
+}
+
+// GetMonthUsd returns the value of MonthUsd.
+func (s *PromptPrices) GetMonthUsd() Usd {
+	return s.MonthUsd
+}
+
+// GetBudgetUsd returns the value of BudgetUsd.
+func (s *PromptPrices) GetBudgetUsd() Usd {
+	return s.BudgetUsd
+}
+
+// GetOverBudget returns the value of OverBudget.
+func (s *PromptPrices) GetOverBudget() bool {
+	return s.OverBudget
+}
+
+// SetBasis sets the value of Basis.
+func (s *PromptPrices) SetBasis(val PromptPriceBasis) {
+	s.Basis = val
+}
+
+// SetProviders sets the value of Providers.
+func (s *PromptPrices) SetProviders(val []PromptProviderPrice) {
+	s.Providers = val
+}
+
+// SetReadingUsd sets the value of ReadingUsd.
+func (s *PromptPrices) SetReadingUsd(val Usd) {
+	s.ReadingUsd = val
+}
+
+// SetRunUsd sets the value of RunUsd.
+func (s *PromptPrices) SetRunUsd(val Usd) {
+	s.RunUsd = val
+}
+
+// SetRunsPerMonth sets the value of RunsPerMonth.
+func (s *PromptPrices) SetRunsPerMonth(val float64) {
+	s.RunsPerMonth = val
+}
+
+// SetMonthUsd sets the value of MonthUsd.
+func (s *PromptPrices) SetMonthUsd(val Usd) {
+	s.MonthUsd = val
+}
+
+// SetBudgetUsd sets the value of BudgetUsd.
+func (s *PromptPrices) SetBudgetUsd(val Usd) {
+	s.BudgetUsd = val
+}
+
+// SetOverBudget sets the value of OverBudget.
+func (s *PromptPrices) SetOverBudget(val bool) {
+	s.OverBudget = val
+}
+
+// What one provider's answers cost.
+// Ref: #/components/schemas/PromptProviderPrice
+type PromptProviderPrice struct {
+	// The provider.
+	Provider string `json:"provider"`
+	// The model it asks.
+	Model string `json:"model"`
+	// The paid model asked when the free one cannot answer.
+	Fallback     OptString `json:"fallback"`
+	KnowledgeUsd Usd       `json:"knowledgeUsd"`
+	WebUsd       Usd       `json:"webUsd"`
+	RunUsd       Usd       `json:"runUsd"`
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptProviderPrice) GetProvider() string {
+	return s.Provider
+}
+
+// GetModel returns the value of Model.
+func (s *PromptProviderPrice) GetModel() string {
+	return s.Model
+}
+
+// GetFallback returns the value of Fallback.
+func (s *PromptProviderPrice) GetFallback() OptString {
+	return s.Fallback
+}
+
+// GetKnowledgeUsd returns the value of KnowledgeUsd.
+func (s *PromptProviderPrice) GetKnowledgeUsd() Usd {
+	return s.KnowledgeUsd
+}
+
+// GetWebUsd returns the value of WebUsd.
+func (s *PromptProviderPrice) GetWebUsd() Usd {
+	return s.WebUsd
+}
+
+// GetRunUsd returns the value of RunUsd.
+func (s *PromptProviderPrice) GetRunUsd() Usd {
+	return s.RunUsd
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptProviderPrice) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetModel sets the value of Model.
+func (s *PromptProviderPrice) SetModel(val string) {
+	s.Model = val
+}
+
+// SetFallback sets the value of Fallback.
+func (s *PromptProviderPrice) SetFallback(val OptString) {
+	s.Fallback = val
+}
+
+// SetKnowledgeUsd sets the value of KnowledgeUsd.
+func (s *PromptProviderPrice) SetKnowledgeUsd(val Usd) {
+	s.KnowledgeUsd = val
+}
+
+// SetWebUsd sets the value of WebUsd.
+func (s *PromptProviderPrice) SetWebUsd(val Usd) {
+	s.WebUsd = val
+}
+
+// SetRunUsd sets the value of RunUsd.
+func (s *PromptProviderPrice) SetRunUsd(val Usd) {
+	s.RunUsd = val
+}
+
 // One provider's part of a run.
 // Ref: #/components/schemas/PromptProviderProgress
 type PromptProviderProgress struct {
@@ -8483,6 +8704,11 @@ type PromptTestSettings struct {
 	PromptSet PromptSet       `json:"promptSet"`
 	// The one model that reads every answer, fixed in this release.
 	ExtractorModel string `json:"extractorModel"`
+	// The models the latest run asked, each provider's with its fallback; empty before any run.
+	Models []PromptModelChoice `json:"models"`
+	// Whether the chosen OpenRouter key can be read and used.
+	KeyWorks bool         `json:"keyWorks"`
+	Prices   PromptPrices `json:"prices"`
 }
 
 // GetCredentialId returns the value of CredentialId.
@@ -8530,6 +8756,21 @@ func (s *PromptTestSettings) GetExtractorModel() string {
 	return s.ExtractorModel
 }
 
+// GetModels returns the value of Models.
+func (s *PromptTestSettings) GetModels() []PromptModelChoice {
+	return s.Models
+}
+
+// GetKeyWorks returns the value of KeyWorks.
+func (s *PromptTestSettings) GetKeyWorks() bool {
+	return s.KeyWorks
+}
+
+// GetPrices returns the value of Prices.
+func (s *PromptTestSettings) GetPrices() PromptPrices {
+	return s.Prices
+}
+
 // SetCredentialId sets the value of CredentialId.
 func (s *PromptTestSettings) SetCredentialId(val OptLlmCredentialId) {
 	s.CredentialId = val
@@ -8573,6 +8814,21 @@ func (s *PromptTestSettings) SetPromptSet(val PromptSet) {
 // SetExtractorModel sets the value of ExtractorModel.
 func (s *PromptTestSettings) SetExtractorModel(val string) {
 	s.ExtractorModel = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptTestSettings) SetModels(val []PromptModelChoice) {
+	s.Models = val
+}
+
+// SetKeyWorks sets the value of KeyWorks.
+func (s *PromptTestSettings) SetKeyWorks(val bool) {
+	s.KeyWorks = val
+}
+
+// SetPrices sets the value of Prices.
+func (s *PromptTestSettings) SetPrices(val PromptPrices) {
+	s.Prices = val
 }
 
 func (*PromptTestSettings) getPromptTestSettingsRes()    {}

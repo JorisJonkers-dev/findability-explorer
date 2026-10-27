@@ -22,7 +22,7 @@ const FORBIDDEN = 'Only administrators can review terms.'
 </script>
 
 <template>
-  <SettingsShell title="Term review" :waiting="counts?.pending">
+  <SettingsShell title="Term review">
     <template #lead>
       <p class="m-0 max-w-[62ch] text-lg text-ink-2">
         Phrases the scans found that the terminology map does not hold yet, with the companies that use them. An

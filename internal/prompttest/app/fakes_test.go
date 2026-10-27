@@ -378,8 +378,9 @@ func (g *gateway) Extract(_ context.Context, model string, in app.ExtractInput) 
 
 // gateways hands out the one gateway for the credential "key".
 type gateways struct {
-	gw       *gateway
-	checkErr error
+	gw         *gateway
+	checkErr   error
+	gatewayErr error
 }
 
 func (g gateways) Check(_ context.Context, id string) error {
@@ -393,6 +394,9 @@ func (g gateways) Check(_ context.Context, id string) error {
 }
 
 func (g gateways) Gateway(_ context.Context, id string) (app.Gateway, error) {
+	if g.gatewayErr != nil {
+		return nil, g.gatewayErr
+	}
 	if id != "key" {
 		return nil, domain.ErrNoKey
 	}

@@ -264,7 +264,7 @@ func toRun(r domain.Run, p domain.Progress, cells []domain.Cell) oas.PromptRun {
 	out := oas.PromptRun{
 		ID: r.ID, PromptSetVersion: int32(r.PromptSetVersion), FactSheetVersion: int32(max(r.FactSheetVersion, 1)), //nolint:gosec // small versions
 		Trigger: oas.PromptTrigger(r.Trigger), StartedBy: r.StartedBy, StartedAt: r.StartedAt, Status: oas.PromptRunStatus(r.Status),
-		Models: make([]oas.PromptModelChoice, 0, len(r.Models)), Tasks: int32(r.Tasks), //nolint:gosec // at most a few thousand
+		Tasks:    int32(r.Tasks),                                                                                       //nolint:gosec // at most a few thousand
 		Answered: int32(p.Answered), Failed: int32(p.Failed), InputTokens: p.InputTokens, OutputTokens: p.OutputTokens, //nolint:gosec // at most a few thousand
 		CostUsd: oas.Usd(p.Cost.Dollars()), ByProvider: make([]oas.PromptProviderProgress, 0, len(p.ByProvider)),
 		Cells: make([]oas.PromptCell, 0, len(cells)),
@@ -275,13 +275,7 @@ func toRun(r domain.Run, p domain.Progress, cells []domain.Cell) oas.PromptRun {
 	if r.Failure != "" {
 		out.Failure = oas.NewOptString(r.Failure)
 	}
-	for _, m := range r.Models {
-		c := oas.PromptModelChoice{Provider: m.Provider, Model: m.Model, Free: m.Free}
-		if m.Fallback != "" {
-			c.Fallback = oas.NewOptString(m.Fallback)
-		}
-		out.Models = append(out.Models, c)
-	}
+	out.Models = toModels(r.Models)
 	for _, pp := range p.ByProvider {
 		out.ByProvider = append(out.ByProvider, oas.PromptProviderProgress{
 			Provider: pp.Provider, Answered: int32(pp.Answered), Failed: int32(pp.Failed), //nolint:gosec // at most a few thousand
@@ -346,6 +340,7 @@ func toSettings(v app.View) oas.PromptTestSettings {
 	if s.CredentialID != "" {
 		out.CredentialId = oas.NewOptLlmCredentialId(oas.LlmCredentialId(s.CredentialID))
 	}
+	out.KeyWorks, out.Models, out.Prices = v.KeyWorks, toModels(v.Models), toPrices(v.Prices)
 	if s.FactSheet.UpdatedBy != "" {
 		out.FactSheet.UpdatedBy = oas.NewOptString(s.FactSheet.UpdatedBy)
 		out.FactSheet.UpdatedAt = oas.NewOptDateTime(s.FactSheet.UpdatedAt)
@@ -389,4 +384,35 @@ func sentence(err error) string {
 	r := []rune(strings.TrimSuffix(msg, ".") + ".")
 	r[0] = unicode.ToUpper(r[0])
 	return string(r)
+}
+
+func toPrices(p domain.Prices) oas.PromptPrices {
+	out := oas.PromptPrices{
+		Basis: oas.PromptPriceBasis(p.Basis), Providers: make([]oas.PromptProviderPrice, 0, len(p.Providers)),
+		ReadingUsd: oas.Usd(p.Reading.Dollars()), RunUsd: oas.Usd(p.Run.Dollars()), RunsPerMonth: p.RunsPerMonth,
+		MonthUsd: oas.Usd(p.Month.Dollars()), BudgetUsd: oas.Usd(p.Budget.Dollars()), OverBudget: p.OverBudget(),
+	}
+	for _, pp := range p.Providers {
+		o := oas.PromptProviderPrice{
+			Provider: pp.Provider, Model: pp.Model, KnowledgeUsd: oas.Usd(pp.Knowledge.Dollars()), WebUsd: oas.Usd(pp.Web.Dollars()),
+			RunUsd: oas.Usd(pp.PerRun.Dollars()),
+		}
+		if pp.Fallback != "" {
+			o.Fallback = oas.NewOptString(pp.Fallback)
+		}
+		out.Providers = append(out.Providers, o)
+	}
+	return out
+}
+
+func toModels(models []domain.ModelChoice) []oas.PromptModelChoice {
+	out := make([]oas.PromptModelChoice, 0, len(models))
+	for _, m := range models {
+		c := oas.PromptModelChoice{Provider: m.Provider, Model: m.Model, Free: m.Free}
+		if m.Fallback != "" {
+			c.Fallback = oas.NewOptString(m.Fallback)
+		}
+		out = append(out, c)
+	}
+	return out
 }

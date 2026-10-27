@@ -14407,6 +14407,438 @@ func (s *PromptNamedCompany) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes PromptPriceBasis as json.
+func (s PromptPriceBasis) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PromptPriceBasis from json.
+func (s *PromptPriceBasis) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PromptPriceBasis to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PromptPriceBasis(v) {
+	case PromptPriceBasisRun:
+		*s = PromptPriceBasisRun
+	case PromptPriceBasisCatalogue:
+		*s = PromptPriceBasisCatalogue
+	case PromptPriceBasisNone:
+		*s = PromptPriceBasisNone
+	default:
+		*s = PromptPriceBasis(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PromptPriceBasis) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PromptPriceBasis) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PromptPrices) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PromptPrices) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("basis")
+		s.Basis.Encode(e)
+	}
+	{
+		e.FieldStart("providers")
+		e.ArrStart()
+		for _, elem := range s.Providers {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("readingUsd")
+		s.ReadingUsd.Encode(e)
+	}
+	{
+		e.FieldStart("runUsd")
+		s.RunUsd.Encode(e)
+	}
+	{
+		e.FieldStart("runsPerMonth")
+		e.Float64(s.RunsPerMonth)
+	}
+	{
+		e.FieldStart("monthUsd")
+		s.MonthUsd.Encode(e)
+	}
+	{
+		e.FieldStart("budgetUsd")
+		s.BudgetUsd.Encode(e)
+	}
+	{
+		e.FieldStart("overBudget")
+		e.Bool(s.OverBudget)
+	}
+}
+
+var jsonFieldsNameOfPromptPrices = [8]string{
+	0: "basis",
+	1: "providers",
+	2: "readingUsd",
+	3: "runUsd",
+	4: "runsPerMonth",
+	5: "monthUsd",
+	6: "budgetUsd",
+	7: "overBudget",
+}
+
+// Decode decodes PromptPrices from json.
+func (s *PromptPrices) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PromptPrices to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "basis":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Basis.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"basis\"")
+			}
+		case "providers":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				s.Providers = make([]PromptProviderPrice, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem PromptProviderPrice
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Providers = append(s.Providers, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"providers\"")
+			}
+		case "readingUsd":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.ReadingUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"readingUsd\"")
+			}
+		case "runUsd":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.RunUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"runUsd\"")
+			}
+		case "runsPerMonth":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Float64()
+				s.RunsPerMonth = float64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"runsPerMonth\"")
+			}
+		case "monthUsd":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.MonthUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"monthUsd\"")
+			}
+		case "budgetUsd":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.BudgetUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"budgetUsd\"")
+			}
+		case "overBudget":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := d.Bool()
+				s.OverBudget = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"overBudget\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PromptPrices")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b11111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPromptPrices) {
+					name = jsonFieldsNameOfPromptPrices[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PromptPrices) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PromptPrices) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PromptProviderPrice) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PromptProviderPrice) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("provider")
+		e.Str(s.Provider)
+	}
+	{
+		e.FieldStart("model")
+		e.Str(s.Model)
+	}
+	{
+		if s.Fallback.Set {
+			e.FieldStart("fallback")
+			s.Fallback.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("knowledgeUsd")
+		s.KnowledgeUsd.Encode(e)
+	}
+	{
+		e.FieldStart("webUsd")
+		s.WebUsd.Encode(e)
+	}
+	{
+		e.FieldStart("runUsd")
+		s.RunUsd.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfPromptProviderPrice = [6]string{
+	0: "provider",
+	1: "model",
+	2: "fallback",
+	3: "knowledgeUsd",
+	4: "webUsd",
+	5: "runUsd",
+}
+
+// Decode decodes PromptProviderPrice from json.
+func (s *PromptProviderPrice) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PromptProviderPrice to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "provider":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Provider = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"provider\"")
+			}
+		case "model":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Model = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"model\"")
+			}
+		case "fallback":
+			if err := func() error {
+				s.Fallback.Reset()
+				if err := s.Fallback.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"fallback\"")
+			}
+		case "knowledgeUsd":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.KnowledgeUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"knowledgeUsd\"")
+			}
+		case "webUsd":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.WebUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"webUsd\"")
+			}
+		case "runUsd":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.RunUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"runUsd\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PromptProviderPrice")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00111011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPromptProviderPrice) {
+					name = jsonFieldsNameOfPromptProviderPrice[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PromptProviderPrice) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PromptProviderPrice) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *PromptProviderProgress) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -15833,18 +16265,37 @@ func (s *PromptTestSettings) encodeFields(e *jx.Encoder) {
 		e.FieldStart("extractorModel")
 		e.Str(s.ExtractorModel)
 	}
+	{
+		e.FieldStart("models")
+		e.ArrStart()
+		for _, elem := range s.Models {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("keyWorks")
+		e.Bool(s.KeyWorks)
+	}
+	{
+		e.FieldStart("prices")
+		s.Prices.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfPromptTestSettings = [9]string{
-	0: "credentialId",
-	1: "providers",
-	2: "monthlyBudgetUsd",
-	3: "spentThisMonthUsd",
-	4: "cadence",
-	5: "nextDueAt",
-	6: "factSheet",
-	7: "promptSet",
-	8: "extractorModel",
+var jsonFieldsNameOfPromptTestSettings = [12]string{
+	0:  "credentialId",
+	1:  "providers",
+	2:  "monthlyBudgetUsd",
+	3:  "spentThisMonthUsd",
+	4:  "cadence",
+	5:  "nextDueAt",
+	6:  "factSheet",
+	7:  "promptSet",
+	8:  "extractorModel",
+	9:  "models",
+	10: "keyWorks",
+	11: "prices",
 }
 
 // Decode decodes PromptTestSettings from json.
@@ -15960,6 +16411,46 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"extractorModel\"")
 			}
+		case "models":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				s.Models = make([]PromptModelChoice, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem PromptModelChoice
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Models = append(s.Models, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"models\"")
+			}
+		case "keyWorks":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.KeyWorks = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"keyWorks\"")
+			}
+		case "prices":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				if err := s.Prices.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"prices\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -15971,7 +16462,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111110,
-		0b00000001,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

@@ -2245,13 +2245,13 @@ components:
             $ref: "#/components/schemas/CrawledPage"
         keywords:
           type: array
-          maxItems: 10000
+          maxItems: 1000
           description: The site's most prominent phrases, highest score first.
           items:
             $ref: "#/components/schemas/Keyword"
         knownTerms:
           type: array
-          maxItems: 1000
+          maxItems: 10000
           description: Terms from the terminology map found on the site, most frequent first.
           items:
             $ref: "#/components/schemas/KnownTerm"
@@ -4609,7 +4609,7 @@ components:
             $ref: "#/components/schemas/PromptMention"
         wrongClaims:
           type: array
-          maxItems: 200
+          maxItems: 1000
           description: The claims about Tribelt the answers got wrong, newest first.
           items:
             $ref: "#/components/schemas/PromptWrongClaim"
@@ -4655,7 +4655,7 @@ components:
             $ref: "#/components/schemas/PromptNamedCompany"
         addresses:
           type: array
-          maxItems: 1000
+          maxItems: 200
           description: The addresses cited.
           items:
             type: string

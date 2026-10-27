@@ -1046,8 +1046,8 @@ export const zAnalysisList = z.object({
 export const zAnalysis = z.object({
     summary: zAnalysisSummary,
     pages: z.array(zCrawledPage).max(100),
-    keywords: z.array(zKeyword).max(10000),
-    knownTerms: z.array(zKnownTerm).max(1000),
+    keywords: z.array(zKeyword).max(1000),
+    knownTerms: z.array(zKnownTerm).max(10000),
     matching: zMatchingStatus,
     matchingModel: z.string().max(300).optional(),
     equivalents: z.array(zEquivalent).max(50),
@@ -1338,7 +1338,7 @@ export const zPromptTestResults = z.object({
     promptSetVersion: z.int().gte(1).lte(100000),
     runs: z.array(zPromptRun).max(24),
     mentions: z.array(zPromptMention).max(10000),
-    wrongClaims: z.array(zPromptWrongClaim).max(200)
+    wrongClaims: z.array(zPromptWrongClaim).max(1000)
 });
 
 /**
@@ -1357,7 +1357,7 @@ export const zPromptNamedCompany = z.object({
 export const zPromptExtraction = z.object({
     failed: z.boolean(),
     companies: z.array(zPromptNamedCompany).max(30),
-    addresses: z.array(z.string().max(500)).max(1000),
+    addresses: z.array(z.string().max(500)).max(200),
     namesTribelt: z.boolean(),
     citesTribelt: z.boolean(),
     correctness: zPromptCorrectness.optional(),

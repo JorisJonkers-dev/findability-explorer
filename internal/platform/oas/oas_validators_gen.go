@@ -1058,7 +1058,7 @@ func (s *Analysis) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    10000,
+			MaxLength:    1000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Keywords)); err != nil {
 			return errors.Wrap(err, "array")
@@ -1094,7 +1094,7 @@ func (s *Analysis) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    1000,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.KnownTerms)); err != nil {
 			return errors.Wrap(err, "array")
@@ -9138,7 +9138,7 @@ func (s *PromptExtraction) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    1000,
+			MaxLength:    200,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Addresses)); err != nil {
 			return errors.Wrap(err, "array")
@@ -10916,7 +10916,7 @@ func (s *PromptTestResults) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    1000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.WrongClaims)); err != nil {
 			return errors.Wrap(err, "array")

@@ -96,12 +96,15 @@ func TestHaikuArchivesTheListsSureNonCompetitors(t *testing.T) {
 }
 
 // What the model does not answer on is an unsure check, so it is not asked again.
-func TestAnUnansweredCompanyIsUnsure(t *testing.T) {
+func TestACompanyTheModelSaysNothingAboutIsAskedAgain(t *testing.T) {
 	r := newRepo()
 	m := &model{verdicts: func([]domain.Candidate) []domain.CompanyVerdict { return nil }}
 	svc := reviewing(r, onTheList(), models{m: m}, nil)
-	if err := svc.CheckList(t.Context()); err != nil || len(r.checks) != 4 || r.checks[0].Sure {
+	if err := svc.CheckList(t.Context()); err != nil || len(r.checks) != 0 {
 		t.Fatalf("CheckList = %v, %+v", err, r.checks)
+	}
+	if err := svc.CheckList(t.Context()); err != nil || len(m.checked) != 2 {
+		t.Fatalf("a second check = %v, asked %d times", err, len(m.checked))
 	}
 }
 

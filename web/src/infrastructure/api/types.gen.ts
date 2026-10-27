@@ -1435,6 +1435,145 @@ export type AiSearchSummary = {
 };
 
 /**
+ * A competitor that sells a family, with its own names for it.
+ */
+export type ProductSeller = {
+    competitorId: CompetitorId;
+    /**
+     * The competitor's name.
+     */
+    name: string;
+    /**
+     * Its website.
+     */
+    websiteUrl?: string;
+    /**
+     * Its names for the family.
+     */
+    names: Array<string>;
+};
+
+/**
+ * A term of the map for a family.
+ */
+export type ProductTerm = {
+    /**
+     * The term.
+     */
+    term: string;
+    /**
+     * Its language.
+     */
+    language: string;
+    tier: IntentTier;
+    /**
+     * How many companies use it.
+     */
+    usedBy: number;
+    /**
+     * Whether Tribelt's own site uses it.
+     */
+    usedByTribelt: boolean;
+};
+
+/**
+ * How many of a family's answers in one scope name Tribelt.
+ */
+export type ProductScope = {
+    scope: PromptScope;
+    /**
+     * The answers in the scope.
+     */
+    answers: number;
+    /**
+     * Those naming Tribelt.
+     */
+    named: number;
+};
+
+/**
+ * A company a family's answers name, and the share of them that do.
+ */
+export type ProductMention = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    /**
+     * The share of the family's answers naming it.
+     */
+    share: number;
+};
+
+/**
+ * One belt family against the field.
+ */
+export type Product = {
+    family: PromptFamily;
+    /**
+     * Tribelt's own names for it.
+     */
+    tribeltNames: Array<string>;
+    /**
+     * The competitors that sell it, by name.
+     */
+    sellers: Array<ProductSeller>;
+    /**
+     * The map's terms for it, the most used first.
+     */
+    terms: Array<ProductTerm>;
+    /**
+     * How many of the terms Tribelt's site uses.
+     */
+    termsUsed: number;
+    /**
+     * The newest run's answers about it; 0 before any run.
+     */
+    answers: number;
+    /**
+     * Those naming Tribelt.
+     */
+    named: number;
+    /**
+     * The answers per scope.
+     */
+    byScope: Array<ProductScope>;
+    /**
+     * The companies its answers name most.
+     */
+    mostNamed: Array<ProductMention>;
+};
+
+/**
+ * What stands out - crowded (the family the most competitors sell), fewestTerms (whose terms Tribelt uses least) or bestInAI (whose answers name Tribelt most).
+ */
+export type ProductFinding = 'crowded' | 'fewestTerms' | 'bestInAI';
+
+/**
+ * A finding and the family it is about.
+ */
+export type ProductStandout = {
+    finding: ProductFinding;
+    family: PromptFamily;
+};
+
+/**
+ * Tribelt's belt families against the field.
+ */
+export type ProductsOverview = {
+    /**
+     * Every family, in order.
+     */
+    items: Array<Product>;
+    /**
+     * What stands out among them.
+     */
+    standouts: Array<ProductStandout>;
+};
+
+/**
  * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
  */
 export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapPages' | 'termsUsed';
@@ -2269,6 +2408,35 @@ export type GetAiSearchSummaryResponses = {
 };
 
 export type GetAiSearchSummaryResponse = GetAiSearchSummaryResponses[keyof GetAiSearchSummaryResponses];
+
+export type GetProductsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/products';
+};
+
+export type GetProductsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetProductsError = GetProductsErrors[keyof GetProductsErrors];
+
+export type GetProductsResponses = {
+    /**
+     * The families.
+     */
+    200: ProductsOverview;
+};
+
+export type GetProductsResponse = GetProductsResponses[keyof GetProductsResponses];
 
 export type GetStandingsData = {
     body?: never;

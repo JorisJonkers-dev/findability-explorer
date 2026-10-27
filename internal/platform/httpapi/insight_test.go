@@ -85,6 +85,42 @@ func TestTheAiSearchSummaryIsForEveryoneSignedIn(t *testing.T) {
 	}
 }
 
+func (c *insightCases) Products(context.Context) (app.Products, error) {
+	eyelink := domain.Product{
+		Family: "eyelink", TribeltNames: []string{"Draadogenbanden"},
+		Sellers: []domain.Seller{{CompanyID: "twentebelt", Name: "Twentebelt", Website: "https://twentebelt.com/", Names: []string{"Oogbanden"}}, {CompanyID: "x", Name: "X", Names: []string{"Y"}}},
+		Terms:   []domain.MapTerm{{Text: "draadogenband", Language: "nl", Tier: "product", UsedBy: 9}},
+		Answers: 10, Named: 3, ByScope: []domain.ScopeShare{{Scope: "twente", Answers: 5, Named: 3}},
+		MostNamed: []domain.CompanyShare{{CompanyID: "tribelt", Share: 0.3}},
+	}
+	return app.Products{
+		Products:  []domain.Product{eyelink},
+		Standouts: []domain.Standout{{Finding: domain.FindingCrowded, Family: "eyelink"}},
+		Companies: []domain.Company{{ID: "tribelt", Name: "Tribelt B.V.", Role: domain.RoleTribelt}},
+	}, c.err
+}
+
+func TestProductsAreForEveryoneSignedIn(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	r := callAs(t, srv, http.MethodGet, "/api/v1/products", "", "tester")
+	items, _ := r.body["items"].([]any)
+	if r.code != http.StatusOK || len(items) != 1 || r.body["standouts"].([]any)[0].(map[string]any)["finding"] != "crowded" {
+		t.Fatalf("products = %d %v", r.code, r.body)
+	}
+	eye := items[0].(map[string]any)
+	sellers := eye["sellers"].([]any)
+	if eye["family"] != "eyelink" || sellers[0].(map[string]any)["websiteUrl"] != "https://twentebelt.com/" || sellers[1].(map[string]any)["websiteUrl"] != nil ||
+		eye["terms"].([]any)[0].(map[string]any)["tier"] != "product" || eye["byScope"].([]any)[0].(map[string]any)["named"].(float64) != 3 ||
+		eye["mostNamed"].([]any)[0].(map[string]any)["name"] != "Tribelt B.V." {
+		t.Errorf("eyelink = %v", eye)
+	}
+	a.insights().err = errors.New("down")
+	if r := callAs(t, srv, http.MethodGet, "/api/v1/products", "", "tester"); r.code != http.StatusInternalServerError {
+		t.Errorf("a failure = %d", r.code)
+	}
+}
+
 func TestStandingsAreForEveryoneSignedIn(t *testing.T) {
 	a := &analyses{}
 	srv := serve(t, a)

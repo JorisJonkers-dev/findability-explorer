@@ -21,6 +21,8 @@ type world struct {
 	runs         []domain.Run
 	readiness    map[string]domain.Readiness
 	terms        map[string]int
+	mapTerms     []domain.MapTerm
+	mapErr       error
 	companiesErr error
 	runsErr      error
 	readyErr     error
@@ -42,6 +44,8 @@ func (w *world) Readiness(context.Context) (map[string]domain.Readiness, error) 
 }
 
 func (w *world) TermsUsed(context.Context) (map[string]int, error) { return w.terms, w.termsErr }
+
+func (w *world) MapTerms(context.Context) ([]domain.MapTerm, error) { return w.mapTerms, w.mapErr }
 
 func newWorld() *world {
 	return &world{

@@ -23,19 +23,19 @@ var (
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn51AllowedHeaders = map[string]string{
+	rn53AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn34AllowedHeaders = map[string]string{
+	rn36AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
-	rn54AllowedHeaders = map[string]string{
+	rn56AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn37AllowedHeaders = map[string]string{
+	rn39AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn5AllowedHeaders = map[string]string{
@@ -618,7 +618,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										default:
 											s.notAllowed(w, r, notAllowedParams{
 												allowedMethods: "POST",
-												allowedHeaders: rn51AllowedHeaders,
+												allowedHeaders: rn53AllowedHeaders,
 												acceptPost:     "application/json",
 												acceptPatch:    "",
 											})
@@ -649,7 +649,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET,PATCH",
-										allowedHeaders: rn34AllowedHeaders,
+										allowedHeaders: rn36AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "application/json",
 									})
@@ -676,7 +676,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn54AllowedHeaders,
+									allowedHeaders: rn56AllowedHeaders,
 									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
@@ -912,7 +912,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn37AllowedHeaders,
+								allowedHeaders: rn39AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -1155,9 +1155,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-			case 'p': // Prefix: "prompt-"
+			case 'p': // Prefix: "pro"
 
-				if l := len("prompt-"); len(elem) >= l && elem[0:l] == "prompt-" {
+				if l := len("pro"); len(elem) >= l && elem[0:l] == "pro" {
 					elem = elem[l:]
 				} else {
 					break
@@ -1167,30 +1167,96 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				switch elem[0] {
-				case 'r': // Prefix: "runs/"
+				case 'd': // Prefix: "ducts"
 
-					if l := len("runs/"); len(elem) >= l && elem[0:l] == "runs/" {
+					if l := len("ducts"); len(elem) >= l && elem[0:l] == "ducts" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					// Param: "runId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
-					if idx < 0 {
-						idx = len(elem)
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetProductsRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET",
+								allowedHeaders: nil,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
 					}
-					args[0] = elem[:idx]
-					elem = elem[idx:]
+
+				case 'm': // Prefix: "mpt-"
+
+					if l := len("mpt-"); len(elem) >= l && elem[0:l] == "mpt-" {
+						elem = elem[l:]
+					} else {
+						break
+					}
 
 					if len(elem) == 0 {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/answers"
+					case 'r': // Prefix: "runs/"
 
-						if l := len("/answers"); len(elem) >= l && elem[0:l] == "/answers" {
+						if l := len("runs/"); len(elem) >= l && elem[0:l] == "runs/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						// Param: "runId"
+						// Match until "/"
+						idx := strings.IndexByte(elem, '/')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/answers"
+
+							if l := len("/answers"); len(elem) >= l && elem[0:l] == "/answers" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleListPromptAnswersRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						}
+
+					case 't': // Prefix: "test"
+
+						if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
 							elem = elem[l:]
 						} else {
 							break
@@ -1200,9 +1266,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							// Leaf node.
 							switch r.Method {
 							case "GET":
-								s.handleListPromptAnswersRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
+								s.handleGetPromptTestResultsRequest([0]string{}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
@@ -1215,31 +1279,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 
-					}
-
-				case 't': // Prefix: "test"
-
-					if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						// Leaf node.
-						switch r.Method {
-						case "GET":
-							s.handleGetPromptTestResultsRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: nil,
-								acceptPost:     "",
-								acceptPatch:    "",
-							})
-						}
-
-						return
 					}
 
 				}
@@ -2458,9 +2497,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 				}
 
-			case 'p': // Prefix: "prompt-"
+			case 'p': // Prefix: "pro"
 
-				if l := len("prompt-"); len(elem) >= l && elem[0:l] == "prompt-" {
+				if l := len("pro"); len(elem) >= l && elem[0:l] == "pro" {
 					elem = elem[l:]
 				} else {
 					break
@@ -2470,57 +2509,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					break
 				}
 				switch elem[0] {
-				case 'r': // Prefix: "runs/"
+				case 'd': // Prefix: "ducts"
 
-					if l := len("runs/"); len(elem) >= l && elem[0:l] == "runs/" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					// Param: "runId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
-					if idx < 0 {
-						idx = len(elem)
-					}
-					args[0] = elem[:idx]
-					elem = elem[idx:]
-
-					if len(elem) == 0 {
-						break
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/answers"
-
-						if l := len("/answers"); len(elem) >= l && elem[0:l] == "/answers" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "GET":
-								r.name = ListPromptAnswersOperation
-								r.summary = "List a Prompt run's answers"
-								r.operationID = "listPromptAnswers"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/prompt-runs/{runId}/answers"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
-						}
-
-					}
-
-				case 't': // Prefix: "test"
-
-					if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
+					if l := len("ducts"); len(elem) >= l && elem[0:l] == "ducts" {
 						elem = elem[l:]
 					} else {
 						break
@@ -2530,17 +2521,104 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						// Leaf node.
 						switch method {
 						case "GET":
-							r.name = GetPromptTestResultsOperation
-							r.summary = "Get the Prompt test's results"
-							r.operationID = "getPromptTestResults"
+							r.name = GetProductsOperation
+							r.summary = "Get Tribelt's belt families against the field"
+							r.operationID = "getProducts"
 							r.operationGroup = ""
-							r.pathPattern = "/api/v1/prompt-test"
+							r.pathPattern = "/api/v1/products"
 							r.args = args
 							r.count = 0
 							return r, true
 						default:
 							return
 						}
+					}
+
+				case 'm': // Prefix: "mpt-"
+
+					if l := len("mpt-"); len(elem) >= l && elem[0:l] == "mpt-" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						break
+					}
+					switch elem[0] {
+					case 'r': // Prefix: "runs/"
+
+						if l := len("runs/"); len(elem) >= l && elem[0:l] == "runs/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						// Param: "runId"
+						// Match until "/"
+						idx := strings.IndexByte(elem, '/')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/answers"
+
+							if l := len("/answers"); len(elem) >= l && elem[0:l] == "/answers" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = ListPromptAnswersOperation
+									r.summary = "List a Prompt run's answers"
+									r.operationID = "listPromptAnswers"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/prompt-runs/{runId}/answers"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
+						}
+
+					case 't': // Prefix: "test"
+
+						if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "GET":
+								r.name = GetPromptTestResultsOperation
+								r.summary = "Get the Prompt test's results"
+								r.operationID = "getPromptTestResults"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/prompt-test"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
+						}
+
 					}
 
 				}

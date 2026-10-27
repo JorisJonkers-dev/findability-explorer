@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"slices"
+	"strings"
 	"time"
 
 	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
@@ -154,6 +155,24 @@ func (t termsUsed) TermsUsed(ctx context.Context) (map[string]int, error) {
 		for _, id := range slices.Compact(slices.Clone(ids)) {
 			out[id]++
 		}
+	}
+	return out, nil
+}
+
+func (t termsUsed) MapTerms(ctx context.Context) ([]insightdomain.MapTerm, error) {
+	found, err := t.terminology.FoundBy(ctx)
+	if err != nil {
+		return nil, err
+	}
+	terms := t.terminology.Terms()
+	out := make([]insightdomain.MapTerm, 0, len(terms))
+	for _, term := range terms {
+		tribelt := slices.Contains(found[term.Key()], insightdomain.TribeltID) ||
+			slices.ContainsFunc(term.UsedBy, func(u string) bool { return strings.HasPrefix(u, "Tribelt") })
+		out = append(out, insightdomain.MapTerm{
+			Text: term.Text, Language: string(term.Language), Family: string(term.Family), Tier: string(term.Tier),
+			UsedBy: len(term.UsedBy), UsedByTribelt: tribelt,
+		})
 	}
 	return out, nil
 }

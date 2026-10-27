@@ -24,6 +24,7 @@ const (
 	GetLlmKeyUsageOperation             OperationName = "GetLlmKeyUsage"
 	GetLlmSettingsOperation             OperationName = "GetLlmSettings"
 	GetMeOperation                      OperationName = "GetMe"
+	GetProductsOperation                OperationName = "GetProducts"
 	GetPromptTestResultsOperation       OperationName = "GetPromptTestResults"
 	GetPromptTestSettingsOperation      OperationName = "GetPromptTestSettings"
 	GetReadinessFilesOperation          OperationName = "GetReadinessFiles"

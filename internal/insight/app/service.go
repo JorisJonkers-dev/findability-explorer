@@ -31,6 +31,9 @@ type Readiness interface {
 // found, by id, for every company a scan read.
 type Terms interface {
 	TermsUsed(ctx context.Context) (map[string]int, error)
+	// MapTerms are the terms of the map, each with how many companies use it and whether
+	// Tribelt's site does.
+	MapTerms(ctx context.Context) ([]domain.MapTerm, error)
 }
 
 // Ports are the other contexts the insight context reads.

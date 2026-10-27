@@ -6284,6 +6284,742 @@ func (s *ProblemStatusCode) Validate() error {
 	return nil
 }
 
+func (s *Product) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Family.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "family",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.TribeltNames == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    100,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.TribeltNames)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.TribeltNames {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     300,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(elem)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "tribeltNames",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.Sellers == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    500,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.Sellers)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Sellers {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "sellers",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.Terms == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    2000,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.Terms)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Terms {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "terms",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           2000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.TermsUsed)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "termsUsed",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           100000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.Answers)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "answers",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           100000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.Named)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "named",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ByScope == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    10,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.ByScope)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.ByScope {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "byScope",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.MostNamed == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    10,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.MostNamed)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.MostNamed {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "mostNamed",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s ProductFinding) Validate() error {
+	switch s {
+	case "crowded":
+		return nil
+	case "fewestTerms":
+		return nil
+	case "bestInAI":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *ProductMention) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.CompetitorId.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "competitorId",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     0,
+			MinLengthSet:  false,
+			MaxLength:     200,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.Name)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "name",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Role.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "role",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Float{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           1,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    nil,
+			Pattern:       nil,
+		}).Validate(float64(s.Share)); err != nil {
+			return errors.Wrap(err, "float")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "share",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ProductScope) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Scope.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "scope",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           100000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.Answers)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "answers",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           100000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.Named)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "named",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ProductSeller) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.CompetitorId.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "competitorId",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     0,
+			MinLengthSet:  false,
+			MaxLength:     200,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.Name)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "name",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.Names == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    100,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.Names)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Names {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     300,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(elem)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "names",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ProductStandout) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Finding.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "finding",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Family.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "family",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ProductTerm) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     0,
+			MinLengthSet:  false,
+			MaxLength:     300,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.Term)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "term",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     0,
+			MinLengthSet:  false,
+			MaxLength:     10,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         regexMap["^[a-z]{2}(-[A-Z]{2})?$"],
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.Language)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "language",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Tier.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "tier",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           1000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.UsedBy)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usedBy",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ProductsOverview) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.Items == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    10,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.Items)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Items {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "items",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.Standouts == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    10,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.Standouts)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Standouts {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "standouts",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s ProfileGroup) Validate() error {
 	switch s {
 	case "eyelink":

@@ -757,6 +757,46 @@ export const zAiSearchSummary = z.object({
 });
 
 /**
+ * A competitor that sells a family, with its own names for it.
+ */
+export const zProductSeller = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    websiteUrl: z.url().max(500).optional(),
+    names: z.array(z.string().max(300)).max(100)
+});
+
+/**
+ * A term of the map for a family.
+ */
+export const zProductTerm = z.object({
+    term: z.string().max(300),
+    language: z.string().max(10).regex(/^[a-z]{2}(-[A-Z]{2})?$/),
+    tier: zIntentTier,
+    usedBy: z.int().gte(0).lte(1000),
+    usedByTribelt: z.boolean()
+});
+
+/**
+ * A company a family's answers name, and the share of them that do.
+ */
+export const zProductMention = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    share: z.number().gte(0).lte(1)
+});
+
+/**
+ * What stands out - crowded (the family the most competitors sell), fewestTerms (whose terms Tribelt uses least) or bestInAI (whose answers name Tribelt most).
+ */
+export const zProductFinding = z.enum([
+    'crowded',
+    'fewestTerms',
+    'bestInAI'
+]);
+
+/**
  * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
  */
 export const zStandingMeasure = z.enum([
@@ -963,6 +1003,14 @@ export const zPromptFamily = z.enum([
 ]);
 
 /**
+ * A finding and the family it is about.
+ */
+export const zProductStandout = z.object({
+    finding: zProductFinding,
+    family: zPromptFamily
+});
+
+/**
  * The kind of question - for a supplier, for a belt for an application, or about a problem.
  */
 export const zPromptKind = z.enum([
@@ -982,6 +1030,38 @@ export const zPromptScope = z.enum([
     'german',
     'english'
 ]);
+
+/**
+ * How many of a family's answers in one scope name Tribelt.
+ */
+export const zProductScope = z.object({
+    scope: zPromptScope,
+    answers: z.int().gte(0).lte(100000),
+    named: z.int().gte(0).lte(100000)
+});
+
+/**
+ * One belt family against the field.
+ */
+export const zProduct = z.object({
+    family: zPromptFamily,
+    tribeltNames: z.array(z.string().max(300)).max(100),
+    sellers: z.array(zProductSeller).max(500),
+    terms: z.array(zProductTerm).max(2000),
+    termsUsed: z.int().gte(0).lte(2000),
+    answers: z.int().gte(0).lte(100000),
+    named: z.int().gte(0).lte(100000),
+    byScope: z.array(zProductScope).max(10),
+    mostNamed: z.array(zProductMention).max(10)
+});
+
+/**
+ * Tribelt's belt families against the field.
+ */
+export const zProductsOverview = z.object({
+    items: z.array(zProduct).max(10),
+    standouts: z.array(zProductStandout).max(10)
+});
 
 /**
  * How a prompt is asked - from the model's own knowledge, or with live web search.
@@ -1360,6 +1440,11 @@ export const zCredentialId = zLlmCredentialId;
  * The summary.
  */
 export const zGetAiSearchSummaryResponse = zAiSearchSummary;
+
+/**
+ * The families.
+ */
+export const zGetProductsResponse = zProductsOverview;
 
 /**
  * The standings.

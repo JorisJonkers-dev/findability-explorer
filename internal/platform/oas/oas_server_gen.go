@@ -144,6 +144,16 @@ type Handler interface {
 	//
 	// GET /api/v1/me
 	GetMe(ctx context.Context) (GetMeRes, error)
+	// GetProducts implements getProducts operation.
+	//
+	// For each of Tribelt's belt families: Tribelt's own names for it, the competitors that sell it with
+	// their names for it, the terminology map's terms for it with how many companies use each and whether
+	// Tribelt's site does, and how the newest Prompt run's answers about it treat Tribelt, per scope and
+	// by who they name. The standouts say which family the most competitors sell, whose terms Tribelt uses
+	// least, and whose answers name Tribelt most.
+	//
+	// GET /api/v1/products
+	GetProducts(ctx context.Context) (GetProductsRes, error)
 	// GetPromptTestResults implements getPromptTestResults operation.
 	//
 	// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per

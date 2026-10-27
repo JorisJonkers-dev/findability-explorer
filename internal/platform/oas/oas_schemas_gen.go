@@ -5861,11 +5861,440 @@ func (s *ProblemStatusCode) SetResponse(val Problem) {
 func (*ProblemStatusCode) getAiReadinessRes()       {}
 func (*ProblemStatusCode) getAiSearchSummaryRes()   {}
 func (*ProblemStatusCode) getMeRes()                {}
+func (*ProblemStatusCode) getProductsRes()          {}
 func (*ProblemStatusCode) getPromptTestResultsRes() {}
 func (*ProblemStatusCode) getStandingsRes()         {}
 func (*ProblemStatusCode) listAnalysesRes()         {}
 func (*ProblemStatusCode) listCompetitorsRes()      {}
 func (*ProblemStatusCode) searchTermsRes()          {}
+
+// One belt family against the field.
+// Ref: #/components/schemas/Product
+type Product struct {
+	Family PromptFamily `json:"family"`
+	// Tribelt's own names for it.
+	TribeltNames []string `json:"tribeltNames"`
+	// The competitors that sell it, by name.
+	Sellers []ProductSeller `json:"sellers"`
+	// The map's terms for it, the most used first.
+	Terms []ProductTerm `json:"terms"`
+	// How many of the terms Tribelt's site uses.
+	TermsUsed int32 `json:"termsUsed"`
+	// The newest run's answers about it; 0 before any run.
+	Answers int32 `json:"answers"`
+	// Those naming Tribelt.
+	Named int32 `json:"named"`
+	// The answers per scope.
+	ByScope []ProductScope `json:"byScope"`
+	// The companies its answers name most.
+	MostNamed []ProductMention `json:"mostNamed"`
+}
+
+// GetFamily returns the value of Family.
+func (s *Product) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetTribeltNames returns the value of TribeltNames.
+func (s *Product) GetTribeltNames() []string {
+	return s.TribeltNames
+}
+
+// GetSellers returns the value of Sellers.
+func (s *Product) GetSellers() []ProductSeller {
+	return s.Sellers
+}
+
+// GetTerms returns the value of Terms.
+func (s *Product) GetTerms() []ProductTerm {
+	return s.Terms
+}
+
+// GetTermsUsed returns the value of TermsUsed.
+func (s *Product) GetTermsUsed() int32 {
+	return s.TermsUsed
+}
+
+// GetAnswers returns the value of Answers.
+func (s *Product) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetNamed returns the value of Named.
+func (s *Product) GetNamed() int32 {
+	return s.Named
+}
+
+// GetByScope returns the value of ByScope.
+func (s *Product) GetByScope() []ProductScope {
+	return s.ByScope
+}
+
+// GetMostNamed returns the value of MostNamed.
+func (s *Product) GetMostNamed() []ProductMention {
+	return s.MostNamed
+}
+
+// SetFamily sets the value of Family.
+func (s *Product) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetTribeltNames sets the value of TribeltNames.
+func (s *Product) SetTribeltNames(val []string) {
+	s.TribeltNames = val
+}
+
+// SetSellers sets the value of Sellers.
+func (s *Product) SetSellers(val []ProductSeller) {
+	s.Sellers = val
+}
+
+// SetTerms sets the value of Terms.
+func (s *Product) SetTerms(val []ProductTerm) {
+	s.Terms = val
+}
+
+// SetTermsUsed sets the value of TermsUsed.
+func (s *Product) SetTermsUsed(val int32) {
+	s.TermsUsed = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *Product) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetNamed sets the value of Named.
+func (s *Product) SetNamed(val int32) {
+	s.Named = val
+}
+
+// SetByScope sets the value of ByScope.
+func (s *Product) SetByScope(val []ProductScope) {
+	s.ByScope = val
+}
+
+// SetMostNamed sets the value of MostNamed.
+func (s *Product) SetMostNamed(val []ProductMention) {
+	s.MostNamed = val
+}
+
+// What stands out - crowded (the family the most competitors sell), fewestTerms (whose terms Tribelt
+// uses least) or bestInAI (whose answers name Tribelt most).
+// Ref: #/components/schemas/ProductFinding
+type ProductFinding string
+
+const (
+	ProductFindingCrowded     ProductFinding = "crowded"
+	ProductFindingFewestTerms ProductFinding = "fewestTerms"
+	ProductFindingBestInAI    ProductFinding = "bestInAI"
+)
+
+// AllValues returns all ProductFinding values.
+func (ProductFinding) AllValues() []ProductFinding {
+	return []ProductFinding{
+		ProductFindingCrowded,
+		ProductFindingFewestTerms,
+		ProductFindingBestInAI,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProductFinding) MarshalText() ([]byte, error) {
+	switch s {
+	case ProductFindingCrowded:
+		return []byte(s), nil
+	case ProductFindingFewestTerms:
+		return []byte(s), nil
+	case ProductFindingBestInAI:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProductFinding) UnmarshalText(data []byte) error {
+	switch ProductFinding(data) {
+	case ProductFindingCrowded:
+		*s = ProductFindingCrowded
+		return nil
+	case ProductFindingFewestTerms:
+		*s = ProductFindingFewestTerms
+		return nil
+	case ProductFindingBestInAI:
+		*s = ProductFindingBestInAI
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A company a family's answers name, and the share of them that do.
+// Ref: #/components/schemas/ProductMention
+type ProductMention struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name string      `json:"name"`
+	Role CompanyRole `json:"role"`
+	// The share of the family's answers naming it.
+	Share float64 `json:"share"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *ProductMention) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *ProductMention) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *ProductMention) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetShare returns the value of Share.
+func (s *ProductMention) GetShare() float64 {
+	return s.Share
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *ProductMention) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *ProductMention) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *ProductMention) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetShare sets the value of Share.
+func (s *ProductMention) SetShare(val float64) {
+	s.Share = val
+}
+
+// How many of a family's answers in one scope name Tribelt.
+// Ref: #/components/schemas/ProductScope
+type ProductScope struct {
+	Scope PromptScope `json:"scope"`
+	// The answers in the scope.
+	Answers int32 `json:"answers"`
+	// Those naming Tribelt.
+	Named int32 `json:"named"`
+}
+
+// GetScope returns the value of Scope.
+func (s *ProductScope) GetScope() PromptScope {
+	return s.Scope
+}
+
+// GetAnswers returns the value of Answers.
+func (s *ProductScope) GetAnswers() int32 {
+	return s.Answers
+}
+
+// GetNamed returns the value of Named.
+func (s *ProductScope) GetNamed() int32 {
+	return s.Named
+}
+
+// SetScope sets the value of Scope.
+func (s *ProductScope) SetScope(val PromptScope) {
+	s.Scope = val
+}
+
+// SetAnswers sets the value of Answers.
+func (s *ProductScope) SetAnswers(val int32) {
+	s.Answers = val
+}
+
+// SetNamed sets the value of Named.
+func (s *ProductScope) SetNamed(val int32) {
+	s.Named = val
+}
+
+// A competitor that sells a family, with its own names for it.
+// Ref: #/components/schemas/ProductSeller
+type ProductSeller struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The competitor's name.
+	Name string `json:"name"`
+	// Its website.
+	WebsiteUrl OptURI `json:"websiteUrl"`
+	// Its names for the family.
+	Names []string `json:"names"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *ProductSeller) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *ProductSeller) GetName() string {
+	return s.Name
+}
+
+// GetWebsiteUrl returns the value of WebsiteUrl.
+func (s *ProductSeller) GetWebsiteUrl() OptURI {
+	return s.WebsiteUrl
+}
+
+// GetNames returns the value of Names.
+func (s *ProductSeller) GetNames() []string {
+	return s.Names
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *ProductSeller) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *ProductSeller) SetName(val string) {
+	s.Name = val
+}
+
+// SetWebsiteUrl sets the value of WebsiteUrl.
+func (s *ProductSeller) SetWebsiteUrl(val OptURI) {
+	s.WebsiteUrl = val
+}
+
+// SetNames sets the value of Names.
+func (s *ProductSeller) SetNames(val []string) {
+	s.Names = val
+}
+
+// A finding and the family it is about.
+// Ref: #/components/schemas/ProductStandout
+type ProductStandout struct {
+	Finding ProductFinding `json:"finding"`
+	Family  PromptFamily   `json:"family"`
+}
+
+// GetFinding returns the value of Finding.
+func (s *ProductStandout) GetFinding() ProductFinding {
+	return s.Finding
+}
+
+// GetFamily returns the value of Family.
+func (s *ProductStandout) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// SetFinding sets the value of Finding.
+func (s *ProductStandout) SetFinding(val ProductFinding) {
+	s.Finding = val
+}
+
+// SetFamily sets the value of Family.
+func (s *ProductStandout) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// A term of the map for a family.
+// Ref: #/components/schemas/ProductTerm
+type ProductTerm struct {
+	// The term.
+	Term string `json:"term"`
+	// Its language.
+	Language string     `json:"language"`
+	Tier     IntentTier `json:"tier"`
+	// How many companies use it.
+	UsedBy int32 `json:"usedBy"`
+	// Whether Tribelt's own site uses it.
+	UsedByTribelt bool `json:"usedByTribelt"`
+}
+
+// GetTerm returns the value of Term.
+func (s *ProductTerm) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *ProductTerm) GetLanguage() string {
+	return s.Language
+}
+
+// GetTier returns the value of Tier.
+func (s *ProductTerm) GetTier() IntentTier {
+	return s.Tier
+}
+
+// GetUsedBy returns the value of UsedBy.
+func (s *ProductTerm) GetUsedBy() int32 {
+	return s.UsedBy
+}
+
+// GetUsedByTribelt returns the value of UsedByTribelt.
+func (s *ProductTerm) GetUsedByTribelt() bool {
+	return s.UsedByTribelt
+}
+
+// SetTerm sets the value of Term.
+func (s *ProductTerm) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *ProductTerm) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetTier sets the value of Tier.
+func (s *ProductTerm) SetTier(val IntentTier) {
+	s.Tier = val
+}
+
+// SetUsedBy sets the value of UsedBy.
+func (s *ProductTerm) SetUsedBy(val int32) {
+	s.UsedBy = val
+}
+
+// SetUsedByTribelt sets the value of UsedByTribelt.
+func (s *ProductTerm) SetUsedByTribelt(val bool) {
+	s.UsedByTribelt = val
+}
+
+// Tribelt's belt families against the field.
+// Ref: #/components/schemas/ProductsOverview
+type ProductsOverview struct {
+	// Every family, in order.
+	Items []Product `json:"items"`
+	// What stands out among them.
+	Standouts []ProductStandout `json:"standouts"`
+}
+
+// GetItems returns the value of Items.
+func (s *ProductsOverview) GetItems() []Product {
+	return s.Items
+}
+
+// GetStandouts returns the value of Standouts.
+func (s *ProductsOverview) GetStandouts() []ProductStandout {
+	return s.Standouts
+}
+
+// SetItems sets the value of Items.
+func (s *ProductsOverview) SetItems(val []Product) {
+	s.Items = val
+}
+
+// SetStandouts sets the value of Standouts.
+func (s *ProductsOverview) SetStandouts(val []ProductStandout) {
+	s.Standouts = val
+}
+
+func (*ProductsOverview) getProductsRes() {}
 
 // How a company's search terms are grouped - one of Tribelt's belt families, other metal belts, broad
 // terms that name no family, or material and specification terms.

@@ -9,6 +9,7 @@ import type {
   PromptAnswer,
   PromptExtraction,
   PromptRun,
+  Product,
   PromptTestResults,
   Term,
   TermSearch,
@@ -257,6 +258,27 @@ export function promptAnswer(
       costUsd: 0.0002,
       ...extraction,
     },
+    ...overrides,
+  }
+}
+
+/** A belt family against the field: eyelink, with a seller, four terms and 40 answers. */
+export function product(overrides: Partial<Product> = {}): Product {
+  return {
+    family: 'eyelink',
+    tribeltNames: ['Draadogenbanden'],
+    sellers: [{ competitorId: 'twentebelt', name: 'Twentebelt', names: ['Oogbanden'] }],
+    terms: [
+      { term: 'draadogenband', language: 'nl', tier: 'product', usedBy: 9, usedByTribelt: false },
+      { term: 'eyelink belt', language: 'en-US', tier: 'product', usedBy: 5, usedByTribelt: true },
+      { term: 'Drahtösenband', language: 'de', tier: 'product', usedBy: 3, usedByTribelt: false },
+      { term: 'bande à maillons', language: 'fr', tier: 'product', usedBy: 1, usedByTribelt: false },
+    ],
+    termsUsed: 1,
+    answers: 40,
+    named: 12,
+    byScope: [],
+    mostNamed: [],
     ...overrides,
   }
 }

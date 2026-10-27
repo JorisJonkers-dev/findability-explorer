@@ -73,6 +73,10 @@ type GetMeRes interface {
 	getMeRes()
 }
 
+type GetProductsRes interface {
+	getProductsRes()
+}
+
 type GetPromptTestResultsRes interface {
 	getPromptTestResultsRes()
 }

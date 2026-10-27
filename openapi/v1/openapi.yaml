@@ -64,6 +64,28 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/products:
+    get:
+      operationId: getProducts
+      summary: Get Tribelt's belt families against the field
+      description: >-
+        For each of Tribelt's belt families: Tribelt's own names for it, the competitors that sell
+        it with their names for it, the terminology map's terms for it with how many companies use
+        each and whether Tribelt's site does, and how the newest Prompt run's answers about it
+        treat Tribelt, per scope and by who they name. The standouts say which family the most
+        competitors sell, whose terms Tribelt uses least, and whose answers name Tribelt most.
+      tags: [insight]
+      responses:
+        "200":
+          description: The families.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductsOverview"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/standings:
     get:
       operationId: getStandings
@@ -3307,6 +3329,202 @@ components:
           maximum: 100
           description: How many providers the newest run asked; 0 before any run.
           example: 5
+    ProductSeller:
+      description: A competitor that sells a family, with its own names for it.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, names]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The competitor's name.
+          example: Twentebelt
+        websiteUrl:
+          type: string
+          format: uri
+          maxLength: 500
+          description: Its website.
+          example: https://www.twentebelt.com/
+        names:
+          type: array
+          maxItems: 100
+          description: Its names for the family.
+          items:
+            type: string
+            maxLength: 300
+            example: Oogbanden
+    ProductTerm:
+      description: A term of the map for a family.
+      type: object
+      additionalProperties: false
+      required: [term, language, tier, usedBy, usedByTribelt]
+      properties:
+        term:
+          type: string
+          maxLength: 300
+          description: The term.
+          example: draadogenband
+        language:
+          type: string
+          maxLength: 10
+          pattern: "^[a-z]{2}(-[A-Z]{2})?$"
+          description: Its language.
+          example: nl
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+        usedBy:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many companies use it.
+          example: 9
+        usedByTribelt:
+          type: boolean
+          description: Whether Tribelt's own site uses it.
+          example: false
+    ProductScope:
+      description: How many of a family's answers in one scope name Tribelt.
+      type: object
+      additionalProperties: false
+      required: [scope, answers, named]
+      properties:
+        scope:
+          $ref: "#/components/schemas/PromptScope"
+        answers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The answers in the scope.
+          example: 10
+        named:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Those naming Tribelt.
+          example: 3
+    ProductMention:
+      description: A company a family's answers name, and the share of them that do.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role, share]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        share:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the family's answers naming it.
+          example: 0.6
+    Product:
+      description: One belt family against the field.
+      type: object
+      additionalProperties: false
+      required: [family, tribeltNames, sellers, terms, termsUsed, answers, named, byScope, mostNamed]
+      properties:
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+        tribeltNames:
+          type: array
+          maxItems: 100
+          description: Tribelt's own names for it.
+          items:
+            type: string
+            maxLength: 300
+            example: Draadogenbanden
+        sellers:
+          type: array
+          maxItems: 500
+          description: The competitors that sell it, by name.
+          items:
+            $ref: "#/components/schemas/ProductSeller"
+        terms:
+          type: array
+          maxItems: 2000
+          description: The map's terms for it, the most used first.
+          items:
+            $ref: "#/components/schemas/ProductTerm"
+        termsUsed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 2000
+          description: How many of the terms Tribelt's site uses.
+          example: 4
+        answers:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: The newest run's answers about it; 0 before any run.
+          example: 40
+        named:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Those naming Tribelt.
+          example: 12
+        byScope:
+          type: array
+          maxItems: 10
+          description: The answers per scope.
+          items:
+            $ref: "#/components/schemas/ProductScope"
+        mostNamed:
+          type: array
+          maxItems: 10
+          description: The companies its answers name most.
+          items:
+            $ref: "#/components/schemas/ProductMention"
+    ProductFinding:
+      description: >-
+        What stands out - crowded (the family the most competitors sell), fewestTerms (whose
+        terms Tribelt uses least) or bestInAI (whose answers name Tribelt most).
+      type: string
+      enum: [crowded, fewestTerms, bestInAI]
+    ProductStandout:
+      description: A finding and the family it is about.
+      type: object
+      additionalProperties: false
+      required: [finding, family]
+      properties:
+        finding:
+          $ref: "#/components/schemas/ProductFinding"
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+    ProductsOverview:
+      description: Tribelt's belt families against the field.
+      type: object
+      additionalProperties: false
+      required: [items, standouts]
+      properties:
+        items:
+          type: array
+          maxItems: 10
+          description: Every family, in order.
+          items:
+            $ref: "#/components/schemas/Product"
+        standouts:
+          type: array
+          maxItems: 10
+          description: What stands out among them.
+          items:
+            $ref: "#/components/schemas/ProductStandout"
     StandingMeasure:
       description: >-
         A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the

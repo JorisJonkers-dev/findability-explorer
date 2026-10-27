@@ -5,6 +5,7 @@ package web
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
@@ -15,6 +16,7 @@ import (
 type UseCases interface {
 	Standings(ctx context.Context) (app.Standings, error)
 	AiSearch(ctx context.Context) (app.AiSearch, error)
+	Products(ctx context.Context) (app.Products, error)
 }
 
 // Handler implements the insight operations. Business rules stay in the use cases.
@@ -97,4 +99,51 @@ func (h *Handler) GetAiSearchSummary(ctx context.Context) (oas.GetAiSearchSummar
 		out.Ranking = append(out.Ranking, oas.ReadinessRank{CompetitorId: oas.CompetitorId(r.CompanyID), Name: r.Name, Role: oas.CompanyRole(r.Role), Score: r.Score})
 	}
 	return out, nil
+}
+
+// GetProducts implements getProducts.
+func (h *Handler) GetProducts(ctx context.Context) (oas.GetProductsRes, error) {
+	p, err := h.uc.Products(ctx)
+	if err != nil {
+		return nil, err
+	}
+	companies := map[string]domain.Company{}
+	for _, c := range p.Companies {
+		companies[c.ID] = c
+	}
+	out := &oas.ProductsOverview{Items: make([]oas.Product, 0, len(p.Products)), Standouts: make([]oas.ProductStandout, 0, len(p.Standouts))}
+	for _, pr := range p.Products {
+		out.Items = append(out.Items, toProduct(pr, companies))
+	}
+	for _, s := range p.Standouts {
+		out.Standouts = append(out.Standouts, oas.ProductStandout{Finding: oas.ProductFinding(s.Finding), Family: oas.PromptFamily(s.Family)})
+	}
+	return out, nil
+}
+
+//nolint:gosec // the counts are of a run's answers and the map's terms, far below int32
+func toProduct(p domain.Product, companies map[string]domain.Company) oas.Product {
+	o := oas.Product{
+		Family: oas.PromptFamily(p.Family), TribeltNames: p.TribeltNames, Sellers: make([]oas.ProductSeller, 0, len(p.Sellers)),
+		Terms: make([]oas.ProductTerm, 0, len(p.Terms)), TermsUsed: int32(p.TermsUsed), Answers: int32(p.Answers), Named: int32(p.Named),
+		ByScope: make([]oas.ProductScope, 0, len(p.ByScope)), MostNamed: make([]oas.ProductMention, 0, len(p.MostNamed)),
+	}
+	for _, s := range p.Sellers {
+		seller := oas.ProductSeller{CompetitorId: oas.CompetitorId(s.CompanyID), Name: s.Name, Names: s.Names}
+		if u, err := url.Parse(s.Website); err == nil && s.Website != "" {
+			seller.WebsiteUrl = oas.NewOptURI(*u)
+		}
+		o.Sellers = append(o.Sellers, seller)
+	}
+	for _, t := range p.Terms {
+		o.Terms = append(o.Terms, oas.ProductTerm{Term: t.Text, Language: t.Language, Tier: oas.IntentTier(t.Tier), UsedBy: int32(t.UsedBy), UsedByTribelt: t.UsedByTribelt})
+	}
+	for _, s := range p.ByScope {
+		o.ByScope = append(o.ByScope, oas.ProductScope{Scope: oas.PromptScope(s.Scope), Answers: int32(s.Answers), Named: int32(s.Named)})
+	}
+	for _, m := range p.MostNamed {
+		c := companies[m.CompanyID]
+		o.MostNamed = append(o.MostNamed, oas.ProductMention{CompetitorId: oas.CompetitorId(m.CompanyID), Name: c.Name, Role: oas.CompanyRole(c.Role), Share: m.Share})
+	}
+	return o
 }

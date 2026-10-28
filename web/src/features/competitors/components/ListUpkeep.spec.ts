@@ -1,4 +1,4 @@
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { competitor, me, overview, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
@@ -32,7 +32,7 @@ function api(sent: Body[] = [], extra: Record<string, Handler> = {}) {
 }
 
 const upkeep = (wrapper: VueWrapper) => wrapper.get('section[aria-labelledby="upkeep-title"]')
-const button = (section: DOMWrapper<Element>, text: string) => {
+const button = (section: ReturnType<typeof upkeep>, text: string) => {
   const found = section.findAll('button').find((b) => b.text().startsWith(text))
   if (!found) throw new Error(`no button ${text}`)
   return found

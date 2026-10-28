@@ -1,3 +1,4 @@
+import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { competitor, me, overview, promptResults, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
@@ -20,7 +21,7 @@ function api(extra: Record<string, Handler> = {}) {
   })
 }
 
-const link = (wrapper: { findAll: (s: string) => { text: () => string }[] }, text: string) => wrapper.findAll('a').find((a) => a.text() === text)
+const link = (wrapper: VueWrapper, text: string) => wrapper.findAll('a').find((a) => a.text() === text)
 
 describe('a competitor’s page', () => {
   it('sets the competitor against Tribelt, with its belts and the ways to look closer', async () => {

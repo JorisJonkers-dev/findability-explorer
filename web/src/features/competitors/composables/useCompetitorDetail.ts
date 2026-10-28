@@ -33,7 +33,6 @@ export function useCompetitorDetail(id: Ref<string>) {
   const coverage = (companyId: string | undefined): number | undefined =>
     companyId === undefined ? undefined : rowOf(companyId)?.readiness?.sitemap.coverage?.share
   const termsOf = (c: { shortName: string } | undefined): number | undefined => (c ? companyTerms(map.terms.value, c.shortName).length : undefined)
-  const scanned = computed(() => (company.value?.scans ?? 0) > 0)
 
   return {
     company,
@@ -61,7 +60,7 @@ export function useCompetitorDetail(id: Ref<string>) {
             sitemap: coverage(id.value),
             tribeltSitemap: coverage(tribelt.value?.id),
             // A site no scan read has no terms found on it.
-            terms: scanned.value ? termsOf(company.value) : undefined,
+            terms: company.value.scans > 0 ? termsOf(company.value) : undefined,
             tribeltTerms: termsOf(tribelt.value),
             mapTerms: overview.value?.terms.total ?? map.terms.value.length,
           })

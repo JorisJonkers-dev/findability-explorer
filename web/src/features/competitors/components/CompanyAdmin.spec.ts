@@ -41,6 +41,7 @@ function api(sent: Sent[], extra: Record<string, Handler> = {}) {
     'DELETE /api/v1/competitors/example-belts': record(() => new Response(null, { status: 204 })),
     'DELETE /api/v1/competitors/twentebelt': record(() => new Response(null, { status: 204 })),
     'POST /api/v1/competitors': record(() => json(competitor('New Belts', { id: 'new-belts', source: 'added' }), 201)),
+    'GET /api/v1/competitors/new-belts': () => json({ competitor: competitor('New Belts', { id: 'new-belts', source: 'added' }), scans: [] }),
     'POST /api/v1/admin/rescans': record(() =>
       json({
         queued: [summary(), summary({ id: '6c1d2b0f-3e4a-4f6b-9c7d-8e9f0a1b2c3d' })],
@@ -60,7 +61,7 @@ const button = (wrapper: VueWrapper, text: string) => {
 describe('managing a company', () => {
   it('edits an added company, sending only what changed, and refuses a bad address before sending', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/competitors?company=example-belts')
+    const { wrapper } = await mountApp(api(sent), '/competitors/example-belts')
     await button(wrapper, 'Edit').trigger('click')
     await settle()
     const form = wrapper.get('form[aria-label="Edit Example Belts"]')
@@ -82,7 +83,7 @@ describe('managing a company', () => {
 
   it('closes the form without a request when nothing changed, or on cancel', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/competitors?company=example-belts')
+    const { wrapper } = await mountApp(api(sent), '/competitors/example-belts')
     await button(wrapper, 'Edit').trigger('click')
     await settle()
     await wrapper.get('form[aria-label="Edit Example Belts"]').trigger('submit')
@@ -99,7 +100,7 @@ describe('managing a company', () => {
     const sent: Sent[] = []
     const { wrapper } = await mountApp(
       api(sent, { 'PATCH /api/v1/competitors/example-belts': () => problem(409, 'Conflict', 'Twentebelt already has this website.') }),
-      '/competitors?company=example-belts',
+      '/competitors/example-belts',
     )
     await button(wrapper, 'Edit').trigger('click')
     await settle()
@@ -107,12 +108,12 @@ describe('managing a company', () => {
     await form.findAll('input')[1]?.setValue('https://www.twentebelt.com')
     await form.trigger('submit')
     await settle()
-    expect(wrapper.get('section[aria-labelledby="company-name"] [role="alert"]').text()).toBe('Twentebelt already has this website.')
+    expect(wrapper.get('[role="alert"]').text()).toBe('Twentebelt already has this website.')
   })
 
   it('archives an added company by default, keeping its scans, after confirming', async () => {
     const sent: Sent[] = []
-    const { wrapper, router } = await mountApp(api(sent), '/competitors?company=example-belts')
+    const { wrapper, router } = await mountApp(api(sent), '/competitors/example-belts')
     await button(wrapper, 'Archive').trigger('click')
     await settle()
     const confirm = wrapper.get('[role="group"][aria-label="Archive Example Belts?"]')
@@ -121,12 +122,12 @@ describe('managing a company', () => {
     await button(wrapper, 'Archive').trigger('click')
     await settle()
     expect(sent).toEqual([{ method: 'PATCH', path: '/api/v1/competitors/example-belts', body: { archived: true } }])
-    expect(router.currentRoute.value.fullPath).toBe('/competitors?company=example-belts')
+    expect(router.currentRoute.value.fullPath).toBe('/competitors/example-belts')
   })
 
-  it('deletes an added company with its scans after confirming, and shows the first company again', async () => {
+  it('deletes an added company with its scans after confirming, and goes back to the competitors', async () => {
     const sent: Sent[] = []
-    const { wrapper, router } = await mountApp(api(sent), '/competitors?company=example-belts')
+    const { wrapper, router } = await mountApp(api(sent), '/competitors/example-belts')
     await button(wrapper, 'Remove').trigger('click')
     await settle()
     const confirm = wrapper.get('[role="group"][aria-label="Remove Example Belts?"]')
@@ -144,14 +145,14 @@ describe('managing a company', () => {
 
   it('only archives a researched company, and says when it is refused', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent, { 'PATCH /api/v1/competitors/twentebelt': () => problem(403, 'Forbidden') }), '/competitors')
+    const { wrapper } = await mountApp(api(sent, { 'PATCH /api/v1/competitors/twentebelt': () => problem(403, 'Forbidden') }), '/competitors/twentebelt')
     expect(wrapper.findAll('button').some((b) => b.text() === 'Remove')).toBe(false)
     await button(wrapper, 'Archive').trigger('click')
     await settle()
     expect(wrapper.text()).toContain('Archive this company?')
     await button(wrapper, 'Archive').trigger('click')
     await settle()
-    expect(wrapper.get('section[aria-labelledby="company-name"] [role="alert"]').text()).toBe('Only administrators can change the companies.')
+    expect(wrapper.get('[role="alert"]').text()).toBe('Only administrators can change the companies.')
   })
 
   it('restores an archived company', async () => {
@@ -162,7 +163,7 @@ describe('managing a company', () => {
         'GET /api/v1/competitors': () => json({ items: [twentebelt, archived] }),
         'GET /api/v1/competitors/example-belts': () => json({ competitor: archived, scans: [] }),
       }),
-      '/competitors?company=example-belts',
+      '/competitors/example-belts',
     )
     await button(wrapper, 'Restore').trigger('click')
     await settle()
@@ -270,7 +271,7 @@ describe('the administrator tools', () => {
     await settle()
     expect(sent).toEqual([{ method: 'POST', path: '/api/v1/competitors', body: { name: 'New Belts', url: 'https://new-belts.com' } }])
     expect(form.text()).toContain('Added New Belts.')
-    expect(router.currentRoute.value.query.company).toBe('new-belts')
+    expect(router.currentRoute.value.fullPath).toBe('/competitors/new-belts')
   })
 
   it('says why a company could not be added or the re-scan refused', async () => {

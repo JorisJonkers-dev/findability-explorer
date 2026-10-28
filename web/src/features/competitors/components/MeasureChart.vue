@@ -31,6 +31,7 @@ const style = (value: number | undefined, scale: number) => ({ width: `${String(
         :aria-label="aria(m)"
         class="grid min-h-16 w-full cursor-pointer gap-2 rounded-2xl border-2 bg-transparent px-3 py-2 text-left text-black hover:bg-white sm:grid-cols-[12rem_minmax(0,1fr)] sm:items-center sm:gap-4 stage:min-h-28 stage:grid-cols-[480px_minmax(0,1fr)]"
         :class="picked?.id === m.id ? 'border-black bg-white' : 'border-transparent'"
+        @click="id = m.id"
       >
         <span class="font-medium">{{ m.label }}</span>
         <span aria-hidden="true" class="flex flex-col gap-1.5">

@@ -53,7 +53,7 @@ const PROFILE_COLUMNS: readonly { key: ProfileColumn; label: string; first: Sort
   { key: 'score', label: 'Score', first: 'desc', numeric: true },
   { key: 'pages', label: 'Pages', first: 'desc', numeric: true },
   { key: 'tier', label: 'Tier', first: 'asc', numeric: false },
-  { key: 'map', label: 'Terminology map', first: 'desc', numeric: false },
+  { key: 'map', label: 'Search term list', first: 'desc', numeric: false },
   { key: 'found', label: 'Found', first: 'desc', numeric: false },
 ]
 </script>

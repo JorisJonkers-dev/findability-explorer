@@ -72,10 +72,10 @@ describe('a company’s search terms and history', () => {
     expect(group(wrapper, 'Eyelink (3)').attributes('aria-pressed')).toBe('true')
     const tables = wrapper.findAll('section[aria-labelledby="profile-title"] table')
     expect(tables.map((t) => t.get('caption').text())).toEqual(['English (2)', 'Dutch (1)'])
-    expect(tables[0]?.findAll('tbody tr')[0]?.text()).toContain('eyelink belts42.56\u00a0p.Productin the mapsince scan 1')
-    expect(tables[1]?.text()).toContain('not in the map, closest: draadogenbanden')
+    expect(tables[0]?.findAll('tbody tr')[0]?.text()).toContain('eyelink belts42.56\u00a0p.Producton the search term listsince scan 1')
+    expect(tables[1]?.text()).toContain('not on the search term list, closest: draadogenbanden')
     expect(tables[1]?.text()).toContain('new in this scan')
-    expect(tables[0]?.text()).toContain('not in the map')
+    expect(tables[0]?.text()).toContain('not on the search term list')
 
     await group(wrapper, 'Tri-Flex (0)').trigger('click')
     expect(wrapper.text()).toContain('The scan found no tri-flex terms.')

@@ -103,7 +103,7 @@ export type PhraseKind = 'all' | 'new' | 'inMap'
 export const PHRASE_KINDS: readonly { value: PhraseKind; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'new', label: 'New terms' },
-  { value: 'inMap', label: 'In the map' },
+  { value: 'inMap', label: 'Already on our list' },
 ]
 
 export type PhraseFilter = {

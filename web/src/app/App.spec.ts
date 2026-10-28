@@ -165,7 +165,8 @@ describe('the routes', () => {
     // A resolved location stands in for the normalized one the router passes after a navigation.
     const at = (path: string) => router.resolve(path) as RouteLocationNormalized
     expect(await scroll?.(at('/terms?q=a'), at('/terms'), null)).toBe(false)
-    expect(await scroll?.(at(`/scan/${ANALYSIS_ID}`), at('/competitors'), null)).toBe(false)
+    expect(await scroll?.(at(`/scan/${ANALYSIS_ID}`), at('/scan/other'), null)).toBe(false)
+    expect(await scroll?.(at(`/scan/${ANALYSIS_ID}`), at('/competitors'), null)).toEqual({ top: 0 })
     expect(await scroll?.(at('/competitors'), at('/terms'), null)).toEqual({ top: 0 })
     expect(await scroll?.(at('/competitors'), at('/terms'), { left: 0, top: 120 })).toEqual({ left: 0, top: 120 })
   })

@@ -18,13 +18,14 @@ describe('useTermMap', () => {
     const { state, sent } = mountComposable(useTermMap, (request) =>
       new URL(request.url).pathname === '/api/v1/competitors'
         ? json({ items: [competitor('Twentebelt'), competitor('Pelger GmbH', { id: 'pelger' })] })
-        : json(termSearch([term({ makers: [{ competitorId: 'twentebelt', fromScan: false }, { competitorId: 'pelger', fromScan: true }] })], { total: 146 })),
+        : json(termSearch([term({ makers: [{ competitorId: 'twentebelt', fromScan: false }, { competitorId: 'pelger', fromScan: true }] })], { total: 146, tribeltFrom: 'scan' })),
     )
     await flushPromises()
     expect([...sent].sort()).toEqual(['GET /api/v1/competitors', 'GET /api/v1/terms?limit=10000'])
     // Twentebelt is credited; Pelger only a scan found.
     expect(state.terms.value).toEqual([{ ...term({ makers: [{ competitorId: 'twentebelt', fromScan: false }, { competitorId: 'pelger', fromScan: true }] }), usedBy: ['Twentebelt', 'Pelger'], scanMakers: ['Pelger'] }])
     expect(state.total.value).toBe(146)
+    expect(state.tribeltFrom.value).toBe('scan')
   })
 
   it('describes a failed request', async () => {

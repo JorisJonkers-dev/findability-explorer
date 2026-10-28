@@ -12,15 +12,15 @@ test('an administrator adds a company, sees it, and deletes it again', async ({ 
   await form.getByLabel('Company name').fill(name)
   await form.getByLabel('Company website').fill(`https://e2e-${stamp}.example.com`)
   await form.getByRole('button', { name: 'Add company' }).click()
-  await expect(form.getByText(`Added ${name}.`)).toBeVisible()
-  await expect(page.getByRole('heading', { level: 2, name })).toBeVisible()
-  await expect(page).toHaveURL(new RegExp(`company=e2e-belts-${stamp}`))
+  // The added company opens on its own page.
+  await expect(page).toHaveURL(new RegExp(`/competitors/e2e-belts-${stamp}$`))
+  await expect(page.getByRole('heading', { level: 2, name: `${name} against Tribelt` })).toBeVisible()
   await expectAccessible(page)
 
   await page.getByRole('group', { name: 'Manage this company' }).getByRole('button', { name: 'Remove' }).click()
   await page.getByRole('button', { name: 'Delete with its 0 scans' }).click()
-  await expect(page.getByRole('heading', { level: 2, name })).toHaveCount(0)
   await expect(page).toHaveURL('/competitors')
+  await expect(page.getByRole('region', { name: 'The competitors' }).getByRole('link', { name: new RegExp(name) })).toHaveCount(0)
 })
 
 const SCAN_1 = '11111111-1111-4111-8111-111111111111'
@@ -92,7 +92,7 @@ test('a company’s search terms, scan history and comparison render', async ({ 
   // so a company page still asking for its data would be answered with scans it cannot fetch (a 404).
   await page.waitForLoadState('networkidle')
   await stubHistory(page)
-  await page.getByRole('link', { name: 'See how it changed over time' }).first().click()
+  await page.getByRole('link', { name: 'See its scan history' }).click()
   await expect(page).toHaveURL('/competitors/twentebelt/history')
   await expect(page).toHaveTitle('Over time · Findability Explorer')
   await expect(page.getByRole('heading', { level: 1, name: 'How Twentebelt changed, scan by scan.' })).toBeVisible()

@@ -3,7 +3,7 @@ import { expect, expectAccessible, test } from './fixtures'
 test('a belt family opens from Search terms, with its terms, sellers and a way back', async ({ page }) => {
   await page.goto('/terms/families/eyelink')
   await expect(page).toHaveTitle('Belt family · Findability Explorer')
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Eyelink.')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\w+ competitors? sells? eyelink belts\.$/)
   await expect(page.getByRole('table').getByRole('rowheader')).not.toHaveCount(0)
   await expect(page.getByRole('list', { name: 'Sellers' }).getByRole('listitem')).not.toHaveCount(0)
   await expectAccessible(page)
@@ -11,7 +11,7 @@ test('a belt family opens from Search terms, with its terms, sellers and a way b
   await expect(page).toHaveURL('/terms')
 })
 
-test('the old product addresses go to Search terms', async ({ page }) => {
+test('the old product addresses go to Search terms and its families', async ({ page }) => {
   await page.goto('/products')
   await expect(page).toHaveURL('/terms')
   await page.goto('/products/eyelink')

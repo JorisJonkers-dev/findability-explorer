@@ -4,7 +4,7 @@ test.skip(({ isMobile }) => isMobile, 'the stage is for large windows; the phone
 
 // Plain pages: the overview, a number and Buyers scroll like a page, outside the stage.
 const PLAIN = ['/', '/buyers', '/numbers/aiShareOfVoice']
-const VIEWS = ['/', '/ai-search', '/ai-search/answers', '/ai-search/readiness', '/competitors', '/terms', '/terms/families/eyelink', '/recommendations', '/buyers', '/numbers/aiShareOfVoice']
+const VIEWS = ['/', '/ai-search', '/ai-search/answers', '/ai-search/readiness', '/competitors', '/terms', '/terms/all', '/terms/families/eyelink', '/recommendations', '/buyers', '/numbers/aiShareOfVoice']
 
 // The stage grows to the window's aspect, so a window that is not 16:9 has no white bands.
 for (const viewport of [

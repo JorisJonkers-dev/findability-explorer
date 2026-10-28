@@ -1,5 +1,6 @@
 import type { PromptAnswer, PromptFamily, PromptMode, PromptRetryPlan, PromptRun, PromptScope } from '../../../infrastructure/api/types.gen'
-import { FAMILIES, familyName, providerName, SCOPES, scopeName } from './results'
+import { oxford } from '../../../shared/words'
+import { costLabel, FAMILIES, familyName, providerName, SCOPES, scopeName } from './results'
 
 /** Tribelt's id among the companies. */
 export const TRIBELT_ID = 'tribelt'
@@ -18,16 +19,16 @@ export const SQUARE = 'mx-auto flex size-9 shrink-0 items-center justify-center 
 
 /** How each place looks and what the legend says about it. */
 export const PLACES: Record<Place, { label: string; cell: string }> = {
-  first: { label: 'Tribelt named first', cell: 'border-orange bg-orange text-black' },
-  top3: { label: 'Named 2nd or 3rd', cell: 'border-orange-soft bg-orange-soft text-black' },
-  later: { label: 'Named 4th or later', cell: 'border-orange-soft bg-orange-pale text-ink-2' },
-  unplaced: { label: 'Named, place unknown', cell: 'border-orange-soft bg-white text-ink-2' },
-  none: { label: 'Not named', cell: 'border-grey bg-grey text-muted' },
-  missing: { label: 'No answer. The model gave none, or it could not be read.', cell: 'border-dashed border-silver bg-white text-orange-ink' },
+  first: { label: 'Tribelt is named first', cell: 'border-orange bg-orange text-black' },
+  top3: { label: 'Tribelt is named second or third', cell: 'border-orange-soft bg-orange-soft text-black' },
+  later: { label: 'Tribelt is named fourth or later', cell: 'border-orange-soft bg-orange-pale text-ink-2' },
+  unplaced: { label: 'Tribelt is named, but not in a ranked list', cell: 'border-orange-soft bg-white text-ink-2' },
+  none: { label: 'Tribelt is not named', cell: 'border-grey bg-grey text-muted' },
+  missing: { label: 'No answer came back', cell: 'border-dashed border-silver bg-white text-orange-ink' },
 }
 
 /** The mark of each place that has no number in it. */
-const SYMBOLS: Record<Exclude<Place, Ranked>, string> = { unplaced: '?', none: '–', missing: '✕' }
+const SYMBOLS: Record<Exclude<Place, Ranked>, string> = { unplaced: '•', none: '', missing: '–' }
 
 /** The legend: one example square per place, in the legend's order. */
 export const LEGEND: readonly Square[] = [
@@ -78,27 +79,27 @@ export function ordinal(n: number): string {
   return `${String(n)}${suffix}`
 }
 
-/** What a square says in words: "Tribelt named 4th", "Tribelt not named". */
+/** What a square says in words: "Tribelt is named 4th", "Tribelt is not named". */
 export function saysOf(s: Square): string {
   switch (s.place) {
     case 'first':
-      return 'Tribelt named first'
+      return 'Tribelt is named first'
     case 'top3':
     case 'later':
-      return `Tribelt named ${ordinal(s.position)}`
+      return `Tribelt is named ${ordinal(s.position)}`
     case 'unplaced':
-      return 'Tribelt named, place unknown'
+      return 'Tribelt is named, but not in a ranked list'
     case 'none':
-      return 'Tribelt not named'
+      return 'Tribelt is not named'
     case 'missing':
-      return 'No answer, the model gave none or it could not be read'
+      return 'No answer came back'
   }
 }
 
 /** Each search mode's column, as its header shows it and in full. */
 export const MODE_COLUMNS: Record<PromptMode, { short: string; long: string }> = {
-  knowledge: { short: 'Own', long: 'Own knowledge' },
-  web: { short: 'Web', long: 'With web search' },
+  knowledge: { short: 'Own', long: 'from its own knowledge' },
+  web: { short: 'Web', long: 'with web search' },
 }
 
 /** A grid column: one provider in one mode. */
@@ -125,9 +126,22 @@ export function rowsOf(answers: readonly PromptAnswer[], scope: PromptScope | 'a
   return [...rows.values()].sort((a, b) => order(a.family, a.scope) - order(b.family, b.scope))
 }
 
-/** A square's full description, for hover and screen readers: "OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 4th". */
+const GRID_FAMILIES: Partial<Record<PromptFamily, string>> = { tri_flex_turn_curve: 'Tri-Flex', other: 'Other belts' }
+const GRID_SCOPES: Partial<Record<PromptScope, string>> = { twente: 'Twente, in Dutch', netherlands: 'Netherlands, in Dutch', germany: 'Germany, in German' }
+
+/** A belt family as the answers page names it. */
+export function gridFamily(family: PromptFamily): string {
+  return GRID_FAMILIES[family] ?? familyName(family)
+}
+
+/** A scope as the answers page names it: "Twente, in Dutch". */
+export function gridScope(scope: PromptScope): string {
+  return GRID_SCOPES[scope] ?? scopeName(scope)
+}
+
+/** A square's full description, for hover and screen readers: "OpenAI, from its own knowledge, Eyelink, Twente, in Dutch: Tribelt is named 4th." */
 export function cellLabel(row: Pick<Row, 'family' | 'scope'>, column: Pick<Column, 'name' | 'mode'>, square: Square): string {
-  return `${column.name}, ${MODE_COLUMNS[column.mode].long.toLowerCase()}, ${familyName(row.family)}, ${scopeName(row.scope)}: ${saysOf(square)}`
+  return `${column.name}, ${MODE_COLUMNS[column.mode].long}, ${gridFamily(row.family)}, ${gridScope(row.scope)}: ${saysOf(square)}.`
 }
 
 /** The key of one answer in a run: its question, provider and mode. */
@@ -211,15 +225,29 @@ export function mostNamed(answers: readonly PromptAnswer[], shown = 8): Named[] 
   return top
 }
 
-/** The page's headline, from who the answers name most overall and in Twente. */
-export function gridHeadline(answers: readonly PromptAnswer[], nameOf: (id: string) => string): string {
-  const counted = answers.filter(counts)
-  if (counted.length === 0) return 'Do AI assistants name Tribelt?'
+/** The page's headline: the company the answers name most. */
+export function answersHeadline(answers: readonly PromptAnswer[], nameOf: (id: string) => string): string {
+  if (answers.filter(counts).length === 0) return 'Do AI assistants name Tribelt?'
   const leader = ranked(answers)[0] as Named
-  const twente = ranked(counted.filter((a) => a.scope === 'twente'))[0] as Named
-  if (leader.tribelt) return 'AI answers name Tribelt more than any competitor.'
-  if (twente.tribelt && twente.share > 0) return `Twente buyers hear of Tribelt. Everyone else hears of ${nameOf(leader.id)}.`
-  return `AI answers name ${nameOf(leader.id)} most.`
+  return `${leader.tribelt ? 'Tribelt' : nameOf(leader.id)} is the company AI responses list most often.`
+}
+
+/** The sentence a picked answer's square gets in the answer panel: what the answer does with Tribelt. */
+export function verdictOf(s: Square): string {
+  switch (s.place) {
+    case 'first':
+      return 'This answer names Tribelt first.'
+    case 'top3':
+      return 'This answer names Tribelt second or third.'
+    case 'later':
+      return 'This answer names Tribelt fourth or later.'
+    case 'unplaced':
+      return 'This answer names Tribelt, but not in a ranked list.'
+    case 'none':
+      return 'This answer does not name Tribelt.'
+    case 'missing':
+      return 'No answer came back for this question.'
+  }
 }
 
 /** The start of an answer, cut at a word. */
@@ -316,4 +344,14 @@ export function unknownLine(unknown: number): string | null {
 /** Whether the answer was given but could not be read, so it can be read again without asking again. */
 export function unread(a: PromptAnswer | undefined): boolean {
   return a !== undefined && a.failure === undefined && a.extraction?.failed === true
+}
+
+/** The three figures under the headline: the answers in the run, the providers asked, and what the run cost. */
+export function runFigures(run: Pick<PromptRun, 'answered' | 'models' | 'costUsd'>): { big: string; text: string }[] {
+  const names = run.models.map((m) => providerName(m.provider))
+  return [
+    { big: String(run.answered), text: run.answered === 1 ? 'answer in the newest run' : 'answers in the newest run' },
+    { big: String(names.length), text: `${names.length === 1 ? 'provider' : 'providers'} asked: ${oxford(names)}` },
+    { big: costLabel(run.costUsd), text: 'about what one run costs' },
+  ]
 }

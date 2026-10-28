@@ -10,9 +10,9 @@ export const CHECK_LABELS: Record<ReadinessCheckKind, string> = {
   llmsTxt: 'Has llms.txt',
   llmsFullTxt: 'Has llms-full.txt',
   markdown: 'Has Markdown pages',
-  sitemapLanguages: 'Sitemap in Dutch, German and English',
-  organization: 'Organization structured data',
-  product: 'Product structured data',
+  sitemapLanguages: 'Sitemap in Dutch, German, and English',
+  organization: 'Organization markup',
+  product: 'Product markup',
 }
 
 /**

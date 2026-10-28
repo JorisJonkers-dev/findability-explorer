@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PromptAnswer, PromptMode, PromptRun, PromptScope } from '../../../infrastructure/api/types.gen'
-import { byKey, cellLabel, type Column, columnsOf, keyOf, LEGEND, markOf, MODE_COLUMNS, MODE_FILTERS, PLACES, type Row, rowsOf, SCOPE_FILTERS, SQUARE, squareOf } from '../domain/grid'
-import { familyName, scopeName } from '../domain/results'
+import { byKey, cellLabel, gridFamily, gridScope, type Column, columnsOf, keyOf, LEGEND, markOf, MODE_COLUMNS, MODE_FILTERS, PLACES, type Row, rowsOf, SCOPE_FILTERS, SQUARE, squareOf } from '../domain/grid'
 
 const props = defineProps<{
   run: PromptRun
@@ -15,7 +14,6 @@ const emit = defineEmits<{ mode: [PromptMode | 'all']; scope: [PromptScope | 'al
 
 const columns = computed(() => columnsOf(props.run, props.mode))
 const providers = computed(() => columnsOf(props.run, 'knowledge'))
-const modes = computed(() => (props.mode === 'all' ? (['knowledge', 'web'] as const) : [props.mode]))
 const found = computed(() => byKey(props.answers))
 const grid = computed(() => rowsOf(props.answers, props.scope).map((row) => ({ row, cells: columns.value.map((c) => cellOf(row, c)) })))
 
@@ -56,20 +54,16 @@ function cellOf(row: Row, column: Column) {
         </button>
       </div>
     </div>
-    <ul aria-label="Legend" class="m-0 flex list-none flex-wrap items-center gap-x-5 gap-y-2 p-0 text-sm text-ink-2 stage:gap-x-8 stage:text-[24px]">
+    <ul aria-label="What the squares mean" class="m-0 flex list-none flex-wrap items-center gap-x-5 gap-y-2 p-0 text-sm text-ink-2 stage:gap-x-8 stage:text-[24px]">
       <li v-for="s in LEGEND" :key="s.place" class="inline-flex items-center gap-2">
         <span aria-hidden="true" :class="[SQUARE, PLACES[s.place].cell]">{{ markOf(s) }}</span>
         {{ PLACES[s.place].label }}
-      </li>
-      <li v-for="m in modes" :key="m" class="inline-flex items-center gap-2">
-        <span aria-hidden="true" class="text-xs font-medium text-muted stage:text-[20px]">{{ MODE_COLUMNS[m].short }}</span>
-        {{ MODE_COLUMNS[m].long }}
       </li>
     </ul>
     <div class="overflow-x-auto stage:min-h-0 stage:overflow-y-auto">
       <!-- Fixed layout: every answer column is equally wide, however long a model's name. -->
       <table class="w-full min-w-[640px] table-fixed border-separate border-spacing-1 text-sm stage:min-w-0 stage:border-spacing-2 stage:text-[24px]">
-        <caption class="sr-only">Tribelt's place in each answer, by question, provider and search mode</caption>
+        <caption class="sr-only">Where each answer names Tribelt, by question, provider and search mode</caption>
         <colgroup>
           <col class="w-44 stage:w-[400px]" />
           <col v-for="c in columns" :key="`${c.provider}-${c.mode}`" />
@@ -98,7 +92,7 @@ function cellOf(row: Row, column: Column) {
         <tbody>
           <tr v-for="g in grid" :key="g.row.promptId">
             <th scope="row" class="truncate pr-3 text-left font-medium whitespace-nowrap" :title="g.row.question">
-              {{ familyName(g.row.family) }}<span class="block truncate text-xs font-normal text-muted stage:text-[20px]">{{ scopeName(g.row.scope) }}</span>
+              {{ gridFamily(g.row.family) }}<span class="block truncate text-xs font-normal text-muted stage:text-[20px]">{{ gridScope(g.row.scope) }}</span>
             </th>
             <td v-for="cell in g.cells" :key="cell.key" class="p-0">
               <button

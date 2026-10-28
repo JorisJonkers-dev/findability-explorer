@@ -139,7 +139,7 @@ func TestTheAutomaticChecksSayWhatIsInPlaceAndWhatIsMissing(t *testing.T) {
 		{
 			"products alone", domain.CheckStructuredData,
 			domain.Readiness{Product: true, StructuredData: []string{"ProductModel"}},
-			[]domain.Part{{Name: "Product markup", Present: true}, {Name: "FAQ markup"}},
+			[]domain.Part{{Name: "Product structured data", Present: true}, {Name: "FAQ structured data"}},
 		},
 		{"a manual improvement", domain.CheckNone, domain.Readiness{Markdown: true}, nil},
 	} {

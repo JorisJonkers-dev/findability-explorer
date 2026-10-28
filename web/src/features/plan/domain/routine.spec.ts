@@ -94,6 +94,6 @@ describe('an improvement in words', () => {
     expect(foundLine([part('a Dutch sitemap', true), part('a German sitemap', false), part('an English sitemap', true)])).toBe(
       'The latest scan found a Dutch sitemap and an English sitemap, but not a German sitemap.',
     )
-    expect(foundLine([part('Product markup', false), part('FAQ markup', true)])).toBe('The latest scan found FAQ markup, but not Product markup.')
+    expect(foundLine([part('Product structured data', false), part('FAQ structured data', true)])).toBe('The latest scan found FAQ structured data, but not Product structured data.')
   })
 })

@@ -23,7 +23,7 @@ describe('the values', () => {
   })
 
   it('label the readiness checks with how many there are, as the server counts them', () => {
-    expect(measureLabel('readinessChecks', 5)).toBe('AI readiness checks passed out of five, on the newest scan')
+    expect(measureLabel('readinessChecks', 5)).toBe('AI readiness checks passed, out of five')
     expect(measureLabel('termsUsed', 5)).toBe(MEASURES.termsUsed.label)
   })
 

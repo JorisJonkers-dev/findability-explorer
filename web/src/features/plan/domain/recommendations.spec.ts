@@ -30,6 +30,7 @@ describe('scores in words', () => {
     expect([1, 3, 5].map(effortText)).toEqual(['A few hours', 'A few days', 'Several weeks'])
     expect(benefitText(9)).toBe('')
     expect(effortText(0)).toBe('')
+    expect(effortText(9)).toBe('')
   })
 
   it('fills as many squares as the score', () => {

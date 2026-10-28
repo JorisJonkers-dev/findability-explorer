@@ -14,12 +14,13 @@ test('the poster renders and is accessible', async ({ page }) => {
   await expect(page).toHaveTitle('Overview · Findability Explorer')
   const sections = page.getByRole('navigation', { name: 'Sections' })
   await expect(sections.getByRole('link')).toHaveCount(5)
-  // The live figures: the research's 44 competitors and the map's 90 terms in Dutch, German and English.
+  // The live figures: the competitors on the list now (the research's 44 and any added since) and
+  // the map's 90 terms in Dutch, German and English.
   await expect(sections.getByRole('link', { name: /^Catching up: (\d+|…) measures? where Tribelt trails/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^AI search: .* of AI answers name Tribelt/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^The plan: 52 weekly checks a year/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^Buyers/ })).toHaveCount(0)
-  await expect(sections.getByRole('link', { name: /^Competitors: 44 competitors/ })).toBeVisible()
+  await expect(sections.getByRole('link', { name: /^Competitors: \d+ competitors on our list sell the same belts in Europe/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^Search terms: 90 search terms in 3 languages\. Our research found 30 of them for Tribelt./ })).toBeVisible()
   await expectAccessible(page)
 })

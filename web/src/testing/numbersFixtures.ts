@@ -17,11 +17,11 @@ export function planFixture(): Plan {
       { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, max: 1, met: false },
       { target: 'twenteShareOfVoice', now: 0.2, goal: 0.5, max: 1, met: false },
       { target: 'citationShare', now: 0.1, goal: 0.5 },
-      { target: 'readinessChecks', now: 3, goal: 5, max: 5, met: false },
+      { target: 'readinessChecks', now: 3, goal: 8, max: 8, met: false },
       { target: 'termsUsed', now: 45, goal: 35, met: true },
     ],
     tribeltTermsFrom: 'scan',
-    readinessChecks: 5,
+    readinessChecks: 8,
     eyeOn: [
       { why: 'mostNamed', leader: ashworth },
       { why: 'twente', leader: { competitorId: 'twentebelt', name: 'Twentebelt', value: 0.6 } },
@@ -35,12 +35,12 @@ export function standingsFixture(): Standings {
     measures: [
       { measure: 'aiShareOfVoice', tribelt: 0.24, median: 0.1, leader: ashworth, competitors: 4, trails: true, leads: false },
       { measure: 'citationShare', tribelt: 0.1, median: 0.05, leader: { competitorId: 'martens', name: 'Märtens', value: 0.3 }, competitors: 3, trails: true, leads: false },
-      { measure: 'readinessChecks', tribelt: 3, median: 2, leader: { competitorId: 'martens', name: 'Märtens', value: 5 }, competitors: 4, trails: true, leads: false },
+      { measure: 'readinessChecks', tribelt: 3, median: 2, leader: { competitorId: 'martens', name: 'Märtens', value: 8 }, competitors: 4, trails: true, leads: false },
       { measure: 'termsUsed', tribelt: 45, median: 20, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 40 }, competitors: 4, trails: false, leads: true },
     ],
     trailing: 3,
     open: [],
-    readinessChecks: 5,
+    readinessChecks: 8,
     tribeltTermsFrom: 'scan',
   }
 }

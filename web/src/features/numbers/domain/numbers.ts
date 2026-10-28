@@ -81,7 +81,7 @@ export function pathOfTarget(target: PlanTarget): string {
 /** What the page has to work with: the plan, the standings and how many readiness checks there are. */
 export type Facts = { plan: Plan; standings: Standings }
 
-/** A value as the page writes it: "24%", "3 of 5", "45". */
+/** A value as the page writes it: "24%", "3 of 8", "45". */
 export function valueText(target: PlanTarget, value: number, readinessChecks: number): string {
   const def = DEFINITIONS[target]
   const text = formatValue(def.unit, value)

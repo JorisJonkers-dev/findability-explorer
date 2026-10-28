@@ -25,7 +25,7 @@ describe('the Overview', () => {
     expect(rows[0]?.text()).toContain('24%')
     expect(rows[0]?.text()).toContain('Target 40%')
     expect(rows[0]?.text()).toContain('Improved by recommendations 1 and 4')
-    expect(rows[3]?.text()).toContain('3 of 5')
+    expect(rows[3]?.text()).toContain('3 of 8')
   })
 
   it('shows a card for each section, and a way to the Buyers page', async () => {

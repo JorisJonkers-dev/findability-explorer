@@ -64,7 +64,7 @@ const groups = computed(() => checkGroups(aiSearch.value, aiSearch.value?.readin
 const best = computed(() => bestSites(aiSearch.value?.ranking ?? []))
 const others = computed(() => Math.max(0, sites.value - best.value.sites.length))
 
-// The check picked in the bar list, and the sites whose five checks are open; the first check Tribelt fails is open to start with.
+// The check picked in the bar list, and the sites whose checks are open; the first check Tribelt fails is open to start with.
 const picked = ref<ReadinessCheckKind | undefined>(undefined)
 const allChecks = computed(() => groups.value.flatMap((g) => g.checks))
 const pickedCheck = computed(() => allChecks.value.find((c) => c.kind === picked.value) ?? allChecks.value.find((c) => c.tribelt === false) ?? allChecks.value[0])
@@ -137,7 +137,7 @@ function pick(r: AiReadinessRow): void {
     </template>
     <div v-if="!isLoading && !error" class="flex flex-col gap-3">
       <div class="flex flex-col gap-3 stage:items-end stage:gap-5">
-        <p class="m-0 max-w-[60ch] text-sm text-muted text-pretty stage:max-w-[1500px] stage:text-right stage:text-[26px]">{{ scanNote(rows, sites) }}</p>
+        <p v-if="scanNote(rows)" class="m-0 max-w-[60ch] text-sm text-muted text-pretty stage:max-w-[1500px] stage:text-right stage:text-[26px]">{{ scanNote(rows) }}</p>
         <div v-if="isAdmin" class="flex flex-wrap items-center gap-3 stage:flex-row-reverse stage:gap-6">
           <button
             type="button"

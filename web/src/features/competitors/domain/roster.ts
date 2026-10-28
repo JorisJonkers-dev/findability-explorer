@@ -18,7 +18,7 @@ function advised(r: AiReadiness, check: string): boolean {
 
 /**
  * A site's eight readiness chips, one for each check the score counts (ADR-0015): crawlers (for
- * search and for training), sitemap, llms.txt, llms-full.txt, Markdown, Organization markup, language
+ * search and for training), sitemap, llms.txt, llms-full.txt, Markdown, structured data about the company, language
  * versions and a sitemap in every language; none before a scan read it. The score is these chips
  * added up, so what a page shows and what it counts cannot differ.
  */
@@ -33,7 +33,7 @@ export function chipsOf(r: AiReadiness | undefined): Chip[] {
     chip('llms.txt', r.llmsTxt.present ? 'yes' : 'no', 'Has llms.txt', 'No llms.txt'),
     chip('llms-full', r.llmsFullTxt ? 'yes' : 'no', 'Has llms-full.txt', 'No llms-full.txt'),
     chip('Markdown', r.markdown ? 'yes' : 'no', 'Has Markdown pages', 'No Markdown pages'),
-    chip('Organization', advised(r, 'organization') ? 'yes' : 'no', 'Has Organization markup on its home page', 'No Organization markup on its home page'),
+    chip('Structured data', advised(r, 'organization') ? 'yes' : 'no', 'Has structured data about the company on its home page', 'No structured data about the company on its home page'),
     chip('languages', advised(r, 'languages') ? 'yes' : 'no', 'Offers its pages in Dutch, German, and English', 'Does not offer its pages in Dutch, German, and English'),
     chip('sitemap languages', advised(r, 'sitemapLanguages') ? 'yes' : 'no', 'Its sitemaps list pages in Dutch, German, and English', 'Its sitemaps do not list pages in all three languages'),
   ]

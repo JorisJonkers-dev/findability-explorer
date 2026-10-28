@@ -11,8 +11,8 @@ export const CHECK_WHAT: Record<ReadinessCheckKind, string> = {
   markdown: 'A Markdown version of a page gives AI tools the facts without the menus and scripts around them.',
   languages: 'The site offers its pages in Dutch, German, and English, the three languages Tribelt’s buyers search in.',
   sitemapLanguages: 'The sitemap lists pages in all three languages Tribelt’s buyers search in.',
-  organization: 'Markup on the home page that tells search engines the company’s name, address, and website.',
-  product: 'Markup on a product page that tells search engines and AI tools what the product is and what it does.',
+  organization: 'Structured data on the home page that tells search engines the company’s name, address, and website.',
+  product: 'Structured data on a product page that tells search engines and AI tools what the product is and what it does.',
 }
 
 /** The recommendation (an improvement of the plan) that fixes each check, by the improvement's id. */

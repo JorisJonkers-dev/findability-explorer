@@ -33,7 +33,7 @@ describe('valueText', () => {
   it('writes shares, counts and readiness checks', () => {
     expect(valueText('aiShareOfVoice', 0.24, 5)).toBe('24%')
     expect(valueText('citationShare', 0.36, 8)).toBe('36%')
-    expect(valueText('readinessChecks', 3, 5)).toBe('3 of 5')
+    expect(valueText('readinessChecks', 3, 8)).toBe('3 of 8')
     expect(valueText('termsUsed', 1234, 5)).toBe('1,234')
   })
 })
@@ -74,7 +74,7 @@ describe('numberRows', () => {
   })
 
   it('writes the readiness checks out of the total', () => {
-    expect(numberRows(facts())[3]).toMatchObject({ now: '3 of 5', goal: '5 of 5' })
+    expect(numberRows(facts())[3]).toMatchObject({ now: '3 of 8', goal: '8 of 8' })
   })
 
   it('says that a target is met, and that Tribelt leads', () => {
@@ -142,10 +142,10 @@ describe('numberDetail', () => {
     expect(d?.figures[1]).toMatchObject({ big: '30%', title: 'Märtens, the leader' })
   })
 
-  it('writes the readiness checks as "3 of 5"', () => {
+  it('writes the readiness checks as "3 of 8"', () => {
     const d = numberDetail(facts(), 'readinessChecks')
-    expect(d?.figures[0]?.big).toBe('3 of 5')
-    expect(d?.bars.find((b) => b.label === 'Typical competitor')?.display).toBe('2 of 5')
+    expect(d?.figures[0]?.big).toBe('3 of 8')
+    expect(d?.bars.find((b) => b.label === 'Typical competitor')?.display).toBe('2 of 8')
   })
 
   it('says that a target is met and that Tribelt leads', () => {

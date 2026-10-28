@@ -1,22 +1,33 @@
 import { expect, expectAccessible, test } from './fixtures'
 
-test('the recommendations tick an improvement off and back, and keeps the tick', async ({ page }, info) => {
-  // The projects share one database, so each ticks an improvement of its own.
-  const title = info.project.name === 'phone' ? /One page per belt family/ : /Get listed where answers find sources/
+test('the recommendations are ranked, and an administrator marks one as done and undoes it', async ({ page }, info) => {
+  // The projects share one database, so each marks a recommendation of its own.
+  const mine = info.project.name === 'phone' ? { id: 'family-pages', title: 'One page per belt family in each language' } : { id: 'listings', title: 'Get listed where answers find sources' }
   await page.goto('/recommendations')
-  const improvements = page.getByRole('list', { name: 'Improvement checklist' })
-  await expect(improvements.locator(':scope > li')).toHaveCount(8)
-  // Each one says how to do it.
-  await improvements.locator(':scope > li').first().getByText('How to do it').click()
-  await expect(improvements.locator(':scope > li').first().locator('details ol li')).toHaveCount(3)
+  await expect(page.getByRole('heading', { level: 1, name: 'Start with the changes that help Tribelt most.' })).toBeVisible()
+  // The best value comes first; the others follow, and each dot of the chart is a button.
+  await expect(page.getByText('Do this first')).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Recommendations' }).locator(':scope > li').first()).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Benefit against effort' }).getByRole('button').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Biggest benefit' }).click()
+  await expect(page.getByRole('button', { name: 'Biggest benefit' })).toHaveAttribute('aria-pressed', 'true')
   await expectAccessible(page)
-  const box = page.getByRole('checkbox', { name: title })
-  await box.check()
-  await expect(improvements.locator(':scope > li').filter({ hasText: title })).toContainText('Ticked off by e2e.')
+
+  await page.goto(`/recommendations/${mine.id}`)
+  await expect(page).toHaveURL(`/recommendations/${mine.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: mine.title })).toBeVisible()
+  await expect(page.getByRole('list').getByRole('button', { name: /^\d/ }).first()).toBeVisible()
+  await expectAccessible(page)
+
+  await page.getByRole('button', { name: 'Mark as done' }).click()
+  await expect(page.getByRole('status')).toContainText('Marked as done')
   await page.reload()
-  await expect(box).toBeChecked()
-  await box.uncheck()
-  await expect(box).not.toBeChecked()
-  // A scan decides an automatic one; it cannot be ticked by hand.
-  await expect(page.getByRole('checkbox', { name: /Add llms.txt and llms-full.txt/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Undo, it is not done' })).toBeVisible()
+  await page.getByRole('button', { name: 'Undo, it is not done' }).click()
+  await expect(page.getByRole('button', { name: 'Mark as done' })).toBeVisible()
+
+  // A scan decides an automatic one; it cannot be marked by hand.
+  await page.goto('/recommendations/llms-files')
+  await expect(page.getByText('The latest scan of tribelt.nl checks this one.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Mark as done' })).toHaveCount(0)
 })

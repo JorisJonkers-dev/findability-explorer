@@ -11,9 +11,9 @@ func Families() []string {
 	return []string{"eyelink", "open_spiral", "closed_spiral", "tri_flex_turn_curve", "other"}
 }
 
-// MapTerm is a term of the terminology map: its family and intent tier, how many companies the
-// map credits with it, whether tribelt.nl uses it, and the companies whose newest finished scan
-// found it.
+// MapTerm is a term of the terminology map: its family and intent tier, how many competitors on
+// the list use it (terminology's SiteUse.Makers), whether tribelt.nl uses it, and the companies
+// whose newest finished scan found it.
 type MapTerm struct {
 	Text     string
 	Language string

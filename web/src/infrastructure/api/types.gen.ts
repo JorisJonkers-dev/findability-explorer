@@ -32,9 +32,13 @@ export type Term = {
     family: BeltFamily;
     tier: IntentTier;
     /**
-     * The companies that use the term.
+     * The companies the desk research or the review credits with the term, by the names the map credits them under. Every count of a term's companies counts makers instead.
      */
     usedBy: Array<string>;
+    /**
+     * The competitors on the list now (not archived, researched or added since) that use the term - those its credits name and those whose newest finished scan found it, by id. A credit to a company no longer on the list, or to Tribelt, makes no maker. The search sets it; every page that counts or lists a term's competitors reads it.
+     */
+    makers?: Array<TermMaker>;
     /**
      * The companies whose newest finished scan found the term on their site, by id. They use it too, though the desk research or the review did not name them; absent when no scan found it.
      */
@@ -47,6 +51,17 @@ export type Term = {
      * The page the term was taken from.
      */
     source: string;
+};
+
+/**
+ * A competitor on the list that uses a term.
+ */
+export type TermMaker = {
+    competitorId: CompetitorId;
+    /**
+     * True when only its newest scan says so, and no credit names it.
+     */
+    fromScan: boolean;
 };
 
 /**
@@ -1315,6 +1330,25 @@ export type SitemapSummary = {
      * The ones of Dutch, German and English the addresses cover, by path or hreflang.
      */
     languages: Array<string>;
+    coverage?: SitemapCoverage;
+};
+
+/**
+ * How much of the site its sitemaps cover - of the pages the scan read on the site, how many the sitemaps list (ADR-0013). Absent until the scan has read its pages, for a scan that read none, and for a readiness recorded before coverage was measured; scanning the site again, or checking its readiness again, measures it.
+ */
+export type SitemapCoverage = {
+    /**
+     * How many different pages the scan read on the site.
+     */
+    pages: number;
+    /**
+     * How many of those pages the sitemaps list.
+     */
+    listed: number;
+    /**
+     * The share of the pages read that the sitemaps list, listed over pages.
+     */
+    share: number;
 };
 
 /**
@@ -1521,6 +1555,40 @@ export type AiSearchSummary = {
      * How many providers the newest run asked; 0 before any run.
      */
     providers: number;
+    readinessChecks: ReadinessCheckCount;
+    /**
+     * Each readiness check, the scored ones first, with how many of the sites with a recorded AI readiness pass it and whether tribelt.nl does.
+     */
+    checks: Array<ReadinessCheckSummary>;
+};
+
+/**
+ * How many readiness checks the readiness score counts, so the most a site can score. Every page that writes "out of" this number reads it here.
+ */
+export type ReadinessCheckCount = number;
+
+/**
+ * One thing a site's AI readiness is checked for - every AI crawler let in, a sitemap, llms.txt, llms-full.txt and Markdown pages are scored; sitemaps in Dutch, German and English, Organization and Product structured data are checked beside them.
+ */
+export type ReadinessCheckKind = 'crawlers' | 'sitemap' | 'llmsTxt' | 'llmsFullTxt' | 'markdown' | 'sitemapLanguages' | 'organization' | 'product';
+
+/**
+ * How many of the sites with a recorded AI readiness pass one check in full.
+ */
+export type ReadinessCheckSummary = {
+    check: ReadinessCheckKind;
+    /**
+     * True for a check the readiness score counts.
+     */
+    scored: boolean;
+    /**
+     * How many of the sites pass it.
+     */
+    passing: number;
+    /**
+     * Whether tribelt.nl passes it; absent before a scan of tribelt.nl recorded its readiness.
+     */
+    tribelt?: boolean;
 };
 
 /**
@@ -1612,6 +1680,10 @@ export type WatchedNumber = {
      */
     goal: number;
     /**
+     * The most the number can be - 1 for a share, the readiness checks for the readiness score; absent for a count, which has no most. A target may not exceed it.
+     */
+    max?: number;
+    /**
      * Whether the value now has reached the target. A met target is no goal any more until an administrator raises it.
      */
     met?: boolean;
@@ -1651,6 +1723,7 @@ export type Plan = {
      */
     eyeOn: Array<EyeOn>;
     tribeltTermsFrom?: TermsSource;
+    readinessChecks: ReadinessCheckCount;
 };
 
 /**
@@ -1717,7 +1790,7 @@ export type ProductTerm = {
     language: string;
     tier: IntentTier;
     /**
-     * How many companies use it.
+     * How many competitors on the list now use it - the makers the term search gives it.
      */
     usedBy: number;
     /**
@@ -1825,9 +1898,9 @@ export type ProductsOverview = {
 };
 
 /**
- * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapCoverage the share of the pages its newest scan read that its sitemaps list (no value for a scan that did not measure it), and termsUsed the map terms its newest scan found.
  */
-export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapPages' | 'termsUsed';
+export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapCoverage' | 'termsUsed';
 
 /**
  * The competitor with the best value on a measure.
@@ -1893,6 +1966,7 @@ export type Standings = {
      */
     runStartedAt?: string;
     tribeltTermsFrom?: TermsSource;
+    readinessChecks: ReadinessCheckCount;
 };
 
 /**
@@ -1943,25 +2017,21 @@ export type OverviewLanguage = {
 };
 
 /**
- * The competitors the desk research found, and which of Tribelt's belt families they offer.
+ * The competitors on the list now, and which of Tribelt's belt families they offer.
  */
 export type OverviewCompetitors = {
     /**
-     * How many competitors the desk research found; a company added later, a group company and the mirror do not count.
+     * How many competitors the list holds now, not archived, whether the desk research found them or they were added since; a group company and the mirror do not count. Every count of the competitors shows this number.
      */
     makers: number;
     /**
-     * Each of Tribelt's belt families, in order, with how many of those competitors offer it.
+     * Each of Tribelt's belt families, in order, with how many of those competitors offer it, by the belt names recorded for them or the products their newest scan matched.
      */
     families: Array<OverviewFamily>;
-    /**
-     * How many competitors the list holds now, not archived, those added since the desk research included; a group company and the mirror do not count.
-     */
-    listed?: number;
 };
 
 /**
- * How many of the competitors the desk research found offer one of Tribelt's belt families.
+ * How many of the competitors on the list offer one of Tribelt's belt families.
  */
 export type OverviewFamily = {
     family: PromptFamily;
@@ -2394,6 +2464,10 @@ export type PromptMention = {
      * Its average place in the answers that name it, from 1.
      */
     averagePosition: number;
+    /**
+     * The share of the run's answers that count that name it - its AI share of voice, the same share the home page, Catching up and AI search show.
+     */
+    share: number;
 };
 
 /**

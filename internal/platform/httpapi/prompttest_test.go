@@ -74,7 +74,7 @@ func (p *promptTests) Results(context.Context) (app.Results, error) {
 	answers := promptAnswers()
 	return app.Results{
 		Runs:        []app.RunResult{{Run: promptRun(), Progress: domain.Progressed(answers, promptRun().Models), Cells: domain.Cells(answers)}},
-		Mentions:    []app.NamedMention{{Mention: domain.Mentions(answers)[0], Name: "Tribelt B.V.", Role: domain.RoleTribelt}},
+		Mentions:    []app.NamedMention{{Mention: domain.Mentions(answers)[0], Name: "Tribelt B.V.", Role: domain.RoleTribelt, Share: 0.5}},
 		WrongClaims: domain.WrongClaims(answers),
 	}, p.err
 }
@@ -230,7 +230,7 @@ func TestPromptTestResultsAreForEveryoneSignedIn(t *testing.T) {
 		t.Errorf("run = %v", run)
 	}
 	mention := r.body["mentions"].([]any)[0].(map[string]any)
-	if mention["name"] != "Tribelt B.V." || mention["role"] != "tribelt" || mention["averagePosition"].(float64) != 1 {
+	if mention["name"] != "Tribelt B.V." || mention["role"] != "tribelt" || mention["averagePosition"].(float64) != 1 || mention["share"].(float64) != 0.5 {
 		t.Errorf("mention = %v", mention)
 	}
 	if claim := r.body["wrongClaims"].([]any)[0].(map[string]any); claim["claim"] != "Tribelt is in Hengelo." || claim["correctness"] != "wrong" {

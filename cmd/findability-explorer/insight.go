@@ -8,7 +8,6 @@ import (
 	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
-	companiesdomain "github.com/JorisJonkers-dev/findability-explorer/internal/companies/domain"
 	insightapp "github.com/JorisJonkers-dev/findability-explorer/internal/insight/app"
 	insightdomain "github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
 	prompttestapp "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
@@ -45,7 +44,7 @@ func (d insightDirectory) Companies(ctx context.Context) ([]insightdomain.Compan
 		if l.Archived {
 			continue
 		}
-		c := insightdomain.Company{ID: l.ID, Name: l.Name, Role: insightdomain.Role(l.Role()), Researched: l.Source == companiesdomain.SourceResearch}
+		c := insightdomain.Company{ID: l.ID, Name: l.Name, Role: insightdomain.Role(l.Role())}
 		if l.URL != nil {
 			c.Website = l.URL.String()
 		}
@@ -135,10 +134,19 @@ func (r readiness) Readiness(ctx context.Context) (map[string]insightdomain.Read
 }
 
 func readinessOf(r analysisdomain.Readiness, at time.Time) insightdomain.Readiness {
+	advice := map[analysisdomain.Check]bool{}
+	for _, a := range r.Advice() {
+		advice[a.Check] = a.OK
+	}
 	out := insightdomain.Readiness{
-		Sitemap: r.Sitemap.Files > 0, SitemapPages: r.Sitemap.Addresses,
+		Sitemap: r.Sitemap.Files > 0, SitemapInEachLanguage: advice[analysisdomain.CheckSitemapLanguages],
+		Organization: advice[analysisdomain.CheckOrganization], Product: advice[analysisdomain.CheckProduct],
 		SitemapLanguages: r.Sitemap.Languages, LLMs: r.LLMs.Present, LLMsFull: r.LLMsFull, Markdown: r.Markdown,
 		StructuredData: r.StructuredData, ScannedAt: at, Bots: map[string]insightdomain.BotAccess{},
+	}
+	if c := r.Sitemap.Coverage; c != nil {
+		share := c.Share()
+		out.SitemapCoverage = &share
 	}
 	for _, b := range r.Bots {
 		out.Bots[b.Bot] = insightdomain.BotAccess(b.Access)
@@ -176,7 +184,7 @@ func (t termsUsed) TermMap(ctx context.Context) (insightdomain.TermMap, error) {
 	for _, term := range t.terminology.Terms() {
 		out.Terms = append(out.Terms, insightdomain.MapTerm{
 			Text: term.Text, Language: string(term.Language), Family: string(term.Family), Tier: string(term.Tier),
-			UsedBy: len(term.UsedBy), UsedByTribelt: use.TribeltUses(term), FoundBy: use.FoundBy[term.Key()],
+			UsedBy: len(use.Makers(term)), UsedByTribelt: use.TribeltUses(term), FoundBy: use.FoundBy[term.Key()],
 		})
 	}
 	return out, nil

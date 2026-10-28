@@ -495,7 +495,15 @@ func TestMentionsComeFromTheNewestRunWithAnswers(t *testing.T) {
 	e.repo.runs = append(e.repo.runs, &storedRun{run: domain.Run{ID: uuid.New(), Status: domain.RunRunning, StartedAt: start.Add(time.Hour)}, owner: "a"})
 	res, err := e.svc.Results(t.Context())
 	if err != nil || len(res.Runs) != 2 || len(res.Runs[0].Cells) != 0 || len(res.Mentions) == 0 {
-		t.Errorf("results = %d runs, %d mentions, %v", len(res.Runs), len(res.Mentions), err)
+		t.Fatalf("results = %d runs, %d mentions, %v", len(res.Runs), len(res.Mentions), err)
+	}
+	// Each mention carries its share of the answers that count, the AI share of voice.
+	counted := 0
+	for _, c := range res.Runs[1].Cells {
+		counted += c.Answers
+	}
+	if m := res.Mentions[0]; counted == 0 || m.Share != float64(m.Answers)/float64(counted) {
+		t.Errorf("share %v of %d answers, %d counted", m.Share, m.Answers, counted)
 	}
 }
 

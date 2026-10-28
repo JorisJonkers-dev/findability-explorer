@@ -25,7 +25,10 @@ func (c siteCrawler) Readiness(_ context.Context, t domain.Target) (domain.Readi
 	if t.URL().Hostname() == "down.test" {
 		return domain.ReadinessFiles{}, errBoom
 	}
-	return domain.ReadinessFiles{Robots: domain.File{Status: 200, ContentType: "text/plain", Body: "User-agent: *\nAllow: /\n"}}, nil
+	return domain.ReadinessFiles{
+		Robots:   domain.File{Status: 200, ContentType: "text/plain", Body: "User-agent: *\nAllow: /\n"},
+		Sitemaps: []domain.Sitemap{{Pages: []string{"https://x.test/"}}},
+	}, nil
 }
 
 // scansOf stores one scan per company of the given status and website, the newest last.
@@ -54,7 +57,7 @@ func waitForCheck(t *testing.T, svc *app.Service) app.ReadinessCheck {
 func TestReadinessCheckRecordsEachNewestScanAgainWithoutACrawl(t *testing.T) {
 	r := newRepo()
 	scansOf(t, r, map[string]domain.Analysis{
-		"x":    {URL: "https://x.test/", Status: domain.StatusDone},
+		"x":    {URL: "https://x.test/", Status: domain.StatusDone, Pages: []domain.PageSummary{{URL: "https://x.test/"}, {URL: "https://x.test/a"}}},
 		"y":    {URL: "https://y.test/", Status: domain.StatusFailed},
 		"down": {URL: "https://down.test/", Status: domain.StatusDone},
 		"p":    {URL: "https://10.0.0.1/", Status: domain.StatusDone},
@@ -80,8 +83,13 @@ func TestReadinessCheckRecordsEachNewestScanAgainWithoutACrawl(t *testing.T) {
 	for _, a := range r.analyses {
 		switch a.CompetitorID {
 		case "x", "y":
-			if a.Readiness == nil || !a.Readiness.CheckedAt.Equal(now) || a.Readiness.Robots != domain.RobotsFound || len(a.Pages) != 0 {
+			if a.Readiness == nil || !a.Readiness.CheckedAt.Equal(now) || a.Readiness.Robots != domain.RobotsFound {
 				t.Errorf("%s = %+v", a.CompetitorID, a.Readiness)
+			}
+			// The coverage is measured against the pages the scan read; one that read none has none.
+			want := map[string]*domain.SitemapCoverage{"x": {Pages: 2, Listed: 1}, "y": nil}[a.CompetitorID]
+			if got := a.Readiness.Sitemap.Coverage; (got == nil) != (want == nil) || (got != nil && *got != *want) {
+				t.Errorf("%s coverage = %+v", a.CompetitorID, got)
 			}
 		default:
 			if a.Readiness != nil {
@@ -105,6 +113,16 @@ func TestReadinessCheckFailures(t *testing.T) {
 	}
 	if done := waitForCheck(t, svc); done.Checked != 1 || done.Failed != 1 {
 		t.Errorf("a check that cannot be recorded = %+v", done)
+	}
+
+	unreadable := newRepo("Get")
+	scansOf(t, unreadable, map[string]domain.Analysis{"x": {URL: "https://x.test/", Status: domain.StatusDone}})
+	svc = app.New(unreadable, &directory{}, siteCrawler{}, source{}, glossary, time.Now, limits())
+	if _, err := svc.StartReadinessCheck(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if done := waitForCheck(t, svc); done.Checked != 1 || done.Failed != 1 {
+		t.Errorf("a check whose scan cannot be read = %+v", done)
 	}
 
 	// Once the context ends, no further site is read.

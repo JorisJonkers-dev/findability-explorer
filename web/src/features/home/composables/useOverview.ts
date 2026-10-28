@@ -4,7 +4,7 @@ import { getOverviewOptions } from '../../../infrastructure/api/@tanstack/vue-qu
 import type { Overview } from '../../../infrastructure/api/types.gen'
 import { describeError } from '../../../shared/describeError'
 
-/** Server state for the poster's figures: the map, the researched competitors and the newest Prompt run, counted on the server. */
+/** Server state for the poster's figures: the map, the competitors on the list and the newest Prompt run, counted on the server. */
 export function useOverview() {
   const query = useQuery(getOverviewOptions())
   return {

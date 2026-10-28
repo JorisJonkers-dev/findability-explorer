@@ -147,6 +147,9 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 		return []terminologydomain.Sighting{{Text: "Drahtösengliederband", Language: "de", CompanyID: "pelger"}}, nil
 	}, time.Now)
 	terminology.WithReviewer(verdictStore{}, noJudge{})
+	terminology.WithCompetitors(func(context.Context) ([]terminologydomain.Listed, error) {
+		return []terminologydomain.Listed{{ID: "pelger", Name: "PELGER GmbH"}, {ID: "martens", Name: "Märtens Transportbänder GmbH"}}, nil
+	})
 	companies := companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		&companyRepo{}, companyScans{}, time.Now,
@@ -224,6 +227,10 @@ func TestSearchTerms(t *testing.T) {
 	first, _ := found.body["items"].([]any)
 	if len(first) == 0 || fmt.Sprint(first[0].(map[string]any)["foundBy"]) != "[pelger]" {
 		t.Fatalf("foundBy = %v", found.body)
+	}
+	// Its makers are the competitors on the list that use it: Märtens by its credit, PELGER by its scan alone.
+	if makers := fmt.Sprint(first[0].(map[string]any)["makers"]); makers != "[map[competitorId:pelger fromScan:true] map[competitorId:martens fromScan:false]]" {
+		t.Fatalf("makers = %v", makers)
 	}
 	// Before any scan of tribelt.nl, the research's credits say which terms it uses.
 	if uses, ok := first[0].(map[string]any)["tribeltUses"].(bool); !ok || !uses || found.body["tribeltFrom"] != "research" {

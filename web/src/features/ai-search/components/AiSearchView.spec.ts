@@ -24,6 +24,8 @@ const summary: AiSearchSummary = {
   sites: 41,
   questions: 20,
   providers: 5,
+  readinessChecks: 5,
+  checks: [{ check: 'crawlers', scored: true, passing: 30, tribelt: true }],
 }
 
 describe('the AI search summary', () => {

@@ -21,7 +21,7 @@ describe('the readiness chips', () => {
 describe("a company's share of the answers", () => {
   it('comes from the newest run with answers', () => {
     const results = promptResults()
-    expect(shareOf(results, 'twentebelt')).toBe(9 / 12)
+    expect(shareOf(results, 'twentebelt')).toBe(0.75)
     expect(shareOf(results, 'esfo')).toBe(0)
     expect(shareOf(promptResults({ runs: [] }), 'twentebelt')).toBeUndefined()
     expect(shareOf(undefined, 'twentebelt')).toBeUndefined()

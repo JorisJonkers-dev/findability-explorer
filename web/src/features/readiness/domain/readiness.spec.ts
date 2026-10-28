@@ -12,6 +12,7 @@ import {
   markedLines,
   policySummary,
   readinessFacts,
+  sitemapCoverage,
   sortValue,
   tableRows,
 } from './readiness'
@@ -59,7 +60,10 @@ describe('the AI readiness table', () => {
     expect(cell(bad, 'bot:ClaudeBot')).toEqual({ text: 'Partly', ok: true })
     expect(cell(readinessRow('A', { readiness: readiness({ bots: bots({}, false) }) }), 'bot:CCBot')).toEqual({ text: 'Allowed, not mentioned', ok: true })
     expect(cell(good, 'bot:NoSuchBot')).toEqual({ text: 'Not checked', ok: null })
-    expect(cell(good, 'sitemaps')).toEqual({ text: 'Yes, 2 files, 124 addresses', ok: true })
+    expect(cell(good, 'sitemaps')).toEqual({ text: 'Yes, listing 85% of its pages', ok: true })
+    const unmeasured = readinessRow('A', { readiness: readiness({ sitemap: { declared: true, files: 1, addresses: 9, languages: [] } }) })
+    expect(cell(unmeasured, 'sitemaps').text).toBe('Yes. Scan the site again to measure how many of its pages it lists.')
+    expect(sitemapCoverage({ sitemap: { declared: false, files: 1, addresses: 9, languages: [] } })).toBe('Not measured yet. Scan the site again.')
     expect(cell(bad, 'sitemaps')).toEqual({ text: 'No', ok: false })
     expect(cell(good, 'sitemapLanguages')).toEqual({ text: 'NL DE EN', ok: true })
     expect(cell(readinessRow('A', { readiness: readiness({ sitemap: { declared: true, files: 0, addresses: 0, languages: [] } }) }), 'sitemapLanguages').text).toBe('None')
@@ -92,7 +96,8 @@ describe('the AI readiness table', () => {
     const unchecked = readinessRow('Unchecked', { readiness: undefined })
     expect(sortValue(good, 'name')).toBe('Good')
     expect([sortValue(good, 'bot:GPTBot'), sortValue(bad, 'bot:ClaudeBot'), sortValue(bad, 'bot:GPTBot'), sortValue(good, 'bot:None')]).toEqual([2, 1, 0, -1])
-    expect([sortValue(good, 'sitemaps'), sortValue(bad, 'sitemaps')]).toEqual([124, -0.5])
+    expect([sortValue(good, 'sitemaps'), sortValue(bad, 'sitemaps')]).toEqual([0.85, -0.5])
+    expect(sortValue(readinessRow('A', { readiness: readiness({ sitemap: { declared: true, files: 1, addresses: 9, languages: [] } }) }), 'sitemaps')).toBe(-0.25)
     expect([sortValue(good, 'llmsTxt'), sortValue(bad, 'llmsTxt')]).toEqual([124, -0.5])
     expect([sortValue(good, 'sitemapLanguages'), sortValue(bad, 'languages')]).toEqual([3, 2])
     expect([sortValue(good, 'cms'), sortValue(bad, 'cms')]).toEqual(['WordPress', '￿'])

@@ -23,12 +23,14 @@ export function chipsOf(r: AiReadiness | undefined): Chip[] {
   ]
 }
 
-/** A company's share of the answers of the newest run with answers, or undefined before any. */
+/**
+ * A company's share of the answers of the newest run with answers, as the server counts it (the
+ * AI share of voice every page shows); none for a company no answer names, undefined before any run.
+ */
 export function shareOf(results: Pick<PromptTestResults, 'runs' | 'mentions'> | undefined, id: string): number | undefined {
   const run = latestRun(results)
-  const answers = run ? tally(run.cells).answers : 0
-  if (!results || answers === 0) return undefined
-  return (results.mentions.find((m) => m.competitorId === id)?.answers ?? 0) / answers
+  if (!results || !run || tally(run.cells).answers === 0) return undefined
+  return results.mentions.find((m) => m.competitorId === id)?.share ?? 0
 }
 
 /** What the list can be narrowed to; administrators also see what Haiku made of it. */

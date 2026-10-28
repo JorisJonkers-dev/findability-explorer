@@ -78,7 +78,8 @@ func (s *Service) checkable(ctx context.Context) ([]domain.Analysis, error) {
 }
 
 // CheckReadiness reads each scan's site's AI readiness files again, a few sites at a time, and
-// records what they say on that scan, dated now. It crawls no pages and asks no language model,
+// records what they say on that scan, dated now, with the sitemaps' coverage of the pages the scan
+// read. It crawls no pages and asks no language model,
 // so it costs nothing. A site that cannot be read keeps what its scan recorded.
 func (s *Service) CheckReadiness(ctx context.Context, scans []domain.Analysis) {
 	work := make(chan domain.Analysis)
@@ -116,7 +117,17 @@ func (s *Service) checkOne(ctx context.Context, a domain.Analysis) bool {
 	if err != nil {
 		return false
 	}
+	// The coverage is measured again against the pages the scan read: a check crawls none.
+	scan, err := s.repo.Get(ctx, a.ID)
+	if err != nil {
+		return false
+	}
+	read := make([]string, 0, len(scan.Pages))
+	for _, p := range scan.Pages {
+		read = append(read, p.URL)
+	}
 	r := domain.AssessReadiness(files)
+	r.Sitemap.Coverage = domain.CoverageOf(files.Sitemaps, read)
 	r.CheckedAt = s.now()
 	return s.repo.SaveReadiness(ctx, a.ID, r, domain.RawFilesOf(files)) == nil
 }

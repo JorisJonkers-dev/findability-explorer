@@ -14,6 +14,8 @@ export function useStandings() {
     open: computed<PlanImprovement[]>(() => query.data.value?.open ?? []),
     /** What says which search terms tribelt.nl uses: its newest scan, or the research before one. */
     termsFrom: computed(() => query.data.value?.tribeltTermsFrom),
+    /** How many checks the readiness score counts; 0 until the standings load. */
+    readinessChecks: computed(() => query.data.value?.readinessChecks ?? 0),
     isLoading: query.isPending,
     error: computed(() => (query.error.value ? describeError(query.error.value) : null)),
   }

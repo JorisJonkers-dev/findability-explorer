@@ -61,9 +61,25 @@ func TestReadinessRoundTrips(t *testing.T) {
 		t.Errorf("latest = %+v", a)
 	}
 
+	// The crawl measures the coverage after the readiness was stored; a scan without one has none to set.
+	if err := repo.SaveSitemapCoverage(ctx, newer.ID, domain.SitemapCoverage{Pages: 4, Listed: 3}); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SaveSitemapCoverage(ctx, none.ID, domain.SitemapCoverage{Pages: 1}); !errors.Is(err, domain.ErrNoReadiness) {
+		t.Errorf("coverage of a scan without readiness = %v", err)
+	}
+	if latest, err = repo.LatestReadiness(ctx); err != nil || latest["example"].Readiness.Sitemap.Coverage == nil ||
+		*latest["example"].Readiness.Sitemap.Coverage != (domain.SitemapCoverage{Pages: 4, Listed: 3}) {
+		t.Errorf("coverage = %+v, %v", latest["example"].Readiness, err)
+	}
+	if old, _ := repo.Get(ctx, older.ID); old.Readiness == nil || old.Readiness.Sitemap.Coverage != nil {
+		t.Errorf("a readiness without coverage = %+v", old.Readiness)
+	}
+
 	// A check again replaces the scan's readiness, its crawler rules and raw files, and is dated.
 	again := domain.AssessReadiness(domain.ReadinessFiles{Robots: domain.File{Status: 200, ContentType: "text/plain", Body: "User-agent: *\nAllow: /\n"}})
 	again.CheckedAt = created.Add(48 * time.Hour)
+	again.Sitemap.Coverage = &domain.SitemapCoverage{Pages: 4, Listed: 4}
 	if err := repo.SaveReadiness(ctx, newer.ID, again, domain.RawFiles{Robots: "User-agent: *"}); err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +88,8 @@ func TestReadinessRoundTrips(t *testing.T) {
 		t.Fatal(err)
 	}
 	checked := latest["example"].Readiness
-	if checked == nil || !checked.CheckedAt.Equal(again.CheckedAt) || checked.LLMs.Present || len(checked.Bots) != len(again.Bots) {
+	if checked == nil || !checked.CheckedAt.Equal(again.CheckedAt) || checked.LLMs.Present || len(checked.Bots) != len(again.Bots) ||
+		checked.Sitemap.Coverage == nil || checked.Sitemap.Coverage.Listed != 4 {
 		t.Errorf("checked again = %+v", checked)
 	}
 	if back, _ := repo.ReadinessFiles(ctx, newer.ID); back.Robots != "User-agent: *" || back.LLMs != "" {

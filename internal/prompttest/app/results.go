@@ -32,19 +32,27 @@ type Results struct {
 	WrongClaims []domain.WrongClaim
 }
 
-// NamedMention is a mention with the name and role of the company it counts; a company no
-// longer on the list goes by its id, as a competitor.
+// NamedMention is a mention with the name and role of the company it counts, and its share of
+// the run's answers that count; a company no longer on the list goes by its id, as a competitor.
 type NamedMention struct {
 	domain.Mention
-	Name string
-	Role domain.Role
+	Name  string
+	Role  domain.Role
+	Share float64
 }
 
-// named gives each mention its company's name and role.
-func named(mentions []domain.Mention, companies []domain.DirectoryCompany) []NamedMention {
+// named gives each mention its company's name and role, and its share of the answers that count
+// (the AI share of voice every page shows).
+func named(mentions []domain.Mention, answers []domain.Answer, companies []domain.DirectoryCompany) []NamedMention {
+	counted := 0
+	for _, a := range answers {
+		if a.Counts() {
+			counted++
+		}
+	}
 	out := make([]NamedMention, 0, len(mentions))
 	for _, m := range mentions {
-		n := NamedMention{Mention: m, Name: m.CompetitorID, Role: domain.RoleCompetitor}
+		n := NamedMention{Mention: m, Name: m.CompetitorID, Role: domain.RoleCompetitor, Share: float64(m.Answers) / float64(max(counted, 1))}
 		for _, c := range companies {
 			if c.ID == m.CompetitorID {
 				n.Name, n.Role = c.Name, c.Role
@@ -76,7 +84,7 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 		cells := domain.Cells(answers)
 		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells})
 		if !mentioned && len(cells) > 0 {
-			out.Mentions, mentioned = named(domain.WithTribelt(domain.Mentions(answers), answers, companies), companies), true
+			out.Mentions, mentioned = named(domain.WithTribelt(domain.Mentions(answers), answers, companies), answers, companies), true
 		}
 		out.WrongClaims = append(out.WrongClaims, domain.WrongClaims(answers)...)
 	}

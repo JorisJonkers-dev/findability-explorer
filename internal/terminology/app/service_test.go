@@ -325,3 +325,20 @@ func TestSiteUseKnowsWhetherTribeltWasScanned(t *testing.T) {
 		t.Fatalf("failing sightings = %v", err)
 	}
 }
+
+// The competitors on the list now are each term's possible makers, by the names the map credits.
+func TestSiteUseKnowsTheCompetitorsOnTheList(t *testing.T) {
+	terms := []domain.Term{{Text: "spiral belt", Language: "en", UsedBy: []string{"Märtens"}}}
+	svc := app.New(catalogue{terms: terms}, &reviews{}, evidence(nil, nil), sightings(nil, nil), func() time.Time { return now })
+	svc.WithCompetitors(func(context.Context) ([]domain.Listed, error) {
+		return []domain.Listed{{ID: "martens", Name: "Märtens GmbH"}}, nil
+	})
+	u, err := svc.SiteUse(t.Context())
+	if err != nil || len(u.Competitors) != 1 || u.Competitors[0].ShortName != "Märtens" || len(u.Makers(terms[0])) != 1 {
+		t.Fatalf("SiteUse = %+v, %v", u, err)
+	}
+	svc.WithCompetitors(func(context.Context) ([]domain.Listed, error) { return nil, errBoom })
+	if _, err := svc.SiteUse(t.Context()); !errors.Is(err, errBoom) {
+		t.Fatalf("a failing list = %v", err)
+	}
+}

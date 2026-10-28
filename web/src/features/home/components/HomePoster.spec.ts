@@ -11,6 +11,7 @@ const api = routes({
         { measure: 'termsUsed', tribelt: 38, median: 10, leader: { competitorId: 'b', name: 'B', value: 30 }, competitors: 3, trails: false, leads: true },
       ],
       trailing: 1,
+      readinessChecks: 5,
       open: [],
     }),
   'GET /api/v1/overview': () =>
@@ -69,7 +70,7 @@ describe('the poster', () => {
     expect(tiles(wrapper).map((a) => [a.attributes('href'), a.attributes('aria-label')])).toEqual([
       ['/catching-up', 'Catching up: 1 measure where Tribelt trails the leader. Zoom in.'],
       ['/ai-search', 'AI search: 25% of the AI answers in the newest Prompt run name Tribelt. Twentebelt is named in 75%. Zoom in.'],
-      ['/competitors', 'Competitors: 2 competitors from our research sell the same belts in Europe, each under its own names. Zoom in.'],
+      ['/competitors', 'Competitors: 2 competitors on our list sell the same belts in Europe, each under its own names. Zoom in.'],
       ['/terms', 'Search terms: 3 search terms in 2 languages. The newest scan of tribelt.nl found 1 of them. Zoom in.'],
       ['/plan', 'The plan: 52 weekly checks a year. Every fix shows up in the numbers the week after. Zoom in.'],
     ])

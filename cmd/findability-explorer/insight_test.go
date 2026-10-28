@@ -58,10 +58,10 @@ func TestReadinessOfSaysHowFarTheCrawlersAreLetIn(t *testing.T) {
 		})
 	}
 	got := readinessOf(analysisdomain.Readiness{
-		Robots: analysisdomain.RobotsFound, Bots: rules("CCBot"), Sitemap: analysisdomain.SitemapSummary{Files: 2, Addresses: 124},
+		Robots: analysisdomain.RobotsFound, Bots: rules("CCBot"), Sitemap: analysisdomain.SitemapSummary{Files: 2, Addresses: 124, Coverage: &analysisdomain.SitemapCoverage{Pages: 40, Listed: 30}},
 		LLMs: analysisdomain.LLMsFacts{Present: true}, Markdown: true,
 	}, at)
-	if !got.Sitemap || got.SitemapPages != 124 || !got.LLMs || got.LLMsFull || !got.Markdown || len(got.Blocked) != 1 || got.Blocked[0] != "CCBot" ||
+	if !got.Sitemap || got.SitemapCoverage == nil || *got.SitemapCoverage != 0.75 || !got.LLMs || got.LLMsFull || !got.Markdown || len(got.Blocked) != 1 || got.Blocked[0] != "CCBot" ||
 		got.Bots["CCBot"] != insightdomain.BotBlocked || got.Bots["GPTBot"] != insightdomain.BotAllowed {
 		t.Errorf("readiness = %+v", got)
 	}

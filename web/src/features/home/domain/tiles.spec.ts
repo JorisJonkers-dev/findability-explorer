@@ -104,7 +104,7 @@ describe('the Catching up tile', () => {
   const measures: Standing[] = [
     { measure: 'aiShareOfVoice', tribelt: 0.24, leader: { competitorId: 'a', name: 'A', value: 0.48 }, competitors: 3, trails: true, leads: false },
     { measure: 'termsUsed', tribelt: 38, leader: { competitorId: 'b', name: 'B', value: 30 }, competitors: 3, trails: false, leads: true },
-    { measure: 'sitemapPages', competitors: 0, trails: false, leads: false },
+    { measure: 'sitemapCoverage', competitors: 0, trails: false, leads: false },
   ]
 
   it('draws Tribelt against the leader per measure, and counts the measures it trails on', () => {

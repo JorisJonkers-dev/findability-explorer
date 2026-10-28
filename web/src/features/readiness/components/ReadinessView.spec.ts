@@ -37,6 +37,17 @@ const api = (extra: Record<string, Handler> = {}) =>
         sites: 5,
         questions: 0,
         providers: 0,
+        readinessChecks: 5,
+        checks: [
+          { check: 'crawlers', scored: true, passing: 2, tribelt: false },
+          { check: 'sitemap', scored: true, passing: 5, tribelt: true },
+          { check: 'llmsTxt', scored: true, passing: 2, tribelt: false },
+          { check: 'llmsFullTxt', scored: true, passing: 5, tribelt: true },
+          { check: 'markdown', scored: true, passing: 5, tribelt: true },
+          { check: 'sitemapLanguages', scored: false, passing: 5, tribelt: true },
+          { check: 'organization', scored: false, passing: 5, tribelt: true },
+          { check: 'product', scored: false, passing: 5, tribelt: true },
+        ],
       }),
     [`GET /api/v1/analyses/${ANALYSIS_ID}/readiness-files`]: () =>
       json({ robotsTxt: 'User-agent: GPTBot\nDisallow: /', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }),
@@ -85,7 +96,7 @@ describe('the AI readiness view', () => {
     expect(bands(wrapper)[2]).toBe('Competitors: Twentebelt, ESFO, Unibelt')
   })
 
-  it('heads the page with the leader and counts the sites passing each check', async () => {
+  it("heads the page with the leader and writes the server's count of the sites passing each check", async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     expect(wrapper.get('h1').text()).toBe('ESFO leads with 5 of five checks. Tribelt passes 3½.')
     expect(wrapper.text()).toContain('The five checks ask whether a site lets every AI crawler in, has a sitemap, has llms.txt, has llms-full.txt and has Markdown pages.')

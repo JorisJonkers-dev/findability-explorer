@@ -134,4 +134,14 @@ func TestTargetsHaveDefaultsAndRules(t *testing.T) {
 			t.Errorf("CheckTarget(%s, %v) = %v, %v", tc.target, tc.value, v, err)
 		}
 	}
+	// The readiness target is every check by default, and no more can be asked.
+	if most, ok := domain.MaxOf(domain.TargetReadiness); !ok || most != float64(domain.ReadinessChecks()) || d[domain.TargetReadiness] != most {
+		t.Errorf("readiness most %v, default %v", most, d[domain.TargetReadiness])
+	}
+	if most, ok := domain.MaxOf(domain.TargetTwenteShareOfVoice); !ok || most != 1 {
+		t.Errorf("a share's most = %v", most)
+	}
+	if _, ok := domain.MaxOf(domain.TargetCitations); ok {
+		t.Error("a count has a most")
+	}
 }

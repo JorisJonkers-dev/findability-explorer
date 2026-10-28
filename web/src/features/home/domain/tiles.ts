@@ -14,7 +14,7 @@ export type TileBar = {
   zero: boolean
 }
 
-/** For each of Tribelt's families, how many of the researched makers offer it, of all of them; every family at none until the figures load. */
+/** For each of Tribelt's families, how many of the competitors on the list offer it, of all of them; every family at none until the figures load. */
 export function familyBars(competitors: OverviewCompetitors | undefined): TileBar[] {
   const makers = competitors?.makers ?? 0
   const families = competitors?.families ?? PRODUCT_FAMILIES.map((family) => ({ family, makers: 0 }))

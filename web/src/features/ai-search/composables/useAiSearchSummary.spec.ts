@@ -6,7 +6,7 @@ import { useAiSearchSummary } from './useAiSearchSummary'
 
 describe('useAiSearchSummary', () => {
   it('loads the summary once', async () => {
-    const body = { goal: 0.4, followed: [], trend: [], crawlers: [], keepingOut: [], ranking: [], sites: 3, questions: 20, providers: 5 }
+    const body = { goal: 0.4, followed: [], trend: [], crawlers: [], keepingOut: [], ranking: [], sites: 3, questions: 20, providers: 5, readinessChecks: 5, checks: [] }
     const { state, sent } = mountComposable(useAiSearchSummary, routes({ 'GET /api/v1/ai-search': () => json(body) }))
     expect(state.summary.value).toBeUndefined()
     await flushPromises()

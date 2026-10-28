@@ -40,6 +40,42 @@ func TestMedianIsTheMiddleValueOrTheMeanOfTheTwo(t *testing.T) {
 	}
 }
 
+func TestTheChecksArePointedOneByOne(t *testing.T) {
+	if domain.ReadinessChecks() != 5 || len(domain.AlsoChecked()) != 3 {
+		t.Fatalf("checks = %d scored, %d beside", domain.ReadinessChecks(), len(domain.AlsoChecked()))
+	}
+	all := domain.Readiness{
+		Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true,
+		SitemapInEachLanguage: true, Organization: true, Product: true,
+	}
+	for _, c := range append(domain.ScoredChecks(), domain.AlsoChecked()...) {
+		if !all.Passes(c) || (domain.Readiness{}).Passes(c) {
+			t.Errorf("%s does not follow its field", c)
+		}
+	}
+	some := domain.Readiness{Crawlers: domain.AccessSome}
+	if some.Points(domain.CheckCrawlersLetIn) != 0.5 || some.Passes(domain.CheckCrawlersLetIn) {
+		t.Error("some crawlers kept out is a half, not a pass")
+	}
+	if (domain.Readiness{}).Points("unheard of") != 0 {
+		t.Error("an unknown check gives points")
+	}
+}
+
+func TestSummariseChecksCountsTheSitesPassingEachInFull(t *testing.T) {
+	got := domain.SummariseChecks(map[string]domain.Readiness{
+		"tribelt":  {Crawlers: domain.AccessSome, Sitemap: true, Product: true},
+		"ashworth": {Crawlers: domain.AccessOpen, Sitemap: true},
+	})
+	if len(got) != 8 || got[0].Check != domain.CheckCrawlersLetIn || !got[0].Scored || got[0].Passing != 1 || *got[0].Tribelt ||
+		got[1].Passing != 2 || !*got[1].Tribelt || got[5].Scored || got[7].Check != domain.CheckProduct || got[7].Passing != 1 || !*got[7].Tribelt {
+		t.Errorf("summary = %+v", got)
+	}
+	if none := domain.SummariseChecks(map[string]domain.Readiness{"ashworth": {}}); none[0].Tribelt != nil || none[0].Passing != 0 {
+		t.Errorf("before a scan of tribelt.nl = %+v", none[0])
+	}
+}
+
 func TestReadinessScoreCountsTheFiveChecks(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -104,10 +140,11 @@ func facts() domain.Facts {
 			{Mode: domain.ModeKnowledge, Named: []string{"de-spiraal"}},
 		}},
 		Readiness: map[string]domain.Readiness{
-			"tribelt":        {Crawlers: domain.AccessOpen, Sitemap: true, SitemapPages: 124},
-			"tribelt-mirror": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true, SitemapPages: 9000},
-			"ashworth":       {Crawlers: domain.AccessSome, Sitemap: true, LLMs: true, SitemapPages: 2140},
-			"martens":        {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true, SitemapPages: 300},
+			"tribelt":        {Crawlers: domain.AccessOpen, Sitemap: true, SitemapCoverage: new(0.5)},
+			"tribelt-mirror": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true, SitemapCoverage: new(1.0)},
+			"ashworth":       {Crawlers: domain.AccessSome, Sitemap: true, LLMs: true, SitemapCoverage: new(0.9)},
+			// Märtens' newest scan was made before coverage was measured.
+			"martens": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true},
 		},
 		TermsUsed: map[string]int{"tribelt": 38, "ashworth": 12, "martens": 30, "twentebelt": 30, "de-spiraal": 90},
 	}
@@ -131,7 +168,8 @@ func TestStandingsCompareTribeltWithTheCompetitorsOnly(t *testing.T) {
 		{domain.MeasureCitationShare, new(0.5), new(0.0), "martens", 0.5, 3, false, true},
 		// Twentebelt was never scanned for readiness, so it is not in the median; the mirror never counts.
 		{domain.MeasureReadiness, new(2.0), new(3.75), "martens", 5, 2, true, false},
-		{domain.MeasureSitemapPages, new(124.0), new(1220.0), "ashworth", 2140, 2, true, false},
+		// Märtens' scan did not measure the coverage, so only Ashworth counts.
+		{domain.MeasureSitemapCoverage, new(0.5), new(0.9), "ashworth", 0.9, 1, true, false},
 		// Märtens and Twentebelt tie on 30; Tribelt is ahead.
 		{domain.MeasureTermsUsed, new(38.0), new(30.0), "martens", 30, 3, false, true},
 	}

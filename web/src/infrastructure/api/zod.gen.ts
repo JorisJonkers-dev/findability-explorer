@@ -74,6 +74,14 @@ export const zBeltName = z.object({
 export const zCompetitorId = z.string().min(1).max(80).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
 
 /**
+ * A competitor on the list that uses a term.
+ */
+export const zTermMaker = z.object({
+    competitorId: zCompetitorId,
+    fromScan: z.boolean()
+});
+
+/**
  * Where a company comes from - the desk research, or added by a user or a scan.
  */
 export const zCompetitorSource = z.enum(['research', 'added']);
@@ -414,6 +422,7 @@ export const zTerm = z.object({
     family: zBeltFamily,
     tier: zIntentTier,
     usedBy: z.array(z.string().max(200)).max(20),
+    makers: z.array(zTermMaker).max(10000).optional(),
     foundBy: z.array(zCompetitorId).max(10000).optional(),
     tribeltUses: z.boolean().optional(),
     source: z.string().max(500)
@@ -675,13 +684,23 @@ export const zReadinessAdvice = z.object({
 });
 
 /**
+ * How much of the site its sitemaps cover - of the pages the scan read on the site, how many the sitemaps list (ADR-0013). Absent until the scan has read its pages, for a scan that read none, and for a readiness recorded before coverage was measured; scanning the site again, or checking its readiness again, measures it.
+ */
+export const zSitemapCoverage = z.object({
+    pages: z.int().gte(1).lte(100000),
+    listed: z.int().gte(0).lte(100000),
+    share: z.number().gte(0).lte(1)
+});
+
+/**
  * What a site's sitemaps list, without the addresses.
  */
 export const zSitemapSummary = z.object({
     declared: z.boolean(),
     files: z.int().gte(0).lte(100),
     addresses: z.int().gte(0).lte(1000000),
-    languages: z.array(z.string().max(16)).max(3)
+    languages: z.array(z.string().max(16)).max(3),
+    coverage: zSitemapCoverage.optional()
 });
 
 /**
@@ -774,6 +793,35 @@ export const zReadinessRank = z.object({
 });
 
 /**
+ * How many readiness checks the readiness score counts, so the most a site can score. Every page that writes "out of" this number reads it here.
+ */
+export const zReadinessCheckCount = z.int().gte(1).lte(20);
+
+/**
+ * One thing a site's AI readiness is checked for - every AI crawler let in, a sitemap, llms.txt, llms-full.txt and Markdown pages are scored; sitemaps in Dutch, German and English, Organization and Product structured data are checked beside them.
+ */
+export const zReadinessCheckKind = z.enum([
+    'crawlers',
+    'sitemap',
+    'llmsTxt',
+    'llmsFullTxt',
+    'markdown',
+    'sitemapLanguages',
+    'organization',
+    'product'
+]);
+
+/**
+ * How many of the sites with a recorded AI readiness pass one check in full.
+ */
+export const zReadinessCheckSummary = z.object({
+    check: zReadinessCheckKind,
+    scored: z.boolean(),
+    passing: z.int().gte(0).lte(1000),
+    tribelt: z.boolean().optional()
+});
+
+/**
  * The AI search summary.
  */
 export const zAiSearchSummary = z.object({
@@ -785,7 +833,9 @@ export const zAiSearchSummary = z.object({
     ranking: z.array(zReadinessRank).max(20),
     sites: z.int().gte(0).lte(1000),
     questions: z.int().gte(0).lte(1000),
-    providers: z.int().gte(0).lte(100)
+    providers: z.int().gte(0).lte(100),
+    readinessChecks: zReadinessCheckCount,
+    checks: z.array(zReadinessCheckSummary).max(20)
 });
 
 /**
@@ -814,6 +864,7 @@ export const zWatchedNumber = z.object({
     target: zPlanTarget,
     now: z.number().gte(0).optional(),
     goal: z.number().gte(0),
+    max: z.number().gte(0).optional(),
     met: z.boolean().optional()
 });
 
@@ -889,13 +940,13 @@ export const zProductFinding = z.enum([
 ]);
 
 /**
- * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapCoverage the share of the pages its newest scan read that its sitemaps list (no value for a scan that did not measure it), and termsUsed the map terms its newest scan found.
  */
 export const zStandingMeasure = z.enum([
     'aiShareOfVoice',
     'citationShare',
     'readinessChecks',
-    'sitemapPages',
+    'sitemapCoverage',
     'termsUsed'
 ]);
 
@@ -1000,7 +1051,8 @@ export const zPlan = z.object({
     improvements: z.array(zPlanImprovement).max(50),
     watched: z.array(zWatchedNumber).max(20),
     eyeOn: z.array(zEyeOn).max(10),
-    tribeltTermsFrom: zTermsSource.optional()
+    tribeltTermsFrom: zTermsSource.optional(),
+    readinessChecks: zReadinessCheckCount
 });
 
 /**
@@ -1011,7 +1063,8 @@ export const zStandings = z.object({
     trailing: z.int().gte(0).lte(20),
     open: z.array(zPlanImprovement).max(10),
     runStartedAt: z.iso.datetime({ offset: true }).max(64).optional(),
-    tribeltTermsFrom: zTermsSource.optional()
+    tribeltTermsFrom: zTermsSource.optional(),
+    readinessChecks: zReadinessCheckCount
 });
 
 /**
@@ -1221,7 +1274,7 @@ export const zProductStandout = z.object({
 });
 
 /**
- * How many of the competitors the desk research found offer one of Tribelt's belt families.
+ * How many of the competitors on the list offer one of Tribelt's belt families.
  */
 export const zOverviewFamily = z.object({
     family: zPromptFamily,
@@ -1229,12 +1282,11 @@ export const zOverviewFamily = z.object({
 });
 
 /**
- * The competitors the desk research found, and which of Tribelt's belt families they offer.
+ * The competitors on the list now, and which of Tribelt's belt families they offer.
  */
 export const zOverviewCompetitors = z.object({
     makers: z.int().gte(0).lte(100000),
-    families: z.array(zOverviewFamily).max(20),
-    listed: z.int().gte(0).lte(100000).optional()
+    families: z.array(zOverviewFamily).max(20)
 });
 
 /**
@@ -1432,7 +1484,8 @@ export const zPromptMention = z.object({
     role: zCompanyRole,
     answers: z.int().gte(1).lte(100000),
     first: z.int().gte(0).lte(100000),
-    averagePosition: z.number().gte(0).lte(1000)
+    averagePosition: z.number().gte(0).lte(1000),
+    share: z.number().gte(0).lte(1)
 });
 
 /**

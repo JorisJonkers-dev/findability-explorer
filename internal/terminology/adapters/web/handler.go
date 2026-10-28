@@ -200,6 +200,9 @@ func (h *Handler) SearchTerms(ctx context.Context, params oas.SearchTermsParams)
 			term.FoundBy = append(term.FoundBy, oas.CompetitorId(id))
 		}
 		term.TribeltUses = oas.NewOptBool(use.TribeltUses(t))
+		for _, m := range use.Makers(t) {
+			term.Makers = append(term.Makers, oas.TermMaker{CompetitorId: oas.CompetitorId(m.ID), FromScan: m.FromScan})
+		}
 		items = append(items, term)
 	}
 	return &oas.TermSearch{

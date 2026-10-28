@@ -42,8 +42,6 @@ type Company struct {
 	Role      Role
 	Website   string
 	BeltNames []BeltName
-	// Researched is true for a company the desk research found, not one added since.
-	Researched bool
 }
 
 // Mode is how a Prompt test question was asked: from the model's own knowledge, or with web search.
@@ -186,34 +184,130 @@ type Readiness struct {
 	// Bots is each crawler's access, by its robots.txt token; empty when robots.txt could not be read.
 	Bots map[string]BotAccess
 	// Blocked are the crawlers kept out of the whole site.
-	Blocked          []string
-	Sitemap          bool
-	SitemapPages     int
+	Blocked []string
+	Sitemap bool
+	// SitemapCoverage is the share of the pages the newest scan read that the sitemaps list, from
+	// 0 to 1 (ADR-0013); nil when that scan did not measure it.
+	SitemapCoverage  *float64
 	SitemapLanguages []string
-	LLMs             bool
-	LLMsFull         bool
-	Markdown         bool
-	StructuredData   []string
-	ScannedAt        time.Time
+	// SitemapInEachLanguage, Organization and Product are whether the site follows the report's
+	// advice on them, as the analysis context judges it: sitemaps in Dutch, German and English,
+	// and Organization and Product structured data.
+	SitemapInEachLanguage bool
+	Organization          bool
+	Product               bool
+	LLMs                  bool
+	LLMsFull              bool
+	Markdown              bool
+	StructuredData        []string
+	ScannedAt             time.Time
 }
 
-// ReadinessScore is how many of the five readiness checks a site passes: its crawlers let in (half
-// when some are kept out), a sitemap, llms.txt, llms-full.txt and Markdown pages.
+// ReadinessCheck is one thing a site's AI readiness is checked for.
+type ReadinessCheck string
+
+const (
+	CheckCrawlersLetIn    ReadinessCheck = "crawlers"
+	CheckHasSitemap       ReadinessCheck = "sitemap"
+	CheckHasLLMs          ReadinessCheck = "llmsTxt"
+	CheckHasLLMsFull      ReadinessCheck = "llmsFullTxt"
+	CheckHasMarkdown      ReadinessCheck = "markdown"
+	CheckSitemapLanguages ReadinessCheck = "sitemapLanguages"
+	CheckOrganization     ReadinessCheck = "organization"
+	CheckProduct          ReadinessCheck = "product"
+)
+
+// ScoredChecks are the readiness checks ReadinessScore counts, in the order the pages list them:
+// every AI crawler let in, a sitemap, llms.txt, llms-full.txt and Markdown pages.
+func ScoredChecks() []ReadinessCheck {
+	return []ReadinessCheck{CheckCrawlersLetIn, CheckHasSitemap, CheckHasLLMs, CheckHasLLMsFull, CheckHasMarkdown}
+}
+
+// AlsoChecked are the readiness checks the pages list beside the scored ones, which no score counts.
+func AlsoChecked() []ReadinessCheck {
+	return []ReadinessCheck{CheckSitemapLanguages, CheckOrganization, CheckProduct}
+}
+
+// ReadinessChecks is how many checks ReadinessScore counts: the most a site can score.
+func ReadinessChecks() int { return len(ScoredChecks()) }
+
+// Points is what a check gives the site: 1 when it passes, 0 when it does not, and for the
+// crawlers a half when some are kept out.
+func (r Readiness) Points(c ReadinessCheck) float64 {
+	pass := false
+	switch c {
+	case CheckCrawlersLetIn:
+		if r.Crawlers == AccessSome {
+			return 0.5
+		}
+		pass = r.Crawlers == AccessOpen
+	case CheckHasSitemap:
+		pass = r.Sitemap
+	case CheckHasLLMs:
+		pass = r.LLMs
+	case CheckHasLLMsFull:
+		pass = r.LLMsFull
+	case CheckHasMarkdown:
+		pass = r.Markdown
+	case CheckSitemapLanguages:
+		pass = r.SitemapInEachLanguage
+	case CheckOrganization:
+		pass = r.Organization
+	case CheckProduct:
+		pass = r.Product
+	}
+	if pass {
+		return 1
+	}
+	return 0
+}
+
+// Passes reports whether the site passes a check in full.
+func (r Readiness) Passes(c ReadinessCheck) bool { return r.Points(c) == 1 }
+
+// ReadinessScore is how many of the ReadinessChecks a site passes, the crawlers counting half
+// when some are kept out.
 func (r Readiness) ReadinessScore() float64 {
 	score := 0.0
-	switch r.Crawlers {
-	case AccessOpen:
-		score++
-	case AccessSome:
-		score += 0.5
-	case AccessClosed, AccessUnknown:
-	}
-	for _, ok := range []bool{r.Sitemap, r.LLMs, r.LLMsFull, r.Markdown} {
-		if ok {
-			score++
-		}
+	for _, c := range ScoredChecks() {
+		score += r.Points(c)
 	}
 	return score
+}
+
+// CheckSummary is how many of the sites with a recorded readiness pass one check, and whether
+// Tribelt's does.
+type CheckSummary struct {
+	Check   ReadinessCheck
+	Scored  bool
+	Passing int
+	// Tribelt is nil before a scan of tribelt.nl recorded its readiness.
+	Tribelt *bool
+}
+
+// SummariseChecks counts, for each scored check and then each check beside them, the sites in
+// readiness passing it in full.
+func SummariseChecks(readiness map[string]Readiness) []CheckSummary {
+	tribelt, scanned := readiness[TribeltID]
+	var out []CheckSummary
+	for _, group := range []struct {
+		checks []ReadinessCheck
+		scored bool
+	}{{ScoredChecks(), true}, {AlsoChecked(), false}} {
+		for _, c := range group.checks {
+			s := CheckSummary{Check: c, Scored: group.scored}
+			for _, r := range readiness {
+				if r.Passes(c) {
+					s.Passing++
+				}
+			}
+			if scanned {
+				s.Tribelt = new(tribelt.Passes(c))
+			}
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // Measure is one thing Tribelt is compared on. Higher is better on every one.
@@ -223,13 +317,15 @@ const (
 	MeasureShareOfVoice  Measure = "aiShareOfVoice"
 	MeasureCitationShare Measure = "citationShare"
 	MeasureReadiness     Measure = "readinessChecks"
-	MeasureSitemapPages  Measure = "sitemapPages"
-	MeasureTermsUsed     Measure = "termsUsed"
+	// MeasureSitemapCoverage is the share of the pages the newest scan read that the sitemaps
+	// list: a sitemap listing more addresses is not better for it, one leaving pages out is worse.
+	MeasureSitemapCoverage Measure = "sitemapCoverage"
+	MeasureTermsUsed       Measure = "termsUsed"
 )
 
 // Measures lists them in the order the standings show them.
 func Measures() []Measure {
-	return []Measure{MeasureShareOfVoice, MeasureCitationShare, MeasureReadiness, MeasureSitemapPages, MeasureTermsUsed}
+	return []Measure{MeasureShareOfVoice, MeasureCitationShare, MeasureReadiness, MeasureSitemapCoverage, MeasureTermsUsed}
 }
 
 // Facts are what the other contexts know of the companies now: the newest Prompt run with answers
@@ -254,15 +350,17 @@ func (f Facts) Value(m Measure, id string) (float64, bool) {
 			return ShareOfVoice(f.Run.Answers, id)
 		}
 		return CitationShare(f.Run.Answers, id)
-	case MeasureReadiness, MeasureSitemapPages:
+	case MeasureReadiness, MeasureSitemapCoverage:
 		r, ok := f.Readiness[id]
-		if !ok {
+		switch {
+		case !ok:
+			return 0, false
+		case m == MeasureReadiness:
+			return r.ReadinessScore(), true
+		case r.SitemapCoverage == nil:
 			return 0, false
 		}
-		if m == MeasureReadiness {
-			return r.ReadinessScore(), true
-		}
-		return float64(r.SitemapPages), true
+		return *r.SitemapCoverage, true
 	case MeasureTermsUsed:
 		n, ok := f.TermsUsed[id]
 		return float64(n), ok

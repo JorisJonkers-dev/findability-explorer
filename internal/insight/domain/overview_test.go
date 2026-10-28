@@ -32,17 +32,19 @@ func TestTermsOfCountsEachLanguageKindAndWhatTribeltUses(t *testing.T) {
 	}
 }
 
-func TestCompetitorsOfCountsTheResearchedCompetitorsPerFamily(t *testing.T) {
+func TestCompetitorsOfCountsTheCompetitorsOnTheListPerFamily(t *testing.T) {
 	got := domain.CompetitorsOf([]domain.Company{
-		{ID: "tribelt", Role: domain.RoleTribelt, Researched: true, BeltNames: []domain.BeltName{{Family: "eyelink"}}},
-		{ID: "twentebelt", Role: domain.RoleCompetitor, Researched: true, BeltNames: []domain.BeltName{{Family: "eyelink"}, {Family: "eyelink"}, {Family: "other"}}},
-		{ID: "martens", Role: domain.RoleCompetitor, Researched: true},
-		{ID: "added", Role: domain.RoleCompetitor, BeltNames: []domain.BeltName{{Family: "eyelink"}}},
-		{ID: "sister", Role: domain.RoleGroup, Researched: true, BeltNames: []domain.BeltName{{Family: "eyelink"}}},
+		{ID: "tribelt", Role: domain.RoleTribelt, BeltNames: []domain.BeltName{{Family: "eyelink"}}},
+		{ID: "twentebelt", Role: domain.RoleCompetitor, BeltNames: []domain.BeltName{{Family: "eyelink"}, {Family: "eyelink"}, {Family: "other"}}},
+		{ID: "martens", Role: domain.RoleCompetitor},
+		{ID: "added", Role: domain.RoleCompetitor, BeltNames: []domain.BeltName{{Family: "open_spiral", FromScan: true}}},
+		{ID: "sister", Role: domain.RoleGroup, BeltNames: []domain.BeltName{{Family: "eyelink"}}},
+		{ID: "mirror", Role: domain.RoleMirror, BeltNames: []domain.BeltName{{Family: "eyelink"}}},
 	})
-	// The research found two competitors; the list holds three, the one added since included.
-	want := domain.CompetitorsOverview{Makers: 2, Listed: 3, Families: []domain.FamilyMakers{
-		{Family: "eyelink", Makers: 1}, {Family: "open_spiral"}, {Family: "closed_spiral"}, {Family: "tri_flex_turn_curve"}, {Family: "other", Makers: 1},
+	// Three competitors, the one added since included with the family its scan found; Tribelt,
+	// the group company and the mirror do not count.
+	want := domain.CompetitorsOverview{Makers: 3, Families: []domain.FamilyMakers{
+		{Family: "eyelink", Makers: 1}, {Family: "open_spiral", Makers: 1}, {Family: "closed_spiral"}, {Family: "tri_flex_turn_curve"}, {Family: "other", Makers: 1},
 	}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("competitors = %+v", got)
@@ -105,7 +107,7 @@ func TestAiSearchOfIsEmptyBeforeAnyAnswer(t *testing.T) {
 
 func TestOverviewOfCountsEveryTile(t *testing.T) {
 	got := domain.OverviewOf(
-		[]domain.Company{{ID: "a", Name: "A", Role: domain.RoleCompetitor, Researched: true}},
+		[]domain.Company{{ID: "a", Name: "A", Role: domain.RoleCompetitor}},
 		domain.TermMap{Terms: []domain.MapTerm{{Text: "spiral belt", Language: "en", UsedByTribelt: true}}},
 		&domain.Run{Answers: []domain.Answer{{Named: []string{"a"}}}},
 	)

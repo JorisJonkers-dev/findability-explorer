@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// Overview is what the home page shows, in figures: the terminology map, the competitors the desk
-// research found, and the newest Prompt run.
+// Overview is what the home page shows, in figures: the terminology map, the competitors on the
+// list now, and the newest Prompt run.
 type Overview struct {
 	Terms       TermsOverview
 	Competitors CompetitorsOverview
@@ -46,18 +46,16 @@ func Tiers() []string {
 	return []string{"spec", "product", "application", "problem", "broad"}
 }
 
-// CompetitorsOverview is how many competitors the desk research found, and how many of them offer
-// each of Tribelt's belt families; and how many competitors the list holds now, those added since
-// the research included.
+// CompetitorsOverview is how many competitors the list holds now, and how many of them offer each
+// of Tribelt's belt families.
 type CompetitorsOverview struct {
+	// Makers are the competitors on the list that are not archived, researched or added since.
 	Makers int
-	// Listed are the competitors on the list that are not archived, researched or added since.
-	Listed int
 	// Families are Tribelt's belt families, in order.
 	Families []FamilyMakers
 }
 
-// FamilyMakers is how many of the researched competitors offer one belt family.
+// FamilyMakers is how many of the competitors on the list offer one belt family.
 type FamilyMakers struct {
 	Family string
 	Makers int
@@ -131,12 +129,12 @@ func tierOrder(tier string) int {
 	return len(Tiers())
 }
 
-// CompetitorsOf counts the competitors the desk research found, not one added since, a group
-// company or the mirror, and how many of them offer each of Tribelt's families.
+// CompetitorsOf counts the competitors on the list now, researched or added since (not a group
+// company or the mirror), and how many of them offer each of Tribelt's families: by the belt names
+// the research or the review recorded, or the products their newest scan matched.
 func CompetitorsOf(companies []Company) CompetitorsOverview {
-	makers := slices.DeleteFunc(slices.Clone(companies), func(c Company) bool { return !c.Researched || c.Role != RoleCompetitor })
-	listed := slices.DeleteFunc(slices.Clone(companies), func(c Company) bool { return c.Role != RoleCompetitor })
-	out := CompetitorsOverview{Makers: len(makers), Listed: len(listed), Families: make([]FamilyMakers, 0, len(Families()))}
+	makers := slices.DeleteFunc(slices.Clone(companies), func(c Company) bool { return c.Role != RoleCompetitor })
+	out := CompetitorsOverview{Makers: len(makers), Families: make([]FamilyMakers, 0, len(Families()))}
 	for _, f := range Families() {
 		n := 0
 		for _, c := range makers {

@@ -70,6 +70,7 @@ func TestAIReadinessTable(t *testing.T) {
 	scan := done()
 	rd := readiness()
 	rd.CheckedAt = time.Date(2026, 10, 27, 18, 30, 0, 0, time.UTC)
+	rd.Sitemap.Coverage = &domain.SitemapCoverage{Pages: 40, Listed: 34}
 	scan.Readiness = &rd
 	a := &analyses{readinessRows: []domain.ReadinessRow{
 		{Company: domain.Company{ID: "tribelt", Name: "Tribelt B.V.", Role: domain.RoleTribelt}, Scan: &scan},
@@ -90,6 +91,9 @@ func TestAIReadinessTable(t *testing.T) {
 	}
 	if got["checkedAt"] != "2026-10-27T18:30:00Z" {
 		t.Errorf("checkedAt = %v", got["checkedAt"])
+	}
+	if c := got["sitemap"].(map[string]any)["coverage"].(map[string]any); c["pages"].(float64) != 40 || c["listed"].(float64) != 34 || c["share"].(float64) != 0.85 {
+		t.Errorf("coverage = %v", c)
 	}
 	if got["stack"].(map[string]any)["cms"] != "WordPress" || got["stack"].(map[string]any)["seoPlugin"] != nil || got["gaps"].(float64) != 8 {
 		t.Errorf("stack and gaps = %v %v", got["stack"], got["gaps"])
@@ -117,6 +121,9 @@ func TestAScanShowsItsReadiness(t *testing.T) {
 	srv := serve(t, &analyses{stored: scan})
 	r := call(t, srv, http.MethodGet, "/api/v1/analyses/"+scan.ID.String(), "", true)
 	got, _ := r.body["aiReadiness"].(map[string]any)
+	if got != nil && got["sitemap"].(map[string]any)["coverage"] != nil {
+		t.Errorf("a readiness without coverage sends %v", got["sitemap"])
+	}
 	if r.code != http.StatusOK || got == nil || len(got["advice"].([]any)) != 7 {
 		t.Fatalf("scan = %d %v", r.code, r.body)
 	}

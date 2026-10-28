@@ -6,6 +6,7 @@ package web
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -45,7 +46,7 @@ func (h *Handler) GetStandings(ctx context.Context) (oas.GetStandingsRes, error)
 	}
 	out := &oas.Standings{
 		Measures: toStandings(s.Standings), Trailing: int32(s.Trailing), Open: toImprovements(s.Open), //nolint:gosec // at most five measures
-		TribeltTermsFrom: toSource(s.TermsFrom),
+		TribeltTermsFrom: toSource(s.TermsFrom), ReadinessChecks: readinessChecks(),
 	}
 	if s.Run != nil {
 		out.RunStartedAt = oas.NewOptDateTime(s.Run.StartedAt)
@@ -74,6 +75,11 @@ func toStandings(in []domain.Standing) []oas.Standing {
 	return out
 }
 
+// readinessChecks is how many checks the readiness score counts, as every page writes it.
+func readinessChecks() oas.ReadinessCheckCount {
+	return oas.ReadinessCheckCount(domain.ReadinessChecks()) //nolint:gosec // five
+}
+
 // GetAiSearchSummary implements getAiSearchSummary.
 func (h *Handler) GetAiSearchSummary(ctx context.Context) (oas.GetAiSearchSummaryRes, error) {
 	s, err := h.uc.AiSearch(ctx)
@@ -84,6 +90,14 @@ func (h *Handler) GetAiSearchSummary(ctx context.Context) (oas.GetAiSearchSummar
 		Goal: s.Goal, Followed: []oas.FollowedCompany{}, Trend: []oas.ShareTrendPoint{}, Crawlers: []oas.TribeltCrawler{},
 		KeepingOut: []oas.KeepingOut{}, Ranking: []oas.ReadinessRank{},
 		Sites: int32(s.Sites), Questions: int32(s.Questions), Providers: int32(s.Providers), //nolint:gosec // small counts
+		ReadinessChecks: readinessChecks(), Checks: make([]oas.ReadinessCheckSummary, 0, len(s.Checks)),
+	}
+	for _, c := range s.Checks {
+		row := oas.ReadinessCheckSummary{Check: oas.ReadinessCheckKind(c.Check), Scored: c.Scored, Passing: int32(c.Passing)} //nolint:gosec // a count of sites
+		if c.Tribelt != nil {
+			row.Tribelt = oas.NewOptBool(*c.Tribelt)
+		}
+		out.Checks = append(out.Checks, row)
 	}
 	for _, c := range s.Followed {
 		out.Followed = append(out.Followed, oas.FollowedCompany{CompetitorId: oas.CompetitorId(c.ID), Name: c.Name, Role: oas.CompanyRole(c.Role)})
@@ -175,7 +189,6 @@ func (h *Handler) GetOverview(ctx context.Context) (oas.GetOverviewRes, error) {
 		},
 		Competitors: oas.OverviewCompetitors{
 			Makers: int32(o.Competitors.Makers), Families: make([]oas.OverviewFamily, 0, len(o.Competitors.Families)),
-			Listed: oas.NewOptInt32(int32(o.Competitors.Listed)),
 		},
 		AiSearch: oas.OverviewAiSearch{Answers: int32(o.AiSearch.Answers), Companies: make([]oas.OverviewMention, 0, len(o.AiSearch.Companies))},
 	}
@@ -239,7 +252,8 @@ func (h *Handler) SetPlanTargets(ctx context.Context, req *oas.PlanTargetsChange
 		return &oas.SetPlanTargetsUnprocessableEntity{
 			StatusCode: http.StatusUnprocessableEntity,
 			Response: httpx.Problem(http.StatusUnprocessableEntity,
-				"A share is from 0 to 1, readiness checks from 0 to 5 in halves, and terms and citations are whole numbers."),
+				fmt.Sprintf("A share is from 0 to 1, readiness checks from 0 to %d in halves, and terms and citations are whole numbers.",
+					domain.ReadinessChecks())),
 		}, nil
 	case err != nil:
 		return nil, err
@@ -251,10 +265,13 @@ func toPlan(p app.Plan) *oas.Plan {
 	out := &oas.Plan{
 		CatalogueVersion: domain.ImprovementsVersion, Improvements: toImprovements(p.Items),
 		Watched: make([]oas.WatchedNumber, 0, len(p.Watched)), EyeOn: make([]oas.EyeOn, 0, len(p.EyeOn)),
-		TribeltTermsFrom: toSource(p.TermsFrom),
+		TribeltTermsFrom: toSource(p.TermsFrom), ReadinessChecks: readinessChecks(),
 	}
 	for _, w := range p.Watched {
 		n := oas.WatchedNumber{Target: oas.PlanTarget(w.Target), Goal: w.Goal, Met: oas.NewOptBool(w.Met)}
+		if most, ok := domain.MaxOf(w.Target); ok {
+			n.Max = oas.NewOptFloat64(most)
+		}
 		if w.Now != nil {
 			n.Now = oas.NewOptFloat64(*w.Now)
 		}

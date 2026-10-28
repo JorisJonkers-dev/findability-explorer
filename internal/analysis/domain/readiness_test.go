@@ -247,3 +247,26 @@ func TestCompareReadiness(t *testing.T) {
 		}
 	}
 }
+
+func TestCoverageOfCountsThePagesReadThatTheSitemapsList(t *testing.T) {
+	sitemaps := []domain.Sitemap{
+		{Pages: []string{"https://www.x.test/belts/", "https://x.test/spiral%20belt", "/relative", "ftp://x.test/file"}},
+		{Pages: []string{"http://x.test/?lang=de", "https://x.test/never-read"}},
+	}
+	got := domain.CoverageOf(sitemaps, []string{
+		"https://x.test/", "https://x.test/belts", "https://x.test/belts/#top", "https://x.test/spiral belt", "https://x.test/news", "not a page",
+	})
+	// Four different pages were read (the belts page twice); three of them are listed.
+	if got == nil || *got != (domain.SitemapCoverage{Pages: 4, Listed: 3}) || got.Share() != 0.75 {
+		t.Fatalf("coverage = %+v", got)
+	}
+	if none := domain.CoverageOf(nil, []string{"https://x.test/"}); none == nil || none.Listed != 0 || none.Share() != 0 {
+		t.Errorf("without a sitemap = %+v", none)
+	}
+	if domain.CoverageOf(sitemaps, nil) != nil || domain.CoverageOf(sitemaps, []string{"::"}) != nil {
+		t.Error("a scan that read no page measured a coverage")
+	}
+	if (domain.SitemapCoverage{}).Share() != 0 {
+		t.Error("an empty coverage has a share")
+	}
+}

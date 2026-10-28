@@ -54,6 +54,29 @@ func TestRunRecordsTheSitesAIReadiness(t *testing.T) {
 	}
 }
 
+func TestRunMeasuresTheSitemapsCoverageOfThePagesItRead(t *testing.T) {
+	files := readySite("Allow: /")
+	files.Sitemaps = []domain.Sitemap{{Pages: []string{"https://www.x.test/belts/"}}}
+	read := append(pages(), domain.Page{URL: "https://x.test/belts", Title: "Belts"}, domain.Page{URL: "https://x.test/news", Title: "News"})
+	r := newRepo()
+	svc := service(r, crawler{files: files, pages: read}, nil, limits())
+	a, _ := svc.Start(t.Context(), "u", "https://x.test/", 3, "")
+	if err := svc.Run(t.Context(), a.ID); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := svc.Get(t.Context(), a.ID)
+	if c := got.Readiness.Sitemap.Coverage; c == nil || *c != (domain.SitemapCoverage{Pages: 3, Listed: 1}) {
+		t.Fatalf("coverage = %+v", c)
+	}
+
+	failing := newRepo("SaveSitemapCoverage")
+	svc = service(failing, crawler{files: files, pages: read}, nil, limits())
+	a, _ = svc.Start(t.Context(), "u", "https://x.test/", 3, "")
+	if err := svc.Run(t.Context(), a.ID); !errors.Is(err, errBoom) || failing.analyses[a.ID].Status != domain.StatusFailed {
+		t.Fatalf("Run = %v, status %s", err, failing.analyses[a.ID].Status)
+	}
+}
+
 func TestRunRecordsReadinessWhenTheSiteBlocksTheCrawl(t *testing.T) {
 	r := newRepo()
 	blocked := crawler{files: readySite("Disallow: /"), err: domain.ErrBlockedBySite}
@@ -65,6 +88,9 @@ func TestRunRecordsReadinessWhenTheSiteBlocksTheCrawl(t *testing.T) {
 	got, _ := svc.Get(t.Context(), a.ID)
 	if !got.Blocked() || got.Readiness == nil || bot(got.Readiness, "GPTBot").Access != domain.AccessBlocked {
 		t.Fatalf("a blocked scan keeps its crawler policy: %+v", got)
+	}
+	if got.Readiness.Sitemap.Coverage != nil {
+		t.Errorf("a scan that read no page measured a coverage: %+v", got.Readiness.Sitemap.Coverage)
 	}
 }
 

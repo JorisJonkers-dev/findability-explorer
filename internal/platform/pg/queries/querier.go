@@ -143,6 +143,8 @@ type Querier interface {
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
 	SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) error
+	// Records how many of the pages a scan read its sitemaps list, once the crawl is done.
+	SetSitemapCoverage(ctx context.Context, arg SetSitemapCoverageParams) (int64, error)
 	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (int64, error)
 	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
 	// How many scans the language model answered for, and the tokens one of them used on average.

@@ -16,7 +16,7 @@ function plan(improvements: PlanImprovement[]): Plan {
     improvements,
     watched: [
       { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, max: 1, met: false },
-      { target: 'citations', goal: 20 },
+      { target: 'citationShare', goal: 20 },
       { target: 'termsUsed', now: 45, goal: 35, met: true },
     ],
     tribeltTermsFrom: 'scan',
@@ -210,7 +210,7 @@ describe('the recommendations', () => {
       {
         targets: [
           { target: 'aiShareOfVoice', value: 0.4 },
-          { target: 'citations', value: 25 },
+          { target: 'citationShare', value: 25 },
         ],
       },
     ])

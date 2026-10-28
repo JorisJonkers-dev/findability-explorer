@@ -10,7 +10,7 @@ const facts = (change: (plan: Plan, standings: Standings) => void = () => undefi
   return { plan, standings }
 }
 
-const TARGETS: PlanTarget[] = ['aiShareOfVoice', 'twenteShareOfVoice', 'citations', 'readinessChecks', 'termsUsed']
+const TARGETS: PlanTarget[] = ['aiShareOfVoice', 'twenteShareOfVoice', 'citationShare', 'readinessChecks', 'termsUsed']
 
 describe('oxford', () => {
   it('writes a list as a sentence does', () => {
@@ -32,7 +32,7 @@ describe('addresses', () => {
 describe('valueText', () => {
   it('writes shares, counts and readiness checks', () => {
     expect(valueText('aiShareOfVoice', 0.24, 5)).toBe('24%')
-    expect(valueText('citations', 3, 5)).toBe('3')
+    expect(valueText('citationShare', 0.36, 8)).toBe('36%')
     expect(valueText('readinessChecks', 3, 5)).toBe('3 of 5')
     expect(valueText('termsUsed', 1234, 5)).toBe('1,234')
   })
@@ -44,7 +44,7 @@ describe('improvementRanks', () => {
     expect(improvementRanks(plan, 'aiShareOfVoice')).toEqual([1, 4])
     expect(improvementRanks(plan, 'twenteShareOfVoice')).toEqual([1, 4])
     expect(improvementRanks(plan, 'readinessChecks')).toEqual([2])
-    expect(improvementRanks(plan, 'citations')).toEqual([3])
+    expect(improvementRanks(plan, 'citationShare')).toEqual([3])
     expect(improvementRanks(plan, 'termsUsed')).toEqual([])
   })
 })
@@ -67,9 +67,10 @@ describe('numberRows', () => {
     expect(twente?.leaderAt).toBeDefined()
   })
 
-  it('sets a count against no leader, since the leader is counted in another unit', () => {
+  it('sets the citation share against the leader, like the other shares', () => {
     const citations = numberRows(facts())[2]
-    expect(citations).toMatchObject({ now: '3', goal: '20', leaderAt: undefined, improvedBy: 'Improved by recommendation 3', progress: '15% of the way to the target.' })
+    expect(citations).toMatchObject({ now: '10%', goal: '50%', improvedBy: 'Improved by recommendation 3', progress: '20% of the way to the target. Märtens is at 30%.' })
+    expect(citations?.leaderAt).toBeDefined()
   })
 
   it('writes the readiness checks out of the total', () => {
@@ -94,8 +95,8 @@ describe('numberRows', () => {
   })
 
   it('treats a target of zero as reached', () => {
-    const rows = numberRows(facts((plan) => (plan.watched = [{ target: 'citations', now: 0, goal: 0 }])))
-    expect(rows[0]?.progress).toBe('100% of the way to the target.')
+    const rows = numberRows(facts((plan) => (plan.watched = [{ target: 'citationShare', now: 0, goal: 0 }])))
+    expect(rows[0]?.progress).toBe('100% of the way to the target. Märtens is at 30%.')
   })
 })
 
@@ -129,12 +130,16 @@ describe('numberDetail', () => {
     expect(none?.headline).toBe('Tribelt is at 20%, against a target of 50%.')
   })
 
-  it('sets the citation count against a share, with no comparison with the leader', () => {
-    const d = numberDetail(facts(), 'citations')
-    expect(d?.headline).toBe('Tribelt is at 3, against a target of 20.')
-    expect(d?.bars.map((b) => b.label)).toEqual(['Tribelt', 'Target'])
-    expect(d?.figures[1]).toMatchObject({ big: '30%', title: 'Märtens, the leader', note: 'By the share of web answers that cite its site.' })
-    expect(d?.comparison).toBe('Competitors are compared by the share of web answers that cite their site, not by the count.')
+  it('sets the citation share against the leader', () => {
+    const d = numberDetail(facts(), 'citationShare')
+    expect(d?.headline).toBe("Märtens is ahead with 30%, against Tribelt's 10%.")
+    expect(d?.bars.map((b) => [b.label, b.display])).toEqual([
+      ['Tribelt', '10%'],
+      ['Typical competitor', '5%'],
+      ['Märtens', '30%'],
+      ['Target', '50%'],
+    ])
+    expect(d?.figures[1]).toMatchObject({ big: '30%', title: 'Märtens, the leader' })
   })
 
   it('writes the readiness checks as "3 of 5"', () => {
@@ -168,6 +173,6 @@ describe('numberDetail', () => {
   })
 
   it('has nothing for a number the plan does not watch', () => {
-    expect(numberDetail(facts((plan) => (plan.watched = [])), 'citations')).toBeUndefined()
+    expect(numberDetail(facts((plan) => (plan.watched = [])), 'citationShare')).toBeUndefined()
   })
 })

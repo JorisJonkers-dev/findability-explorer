@@ -59,7 +59,7 @@ describe('usePlan', () => {
     state.tick('listings', true)
     await flushPromises()
     expect(state.saveError.value).toBe('A scan checks this.')
-    state.setTargets([{ target: 'citations', value: 5 }])
+    state.setTargets([{ target: 'citationShare', value: 5 }])
     await flushPromises()
     expect(state.saveError.value).toBe('Out of range.')
   })

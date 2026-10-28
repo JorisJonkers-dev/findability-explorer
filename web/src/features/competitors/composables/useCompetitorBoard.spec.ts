@@ -19,7 +19,7 @@ function api(extra: Record<string, Handler> = {}, items = [tribelt, twentebelt, 
     'GET /api/v1/prompt-test': () => json(promptResults()),
     'GET /api/v1/ai-readiness': () =>
       json(readinessTable([readinessRow('Tribelt', { role: 'tribelt' }), readinessRow('Twentebelt', { readiness: readiness({ bots: bots({ GPTBot: 'blocked' }) }) })])),
-    'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 7 }),
+    'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 9 }),
     ...extra,
   })
 }
@@ -30,12 +30,12 @@ describe('useCompetitorBoard', () => {
     expect(state.isLoading.value).toBe(true)
     await flushPromises()
     expect(state.rows.value).toEqual([
-      { id: 'twentebelt', name: 'Twentebelt', share: 0.75, ready: 4.5 },
+      { id: 'twentebelt', name: 'Twentebelt', share: 0.75, ready: 7.5 },
       { id: 'martens', name: 'Martens', share: 0, ready: undefined },
     ])
     expect(state.tribelt.value?.id).toBe('tribelt')
     expect(state.tribeltShare.value).toBe(0.25)
-    expect(state.tribeltReady.value).toBe(5)
+    expect(state.tribeltReady.value).toBe(8)
     expect(state.group.value.map((c) => c.id)).toEqual(['tribelt-group'])
     expect(state.error.value).toBeNull()
   })
@@ -44,20 +44,20 @@ describe('useCompetitorBoard', () => {
     const { state } = mountComposable(useCompetitorBoard, api())
     await flushPromises()
     expect(state.count.value).toBe(7)
-    expect(state.outOf.value).toBe(7)
+    expect(state.outOf.value).toBe(9)
     expect(state.title.value).toBe('7 competitors sell metal belts that Tribelt’s buyers could buy instead.')
     expect(state.figures.value.map((f) => f.big)).toEqual(['7', '1', '0'])
     expect(state.bars.value).toEqual([{ family: 'eyelink', label: 'Eyelink', makers: 2, tribelt: null, path: '/terms/families/eyelink' }])
   })
 
-  it('counts what it lists and five checks until the server says, and has nothing to compare without Tribelt', async () => {
+  it('counts what it lists and eight checks until the server says, and has nothing to compare without Tribelt', async () => {
     const { state } = mountComposable(
       useCompetitorBoard,
       api({ 'GET /api/v1/overview': () => problem(500, 'Internal Server Error'), 'GET /api/v1/standings': () => problem(500, 'Internal Server Error'), 'GET /api/v1/prompt-test': () => problem(500, 'Internal Server Error') }, [twentebelt, martens]),
     )
     await flushPromises()
     expect(state.count.value).toBe(2)
-    expect(state.outOf.value).toBe(5)
+    expect(state.outOf.value).toBe(8)
     expect(state.bars.value).toEqual([])
     expect(state.tribelt.value).toBeUndefined()
     expect(state.tribeltShare.value).toBeUndefined()

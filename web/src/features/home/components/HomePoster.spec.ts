@@ -55,7 +55,7 @@ const poster = (wrapper: VueWrapper) => wrapper.get('main > div > div > div')
 describe('the poster', () => {
   it('says what the strategy is about, and credits the course', async () => {
     const { wrapper } = await mountApp(api, '/')
-    expect(wrapper.get('h1').text()).toBe('One belt,five names.')
+    expect(wrapper.get('h1').text()).toBe('One belt,many names.')
     expect(wrapper.text()).toContain('find Tribelt, on Google and in Gemini.')
     expect(wrapper.find('img[alt="A Tribelt employee at a belt production line"]').exists()).toBe(true)
     const footer = wrapper.get('footer')

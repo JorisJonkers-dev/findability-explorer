@@ -10,7 +10,7 @@ const SECTIONS = [
 
 test('the poster renders and is accessible', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1, name: /^One belt,\s*five names\.$/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /^One belt,\s*many names\.$/ })).toBeVisible()
   await expect(page).toHaveTitle('Overview · Findability Explorer')
   const sections = page.getByRole('navigation', { name: 'Sections' })
   await expect(sections.getByRole('link')).toHaveCount(5)

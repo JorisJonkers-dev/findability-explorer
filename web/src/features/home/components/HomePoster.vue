@@ -75,7 +75,7 @@ onMounted(() => {
           <span class="flex items-center gap-3 text-sm font-medium tracking-[0.08em] text-ink-2 uppercase stage:gap-6 stage:text-[30px]">
             <span aria-hidden="true" class="h-1.5 w-9 flex-none bg-orange stage:h-3 stage:w-18"></span>{{ EYEBROW }}
           </span>
-          <h1 class="m-0 font-display text-6xl leading-[0.95] font-semibold tracking-[-0.03em] sm:text-7xl stage:text-[196px]">One belt,<br />five names.</h1>
+          <h1 class="m-0 font-display text-6xl leading-[0.95] font-semibold tracking-[-0.03em] sm:text-7xl stage:text-[196px]">One belt,<br />many names.</h1>
           <p class="m-0 max-w-[60ch] text-lg leading-snug font-light text-ink-2 stage:max-w-[1800px] stage:text-[48px] stage:leading-[1.3]">{{ LEAD }}</p>
         </div>
         <img

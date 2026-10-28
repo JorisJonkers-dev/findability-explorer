@@ -8,7 +8,7 @@ import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
 import { useReadinessTable } from '../../readiness/composables/useReadiness'
 import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
-import { companyPath, COMPETITOR_TABS } from '../../shell/domain/sections'
+import { companyPath } from '../../shell/domain/sections'
 import { useRescan } from '../composables/useCompanyAdmin'
 import AddCompetitors from './AddCompetitors.vue'
 import { useCompetitorChecks, useListDecision } from '../composables/useCompetitorChecks'
@@ -64,7 +64,7 @@ function show(f: RosterFilter): void {
   <SectionView
     section="competitors"
     :title="competitorCount > 0 ? `${String(competitorCount)} competitors on the list, and Tribelt among them.` : 'Every competitor.'"
-    :tabs="COMPETITOR_TABS"
+    :back="{ to: '/competitors', label: 'Back to Competitors' }"
   >
     <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :class="isAdmin ? 'stage:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]' : 'stage:grid-cols-1'">
       <section aria-labelledby="list-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">

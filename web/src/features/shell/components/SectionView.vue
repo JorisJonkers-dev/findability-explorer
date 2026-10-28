@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import BackLink from '../../../shared/ui/BackLink.vue'
 import { usePreviousPath } from '../composables/navigation'
 import { section as sectionById, type SectionId, type Tab } from '../domain/sections'
 import SectionEyebrow from './SectionEyebrow.vue'
@@ -12,6 +14,8 @@ const props = withDefaults(
     /** The section the page is in; a page outside the sections, such as settings, names its eyebrow instead. */
     section?: SectionId
     eyebrow?: string
+    /** A detail page's way back, such as "Back to AI search". */
+    back?: { to: RouteLocationRaw; label: string }
     title: string
     /** What the tabs are called for screen readers. */
     tabsLabel?: string
@@ -20,7 +24,7 @@ const props = withDefaults(
     /** The section's pages, shown as tabs beside the title. */
     tabs?: readonly Tab[]
   }>(),
-  { section: undefined, eyebrow: undefined, tabsLabel: undefined, source: () => [], tabs: () => [] },
+  { section: undefined, eyebrow: undefined, back: undefined, tabsLabel: undefined, source: () => [], tabs: () => [] },
 )
 
 const eyebrowText = computed(() => {
@@ -42,6 +46,7 @@ const fromPoster = usePreviousPath().value === '/'
       <TopBar />
       <header class="flex flex-col gap-5 stage:grid stage:grid-cols-[minmax(0,1fr)_auto] stage:items-end stage:gap-18">
         <div class="flex flex-col gap-3 stage:gap-4">
+          <BackLink v-if="back" :to="back.to" :label="back.label" />
           <SectionEyebrow>{{ eyebrowText }}</SectionEyebrow>
           <h1
             :id="titleId"

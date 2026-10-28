@@ -8,16 +8,19 @@ describe('useStandings', () => {
   it('loads the measures and the count Tribelt trails on', async () => {
     const { state, sent } = mountComposable(
       useStandings,
-      routes({ 'GET /api/v1/standings': () => json({ measures: [{ measure: 'termsUsed', competitors: 0, trails: false, leads: false }], trailing: 3, open: [], readinessChecks: 5 }) }),
+      routes({ 'GET /api/v1/standings': () => json({ measures: [{ measure: 'termsUsed', competitors: 0, trails: false, leads: false }], trailing: 3, open: [], readinessChecks: 5, tribeltTermsFrom: 'scan' }) }),
     )
     expect(state.measures.value).toEqual([])
     expect(state.trailing.value).toBe(0)
     expect(state.readinessChecks.value).toBe(0)
+    expect(state.open.value).toEqual([])
+    expect(state.termsFrom.value).toBeUndefined()
     await flushPromises()
     expect(state.readinessChecks.value).toBe(5)
     expect(state.measures.value.map((m) => m.measure)).toEqual(['termsUsed'])
     expect(state.trailing.value).toBe(3)
     expect(state.open.value).toEqual([])
+    expect(state.termsFrom.value).toBe('scan')
     expect(state.error.value).toBeNull()
     expect(sent).toEqual(['GET /api/v1/standings'])
   })

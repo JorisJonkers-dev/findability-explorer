@@ -21,7 +21,7 @@ const COLUMN_FILL = ['bg-blue-grey', 'bg-orange', 'bg-black'] as const
 </script>
 
 <template>
-  <SectionView section="buyers" :title="TITLE" :source="SOURCE">
+  <SectionView section="overview" :back="{ to: '/', label: 'Back to Overview' }" :title="TITLE" :source="SOURCE">
     <div class="flex flex-col gap-14 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,0.8fr)] stage:gap-24">
       <section aria-labelledby="cmp-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-10">
         <SectionHeading id="cmp-title">Compare the channels</SectionHeading>

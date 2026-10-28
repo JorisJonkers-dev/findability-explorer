@@ -9,7 +9,6 @@ import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import { batchSummary } from '../../competitors/domain/tray'
 import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
-import { AI_SEARCH_TABS } from '../../shell/domain/sections'
 import { usePromptAnswers, usePromptResults, useRetryPlan, useRetryRun, useStartRun } from '../composables/usePromptTest'
 import {
   answerCost,
@@ -90,7 +89,7 @@ function download(): void {
 </script>
 
 <template>
-  <SectionView section="ai-search" :title="title" :tabs="AI_SEARCH_TABS">
+  <SectionView section="ai-search" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
     <template v-if="results && run" #aside>
       <div class="flex flex-wrap items-center gap-3 stage:justify-end stage:gap-4">
         <label class="inline-flex items-center gap-2 text-sm font-medium stage:gap-3 stage:text-[24px]">

@@ -5,7 +5,7 @@ const SECTIONS = [
   { path: '/ai-search', title: 'AI search', heading: 'An AI assistant can only recommend what it has read.' },
   { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors are on our list\. The same belts, other names\.$/ },
   { path: '/terms', title: 'Search terms', heading: /ways to search for a metal belt\.$/ },
-  { path: '/plan', title: 'The plan', heading: 'Check every Monday. Fix one thing a week. Watch the numbers move.' },
+  { path: '/recommendations', title: 'Recommendations', heading: 'Check every Monday. Fix one thing a week. Watch the numbers move.' },
 ] as const
 
 test('the poster renders and is accessible', async ({ page }) => {
@@ -13,12 +13,11 @@ test('the poster renders and is accessible', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: /^One belt,\s*many names\.$/ })).toBeVisible()
   await expect(page).toHaveTitle('Overview · Findability Explorer')
   const sections = page.getByRole('navigation', { name: 'Sections' })
-  await expect(sections.getByRole('link')).toHaveCount(5)
+  await expect(sections.getByRole('link')).toHaveCount(4)
   // The live figures: the competitors on the list now (the research's 44 and any added since) and
   // the map's 90 terms in Dutch, German and English.
-  await expect(sections.getByRole('link', { name: /^Catching up: (\d+|…) measures? where Tribelt trails/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^AI search: .* of AI answers name Tribelt/ })).toBeVisible()
-  await expect(sections.getByRole('link', { name: /^The plan: 52 weekly checks a year/ })).toBeVisible()
+  await expect(sections.getByRole('link', { name: /^Recommendations: 52 weekly checks a year/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^Buyers/ })).toHaveCount(0)
   await expect(sections.getByRole('link', { name: /^Competitors: \d+ competitors on our list sell the same belts in Europe/ })).toBeVisible()
   await expect(sections.getByRole('link', { name: /^Search terms: 90 search terms in 3 languages\. Our research found 30 of them for Tribelt./ })).toBeVisible()
@@ -34,18 +33,18 @@ for (const section of SECTIONS) {
   })
 }
 
-test('a tile zooms into its section, and Overview zooms back out', async ({ page }) => {
+test('a tile zooms into its section, and Overview links back', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: /^The plan:/ }).click()
-  await expect(page).toHaveURL('/plan')
+  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: /^Recommendations:/ }).click()
+  await expect(page).toHaveURL('/recommendations')
   await expect(page.getByRole('heading', { level: 1, name: 'Check every Monday. Fix one thing a week. Watch the numbers move.' })).toBeVisible()
 
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Overview' }).click()
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Overview', exact: true }).click()
   await expect(page).toHaveURL('/')
   await expect(page.getByRole('heading', { level: 1, name: /^One belt/ })).toBeVisible()
-  // The browser's own back and forward agree with the zoom.
-  await page.goForward()
-  await expect(page).toHaveURL('/plan')
+  // The browser's own back agrees with the links.
+  await page.goBack()
+  await expect(page).toHaveURL('/recommendations')
 })
 
 test('the company picker suggests a known company, and names an unknown one', async ({ page }) => {
@@ -98,7 +97,7 @@ test('the terms view filters by language and survives a reload', async ({ page }
 
 test('the settings page is reachable for an administrator, and accessible', async ({ page }) => {
   await page.goto('/')
-  await page.goto('/plan')
+  await page.goto('/recommendations')
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Settings' }).click()
   await expect(page).toHaveURL('/settings')
   await expect(page.getByRole('heading', { level: 1, name: 'Language models' })).toBeVisible()

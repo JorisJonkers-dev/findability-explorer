@@ -3,7 +3,7 @@ import StageColumn from '../../../shared/ui/StageColumn.vue'
 import { useColumnLayout } from '../../../shared/useColumnLayout'
 import { computed, toRef } from 'vue'
 import SectionView from '../../shell/components/SectionView.vue'
-import { companyTabs } from '../../shell/domain/sections'
+import { companyPath } from '../../shell/domain/sections'
 import ReadinessFiles from '../../readiness/components/ReadinessFiles.vue'
 import { useCompany } from '../composables/useCompany'
 import { useCompanyProfile } from '../composables/useCompanyHistory'
@@ -28,7 +28,7 @@ function columnProps(i: number) {
 </script>
 
 <template>
-  <SectionView section="competitors" :title="title" :tabs="companyTabs(companyId)" :source="['Scans: live, from this app', 'Grouped by the terminology map']">
+  <SectionView section="competitors" :title="title" :back="{ to: companyPath(companyId), label: 'Back to the latest scan' }" :source="['Scans: live, from this app', 'Grouped by the terminology map']">
     <div
       class="flex flex-col gap-10 stage:grid stage:min-h-0 stage:grid-rows-[minmax(0,1fr)] stage:gap-x-24 stage:gap-y-10"
       :style="{ gridTemplateColumns: columns.template.value }"

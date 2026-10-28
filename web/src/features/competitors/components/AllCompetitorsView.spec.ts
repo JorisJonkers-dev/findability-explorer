@@ -1,7 +1,16 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { competitor, me, promptResults, readiness, readinessRow, summary, readinessTable } from '../../../testing/fixtures'
-import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
+import { type Handler, json, mountApp as mountRouted, problem, routes, settle } from '../../../testing/mountApp'
+
+/** The list is no longer routed, so the test gives it a route of its own. */
+async function mountApp(handle: Handler, path: string) {
+  const app = await mountRouted(handle, '/')
+  app.router.addRoute({ path: '/all-competitors', component: () => import('./AllCompetitorsView.vue') })
+  await app.router.push(path.replace('/competitors/all', '/all-competitors'))
+  await settle()
+  return app
+}
 
 function api(admin = false, extra: Record<string, Handler> = {}) {
   return routes({

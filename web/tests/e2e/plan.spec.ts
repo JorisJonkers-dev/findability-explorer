@@ -1,9 +1,9 @@
 import { expect, expectAccessible, test } from './fixtures'
 
-test('the plan ticks an improvement off and back, and keeps the tick', async ({ page }, info) => {
+test('the recommendations tick an improvement off and back, and keeps the tick', async ({ page }, info) => {
   // The projects share one database, so each ticks an improvement of its own.
   const title = info.project.name === 'phone' ? /One page per belt family/ : /Get listed where answers find sources/
-  await page.goto('/plan')
+  await page.goto('/recommendations')
   const improvements = page.getByRole('list', { name: 'Improvement checklist' })
   await expect(improvements.locator(':scope > li')).toHaveCount(8)
   // Each one says how to do it.
@@ -19,9 +19,4 @@ test('the plan ticks an improvement off and back, and keeps the tick', async ({ 
   await expect(box).not.toBeChecked()
   // A scan decides an automatic one; it cannot be ticked by hand.
   await expect(page.getByRole('checkbox', { name: /Add llms.txt and llms-full.txt/ })).toBeDisabled()
-})
-
-test('Catching up lists the open improvements', async ({ page }) => {
-  await page.goto('/catching-up')
-  await expect(page.getByRole('region', { name: 'What to do, in order' }).getByRole('listitem')).toHaveCount(5)
 })

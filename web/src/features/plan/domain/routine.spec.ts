@@ -3,7 +3,7 @@ import { eyeOnText, foundLine, metLine, MONTHS, ROUTINE, standingLine, statusLin
 
 describe('the routine and the year', () => {
   it('has four weekly steps, each linking to its page, and a year of twelve months in three phases', () => {
-    expect(ROUTINE.map((s) => s.link.path)).toEqual(['/ai-search', '/catching-up', '/plan', '/competitors/tribelt'])
+    expect(ROUTINE.map((s) => s.link.path)).toEqual(['/ai-search', '/', '/plan', '/competitors/tribelt'])
     expect(MONTHS).toHaveLength(12)
     expect(YEAR.reduce((n, p) => n + p.span, 0)).toBe(12)
   })

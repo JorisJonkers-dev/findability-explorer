@@ -2,24 +2,22 @@
 import { computed, onMounted, useTemplateRef } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import worker from '../../../assets/worker.webp'
-import tribeltLogo from '../../../assets/tribelt-logo-on-dark.svg'
-import utLogo from '../../../assets/ut-logo-white.png'
-import { useStandings } from '../../catching-up/composables/useStandings'
-import AccountBar from '../../shell/components/AccountBar.vue'
+import SiteFooter from '../../shell/components/SiteFooter.vue'
 import StageFrame from '../../shell/components/StageFrame.vue'
 import { usePreviousPath } from '../../shell/composables/navigation'
-import { type SectionId, SECTIONS, sectionOfPath } from '../../shell/domain/sections'
+import { type SectionId, SECTIONS as ALL_SECTIONS, sectionOfPath } from '../../shell/domain/sections'
 import { useOverview } from '../composables/useOverview'
 import { useZoom } from '../composables/useZoom'
-import { COURSE_LINE, EYEBROW, LEAD, TEAM_LINE, TILE_TEXT } from '../domain/content'
-import { aiFigure, catchUpFigure, familyBars, gapBars, languageBars, originOf, termsFigure, voiceBars } from '../domain/tiles'
+import { EYEBROW, LEAD, TILE_TEXT } from '../domain/content'
+import { aiFigure, familyBars, languageBars, originOf, termsFigure, voiceBars } from '../domain/tiles'
 import TileBars from './TileBars.vue'
 import TilePlan from './TilePlan.vue'
 
+/** The poster's tiles: every section but the overview, which is this page. */
+const SECTIONS = ALL_SECTIONS.filter((s) => s.id !== 'overview')
 const router = useRouter()
 const root = useTemplateRef<HTMLElement>('root')
 const tiles = useTemplateRef<HTMLElement[]>('tiles')
-const { measures, trailing } = useStandings()
 const { overview } = useOverview()
 
 const { zoomClass, origin, zoomIn, zoomOut, finished } = useZoom((index) => {
@@ -30,11 +28,10 @@ const { zoomClass, origin, zoomIn, zoomOut, finished } = useZoom((index) => {
 const figures = computed<Partial<Record<SectionId, { big: string; text: string }>>>(() => {
   const makers = overview.value?.competitors.makers ?? 0
   return {
-    'catching-up': catchUpFigure(measures.value, trailing.value),
     'ai-search': aiFigure(overview.value?.aiSearch),
     competitors: { big: makers > 0 ? String(makers) : '…', text: TILE_TEXT.competitors },
     terms: termsFigure(overview.value?.terms),
-    plan: TILE_TEXT.plan,
+    recommendations: TILE_TEXT.plan,
   }
 })
 
@@ -85,7 +82,7 @@ onMounted(() => {
         />
       </header>
 
-      <nav aria-label="Sections" class="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:px-8 stage:min-h-0 stage:grid-cols-5 stage:gap-12 stage:px-0">
+      <nav aria-label="Sections" class="grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:px-8 stage:min-h-0 stage:grid-cols-4 stage:gap-12 stage:px-0">
         <RouterLink v-for="(section, index) in SECTIONS" :key="section.id" v-slot="{ href }" :to="section.path" custom>
           <a
             ref="tiles"
@@ -101,16 +98,7 @@ onMounted(() => {
             <span class="leading-snug text-ink-2 stage:min-h-[132px] stage:text-[34px] stage:leading-[1.3]">{{ figures[section.id]?.text }}</span>
             <span aria-hidden="true" class="flex flex-col justify-end gap-3 stage:min-h-0 stage:flex-1 stage:gap-[18px]">
               <TileBars
-                v-if="section.id === 'catching-up'"
-                :bars="gapBars(measures)"
-                fill="orange"
-                :legend="[
-                  { label: 'Tribelt', fill: 'orange' },
-                  { label: 'Gap to the leader', fill: 'blue-grey' },
-                ]"
-              />
-              <TileBars
-                v-else-if="section.id === 'ai-search'"
+                v-if="section.id === 'ai-search'"
                 :bars="voiceBars(overview?.aiSearch)"
                 fill="blue-grey"
                 strong="Tribelt"
@@ -131,7 +119,7 @@ onMounted(() => {
                   { label: 'Only others use', fill: 'blue-grey' },
                 ]"
               />
-              <TilePlan v-else-if="section.id === 'plan'" />
+              <TilePlan v-else-if="section.id === 'recommendations'" />
             </span>
             <span aria-hidden="true" class="inline-flex items-center gap-2 text-sm font-medium text-muted stage:gap-3.5 stage:text-[24px]">
               <svg viewBox="0 0 24 24" class="size-5 stage:size-[30px]" fill="none" stroke="currentColor" stroke-width="2">
@@ -144,20 +132,7 @@ onMounted(() => {
         </RouterLink>
       </nav>
 
-      <footer
-        class="flex flex-col gap-6 bg-black px-4 py-8 text-white sm:px-8 stage:-mx-28 stage:grid stage:grid-cols-[auto_minmax(0,1fr)_auto] stage:items-center stage:gap-24 stage:px-28 stage:py-0"
-      >
-        <img :src="tribeltLogo" alt="Tribelt, part of Lesjöfors Group" class="block h-14 w-auto self-start stage:h-[104px] stage:self-center" />
-        <div class="flex items-start gap-4 border-ink-2 text-sm stage:items-center stage:gap-12 stage:border-l-2 stage:pl-24 stage:text-[30px]">
-          <span aria-hidden="true" class="mt-2 h-1.5 w-6 flex-none bg-orange stage:mt-0 stage:h-3 stage:w-12"></span>
-          <span class="flex flex-col gap-2 stage:gap-3">
-            <span class="font-semibold">{{ COURSE_LINE }}</span>
-            <span class="text-silver">{{ TEAM_LINE }}</span>
-            <AccountBar tone="dark" />
-          </span>
-        </div>
-        <img :src="utLogo" alt="University of Twente" class="block h-14 w-auto self-start stage:h-[116px] stage:self-center" />
-      </footer>
+      <SiteFooter />
     </div>
   </StageFrame>
 </template>

@@ -30,19 +30,19 @@ function api(admin = false, extra: Record<string, Handler> = {}) {
 
 describe('the plan', () => {
   it('walks through the weekly routine, a step at a time', async () => {
-    const { wrapper } = await mountApp(api(), '/plan')
-    expect(document.title).toBe('The plan · Findability Explorer')
+    const { wrapper } = await mountApp(api(), '/recommendations')
+    expect(document.title).toBe('Recommendations · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('Check every Monday. Fix one thing a week. Watch the numbers move.')
     const steps = wrapper.findAll('section[aria-labelledby="week-title"] ol button')
     expect(steps.map((s) => s.attributes('aria-pressed'))).toEqual(['true', 'false', 'false', 'false'])
     expect(wrapper.get('[aria-live="polite"] a').attributes('href')).toBe('/ai-search')
     await steps[1]?.trigger('click')
-    expect(wrapper.get('[aria-live="polite"]').text()).toContain('Catching up shows where Tribelt trails the leaders.')
-    expect(wrapper.get('[aria-live="polite"] a').attributes('href')).toBe('/catching-up')
+    expect(wrapper.get('[aria-live="polite"]').text()).toContain('The overview shows where Tribelt trails the leaders.')
+    expect(wrapper.get('[aria-live="polite"] a').attributes('href')).toBe('/')
   })
 
   it('lists the improvements in order, with what is done and who to look at', async () => {
-    const { wrapper } = await mountApp(api(), '/plan')
+    const { wrapper } = await mountApp(api(), '/recommendations')
     expect(wrapper.get('#fix-title').text()).toBe('Improvement checklist')
     const items = wrapper.findAll('ol[aria-label="Improvement checklist"] > li')
     expect(items).toHaveLength(2)
@@ -64,7 +64,7 @@ describe('the plan', () => {
   })
 
   it('shows the numbers to watch against their targets, and who to keep an eye on', async () => {
-    const { wrapper } = await mountApp(api(), '/plan')
+    const { wrapper } = await mountApp(api(), '/recommendations')
     const watch = wrapper.get('aside[aria-labelledby="watch-title"]')
     expect(watch.text()).toContain('AI answers in the newest Prompt run that name Tribelt24% to 40%')
     expect(watch.text()).toContain('Web answers in the newest Prompt run that cite tribelt.nlNo data yet to 20')

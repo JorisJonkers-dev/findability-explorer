@@ -65,23 +65,20 @@ describe('the poster', () => {
     expect(footer.text()).toContain('Signed in as Joris Jonkers')
   })
 
-  it('links to the five sections, each with its figure and line', async () => {
+  it('links to the four sections, each with its figure and line', async () => {
     const { wrapper } = await mountApp(api, '/')
     expect(tiles(wrapper).map((a) => [a.attributes('href'), a.attributes('aria-label')])).toEqual([
-      ['/catching-up', 'Catching up: 1 measure where Tribelt trails the leader. Zoom in.'],
       ['/ai-search', 'AI search: 25% of the AI answers in the newest Prompt run name Tribelt. Twentebelt is named in 75%. Zoom in.'],
       ['/competitors', 'Competitors: 2 competitors on our list sell the same belts in Europe, each under its own names. Zoom in.'],
       ['/terms', 'Search terms: 3 search terms in 2 languages. The newest scan of tribelt.nl found 1 of them. Zoom in.'],
-      ['/plan', 'The plan: 52 weekly checks a year. Every fix shows up in the numbers the week after. Zoom in.'],
+      ['/recommendations', 'Recommendations: 52 weekly checks a year. Every fix shows up in the numbers the week after. Zoom in.'],
     ])
-    expect(tiles(wrapper)[0]?.text()).toContain('AI answers24%')
-    expect(tiles(wrapper)[0]?.text()).toContain('Gap to the leader')
-    expect(tiles(wrapper)[1]?.text()).toContain('Tribelt25%')
-    const competitors = tiles(wrapper)[2]
+    expect(tiles(wrapper)[0]?.text()).toContain('Tribelt25%')
+    const competitors = tiles(wrapper)[1]
     expect(competitors?.text()).toContain('Competitors offering each Tribelt family, of 2')
     expect(competitors?.text()).toContain('Eyelink1')
-    expect(tiles(wrapper)[3]?.text()).toContain('English2')
-    expect(tiles(wrapper)[4]?.text()).toContain('Read the Monday report')
+    expect(tiles(wrapper)[2]?.text()).toContain('English2')
+    expect(tiles(wrapper)[3]?.text()).toContain('Read the Monday report')
   })
 
   it('asks the server for its figures, not for the whole map, the companies or the Prompt runs', async () => {
@@ -92,33 +89,29 @@ describe('the poster', () => {
 
   it('shows a placeholder until the live figures load', async () => {
     const { wrapper } = await mountApp(routes({}), '/')
-    expect(tiles(wrapper)[0]?.attributes('aria-label')).toContain('Catching up: … measures')
-    expect(tiles(wrapper)[1]?.attributes('aria-label')).toContain('AI search: … of AI answers name Tribelt, once the first Prompt run is in.')
-    expect(tiles(wrapper)[2]?.attributes('aria-label')).toContain('Competitors: …')
-    expect(tiles(wrapper)[3]?.attributes('aria-label')).toContain('Search terms: … search terms in the terminology map.')
+    expect(tiles(wrapper)[0]?.attributes('aria-label')).toContain('AI search: … of AI answers name Tribelt, once the first Prompt run is in.')
+    expect(tiles(wrapper)[1]?.attributes('aria-label')).toContain('Competitors: …')
+    expect(tiles(wrapper)[2]?.attributes('aria-label')).toContain('Search terms: … search terms in the terminology map.')
   })
 })
 
 describe('the zoom', () => {
-  it('grows toward a tile, then opens its section; Overview shrinks back out of it', async () => {
+  it('grows toward a tile, then opens its section; Overview links back', async () => {
     const { wrapper, router } = await mountApp(api, '/')
-    await tiles(wrapper)[4]?.trigger('click', { button: 0 })
+    await tiles(wrapper)[3]?.trigger('click', { button: 0 })
     expect(poster(wrapper).classes()).toContain('zoom-in')
     expect(router.currentRoute.value.path).toBe('/')
     // A second click while it moves changes nothing.
     await tiles(wrapper)[0]?.trigger('click', { button: 0 })
     await poster(wrapper).trigger('animationend')
     await settle()
-    expect(router.currentRoute.value.path).toBe('/plan')
+    expect(router.currentRoute.value.path).toBe('/recommendations')
     // Opened from the poster, the section settles in.
     expect(wrapper.find('.detail-in').exists()).toBe(true)
 
-    await wrapper.get('nav[aria-label="Main"] button.cursor-zoom-out').trigger('click')
+    await wrapper.get('nav[aria-label="Main"] a[href="/"]:not([aria-label])').trigger('click')
     await settle()
     expect(router.currentRoute.value.path).toBe('/')
-    expect(poster(wrapper).classes()).toContain('zoom-out')
-    await poster(wrapper).trigger('animationend')
-    expect(poster(wrapper).classes()).not.toContain('zoom-out')
   })
 
   it('leaves a click that opens a new tab to the browser', async () => {

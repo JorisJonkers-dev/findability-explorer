@@ -37,7 +37,7 @@ describe('the AI search summary', () => {
     expect(share.text()).toContain('of the answers in the newest run, up from 14% on 26 Oct')
     expect(share.get('svg').attributes('aria-label')).toContain('The goal is 40%.')
     expect(share.text()).toContain('Goal 40%')
-    expect(share.get('a[href="/ai-search/prompt-test"]').text()).toContain('Each Prompt run asks 5 assistants 20 buyer questions.')
+    expect(share.get('a[href="/ai-search/answers"]').text()).toContain('Each Prompt run asks 5 assistants 20 buyer questions.')
   })
 
   it('lists the crawlers with what tribelt.nl does with each, and who keeps them out', async () => {

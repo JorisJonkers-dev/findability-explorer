@@ -31,8 +31,7 @@ writes it.**
   agree with it. The share is sent with the home page's figures rather than divided in the browser.
 - **The Twente share** is `TwenteShare`, **citations** are `Citations` (the count) and
   `CitationShare` (its share of the web answers), **readiness checks** are `ReadinessScore`.
-- **Competitors** are two counts with two names: those the desk research found (the home page and
-  the Competitors page) and those on the list now (All competitors and the products), both from
+- **Competitors** are the competitors on the list now (see the amendment below), counted by
   `CompetitorsOf`.
 
 **A target at or below the value now is met, not a goal.** `Watched.Met` says so; the plan shows
@@ -54,3 +53,38 @@ readiness checks stay at 40%, 75% and five of five.
   statistic from the five readiness checks, and its heading says how many sites it counts.
 - Tests in `internal/insight/app/agreement_test.go` read the same data through every use case and
   check the pages agree on each statistic.
+
+## Amended, October 2026: every competitor figure counts the list as it is now
+
+The home page and the Competitors page still said "The desk research found 44 competitors" after an
+administrator, the candidate review and Haiku had grown the list to 69: `CompetitorsOf` counted only
+the competitors the research found, and the families' bars only their belt names. Other pages
+counted the list, so one idea was two numbers again.
+
+**Every competitor figure is computed from the competitors on the list now: role competitor, not
+archived, researched or added since.** No page keeps a count of the research's list.
+
+- `CompetitorsOf` counts them (`makers` on the overview; `listed` is gone, as it is now the same
+  number), and each family's makers by the belt names recorded for them or the products their
+  newest scan matched (`AllBeltNames`). The home tile, the Competitors headline ("69 competitors sell
+  the same belts under other names.") and All competitors show it; the products' sellers, the
+  standings' typical competitor and leader, the readiness ranking and the AI share rows already
+  read the same list through the insight Directory.
+- **A term's companies are its makers** (`SiteUse.Makers` in `internal/terminology/domain`): the
+  competitors on the list that its credits name, by the name the map credits them under, or whose
+  newest finished scan found it. A credit to a company no longer on the list, or to Tribelt, makes
+  no maker. The term search sends them (`makers`), the products count them (`usedBy`), and the
+  search terms page, the heatmap and the company pages list them, in place of the browser merging
+  the credits with the scans.
+- **The readiness checks are defined once** (`ScoredChecks`, `ReadinessChecks`, `Points` in
+  `internal/insight/domain`). The standings, the plan and the AI search summary send how many there
+  are (`readinessChecks`), so no page writes "five" itself; the AI search summary counts the sites
+  passing each check (`checks`) for the readiness page; a plan target carries its most (`max`); and
+  the plan's Product markup check reads the readiness page's rule.
+- **A competitor's share of AI answers** on All competitors is the Prompt test mention's `share`,
+  computed on the server over the same answers as `ShareOfVoice`.
+- The sitemap is measured by its coverage (ADR-0013).
+- `internal/insight/app/agreement_test.go` reads one field of Tribelt, its group, the mirror and
+  three competitors, one added since, through every use case, and checks the competitor count, the
+  family makers, the leaders, the typical competitor, the sitemap coverage, the readiness checks
+  and the shares agree.

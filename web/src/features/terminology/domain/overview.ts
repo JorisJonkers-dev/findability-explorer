@@ -5,7 +5,7 @@ import type { Tone } from '../../../shared/ui/charts/tones'
 /** Words listed as a sentence lists them, with the Oxford comma: "a", "a and b", "a, b, and c". */
 export function listOf(words: readonly string[]): string {
   if (words.length <= 2) return words.join(' and ')
-  return `${words.slice(0, -1).join(', ')}, and ${words[words.length - 1] ?? ''}`
+  return `${words.slice(0, -1).join(', ')}, and ${words.slice(-1).join('')}`
 }
 
 /** The main page's headline, from the map's count and the terms tribelt.nl uses; neutral until the figures load. */
@@ -48,7 +48,7 @@ export function languageSlices(terms: OverviewTerms | undefined): LanguageSlice[
     count: l.terms,
     tribelt: l.tribelt,
     share: total > 0 ? l.terms / total : 0,
-    tone: SLICE_TONES[i % SLICE_TONES.length] ?? 'silver',
+    tone: SLICE_TONES[i % SLICE_TONES.length] as Tone,
   }))
 }
 

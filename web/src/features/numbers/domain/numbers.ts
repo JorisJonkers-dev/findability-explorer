@@ -63,7 +63,7 @@ const DEFINITIONS: Record<PlanTarget, Definition> = {
   termsUsed: {
     slug: 'termsUsed',
     label: 'Search terms tribelt.nl uses',
-    counts: "how many of the map's search terms the newest scan of tribelt.nl found.",
+    counts: "how many of the terms on our search term list the newest scan of tribelt.nl found.",
     unit: 'termsUsed',
     compare: 'termsUsed',
     improvedBy: 'termsUsed',

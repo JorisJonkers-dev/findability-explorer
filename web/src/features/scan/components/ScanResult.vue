@@ -103,7 +103,7 @@ const model = computed(() => matchedBy(props.scan.matchingModel))
           class="rounded-full px-2.5 py-0.5 text-xs font-medium text-black stage:px-4 stage:py-1 stage:text-[22px]"
           :class="p.inMap ? 'bg-grey' : 'bg-orange'"
         >
-          {{ p.inMap ? 'In the map' : 'New term' }}
+          {{ p.inMap ? 'Already on our list' : 'New term' }}
         </span>
       </li>
     </ol>

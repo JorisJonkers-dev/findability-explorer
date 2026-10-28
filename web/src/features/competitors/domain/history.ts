@@ -55,10 +55,10 @@ export function sinceLabel(firstScan: number, latest: number | undefined): strin
   return firstScan === latest ? 'new in this scan' : `since scan ${String(firstScan)}`
 }
 
-/** What the map makes of a term: "in the map", or "not in the map, closest: eyelink belt". */
+/** What the map makes of a term: "in the map", or "not on the search term list, closest: eyelink belt". */
 export function mapLabel(t: Pick<ProfileTerm, 'inMap' | 'closestTerm'>): string {
-  if (t.inMap) return 'in the map'
-  return t.closestTerm ? `not in the map, closest: ${t.closestTerm}` : 'not in the map'
+  if (t.inMap) return 'on the search term list'
+  return t.closestTerm ? `not on the search term list, closest: ${t.closestTerm}` : 'not on the search term list'
 }
 
 /** A scan's name: "Scan 3", or "Scan" for one without a number. */

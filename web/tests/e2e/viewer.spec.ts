@@ -2,17 +2,23 @@ import { expect, expectAccessible, test } from './fixtures'
 
 // This file runs only in the viewer project: a signed-in account without ROLE_ADMIN.
 
-test('an account that is no administrator sees the companies and scans, but no controls', async ({ page }) => {
-  await page.goto('/competitors?company=twentebelt')
-  await expect(page.getByRole('heading', { level: 2, name: 'Twentebelt' })).toBeVisible()
-  await expect(page.getByRole('heading', { level: 2, name: 'Scans', exact: true })).toBeVisible()
+test('an account that is no administrator sees the competitors, but no controls', async ({ page }) => {
+  await page.goto('/competitors')
+  await expect(page.getByRole('region', { name: 'The competitors' })).toBeVisible()
   await expect(page.getByRole('combobox', { name: 'Website address' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Scan website' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: /^(Re-scan|Scan this website)$/ })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Re-scan all companies with data' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Add a company' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Manage the list' })).toHaveCount(0)
+  await expectAccessible(page)
+})
+
+test('a competitor’s page shows an account that is no administrator no way to scan or change it', async ({ page }) => {
+  await page.goto('/competitors/twentebelt')
+  await expect(page.getByRole('heading', { level: 2, name: 'Twentebelt against Tribelt' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^(Scan again|Scan this website)$/ })).toHaveCount(0)
   await expect(page.getByRole('group', { name: 'Manage this company' })).toHaveCount(0)
-  await expect(page.getByRole('link', { name: 'Over time' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'See its scan history' })).toBeVisible()
   await expectAccessible(page)
 })
 

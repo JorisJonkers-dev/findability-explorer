@@ -3,7 +3,7 @@ import { expect, expectAccessible, test } from './fixtures'
 const SECTIONS = [
   { path: '/buyers', title: 'Buyers', heading: 'Paid search buys traffic, not buyers.' },
   { path: '/ai-search', title: 'AI search', heading: 'An AI assistant can only recommend what it has read.' },
-  { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors are on our list\. The same belts, other names\.$/ },
+  { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors? sells? metal belts that Tribelt’s buyers could buy instead\.$/ },
   { path: '/terms', title: 'Search terms', heading: /^Competitors list belts using \d+ terms/ },
   { path: '/recommendations', title: 'Recommendations', heading: 'Start with the changes that help Tribelt most.' },
 ] as const
@@ -91,13 +91,14 @@ test('the company picker suggests a known company, and names an unknown one', as
   await expectAccessible(page)
 })
 
-test('picking a company shows it, and keeps it in the address', async ({ page }) => {
+test('picking a competitor opens its page, which survives a reload', async ({ page }) => {
   await page.goto('/competitors')
-  await page.getByRole('list', { name: 'Companies' }).getByRole('button', { name: /^Märtens/ }).click()
-  await expect(page).toHaveURL(/[?&]company=/)
-  await expect(page.getByRole('heading', { level: 2, name: 'Märtens' })).toBeVisible()
+  await page.getByRole('region', { name: 'The competitors' }).getByRole('link').first().click()
+  await expect(page).toHaveURL(/\/competitors\/[^/]+$/)
+  await expect(page.getByRole('link', { name: 'Back to Competitors' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: /against Tribelt$/ })).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('heading', { level: 2, name: 'Märtens' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: /against Tribelt$/ })).toBeVisible()
 })
 
 test('the scan form refuses an address it cannot scan', async ({ page }) => {

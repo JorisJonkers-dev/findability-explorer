@@ -95,9 +95,9 @@ describe('the company card', () => {
   })
 
   it('counts its terms', () => {
-    expect(termsTitle(1)).toBe('1 term from the map, from our research or found by its newest scan')
-    expect(termsTitle(45, 'scan')).toBe('45 terms from the map, found by the newest scan of tribelt.nl')
-    expect(termsTitle(12, 'research')).toBe('12 terms from the map, from our research until tribelt.nl is scanned')
+    expect(termsTitle(1)).toBe('1 term from the search term list, from our research or found by its newest scan')
+    expect(termsTitle(45, 'scan')).toBe('45 terms from the search term list, found by the newest scan of tribelt.nl')
+    expect(termsTitle(12, 'research')).toBe('12 terms from the search term list, from our research until tribelt.nl is scanned')
   })
 
   it('shows the company in the address, else the first', () => {

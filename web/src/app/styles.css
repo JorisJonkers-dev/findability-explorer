@@ -32,9 +32,16 @@
  * The stage: on a screen at least 1024 by 576 pixels, the poster and every section view is a
  * 3840 by 2160 slide scaled to fit the window. `stage:` classes carry the slide's own sizes, in
  * the slide's pixels; the classes without it are the stacked page a phone scrolls through.
- * StageFrame.vue asks the same media query, so the two always agree.
+ * StageFrame.vue asks the same media query, so the two always agree. The classes apply only inside
+ * a StageFrame (`.stage-on`), so a page that is not a slide, such as the overview, sits beside them.
  */
-@custom-variant stage (@media (min-width: 1024px) and (min-height: 576px));
+@custom-variant stage {
+  @media (min-width: 1024px) and (min-height: 576px) {
+    &:where(.stage-on, .stage-on *) {
+      @slot;
+    }
+  }
+}
 
 @layer base {
   :root {

@@ -13339,6 +13339,14 @@ func (s *PlanImprovement) encodeFields(e *jx.Encoder) {
 		s.Measure.Encode(e)
 	}
 	{
+		e.FieldStart("benefit")
+		e.Int32(s.Benefit)
+	}
+	{
+		e.FieldStart("effort")
+		e.Int32(s.Effort)
+	}
+	{
 		e.FieldStart("auto")
 		e.Bool(s.Auto)
 	}
@@ -13396,21 +13404,23 @@ func (s *PlanImprovement) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPlanImprovement = [14]string{
+var jsonFieldsNameOfPlanImprovement = [16]string{
 	0:  "id",
 	1:  "title",
 	2:  "moves",
 	3:  "measure",
-	4:  "auto",
-	5:  "done",
-	6:  "tickedBy",
-	7:  "tickedAt",
-	8:  "why",
-	9:  "steps",
-	10: "doneWhen",
-	11: "parts",
-	12: "tribelt",
-	13: "leader",
+	4:  "benefit",
+	5:  "effort",
+	6:  "auto",
+	7:  "done",
+	8:  "tickedBy",
+	9:  "tickedAt",
+	10: "why",
+	11: "steps",
+	12: "doneWhen",
+	13: "parts",
+	14: "tribelt",
+	15: "leader",
 }
 
 // Decode decodes PlanImprovement from json.
@@ -13468,8 +13478,32 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"measure\"")
 			}
-		case "auto":
+		case "benefit":
 			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Int32()
+				s.Benefit = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"benefit\"")
+			}
+		case "effort":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Int32()
+				s.Effort = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"effort\"")
+			}
+		case "auto":
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Bool()
 				s.Auto = bool(v)
@@ -13481,7 +13515,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"auto\"")
 			}
 		case "done":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Bool()
 				s.Done = bool(v)
@@ -13513,7 +13547,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tickedAt\"")
 			}
 		case "why":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Why = string(v)
@@ -13525,7 +13559,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"why\"")
 			}
 		case "steps":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				s.Steps = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -13545,7 +13579,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"steps\"")
 			}
 		case "doneWhen":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.DoneWhen = string(v)
@@ -13557,7 +13591,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"doneWhen\"")
 			}
 		case "parts":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				s.Parts = make([]PlanPart, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -13604,8 +13638,8 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b00111111,
-		0b00001111,
+		0b11111111,
+		0b00111100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

@@ -967,6 +967,8 @@ export const zPlanImprovement = z.object({
     title: z.string().max(200),
     moves: z.string().max(200),
     measure: zStandingMeasure,
+    benefit: z.int().gte(1).lte(5),
+    effort: z.int().gte(1).lte(5),
     auto: z.boolean(),
     done: z.boolean(),
     tickedBy: z.string().max(200).optional(),

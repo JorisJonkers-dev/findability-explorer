@@ -287,7 +287,7 @@ func toImprovements(items []domain.PlanItem) []oas.PlanImprovement {
 	out := make([]oas.PlanImprovement, 0, len(items))
 	for _, it := range items {
 		o := oas.PlanImprovement{
-			ID: it.ID, Title: it.Title, Moves: it.Moves, Measure: oas.StandingMeasure(it.Measure), Auto: it.Auto, Done: it.Done,
+			ID: it.ID, Title: it.Title, Moves: it.Moves, Measure: oas.StandingMeasure(it.Measure), Benefit: int32(it.Benefit), Effort: int32(it.Effort), Auto: it.Auto, Done: it.Done, //nolint:gosec // a score from one to five
 			Why: it.Why, Steps: it.Steps, DoneWhen: it.DoneWhen, Parts: make([]oas.PlanPart, 0, len(it.Parts)),
 		}
 		for _, p := range it.Parts {

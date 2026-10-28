@@ -59,7 +59,7 @@ export const TARGETS: Record<PlanTarget, { label: string; format: (v: number) =>
     step: 0.01,
   },
   readinessChecks: { label: "AI readiness checks tribelt.nl's newest scan passed", format: (v) => formatValue('readinessChecks', v), step: 0.5 },
-  termsUsed: { label: "Search terms from the map found on tribelt.nl's newest scan", format: (v) => formatValue('termsUsed', v), step: 1 },
+  termsUsed: { label: "Search terms from our list found in tribelt.nl's newest scan", format: (v) => formatValue('termsUsed', v), step: 1 },
   citations: { label: 'Web answers in the newest Prompt run that cite tribelt.nl', format: (v) => formatValue('termsUsed', v), step: 1 },
 }
 
@@ -68,7 +68,7 @@ export const TARGETS: Record<PlanTarget, { label: string; format: (v: number) =>
  * terms say so when the desk research counts them, before a scan of tribelt.nl.
  */
 export function targetLabel(target: PlanTarget, readinessChecks: number, termsFrom?: TermsSource): string {
-  if (target === 'termsUsed' && termsFrom === 'research') return 'Search terms from the map found for Tribelt by our research'
+  if (target === 'termsUsed' && termsFrom === 'research') return 'Search terms from our list found for Tribelt by our research'
   if (target === 'readinessChecks') return `${TARGETS[target].label}, out of ${inWords(readinessChecks)}`
   return TARGETS[target].label
 }
@@ -136,14 +136,14 @@ const NOW: Record<StandingMeasure, { says: (value: string, readinessChecks: numb
     says: (v) => `The sitemaps of tribelt.nl list ${v} of the pages its newest scan read.`,
     missing: 'Not measured on tribelt.nl yet. Scan it again.',
   },
-  termsUsed: { says: (v) => `The newest scan of tribelt.nl found ${v} search terms from the map.`, missing: 'No scan of tribelt.nl yet.' },
+  termsUsed: { says: (v) => `The newest scan of tribelt.nl found ${v} search terms from our list.`, missing: 'No scan of tribelt.nl yet.' },
 }
 
 /** Where Tribelt stands on the measure an improvement moves, and who leads, in sentences. */
 export function standingLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>, readinessChecks: number, termsFrom?: TermsSource): string {
   const now = NOW[it.measure]
   const credited = it.measure === 'termsUsed' && termsFrom === 'research'
-  const says = (v: string) => (credited ? `Our research found ${v} search terms from the map for Tribelt.` : now.says(v, readinessChecks))
+  const says = (v: string) => (credited ? `Our research found ${v} search terms from our list for Tribelt.` : now.says(v, readinessChecks))
   const tribelt = it.tribelt === undefined ? now.missing : says(formatValue(it.measure, it.tribelt))
   return it.leader ? `${tribelt} ${it.leader.name} leads with ${formatValue(it.measure, it.leader.value)}.` : tribelt
 }

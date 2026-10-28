@@ -59,7 +59,7 @@ test.describe('at phone width', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
   test('the bar wraps, and no new page scrolls sideways', async ({ page }) => {
-    for (const path of ['/', '/terms', '/terms/families/eyelink', '/competitors', '/ai-search', '/recommendations']) {
+    for (const path of ['/', '/terms', '/terms/all', '/terms/families/eyelink', '/competitors', '/ai-search', '/recommendations']) {
       await page.goto(path)
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)

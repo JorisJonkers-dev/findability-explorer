@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { channelColumns, chartLabel, duration, formatValue, metric, shareLabel, volumeAgainstValue } from './channels'
-import { DEFAULT_METRIC, GOAL, HOME_PAIRS, METRICS, TABLE } from './content'
+import { buyerFigures, channelColumns, chartLabel, duration, formatValue, metric, visitorsLine } from './channels'
+import { DEFAULT_METRIC, GOAL, METRICS, TABLE } from './content'
 
 describe('the channel chart', () => {
   it('writes each kind of value as the chart shows it', () => {
@@ -36,19 +36,26 @@ describe('the channel chart', () => {
   })
 })
 
-describe('volume against value', () => {
-  it("gives each channel's share of the visits and of the contacts", () => {
-    expect(volumeAgainstValue()).toEqual([
-      { channel: 'Paid search', visits: '96.6%', visitsFraction: 18_772 / 19_425, contacts: '47.8%', contactsFraction: 11 / 23 },
-      { channel: 'Organic search', visits: '3.3%', visitsFraction: 640 / 19_425, contacts: '52.2%', contactsFraction: 12 / 23 },
-      { channel: 'AI assistants', visits: '<0.1%', visitsFraction: 13 / 19_425, contacts: '0.0%', contactsFraction: 0 },
+describe('the figures', () => {
+  it('states the three figures from the export', () => {
+    expect(buyerFigures()).toEqual([
+      { big: '18,772', text: 'users came from paid search, 79% of all users' },
+      { big: '1.73%', text: 'of organic visitors got in touch, against 0.04% of paid visitors' },
+      { big: '13', text: 'users came from AI assistants, and none of them got in touch' },
     ])
   })
 
-  it('writes a sliver as less than a tenth, and nothing as nothing', () => {
-    expect(shareLabel(0.05)).toBe('<0.1%')
-    expect(shareLabel(0)).toBe('0.0%')
-    expect(volumeAgainstValue([0, 0, 0], [0, 0, 0]).map((v) => v.visits)).toEqual(['0.0%', '0.0%', '0.0%'])
+  it('copes with a missing export, and with a single AI user who got in touch', () => {
+    expect(buyerFigures([], [])[2]).toEqual({ big: '0', text: 'users came from AI assistants, and none of them got in touch' })
+    expect(buyerFigures([5, 5, 1], [1, 1, 1])[2]).toEqual({ big: '1', text: 'user came from AI assistants' })
+  })
+
+  it('says so when one channel brings both the visitors and the contacts', () => {
+    expect(visitorsLine([9, 1, 1], [3, 1, 1])).toBe('Paid search brings the most visitors, and the most who get in touch.')
+  })
+
+  it('says which channel brings the visitors and which brings the contacts', () => {
+    expect(visitorsLine()).toBe('Paid search brings the most visitors, but organic search brings the visitors who get in touch.')
   })
 })
 
@@ -56,6 +63,5 @@ describe('the content', () => {
   it("keeps the report's figures", () => {
     expect(TABLE).toHaveLength(7)
     expect(GOAL.rows.map((r) => r.fraction)).toEqual([0.08, 1])
-    expect(HOME_PAIRS.map((p) => p.bars.map((b) => b.value))).toEqual([['78.9%', '2.7%'], ['0.04%', '1.73%']])
   })
 })

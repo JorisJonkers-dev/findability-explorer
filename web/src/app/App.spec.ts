@@ -17,7 +17,7 @@ describe('signing in', () => {
     const pending = new Promise<Response>((resolve) => {
       answer = resolve
     })
-    const { wrapper } = await mountApp(routes({ 'GET /api/v1/me': () => pending }), '/plan')
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/me': () => pending }), '/recommendations')
     expect(wrapper.text()).toContain('Signing in…')
     expect(wrapper.find('h1').exists()).toBe(false)
     answer(json(me()))
@@ -45,7 +45,7 @@ describe('signing in', () => {
   })
 
   it('offers Settings to an administrator only, and signs out with a form', async () => {
-    const reader = await mountApp(api, '/plan')
+    const reader = await mountApp(api, '/recommendations')
     const bar = reader.wrapper.get('nav[aria-label="Main"]')
     expect(bar.find('a[href="/settings"]').exists()).toBe(false)
     const form = bar.get('form')
@@ -54,25 +54,22 @@ describe('signing in', () => {
     expect(form.get('button[type="submit"]').text()).toBe('Sign out')
     reader.wrapper.unmount()
 
-    const admin = await mountApp(routes({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/plan')
+    const admin = await mountApp(routes({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/recommendations')
     expect(admin.wrapper.get('nav[aria-label="Main"] a[href="/settings"]').text()).toBe('Settings')
   })
 })
 
 describe('the top bar', () => {
   it('links to every section in order and marks the one shown', async () => {
-    const { wrapper } = await mountApp(api, '/ai-search/prompt-test')
+    const { wrapper } = await mountApp(api, '/ai-search/answers')
     const links = wrapper.findAll('nav[aria-label="Main"] a').map((a) => [a.text(), a.attributes('href'), a.attributes('aria-current') ?? ''])
     expect(links).toEqual([
       ['Findability Explorer', '/', ''],
       ['Overview', '/', ''],
-      ['Catching up', '/catching-up', ''],
       ['AI search', '/ai-search', 'page'],
       ['Competitors', '/competitors', ''],
-      ['Products', '/products', ''],
       ['Search terms', '/terms', ''],
-      ['The plan', '/plan', ''],
-      ['Buyers', '/buyers', ''],
+      ['Recommendations', '/recommendations', ''],
     ])
   })
 
@@ -82,29 +79,36 @@ describe('the top bar', () => {
     expect(wrapper.get('nav[aria-label="Settings"] a[aria-current="page"]').text()).toBe('Term review')
   })
 
-  it("shows a section's pages as tabs and marks the one shown", async () => {
-    const { wrapper } = await mountApp(api, '/ai-search/prompt-test')
-    const tabs = wrapper.findAll('nav[aria-label="In this section"] a').map((a) => [a.text(), a.attributes('aria-current') ?? ''])
-    expect(tabs).toEqual([
-      ['Summary', ''],
-      ['Prompt test', 'page'],
-      ['AI readiness', ''],
-    ])
+  it('has no section tabs, and a detail page links back to its section', async () => {
+    const { wrapper } = await mountApp(api, '/ai-search/answers')
+    expect(wrapper.find('nav[aria-label="In this section"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Back to AI search')
   })
 
-  it('opens the new sections and a page per belt family', async () => {
-    const { wrapper, router } = await mountApp(api, '/catching-up')
-    expect(wrapper.get('h1').text()).toBe('Where Tribelt trails the leaders.')
-    await router.push('/products/open-spiral')
-    await settle()
+  it('redirects the old routes to the new ones', async () => {
+    const { router } = await mountApp(api, '/catching-up')
+    expect(router.currentRoute.value.fullPath).toBe('/')
+    const moves: [string, string][] = [
+      ['/plan', '/recommendations'],
+      ['/products', '/terms'],
+      ['/products/open-spiral', '/terms/families/open-spiral'],
+      ['/ai-search/prompt-test', '/ai-search/answers'],
+      ['/competitors/all', '/competitors'],
+    ]
+    for (const [from, to] of moves) {
+      await router.push(from)
+      await settle()
+      expect(router.currentRoute.value.fullPath).toBe(to)
+    }
+  })
+
+  it('opens a page per belt family, with a link back to Search terms', async () => {
+    const { wrapper, router } = await mountApp(api, '/terms/families/open-spiral')
     expect(wrapper.get('h1').text()).toBe('Open spiral')
-    expect(wrapper.get('nav[aria-label="In this section"] a[aria-current="page"]').text()).toBe('Open spiral')
-    await router.push('/products/nothing')
+    expect(wrapper.text()).toContain('Back to Search terms')
+    await router.push('/terms/families/nothing')
     await settle()
     expect(wrapper.get('h1').text()).toBe('No such belt family.')
-    await router.push('/competitors/all')
-    await settle()
-    expect(wrapper.get('nav[aria-label="In this section"] a[aria-current="page"]').text()).toBe('All competitors')
   })
 })
 
@@ -118,7 +122,7 @@ describe('the routes', () => {
       ['/competitors', 'Competitors'],
       [`/scan/${ANALYSIS_ID}`, 'Scan'],
       ['/terms', 'Search terms'],
-      ['/plan', 'The plan'],
+      ['/recommendations', 'Recommendations'],
     ]
     for (const [path, title] of titles) {
       await router.push(path)

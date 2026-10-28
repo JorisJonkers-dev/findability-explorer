@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { product } from '../../../testing/fixtures'
-import { json, mountApp, problem, routes } from '../../../testing/mountApp'
+import type { Handler } from '../../../testing/mountApp'
+import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 const overview = {
   items: [
@@ -25,11 +26,20 @@ const api = () =>
     'GET /api/v1/products': () => json(overview),
   })
 
+/** The list is no longer routed, so the test gives it a route of its own. */
+async function mountList(handle: Handler) {
+  const app = await mountApp(handle, '/')
+  app.router.addRoute({ path: '/product-list', component: () => import('./ProductsView.vue') })
+  await app.router.push('/product-list')
+  await settle()
+  return app
+}
+
 describe('the products', () => {
   it('shows a card per family with its share of answers, sellers, terms and most used name', async () => {
-    const { wrapper } = await mountApp(api(), '/products')
+    const { wrapper } = await mountList(api())
     const cards = wrapper.findAll('nav[aria-label="Belt families"] a')
-    expect(cards.map((c) => c.attributes('href'))).toEqual(['/products/eyelink', '/products/open-spiral'])
+    expect(cards.map((c) => c.attributes('href'))).toEqual(['/terms/families/eyelink', '/terms/families/open-spiral'])
     const eye = cards[0]?.text() ?? ''
     expect(eye).toContain('30%of AI answers about it name Tribelt')
     expect(eye).toContain('Competitors on the list selling it1')
@@ -49,9 +59,9 @@ describe('the products', () => {
         { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', share: 0.3 },
       ],
     })
-    const { wrapper } = await mountApp(routes({ 'GET /api/v1/products': () => json({ items: [one], standouts: [] }) }), '/products/eyelink')
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/products': () => json({ items: [one], standouts: [] }) }), '/terms/families/eyelink')
     expect(wrapper.get('h1').text()).toBe('Eyelink. One competitor sells it, and buyers search for it in four languages.')
-    expect(wrapper.get('nav[aria-label="In this section"] a[aria-current="page"]').text()).toBe('Eyelink')
+    expect(wrapper.text()).toContain('Back to Search terms')
     const terms = wrapper.findAll('section[aria-labelledby="terms-title"] tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
     expect(terms[0]).toEqual(['draadogenband, Product', 'Dutch', '9', '✕ No'])
     expect(terms[1]?.[3]).toBe('✓ Yes')
@@ -67,17 +77,17 @@ describe('the products', () => {
 
   it('says what is missing: no run, no seller, no such family, or no data', async () => {
     const bare = product({ answers: 0, named: 0, sellers: [], tribeltNames: [] })
-    const { wrapper, router } = await mountApp(routes({ 'GET /api/v1/products': () => json({ items: [bare], standouts: [] }) }), '/products/eyelink')
+    const { wrapper, router } = await mountApp(routes({ 'GET /api/v1/products': () => json({ items: [bare], standouts: [] }) }), '/terms/families/eyelink')
     expect(wrapper.text()).toContain('No Prompt run has asked about it yet.')
     expect(wrapper.text()).toContain('No competitor sells it')
     expect(wrapper.text()).toContain('Tribelt names none for it yet.')
-    await router.push('/products/nothing')
-    expect(wrapper.text()).toContain('Pick a belt family above.')
+    await router.push('/terms/families/nothing')
+    expect(wrapper.text()).toContain('No such belt family.')
     wrapper.unmount()
-    const down = await mountApp(routes({ 'GET /api/v1/products': () => problem(500, 'Internal Server Error', 'Down.') }), '/products')
+    const down = await mountList(routes({ 'GET /api/v1/products': () => problem(500, 'Internal Server Error', 'Down.') }))
     expect(down.wrapper.get('[role="alert"]').text()).toContain('Down.')
     down.wrapper.unmount()
-    const downOne = await mountApp(routes({ 'GET /api/v1/products': () => problem(500, 'Internal Server Error', 'Down.') }), '/products/eyelink')
+    const downOne = await mountApp(routes({ 'GET /api/v1/products': () => problem(500, 'Internal Server Error', 'Down.') }), '/terms/families/eyelink')
     expect(downOne.wrapper.get('h1').text()).toBe('Eyelink')
     expect(downOne.wrapper.get('[role="alert"]').text()).toContain('Down.')
   })

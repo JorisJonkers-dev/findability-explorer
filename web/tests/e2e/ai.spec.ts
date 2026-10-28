@@ -2,7 +2,7 @@ import { expect, expectAccessible, test } from './fixtures'
 
 const VIEWS = [
   { path: '/ai-search/readiness', title: 'AI readiness', heading: /./ },
-  { path: '/ai-search/prompt-test', title: 'Prompt test', heading: /./ },
+  { path: '/ai-search/answers', title: 'Every answer', heading: /./ },
   { path: '/settings/prompt-test', title: 'Prompt test settings', heading: 'Prompt test' },
 ] as const
 
@@ -91,7 +91,7 @@ test('the Prompt test grid opens an answer and keeps its filters in the address'
   await page.route(`**/api/v1/prompt-runs/${RUN}/answers**`, (route) =>
     route.fulfill({ json: { run, items: [answer('web', '00000000-0000-4000-8000-000000000001', false), answer('knowledge', '00000000-0000-4000-8000-000000000002', true)] } }),
   )
-  await page.goto('/ai-search/prompt-test')
+  await page.goto('/ai-search/answers')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('AI answers name Tribelt more than any competitor.')
   await page.getByRole('button', { name: /OpenAI, with web search, .*: Tribelt named first/ }).click()
   await expect(page).toHaveURL(/answer=/)

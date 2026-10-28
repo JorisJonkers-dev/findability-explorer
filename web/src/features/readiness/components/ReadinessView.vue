@@ -278,7 +278,7 @@ function pick(r: AiReadinessRow): void {
         </section>
       </div>
 
-      <section aria-labelledby="sites-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
+      <section aria-labelledby="sites-title" class="flex flex-col gap-4 stage:shrink-0 stage:gap-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <h2 id="sites-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[52px]">Every site, every column</h2>
           <label class="flex flex-col gap-1.5 text-sm text-ink-2 sm:flex-row sm:items-center sm:gap-3 stage:text-[24px]">
@@ -295,7 +295,7 @@ function pick(r: AiReadinessRow): void {
             <span>{{ l.meaning }}</span>
           </li>
         </ul>
-        <div v-scroll-hint class="scroll-hint relative max-h-[75svh] overflow-auto stage:max-h-none stage:min-h-0 stage:flex-1">
+        <div v-scroll-hint class="scroll-hint relative max-h-[75svh] overflow-auto stage:max-h-none">
           <table class="w-full border-separate border-spacing-0 text-sm stage:text-[22px]">
             <caption class="sr-only">AI readiness per site: each crawler's access, the sitemap, llms.txt, llms-full.txt, Markdown pages, structured data and platform</caption>
             <thead>

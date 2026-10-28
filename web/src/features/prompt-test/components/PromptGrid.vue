@@ -60,7 +60,7 @@ function cellOf(row: Row, column: Column) {
         {{ PLACES[s.place].label }}
       </li>
     </ul>
-    <div class="overflow-x-auto stage:min-h-0 stage:overflow-y-auto">
+    <div class="relative overflow-x-auto stage:min-h-0 stage:overflow-y-auto">
       <!-- Fixed layout: every answer column is equally wide, however long a model's name. -->
       <table class="w-full min-w-[640px] table-fixed border-separate border-spacing-1 text-sm stage:min-w-0 stage:border-spacing-2 stage:text-[24px]">
         <caption class="sr-only">Where each answer names Tribelt, by question, provider and search mode</caption>

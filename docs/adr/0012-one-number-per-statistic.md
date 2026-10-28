@@ -66,8 +66,8 @@ archived, researched or added since.** No page keeps a count of the research's l
 
 - `CompetitorsOf` counts them (`makers` on the overview; `listed` is gone, as it is now the same
   number), and each family's makers by the belt names recorded for them or the products their
-  newest scan matched (`AllBeltNames`). The home tile, the Competitors headline ("69 competitors sell
-  the same belts under other names.") and All competitors show it; the products' sellers, the
+  newest scan matched (`AllBeltNames`). The home tile, the Competitors headline ("69 competitors are
+  on our list. The same belts, other names.") and All competitors show it; the products' sellers, the
   standings' typical competitor and leader, the readiness ranking and the AI share rows already
   read the same list through the insight Directory.
 - **A term's companies are its makers** (`SiteUse.Makers` in `internal/terminology/domain`): the

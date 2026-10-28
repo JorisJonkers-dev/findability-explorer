@@ -35,7 +35,7 @@ func (c *insightCases) Standings(context.Context) (app.Standings, error) {
 	return app.Standings{
 		Standings: []domain.Standing{
 			{Measure: domain.MeasureShareOfVoice, Tribelt: &share, Median: new(0.17), Leader: &domain.Leader{CompanyID: "ashworth", Name: "Ashworth", Value: 0.57}, Competitors: 38},
-			{Measure: domain.MeasureSitemapPages},
+			{Measure: domain.MeasureSitemapCoverage},
 		},
 		Trailing:  1,
 		Run:       c.run,
@@ -137,7 +137,7 @@ func (c *insightCases) Overview(context.Context) (domain.Overview, error) {
 			Languages: []domain.LanguageTerms{{Language: "en", Terms: 200, Tribelt: 20}, {Language: "de", Terms: 187, Tribelt: 10}},
 			Tiers:     []domain.TierTerms{{Tier: "product", Terms: 387, Tribelt: 30}},
 		},
-		Competitors: domain.CompetitorsOverview{Makers: 24, Listed: 61, Families: []domain.FamilyMakers{{Family: "eyelink", Makers: 9}, {Family: "other"}}},
+		Competitors: domain.CompetitorsOverview{Makers: 61, Families: []domain.FamilyMakers{{Family: "eyelink", Makers: 9}, {Family: "other"}}},
 		AiSearch: domain.AiSearchOverview{Answers: 1260, Companies: []domain.Mentioned{
 			{CompanyID: "twentebelt", Name: "Twentebelt", Role: domain.RoleCompetitor, Answers: 412, Share: 412.0 / 1260},
 			{CompanyID: "tribelt", Name: "Tribelt", Role: domain.RoleTribelt},
@@ -161,7 +161,7 @@ func TestTheOverviewIsForEveryoneSignedIn(t *testing.T) {
 	}
 	competitors := r.body["competitors"].(map[string]any)
 	families := competitors["families"].([]any)
-	if competitors["makers"].(float64) != 24 || competitors["listed"].(float64) != 61 || len(families) != 2 || families[0].(map[string]any)["family"] != "eyelink" || families[1].(map[string]any)["makers"].(float64) != 0 {
+	if competitors["makers"].(float64) != 61 || competitors["listed"] != nil || len(families) != 2 || families[0].(map[string]any)["family"] != "eyelink" || families[1].(map[string]any)["makers"].(float64) != 0 {
 		t.Errorf("competitors = %v", competitors)
 	}
 	ai := r.body["aiSearch"].(map[string]any)

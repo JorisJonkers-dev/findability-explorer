@@ -104,10 +104,11 @@ func facts() domain.Facts {
 			{Mode: domain.ModeKnowledge, Named: []string{"de-spiraal"}},
 		}},
 		Readiness: map[string]domain.Readiness{
-			"tribelt":        {Crawlers: domain.AccessOpen, Sitemap: true, SitemapPages: 124},
-			"tribelt-mirror": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true, SitemapPages: 9000},
-			"ashworth":       {Crawlers: domain.AccessSome, Sitemap: true, LLMs: true, SitemapPages: 2140},
-			"martens":        {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true, SitemapPages: 300},
+			"tribelt":        {Crawlers: domain.AccessOpen, Sitemap: true, SitemapCoverage: new(0.5)},
+			"tribelt-mirror": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true, SitemapCoverage: new(1.0)},
+			"ashworth":       {Crawlers: domain.AccessSome, Sitemap: true, LLMs: true, SitemapCoverage: new(0.9)},
+			// Märtens' newest scan was made before coverage was measured.
+			"martens": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true},
 		},
 		TermsUsed: map[string]int{"tribelt": 38, "ashworth": 12, "martens": 30, "twentebelt": 30, "de-spiraal": 90},
 	}
@@ -131,7 +132,8 @@ func TestStandingsCompareTribeltWithTheCompetitorsOnly(t *testing.T) {
 		{domain.MeasureCitationShare, new(0.5), new(0.0), "martens", 0.5, 3, false, true},
 		// Twentebelt was never scanned for readiness, so it is not in the median; the mirror never counts.
 		{domain.MeasureReadiness, new(2.0), new(3.75), "martens", 5, 2, true, false},
-		{domain.MeasureSitemapPages, new(124.0), new(1220.0), "ashworth", 2140, 2, true, false},
+		// Märtens' scan did not measure the coverage, so only Ashworth counts.
+		{domain.MeasureSitemapCoverage, new(0.5), new(0.9), "ashworth", 0.9, 1, true, false},
 		// Märtens and Twentebelt tie on 30; Tribelt is ahead.
 		{domain.MeasureTermsUsed, new(38.0), new(30.0), "martens", 30, 3, false, true},
 	}

@@ -53,7 +53,7 @@ func Improvements() []Improvement {
 		},
 		{
 			ID: "sitemap-per-language", Title: "A sitemap for each language", Moves: "Helps search engines find every page in Dutch, German and English.",
-			Measure: MeasureSitemapPages, Check: CheckSitemaps,
+			Measure: MeasureSitemapCoverage, Check: CheckSitemaps,
 			Why: "Search engines and AI crawlers find pages through the sitemap. German and English pages that no sitemap lists are found late, or not at all.",
 			Steps: []string{
 				"List every Dutch, German and English page in a sitemap, each with its versions in the other languages.",

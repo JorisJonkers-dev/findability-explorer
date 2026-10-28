@@ -6446,6 +6446,52 @@ func (o OptPromptScope) Or(d PromptScope) PromptScope {
 	return d
 }
 
+// NewOptSitemapCoverage returns new OptSitemapCoverage with value set to v.
+func NewOptSitemapCoverage(v SitemapCoverage) OptSitemapCoverage {
+	return OptSitemapCoverage{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSitemapCoverage is optional SitemapCoverage.
+type OptSitemapCoverage struct {
+	Value SitemapCoverage
+	Set   bool
+}
+
+// IsSet returns true if OptSitemapCoverage was set.
+func (o OptSitemapCoverage) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSitemapCoverage) Reset() {
+	var v SitemapCoverage
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSitemapCoverage) SetTo(v SitemapCoverage) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSitemapCoverage) Get() (v SitemapCoverage, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSitemapCoverage) Or(d SitemapCoverage) SitemapCoverage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -6977,17 +7023,16 @@ func (s *OverviewAiSearch) SetCompanies(val []OverviewMention) {
 	s.Companies = val
 }
 
-// The competitors the desk research found, and which of Tribelt's belt families they offer.
+// The competitors on the list now, and which of Tribelt's belt families they offer.
 // Ref: #/components/schemas/OverviewCompetitors
 type OverviewCompetitors struct {
-	// How many competitors the desk research found; a company added later, a group company and the mirror
-	// do not count.
+	// How many competitors the list holds now, not archived, whether the desk research found them or they
+	// were added since; a group company and the mirror do not count. Every count of the competitors shows
+	// this number.
 	Makers int32 `json:"makers"`
-	// Each of Tribelt's belt families, in order, with how many of those competitors offer it.
+	// Each of Tribelt's belt families, in order, with how many of those competitors offer it, by the belt
+	// names recorded for them or the products their newest scan matched.
 	Families []OverviewFamily `json:"families"`
-	// How many competitors the list holds now, not archived, those added since the desk research included;
-	// a group company and the mirror do not count.
-	Listed OptInt32 `json:"listed"`
 }
 
 // GetMakers returns the value of Makers.
@@ -7000,11 +7045,6 @@ func (s *OverviewCompetitors) GetFamilies() []OverviewFamily {
 	return s.Families
 }
 
-// GetListed returns the value of Listed.
-func (s *OverviewCompetitors) GetListed() OptInt32 {
-	return s.Listed
-}
-
 // SetMakers sets the value of Makers.
 func (s *OverviewCompetitors) SetMakers(val int32) {
 	s.Makers = val
@@ -7015,12 +7055,7 @@ func (s *OverviewCompetitors) SetFamilies(val []OverviewFamily) {
 	s.Families = val
 }
 
-// SetListed sets the value of Listed.
-func (s *OverviewCompetitors) SetListed(val OptInt32) {
-	s.Listed = val
-}
-
-// How many of the competitors the desk research found offer one of Tribelt's belt families.
+// How many of the competitors on the list offer one of Tribelt's belt families.
 // Ref: #/components/schemas/OverviewFamily
 type OverviewFamily struct {
 	Family PromptFamily `json:"family"`
@@ -11474,6 +11509,50 @@ func (s *SiteStack) SetBotProtection(val OptString) {
 	s.BotProtection = val
 }
 
+// How much of the site its sitemaps cover - of the pages the scan read on the site, how many the
+// sitemaps list (ADR-0013). Absent until the scan has read its pages, for a scan that read none, and
+// for a readiness recorded before coverage was measured; scanning the site again, or checking its
+// readiness again, measures it.
+// Ref: #/components/schemas/SitemapCoverage
+type SitemapCoverage struct {
+	// How many different pages the scan read on the site.
+	Pages int32 `json:"pages"`
+	// How many of those pages the sitemaps list.
+	Listed int32 `json:"listed"`
+	// The share of the pages read that the sitemaps list, listed over pages.
+	Share float64 `json:"share"`
+}
+
+// GetPages returns the value of Pages.
+func (s *SitemapCoverage) GetPages() int32 {
+	return s.Pages
+}
+
+// GetListed returns the value of Listed.
+func (s *SitemapCoverage) GetListed() int32 {
+	return s.Listed
+}
+
+// GetShare returns the value of Share.
+func (s *SitemapCoverage) GetShare() float64 {
+	return s.Share
+}
+
+// SetPages sets the value of Pages.
+func (s *SitemapCoverage) SetPages(val int32) {
+	s.Pages = val
+}
+
+// SetListed sets the value of Listed.
+func (s *SitemapCoverage) SetListed(val int32) {
+	s.Listed = val
+}
+
+// SetShare sets the value of Share.
+func (s *SitemapCoverage) SetShare(val float64) {
+	s.Share = val
+}
+
 // What a site's sitemaps list, without the addresses.
 // Ref: #/components/schemas/SitemapSummary
 type SitemapSummary struct {
@@ -11484,7 +11563,8 @@ type SitemapSummary struct {
 	// How many different addresses they list.
 	Addresses int32 `json:"addresses"`
 	// The ones of Dutch, German and English the addresses cover, by path or hreflang.
-	Languages []string `json:"languages"`
+	Languages []string           `json:"languages"`
+	Coverage  OptSitemapCoverage `json:"coverage"`
 }
 
 // GetDeclared returns the value of Declared.
@@ -11507,6 +11587,11 @@ func (s *SitemapSummary) GetLanguages() []string {
 	return s.Languages
 }
 
+// GetCoverage returns the value of Coverage.
+func (s *SitemapSummary) GetCoverage() OptSitemapCoverage {
+	return s.Coverage
+}
+
 // SetDeclared sets the value of Declared.
 func (s *SitemapSummary) SetDeclared(val bool) {
 	s.Declared = val
@@ -11525,6 +11610,11 @@ func (s *SitemapSummary) SetAddresses(val int32) {
 // SetLanguages sets the value of Languages.
 func (s *SitemapSummary) SetLanguages(val []string) {
 	s.Languages = val
+}
+
+// SetCoverage sets the value of Coverage.
+func (s *SitemapSummary) SetCoverage(val OptSitemapCoverage) {
+	s.Coverage = val
 }
 
 type SplitCompetitorCandidateBadRequest ProblemStatusCode
@@ -11642,7 +11732,8 @@ func (s *Standing) SetLeads(val bool) {
 // A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of
 // answers naming the company, citationShare the share of web answers citing its site, readinessChecks
 // the AI readiness checks its site passes out of five (half for crawlers when some are kept out),
-// sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+// sitemapCoverage the share of the pages its newest scan read that its sitemaps list (no value for a
+// scan that did not measure it), and termsUsed the map terms its newest scan found.
 // Ref: #/components/schemas/StandingMeasure
 type StandingMeasure string
 
@@ -11650,7 +11741,7 @@ const (
 	StandingMeasureAiShareOfVoice  StandingMeasure = "aiShareOfVoice"
 	StandingMeasureCitationShare   StandingMeasure = "citationShare"
 	StandingMeasureReadinessChecks StandingMeasure = "readinessChecks"
-	StandingMeasureSitemapPages    StandingMeasure = "sitemapPages"
+	StandingMeasureSitemapCoverage StandingMeasure = "sitemapCoverage"
 	StandingMeasureTermsUsed       StandingMeasure = "termsUsed"
 )
 
@@ -11660,7 +11751,7 @@ func (StandingMeasure) AllValues() []StandingMeasure {
 		StandingMeasureAiShareOfVoice,
 		StandingMeasureCitationShare,
 		StandingMeasureReadinessChecks,
-		StandingMeasureSitemapPages,
+		StandingMeasureSitemapCoverage,
 		StandingMeasureTermsUsed,
 	}
 }
@@ -11674,7 +11765,7 @@ func (s StandingMeasure) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case StandingMeasureReadinessChecks:
 		return []byte(s), nil
-	case StandingMeasureSitemapPages:
+	case StandingMeasureSitemapCoverage:
 		return []byte(s), nil
 	case StandingMeasureTermsUsed:
 		return []byte(s), nil
@@ -11695,8 +11786,8 @@ func (s *StandingMeasure) UnmarshalText(data []byte) error {
 	case StandingMeasureReadinessChecks:
 		*s = StandingMeasureReadinessChecks
 		return nil
-	case StandingMeasureSitemapPages:
-		*s = StandingMeasureSitemapPages
+	case StandingMeasureSitemapCoverage:
+		*s = StandingMeasureSitemapCoverage
 		return nil
 	case StandingMeasureTermsUsed:
 		*s = StandingMeasureTermsUsed

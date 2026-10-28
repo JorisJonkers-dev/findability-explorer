@@ -342,6 +342,7 @@ func (r *Repository) SaveReadiness(ctx context.Context, id uuid.UUID, rd domain.
 			Markdown: rd.Markdown, HomeRead: rd.Home, StructuredData: clipAll(rd.StructuredData, 50, 100),
 			Languages: clipAll(rd.Languages, 50, 16), Cms: clip(rd.Stack.CMS, 60), SeoPlugin: clip(rd.Stack.SEOPlugin, 60),
 			BotProtection: clip(rd.Stack.BotProtection, 60), CheckedAt: optionalTime(rd.CheckedAt),
+			SitemapPagesRead: coverageRead(rd.Sitemap.Coverage), SitemapPagesListed: coverageListed(rd.Sitemap.Coverage),
 		}); err != nil {
 			return fmt.Errorf("insert readiness: %w", err)
 		}
@@ -360,6 +361,36 @@ func (r *Repository) SaveReadiness(ctx context.Context, id uuid.UUID, rd domain.
 		}
 		return nil
 	})
+}
+
+// SaveSitemapCoverage records the sitemaps' coverage on the readiness the scan recorded, or
+// returns domain.ErrNoReadiness when it recorded none.
+func (r *Repository) SaveSitemapCoverage(ctx context.Context, id uuid.UUID, c domain.SitemapCoverage) error {
+	n, err := r.store.Queries().SetSitemapCoverage(ctx, queries.SetSitemapCoverageParams{
+		AnalysisID: id, SitemapPagesRead: coverageRead(&c), SitemapPagesListed: coverageListed(&c),
+	})
+	if err != nil {
+		return fmt.Errorf("update sitemap coverage: %w", err)
+	}
+	if n == 0 {
+		return domain.ErrNoReadiness
+	}
+	return nil
+}
+
+// coverageRead and coverageListed are a coverage's counts, or null when it was not measured.
+func coverageRead(c *domain.SitemapCoverage) pgtype.Int8 {
+	if c == nil {
+		return pgtype.Int8{}
+	}
+	return pgtype.Int8{Int64: int64(c.Pages), Valid: true}
+}
+
+func coverageListed(c *domain.SitemapCoverage) pgtype.Int8 {
+	if c == nil {
+		return pgtype.Int8{}
+	}
+	return pgtype.Int8{Int64: int64(c.Listed), Valid: true}
 }
 
 // ReadinessFiles returns the raw files of an analysis's readiness, or domain.ErrNoReadiness.
@@ -406,6 +437,7 @@ func (r *Repository) LatestReadiness(ctx context.Context) (map[string]domain.Ana
 			LlmsBytes: row.LlmsBytes, LlmsLinks: row.LlmsLinks, LlmsFullPresent: row.LlmsFullPresent, Markdown: row.Markdown,
 			HomeRead: row.HomeRead, StructuredData: row.StructuredData, Languages: row.Languages, Cms: row.Cms,
 			SeoPlugin: row.SeoPlugin, BotProtection: row.BotProtection, CheckedAt: row.CheckedAt,
+			SitemapPagesRead: row.SitemapPagesRead, SitemapPagesListed: row.SitemapPagesListed,
 		}, bots[row.ID])
 		a.Readiness = &rd
 		out[row.CompetitorID] = a
@@ -543,12 +575,21 @@ func toReadiness(r queries.AnalysisReadiness, bots []domain.BotRule) domain.Read
 		Robots: domain.RobotsStatus(r.Robots), Bots: bots,
 		Sitemap: domain.SitemapSummary{
 			Declared: r.SitemapDeclared, Files: int(r.SitemapFiles), Addresses: int(r.SitemapAddresses), Languages: r.SitemapLanguages,
+			Coverage: toCoverage(r.SitemapPagesRead, r.SitemapPagesListed),
 		},
 		LLMs:     domain.LLMsFacts{Present: r.LlmsPresent, Bytes: int(r.LlmsBytes), Links: int(r.LlmsLinks)},
 		LLMsFull: r.LlmsFullPresent, Markdown: r.Markdown, Home: r.HomeRead, StructuredData: r.StructuredData,
 		Languages: r.Languages, Stack: domain.Stack{CMS: r.Cms, SEOPlugin: r.SeoPlugin, BotProtection: r.BotProtection},
 		CheckedAt: r.CheckedAt.Time,
 	}
+}
+
+// toCoverage is the stored coverage, or nil when it was not measured.
+func toCoverage(read, listed pgtype.Int8) *domain.SitemapCoverage {
+	if !read.Valid || !listed.Valid {
+		return nil
+	}
+	return &domain.SitemapCoverage{Pages: int(read.Int64), Listed: int(listed.Int64)}
 }
 
 // optionalTime is t, or null when it is zero.

@@ -15,7 +15,6 @@ import (
 // answer of two, five map terms on its newest scan and two more the research credits it with.
 func agreeingWorld() *world {
 	w := newWorld()
-	w.companies[1].Researched = true
 	w.runs[0].Answers = []domain.Answer{
 		{Mode: domain.ModeWeb, Scope: domain.ScopeTwente, Family: "eyelink", Named: []string{"tribelt", "ashworth"}, Cited: []string{"tribelt"}},
 		{Mode: domain.ModeWeb, Scope: domain.ScopeTwente, Family: "eyelink", Named: []string{"ashworth"}},
@@ -150,8 +149,8 @@ func TestTheHomePageAndTheProductsCountTheSameCompetitors(t *testing.T) {
 	w.companies[1].BeltNames = []domain.BeltName{{Name: "Omni-Grid", Family: "eyelink"}}
 	w.companies[2].BeltNames = []domain.BeltName{{Name: "Eyelink", Family: "eyelink", FromScan: true}}
 	overview, _, _, _, products := readAll(t, w)
-	// Two competitors are on the list and both sell eyelink belts; the research found one of them.
-	if overview.Competitors.Listed != len(products.Products[0].Sellers) || overview.Competitors.Makers != 1 || overview.Competitors.Families[0].Makers != 1 {
-		t.Errorf("listed %d, sellers %d, researched %+v", overview.Competitors.Listed, len(products.Products[0].Sellers), overview.Competitors)
+	// Two competitors are on the list and both sell eyelink belts, the one by the names its scan matched.
+	if overview.Competitors.Makers != 2 || overview.Competitors.Families[0].Makers != len(products.Products[0].Sellers) {
+		t.Errorf("sellers %d, competitors %+v", len(products.Products[0].Sellers), overview.Competitors)
 	}
 }

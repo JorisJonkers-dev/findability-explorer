@@ -66,7 +66,10 @@ describe('an improvement in words', () => {
     )
     expect(standingLine({ measure: 'citationShare', tribelt: 0.05 })).toBe('5% of the web answers in the newest Prompt run cite tribelt.nl.')
     expect(standingLine({ measure: 'readinessChecks', tribelt: 2.5, leader })).toBe('tribelt.nl passes 2½ of five AI readiness checks. Märtens leads with 5.')
-    expect(standingLine({ measure: 'sitemapPages', tribelt: 2140 })).toBe('The sitemaps of tribelt.nl list 2,140 pages.')
+    expect(standingLine({ measure: 'sitemapCoverage', tribelt: 0.6, leader: { ...leader, value: 1 } })).toBe(
+      'The sitemaps of tribelt.nl list 60% of the pages its newest scan read. Märtens leads with 100%.',
+    )
+    expect(standingLine({ measure: 'sitemapCoverage' })).toBe('Not measured on tribelt.nl yet. Scan it again.')
     expect(standingLine({ measure: 'termsUsed', tribelt: 45 })).toBe('The newest scan of tribelt.nl found 45 search terms from the map.')
     expect(standingLine({ measure: 'termsUsed', tribelt: 12 }, 'research')).toBe('Our research found 12 search terms from the map for Tribelt.')
     // Without data, it says what is missing.

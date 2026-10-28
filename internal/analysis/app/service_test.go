@@ -179,6 +179,10 @@ func (r *repo) SaveReadiness(_ context.Context, id uuid.UUID, rd domain.Readines
 	return r.update("SaveReadiness", id, func(a *domain.Analysis) { a.Readiness, r.raw[id] = &rd, raw })
 }
 
+func (r *repo) SaveSitemapCoverage(_ context.Context, id uuid.UUID, c domain.SitemapCoverage) error {
+	return r.update("SaveSitemapCoverage", id, func(a *domain.Analysis) { a.Readiness.Sitemap.Coverage = &c })
+}
+
 func (r *repo) ReadinessFiles(_ context.Context, id uuid.UUID) (domain.RawFiles, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

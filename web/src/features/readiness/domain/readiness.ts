@@ -2,6 +2,7 @@ import type { AiReadiness, AiReadinessRow, CrawlerAccess, ReadinessChange, Readi
 import type { Sort, SortDirection, SortValue } from '../../../shared/sort'
 import { sortRows } from '../../../shared/sort'
 import { joinWords } from '../../../shared/words'
+import { formatValue } from '../../catching-up/domain/standings'
 
 /** The search and AI crawlers a scan records, in the server's order, with who runs them and why. */
 export const BOTS: readonly { token: string; owner: string }[] = [
@@ -90,6 +91,15 @@ function isBotColumn(column: ReadinessColumn): column is `bot:${string}` {
   return column.startsWith('bot:')
 }
 
+/**
+ * The share of the site's pages its sitemap lists, as the server measured it on the pages the
+ * scan read: "85% of its pages"; a scan from before that was measured says so.
+ */
+export function sitemapCoverage(r: Pick<AiReadiness, 'sitemap'>): string {
+  if (r.sitemap.coverage === undefined) return 'Not measured yet. Scan the site again.'
+  return `${formatValue('sitemapCoverage', r.sitemap.coverage.share)} of its pages`
+}
+
 /** What a company's row shows in a column. */
 export function cell(row: AiReadinessRow, column: ReadinessColumn): Cell {
   const r = row.readiness
@@ -98,7 +108,8 @@ export function cell(row: AiReadinessRow, column: ReadinessColumn): Cell {
   if (isBotColumn(column)) return botCell(r, column.slice(4))
   switch (column) {
     case 'sitemaps':
-      return { text: r.sitemap.declared ? `Yes, ${String(r.sitemap.files)} files, ${String(r.sitemap.addresses)} addresses` : 'No', ok: adviceOk(r, 'sitemapDeclared') }
+      if (!r.sitemap.declared) return { text: 'No', ok: adviceOk(r, 'sitemapDeclared') }
+      return { text: r.sitemap.coverage ? `Yes, listing ${sitemapCoverage(r)}` : 'Yes. Scan the site again to measure how many of its pages it lists.', ok: adviceOk(r, 'sitemapDeclared') }
     case 'sitemapLanguages':
       return { text: languageCodes(r.sitemap.languages), ok: adviceOk(r, 'sitemapLanguages') }
     case 'llmsTxt':
@@ -138,7 +149,7 @@ export function sortValue(row: AiReadinessRow, column: ReadinessColumn): SortVal
   }
   switch (column) {
     case 'sitemaps':
-      return r.sitemap.declared ? r.sitemap.addresses : -0.5
+      return r.sitemap.coverage?.share ?? (r.sitemap.declared ? -0.25 : -0.5)
     case 'sitemapLanguages':
       return r.sitemap.languages.length
     case 'llmsTxt':

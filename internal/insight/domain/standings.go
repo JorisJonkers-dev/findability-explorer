@@ -42,8 +42,6 @@ type Company struct {
 	Role      Role
 	Website   string
 	BeltNames []BeltName
-	// Researched is true for a company the desk research found, not one added since.
-	Researched bool
 }
 
 // Mode is how a Prompt test question was asked: from the model's own knowledge, or with web search.
@@ -187,8 +185,10 @@ type Readiness struct {
 	Bots map[string]BotAccess
 	// Blocked are the crawlers kept out of the whole site.
 	Blocked          []string
-	Sitemap          bool
-	SitemapPages     int
+	Sitemap bool
+	// SitemapCoverage is the share of the pages the newest scan read that the sitemaps list, from
+	// 0 to 1 (ADR-0013); nil when that scan did not measure it.
+	SitemapCoverage  *float64
 	SitemapLanguages []string
 	LLMs             bool
 	LLMsFull         bool
@@ -223,13 +223,15 @@ const (
 	MeasureShareOfVoice  Measure = "aiShareOfVoice"
 	MeasureCitationShare Measure = "citationShare"
 	MeasureReadiness     Measure = "readinessChecks"
-	MeasureSitemapPages  Measure = "sitemapPages"
+	// MeasureSitemapCoverage is the share of the pages the newest scan read that the sitemaps
+	// list: a sitemap listing more addresses is not better for it, one leaving pages out is worse.
+	MeasureSitemapCoverage Measure = "sitemapCoverage"
 	MeasureTermsUsed     Measure = "termsUsed"
 )
 
 // Measures lists them in the order the standings show them.
 func Measures() []Measure {
-	return []Measure{MeasureShareOfVoice, MeasureCitationShare, MeasureReadiness, MeasureSitemapPages, MeasureTermsUsed}
+	return []Measure{MeasureShareOfVoice, MeasureCitationShare, MeasureReadiness, MeasureSitemapCoverage, MeasureTermsUsed}
 }
 
 // Facts are what the other contexts know of the companies now: the newest Prompt run with answers
@@ -254,15 +256,17 @@ func (f Facts) Value(m Measure, id string) (float64, bool) {
 			return ShareOfVoice(f.Run.Answers, id)
 		}
 		return CitationShare(f.Run.Answers, id)
-	case MeasureReadiness, MeasureSitemapPages:
+	case MeasureReadiness, MeasureSitemapCoverage:
 		r, ok := f.Readiness[id]
-		if !ok {
+		switch {
+		case !ok:
+			return 0, false
+		case m == MeasureReadiness:
+			return r.ReadinessScore(), true
+		case r.SitemapCoverage == nil:
 			return 0, false
 		}
-		if m == MeasureReadiness {
-			return r.ReadinessScore(), true
-		}
-		return float64(r.SitemapPages), true
+		return *r.SitemapCoverage, true
 	case MeasureTermsUsed:
 		n, ok := f.TermsUsed[id]
 		return float64(n), ok

@@ -175,7 +175,6 @@ func (h *Handler) GetOverview(ctx context.Context) (oas.GetOverviewRes, error) {
 		},
 		Competitors: oas.OverviewCompetitors{
 			Makers: int32(o.Competitors.Makers), Families: make([]oas.OverviewFamily, 0, len(o.Competitors.Families)),
-			Listed: oas.NewOptInt32(int32(o.Competitors.Listed)),
 		},
 		AiSearch: oas.OverviewAiSearch{Answers: int32(o.AiSearch.Answers), Companies: make([]oas.OverviewMention, 0, len(o.AiSearch.Companies))},
 	}

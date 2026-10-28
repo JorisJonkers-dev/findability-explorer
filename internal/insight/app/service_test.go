@@ -109,8 +109,8 @@ func newWorld() *world {
 			{ID: "older", StartedAt: today.AddDate(0, 0, -7)},
 		},
 		readiness: map[string]domain.Readiness{
-			"tribelt": {Crawlers: domain.AccessOpen, SitemapPages: 10},
-			"martens": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, SitemapPages: 40},
+			"tribelt": {Crawlers: domain.AccessOpen, SitemapCoverage: new(0.25)},
+			"martens": {Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, SitemapCoverage: new(0.8)},
 		},
 		terms: termMap(9, 3),
 		set:   map[domain.Target]float64{},
@@ -138,7 +138,7 @@ func TestStandingsComeFromTheNewestRunAndScans(t *testing.T) {
 	}
 	want := map[domain.Measure]string{
 		domain.MeasureShareOfVoice: "ashworth", domain.MeasureCitationShare: "ashworth",
-		domain.MeasureReadiness: "martens", domain.MeasureSitemapPages: "martens", domain.MeasureTermsUsed: "ashworth",
+		domain.MeasureReadiness: "martens", domain.MeasureSitemapCoverage: "martens", domain.MeasureTermsUsed: "ashworth",
 	}
 	for m, id := range want {
 		if leaders[m] != id {

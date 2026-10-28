@@ -104,8 +104,8 @@ describe('the columns', () => {
 describe('the company list', () => {
   it('lists every company with the families it offers, counting what is shown', async () => {
     const { wrapper } = await mountApp(api(), '/competitors')
-    // The server counts the competitors the desk research found.
-    expect(wrapper.get('h1').text()).toBe('Our research found 3 competitors. The same belts, other names.')
+    // The server counts the competitors on our list now.
+    expect(wrapper.get('h1').text()).toBe('4 competitors are on our list. The same belts, other names.')
     expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual([
       'Twentebelt, Netherlands: Tri-Flex; 2 scans',
       'Märtens, Germany: Eyelink; No scans',
@@ -152,7 +152,7 @@ describe('the company list', () => {
     const { wrapper } = await mountApp(api({ 'GET /api/v1/competitors': () => problem(500, 'Internal Server Error') }), '/competitors')
     expect(wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
     // The count is the server's, so it stays when the list fails.
-    expect(wrapper.get('h1').text()).toBe('Our research found 3 competitors. The same belts, other names.')
+    expect(wrapper.get('h1').text()).toBe('4 competitors are on our list. The same belts, other names.')
   })
 })
 

@@ -11679,6 +11679,39 @@ func (s *OptPromptScope) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes SitemapCoverage as json.
+func (o OptSitemapCoverage) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes SitemapCoverage from json.
+func (o *OptSitemapCoverage) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptSitemapCoverage to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptSitemapCoverage) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptSitemapCoverage) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes string as json.
 func (o OptString) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -12215,18 +12248,11 @@ func (s *OverviewCompetitors) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
-	{
-		if s.Listed.Set {
-			e.FieldStart("listed")
-			s.Listed.Encode(e)
-		}
-	}
 }
 
-var jsonFieldsNameOfOverviewCompetitors = [3]string{
+var jsonFieldsNameOfOverviewCompetitors = [2]string{
 	0: "makers",
 	1: "families",
-	2: "listed",
 }
 
 // Decode decodes OverviewCompetitors from json.
@@ -12267,16 +12293,6 @@ func (s *OverviewCompetitors) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"families\"")
-			}
-		case "listed":
-			if err := func() error {
-				s.Listed.Reset()
-				if err := s.Listed.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"listed\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -22017,6 +22033,136 @@ func (s *SiteStack) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *SitemapCoverage) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *SitemapCoverage) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("pages")
+		e.Int32(s.Pages)
+	}
+	{
+		e.FieldStart("listed")
+		e.Int32(s.Listed)
+	}
+	{
+		e.FieldStart("share")
+		e.Float64(s.Share)
+	}
+}
+
+var jsonFieldsNameOfSitemapCoverage = [3]string{
+	0: "pages",
+	1: "listed",
+	2: "share",
+}
+
+// Decode decodes SitemapCoverage from json.
+func (s *SitemapCoverage) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SitemapCoverage to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "pages":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int32()
+				s.Pages = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"pages\"")
+			}
+		case "listed":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int32()
+				s.Listed = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"listed\"")
+			}
+		case "share":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Float64()
+				s.Share = float64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"share\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode SitemapCoverage")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfSitemapCoverage) {
+					name = jsonFieldsNameOfSitemapCoverage[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *SitemapCoverage) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SitemapCoverage) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *SitemapSummary) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -22045,13 +22191,20 @@ func (s *SitemapSummary) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		if s.Coverage.Set {
+			e.FieldStart("coverage")
+			s.Coverage.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfSitemapSummary = [4]string{
+var jsonFieldsNameOfSitemapSummary = [5]string{
 	0: "declared",
 	1: "files",
 	2: "addresses",
 	3: "languages",
+	4: "coverage",
 }
 
 // Decode decodes SitemapSummary from json.
@@ -22118,6 +22271,16 @@ func (s *SitemapSummary) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"languages\"")
+			}
+		case "coverage":
+			if err := func() error {
+				s.Coverage.Reset()
+				if err := s.Coverage.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"coverage\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -22393,8 +22556,8 @@ func (s *StandingMeasure) Decode(d *jx.Decoder) error {
 		*s = StandingMeasureCitationShare
 	case StandingMeasureReadinessChecks:
 		*s = StandingMeasureReadinessChecks
-	case StandingMeasureSitemapPages:
-		*s = StandingMeasureSitemapPages
+	case StandingMeasureSitemapCoverage:
+		*s = StandingMeasureSitemapCoverage
 	case StandingMeasureTermsUsed:
 		*s = StandingMeasureTermsUsed
 	default:

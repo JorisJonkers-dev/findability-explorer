@@ -13,7 +13,7 @@ import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSumma
 import { useMe } from '../../shell/composables/useMe'
 import { useReadinessCheck, useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
 import { ACCESS_LEGEND, accessMark, checkSummary, fiveChecksLine, hasMark, type MarkTone, readinessCheckLine, readinessHeadline, scanned, scanNote } from '../domain/overview'
-import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary, type ReadinessColumn, tableRows } from '../domain/readiness'
+import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary, type ReadinessColumn, sitemapCoverage, tableRows } from '../domain/readiness'
 
 const route = useRoute()
 const router = useRouter()
@@ -253,7 +253,7 @@ function pick(r: AiReadinessRow): void {
                 </td>
                 <template v-if="r.readiness">
                   <td :class="[CELL, 'px-3 whitespace-nowrap stage:px-3.5']">
-                    {{ r.readiness.sitemap.files > 0 ? `${r.readiness.sitemap.addresses.toLocaleString('en-US')} pages` : 'None' }}
+                    {{ r.readiness.sitemap.files > 0 ? sitemapCoverage(r.readiness) : 'None' }}
                     <span class="block text-xs text-muted stage:text-[18px]">{{ r.readiness.sitemap.languages.map((l) => l.toUpperCase()).join(' ') || 'No language' }}</span>
                   </td>
                   <td v-for="f in FILES" :key="f.key" :class="[CELL, 'px-3 text-center stage:px-3.5']" :title="hasMark(f.has(r.readiness), f.what).text">

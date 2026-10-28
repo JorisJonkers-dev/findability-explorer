@@ -265,12 +265,18 @@ func toReadiness(r domain.Readiness) oas.AiReadiness {
 	if !r.CheckedAt.IsZero() {
 		checked = oas.NewOptDateTime(r.CheckedAt)
 	}
+	sitemap := oas.SitemapSummary{
+		Declared: r.Sitemap.Declared, Files: int32(r.Sitemap.Files), //nolint:gosec // at most 10
+		Addresses: int32(min(r.Sitemap.Addresses, 1_000_000)), Languages: orEmpty(r.Sitemap.Languages), //nolint:gosec // capped
+	}
+	if c := r.Sitemap.Coverage; c != nil {
+		sitemap.Coverage = oas.NewOptSitemapCoverage(oas.SitemapCoverage{
+			Pages: int32(min(c.Pages, 100_000)), Listed: int32(min(c.Listed, 100_000)), Share: c.Share(), //nolint:gosec // capped
+		})
+	}
 	return oas.AiReadiness{
 		CheckedAt: checked, Robots: oas.RobotsStatus(r.Robots), Bots: bots,
-		Sitemap: oas.SitemapSummary{
-			Declared: r.Sitemap.Declared, Files: int32(r.Sitemap.Files), //nolint:gosec // at most 10
-			Addresses: int32(min(r.Sitemap.Addresses, 1_000_000)), Languages: orEmpty(r.Sitemap.Languages), //nolint:gosec // capped
-		},
+		Sitemap: sitemap,
 		LlmsTxt: oas.LlmsFacts{
 			Present: r.LLMs.Present, Bytes: int32(min(r.LLMs.Bytes, 100_000_000)), //nolint:gosec // capped
 			Links: int32(min(r.LLMs.Links, 10_000_000)), //nolint:gosec // capped

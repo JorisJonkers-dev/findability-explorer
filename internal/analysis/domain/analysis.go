@@ -179,6 +179,9 @@ type Repository interface {
 	SaveMatching(ctx context.Context, id uuid.UUID, m Matching, model string, eqs []Equivalent, usage Usage) error
 	// SaveReadiness stores the site's AI readiness and the raw files it was read from.
 	SaveReadiness(ctx context.Context, id uuid.UUID, r Readiness, raw RawFiles) error
+	// SaveSitemapCoverage records how many of the pages the scan read its sitemaps list, on the
+	// readiness it recorded; ErrNoReadiness when it recorded none.
+	SaveSitemapCoverage(ctx context.Context, id uuid.UUID, c SitemapCoverage) error
 	// ReadinessFiles returns the raw files of an analysis's readiness, or ErrNoReadiness.
 	ReadinessFiles(ctx context.Context, id uuid.UUID) (RawFiles, error)
 	// LatestReadiness returns, per company, its newest analysis that recorded its readiness,

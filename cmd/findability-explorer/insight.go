@@ -8,7 +8,6 @@ import (
 	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
-	companiesdomain "github.com/JorisJonkers-dev/findability-explorer/internal/companies/domain"
 	insightapp "github.com/JorisJonkers-dev/findability-explorer/internal/insight/app"
 	insightdomain "github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
 	prompttestapp "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
@@ -45,7 +44,7 @@ func (d insightDirectory) Companies(ctx context.Context) ([]insightdomain.Compan
 		if l.Archived {
 			continue
 		}
-		c := insightdomain.Company{ID: l.ID, Name: l.Name, Role: insightdomain.Role(l.Role()), Researched: l.Source == companiesdomain.SourceResearch}
+		c := insightdomain.Company{ID: l.ID, Name: l.Name, Role: insightdomain.Role(l.Role())}
 		if l.URL != nil {
 			c.Website = l.URL.String()
 		}
@@ -136,9 +135,13 @@ func (r readiness) Readiness(ctx context.Context) (map[string]insightdomain.Read
 
 func readinessOf(r analysisdomain.Readiness, at time.Time) insightdomain.Readiness {
 	out := insightdomain.Readiness{
-		Sitemap: r.Sitemap.Files > 0, SitemapPages: r.Sitemap.Addresses,
+		Sitemap: r.Sitemap.Files > 0,
 		SitemapLanguages: r.Sitemap.Languages, LLMs: r.LLMs.Present, LLMsFull: r.LLMsFull, Markdown: r.Markdown,
 		StructuredData: r.StructuredData, ScannedAt: at, Bots: map[string]insightdomain.BotAccess{},
+	}
+	if c := r.Sitemap.Coverage; c != nil {
+		share := c.Share()
+		out.SitemapCoverage = &share
 	}
 	for _, b := range r.Bots {
 		out.Bots[b.Bot] = insightdomain.BotAccess(b.Access)

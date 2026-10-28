@@ -53,7 +53,7 @@ const most = computed(() => Math.max(0.01, ...active.value.map((c) => share(c) ?
 const never = computed(() => unscannedCandidates(active.value).length)
 // The server counts the competitors on the list, as the home page does.
 const { overview } = useOverview()
-const competitorCount = computed(() => overview.value?.competitors.listed ?? 0)
+const competitorCount = computed(() => overview.value?.competitors.makers ?? 0)
 
 function show(f: RosterFilter): void {
   void router.replace({ query: f === 'all' ? {} : { show: f } })

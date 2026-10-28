@@ -3,7 +3,7 @@ import { expect, expectAccessible, test } from './fixtures'
 const SECTIONS = [
   { path: '/buyers', title: 'Buyers', heading: 'Paid search buys traffic, not buyers.' },
   { path: '/ai-search', title: 'AI search', heading: 'An AI assistant can only recommend what it has read.' },
-  { path: '/competitors', title: 'Competitors', heading: /^Our research found \d+ competitors\. The same belts, other names\.$/ },
+  { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors are on our list\. The same belts, other names\.$/ },
   { path: '/terms', title: 'Search terms', heading: /ways to search for a metal belt\.$/ },
   { path: '/plan', title: 'The plan', heading: 'Check every Monday. Fix one thing a week. Watch the numbers move.' },
 ] as const

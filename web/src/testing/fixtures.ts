@@ -48,7 +48,7 @@ export function overview(overrides: Partial<Overview> = {}): Overview {
         { tier: 'broad', terms: 1, tribelt: 0 },
       ],
     },
-    competitors: { makers: 3, listed: 4, families: [{ family: 'eyelink', makers: 1 }] },
+    competitors: { makers: 4, families: [{ family: 'eyelink', makers: 1 }] },
     aiSearch: {
       answers: 4,
       companies: [
@@ -177,7 +177,7 @@ export function readiness(overrides: Partial<AiReadiness> = {}): AiReadiness {
   const r: AiReadiness = {
     robots: 'found',
     bots: bots(),
-    sitemap: { declared: true, files: 2, addresses: 124, languages: ['nl', 'de', 'en'] },
+    sitemap: { declared: true, files: 2, addresses: 124, languages: ['nl', 'de', 'en'], coverage: { pages: 40, listed: 34, share: 0.85 } },
     llmsTxt: { present: true, bytes: 5120, links: 124 },
     llmsFullTxt: true,
     markdown: true,

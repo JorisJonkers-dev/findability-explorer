@@ -219,8 +219,8 @@ paths:
       description: >-
         The figures the home page shows, counted on the server so the page fetches a few numbers.
         The terminology map's terms, in total and per language (American English counts as
-        English), and how many of them Tribelt's own site uses. The competitors the desk research
-        found, and how many of them offer each of Tribelt's belt families. From the newest Prompt
+        English), and how many of them Tribelt's own site uses. The competitors on the list now,
+        and how many of them offer each of Tribelt's belt families. From the newest Prompt
         run with answers that count, how many answers there are, and how many name Tribelt and
         each of the four competitors named most.
       tags: [insight]
@@ -3566,6 +3566,39 @@ components:
             type: string
             maxLength: 16
             example: de
+        coverage:
+          $ref: "#/components/schemas/SitemapCoverage"
+    SitemapCoverage:
+      description: >-
+        How much of the site its sitemaps cover - of the pages the scan read on the site, how many
+        the sitemaps list (ADR-0013). Absent until the scan has read its pages, for a scan that read
+        none, and for a readiness recorded before coverage was measured; scanning the site again,
+        or checking its readiness again, measures it.
+      type: object
+      additionalProperties: false
+      required: [pages, listed, share]
+      properties:
+        pages:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: How many different pages the scan read on the site.
+          example: 40
+        listed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many of those pages the sitemaps list.
+          example: 34
+        share:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the pages read that the sitemaps list, listed over pages.
+          example: 0.85
     LlmsFacts:
       description: What a site's llms.txt holds.
       type: object
@@ -4262,10 +4295,11 @@ components:
         A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the
         share of answers naming the company, citationShare the share of web answers citing its
         site, readinessChecks the AI readiness checks its site passes out of five (half for
-        crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and
-        termsUsed the map terms its newest scan found.
+        crawlers when some are kept out), sitemapCoverage the share of the pages its newest scan
+        read that its sitemaps list (no value for a scan that did not measure it), and termsUsed
+        the map terms its newest scan found.
       type: string
-      enum: [aiShareOfVoice, citationShare, readinessChecks, sitemapPages, termsUsed]
+      enum: [aiShareOfVoice, citationShare, readinessChecks, sitemapCoverage, termsUsed]
       example: aiShareOfVoice
     MeasureLeader:
       description: The competitor with the best value on a measure.
@@ -4427,7 +4461,7 @@ components:
           description: How many of them Tribelt's own site uses.
           example: 12
     OverviewCompetitors:
-      description: The competitors the desk research found, and which of Tribelt's belt families they offer.
+      description: The competitors on the list now, and which of Tribelt's belt families they offer.
       type: object
       additionalProperties: false
       required: [makers, families]
@@ -4438,26 +4472,20 @@ components:
           minimum: 0
           maximum: 100000
           description: >-
-            How many competitors the desk research found; a company added later, a group
-            company and the mirror do not count.
-          example: 24
+            How many competitors the list holds now, not archived, whether the desk research
+            found them or they were added since; a group company and the mirror do not count.
+            Every count of the competitors shows this number.
+          example: 69
         families:
           type: array
           maxItems: 20
-          description: Each of Tribelt's belt families, in order, with how many of those competitors offer it.
+          description: >-
+            Each of Tribelt's belt families, in order, with how many of those competitors offer
+            it, by the belt names recorded for them or the products their newest scan matched.
           items:
             $ref: "#/components/schemas/OverviewFamily"
-        listed:
-          type: integer
-          format: int32
-          minimum: 0
-          maximum: 100000
-          description: >-
-            How many competitors the list holds now, not archived, those added since the desk
-            research included; a group company and the mirror do not count.
-          example: 61
     OverviewFamily:
-      description: How many of the competitors the desk research found offer one of Tribelt's belt families.
+      description: How many of the competitors on the list offer one of Tribelt's belt families.
       type: object
       additionalProperties: false
       required: [family, makers]

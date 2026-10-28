@@ -158,7 +158,7 @@ export const getStandings = <ThrowOnError extends boolean = false>(options?: Opt
 /**
  * Get the home page's figures
  *
- * The figures the home page shows, counted on the server so the page fetches a few numbers. The terminology map's terms, in total and per language (American English counts as English), and how many of them Tribelt's own site uses. The competitors the desk research found, and how many of them offer each of Tribelt's belt families. From the newest Prompt run with answers that count, how many answers there are, and how many name Tribelt and each of the four competitors named most.
+ * The figures the home page shows, counted on the server so the page fetches a few numbers. The terminology map's terms, in total and per language (American English counts as English), and how many of them Tribelt's own site uses. The competitors on the list now, and how many of them offer each of Tribelt's belt families. From the newest Prompt run with answers that count, how many answers there are, and how many name Tribelt and each of the four competitors named most.
  */
 export const getOverview = <ThrowOnError extends boolean = false>(options?: Options<GetOverviewData, ThrowOnError>): RequestResult<GetOverviewResponses, GetOverviewErrors, ThrowOnError> => (options?.client ?? client).get<GetOverviewResponses, GetOverviewErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

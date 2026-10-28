@@ -69,6 +69,67 @@ type SitemapSummary struct {
 	// Languages are the ones of Dutch, German and English the addresses cover, by their path
 	// (/de/) or their hreflang.
 	Languages []string
+	// Coverage is how many of the pages the scan read the sitemaps list; nil until the crawl is
+	// done, for a scan that read no page, and for a readiness recorded before coverage was measured.
+	Coverage *SitemapCoverage
+}
+
+// SitemapCoverage is how much of a site its sitemaps cover (ADR-0013): of the pages a scan read
+// on the site, how many its sitemaps list. A sitemap that lists every page a buyer can reach is
+// complete; one that lists more addresses is not better for it.
+type SitemapCoverage struct {
+	// Pages is how many different pages the scan read; never 0.
+	Pages int
+	// Listed is how many of them the sitemaps list, at most Pages.
+	Listed int
+}
+
+// Share is the share of the pages read that the sitemaps list, from 0 to 1.
+func (c SitemapCoverage) Share() float64 {
+	if c.Pages == 0 {
+		return 0
+	}
+	return float64(c.Listed) / float64(c.Pages)
+}
+
+// CoverageOf counts, of the pages a scan read (their addresses after redirects), the ones the
+// sitemaps list. Addresses compare as the crawl compares them: "www." aside, without the query,
+// the fragment or a trailing slash, and with the path decoded, so /a%20b and /a b are one page.
+// A site without a sitemap covers none of its pages. It is nil when no page was read.
+func CoverageOf(sitemaps []Sitemap, pages []string) *SitemapCoverage {
+	listed := map[string]bool{}
+	for _, sm := range sitemaps {
+		for _, p := range sm.Pages {
+			if k, ok := coverageKey(p); ok {
+				listed[k] = true
+			}
+		}
+	}
+	read := map[string]bool{}
+	for _, p := range pages {
+		if k, ok := coverageKey(p); ok {
+			read[k] = true
+		}
+	}
+	if len(read) == 0 {
+		return nil
+	}
+	c := SitemapCoverage{Pages: len(read)}
+	for k := range read {
+		if listed[k] {
+			c.Listed++
+		}
+	}
+	return &c
+}
+
+// coverageKey is an address as coverage compares it; false for one that is not an http(s) page.
+func coverageKey(raw string) (string, bool) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return "", false
+	}
+	return SiteOf(u.Hostname()) + strings.TrimSuffix(u.Path, "/"), true
 }
 
 // LLMsFacts is what a site's llms.txt holds.

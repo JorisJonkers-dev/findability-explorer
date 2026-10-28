@@ -1,11 +1,11 @@
 import type { Standing, StandingMeasure, TermsSource } from '../../../infrastructure/api/types.gen'
 
-/** What each measure is called on the page, and how its values read. */
-export const MEASURES: Record<StandingMeasure, { label: string; short: string; unit: 'share' | 'score' | 'count' }> = {
+/** What each measure is called on the page, how its values read, and what a bar without a value says. */
+export const MEASURES: Record<StandingMeasure, { label: string; short: string; unit: 'share' | 'score' | 'count'; missing?: string }> = {
   aiShareOfVoice: { label: 'AI answers naming the company, in the newest Prompt run', short: 'AI answers', unit: 'share' },
   citationShare: { label: 'Web answers citing its website, in the newest Prompt run', short: 'Citations', unit: 'share' },
   readinessChecks: { label: 'AI readiness checks passed, out of five', short: 'AI readiness', unit: 'score' },
-  sitemapPages: { label: 'Pages in the sitemap', short: 'Sitemap', unit: 'count' },
+  sitemapCoverage: { label: "Share of the site's pages its sitemap lists", short: 'Sitemap', unit: 'share', missing: 'Not measured yet. Scan the site again.' },
   termsUsed: { label: 'Search terms from the map found on the site', short: 'Search terms', unit: 'count' },
 }
 
@@ -14,7 +14,7 @@ export function termsSourceLine(from: TermsSource | undefined): string {
   return from === 'research' ? "tribelt.nl has not been scanned yet. Tribelt's bar counts the terms our research found for it." : ''
 }
 
-/** A value as the page writes it: "24%", "3½", "2,140". */
+/** A value as the page writes it: "24%", "3½", "45". */
 export function formatValue(measure: StandingMeasure, value: number): string {
   switch (MEASURES[measure].unit) {
     case 'share':
@@ -36,7 +36,7 @@ export function barsOf(s: Standing): Bar[] {
   const max = Math.max(s.tribelt ?? 0, s.median ?? 0, s.leader?.value ?? 0)
   const bar = (who: string, value: number | undefined, tone: Bar['tone']): Bar => ({
     who,
-    value: value === undefined ? 'No data yet' : formatValue(s.measure, value),
+    value: value === undefined ? (MEASURES[s.measure].missing ?? 'No data yet') : formatValue(s.measure, value),
     length: value === undefined || max === 0 ? 0 : value / max,
     tone,
   })
@@ -46,7 +46,7 @@ export function barsOf(s: Standing): Bar[] {
 /** A short line under a measure: where Tribelt leads, or how far behind it is. */
 export function noteOf(s: Standing): string {
   if (s.leads) return 'Tribelt leads here.'
-  if (s.tribelt === undefined) return 'Tribelt has no data here yet.'
+  if (s.tribelt === undefined) return s.measure === 'sitemapCoverage' ? 'Not measured on tribelt.nl yet. Scan it again.' : 'Tribelt has no data here yet.'
   if (!s.leader) return 'No competitor has data here yet.'
   return `${s.leader.name} is ahead.`
 }

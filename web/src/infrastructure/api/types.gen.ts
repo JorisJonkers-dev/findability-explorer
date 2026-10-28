@@ -1315,6 +1315,25 @@ export type SitemapSummary = {
      * The ones of Dutch, German and English the addresses cover, by path or hreflang.
      */
     languages: Array<string>;
+    coverage?: SitemapCoverage;
+};
+
+/**
+ * How much of the site its sitemaps cover - of the pages the scan read on the site, how many the sitemaps list (ADR-0013). Absent until the scan has read its pages, for a scan that read none, and for a readiness recorded before coverage was measured; scanning the site again, or checking its readiness again, measures it.
+ */
+export type SitemapCoverage = {
+    /**
+     * How many different pages the scan read on the site.
+     */
+    pages: number;
+    /**
+     * How many of those pages the sitemaps list.
+     */
+    listed: number;
+    /**
+     * The share of the pages read that the sitemaps list, listed over pages.
+     */
+    share: number;
 };
 
 /**
@@ -1825,9 +1844,9 @@ export type ProductsOverview = {
 };
 
 /**
- * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapCoverage the share of the pages its newest scan read that its sitemaps list (no value for a scan that did not measure it), and termsUsed the map terms its newest scan found.
  */
-export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapPages' | 'termsUsed';
+export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapCoverage' | 'termsUsed';
 
 /**
  * The competitor with the best value on a measure.
@@ -1943,25 +1962,21 @@ export type OverviewLanguage = {
 };
 
 /**
- * The competitors the desk research found, and which of Tribelt's belt families they offer.
+ * The competitors on the list now, and which of Tribelt's belt families they offer.
  */
 export type OverviewCompetitors = {
     /**
-     * How many competitors the desk research found; a company added later, a group company and the mirror do not count.
+     * How many competitors the list holds now, not archived, whether the desk research found them or they were added since; a group company and the mirror do not count. Every count of the competitors shows this number.
      */
     makers: number;
     /**
-     * Each of Tribelt's belt families, in order, with how many of those competitors offer it.
+     * Each of Tribelt's belt families, in order, with how many of those competitors offer it, by the belt names recorded for them or the products their newest scan matched.
      */
     families: Array<OverviewFamily>;
-    /**
-     * How many competitors the list holds now, not archived, those added since the desk research included; a group company and the mirror do not count.
-     */
-    listed?: number;
 };
 
 /**
- * How many of the competitors the desk research found offer one of Tribelt's belt families.
+ * How many of the competitors on the list offer one of Tribelt's belt families.
  */
 export type OverviewFamily = {
     family: PromptFamily;

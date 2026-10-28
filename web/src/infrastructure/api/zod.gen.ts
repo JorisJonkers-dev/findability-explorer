@@ -675,13 +675,23 @@ export const zReadinessAdvice = z.object({
 });
 
 /**
+ * How much of the site its sitemaps cover - of the pages the scan read on the site, how many the sitemaps list (ADR-0013). Absent until the scan has read its pages, for a scan that read none, and for a readiness recorded before coverage was measured; scanning the site again, or checking its readiness again, measures it.
+ */
+export const zSitemapCoverage = z.object({
+    pages: z.int().gte(1).lte(100000),
+    listed: z.int().gte(0).lte(100000),
+    share: z.number().gte(0).lte(1)
+});
+
+/**
  * What a site's sitemaps list, without the addresses.
  */
 export const zSitemapSummary = z.object({
     declared: z.boolean(),
     files: z.int().gte(0).lte(100),
     addresses: z.int().gte(0).lte(1000000),
-    languages: z.array(z.string().max(16)).max(3)
+    languages: z.array(z.string().max(16)).max(3),
+    coverage: zSitemapCoverage.optional()
 });
 
 /**
@@ -889,13 +899,13 @@ export const zProductFinding = z.enum([
 ]);
 
 /**
- * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapPages the addresses its sitemaps list, and termsUsed the map terms its newest scan found.
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapCoverage the share of the pages its newest scan read that its sitemaps list (no value for a scan that did not measure it), and termsUsed the map terms its newest scan found.
  */
 export const zStandingMeasure = z.enum([
     'aiShareOfVoice',
     'citationShare',
     'readinessChecks',
-    'sitemapPages',
+    'sitemapCoverage',
     'termsUsed'
 ]);
 
@@ -1221,7 +1231,7 @@ export const zProductStandout = z.object({
 });
 
 /**
- * How many of the competitors the desk research found offer one of Tribelt's belt families.
+ * How many of the competitors on the list offer one of Tribelt's belt families.
  */
 export const zOverviewFamily = z.object({
     family: zPromptFamily,
@@ -1229,12 +1239,11 @@ export const zOverviewFamily = z.object({
 });
 
 /**
- * The competitors the desk research found, and which of Tribelt's belt families they offer.
+ * The competitors on the list now, and which of Tribelt's belt families they offer.
  */
 export const zOverviewCompetitors = z.object({
     makers: z.int().gte(0).lte(100000),
-    families: z.array(zOverviewFamily).max(20),
-    listed: z.int().gte(0).lte(100000).optional()
+    families: z.array(zOverviewFamily).max(20)
 });
 
 /**

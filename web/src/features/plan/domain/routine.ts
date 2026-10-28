@@ -129,7 +129,10 @@ const NOW: Record<StandingMeasure, { says: (value: string) => string; missing: s
   aiShareOfVoice: { says: (v) => `${v} of the AI answers in the newest Prompt run name Tribelt.`, missing: 'No Prompt run has finished yet.' },
   citationShare: { says: (v) => `${v} of the web answers in the newest Prompt run cite tribelt.nl.`, missing: 'No Prompt run has finished yet.' },
   readinessChecks: { says: (v) => `tribelt.nl passes ${v} of five AI readiness checks.`, missing: 'No scan of tribelt.nl yet.' },
-  sitemapPages: { says: (v) => `The sitemaps of tribelt.nl list ${v} pages.`, missing: 'No scan of tribelt.nl yet.' },
+  sitemapCoverage: {
+    says: (v) => `The sitemaps of tribelt.nl list ${v} of the pages its newest scan read.`,
+    missing: 'Not measured on tribelt.nl yet. Scan it again.',
+  },
   termsUsed: { says: (v) => `The newest scan of tribelt.nl found ${v} search terms from the map.`, missing: 'No scan of tribelt.nl yet.' },
 }
 

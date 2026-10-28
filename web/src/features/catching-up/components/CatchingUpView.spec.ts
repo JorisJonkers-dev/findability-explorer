@@ -6,11 +6,11 @@ const standings = {
   measures: [
     { measure: 'aiShareOfVoice', tribelt: 0.24, median: 0.17, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.57 }, competitors: 38, trails: true, leads: false },
     { measure: 'termsUsed', tribelt: 38, median: 14, leader: { competitorId: 'martens', name: 'Märtens', value: 30 }, competitors: 20, trails: false, leads: true },
-    { measure: 'sitemapPages', competitors: 0, trails: false, leads: false },
+    { measure: 'sitemapCoverage', competitors: 0, trails: false, leads: false },
   ],
   trailing: 1,
   open: [
-    { id: 'sitemap-per-language', title: 'A sitemap for each language', moves: 'Helps search engines find every page.', measure: 'sitemapPages', auto: true, done: false, ...details, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 2140 } },
+    { id: 'sitemap-per-language', title: 'A sitemap for each language', moves: 'Helps search engines find every page.', measure: 'sitemapCoverage', auto: true, done: false, ...details, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.9 } },
     { id: 'listings', title: 'Get listed where answers find sources', moves: 'Makes web answers cite tribelt.nl more often.', measure: 'citationShare', auto: false, done: false, ...details },
   ],
 }
@@ -23,7 +23,7 @@ describe('Catching up', () => {
     expect(figures.map((f) => f.get('figcaption').text())).toEqual([
       'AI answers naming the company, in the newest Prompt run Ashworth is ahead.',
       'Search terms from the map found on the site Tribelt leads here.',
-      'Pages in the sitemap Tribelt has no data here yet.',
+      "Share of the site's pages its sitemap lists Not measured on tribelt.nl yet. Scan it again.",
     ])
     expect(figures[0]?.findAll('figcaption ~ div').map((d) => d.text())).toEqual(['Tribelt24%', 'Typical competitor17%', 'Ashworth57%'])
     expect(figures[1]?.text()).toContain('Märtens30')
@@ -34,7 +34,7 @@ describe('Catching up', () => {
     const { wrapper } = await mountApp(routes({ 'GET /api/v1/standings': () => json(standings) }), '/catching-up')
     const todo = wrapper.get('section[aria-labelledby="todo-title"]')
     expect(todo.findAll('li').map((l) => l.text())).toEqual([
-      '1A sitemap for each languageHelps search engines find every page.No scan of tribelt.nl yet. Ashworth leads with 2,140.Look atAshworth',
+      '1A sitemap for each languageHelps search engines find every page.Not measured on tribelt.nl yet. Scan it again. Ashworth leads with 90%.Look atAshworth',
       '2Get listed where answers find sourcesMakes web answers cite tribelt.nl more often.No Prompt run has finished yet.',
     ])
     expect(todo.get('li a').attributes('href')).toBe('/competitors/ashworth')

@@ -407,7 +407,8 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	}
 	// The readiness files come first, so a site that turns the page crawl away still shows its
 	// crawler policy. When ctx ends while they are read, the crawl below ends too.
-	if files, err := s.crawler.Readiness(ctx, target); err == nil {
+	files, readErr := s.crawler.Readiness(ctx, target)
+	if readErr == nil {
 		if err := s.repo.SaveReadiness(ctx, id, domain.AssessReadiness(files), domain.RawFilesOf(files)); err != nil {
 			return s.abort(ctx, id, fmt.Errorf("save readiness: %w", err))
 		}
@@ -430,6 +431,12 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if len(pages) == 0 {
 		return s.fail(ctx, id, noPages(crawlErr))
 	}
+	// How much of the site its sitemaps cover is known only once the pages are read.
+	if c := domain.CoverageOf(files.Sitemaps, pageURLs(pages)); readErr == nil && c != nil {
+		if err := s.repo.SaveSitemapCoverage(ctx, id, *c); err != nil {
+			return s.abort(ctx, id, fmt.Errorf("save sitemap coverage: %w", err))
+		}
+	}
 	keywords := domain.Keywords(pages, lexicon, domain.BrandWords(target.URL().Hostname()))
 	if err := s.repo.SaveFindings(ctx, id, keywords, domain.FindKnownTerms(pages, glossary)); err != nil {
 		return s.abort(ctx, id, fmt.Errorf("save findings: %w", err))
@@ -442,6 +449,15 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 		return s.abort(ctx, id, fmt.Errorf("finish analysis: %w", err))
 	}
 	return nil
+}
+
+// pageURLs are the addresses of the pages read.
+func pageURLs(pages []domain.Page) []string {
+	out := make([]string, 0, len(pages))
+	for _, p := range pages {
+		out = append(out, p.URL)
+	}
+	return out
 }
 
 // noPages is the failure of a scan that read no page: blocked by the site, or why else.

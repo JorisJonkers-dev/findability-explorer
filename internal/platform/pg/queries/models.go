@@ -111,24 +111,26 @@ type AnalysisPage struct {
 }
 
 type AnalysisReadiness struct {
-	AnalysisID       uuid.UUID
-	Robots           string
-	SitemapDeclared  bool
-	SitemapFiles     int64
-	SitemapAddresses int64
-	SitemapLanguages []string
-	LlmsPresent      bool
-	LlmsBytes        int64
-	LlmsLinks        int64
-	LlmsFullPresent  bool
-	Markdown         bool
-	HomeRead         bool
-	StructuredData   []string
-	Languages        []string
-	Cms              string
-	SeoPlugin        string
-	BotProtection    string
-	CheckedAt        pgtype.Timestamptz
+	AnalysisID         uuid.UUID
+	Robots             string
+	SitemapDeclared    bool
+	SitemapFiles       int64
+	SitemapAddresses   int64
+	SitemapLanguages   []string
+	LlmsPresent        bool
+	LlmsBytes          int64
+	LlmsLinks          int64
+	LlmsFullPresent    bool
+	Markdown           bool
+	HomeRead           bool
+	StructuredData     []string
+	Languages          []string
+	Cms                string
+	SeoPlugin          string
+	BotProtection      string
+	CheckedAt          pgtype.Timestamptz
+	SitemapPagesRead   pgtype.Int8
+	SitemapPagesListed pgtype.Int8
 }
 
 type AnalysisReadinessFile struct {

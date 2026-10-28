@@ -27,20 +27,20 @@ const placed = computed(() =>
         <div class="flex items-end justify-end bg-white p-3 text-[13px] font-bold text-muted">Probably later</div>
         <!-- Dots live in an inner box that stays clear of the corner labels. -->
         <div class="pointer-events-none absolute inset-x-8 inset-y-16">
-        <button
-          v-for="d in placed"
-          :key="d.id"
-          type="button"
-          :title="d.tip"
-          :aria-label="d.tip"
-          :aria-pressed="picked === d.id"
-          class="pointer-events-auto absolute size-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-solid p-0 text-[15px] font-extrabold text-black transition-transform hover:scale-110"
-          :class="picked === d.id ? 'border-[3px] border-black bg-orange shadow-[0_0_0_4px_#fff]' : 'border-2 border-black bg-white'"
-          :style="{ left: `${String(d.x)}%`, top: `${String(d.y)}%` }"
-          @click="emit('pick', d.id)"
-        >
-          {{ d.rank }}
-        </button>
+          <button
+            v-for="d in placed"
+            :key="d.id"
+            type="button"
+            :title="d.tip"
+            :aria-label="d.tip"
+            :aria-pressed="picked === d.id"
+            class="pointer-events-auto absolute size-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-solid p-0 text-[15px] font-extrabold text-black transition-transform hover:scale-110"
+            :class="picked === d.id ? 'border-[3px] border-black bg-orange shadow-[0_0_0_4px_#fff]' : 'border-2 border-black bg-white'"
+            :style="{ left: `${String(d.x)}%`, top: `${String(d.y)}%` }"
+            @click="emit('pick', d.id)"
+          >
+            {{ d.rank }}
+          </button>
         </div>
       </div>
       <div aria-hidden="true" class="text-center text-[13px] font-semibold text-muted">More work →</div>

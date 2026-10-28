@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory, type Router, type RouterHistory } from 'vue-router'
 import { trackPreviousPath } from '../features/shell/composables/navigation'
 
-const competitors = () => import('../features/competitors/components/CompetitorsView.vue')
-
 /** The app's routes. Each view loads on demand, so the first paint carries only the shell. */
 export function createAppRouter(history: RouterHistory = createWebHistory()): Router {
   const router = createRouter({
@@ -36,15 +34,20 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         component: () => import('../features/prompt-test/components/PromptSettingsPage.vue'),
         meta: { title: 'Prompt test settings' },
       },
-      // One view for the companies alone and for a scan beside them, so a started scan keeps the form.
-      { path: '/competitors', name: 'competitors', component: competitors, meta: { title: 'Competitors' } },
-      { path: '/scan/:id', name: 'scan', component: competitors, props: (to) => ({ scanId: String(to.params.id) }), meta: { title: 'Scan' } },
+      { path: '/competitors', name: 'competitors', component: () => import('../features/competitors/components/CompetitorsView.vue'), meta: { title: 'Competitors' } },
+      {
+        path: '/scan/:id',
+        name: 'scan',
+        component: () => import('../features/scan/components/ScanView.vue'),
+        props: (to) => ({ scanId: String(to.params.id) }),
+        meta: { title: 'Scan' },
+      },
       {
         path: '/competitors/:id',
         name: 'company',
-        component: () => import('../features/competitors/components/CompanyScanView.vue'),
+        component: () => import('../features/competitors/components/CompetitorView.vue'),
         props: (to) => ({ companyId: String(to.params.id) }),
-        meta: { title: 'Latest scan' },
+        meta: { title: 'Competitor' },
       },
       // A company's search terms and scan history, a view of its own: the stage has no room beside the list.
       {

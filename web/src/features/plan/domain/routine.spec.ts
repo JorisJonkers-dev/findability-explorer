@@ -24,7 +24,8 @@ describe('the numbers to watch', () => {
     const terms = watchedRow({ target: 'termsUsed', now: 18, goal: 35 }, 5)
     expect([terms.now, terms.goal]).toEqual(['18', '35'])
     expect(terms.goalLength).toBeCloseTo(1 / 1.15)
-    expect(watchedRow({ target: 'citations', goal: 20 }, 5)).toMatchObject({ now: 'No data yet', goal: '20', nowLength: 0 })
+    expect(watchedRow({ target: 'citationShare', goal: 0.5 }, 5)).toMatchObject({ now: 'No data yet', goal: '50%', nowLength: 0 })
+    expect(watchedRow({ target: 'citationShare', now: 0.36, goal: 0.5 }, 5)).toMatchObject({ now: '36%', goal: '50%' })
     expect(TARGETS.twenteShareOfVoice.format(0.75)).toBe('75%')
   })
 
@@ -34,10 +35,10 @@ describe('the numbers to watch', () => {
     // Past the target the scale reaches past the value, so the bar does not run off its end.
     expect(met.nowLength).toBeCloseTo(1 / 1.15)
     // Without a value there is nothing met, whatever the server says.
-    expect(watchedRow({ target: 'citations', goal: 20, met: true }, 5).met).toBe(false)
+    expect(watchedRow({ target: 'citationShare', goal: 0.2, met: true }, 5).met).toBe(false)
     const watched = [
       { target: 'termsUsed' as const, now: 45, goal: 35, met: true },
-      { target: 'citations' as const, now: 3, goal: 50, met: false },
+      { target: 'citationShare' as const, now: 0.03, goal: 0.5, met: false },
     ]
     expect(metLine(watched, true)).toBe('A target you have met is done. Raise it under Change the targets.')
     expect(metLine(watched, false)).toBe('A target you have met is done. An administrator can raise it.')
@@ -50,7 +51,7 @@ describe('the numbers to watch', () => {
     // The readiness checks say how many there are, as the server counts them.
     expect(targetLabel('readinessChecks', 5)).toMatch(/, out of five$/)
     expect(watchedRow({ target: 'readinessChecks', now: 3, goal: 6, max: 6 }, 6).label).toMatch(/, out of six$/)
-    expect(watchedRow({ target: 'citations', goal: 50 }, 5, 'research').label).toBe('Web answers in the newest Prompt run that cite tribelt.nl')
+    expect(watchedRow({ target: 'citationShare', goal: 50 }, 5, 'research').label).toBe('Web answers in the newest Prompt run that cite tribelt.nl')
   })
 
   it('say why to keep an eye on a competitor', () => {

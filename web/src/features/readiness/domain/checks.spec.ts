@@ -14,27 +14,27 @@ const rank = (name: string, role: ReadinessRank['role'], score: number): Readine
 
 describe('the checks in groups', () => {
   it('lists the scored checks first, then the ones checked beside them, with Tribelt’s standing', () => {
-    const groups = checkGroups({ checks, sites: 5 }, 5)
+    const groups = checkGroups({ checks, sites: 5 }, 8)
     expect(groups.map((g) => [g.title, g.aria, g.checks.map((c) => c.kind)])).toEqual([
-      ['The five checks in the score', 'The five checks in the score', ['crawlers', 'sitemap', 'llmsTxt']],
+      ['The eight checks in the score', 'The eight checks in the score', ['crawlers', 'sitemap', 'llmsTxt']],
       ['Also checked', 'Also checked, not in the score', ['product']],
     ])
     expect(groups[0]?.checks[0]).toEqual({
       kind: 'crawlers',
-      label: 'Lets every AI crawler in',
+      label: 'Lets every AI crawler in, for search and for training',
       passing: 2,
       sites: 5,
       share: 0.4,
       tribelt: false,
       status: 'Tribelt does not pass',
-      aria: 'Lets every AI crawler in: 2 of 5 sites pass. Tribelt does not pass.',
+      aria: 'Lets every AI crawler in, for search and for training: 2 of 5 sites pass. Tribelt does not pass.',
     })
     expect(groups[0]?.checks.map((c) => c.status)).toEqual(['Tribelt does not pass', 'Tribelt passes', 'Not scanned yet'])
   })
 
   it('drops a group with no checks, and has none before the summary loads', () => {
-    expect(checkGroups({ checks: checks.slice(0, 2), sites: 5 }, 5).map((g) => g.title)).toEqual(['The five checks in the score'])
-    expect(checkGroups({ checks, sites: 0 }, 5)[0]?.checks[0]?.share).toBe(0)
+    expect(checkGroups({ checks: checks.slice(0, 2), sites: 5 }, 8).map((g) => g.title)).toEqual(['The eight checks in the score'])
+    expect(checkGroups({ checks, sites: 0 }, 8)[0]?.checks[0]?.share).toBe(0)
     expect(checkGroups(undefined, 5)).toEqual([])
   })
 
@@ -43,7 +43,7 @@ describe('the checks in groups', () => {
   })
 
   it('explains every check, and links the fix of the ones a recommendation fixes', () => {
-    expect(Object.keys(CHECK_WHAT)).toHaveLength(8)
+    expect(Object.keys(CHECK_WHAT)).toHaveLength(9)
     expect(Object.keys(CHECK_FIX)).toEqual(['sitemap', 'sitemapLanguages', 'llmsTxt', 'llmsFullTxt', 'markdown', 'product'])
   })
 })
@@ -66,12 +66,12 @@ describe('the link to a fix', () => {
 
 describe('the headline', () => {
   it('says how many checks Tribelt passes, against the best competitor', () => {
-    expect(readinessTitle([], 5)).toBe('How ready the sites are for AI assistants')
-    expect(readinessTitle([rank('Tribelt', 'tribelt', 3.5)], 5)).toBe('Tribelt passes three and a half of the five readiness checks')
-    expect(readinessTitle([rank('Tribelt', 'tribelt', 4), rank('A', 'competitor', 3)], 5)).toBe('Tribelt passes four of the five readiness checks, more than any competitor')
-    expect(readinessTitle([rank('Tribelt', 'tribelt', 3), rank('A', 'competitor', 3)], 5)).toBe('Tribelt passes three of the five readiness checks, matching its best competitors')
-    expect(readinessTitle([rank('Tribelt', 'tribelt', 0.5), rank('A', 'competitor', 3)], 5)).toBe('Tribelt passes half of one of the five readiness checks, fewer than its best competitors')
-    expect(readinessTitle([rank('Tribelt', 'tribelt', 0), rank('A', 'competitor', 3)], 5)).toBe('Tribelt passes none of the five readiness checks, fewer than its best competitors')
+    expect(readinessTitle([], 8)).toBe('How ready the sites are for AI assistants')
+    expect(readinessTitle([rank('Tribelt', 'tribelt', 3.5)], 8)).toBe('Tribelt passes three and a half of the eight readiness checks')
+    expect(readinessTitle([rank('Tribelt', 'tribelt', 4), rank('A', 'competitor', 3)], 8)).toBe('Tribelt passes four of the eight readiness checks, more than any competitor')
+    expect(readinessTitle([rank('Tribelt', 'tribelt', 3), rank('A', 'competitor', 3)], 8)).toBe('Tribelt passes three of the eight readiness checks, matching its best competitors')
+    expect(readinessTitle([rank('Tribelt', 'tribelt', 0.5), rank('A', 'competitor', 3)], 8)).toBe('Tribelt passes half of one of the eight readiness checks, fewer than its best competitors')
+    expect(readinessTitle([rank('Tribelt', 'tribelt', 0), rank('A', 'competitor', 3)], 8)).toBe('Tribelt passes none of the eight readiness checks, fewer than its best competitors')
   })
 
   it('writes a score in words', () => {
@@ -94,37 +94,42 @@ describe('the sites with the best score', () => {
 describe('the figures', () => {
   it('count the sites, the checks Tribelt passes and the sites that share the best score', () => {
     const ranking = [rank('A', 'competitor', 5), rank('B', 'competitor', 5), rank('Tribelt', 'tribelt', 3.5)]
-    expect(readinessFigures({ ranking, sites: 41, readinessChecks: 5 })).toEqual([
+    expect(readinessFigures({ ranking, sites: 41, readinessChecks: 8 })).toEqual([
       { big: '41', text: 'sites checked', accent: false },
-      { big: '3½ of 5', text: 'checks that tribelt.nl passes', accent: true },
+      { big: '3½ of 8', text: 'checks that tribelt.nl passes', accent: true },
       { big: '2', text: 'sites share the best score', accent: false },
     ])
   })
 
   it('say when Tribelt is among the best, or alone', () => {
-    const tied = readinessFigures({ ranking: [rank('A', 'competitor', 4), rank('Tribelt', 'tribelt', 4)], sites: 1, readinessChecks: 5 })
+    const tied = readinessFigures({ ranking: [rank('A', 'competitor', 4), rank('Tribelt', 'tribelt', 4)], sites: 1, readinessChecks: 8 })
     expect([tied[0]?.text, tied[2]?.text]).toEqual(['site checked', 'sites share the best score, Tribelt among them'])
-    expect(readinessFigures({ ranking: [rank('Tribelt', 'tribelt', 4)], sites: 2, readinessChecks: 5 })[2]?.text).toBe('site has the best score, and it is Tribelt')
-    const alone = readinessFigures({ ranking: [rank('A', 'competitor', 4), rank('Tribelt', 'tribelt', 1)], sites: 2, readinessChecks: 5 })
-    expect([alone[1]?.big, alone[2]?.text]).toEqual(['1 of 5', 'site has the best score'])
-    expect(readinessFigures({ ranking: [], sites: 0, readinessChecks: 5 })[1]?.big).toBe('–')
+    expect(readinessFigures({ ranking: [rank('Tribelt', 'tribelt', 4)], sites: 2, readinessChecks: 8 })[2]?.text).toBe('site has the best score, and it is Tribelt')
+    const alone = readinessFigures({ ranking: [rank('A', 'competitor', 4), rank('Tribelt', 'tribelt', 1)], sites: 2, readinessChecks: 8 })
+    expect([alone[1]?.big, alone[2]?.text]).toEqual(['1 of 8', 'site has the best score'])
+    expect(readinessFigures({ ranking: [], sites: 0, readinessChecks: 8 })[1]?.big).toBe('–')
   })
 })
 
-describe("a site's five checks", () => {
+describe("a site's eight checks", () => {
   const states = (r: Parameters<typeof siteChecks>[0]) => siteChecks(r).map((c) => c.state)
 
   it('read the way the server scores them', () => {
-    expect(siteChecks({ readiness: readiness() }).map((c) => c.label)).toEqual(['Lets every AI crawler in', 'Has a sitemap', 'Has llms.txt', 'Has llms-full.txt', 'Has Markdown pages'])
-    expect(states({ readiness: readiness() })).toEqual(['yes', 'yes', 'yes', 'yes', 'yes'])
-    expect(states({ readiness: readiness({ sitemap: { declared: false, files: 0, addresses: 0, languages: [] }, llmsTxt: { present: false, bytes: 0, links: 0 }, llmsFullTxt: false, markdown: false }) })).toEqual(['yes', 'no', 'no', 'no', 'no'])
+    expect(siteChecks({ readiness: readiness() }).map((c) => c.label)).toEqual(['Lets every AI crawler in, for search and for training', 'Has a sitemap', 'Has llms.txt', 'Has llms-full.txt', 'Has Markdown pages', 'Structured data about the company', 'Pages in Dutch, German, and English', 'Sitemap in Dutch, German, and English'])
+    expect(states({ readiness: readiness() })).toEqual(['yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'])
+    expect(states({ readiness: readiness({ sitemap: { declared: false, files: 0, addresses: 0, languages: [] }, llmsTxt: { present: false, bytes: 0, links: 0 }, llmsFullTxt: false, markdown: false }) })).toEqual(['yes', 'no', 'no', 'no', 'no', 'yes', 'yes', 'yes'])
   })
+
+  it('fail the checks the site does not follow in the advice', () => {
+    const advice = readiness().advice.map((a) => ({ ...a, ok: false }));
+    expect(states({ readiness: readiness({ advice }) })).toEqual(['yes', 'yes', 'yes', 'yes', 'yes', 'no', 'no', 'no']);
+  });
 
   it('call the crawlers partly let in, kept out, or not known', () => {
     expect(states({ readiness: readiness({ bots: bots({ GPTBot: 'blocked' }) }) })[0]).toBe('partly')
     expect(states({ readiness: readiness({ bots: readiness().bots.map((b) => ({ ...b, access: 'blocked' as const })) }) })[0]).toBe('no')
     expect(states({ readiness: readiness({ robots: 'unreachable' }) })[0]).toBe('unknown')
-    expect(states({ readiness: undefined })).toEqual(['unknown', 'unknown', 'unknown', 'unknown', 'unknown'])
+    expect(states({ readiness: undefined })).toEqual(Array(8).fill('unknown'))
   })
 
   it('have words for every state and every crawler access', () => {

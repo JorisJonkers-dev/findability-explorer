@@ -57,7 +57,7 @@ describe('the competitors page', () => {
     const figures = wrapper.get('section[aria-label="Key figures"]').text()
     expect(figures).toContain('3competitors on the list')
     expect(figures).toContain('1is named in more AI answers than TribeltTwentebelt leads.')
-    expect(figures).toContain('1shares Tribelt’s AI readiness score of 5 of 5Among them Twentebelt.')
+    expect(figures).toContain('1shares Tribelt’s AI readiness score of 8 of 8Among them Twentebelt.')
     expect(list(wrapper).findAll('li a').map((a) => a.attributes('href'))).toEqual(['/competitors/twentebelt', '/competitors/ashworth', '/competitors/martens'])
     expect(list(wrapper).text()).toContain('Tribelt Group is left out')
     expect(wrapper.get('section[aria-labelledby="family-title"]').text()).toContain('Eyelink')

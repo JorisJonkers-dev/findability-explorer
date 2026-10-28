@@ -2,14 +2,15 @@ import type { AiReadiness, AiReadinessRow, ReadinessCheckKind, ReadinessCheckSta
 
 /** What each readiness check is called in the summary. */
 export const CHECK_LABELS: Record<ReadinessCheckKind, string> = {
-  crawlers: 'Lets every AI crawler in',
+  crawlers: 'Lets every AI crawler in, for search and for training',
   sitemap: 'Has a sitemap',
   llmsTxt: 'Has llms.txt',
   llmsFullTxt: 'Has llms-full.txt',
   markdown: 'Has Markdown pages',
+  languages: 'Pages in Dutch, German, and English',
   sitemapLanguages: 'Sitemap in Dutch, German, and English',
-  organization: 'Organization markup',
-  product: 'Product markup',
+  organization: 'Structured data about the company',
+  product: 'Structured data about products',
 }
 
 /** How a mark in the table looks: allowed or present, partly, blocked, absent, or unknown. */
@@ -46,8 +47,8 @@ export function hasMark(present: boolean, what: string): Mark {
  * How many sites the page counts (the server's count of the sites with a recorded AI readiness),
  * when they were scanned and when they were checked again, as sentences.
  */
-export function scanNote(rows: readonly AiReadinessRow[], sites: number): string {
-  return [sites === 1 ? '1 site' : `${String(sites)} sites`, scanRange(rows), checkedAgain(rows)]
+export function scanNote(rows: readonly AiReadinessRow[]): string {
+  return [scanRange(rows), checkedAgain(rows)]
     .filter((s): s is string => s !== null)
     .map((s) => `${s}.`)
     .join(' ')

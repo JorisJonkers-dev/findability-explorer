@@ -60,10 +60,10 @@ func TestTickingRefusals(t *testing.T) {
 func TestSettingTargets(t *testing.T) {
 	w := newWorld()
 	svc := service(w)
-	if err := svc.SetTargets(context.Background(), "joris", map[domain.Target]float64{domain.TargetTermsUsed: 40, domain.TargetCitations: 25}); err != nil {
+	if err := svc.SetTargets(context.Background(), "joris", map[domain.Target]float64{domain.TargetTermsUsed: 40, domain.TargetCitationShare: 0.25}); err != nil {
 		t.Fatal(err)
 	}
-	if w.set[domain.TargetTermsUsed] != 40 || w.set[domain.TargetCitations] != 25 || len(w.set) != 2 {
+	if w.set[domain.TargetTermsUsed] != 40 || w.set[domain.TargetCitationShare] != 0.25 || len(w.set) != 2 {
 		t.Errorf("set = %v", w.set)
 	}
 	if err := svc.SetTargets(context.Background(), "joris", map[domain.Target]float64{domain.TargetTermsUsed: 50, domain.TargetShareOfVoice: 2}); !app.IsInputError(err) || w.set[domain.TargetTermsUsed] != 40 {

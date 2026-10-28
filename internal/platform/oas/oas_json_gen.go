@@ -13822,8 +13822,8 @@ func (s *PlanTarget) Decode(d *jx.Decoder) error {
 		*s = PlanTargetReadinessChecks
 	case PlanTargetTermsUsed:
 		*s = PlanTargetTermsUsed
-	case PlanTargetCitations:
-		*s = PlanTargetCitations
+	case PlanTargetCitationShare:
+		*s = PlanTargetCitationShare
 	default:
 		*s = PlanTarget(v)
 	}
@@ -20807,10 +20807,12 @@ func (s *ReadinessCheckKind) Decode(d *jx.Decoder) error {
 		*s = ReadinessCheckKindLlmsFullTxt
 	case ReadinessCheckKindMarkdown:
 		*s = ReadinessCheckKindMarkdown
-	case ReadinessCheckKindSitemapLanguages:
-		*s = ReadinessCheckKindSitemapLanguages
 	case ReadinessCheckKindOrganization:
 		*s = ReadinessCheckKindOrganization
+	case ReadinessCheckKindLanguages:
+		*s = ReadinessCheckKindLanguages
+	case ReadinessCheckKindSitemapLanguages:
+		*s = ReadinessCheckKindSitemapLanguages
 	case ReadinessCheckKindProduct:
 		*s = ReadinessCheckKindProduct
 	default:

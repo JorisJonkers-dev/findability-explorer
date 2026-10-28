@@ -22,7 +22,7 @@ function api(extra: Record<string, Handler> = {}, items = [tribelt, twentebelt, 
     'GET /api/v1/overview': () => json(overview()),
     'GET /api/v1/prompt-test': () => json(promptResults()),
     'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Tribelt', { role: 'tribelt' }), readinessRow('Twentebelt', { readiness: readiness({ sitemap: { declared: true, files: 1, addresses: 5, languages: ['en'], coverage: { pages: 10, listed: 5, share: 0.5 } } }) })])),
-    'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 6 }),
+    'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 9 }),
     ...extra,
   })
 }
@@ -33,15 +33,15 @@ describe('useCompetitorDetail', () => {
     await flushPromises()
     expect(state.company.value?.shortName).toBe('Twentebelt')
     expect(state.tribelt.value?.id).toBe('tribelt')
-    expect(state.outOf.value).toBe(6)
+    expect(state.outOf.value).toBe(9)
     expect(state.share.value).toBe(0.75)
-    expect(state.ready.value).toBe(5)
+    expect(state.ready.value).toBe(8)
     expect(state.title.value).toBe('Twentebelt is named in three times as many AI answers as Tribelt.')
     expect(state.where.value).toBe('Netherlands. Its website is in 2 languages.')
     expect(state.belts.value.find((b) => b.family === 'tri_flex_turn_curve')?.name).toBe('TwenteFlex spiral belts')
     expect(state.measures.value.map((m) => [m.id, m.themText, m.usText])).toEqual([
       ['answers', '75%', '25%'],
-      ['ready', '5 of 6', '5 of 6'],
+      ['ready', '8 of 9', '8 of 9'],
       ['sitemap', '50%', '85%'],
       ['terms', '2', '1'],
     ])
@@ -53,7 +53,7 @@ describe('useCompetitorDetail', () => {
   it('knows nothing of a competitor no scan has read', async () => {
     const { state } = mountComposable(() => useCompetitorDetail(ref('martens')), api({ 'GET /api/v1/standings': () => problem(500, 'Internal Server Error'), 'GET /api/v1/overview': () => problem(500, 'Internal Server Error') }))
     await flushPromises()
-    expect(state.outOf.value).toBe(5)
+    expect(state.outOf.value).toBe(8)
     expect(state.ready.value).toBeUndefined()
     expect(state.latestScan.value).toBeUndefined()
     const [, ready, sitemap, terms] = state.measures.value

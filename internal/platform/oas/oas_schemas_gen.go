@@ -7620,8 +7620,8 @@ func (s *PlanPart) SetPresent(val bool) {
 }
 
 // A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt),
-// readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a
-// run citing tribelt.nl).
+// readinessChecks (out of the readiness check count), termsUsed (map terms on tribelt.nl) or
+// citationShare (the share of a run's web answers that cite tribelt.nl, from 0 to 1).
 // Ref: #/components/schemas/PlanTarget
 type PlanTarget string
 
@@ -7630,7 +7630,7 @@ const (
 	PlanTargetTwenteShareOfVoice PlanTarget = "twenteShareOfVoice"
 	PlanTargetReadinessChecks    PlanTarget = "readinessChecks"
 	PlanTargetTermsUsed          PlanTarget = "termsUsed"
-	PlanTargetCitations          PlanTarget = "citations"
+	PlanTargetCitationShare      PlanTarget = "citationShare"
 )
 
 // AllValues returns all PlanTarget values.
@@ -7640,7 +7640,7 @@ func (PlanTarget) AllValues() []PlanTarget {
 		PlanTargetTwenteShareOfVoice,
 		PlanTargetReadinessChecks,
 		PlanTargetTermsUsed,
-		PlanTargetCitations,
+		PlanTargetCitationShare,
 	}
 }
 
@@ -7655,7 +7655,7 @@ func (s PlanTarget) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case PlanTargetTermsUsed:
 		return []byte(s), nil
-	case PlanTargetCitations:
+	case PlanTargetCitationShare:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -7677,8 +7677,8 @@ func (s *PlanTarget) UnmarshalText(data []byte) error {
 	case PlanTargetTermsUsed:
 		*s = PlanTargetTermsUsed
 		return nil
-	case PlanTargetCitations:
-		*s = PlanTargetCitations
+	case PlanTargetCitationShare:
+		*s = PlanTargetCitationShare
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -10936,9 +10936,10 @@ func (s *ReadinessCheck) UnmarshalText(data []byte) error {
 
 type ReadinessCheckCount int32
 
-// One thing a site's AI readiness is checked for - every AI crawler let in, a sitemap, llms.txt,
-// llms-full.txt and Markdown pages are scored; sitemaps in Dutch, German and English, Organization and
-// Product structured data are checked beside them.
+// One thing a site's AI readiness is checked for - every AI crawler let in (for search and for
+// training), a sitemap, llms.txt, llms-full.txt, Markdown pages, Organization structured data,
+// language versions in Dutch, German and English, and sitemaps in all three languages are scored;
+// Product structured data is checked beside them.
 // Ref: #/components/schemas/ReadinessCheckKind
 type ReadinessCheckKind string
 
@@ -10948,8 +10949,9 @@ const (
 	ReadinessCheckKindLlmsTxt          ReadinessCheckKind = "llmsTxt"
 	ReadinessCheckKindLlmsFullTxt      ReadinessCheckKind = "llmsFullTxt"
 	ReadinessCheckKindMarkdown         ReadinessCheckKind = "markdown"
-	ReadinessCheckKindSitemapLanguages ReadinessCheckKind = "sitemapLanguages"
 	ReadinessCheckKindOrganization     ReadinessCheckKind = "organization"
+	ReadinessCheckKindLanguages        ReadinessCheckKind = "languages"
+	ReadinessCheckKindSitemapLanguages ReadinessCheckKind = "sitemapLanguages"
 	ReadinessCheckKindProduct          ReadinessCheckKind = "product"
 )
 
@@ -10961,8 +10963,9 @@ func (ReadinessCheckKind) AllValues() []ReadinessCheckKind {
 		ReadinessCheckKindLlmsTxt,
 		ReadinessCheckKindLlmsFullTxt,
 		ReadinessCheckKindMarkdown,
-		ReadinessCheckKindSitemapLanguages,
 		ReadinessCheckKindOrganization,
+		ReadinessCheckKindLanguages,
+		ReadinessCheckKindSitemapLanguages,
 		ReadinessCheckKindProduct,
 	}
 }
@@ -10980,9 +10983,11 @@ func (s ReadinessCheckKind) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case ReadinessCheckKindMarkdown:
 		return []byte(s), nil
-	case ReadinessCheckKindSitemapLanguages:
-		return []byte(s), nil
 	case ReadinessCheckKindOrganization:
+		return []byte(s), nil
+	case ReadinessCheckKindLanguages:
+		return []byte(s), nil
+	case ReadinessCheckKindSitemapLanguages:
 		return []byte(s), nil
 	case ReadinessCheckKindProduct:
 		return []byte(s), nil
@@ -11009,11 +11014,14 @@ func (s *ReadinessCheckKind) UnmarshalText(data []byte) error {
 	case ReadinessCheckKindMarkdown:
 		*s = ReadinessCheckKindMarkdown
 		return nil
-	case ReadinessCheckKindSitemapLanguages:
-		*s = ReadinessCheckKindSitemapLanguages
-		return nil
 	case ReadinessCheckKindOrganization:
 		*s = ReadinessCheckKindOrganization
+		return nil
+	case ReadinessCheckKindLanguages:
+		*s = ReadinessCheckKindLanguages
+		return nil
+	case ReadinessCheckKindSitemapLanguages:
+		*s = ReadinessCheckKindSitemapLanguages
 		return nil
 	case ReadinessCheckKindProduct:
 		*s = ReadinessCheckKindProduct
@@ -11217,7 +11225,7 @@ type ReadinessRank struct {
 	// The company's name.
 	Name string      `json:"name"`
 	Role CompanyRole `json:"role"`
-	// Readiness checks passed out of five, in halves.
+	// Readiness checks passed, in halves, out of the readiness check count.
 	Score float64 `json:"score"`
 }
 
@@ -11944,9 +11952,10 @@ func (s *Standing) SetLeads(val bool) {
 
 // A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of
 // answers naming the company, citationShare the share of web answers citing its site, readinessChecks
-// the AI readiness checks its site passes out of five (half for crawlers when some are kept out),
-// sitemapCoverage the share of the pages its newest scan read that its sitemaps list (no value for a
-// scan that did not measure it), and termsUsed the map terms its newest scan found.
+// the AI readiness checks its site passes out of the readiness check count (half for crawlers when
+// some are kept out), sitemapCoverage the share of the pages its newest scan read that its sitemaps
+// list (no value for a scan that did not measure it), and termsUsed the map terms its newest scan
+// found.
 // Ref: #/components/schemas/StandingMeasure
 type StandingMeasure string
 

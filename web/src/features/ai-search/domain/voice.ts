@@ -101,7 +101,7 @@ export function figures(summary: AiSearchSummary, cells: readonly PromptCell[], 
   const all = tally(cells)
   const web = tally(cells, { mode: 'web' })
   const named = goalOf(plan, 'aiShareOfVoice') ?? summary.goal
-  const cited = goalOf(plan, 'citations')
+  const cited = goalOf(plan, 'citationShare')
   const score = readinessScore(summary)
   return [
     {
@@ -114,7 +114,7 @@ export function figures(summary: AiSearchSummary, cells: readonly PromptCell[], 
       to: '/numbers/citationShare',
       big: web.answers === 0 ? '–' : pct(web.cited / web.answers),
       text: 'of web answers cite tribelt.nl',
-      note: cited === undefined ? '' : `Target ${String(cited)} web answers in a run.`,
+      note: cited === undefined ? '' : `Target ${pct(cited)}.`,
     },
     {
       to: '/ai-search/readiness',

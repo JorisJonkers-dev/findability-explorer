@@ -41,12 +41,12 @@ func TestMedianIsTheMiddleValueOrTheMeanOfTheTwo(t *testing.T) {
 }
 
 func TestTheChecksArePointedOneByOne(t *testing.T) {
-	if domain.ReadinessChecks() != 5 || len(domain.AlsoChecked()) != 3 {
+	if domain.ReadinessChecks() != 8 || len(domain.AlsoChecked()) != 1 {
 		t.Fatalf("checks = %d scored, %d beside", domain.ReadinessChecks(), len(domain.AlsoChecked()))
 	}
 	all := domain.Readiness{
 		Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true,
-		SitemapInEachLanguage: true, Organization: true, Product: true,
+		SitemapInEachLanguage: true, LanguageVersions: true, Organization: true, Product: true,
 	}
 	for _, c := range append(domain.ScoredChecks(), domain.AlsoChecked()...) {
 		if !all.Passes(c) || (domain.Readiness{}).Passes(c) {
@@ -67,8 +67,9 @@ func TestSummariseChecksCountsTheSitesPassingEachInFull(t *testing.T) {
 		"tribelt":  {Crawlers: domain.AccessSome, Sitemap: true, Product: true},
 		"ashworth": {Crawlers: domain.AccessOpen, Sitemap: true},
 	})
-	if len(got) != 8 || got[0].Check != domain.CheckCrawlersLetIn || !got[0].Scored || got[0].Passing != 1 || *got[0].Tribelt ||
-		got[1].Passing != 2 || !*got[1].Tribelt || got[5].Scored || got[7].Check != domain.CheckProduct || got[7].Passing != 1 || !*got[7].Tribelt {
+	if len(got) != 9 || got[0].Check != domain.CheckCrawlersLetIn || !got[0].Scored || got[0].Passing != 1 || *got[0].Tribelt ||
+		got[1].Passing != 2 || !*got[1].Tribelt || got[6].Check != domain.CheckLanguages || !got[6].Scored || got[7].Check != domain.CheckSitemapLanguages ||
+		got[8].Scored || got[8].Check != domain.CheckProduct || got[8].Passing != 1 || !*got[8].Tribelt {
 		t.Errorf("summary = %+v", got)
 	}
 	if none := domain.SummariseChecks(map[string]domain.Readiness{"ashworth": {}}); none[0].Tribelt != nil || none[0].Passing != 0 {
@@ -76,7 +77,7 @@ func TestSummariseChecksCountsTheSitesPassingEachInFull(t *testing.T) {
 	}
 }
 
-func TestReadinessScoreCountsTheFiveChecks(t *testing.T) {
+func TestReadinessScoreCountsTheEightChecks(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		r    domain.Readiness
@@ -85,7 +86,10 @@ func TestReadinessScoreCountsTheFiveChecks(t *testing.T) {
 		{"nothing", domain.Readiness{Crawlers: domain.AccessUnknown}, 0},
 		{"crawlers kept out", domain.Readiness{Crawlers: domain.AccessClosed, Sitemap: true}, 1},
 		{"some crawlers kept out is half", domain.Readiness{Crawlers: domain.AccessSome, Sitemap: true}, 1.5},
-		{"everything", domain.Readiness{Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true}, 5},
+		{"the five files and tags", domain.Readiness{Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true}, 5},
+		{"the language checks count", domain.Readiness{Crawlers: domain.AccessUnknown, LanguageVersions: true, SitemapInEachLanguage: true}, 2},
+		{"a product page is not scored", domain.Readiness{Crawlers: domain.AccessUnknown, Product: true}, 0},
+		{"everything", domain.Readiness{Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true, Organization: true, LanguageVersions: true, SitemapInEachLanguage: true, Product: true}, 8},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := tc.r.ReadinessScore(); got != tc.want {
@@ -110,10 +114,6 @@ func TestSharesCountAnswersAndWebAnswers(t *testing.T) {
 	}
 	if _, ok := domain.CitationShare(answers[:1], "tribelt"); ok {
 		t.Error("a run without web answers has no citation share")
-	}
-	// The count the plan watches is the count the share is a share of.
-	if n := domain.Citations(answers, "tribelt"); n != 1 || domain.Citations(answers[:1], "tribelt") != 0 {
-		t.Errorf("citations = %d", n)
 	}
 	answers[1].Scope, answers[2].Scope = domain.ScopeTwente, domain.ScopeTwente
 	if v, ok := domain.TwenteShare(domain.Run{Answers: answers}, "tribelt"); v != 0.5 || !ok {

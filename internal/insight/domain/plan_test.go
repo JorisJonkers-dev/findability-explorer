@@ -81,17 +81,17 @@ func TestNumbersToWatchAndWhoToKeepAnEyeOn(t *testing.T) {
 		}
 	}
 	if len(watched) != len(domain.Targets()) || now[domain.TargetShareOfVoice] != 0.25 || now[domain.TargetTwenteShareOfVoice] != 0.5 ||
-		now[domain.TargetReadiness] != 2 || now[domain.TargetTermsUsed] != 38 || now[domain.TargetCitations] != 1 || watched[0].Goal != 0.40 {
+		now[domain.TargetReadiness] != 2 || now[domain.TargetTermsUsed] != 38 || now[domain.TargetCitationShare] != 0.5 || watched[0].Goal != 0.40 {
 		t.Errorf("watched = %v", now)
 	}
 	if empty := domain.Watch(domain.DefaultTargets(), domain.Facts{}); empty[0].Now != nil || empty[1].Now != nil || empty[4].Now != nil || empty[0].Met {
 		t.Errorf("without data = %+v", empty)
 	}
-	// A target the value has reached is met: 38 terms against a target of 35, and exactly 1 citation.
+	// A target the value has reached is met: 38 terms against a target of 35, and exactly half the web answers citing.
 	low := domain.DefaultTargets()
-	low[domain.TargetTermsUsed], low[domain.TargetCitations] = 35, 1
+	low[domain.TargetTermsUsed], low[domain.TargetCitationShare] = 35, 0.5
 	for _, w := range domain.Watch(low, f) {
-		if met := w.Target == domain.TargetTermsUsed || w.Target == domain.TargetCitations; w.Met != met {
+		if met := w.Target == domain.TargetTermsUsed || w.Target == domain.TargetCitationShare; w.Met != met {
 			t.Errorf("%s met = %v", w.Target, w.Met)
 		}
 	}

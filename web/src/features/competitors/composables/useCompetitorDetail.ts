@@ -7,11 +7,9 @@ import { useTermMap } from '../../terminology/composables/useTermSearch'
 import { detailHeadline, measuresOf, readinessScore } from '../domain/compare'
 import { companyTerms } from '../domain/company'
 import { beltRows, whereLine } from '../domain/list'
-import { shareOf } from '../domain/roster'
+import { shareOf, CHIP_COUNT } from '../domain/roster'
 import { useCompanies } from './useCompanies'
 import { useCompany } from './useCompany'
-
-const FIVE_CHECKS = 5
 
 /** One competitor set against Tribelt: its headline, its measures, its belts and its newest finished scan. */
 export function useCompetitorDetail(id: Ref<string>) {
@@ -25,7 +23,7 @@ export function useCompetitorDetail(id: Ref<string>) {
 
   const company = computed(() => byId(id.value))
   const tribelt = computed(() => companies.value.find((c) => c.role === 'tribelt'))
-  const outOf = computed(() => (readinessChecks.value > 0 ? readinessChecks.value : FIVE_CHECKS))
+  const outOf = computed(() => (readinessChecks.value > 0 ? readinessChecks.value : CHIP_COUNT))
   const share = computed(() => shareOf(results.value, id.value))
   const tribeltShare = computed(() => (tribelt.value ? shareOf(results.value, tribelt.value.id) : undefined))
   const ready = computed(() => readinessScore(rowOf(id.value)?.readiness))

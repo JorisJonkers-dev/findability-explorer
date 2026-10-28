@@ -33,7 +33,7 @@ const aiSearch = {
   sites: 5,
   questions: 0,
   providers: 0,
-  readinessChecks: 5,
+  readinessChecks: 8,
   checks: [
     { check: 'crawlers', scored: true, passing: 2, tribelt: false },
     { check: 'sitemap', scored: true, passing: 5, tribelt: true },
@@ -54,7 +54,7 @@ const plan = {
   ],
   watched: [],
   eyeOn: [],
-  readinessChecks: 5,
+  readinessChecks: 8,
 }
 
 const api = (extra: Record<string, Handler> = {}) =>
@@ -111,11 +111,11 @@ describe('the AI readiness view', () => {
 
   it('heads the page with how many checks Tribelt passes, and counts the sites', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
-    expect(wrapper.get('h1').text()).toBe('Tribelt passes three and a half of the five readiness checks, fewer than its best competitors')
-    expect(wrapper.text()).toContain('5 sites. Scanned on 22 October 2026.')
+    expect(wrapper.get('h1').text()).toBe('Tribelt passes three and a half of the eight readiness checks, fewer than its best competitors')
+    expect(wrapper.text()).toContain('Scanned on 22 October 2026.')
     expect(wrapper.findAll('dl[aria-label="Key figures"] > div').map((d) => `${d.get('dd').text()} ${d.get('dt').text()}`)).toEqual([
       '5 sites checked',
-      '3½ of 5 checks that tribelt.nl passes',
+      '3½ of 8 checks that tribelt.nl passes',
       '1 site has the best score',
     ])
     expect(wrapper.get('section[aria-labelledby="best-title"]').text()).toContain('The other 3 sites pass fewer.')
@@ -125,10 +125,10 @@ describe('the AI readiness view', () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     expect(wrapper.get('#checks-title').text()).toBe('How many of the 5 sites pass each check')
     const group = (label: string) => wrapper.findAll(`[role="group"][aria-label="${label}"] button`).map((b) => b.get('span').text())
-    expect(group('The five checks in the score')).toEqual(['Lets every AI crawler in', 'Has a sitemap', 'Has llms.txt', 'Has llms-full.txt', 'Has Markdown pages'])
-    expect(group('Also checked, not in the score')).toEqual(['Sitemap in Dutch, German, and English', 'Organization markup', 'Product markup'])
-    const crawlers = wrapper.get('button[aria-label^="Lets every AI crawler in"]')
-    expect(crawlers.attributes('aria-label')).toBe('Lets every AI crawler in: 2 of 5 sites pass. Tribelt does not pass.')
+    expect(group('The eight checks in the score')).toEqual(['Lets every AI crawler in, for search and for training', 'Has a sitemap', 'Has llms.txt', 'Has llms-full.txt', 'Has Markdown pages'])
+    expect(group('Also checked, not in the score')).toEqual(['Sitemap in Dutch, German, and English', 'Structured data about the company', 'Structured data about products'])
+    const crawlers = wrapper.get('button[aria-label^="Lets every AI crawler in, for search and for training"]')
+    expect(crawlers.attributes('aria-label')).toBe('Lets every AI crawler in, for search and for training: 2 of 5 sites pass. Tribelt does not pass.')
     expect(crawlers.text()).toContain('2')
     expect(crawlers.text()).toContain('Tribelt does not pass')
     expect(wrapper.get('button[aria-label^="Has a sitemap"]').text()).toContain('Tribelt passes')
@@ -137,7 +137,7 @@ describe('the AI readiness view', () => {
   it('opens on the first check Tribelt fails, and explains another when picked, with the recommendation that fixes it', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     const panel = () => wrapper.get('aside[aria-live="polite"]')
-    expect(panel().get('h2').text()).toBe('Lets every AI crawler in')
+    expect(panel().get('h2').text()).toBe('Lets every AI crawler in, for search and for training')
     expect(panel().text()).toContain('Tribelt does not pass.')
     expect(panel().find('a').exists()).toBe(false)
     await wrapper.get('button[aria-label^="Has llms.txt"]').trigger('click')
@@ -150,13 +150,13 @@ describe('the AI readiness view', () => {
   it('shows the sites with the best score, and what each one passes on request', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     const best = wrapper.get('section[aria-labelledby="best-title"]')
-    expect(best.findAll('li > div').map((r) => r.text())).toEqual(['ESFO5 of 5Show the checks', 'Tribelt B.V.3½ of 5Show the checks'])
+    expect(best.findAll('li > div').map((r) => r.text())).toEqual(['ESFO5 of 8Show the checks', 'Tribelt B.V.3½ of 8Show the checks'])
     const show = best.get('button[aria-label="Show the checks for ESFO"]')
     await show.trigger('click')
     expect(show.attributes('aria-expanded')).toBe('true')
-    expect(best.findAll('ul ul li').map((l) => l.text())).toEqual(['Yes Lets every AI crawler in', 'Yes Has a sitemap', 'Yes Has llms.txt', 'Yes Has llms-full.txt', 'Yes Has Markdown pages'])
+    expect(best.findAll('ul ul li').map((l) => l.text())).toEqual(['Yes Lets every AI crawler in, for search and for training', 'Yes Has a sitemap', 'Yes Has llms.txt', 'Yes Has llms-full.txt', 'Yes Has Markdown pages', 'Yes Structured data about the company', 'Yes Pages in Dutch, German, and English', 'Yes Sitemap in Dutch, German, and English'])
     await best.get('button[aria-label="Show the checks for Tribelt B.V."]').trigger('click')
-    expect(best.findAll('ul ul')[1]?.text()).toContain('Partly Lets every AI crawler in')
+    expect(best.findAll('ul ul')[1]?.text()).toContain('Partly Lets every AI crawler in, for search and for training')
     expect(best.findAll('ul ul')[1]?.text()).toContain('No Has llms.txt')
   })
 

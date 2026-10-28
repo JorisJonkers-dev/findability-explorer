@@ -34,10 +34,10 @@ describe('oxford', () => {
 describe('readinessScore', () => {
   it('counts the checks a site passes, the crawlers half when some are kept out', () => {
     expect(readinessScore(undefined)).toBeUndefined()
-    expect(readinessScore(readiness())).toBe(5)
-    expect(readinessScore(readiness({ bots: bots({ GPTBot: 'blocked' }) }))).toBe(4.5)
-    expect(readinessScore(readiness({ bots: bots({ GPTBot: 'blocked' }), markdown: false, llmsFullTxt: false }))).toBe(2.5)
-    expect(readinessScore(readiness({ robots: 'unreachable' }))).toBe(4)
+    expect(readinessScore(readiness())).toBe(8)
+    expect(readinessScore(readiness({ bots: bots({ GPTBot: 'blocked' }) }))).toBe(7.5)
+    expect(readinessScore(readiness({ bots: bots({ GPTBot: 'blocked' }), markdown: false, llmsFullTxt: false }))).toBe(5.5)
+    expect(readinessScore(readiness({ robots: 'unreachable' }))).toBe(7)
   })
 })
 

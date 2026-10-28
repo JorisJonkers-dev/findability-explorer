@@ -16,11 +16,11 @@ function plan(improvements: PlanImprovement[]): Plan {
     improvements,
     watched: [
       { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, max: 1, met: false },
-      { target: 'citations', goal: 20 },
+      { target: 'citationShare', goal: 20 },
       { target: 'termsUsed', now: 45, goal: 35, met: true },
     ],
     tribeltTermsFrom: 'scan',
-    readinessChecks: 5,
+    readinessChecks: 8,
     eyeOn: [],
   }
 }
@@ -28,7 +28,7 @@ function plan(improvements: PlanImprovement[]): Plan {
 // Best value first, as the server sends them: a (4, 1), b (3, 1) scanned, c (4, 3), and d done.
 const three = (): PlanImprovement[] => [
   imp('a', 4, 1),
-  imp('b', 3, 1, { auto: true, measure: 'readinessChecks', tribelt: 3, leader: { ...leader, value: 5 } }),
+  imp('b', 3, 1, { auto: true, measure: 'readinessChecks', tribelt: 3, leader: { ...leader, value: 8 } }),
   imp('c', 4, 3, { measure: 'termsUsed', tribelt: 20 }),
   imp('d', 5, 5, { done: true, tickedBy: 'joris', tickedAt: '2026-11-02T09:00:00Z' }),
 ]
@@ -55,7 +55,7 @@ describe('the recommendations', () => {
     expect(first.text()).toContain('Target')
     expect(first.get('a[href="/recommendations/a"]').text()).toBe('Open the recommendation')
     expect(rows(wrapper).map((r) => r.get('a').text())).toEqual(['Title b', 'Title c'])
-    expect(rows(wrapper)[0]?.text()).toContain('AI readiness checks passed: 3 of five, Ashworth 5 of five')
+    expect(rows(wrapper)[0]?.text()).toContain('AI readiness checks passed: 3 of eight, Ashworth 8 of eight')
     // The chart has one dot per open recommendation, ranked.
     expect(wrapper.findAll('[aria-label="Benefit against effort"] button').map((b) => b.text())).toEqual(['1', '2', '3'])
     expect(wrapper.text()).toContain('1 recommendation done')
@@ -121,7 +121,7 @@ describe('the recommendations', () => {
         'GET /api/v1/plan': () => json(current),
         'PUT /api/v1/admin/plan/improvements/a': put,
         'PUT /api/v1/admin/plan/improvements/d': put,
-        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 5 }),
+        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 8 }),
       }),
       '/recommendations',
     )
@@ -152,7 +152,7 @@ describe('the recommendations', () => {
           current = plan(current.improvements.map((i) => (i.id === 'c' ? { ...i, done: true } : i)))
           return json(current)
         },
-        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 5 }),
+        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 8 }),
       }),
       '/recommendations',
     )
@@ -194,7 +194,7 @@ describe('the recommendations', () => {
           sent.push(await r.json())
           return json(plan(three()))
         },
-        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 5 }),
+        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 8 }),
       }),
       '/recommendations',
     )
@@ -210,7 +210,7 @@ describe('the recommendations', () => {
       {
         targets: [
           { target: 'aiShareOfVoice', value: 0.4 },
-          { target: 'citations', value: 25 },
+          { target: 'citationShare', value: 25 },
         ],
       },
     ])

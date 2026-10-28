@@ -8,7 +8,7 @@ const plan = (): Plan => ({
   improvements: [{ id: 'listings', title: 'Get listed', moves: 'citations', measure: 'citationShare', auto: false, done: false, ...details }],
   watched: [{ target: 'termsUsed', now: 4, goal: 20 }],
   eyeOn: [],
-  readinessChecks: 5,
+  readinessChecks: 8,
 })
 
 const FIGURES = overview({

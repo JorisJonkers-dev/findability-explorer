@@ -8,20 +8,45 @@ const SECTIONS = [
   { path: '/recommendations', title: 'Recommendations', heading: 'Check every Monday. Fix one thing a week. Watch the numbers move.' },
 ] as const
 
-test('the poster renders and is accessible', async ({ page }) => {
+test('the overview renders its numbers and section cards, and is accessible', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1, name: /^One belt,\s*many names\.$/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page).toHaveTitle('Overview · Findability Explorer')
-  const sections = page.getByRole('navigation', { name: 'Sections' })
-  await expect(sections.getByRole('link')).toHaveCount(4)
-  // The live figures: the competitors on the list now (the research's 44 and any added since) and
-  // the map's 90 terms in Dutch, German and English.
-  await expect(sections.getByRole('link', { name: /^AI search: .* of AI answers name Tribelt/ })).toBeVisible()
-  await expect(sections.getByRole('link', { name: /^Recommendations: 52 weekly checks a year/ })).toBeVisible()
-  await expect(sections.getByRole('link', { name: /^Buyers/ })).toHaveCount(0)
-  await expect(sections.getByRole('link', { name: /^Competitors: \d+ competitors on our list sell the same belts in Europe/ })).toBeVisible()
-  await expect(sections.getByRole('link', { name: /^Search terms: 90 search terms in 3 languages\. Our research found 30 of them for Tribelt./ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
+  await expect(page.locator('a[href^="/numbers/"]').first()).toBeVisible()
+  const cards = page.locator('section[aria-labelledby="sections-title"] li a')
+  await expect(cards).toHaveCount(4)
+  await expect(cards.filter({ hasText: 'Open Search terms' })).toBeVisible()
+  await expect(page.locator('a[href="/buyers"]')).toBeVisible()
   await expectAccessible(page)
+})
+
+test('the overview opens a number and goes back', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('a[href="/numbers/aiShareOfVoice"]').click()
+  await expect(page).toHaveURL('/numbers/aiShareOfVoice')
+  await expect(page.getByRole('heading', { level: 2, name: 'Tribelt against the field' })).toBeVisible()
+  await expectAccessible(page)
+  await page.getByRole('link', { name: 'Back to Overview' }).click()
+  await expect(page).toHaveURL('/')
+  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
+})
+
+test('the overview opens Buyers and goes back', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('a[href="/buyers"]').click()
+  await expect(page).toHaveURL('/buyers')
+  await expect(page.getByRole('heading', { level: 1, name: 'Paid search buys traffic, not buyers.' })).toBeVisible()
+  await page.getByRole('link', { name: 'Back to Overview' }).click()
+  await expect(page).toHaveURL('/')
+})
+
+test('the footer is on every page', async ({ page }) => {
+  for (const path of ['/', '/buyers', '/numbers/aiShareOfVoice', '/terms', '/settings']) {
+    await page.goto(path)
+    await expect(page.locator('footer').first(), path).toBeVisible()
+    await expect(page.locator('footer').first().getByRole('img', { name: 'University of Twente' }), path).toBeVisible()
+  }
 })
 
 for (const section of SECTIONS) {
@@ -33,15 +58,15 @@ for (const section of SECTIONS) {
   })
 }
 
-test('a tile zooms into its section, and Overview links back', async ({ page }) => {
+test('a section opens from the top bar, and Overview links back', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: /^Recommendations:/ }).click()
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Recommendations', exact: true }).click()
   await expect(page).toHaveURL('/recommendations')
   await expect(page.getByRole('heading', { level: 1, name: 'Check every Monday. Fix one thing a week. Watch the numbers move.' })).toBeVisible()
 
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Overview', exact: true }).click()
   await expect(page).toHaveURL('/')
-  await expect(page.getByRole('heading', { level: 1, name: /^One belt/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
   // The browser's own back agrees with the links.
   await page.goBack()
   await expect(page).toHaveURL('/recommendations')
@@ -106,7 +131,7 @@ test('the settings page is reachable for an administrator, and accessible', asyn
   await expectAccessible(page)
 })
 
-test('unknown routes go to the poster, and old addresses to their new views', async ({ page }) => {
+test('unknown routes go to the overview, and old addresses to their new views', async ({ page }) => {
   await page.goto('/no/such/page')
   await expect(page).toHaveURL('/')
   await page.goto('/terminology?q=spiral')

@@ -3,29 +3,27 @@ import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { PromptMode, PromptScope } from '../../../infrastructure/api/types.gen'
 import { saveText } from '../../../shared/download'
-import { percent } from '../../../shared/percent'
 import { useAddCompanies } from '../../competitors/composables/useCompanyAdmin'
 import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import { batchSummary } from '../../competitors/domain/tray'
-import SectionView from '../../shell/components/SectionView.vue'
+import PageView from '../../shell/components/PageView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { usePromptAnswers, usePromptResults, useRetryPlan, useRetryRun, useStartRun } from '../composables/usePromptTest'
 import {
   answerCost,
   byKey,
   counts,
-  gridHeadline,
-  headlineNumbers,
+  answersHeadline,
   MODE_FILTERS,
   modeCost,
-  mostNamed,
   parseFilter,
+  runFigures,
   SCOPE_FILTERS,
   toCsv,
   unknownLine,
   unread,
 } from '../domain/grid'
-import { costLabel, latestRun, progressLabel, providerName, runDate, shareLabel, statusName } from '../domain/results'
+import { latestRun, providerName, runDate, runLine, statusName } from '../domain/results'
 import AnswerDetail from './AnswerDetail.vue'
 import PromptGrid from './PromptGrid.vue'
 
@@ -59,10 +57,8 @@ const picked = computed(() => (selected.value ? byKey(answers.value).get(selecte
 function nameOf(id: string): string {
   return competitors.value.find((c) => c.id === id)?.name ?? id
 }
-const title = computed(() => gridHeadline(answers.value, nameOf))
-const numbers = computed(() => headlineNumbers(answers.value))
-const named = computed(() => mostNamed(answers.value))
-const most = computed(() => Math.max(...named.value.map((n) => n.share), 0.01))
+const title = computed(() => answersHeadline(answers.value, nameOf))
+const figures = computed(() => (run.value ? runFigures(run.value) : []))
 
 const anyRunning = computed(() => results.value?.runs.some((r) => r.status === 'running') ?? false)
 const { plan } = useRetryPlan(
@@ -89,8 +85,13 @@ function download(): void {
 </script>
 
 <template>
-  <SectionView section="ai-search" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
-    <template v-if="results && run" #aside>
+  <PageView section="ai-search" eyebrow="02 AI search, every answer" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
+    <template #lede>
+      <p class="m-0 max-w-[66ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">
+        Each square is one answer from the newest Prompt run. Pick a square to read the answer and see which companies it names.
+      </p>
+    </template>
+    <div v-if="results && run" class="flex flex-col gap-3">
       <div class="flex flex-wrap items-center gap-3 stage:justify-end stage:gap-4">
         <label class="inline-flex items-center gap-2 text-sm font-medium stage:gap-3 stage:text-[24px]">
           Run
@@ -139,14 +140,12 @@ function download(): void {
         </button>
       </div>
       <p v-if="isAdmin && unknown" class="m-0 text-sm text-muted stage:text-[24px]">{{ unknown }}</p>
-      <p class="m-0 text-sm text-muted stage:text-right stage:text-[24px]">
-        {{ progressLabel(run) }}. {{ statusName(run.status) }}. Cost {{ costLabel(run.costUsd) }}.
-      </p>
+      <p class="m-0 text-sm text-muted stage:text-right stage:text-[24px]">{{ runLine(run) }}</p>
       <p v-if="startNotice" class="m-0 text-sm font-medium stage:text-[24px]" aria-live="polite">{{ startNotice }}</p>
       <p v-if="startError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ startError }}</p>
       <p v-if="retryNotice" class="m-0 text-sm font-medium stage:text-[24px]" aria-live="polite">{{ retryNotice }}</p>
       <p v-if="retryError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ retryError }}</p>
-    </template>
+    </div>
 
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-muted">Loading the results…</p>
@@ -158,13 +157,16 @@ function download(): void {
     </div>
     <div
       v-else
-      class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] stage:gap-24"
+      class="flex flex-col gap-8 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] stage:grid-rows-[auto_minmax(0,1fr)] stage:gap-x-24 stage:gap-y-10"
     >
-      <section aria-labelledby="grid-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
-        <div class="flex flex-col gap-1">
-          <h2 id="grid-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Every question and answer</h2>
-          <span class="text-ink-2 stage:text-[26px]">Where each answer names Tribelt. Pick a square to read the answer.</span>
+      <dl aria-label="Key figures" class="m-0 grid gap-3 sm:grid-cols-3 stage:col-start-2 stage:row-start-1 stage:grid-cols-1 stage:gap-5">
+        <div v-for="f in figures" :key="f.text" class="flex items-baseline gap-4 rounded-[20px] bg-mist px-6 py-5 stage:gap-8 stage:rounded-[32px] stage:px-10 stage:py-7">
+          <dd class="order-1 m-0 font-display text-4xl font-semibold stage:text-[80px]">{{ f.big }}</dd>
+          <dt class="order-2 font-semibold stage:text-[32px]">{{ f.text }}</dt>
         </div>
+      </dl>
+
+      <section aria-label="Every question and answer" class="flex flex-col gap-4 stage:col-start-1 stage:row-span-2 stage:row-start-1 stage:min-h-0 stage:gap-6">
         <p v-if="answersError" role="alert" class="m-0 text-orange-ink">{{ answersError }}</p>
         <p v-else-if="answersLoading" class="m-0 text-muted">Loading the answers…</p>
         <PromptGrid
@@ -180,38 +182,7 @@ function download(): void {
         />
       </section>
 
-      <aside aria-label="Results and the selected answer" class="flex flex-col gap-6 stage:min-h-0 stage:gap-10 stage:overflow-y-auto">
-        <dl class="m-0 grid grid-cols-3 gap-3 stage:gap-6">
-          <div class="flex flex-col gap-1">
-            <dt class="order-2 text-sm text-ink-2 stage:text-[24px]">of answers name Tribelt</dt>
-            <dd class="order-1 m-0 font-display text-3xl font-semibold text-orange-ink stage:text-[88px]">{{ shareLabel(numbers.named, numbers.counted) }}</dd>
-          </div>
-          <div class="flex flex-col gap-1">
-            <dt class="order-2 text-sm text-ink-2 stage:text-[24px]">when the buyer asks for Twente</dt>
-            <dd class="order-1 m-0 font-display text-3xl font-semibold stage:text-[88px]">{{ shareLabel(numbers.twente, numbers.twenteCounted) }}</dd>
-          </div>
-          <div class="flex flex-col gap-1">
-            <dt class="order-2 text-sm text-ink-2 stage:text-[24px]">of {{ numbers.web }} web answers cite tribelt.nl</dt>
-            <dd class="order-1 m-0 font-display text-3xl font-semibold stage:text-[88px]">{{ numbers.cited }}</dd>
-          </div>
-        </dl>
-        <figure class="m-0 flex flex-col gap-2 stage:gap-3">
-          <figcaption class="flex flex-col">
-            <span class="font-semibold stage:text-[32px]">Who the answers name</span>
-            <span class="text-sm text-muted stage:text-[22px]">Share of the {{ numbers.counted }} answers that name each company</span>
-          </figcaption>
-          <div
-            v-for="n in named"
-            :key="n.id"
-            class="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3rem] items-center gap-3 stage:grid-cols-[300px_minmax(0,1fr)_80px] stage:gap-4"
-          >
-            <span class="truncate text-sm stage:text-[24px]" :class="n.tribelt ? 'font-bold text-orange-ink' : ''">{{ nameOf(n.id) }}</span>
-            <span aria-hidden="true" class="relative h-3 bg-white stage:h-5">
-              <span class="absolute inset-y-0 left-0" :class="n.tribelt ? 'bg-orange' : 'bg-blue-grey'" :style="{ width: percent(n.share / most) }"></span>
-            </span>
-            <span class="text-right text-sm font-semibold stage:text-[24px]">{{ Math.round(n.share * 100) }}%</span>
-          </div>
-        </figure>
+      <div class="flex flex-col gap-4 stage:col-start-2 stage:row-start-2 stage:min-h-0 stage:gap-6 stage:overflow-y-auto">
         <p v-if="added" aria-live="polite" class="m-0 text-sm font-medium stage:text-[24px]">{{ batchSummary(added) }}</p>
         <p v-if="addError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ addError }}</p>
         <AnswerDetail :answer="picked" :competitors="competitors" :is-admin="isAdmin" @add="addNamed">
@@ -234,7 +205,7 @@ function download(): void {
             Read this answer again, about {{ answerCost(plan.readingCostUsd) }}
           </button>
         </AnswerDetail>
-      </aside>
+      </div>
     </div>
-  </SectionView>
+  </PageView>
 </template>

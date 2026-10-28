@@ -1,7 +1,7 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { AiReadiness } from '../../../infrastructure/api/types.gen'
-import { ANALYSIS_ID, bots, me, readiness, readinessRow, readinessTable } from '../../../testing/fixtures'
+import { ANALYSIS_ID, bots, details, me, readiness, readinessRow, readinessTable } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 const gappy: AiReadiness = readiness({
@@ -20,35 +20,48 @@ const table = [
   readinessRow('Tribelt B.V.', { competitorId: 'tribelt', role: 'tribelt', readiness: gappy }),
 ]
 
+const aiSearch = {
+  goal: 0.4,
+  followed: [],
+  trend: [],
+  crawlers: [],
+  keepingOut: [],
+  ranking: [
+    { competitorId: 'esfo', name: 'ESFO', role: 'competitor', score: 5 },
+    { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', score: 3.5 },
+  ],
+  sites: 5,
+  questions: 0,
+  providers: 0,
+  readinessChecks: 5,
+  checks: [
+    { check: 'crawlers', scored: true, passing: 2, tribelt: false },
+    { check: 'sitemap', scored: true, passing: 5, tribelt: true },
+    { check: 'llmsTxt', scored: true, passing: 2, tribelt: false },
+    { check: 'llmsFullTxt', scored: true, passing: 5, tribelt: true },
+    { check: 'markdown', scored: true, passing: 5, tribelt: true },
+    { check: 'sitemapLanguages', scored: false, passing: 5, tribelt: true },
+    { check: 'organization', scored: false, passing: 5, tribelt: true },
+    { check: 'product', scored: false, passing: 5, tribelt: true },
+  ],
+}
+
+const plan = {
+  catalogueVersion: 1,
+  improvements: [
+    { id: 'other', title: 'Other', moves: 'Helps.', measure: 'aiShareOfVoice', auto: false, done: false, ...details, why: 'Because.' },
+    { id: 'llms-files', title: 'Add llms.txt and llms-full.txt', moves: 'Improves AI readiness.', measure: 'readinessChecks', auto: true, done: false, ...details, why: 'Because.' },
+  ],
+  watched: [],
+  eyeOn: [],
+  readinessChecks: 5,
+}
+
 const api = (extra: Record<string, Handler> = {}) =>
   routes({
     'GET /api/v1/ai-readiness': () => json(readinessTable(table)),
-    'GET /api/v1/ai-search': () =>
-      json({
-        goal: 0.4,
-        followed: [],
-        trend: [],
-        crawlers: [],
-        keepingOut: [],
-        ranking: [
-          { competitorId: 'esfo', name: 'ESFO', role: 'competitor', score: 5 },
-          { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', score: 3.5 },
-        ],
-        sites: 5,
-        questions: 0,
-        providers: 0,
-        readinessChecks: 5,
-        checks: [
-          { check: 'crawlers', scored: true, passing: 2, tribelt: false },
-          { check: 'sitemap', scored: true, passing: 5, tribelt: true },
-          { check: 'llmsTxt', scored: true, passing: 2, tribelt: false },
-          { check: 'llmsFullTxt', scored: true, passing: 5, tribelt: true },
-          { check: 'markdown', scored: true, passing: 5, tribelt: true },
-          { check: 'sitemapLanguages', scored: false, passing: 5, tribelt: true },
-          { check: 'organization', scored: false, passing: 5, tribelt: true },
-          { check: 'product', scored: false, passing: 5, tribelt: true },
-        ],
-      }),
+    'GET /api/v1/ai-search': () => json(aiSearch),
+    'GET /api/v1/plan': () => json(plan),
     [`GET /api/v1/analyses/${ANALYSIS_ID}/readiness-files`]: () =>
       json({ robotsTxt: 'User-agent: GPTBot\nDisallow: /', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }),
     ...extra,
@@ -96,26 +109,75 @@ describe('the AI readiness view', () => {
     expect(bands(wrapper)[2]).toBe('Competitors: Twentebelt, ESFO, Unibelt')
   })
 
-  it("heads the page with the leader and writes the server's count of the sites passing each check", async () => {
+  it('heads the page with how many checks Tribelt passes, and counts the sites', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
-    expect(wrapper.get('h1').text()).toBe('ESFO leads with 5 of five checks. Tribelt passes 3½.')
-    expect(wrapper.text()).toContain('The five checks ask whether a site lets every AI crawler in, has a sitemap, has llms.txt, has llms-full.txt and has Markdown pages.')
+    expect(wrapper.get('h1').text()).toBe('Tribelt passes three and a half of the five readiness checks, fewer than its best competitors')
     expect(wrapper.text()).toContain('5 sites. Scanned on 22 October 2026.')
-    const part = (label: string) =>
-      wrapper.findAll(`section[aria-labelledby="sum-title"] tbody[aria-label="${label}"] tr`).map((r) => r.findAll('th, td').map((c) => c.text()))
-    const counted = part('The five checks the ranking counts')
-    expect(counted.map((r) => r[0])).toEqual([
-      'The five checks the ranking counts',
-      'Lets every AI crawler in',
-      'Has a sitemap',
-      'Has llms.txt',
-      'Has llms-full.txt',
-      'Has Markdown pages',
+    expect(wrapper.findAll('dl[aria-label="Key figures"] > div').map((d) => `${d.get('dd').text()} ${d.get('dt').text()}`)).toEqual([
+      '5 sites checked',
+      '3½ of 5 checks that tribelt.nl passes',
+      '1 site has the best score',
     ])
-    expect(counted[1]).toEqual(['Lets every AI crawler in', '2', '✕ No'])
-    expect(counted[2]).toEqual(['Has a sitemap', '5', '✓ Yes'])
-    expect(counted[3]).toEqual(['Has llms.txt', '2', '✕ No'])
-    expect(part('Also checked').map((r) => r[0])).toEqual(['Also checked', 'Sitemap in Dutch, German and English', 'Organization structured data', 'Product structured data'])
+    expect(wrapper.get('section[aria-labelledby="best-title"]').text()).toContain('The other 3 sites pass fewer.')
+  })
+
+  it('writes the server’s count of the sites passing each check, in two groups, with Tribelt beside it', async () => {
+    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    expect(wrapper.get('#checks-title').text()).toBe('How many of the 5 sites pass each check')
+    const group = (label: string) => wrapper.findAll(`[role="group"][aria-label="${label}"] button`).map((b) => b.get('span').text())
+    expect(group('The five checks in the score')).toEqual(['Lets every AI crawler in', 'Has a sitemap', 'Has llms.txt', 'Has llms-full.txt', 'Has Markdown pages'])
+    expect(group('Also checked, not in the score')).toEqual(['Sitemap in Dutch, German, and English', 'Organization markup', 'Product markup'])
+    const crawlers = wrapper.get('button[aria-label^="Lets every AI crawler in"]')
+    expect(crawlers.attributes('aria-label')).toBe('Lets every AI crawler in: 2 of 5 sites pass. Tribelt does not pass.')
+    expect(crawlers.text()).toContain('2')
+    expect(crawlers.text()).toContain('Tribelt does not pass')
+    expect(wrapper.get('button[aria-label^="Has a sitemap"]').text()).toContain('Tribelt passes')
+  })
+
+  it('opens on the first check Tribelt fails, and explains another when picked, with the recommendation that fixes it', async () => {
+    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const panel = () => wrapper.get('aside[aria-live="polite"]')
+    expect(panel().get('h2').text()).toBe('Lets every AI crawler in')
+    expect(panel().text()).toContain('Tribelt does not pass.')
+    expect(panel().find('a').exists()).toBe(false)
+    await wrapper.get('button[aria-label^="Has llms.txt"]').trigger('click')
+    expect(panel().get('h2').text()).toBe('Has llms.txt')
+    expect(panel().text()).toContain('llms.txt is a short map of the site in plain text')
+    expect(panel().get('a').text()).toBe('See recommendation 2, add llms.txt and llms-full.txt')
+    expect(panel().get('a').attributes('href')).toBe('/recommendations/llms-files')
+  })
+
+  it('shows the sites with the best score, and what each one passes on request', async () => {
+    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const best = wrapper.get('section[aria-labelledby="best-title"]')
+    expect(best.findAll('li > div').map((r) => r.text())).toEqual(['ESFO5 of 5Show the checks', 'Tribelt B.V.3½ of 5Show the checks'])
+    const show = best.get('button[aria-label="Show the checks for ESFO"]')
+    await show.trigger('click')
+    expect(show.attributes('aria-expanded')).toBe('true')
+    expect(best.findAll('ul ul li').map((l) => l.text())).toEqual(['Yes Lets every AI crawler in', 'Yes Has a sitemap', 'Yes Has llms.txt', 'Yes Has llms-full.txt', 'Yes Has Markdown pages'])
+    await best.get('button[aria-label="Show the checks for Tribelt B.V."]').trigger('click')
+    expect(best.findAll('ul ul')[1]?.text()).toContain('Partly Lets every AI crawler in')
+    expect(best.findAll('ul ul')[1]?.text()).toContain('No Has llms.txt')
+  })
+
+  it('says which crawlers tribelt.nl lets in', async () => {
+    const { wrapper } = await mountApp(
+      api({
+        'GET /api/v1/ai-search': () =>
+          json({
+            ...(aiSearch as object),
+            crawlers: [
+              { bot: 'OAI-SearchBot', lab: 'OpenAI', gets: 'Links in ChatGPT search answers', feeds: 'today', access: 'allowed' },
+              { bot: 'GPTBot', lab: 'OpenAI', gets: 'What future ChatGPT models know', feeds: 'future', access: 'blocked' },
+              { bot: 'CCBot', lab: 'Common Crawl', gets: 'Open data many models learn from', feeds: 'future' },
+            ],
+          }),
+      }),
+      '/ai-search/readiness',
+    )
+    const rows = wrapper.findAll('section[aria-labelledby="crawlers-title"] tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
+    expect(rows[0]?.[0]).toBe('OAI-SearchBotOpenAI')
+    expect(rows.map((r) => r[2])).toEqual(['Lets it in', 'Keeps it out', 'Not checked'])
   })
 
   it('marks each crawler by shape, and opens the site in a new tab', async () => {

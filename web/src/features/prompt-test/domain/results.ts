@@ -103,6 +103,12 @@ export function statusName(status: PromptRunStatus): string {
   return STATUS[status]
 }
 
+/** The line under the headline: which run this is and how it ended. */
+export function runLine(run: Pick<PromptRun, 'startedAt' | 'status'>): string {
+  const how = run.status === 'done' ? 'Finished' : statusName(run.status)
+  return `Prompt run of ${runDate(run)}. ${how}.`
+}
+
 /** How far a run got: "640 of 1,260 answers", with failures when there were any. */
 export function progressLabel(run: Pick<PromptRun, 'answered' | 'failed' | 'tasks'>): string {
   const failed = run.failed > 0 ? `, ${NUMBER.format(run.failed)} without an answer` : ''

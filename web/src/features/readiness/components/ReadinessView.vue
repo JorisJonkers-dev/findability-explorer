@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import type { AiReadiness, AiReadinessRow } from '../../../infrastructure/api/types.gen'
+import type { AiReadiness, AiReadinessRow, ReadinessCheckKind } from '../../../infrastructure/api/types.gen'
 import { percent } from '../../../shared/percent'
 import { vScrollHint } from '../../../shared/scrollHint'
 import { directionOf, nextSort, type Sort } from '../../../shared/sort'
 import SortButton from '../../../shared/ui/SortButton.vue'
 import { hostOf } from '../../prompt-test/domain/grid'
-import SectionView from '../../shell/components/SectionView.vue'
+import { formatValue } from '../../catching-up/domain/standings'
+import PageView from '../../shell/components/PageView.vue'
 import { companyPath } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
+import { usePlan } from '../../plan/composables/usePlan'
 import { useMe } from '../../shell/composables/useMe'
 import { useReadinessCheck, useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
-import { ACCESS_LEGEND, accessMark, checkSummary, fiveChecksLine, hasMark, type MarkTone, readinessCheckLine, readinessHeadline, scanNote, scoredChecksTitle } from '../domain/overview'
+import { ACCESS_LEGEND, accessMark, hasMark, type MarkTone, readinessCheckLine, scanNote } from '../domain/overview'
+import { bestSites, CHECK_WHAT, checkGroups, fixFor, LETS_IN, readinessFigures, readinessTitle, siteChecks, STATE_WORDS, tribeltStatus } from '../domain/checks'
 import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary, type ReadinessColumn, sitemapCoverage, tableRows } from '../domain/readiness'
 
 const route = useRoute()
@@ -53,13 +56,21 @@ function headClass(column: ReadinessColumn, centred = false): string {
   const on = directionOf(sort.value, column) !== null
   return `-mx-1.5 rounded-lg px-1.5 py-1 hover:bg-mist hover:text-black [&>span]:whitespace-normal stage:-mx-3 stage:rounded-xl stage:px-3 stage:py-2 ${centred ? 'text-center' : 'text-left'} ${on ? 'text-orange-ink' : ''}`
 }
-const summary = computed(() => checkSummary(aiSearch.value))
-/** The checks the headline and the ranking score, then the ones listed beside them. */
-const SUMMARY_PARTS = computed(() => [
-  { title: scoredChecksTitle(aiSearch.value?.readinessChecks ?? 0), counted: true },
-  { title: 'Also checked', counted: false },
-])
+const { plan } = usePlan()
 const sites = computed(() => aiSearch.value?.sites ?? 0)
+const title = computed(() => (aiSearch.value && !error.value ? readinessTitle(aiSearch.value.ranking, aiSearch.value.readinessChecks) : 'How ready the sites are for AI assistants'))
+const figures = computed(() => (aiSearch.value ? readinessFigures(aiSearch.value) : []))
+const groups = computed(() => checkGroups(aiSearch.value, aiSearch.value?.readinessChecks ?? 0))
+const best = computed(() => bestSites(aiSearch.value?.ranking ?? []))
+const others = computed(() => Math.max(0, sites.value - best.value.sites.length))
+
+// The check picked in the bar list, and the sites whose five checks are open; the first check Tribelt fails is open to start with.
+const picked = ref<ReadinessCheckKind | undefined>(undefined)
+const allChecks = computed(() => groups.value.flatMap((g) => g.checks))
+const pickedCheck = computed(() => allChecks.value.find((c) => c.kind === picked.value) ?? allChecks.value.find((c) => c.tribelt === false) ?? allChecks.value[0])
+const fix = computed(() => (pickedCheck.value ? fixFor(pickedCheck.value.kind, plan.value) : undefined))
+const open = ref<Record<string, boolean>>({})
+const rowOf = (id: string): AiReadinessRow | undefined => rows.value.find((r) => r.competitorId === id)
 // The site picked lives in the address; Tribelt's own until another is picked.
 const selected = computed<AiReadinessRow | undefined>(
   () => rows.value.find((r) => r.competitorId === route.query.site) ?? rows.value.find((r) => r.role === 'tribelt'),
@@ -120,11 +131,11 @@ function pick(r: AiReadinessRow): void {
 </script>
 
 <template>
-  <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(aiSearch?.ranking ?? [], aiSearch?.readinessChecks ?? 0)" :back="{ to: '/ai-search', label: 'Back to AI search' }">
+  <PageView section="ai-search" eyebrow="02 AI search, AI readiness" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
     <template #lede>
-      <p class="m-0 max-w-[62ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">{{ fiveChecksLine(aiSearch) }}</p>
+      <p class="m-0 max-w-[62ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">Each check is something a website can do to help search engines and AI assistants read it. The newest scan checked the sites of Tribelt and its competitors.</p>
     </template>
-    <template v-if="!isLoading && !error" #aside>
+    <div v-if="!isLoading && !error" class="flex flex-col gap-3">
       <div class="flex flex-col gap-3 stage:items-end stage:gap-5">
         <p class="m-0 max-w-[60ch] text-sm text-muted text-pretty stage:max-w-[1500px] stage:text-right stage:text-[26px]">{{ scanNote(rows, sites) }}</p>
         <div v-if="isAdmin" class="flex flex-wrap items-center gap-3 stage:flex-row-reverse stage:gap-6">
@@ -140,47 +151,136 @@ function pick(r: AiReadinessRow): void {
           <p v-if="checkError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ checkError }}</p>
         </div>
       </div>
-    </template>
+    </div>
 
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-muted">Loading the AI readiness…</p>
-    <div v-else class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,0.7fr)_minmax(0,2fr)] stage:gap-24">
-      <section aria-labelledby="sum-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-7">
-        <h2 id="sum-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] text-balance stage:text-[56px]">How many of the {{ sites }} sites are set up for AI</h2>
-        <table class="w-full border-collapse text-sm stage:text-[26px]">
-          <caption class="sr-only">For each check, how many sites pass it, and whether Tribelt does</caption>
-          <thead>
-            <tr class="border-b-2 border-black">
-              <th scope="col" class="py-2 text-left font-medium text-muted">Check</th>
-              <th scope="col" class="py-2 pl-3 text-right font-medium text-muted">Sites</th>
-              <th scope="col" class="py-2 pl-3 text-right font-medium text-muted">Tribelt</th>
-            </tr>
-          </thead>
-          <tbody v-for="part in SUMMARY_PARTS" :key="part.title" :aria-label="part.title">
-            <tr>
-              <th colspan="3" scope="colgroup" class="bg-mist px-2 py-1.5 text-left text-xs font-semibold tracking-[0.06em] text-orange-ink uppercase stage:px-4 stage:py-2.5 stage:text-[20px]">
-                {{ part.title }}
-              </th>
-            </tr>
-            <tr v-for="c in summary.filter((s) => s.counted === part.counted)" :key="c.label" class="border-b border-grey">
-              <th scope="row" class="py-2.5 text-left font-normal stage:py-4">
-                {{ c.label }}
-                <span aria-hidden="true" class="mt-1.5 block h-1.5 rounded-full bg-mist stage:mt-2.5 stage:h-3">
-                  <span class="block h-full rounded-full bg-blue-grey" :style="{ width: percent(c.sites === 0 ? 0 : c.passing / c.sites) }"></span>
-                </span>
-              </th>
-              <td class="py-2.5 pl-3 text-right font-semibold stage:py-4">{{ c.passing }}</td>
-              <td class="py-2.5 pl-3 text-right font-semibold whitespace-nowrap stage:py-4" :class="c.tribelt === false ? 'text-orange-ink' : ''">
-                {{ c.tribelt === null ? 'Not scanned' : c.tribelt ? '✓ Yes' : '✕ No' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+    <div v-else class="flex flex-col gap-14 stage:min-h-0 stage:gap-20 stage:overflow-y-auto stage:pr-6">
+      <dl aria-label="Key figures" class="m-0 grid gap-4 sm:grid-cols-3 stage:gap-8">
+        <div
+          v-for="f in figures"
+          :key="f.text"
+          class="flex items-baseline gap-4 rounded-[20px] px-6 py-5 stage:gap-8 stage:rounded-[32px] stage:px-12 stage:py-8"
+          :class="f.accent ? 'bg-orange-pale' : 'bg-mist'"
+        >
+          <dd class="order-1 m-0 font-display text-4xl font-semibold stage:text-[96px]" :class="f.accent ? 'text-orange-ink' : ''">{{ f.big }}</dd>
+          <dt class="order-2 font-semibold stage:text-[34px]">{{ f.text }}</dt>
+        </div>
+      </dl>
 
-      <section aria-labelledby="sites-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-6">
+      <div class="grid gap-8 stage:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] stage:gap-20">
+        <section aria-labelledby="checks-title" class="flex flex-col gap-4 rounded-[28px] border-2 border-grey p-6 stage:gap-7 stage:rounded-[48px] stage:border-[3px] stage:p-14">
+          <h2 id="checks-title" class="m-0 font-display text-2xl font-semibold stage:text-[52px]">How many of the {{ sites }} sites pass each check</h2>
+          <p class="m-0 text-ink-2 stage:text-[30px]">Pick a check to see what it means for Tribelt.</p>
+          <div v-for="g in groups" :key="g.title" role="group" :aria-label="g.aria" class="flex flex-col gap-1 stage:gap-2">
+            <span class="px-2.5 pt-2 text-[13px] font-bold tracking-[0.06em] text-muted uppercase stage:px-5 stage:pt-4 stage:text-[24px]">{{ g.title }}</span>
+            <button
+              v-for="c in g.checks"
+              :key="c.kind"
+              type="button"
+              :aria-pressed="pickedCheck?.kind === c.kind"
+              :aria-label="c.aria"
+              class="grid min-h-12 w-full cursor-pointer grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_2.5rem] items-center gap-3 rounded-xl border-2 bg-transparent px-2.5 py-1 text-left text-black hover:bg-mist sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_2.5rem_9.5rem] stage:min-h-[96px] stage:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_100px_360px] stage:gap-8 stage:rounded-[24px] stage:border-[3px] stage:px-5"
+              :class="pickedCheck?.kind === c.kind ? 'border-black bg-white' : 'border-transparent'"
+              @click="picked = c.kind"
+            >
+              <span class="font-semibold stage:text-[32px]">{{ c.label }}</span>
+              <span aria-hidden="true" class="relative block h-4 overflow-hidden rounded-lg bg-grey stage:h-8 stage:rounded-2xl">
+                <span class="absolute inset-y-0 left-0 rounded-lg" :class="pickedCheck?.kind === c.kind ? 'bg-orange' : 'bg-blue-grey'" :style="{ width: c.passing > 0 ? percent(Math.max(c.share, 0.015)) : '0%' }"></span>
+              </span>
+              <span class="text-right text-base font-extrabold stage:text-[36px]">{{ c.passing }}</span>
+              <span class="hidden text-right text-sm font-bold sm:block stage:text-[28px]" :class="c.tribelt === false ? 'text-orange-ink' : c.tribelt === null ? 'text-muted' : ''">{{ c.status }}</span>
+            </button>
+          </div>
+        </section>
+
+        <aside v-if="pickedCheck" aria-live="polite" class="flex flex-col gap-4 self-start rounded-[28px] bg-orange-pale p-6 stage:gap-7 stage:rounded-[48px] stage:p-14">
+          <span class="text-sm font-bold tracking-[0.06em] text-orange-ink uppercase stage:text-[26px]">The check you picked</span>
+          <h2 class="m-0 font-display text-3xl leading-tight font-semibold stage:text-[60px]">{{ pickedCheck.label }}</h2>
+          <p class="m-0 text-lg leading-relaxed stage:text-[34px]">{{ CHECK_WHAT[pickedCheck.kind] }}</p>
+          <span
+            class="self-start rounded-full bg-white px-4 py-2 font-bold stage:px-8 stage:py-4 stage:text-[30px]"
+            :class="pickedCheck.tribelt === false ? 'text-orange-ink' : ''"
+          >
+            {{ tribeltStatus(pickedCheck.tribelt) }}{{ pickedCheck.tribelt === null ? '. tribelt.nl has not been scanned yet.' : '.' }}
+          </span>
+          <RouterLink
+            v-if="fix"
+            :to="fix.to"
+            class="inline-flex min-h-12 items-center self-start rounded-full bg-black px-6 font-bold text-white no-underline hover:bg-orange-ink hover:text-white stage:min-h-[96px] stage:px-12 stage:text-[32px]"
+          >
+            {{ fix.label }}
+          </RouterLink>
+        </aside>
+      </div>
+
+      <div class="grid gap-10 stage:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] stage:gap-20">
+        <section aria-labelledby="best-title" class="flex flex-col gap-4 stage:gap-6">
+          <h2 id="best-title" class="m-0 font-display text-2xl font-semibold stage:text-[52px]">The sites with the best score</h2>
+          <ul class="m-0 list-none border-t-2 border-black p-0 stage:border-t-4">
+            <li v-for="s in best.sites" :key="s.competitorId" class="border-b border-grey">
+              <div class="grid min-h-14 grid-cols-[minmax(0,1fr)_5rem_auto] items-center gap-3 px-2 py-1 stage:min-h-[104px] stage:grid-cols-[minmax(0,1fr)_200px_360px] stage:gap-6 stage:px-4">
+                <span class="text-lg stage:text-[38px]" :class="s.role === 'tribelt' ? 'font-extrabold text-orange-ink' : 'font-semibold'">{{ s.name }}</span>
+                <span class="text-right text-lg font-extrabold stage:text-[38px]">{{ formatValue('readinessChecks', s.score) }} of {{ aiSearch?.readinessChecks }}</span>
+                <button
+                  type="button"
+                  :aria-expanded="open[s.competitorId] === true"
+                  :aria-label="`${open[s.competitorId] ? 'Hide' : 'Show'} the checks for ${s.name}`"
+                  class="min-h-11 cursor-pointer justify-self-end rounded-full border-2 border-silver bg-white px-4 text-sm font-semibold hover:bg-mist stage:min-h-[80px] stage:border-[3px] stage:px-8 stage:text-[28px]"
+                  @click="open = { ...open, [s.competitorId]: !open[s.competitorId] }"
+                >
+                  {{ open[s.competitorId] ? 'Hide the checks' : 'Show the checks' }}
+                </button>
+              </div>
+              <ul v-if="open[s.competitorId]" class="m-0 flex list-none flex-col gap-1.5 px-4 pt-0 pb-4 stage:gap-3 stage:px-8 stage:pb-8 stage:text-[30px]">
+                <li v-for="c in siteChecks(rowOf(s.competitorId) ?? { readiness: undefined })" :key="c.label" class="flex items-center gap-3">
+                  <span class="w-20 font-extrabold stage:w-36" :class="c.state === 'no' ? 'text-orange-ink' : c.state === 'unknown' ? 'text-muted' : ''">{{ STATE_WORDS[c.state] }}</span>
+                  {{ c.label }}
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <p v-if="others > 0" class="m-0 text-sm text-muted stage:text-[26px]">
+            The other {{ others }} {{ others === 1 ? 'site passes' : 'sites pass' }} fewer. Every site, with every column, is further down.
+          </p>
+        </section>
+
+        <section aria-labelledby="crawlers-title" class="flex flex-col gap-4 stage:gap-6">
+          <h2 id="crawlers-title" class="m-0 font-display text-2xl font-semibold stage:text-[52px]">Which crawlers can read tribelt.nl</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm stage:text-[28px]">
+              <caption class="sr-only">Each crawler, what it does for Tribelt, and whether tribelt.nl lets it in</caption>
+              <thead>
+                <tr class="border-b-2 border-black">
+                  <th scope="col" class="py-2 text-left font-semibold text-muted">Crawler</th>
+                  <th scope="col" class="py-2 pl-3 text-left font-semibold text-muted">What it does for Tribelt</th>
+                  <th scope="col" class="py-2 pl-3 text-right font-semibold text-muted">tribelt.nl</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="c in aiSearch?.crawlers ?? []" :key="c.bot" class="border-b border-grey">
+                  <th scope="row" class="py-2 text-left font-bold stage:py-4">{{ c.bot }}<span class="block text-[13px] font-normal text-muted stage:text-[22px]">{{ c.lab }}</span></th>
+                  <td class="py-2 pl-3 stage:py-4">
+                    <span class="inline-flex items-center gap-2 stage:gap-4">
+                      <span aria-hidden="true" class="size-3 flex-none rounded-full stage:size-5" :class="c.feeds === 'today' ? 'bg-orange' : 'bg-blue-grey'"></span>
+                      {{ c.gets }}<span class="sr-only">{{ c.feeds === 'today' ? ', shows up in answers today' : ', teaches future models' }}</span>
+                    </span>
+                  </td>
+                  <td class="py-2 pl-3 text-right font-bold stage:py-4" :class="c.access === 'blocked' ? 'text-orange-ink' : ''">{{ LETS_IN[c.access ?? 'unknown'] }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ul aria-label="Legend" class="m-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0 text-sm text-ink-2 stage:gap-x-10 stage:text-[26px]">
+            <li class="inline-flex items-center gap-2"><span aria-hidden="true" class="size-3 rounded-full bg-orange stage:size-5"></span>Shows up in answers today</li>
+            <li class="inline-flex items-center gap-2"><span aria-hidden="true" class="size-3 rounded-full bg-blue-grey stage:size-5"></span>Teaches future models</li>
+          </ul>
+        </section>
+      </div>
+
+      <section aria-labelledby="sites-title" class="flex flex-col gap-4 stage:shrink-0 stage:gap-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-          <h2 id="sites-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Site by site</h2>
+          <h2 id="sites-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[52px]">Every site, every column</h2>
           <label class="flex flex-col gap-1.5 text-sm text-ink-2 sm:flex-row sm:items-center sm:gap-3 stage:text-[24px]">
             Show
             <select v-model="gap" class="h-11 w-full cursor-pointer truncate rounded-full sm:w-80 stage:w-[760px] border-2 border-grey bg-white px-4 text-base text-black hover:border-black stage:h-16 stage:px-6 stage:text-[24px]">
@@ -195,7 +295,7 @@ function pick(r: AiReadinessRow): void {
             <span>{{ l.meaning }}</span>
           </li>
         </ul>
-        <div v-scroll-hint class="scroll-hint relative max-h-[75svh] overflow-auto stage:max-h-none stage:min-h-0 stage:flex-1">
+        <div v-scroll-hint class="scroll-hint relative max-h-[75svh] overflow-auto stage:max-h-none">
           <table class="w-full border-separate border-spacing-0 text-sm stage:text-[22px]">
             <caption class="sr-only">AI readiness per site: each crawler's access, the sitemap, llms.txt, llms-full.txt, Markdown pages, structured data and platform</caption>
             <thead>
@@ -295,5 +395,5 @@ function pick(r: AiReadinessRow): void {
         </div>
       </section>
     </div>
-  </SectionView>
+  </PageView>
 </template>

@@ -7,7 +7,9 @@ import {
   columnsOf,
   counts,
   excerpt,
-  gridHeadline,
+  answersHeadline,
+  gridFamily,
+  gridScope,
   headlineNumbers,
   hostOf,
   isTribeltSite,
@@ -24,6 +26,7 @@ import {
   PLACES,
   placeOf,
   rowsOf,
+  runFigures,
   SCOPE_FILTERS,
   saysOf,
   type Square,
@@ -32,6 +35,7 @@ import {
   tribeltPosition,
   unknownLine,
   unread,
+  verdictOf,
 } from './grid'
 
 /** An answer that puts Tribelt at a place in its list, from 1. */
@@ -54,25 +58,33 @@ describe("Tribelt's place in an answer", () => {
     expect([1, 2, 3, 4, 7, 30].map((p) => markOf(squareOf(at(p))))).toEqual(['1', '2', '3', '4', '7', '30'])
     const named = promptAnswer({}, ['A:a'], { namesTribelt: true })
     expect(tribeltPosition(named)).toBeUndefined()
-    expect(markOf(squareOf(named))).toBe('?')
-    expect(markOf({ place: 'none' })).toBe('–')
-    expect(markOf({ place: 'missing' })).toBe('✕')
+    expect(markOf(squareOf(named))).toBe('•')
+    expect(markOf({ place: 'none' })).toBe('')
+    expect(markOf({ place: 'missing' })).toBe('–')
   })
 
   it('says each square in words', () => {
     const squares: Square[] = [{ place: 'first', position: 1 }, { place: 'top3', position: 2 }, { place: 'later', position: 11 }, { place: 'unplaced' }, { place: 'none' }, { place: 'missing' }]
     expect(squares.map(saysOf)).toEqual([
-      'Tribelt named first',
-      'Tribelt named 2nd',
-      'Tribelt named 11th',
-      'Tribelt named, place unknown',
-      'Tribelt not named',
-      'No answer, the model gave none or it could not be read',
+      'Tribelt is named first',
+      'Tribelt is named 2nd',
+      'Tribelt is named 11th',
+      'Tribelt is named, but not in a ranked list',
+      'Tribelt is not named',
+      'No answer came back',
+    ])
+    expect(squares.map(verdictOf)).toEqual([
+      'This answer names Tribelt first.',
+      'This answer names Tribelt second or third.',
+      'This answer names Tribelt fourth or later.',
+      'This answer names Tribelt, but not in a ranked list.',
+      'This answer does not name Tribelt.',
+      'No answer came back for this question.',
     ])
     expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 30].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '30th'])
     const row = { family: 'eyelink' as const, scope: 'twente' as const }
-    expect(cellLabel(row, { name: 'OpenAI', mode: 'knowledge' }, squareOf(at(4)))).toBe('OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 4th')
-    expect(cellLabel(row, { name: 'Google', mode: 'web' }, { place: 'none' })).toBe('Google, with web search, Eyelink, Twente (Dutch): Tribelt not named')
+    expect(cellLabel(row, { name: 'OpenAI', mode: 'knowledge' }, squareOf(at(4)))).toBe('OpenAI, from its own knowledge, Eyelink, Twente, in Dutch: Tribelt is named 4th.')
+    expect(cellLabel(row, { name: 'Google', mode: 'web' }, { place: 'none' })).toBe('Google, with web search, Eyelink, Twente, in Dutch: Tribelt is not named.')
   })
 
   it('has a legend entry for every mark a square can show, with the same text and look', () => {
@@ -95,12 +107,12 @@ describe("Tribelt's place in an answer", () => {
     // Each numbered example sits in its own tier: the legend's "4" is a real 4th place.
     for (const s of LEGEND) if ('position' in s) expect(squareOf(at(s.position))).toEqual(s)
     expect(PLACE_ORDER).toEqual(['first', 'top3', 'later', 'unplaced', 'none', 'missing'])
-    expect(LEGEND.map(markOf)).toEqual(['1', '2', '4', '?', '–', '✕'])
+    expect(LEGEND.map(markOf)).toEqual(['1', '2', '4', '•', '', '–'])
     expect(new Set(PLACE_ORDER.map((p) => PLACES[p].cell)).size).toBe(PLACE_ORDER.length)
   })
 
   it('names both columns of a provider in full', () => {
-    expect(MODE_COLUMNS).toEqual({ knowledge: { short: 'Own', long: 'Own knowledge' }, web: { short: 'Web', long: 'With web search' } })
+    expect(MODE_COLUMNS).toEqual({ knowledge: { short: 'Own', long: 'from its own knowledge' }, web: { short: 'Web', long: 'with web search' } })
   })
 })
 
@@ -163,13 +175,29 @@ describe('the numbers', () => {
     expect(tribelt?.share).toBe(0.5)
   })
 
-  it('head the page with who the answers name most', () => {
+  it('heads the page with the company the answers list most often', () => {
     const name = (id: string) => id.toUpperCase()
-    expect(gridHeadline([], name)).toBe('Do AI assistants name Tribelt?')
-    expect(gridHeadline(answers, name)).toBe('AI answers name Tribelt more than any competitor.')
-    const twente = [promptAnswer({ scope: 'twente' }, ['Tribelt:tribelt']), promptAnswer({ scope: 'dutch' }, ['Ashworth:ashworth']), promptAnswer({ scope: 'german' }, ['Ashworth:ashworth'])]
-    expect(gridHeadline(twente, name)).toBe('Twente buyers hear of Tribelt. Everyone else hears of ASHWORTH.')
-    expect(gridHeadline([promptAnswer({ scope: 'dutch' }, ['Ashworth:ashworth'])], name)).toBe('AI answers name ASHWORTH most.')
+    expect(answersHeadline([], name)).toBe('Do AI assistants name Tribelt?')
+    expect(answersHeadline(answers, name)).toBe('Tribelt is the company AI responses list most often.')
+    expect(answersHeadline([promptAnswer({ scope: 'dutch' }, ['Ashworth:ashworth'])], name)).toBe('ASHWORTH is the company AI responses list most often.')
+  })
+
+  it('names the families and scopes the way the answers page does', () => {
+    expect([gridFamily('tri_flex_turn_curve'), gridFamily('other'), gridFamily('eyelink')]).toEqual(['Tri-Flex', 'Other belts', 'Eyelink'])
+    expect([gridScope('twente'), gridScope('netherlands'), gridScope('germany'), gridScope('english')]).toEqual(['Twente, in Dutch', 'Netherlands, in Dutch', 'Germany, in German', 'English, no region'])
+  })
+
+  it('shows the figures of a run', () => {
+    expect(runFigures(promptRun())).toEqual([
+      { big: '358', text: 'answers in the newest run' },
+      { big: '2', text: 'providers asked: OpenAI and Google' },
+      { big: '$0.42', text: 'about what one run costs' },
+    ])
+    expect(runFigures(promptRun({ answered: 1, models: [{ provider: 'openai', model: 'openai/x', free: false }] }))).toEqual([
+      { big: '1', text: 'answer in the newest run' },
+      { big: '1', text: 'provider asked: OpenAI' },
+      { big: '$0.42', text: 'about what one run costs' },
+    ])
   })
 })
 

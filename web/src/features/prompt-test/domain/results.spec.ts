@@ -10,6 +10,7 @@ import {
   progressLabel,
   providerName,
   runDate,
+  runLine,
   scopeName,
   shareLabel,
   statusName,
@@ -37,6 +38,7 @@ describe('the Prompt test’s measures', () => {
     expect(progressLabel(promptRun())).toBe('360 of 360 answers, 2 without an answer')
     expect(progressLabel(promptRun({ answered: 1200, failed: 0, tasks: 1260 }))).toBe('1,200 of 1,260 answers')
     expect([costLabel(0.42), costLabel(10), runDate(promptRun())]).toEqual(['$0.42', '$10.00', '1 Nov 2026'])
+    expect([runLine(promptRun()), runLine(promptRun({ status: 'stopped' }))]).toEqual(['Prompt run of 1 Nov 2026. Finished.', 'Prompt run of 1 Nov 2026. Stopped at the budget.'])
   })
 })
 

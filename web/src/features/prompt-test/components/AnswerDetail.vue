@@ -3,8 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { Competitor, PromptAnswer } from '../../../infrastructure/api/types.gen'
 import { companyPath } from '../../shell/domain/sections'
-import { answerCost, counts, excerpt, hostOf, isTribeltSite, TRIBELT_ID } from '../domain/grid'
-import { CORRECTNESS, familyName, modeName, providerName, scopeName } from '../domain/results'
+import { answerCost, counts, excerpt, gridFamily, gridScope, hostOf, isTribeltSite, MODE_COLUMNS, squareOf, TRIBELT_ID, verdictOf } from '../domain/grid'
+import { CORRECTNESS, providerName } from '../domain/results'
 
 const props = defineProps<{ answer: PromptAnswer | undefined; competitors: readonly Competitor[]; isAdmin?: boolean }>()
 const emit = defineEmits<{ add: [company: { name: string; url: string }] }>()
@@ -31,34 +31,36 @@ const names = computed(() =>
   }),
 )
 const NUMBER = new Intl.NumberFormat('en-GB')
+const square = computed(() => squareOf(props.answer))
 </script>
 
 <template>
-  <div aria-live="polite" class="flex flex-col gap-3 rounded-2xl bg-mist p-5 stage:gap-5 stage:rounded-[28px] stage:p-10">
-    <p v-if="!answer" class="m-0 text-ink-2 stage:text-[28px]">Pick a square to read its answer.</p>
+  <aside aria-live="polite" aria-labelledby="answer-title" class="flex flex-col gap-4 rounded-[28px] border-2 border-grey p-6 stage:gap-7 stage:rounded-[48px] stage:border-[3px] stage:p-12">
+    <span class="text-sm font-bold tracking-[0.06em] text-orange-ink uppercase stage:text-[26px]">The answer you picked</span>
+    <h2 v-if="!answer" id="answer-title" class="m-0 font-display text-xl font-semibold stage:text-[44px]">Pick a square to read the answer.</h2>
     <template v-else>
-      <p class="m-0 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold tracking-[0.04em] text-orange-ink uppercase stage:gap-x-8 stage:text-[22px]">
-        <span>{{ providerName(answer.provider) }} {{ modeName(answer.mode).toLowerCase() }}</span>
-        <span>{{ familyName(answer.family) }}</span>
-        <span>{{ scopeName(answer.scope) }}</span>
-      </p>
-      <p class="m-0 font-medium stage:text-[28px]">{{ answer.prompt }}</p>
-      <p v-if="!read" class="m-0 font-semibold text-orange-ink stage:text-[28px]">
-        No answer to read. {{ answer.failure ?? 'The answer could not be read.' }}
-      </p>
+      <h2 id="answer-title" class="m-0 font-display text-2xl leading-tight font-semibold stage:text-[52px]">{{ gridFamily(answer.family) }}, {{ gridScope(answer.scope) }}</h2>
+      <span class="text-ink-2 stage:text-[30px]">{{ providerName(answer.provider) }}, {{ MODE_COLUMNS[answer.mode].long }}.</span>
+      <div class="flex flex-col gap-1.5 rounded-2xl bg-mist px-4 py-3.5 stage:gap-3 stage:rounded-[28px] stage:px-8 stage:py-6">
+        <span class="text-[13px] font-bold text-muted stage:text-[24px]">The buyer asked</span>
+        <span class="leading-snug stage:text-[30px]">{{ answer.prompt }}</span>
+      </div>
+      <div v-if="read" class="flex flex-col gap-1.5 stage:gap-3">
+        <span class="text-[13px] font-bold text-muted stage:text-[24px]">The answer</span>
+        <span class="leading-relaxed text-pretty stage:text-[30px]">{{ whole ? read.text : excerpt(read.text) }}</span>
+      </div>
+      <div
+        class="rounded-2xl px-4 py-3 font-bold stage:rounded-[28px] stage:px-8 stage:py-6 stage:text-[32px]"
+        :class="read?.extraction.namesTribelt ? 'bg-orange-pale text-orange-ink' : 'bg-grey text-ink-2'"
+      >
+        {{ verdictOf(square) }}
+      </div>
+      <p v-if="!read" class="m-0 text-ink-2 stage:text-[28px]">{{ answer.failure ?? 'The answer could not be read.' }}</p>
       <template v-else>
-        <p class="m-0 text-ink-2 stage:text-[26px]">“{{ whole ? read.text : excerpt(read.text) }}”</p>
-        <button
-          v-if="excerpt(read.text) !== read.text.replace(/\s+/g, ' ').trim()"
-          type="button"
-          class="self-start border-0 bg-transparent p-0 font-medium text-orange-ink underline underline-offset-4 stage:text-[24px]"
-          @click="whole = !whole"
-        >
-          {{ whole ? 'Show less' : 'Read the whole answer' }}
-        </button>
-        <div v-if="names.length > 0" class="flex flex-col gap-1.5">
-          <span class="text-sm text-muted stage:text-[22px]">Companies it names, in order</span>
-          <ol aria-label="Companies named" class="m-0 flex list-none flex-wrap gap-2 p-0">
+        <div class="flex flex-col gap-1.5 stage:gap-3">
+          <span class="text-[13px] font-bold text-muted stage:text-[24px]">It names</span>
+          <p v-if="names.length === 0" class="m-0 stage:text-[30px]">No company.</p>
+          <ol v-else aria-label="Companies named" class="m-0 flex list-none flex-wrap gap-2 p-0">
             <li
               v-for="n in names"
               :key="`${String(n.position)}-${n.name}`"
@@ -78,29 +80,39 @@ const NUMBER = new Intl.NumberFormat('en-GB')
               >
                 Add<span class="sr-only">{{ ' ' + n.name }} as a competitor</span>
               </button>
-              <RouterLink v-else-if="!n.id && isAdmin" to="/competitors/all" class="text-xs font-semibold stage:text-[20px]">
-                Add on All competitors<span class="sr-only">: {{ n.name }}</span>
+              <RouterLink v-else-if="!n.id && isAdmin" to="/competitors" class="text-xs font-semibold stage:text-[20px]">
+                Add on Competitors<span class="sr-only">: {{ n.name }}</span>
               </RouterLink>
             </li>
           </ol>
         </div>
-        <p v-if="read.extraction.correctness" class="m-0 text-sm stage:text-[24px]">
+        <p v-if="read.extraction.correctness" class="m-0 text-sm stage:text-[26px]">
           {{ CORRECTNESS[read.extraction.correctness] }}.
           <template v-for="claim in read.extraction.wrongClaims" :key="claim"> “{{ claim }}”</template>
         </p>
-        <div v-if="read.extraction.addresses.length > 0" class="flex flex-col gap-1.5">
-          <span class="text-sm text-muted stage:text-[22px]">Sources it cites</span>
-          <ul aria-label="Sources cited" class="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-sm stage:text-[22px]">
+        <div class="flex flex-col gap-1.5 stage:gap-3">
+          <span class="text-[13px] font-bold text-muted stage:text-[24px]">It cites</span>
+          <ul v-if="read.extraction.addresses.length > 0" aria-label="Sources cited" class="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 stage:text-[26px]">
             <li v-for="a in read.extraction.addresses" :key="a" :class="isTribeltSite(a) ? 'font-bold' : ''">
               <a :href="a" target="_blank" rel="noopener">{{ hostOf(a) }}</a>
             </li>
           </ul>
+          <p v-else-if="answer.mode === 'knowledge'" class="m-0 stage:text-[30px]">Nothing. Answers from the model’s own knowledge cite no sources.</p>
+          <p v-else class="m-0 stage:text-[30px]">Nothing. This answer cites no sources.</p>
         </div>
+        <button
+          v-if="excerpt(read.text) !== read.text.replace(/\s+/g, ' ').trim()"
+          type="button"
+          class="inline-flex min-h-11 items-center self-start rounded-full border-2 border-black bg-white px-5 font-bold hover:bg-mist stage:min-h-[88px] stage:border-[3px] stage:px-9 stage:text-[30px]"
+          @click="whole = !whole"
+        >
+          {{ whole ? 'Show less' : 'Read the whole answer' }}
+        </button>
       </template>
       <p class="m-0 text-xs text-muted stage:text-[22px]">
         {{ answer.model }}. {{ NUMBER.format(answer.inputTokens + answer.outputTokens) }} tokens. {{ answerCost(answer.costUsd) }}.
       </p>
       <slot />
     </template>
-  </div>
+  </aside>
 </template>

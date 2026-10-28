@@ -3,7 +3,7 @@ import { expect, test } from './fixtures'
 test.skip(({ isMobile }) => isMobile, 'the stage is for large windows; the phone project checks the stacked page')
 
 // Plain pages: the overview, a number and Buyers scroll like a page, outside the stage.
-const PLAIN = ['/', '/buyers', '/numbers/aiShareOfVoice']
+const PLAIN = ['/', '/buyers', '/numbers/aiShareOfVoice', '/ai-search', '/ai-search/answers', '/ai-search/readiness']
 const VIEWS = ['/', '/ai-search', '/ai-search/answers', '/ai-search/readiness', '/competitors', '/terms', '/terms/all', '/terms/families/eyelink', '/recommendations', '/buyers', '/numbers/aiShareOfVoice']
 
 // The stage grows to the window's aspect, so a window that is not 16:9 has no white bands.

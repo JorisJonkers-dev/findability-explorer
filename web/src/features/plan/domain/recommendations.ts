@@ -93,7 +93,8 @@ export function comparison(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'le
 export function ordinal(n: number): string {
   const rest = n % 100
   if (rest >= 11 && rest <= 13) return `${String(n)}th`
-  return `${String(n)}${['th', 'st', 'nd', 'rd'][n % 10 > 3 ? 0 : n % 10] ?? 'th'}`
+  const last = n % 10
+  return `${String(n)}${last === 1 ? 'st' : last === 2 ? 'nd' : last === 3 ? 'rd' : 'th'}`
 }
 
 /** The recommendations that improve the same measure, other than this one. */
@@ -103,9 +104,8 @@ export function alsoImproving(items: readonly PlanImprovement[], it: PlanImprove
 
 /** The comparison in one line: "AI answers that name Tribelt: 5%, Habasit 22%, target 40%". */
 export function compareLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>, watched: readonly WatchedNumber[], readinessChecks: number): string {
-  const [tribelt, ...others] = comparison(it, watched, readinessChecks)
-  const parts = others.map((r) => (r.tone === 'target' ? `target ${r.text}` : `${r.who} ${r.text}`))
-  return `${MEASURE_NAME[it.measure]}: ${[tribelt?.text ?? '', ...parts].join(', ')}`
+  const parts = comparison(it, watched, readinessChecks).map((r) => (r.tone === 'tribelt' ? r.text : r.tone === 'target' ? `target ${r.text}` : `${r.who} ${r.text}`))
+  return `${MEASURE_NAME[it.measure]}: ${parts.join(', ')}`
 }
 
 /** A recommendation's place among those still to do by best value, and how many there are; undefined once done. */

@@ -38,8 +38,8 @@ function companyOf(scan: AnalysisSummary): string {
   return props.companies.find((c) => c.id === scan.competitorId)?.shortName ?? siteHost(scan.url)
 }
 
-const BUTTON = 'min-h-11 rounded-full border-2 px-5 font-medium stage:min-h-[76px] stage:border-[3px] stage:px-8 stage:text-[26px]'
-const FIELD = 'h-11 min-w-0 rounded-xl border-2 bg-white px-3 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-5 stage:text-[28px]'
+const BUTTON = 'min-h-11 rounded-full border-2 px-5 font-medium'
+const FIELD = 'h-11 min-w-0 rounded-xl border-2 bg-white px-3 text-base text-black'
 
 function sweep(): void {
   const which = confirming.value
@@ -71,17 +71,17 @@ function submit(): void {
 </script>
 
 <template>
-  <section aria-labelledby="admin-title" class="flex flex-col gap-4 border-t-2 border-grey pt-5 stage:gap-6 stage:border-t-[3px] stage:pt-9">
-    <h3 id="admin-title" class="m-0 text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[24px]">Administrator</h3>
-    <div class="flex flex-wrap items-center gap-3 stage:gap-5">
-      <label class="flex items-center gap-2 text-sm text-ink-2 stage:gap-4 stage:text-[26px]">
+  <section aria-labelledby="admin-title" class="flex flex-col gap-4 border-t-2 border-grey pt-5">
+    <h3 id="admin-title" class="m-0 text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase">Administrator</h3>
+    <div class="flex flex-wrap items-center gap-3">
+      <label class="flex items-center gap-2 text-sm text-ink-2">
         Pages per scan
         <input
           type="number"
           min="1"
           :max="MAX_SCAN_PAGES"
           :value="pages"
-          class="h-11 w-24 rounded-xl border-2 border-grey bg-white px-3 text-base text-black stage:h-[76px] stage:w-[170px] stage:border-[3px] stage:px-5 stage:text-[28px]"
+          class="h-11 w-24 rounded-xl border-2 border-grey bg-white px-3 text-base text-black"
           @change="budget"
         />
       </label>
@@ -106,9 +106,9 @@ function submit(): void {
         </button>
       </template>
     </div>
-    <p v-if="leftOutNote" class="m-0 text-sm text-ink-2 stage:text-[26px]">{{ leftOutNote }}</p>
-    <div v-if="confirming" role="group" aria-labelledby="rescan-question" class="flex flex-col gap-3 rounded-2xl bg-white p-4 stage:gap-5 stage:p-8">
-      <p id="rescan-question" class="m-0 text-sm stage:text-[26px]">
+    <p v-if="leftOutNote" class="m-0 text-sm text-ink-2">{{ leftOutNote }}</p>
+    <div v-if="confirming" role="group" aria-labelledby="rescan-question" class="flex flex-col gap-3 rounded-2xl bg-white p-4">
+      <p id="rescan-question" class="m-0 text-sm">
         {{ confirming === 'unscanned' ? 'Scan' : 'Re-scan' }} {{ sweepCount }} {{ sweepCount === 1 ? 'company' : 'companies' }}, up to
         {{ pages }} pages each? Each scan also uses the language model, so this spends part of the monthly budget.
       </p>
@@ -119,26 +119,26 @@ function submit(): void {
         <button type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="confirming = null">Cancel</button>
       </div>
     </div>
-    <div v-if="summary || progress" class="flex flex-col gap-3 rounded-2xl bg-white p-4 stage:gap-5 stage:p-8" data-testid="rescan-progress">
+    <div v-if="summary || progress" class="flex flex-col gap-3 rounded-2xl bg-white p-4" data-testid="rescan-progress">
       <template v-if="progress">
-        <p class="m-0 text-base font-semibold stage:text-[30px]" aria-live="polite">{{ progress.text }}</p>
+        <p class="m-0 text-base font-semibold" aria-live="polite">{{ progress.text }}</p>
         <ProgressBar thick :fraction="progress.fraction" label="Re-scan progress" :text="`${progress.settled} of ${progress.total} finished`" />
-        <ul v-if="progress.running.length > 0" aria-label="Scanning now" class="m-0 flex list-none flex-col gap-3 p-0 stage:gap-5">
-          <li v-for="scan in progress.running" :key="scan.id" class="flex flex-col gap-1.5 stage:gap-2.5">
-            <div class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm stage:text-[26px]">
+        <ul v-if="progress.running.length > 0" aria-label="Scanning now" class="m-0 flex list-none flex-col gap-3 p-0">
+          <li v-for="scan in progress.running" :key="scan.id" class="flex flex-col gap-1.5">
+            <div class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
               <RouterLink :to="{ path: `/scan/${scan.id}`, query: route.query }" class="font-medium">{{ companyOf(scan) }}</RouterLink>
               <span class="text-ink-2">{{ scanProgress(scan).label }}</span>
             </div>
             <ProgressBar :fraction="scanProgress(scan).fraction" :label="`Scan of ${companyOf(scan)}`" :text="scanProgress(scan).label" />
           </li>
         </ul>
-        <p v-if="progress.waiting > 0" class="m-0 text-sm text-ink-2 stage:text-[26px]">
+        <p v-if="progress.waiting > 0" class="m-0 text-sm text-ink-2">
           {{ progress.waiting === 1 ? '1 company waits its turn.' : `${progress.waiting} companies wait their turn.` }}
         </p>
       </template>
-      <p v-if="summary" class="m-0 text-sm text-ink-2 stage:text-[26px]">{{ summary }}</p>
+      <p v-if="summary" class="m-0 text-sm text-ink-2">{{ summary }}</p>
     </div>
-    <p v-if="rescanError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[26px]">{{ rescanError }}</p>
+    <p v-if="rescanError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ rescanError }}</p>
     <button
       type="button"
       :aria-expanded="adding"
@@ -150,8 +150,8 @@ function submit(): void {
       Add a company
     </button>
     <div v-show="adding" id="add-company">
-      <form novalidate aria-label="Add a company" class="mt-3 flex flex-col gap-3 stage:mt-5 stage:gap-4" @submit.prevent="submit">
-        <label class="flex flex-col gap-1.5 text-sm text-ink-2 stage:text-[26px]">
+      <form novalidate aria-label="Add a company" class="mt-3 flex flex-col gap-3" @submit.prevent="submit">
+        <label class="flex flex-col gap-1.5 text-sm text-ink-2">
           Company name
           <input
             v-model="name"
@@ -162,7 +162,7 @@ function submit(): void {
             :class="[FIELD, formError?.field === 'name' ? 'border-orange-ink' : 'border-grey']"
           />
         </label>
-        <label class="flex flex-col gap-1.5 text-sm text-ink-2 stage:text-[26px]">
+        <label class="flex flex-col gap-1.5 text-sm text-ink-2">
           Company website
           <input
             v-model="website"
@@ -174,13 +174,13 @@ function submit(): void {
             :class="[FIELD, formError?.field === 'url' ? 'border-orange-ink' : 'border-grey']"
           />
         </label>
-        <p v-if="formError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[26px]">{{ formError.message }}</p>
-        <p v-if="addError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[26px]">{{ addError }}</p>
+        <p v-if="formError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ formError.message }}</p>
+        <p v-if="addError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ addError }}</p>
         <div class="flex flex-wrap items-center gap-3">
           <button type="submit" :disabled="isAdding" :class="BUTTON" class="border-black bg-black text-white hover:bg-ink-2 disabled:opacity-70">
             {{ isAdding ? 'Adding…' : 'Add company' }}
           </button>
-          <span class="text-sm font-medium stage:text-[26px]" aria-live="polite">{{ added }}</span>
+          <span class="text-sm font-medium" aria-live="polite">{{ added }}</span>
         </div>
       </form>
     </div>

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { PlanTarget } from '../../../infrastructure/api/types.gen'
 import BenefitEffortChart from '../../../shared/ui/charts/BenefitEffortChart.vue'
-import SectionView from '../../shell/components/SectionView.vue'
+import PageView from '../../shell/components/PageView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { usePlan } from '../composables/usePlan'
 import { benefitText, comparison, compareLine, dotTip, effortText, rankOpen, scoreDots, SORTS, type Ranked, type Sort } from '../domain/recommendations'
@@ -57,7 +57,7 @@ const button = 'inline-flex min-h-12 items-center rounded-full border-2 border-b
 </script>
 
 <template>
-  <SectionView section="recommendations" title="Start with the changes that help Tribelt most.">
+  <PageView section="recommendations" title="Start with the changes that help Tribelt most.">
     <template #lede>
       <p class="m-0 max-w-[62ch] text-lg text-ink-2">
         Each recommendation is ranked by how much it helps against how much work it takes. Mark one as done and the rest move up.
@@ -240,5 +240,5 @@ const button = 'inline-flex min-h-12 items-center rounded-full border-2 border-b
         <p v-else class="m-0 text-sm text-ink-2">The targets are shown on the overview. Raise one when it has been met.</p>
       </section>
     </div>
-  </SectionView>
+  </PageView>
 </template>

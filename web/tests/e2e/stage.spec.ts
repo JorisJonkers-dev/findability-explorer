@@ -2,9 +2,9 @@ import { expect, test } from './fixtures'
 
 test.skip(({ isMobile }) => isMobile, 'the stage is for large windows; the phone project checks the stacked page')
 
-// Plain pages: the overview, a number and Buyers scroll like a page, outside the stage.
-const PLAIN = ['/', '/buyers', '/numbers/aiShareOfVoice', '/ai-search', '/ai-search/answers', '/ai-search/readiness']
-const VIEWS = ['/', '/ai-search', '/ai-search/answers', '/ai-search/readiness', '/competitors', '/terms', '/terms/all', '/terms/families/eyelink', '/recommendations', '/buyers', '/numbers/aiShareOfVoice']
+// Every page scrolls like a page, outside the stage, except the settings, which are still drawn on it.
+const STAGE = ['/settings']
+const VIEWS = ['/', '/ai-search', '/ai-search/answers', '/ai-search/readiness', '/competitors', '/terms', '/terms/all', '/terms/families/eyelink', '/recommendations', '/buyers', '/numbers/aiShareOfVoice', ...STAGE]
 
 // The stage grows to the window's aspect, so a window that is not 16:9 has no white bands.
 for (const viewport of [
@@ -26,7 +26,7 @@ for (const viewport of [
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
         expect(overflow, path).toBe(0)
-        if (PLAIN.includes(path)) continue
+        if (!STAGE.includes(path)) continue
         const stage = await page.locator('.stage-focus').boundingBox()
         expect(stage?.width ?? 0, path).toBeCloseTo(viewport.width, 0)
         expect(stage?.height ?? 0, path).toBeCloseTo(viewport.height, 0)

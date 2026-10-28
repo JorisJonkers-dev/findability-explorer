@@ -51,51 +51,51 @@ const PHRASE: Record<ChangeKind, string> = { added: 'font-semibold', removed: 't
 </script>
 
 <template>
-  <section aria-labelledby="compare-title" class="flex flex-col gap-4 stage:min-h-0 stage:gap-7">
+  <section aria-labelledby="compare-title" class="flex flex-col gap-4">
     <SectionHeading id="compare-title">Compare two scans</SectionHeading>
-    <p v-if="finished.length < 2" class="m-0 text-ink-2 stage:text-[30px]">Two finished scans are needed to compare. Re-scan the company to get a second.</p>
+    <p v-if="finished.length < 2" class="m-0 text-ink-2">Two finished scans are needed to compare. Re-scan the company to get a second.</p>
     <template v-else>
-      <div class="grid grid-cols-2 gap-3 stage:gap-6">
-        <label class="flex flex-col gap-1.5 text-sm text-ink-2 stage:gap-2 stage:text-[26px]">
+      <div class="grid grid-cols-2 gap-3">
+        <label class="flex flex-col gap-1.5 text-sm text-ink-2">
           Older scan
-          <select v-model="from" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-5 stage:text-[28px]">
+          <select v-model="from" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base text-black">
             <option v-for="s in finished" :key="s.id" :value="s.id">{{ scanName(s) }}, {{ scanDate(s) }}</option>
           </select>
         </label>
-        <label class="flex flex-col gap-1.5 text-sm text-ink-2 stage:gap-2 stage:text-[26px]">
+        <label class="flex flex-col gap-1.5 text-sm text-ink-2">
           Newer scan
-          <select v-model="to" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-5 stage:text-[28px]">
+          <select v-model="to" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base text-black">
             <option v-for="s in finished" :key="s.id" :value="s.id">{{ scanName(s) }}, {{ scanDate(s) }}</option>
           </select>
         </label>
       </div>
-      <p v-if="from === to" class="m-0 text-ink-2 stage:text-[28px]">Pick two different scans.</p>
-      <p v-else-if="error" role="alert" class="m-0 text-orange-ink stage:text-[28px]">{{ error }}</p>
-      <p v-else-if="isLoading" class="m-0 text-muted stage:text-[28px]">Comparing…</p>
+      <p v-if="from === to" class="m-0 text-ink-2">Pick two different scans.</p>
+      <p v-else-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
+      <p v-else-if="isLoading" class="m-0 text-muted">Comparing…</p>
       <template v-else-if="comparison && counts">
-        <p class="m-0 flex flex-wrap gap-x-5 gap-y-1 text-sm stage:gap-x-8 stage:text-[28px]" aria-live="polite">
-          <span v-for="kind in KINDS" :key="kind" class="inline-flex items-center gap-2 stage:gap-3">
-            <span aria-hidden="true" class="size-3 rounded-full stage:size-5" :class="MARK[kind]"></span>{{ counts[kind] }} {{ kindLabel(kind).toLowerCase() }}
+        <p class="m-0 flex flex-wrap gap-x-5 gap-y-1 text-sm" aria-live="polite">
+          <span v-for="kind in KINDS" :key="kind" class="inline-flex items-center gap-2">
+            <span aria-hidden="true" class="size-3 rounded-full" :class="MARK[kind]"></span>{{ counts[kind] }} {{ kindLabel(kind).toLowerCase() }}
           </span>
         </p>
         <LanguageFilter :choices="languages" :selected="language" @select="(l) => (language = l)" />
-        <p v-if="groups.length === 0" class="m-0 text-ink-2 stage:text-[28px]">The two scans found the same terms.</p>
-        <section aria-label="AI readiness" class="flex flex-col gap-2 stage:gap-3" data-testid="readiness-changes">
-          <h3 class="m-0 text-base font-semibold stage:text-[32px]">AI readiness</h3>
-          <p v-if="comparison.readiness === undefined" class="m-0 text-sm text-ink-2 stage:text-[26px]">One of the two scans did not record its AI readiness.</p>
-          <p v-else-if="comparison.readiness.length === 0" class="m-0 text-sm text-ink-2 stage:text-[26px]">Nothing changed.</p>
-          <ul v-else class="m-0 flex list-none flex-col gap-1 p-0 text-sm stage:gap-2 stage:text-[26px]">
+        <p v-if="groups.length === 0" class="m-0 text-ink-2">The two scans found the same terms.</p>
+        <section aria-label="AI readiness" class="flex flex-col gap-2" data-testid="readiness-changes">
+          <h3 class="m-0 text-base font-semibold">AI readiness</h3>
+          <p v-if="comparison.readiness === undefined" class="m-0 text-sm text-ink-2">One of the two scans did not record its AI readiness.</p>
+          <p v-else-if="comparison.readiness.length === 0" class="m-0 text-sm text-ink-2">Nothing changed.</p>
+          <ul v-else class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
             <li v-for="c in comparison.readiness" :key="c.field">{{ changeLabel(c) }}</li>
           </ul>
         </section>
-        <div v-scroll-hint class="scroll-hint flex flex-col gap-5 stage:min-h-0 stage:flex-1 stage:gap-8 stage:overflow-y-auto">
-          <section v-for="g in groups" :key="g.group" :aria-label="groupLabel(g.group)" class="flex flex-col gap-2 stage:gap-3">
-            <h3 class="m-0 text-base font-semibold stage:text-[32px]">{{ groupLabel(g.group) }}</h3>
-            <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm stage:gap-2 stage:text-[26px]">
+        <div v-scroll-hint class="scroll-hint flex flex-col gap-5">
+          <section v-for="g in groups" :key="g.group" :aria-label="groupLabel(g.group)" class="flex flex-col gap-2">
+            <h3 class="m-0 text-base font-semibold">{{ groupLabel(g.group) }}</h3>
+            <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
               <template v-for="kind in KINDS" :key="kind">
-                <li v-for="c in g[kind]" :key="`${kind}-${c.phrase}-${c.language}`" class="flex flex-wrap items-baseline gap-x-2.5 stage:gap-x-4">
-                  <span class="inline-flex items-center gap-1.5 self-center rounded-full bg-mist px-2 py-0.5 text-xs font-semibold stage:gap-2.5 stage:px-4 stage:py-1 stage:text-[22px]">
-                    <span aria-hidden="true" class="size-2 rounded-full stage:size-3.5" :class="MARK[kind]"></span>{{ kindLabel(kind) }}
+                <li v-for="c in g[kind]" :key="`${kind}-${c.phrase}-${c.language}`" class="flex flex-wrap items-baseline gap-x-2.5">
+                  <span class="inline-flex items-center gap-1.5 self-center rounded-full bg-mist px-2 py-0.5 text-xs font-semibold">
+                    <span aria-hidden="true" class="size-2 rounded-full" :class="MARK[kind]"></span>{{ kindLabel(kind) }}
                   </span>
                   <span :class="PHRASE[kind]">{{ c.phrase }}</span>
                   <span class="text-muted">({{ c.language }}) {{ changeDetail(c, kind) }}</span>

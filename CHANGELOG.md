@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.11.1](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.11.0...v1.11.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* a clearer AI readiness page, with symbols, hover states and the five checks named ([#88](https://github.com/JorisJonkers-dev/findability-explorer/issues/88)) ([f758518](https://github.com/JorisJonkers-dev/findability-explorer/commit/f7585185edeadaa2a663a114f4a6d08387031f5f))
+* count every competitor on the list, and measure a sitemap by the share of pages it lists ([#90](https://github.com/JorisJonkers-dev/findability-explorer/issues/90)) ([b0ba394](https://github.com/JorisJonkers-dev/findability-explorer/commit/b0ba3944223ba18d2bce8c5e1fe5dbd88f175272))
+* each improvement says in a plain sentence what it improves ([#86](https://github.com/JorisJonkers-dev/findability-explorer/issues/86)) ([f3922f6](https://github.com/JorisJonkers-dev/findability-explorer/commit/f3922f61e47aeba279dd32cfae887a440705836b))
+
 ## [1.11.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.10.0...v1.11.0) (2026-10-27)
 
 

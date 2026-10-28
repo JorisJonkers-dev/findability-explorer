@@ -6,9 +6,9 @@ const ok = { 'GET /api/v1/plan': () => json(planFixture()), 'GET /api/v1/standin
 
 describe('the page of a number', () => {
   it('shows the headline, the key figures, the comparison and what improves it', async () => {
-    const { wrapper } = await mountApp(routes(ok), '/numbers/ai-answers')
+    const { wrapper } = await mountApp(routes(ok), '/numbers/aiShareOfVoice')
     expect(wrapper.get('h1').text()).toBe("Ashworth is ahead with 57%, against Tribelt's 24%.")
-    expect(wrapper.get('header').text()).toContain('Back to Overview')
+    expect(wrapper.findAll('a').some((a) => a.text() === 'Back to Overview')).toBe(true)
     expect(wrapper.text()).toContain("This number is the share of the newest Prompt run's answers that name Tribelt at least once.")
     expect(wrapper.findAll('section[aria-label="Key figures"] > div').map((d) => d.text())).toEqual([
       '24%Tribelt nowTribelt is 60% of the way there.',
@@ -24,15 +24,15 @@ describe('the page of a number', () => {
   })
 
   it('says when nothing improves a number, and marks a done improvement', async () => {
-    const { wrapper } = await mountApp(routes(ok), '/numbers/search-terms')
+    const { wrapper } = await mountApp(routes(ok), '/numbers/termsUsed')
     expect(wrapper.text()).toContain('No recommendation improves this number yet.')
-    const readiness = await mountApp(routes(ok), '/numbers/ai-readiness')
+    const readiness = await mountApp(routes(ok), '/numbers/readinessChecks')
     expect(readiness.wrapper.get('section[aria-labelledby="improves-title"] li').text()).toContain('Done. Improves AI readiness.')
   })
 
   it('goes back to the Overview', async () => {
-    const { wrapper, router } = await mountApp(routes(ok), '/numbers/ai-answers')
-    await wrapper.get('header a[href="/"]').trigger('click')
+    const { wrapper, router } = await mountApp(routes(ok), '/numbers/aiShareOfVoice')
+    await wrapper.findAll('a').find((a) => a.text() === 'Back to Overview')?.trigger('click')
     await settle()
     expect(router.currentRoute.value.fullPath).toBe('/')
   })
@@ -44,7 +44,7 @@ describe('the page of a number', () => {
   })
 
   it('says when the numbers fail to load', async () => {
-    const { wrapper } = await mountApp(routes({ ...ok, 'GET /api/v1/standings': () => problem(500, 'Internal Server Error', 'Down.') }), '/numbers/ai-answers')
+    const { wrapper } = await mountApp(routes({ ...ok, 'GET /api/v1/standings': () => problem(500, 'Internal Server Error', 'Down.') }), '/numbers/aiShareOfVoice')
     expect(wrapper.get('[role="alert"]').text()).toContain('Down.')
   })
 })

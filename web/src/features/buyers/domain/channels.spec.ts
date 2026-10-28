@@ -45,6 +45,15 @@ describe('the figures', () => {
     ])
   })
 
+  it('copes with a missing export, and with a single AI user who got in touch', () => {
+    expect(buyerFigures([], [])[2]).toEqual({ big: '0', text: 'users came from AI assistants, and none of them got in touch' })
+    expect(buyerFigures([5, 5, 1], [1, 1, 1])[2]).toEqual({ big: '1', text: 'user came from AI assistants' })
+  })
+
+  it('says so when one channel brings both the visitors and the contacts', () => {
+    expect(visitorsLine([9, 1, 1], [3, 1, 1])).toBe('Paid search brings the most visitors, and the most who get in touch.')
+  })
+
   it('says which channel brings the visitors and which brings the contacts', () => {
     expect(visitorsLine()).toBe('Paid search brings the most visitors, but organic search brings the visitors who get in touch.')
   })

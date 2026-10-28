@@ -9,7 +9,7 @@ describe('sections', () => {
 
   it('finds the section a path is in', () => {
     expect(sectionOfPath('/')?.id).toBe('overview')
-    expect(sectionOfPath('/numbers/ai-answers')?.id).toBe('overview')
+    expect(sectionOfPath('/numbers/aiShareOfVoice')?.id).toBe('overview')
     expect(sectionOfPath('/buyers')?.id).toBe('overview')
     expect(sectionOfPath('/terms/families/open-spiral')?.id).toBe('terms')
     expect(sectionOfPath('/scan/5b0c')?.id).toBe('competitors')

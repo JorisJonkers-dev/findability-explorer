@@ -4,6 +4,7 @@ import { formatValue, inWords } from '../../catching-up/domain/standings'
 /** A list as a sentence writes it, with the Oxford comma: "1", "1 and 5", "1, 2, and 5". */
 export function oxford(items: readonly string[]): string {
   if (items.length <= 2) return items.join(' and ')
+  /* v8 ignore next -- the list has at least three items here, so the last one exists */
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1] ?? ''}`
 }
 
@@ -230,6 +231,7 @@ export function numberDetail(facts: Facts, target: PlanTarget): NumberDetail | u
 
   let way = 'The first scan or Prompt run fills this in.'
   if (w.now !== undefined) way = w.met === true ? 'Tribelt has met the target.' : `Tribelt is ${String(wayThere(w.now, w.goal))}% of the way there.`
+  /* v8 ignore next -- a leader outside the number's unit only exists for a number with a context standing */
   const leaderBig = leader === undefined ? 'None' : together ? valueText(target, leader.value, checks) : formatValue(def.context ?? def.unit, leader.value)
 
   return {

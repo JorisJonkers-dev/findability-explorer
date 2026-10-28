@@ -20,7 +20,7 @@ describe('the Buyers view', () => {
     const { wrapper } = await mountApp(routes({}), '/buyers')
     expect(document.title).toBe('Buyers · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('Paid search buys traffic, not buyers.')
-    expect(wrapper.get('header').text()).toContain('Back to Overview')
+    expect(wrapper.findAll('a').some((a) => a.text() === 'Back to Overview')).toBe(true)
     expect(pills(wrapper).map((b) => [b.text(), b.attributes('aria-pressed')])).toEqual([
       ['Users', 'false'],
       ['Contact rate', 'true'],

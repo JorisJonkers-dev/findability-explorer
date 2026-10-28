@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { json, mountApp, problem, routes } from '../../../testing/mountApp'
+import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { overviewFixture, planFixture, standingsFixture } from '../../../testing/numbersFixtures'
 
 const ok = {
@@ -15,11 +15,11 @@ describe('the Overview', () => {
     expect(wrapper.get('h1').text()).toBe('Tribelt trails the leaders on three of four measures.')
     const rows = wrapper.findAll('section[aria-labelledby="watch-title"] > ul:last-child > li a')
     expect(rows.map((a) => a.attributes('href'))).toEqual([
-      '/numbers/ai-answers',
-      '/numbers/twente-answers',
-      '/numbers/web-citations',
-      '/numbers/ai-readiness',
-      '/numbers/search-terms',
+      '/numbers/aiShareOfVoice',
+      '/numbers/twenteShareOfVoice',
+      '/numbers/citationShare',
+      '/numbers/readinessChecks',
+      '/numbers/termsUsed',
     ])
     expect(rows[0]?.text()).toContain('AI answers that name Tribelt')
     expect(rows[0]?.text()).toContain('24%')
@@ -45,8 +45,8 @@ describe('the Overview', () => {
 
   it('opens a number from its row', async () => {
     const { wrapper, router } = await mountApp(routes(ok), '/')
-    await wrapper.get('a[href="/numbers/ai-readiness"]').trigger('click')
-    await new Promise((r) => setTimeout(r))
-    expect(router.currentRoute.value.fullPath).toBe('/numbers/ai-readiness')
+    await wrapper.get('a[href="/numbers/readinessChecks"]').trigger('click')
+    await settle()
+    expect(router.currentRoute.value.fullPath).toBe('/numbers/readinessChecks')
   })
 })

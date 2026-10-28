@@ -77,9 +77,9 @@ export function buyerFigures(users: readonly number[] = USERS, events: readonly 
 }
 
 /** The overview's line about the channels: which brings the most visitors, and which the visitors who get in touch. */
-export function visitorsLine(): string {
-  const most = peak(USERS)
-  const contact = peak(metric('rate').values)
+export function visitorsLine(users: readonly number[] = USERS, rates: readonly number[] = metric('rate').values): string {
+  const most = peak(users)
+  const contact = peak(rates)
   const first = CHANNELS[most] as string
   if (most === contact) return `${first} brings the most visitors, and the most who get in touch.`
   return `${first} brings the most visitors, but ${(CHANNELS[contact] as string).toLowerCase()} brings the visitors who get in touch.`

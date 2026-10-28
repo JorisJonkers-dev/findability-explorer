@@ -432,10 +432,8 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 		return s.fail(ctx, id, noPages(crawlErr))
 	}
 	// How much of the site its sitemaps cover is known only once the pages are read.
-	if c := domain.CoverageOf(files.Sitemaps, pageURLs(pages)); readErr == nil && c != nil {
-		if err := s.repo.SaveSitemapCoverage(ctx, id, *c); err != nil {
-			return s.abort(ctx, id, fmt.Errorf("save sitemap coverage: %w", err))
-		}
+	if err := s.saveCoverage(ctx, id, files, readErr == nil, pages); err != nil {
+		return s.abort(ctx, id, err)
 	}
 	keywords := domain.Keywords(pages, lexicon, domain.BrandWords(target.URL().Hostname()))
 	if err := s.repo.SaveFindings(ctx, id, keywords, domain.FindKnownTerms(pages, glossary)); err != nil {
@@ -447,6 +445,18 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	}
 	if err := s.repo.Finish(ctx, id, s.now()); err != nil {
 		return s.abort(ctx, id, fmt.Errorf("finish analysis: %w", err))
+	}
+	return nil
+}
+
+// saveCoverage records how many of the pages read the sitemaps list, when the readiness was read.
+func (s *Service) saveCoverage(ctx context.Context, id uuid.UUID, files domain.ReadinessFiles, read bool, pages []domain.Page) error {
+	c := domain.CoverageOf(files.Sitemaps, pageURLs(pages))
+	if !read || c == nil {
+		return nil
+	}
+	if err := s.repo.SaveSitemapCoverage(ctx, id, *c); err != nil {
+		return fmt.Errorf("save sitemap coverage: %w", err)
 	}
 	return nil
 }

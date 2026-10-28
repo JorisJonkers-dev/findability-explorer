@@ -71,8 +71,8 @@ func creditedName(credit string) string {
 // word of its registered name, the most credited first on a tie (CreditNames); empty when no
 // credit fits.
 type Competitor struct {
-	ID     string
-	Credit string
+	ID        string
+	ShortName string
 }
 
 // Maker is a competitor on the list that uses a term, and whether only its newest scan says so.
@@ -104,7 +104,7 @@ func CreditNames(terms []Term, companies []Listed) []Competitor {
 				best, length = credit, len(own)
 			}
 		}
-		out = append(out, Competitor{ID: c.ID, Credit: best})
+		out = append(out, Competitor{ID: c.ID, ShortName: best})
 	}
 	return out
 }
@@ -138,7 +138,7 @@ func (u SiteUse) Makers(t Term) []Maker {
 	found := u.FoundBy[t.Key()]
 	var out []Maker
 	for _, c := range u.Competitors {
-		credited := c.Credit != "" && slices.ContainsFunc(t.UsedBy, func(credit string) bool { return creditedName(credit) == c.Credit })
+		credited := c.ShortName != "" && slices.ContainsFunc(t.UsedBy, func(credit string) bool { return creditedName(credit) == c.ShortName })
 		if scanned := slices.Contains(found, c.ID); credited || scanned {
 			out = append(out, Maker{ID: c.ID, FromScan: !credited})
 		}

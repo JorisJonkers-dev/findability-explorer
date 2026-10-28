@@ -334,7 +334,7 @@ func TestSiteUseKnowsTheCompetitorsOnTheList(t *testing.T) {
 		return []domain.Listed{{ID: "martens", Name: "Märtens GmbH"}}, nil
 	})
 	u, err := svc.SiteUse(t.Context())
-	if err != nil || len(u.Competitors) != 1 || u.Competitors[0].Credit != "Märtens" || len(u.Makers(terms[0])) != 1 {
+	if err != nil || len(u.Competitors) != 1 || u.Competitors[0].ShortName != "Märtens" || len(u.Makers(terms[0])) != 1 {
 		t.Fatalf("SiteUse = %+v, %v", u, err)
 	}
 	svc.WithCompetitors(func(context.Context) ([]domain.Listed, error) { return nil, errBoom })

@@ -57,7 +57,7 @@ func TestMakersAreTheCompetitorsOnTheListThatUseATerm(t *testing.T) {
 		{ID: "added", Name: "Added Belts B.V."},
 	})
 	// The longest credit that fits wins: Osterloh is "Wire Belt Osterloh", not "Wire Belt".
-	want := []domain.Competitor{{ID: "wire-belt", Credit: "Wire Belt"}, {ID: "osterloh", Credit: "Wire Belt Osterloh"}, {ID: "martens", Credit: "Märtens"}, {ID: "added"}}
+	want := []domain.Competitor{{ID: "wire-belt", ShortName: "Wire Belt"}, {ID: "osterloh", ShortName: "Wire Belt Osterloh"}, {ID: "martens", ShortName: "Märtens"}, {ID: "added"}}
 	if !slices.Equal(competitors, want) {
 		t.Fatalf("credit names = %+v", competitors)
 	}

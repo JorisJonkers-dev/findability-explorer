@@ -39,7 +39,7 @@ function started(id: string): void {
       <p v-else-if="isLoading" class="m-0 text-muted">Loading the competitors…</p>
       <template v-else>
         <FigureRow :figures="figures" />
-        <div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] lg:items-start">
+        <div class="grid gap-12 lg:items-start" :class="{ 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]': bars.length > 0 }">
           <FamilyChart v-if="bars.length > 0" :bars="bars" />
           <CompetitorList :rows="rows" :tribelt="tribeltRow" :group="group.map((c) => c.shortName)" :out-of="outOf" />
         </div>

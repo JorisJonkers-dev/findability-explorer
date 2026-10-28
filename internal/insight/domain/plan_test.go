@@ -61,7 +61,7 @@ func TestPlanItemsAreDoneByScanOrByTick(t *testing.T) {
 		t.Errorf("an unticked improvement = %+v", it)
 	}
 	open := domain.Open(items, 5)
-	if len(open) != 5 || open[0].ID != "sitemap-per-language" {
+	if len(open) != 5 || open[0].ID != "buyer-words" {
 		t.Errorf("open = %+v", open)
 	}
 	if none := domain.PlanItems(nil, nil, nil); none[2].Done || none[2].Leader != nil {
@@ -184,5 +184,26 @@ func TestTheCatalogueCountsTheFamiliesAndLanguagesItNames(t *testing.T) {
 	}
 	if domain.InWords(0) != "no" || domain.InWords(10) != "ten" || domain.InWords(11) != "11" || domain.InWords(-1) != "-1" {
 		t.Error("InWords writes small counts in words and others in digits")
+	}
+}
+
+func TestImprovementsAreRankedByBenefitAgainstEffort(t *testing.T) {
+	for _, imp := range domain.Improvements() {
+		if imp.Benefit < domain.ScoreMin || imp.Benefit > domain.ScoreMax || imp.Effort < domain.ScoreMin || imp.Effort > domain.ScoreMax {
+			t.Errorf("%s scores benefit %d and effort %d", imp.ID, imp.Benefit, imp.Effort)
+		}
+	}
+	var ids []string
+	for _, imp := range domain.ByValue(domain.Improvements()) {
+		ids = append(ids, imp.ID)
+	}
+	// The ratio decides; a tie goes to the larger benefit, then to the catalogue's order.
+	want := []string{"submit-search-engines", "llms-files", "buyer-words", "listings", "family-pages", "structured-data", "sitemap-per-language", "markdown-pages"}
+	if !slices.Equal(ids, want) {
+		t.Errorf("by value = %v", ids)
+	}
+	tied := []domain.Improvement{{ID: "a", Benefit: 1, Effort: 1}, {ID: "b", Benefit: 1, Effort: 1}, {ID: "c", Benefit: 2, Effort: 2}}
+	if got := domain.ByValue(tied); got[0].ID != "c" || got[1].ID != "a" || got[2].ID != "b" {
+		t.Errorf("a tie = %v", got)
 	}
 }

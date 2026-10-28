@@ -225,14 +225,15 @@ func TestThePlanIsForEveryoneAndTickedByAdministrators(t *testing.T) {
 	srv := serve(t, a)
 	r := callAs(t, srv, http.MethodGet, "/api/v1/plan", "", "tester")
 	items, _ := r.body["improvements"].([]any)
-	if r.code != http.StatusOK || len(items) != 2 || r.body["catalogueVersion"].(float64) != 1 {
+	if r.code != http.StatusOK || len(items) != 2 || r.body["catalogueVersion"].(float64) != 2 {
 		t.Fatalf("plan = %d %v", r.code, r.body)
 	}
 	first := items[0].(map[string]any)
-	if first["id"] != "submit-search-engines" || first["done"] != true || first["tickedBy"] != "joris" || first["leader"].(map[string]any)["name"] != "Ashworth" {
+	if first["id"] != "submit-search-engines" || first["done"] != true || first["tickedBy"] != "joris" || first["leader"].(map[string]any)["name"] != "Ashworth" ||
+		first["benefit"].(float64) != 4 || first["effort"].(float64) != 1 {
 		t.Errorf("first = %v", first)
 	}
-	if second := items[1].(map[string]any); second["auto"] != true || second["leader"] != nil || second["tickedAt"] != nil {
+	if second := items[1].(map[string]any); second["auto"] != true || second["benefit"].(float64) != 3 || second["effort"].(float64) != 1 || second["leader"] != nil || second["tickedAt"] != nil {
 		t.Errorf("second = %v", second)
 	}
 	watched := r.body["watched"].([]any)

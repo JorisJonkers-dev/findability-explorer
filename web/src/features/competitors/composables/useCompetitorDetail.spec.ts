@@ -45,7 +45,7 @@ describe('useCompetitorDetail', () => {
       ['sitemap', '50%', '85%'],
       ['terms', '2', '1'],
     ])
-    expect(state.measures.value[3]?.text).toContain('of the 3 terms in the map')
+    expect(state.measures.value[3]?.text).toContain('of the 3 terms on the search term list')
     expect(state.latestScan.value?.status).toBe('done')
     expect(state.notFound.value).toBe(false)
   })
@@ -60,7 +60,7 @@ describe('useCompetitorDetail', () => {
     expect(ready?.themText).toBe('Not known')
     expect(sitemap?.themText).toBe('Not known')
     expect(terms?.themText).toBe('Not known')
-    expect(terms?.text).toContain('of the 3 terms in the map')
+    expect(terms?.text).toContain('of the 3 terms on the search term list')
   })
 
   it('has nothing to say before the company is known, or without Tribelt', async () => {

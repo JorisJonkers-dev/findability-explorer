@@ -39,11 +39,11 @@ describe('a scan', () => {
     expect(wrapper.text()).toContain('balanced weave belt, Product')
     const phrases = () => wrapper.findAll('ol[aria-label="Ranked phrases"] li').map((li) => li.text())
     expect(phrases()).toEqual([
-      expect.stringMatching(/^1metal conveyor belts, Broad.*In the map$/),
+      expect.stringMatching(/^1metal conveyor belts, Broad.*Already on our list$/),
       expect.stringMatching(/^2förderbänder, Broad.*New term$/),
       expect.stringMatching(/^3spiral belts, Product.*New term$/),
     ])
-    await pill(wrapper, 'Which phrases', 'In the map').trigger('click')
+    await pill(wrapper, 'Which phrases', 'Already on our list').trigger('click')
     expect(phrases()).toHaveLength(1)
     await pill(wrapper, 'Which phrases', 'New terms').trigger('click')
     expect(phrases()).toHaveLength(2)

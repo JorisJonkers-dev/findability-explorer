@@ -217,13 +217,13 @@ export function measuresOf(input: Known & Coverage & Terms): Measure[] {
     },
     {
       id: 'terms',
-      label: 'Search terms from the map on its site',
+      label: 'Search terms from the list on its site',
       them: input.terms,
       us: input.tribeltTerms,
       themText: count(input.terms),
       usText: count(input.tribeltTerms),
       scale: scaled(input.terms, input.tribeltTerms, 1),
-      text: `tribelt.nl uses ${count(input.tribeltTerms)} of the ${count(input.mapTerms)} terms in the map. ${name}’s site uses ${count(input.terms)}.`,
+      text: `tribelt.nl uses ${count(input.tribeltTerms)} of the ${count(input.mapTerms)} terms on the search term list. ${name}’s site uses ${count(input.terms)}.`,
       path: '/terms',
       pathLabel: 'Open the search terms',
     },
@@ -240,7 +240,7 @@ export function detailFigures(measures: readonly Measure[]): Figure[] {
   const texts: Partial<Record<Measure['id'], string>> = {
     answers: 'of AI answers name it',
     ready: 'AI readiness checks passed',
-    terms: 'search terms from the map on its site',
+    terms: 'search terms from the list on its site',
   }
   return measures.flatMap((m) => {
     const text = texts[m.id]

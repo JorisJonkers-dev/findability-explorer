@@ -140,7 +140,7 @@ describe('the phrases', () => {
     expect(phrases(mixed, { language: '', singleWords: false, kind: 'inMap' }).map((p) => p.phrase)).toEqual([
       'metal conveyor belts',
     ])
-    expect(PHRASE_KINDS.map((k) => k.label)).toEqual(['All', 'New terms', 'In the map'])
+    expect(PHRASE_KINDS.map((k) => k.label)).toEqual(['All', 'New terms', 'Already on our list'])
   })
 
   it('shows a score in whole points', () => {

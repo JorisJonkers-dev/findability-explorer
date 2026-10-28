@@ -16,7 +16,7 @@ describe('the measure chart', () => {
       'AI answers that name it: Twentebelt 40%, Tribelt 20%.',
       'AI readiness checks passed: Twentebelt 3 of 5, Tribelt 5 of 5.',
       'Pages its sitemap lists: Twentebelt Not known, Tribelt 85%.',
-      'Search terms from the map on its site: Twentebelt 12, Tribelt 1,200.',
+      'Search terms from the list on its site: Twentebelt 12, Tribelt 1,200.',
     ])
   })
 
@@ -36,7 +36,7 @@ describe('the measure chart', () => {
     expect(reading.getComponent(RouterLinkStub).props('to')).toBe('/ai-search/answers')
     await buttons[3]?.trigger('click')
     expect(buttons.map((b) => b.attributes('aria-pressed'))).toEqual(['false', 'false', 'false', 'true'])
-    expect(reading.text()).toContain('tribelt.nl uses 1,200 of the 2,400 terms in the map.')
+    expect(reading.text()).toContain('tribelt.nl uses 1,200 of the 2,400 terms on the search term list.')
     expect(reading.getComponent(RouterLinkStub).text()).toBe('Open the search terms')
   })
 

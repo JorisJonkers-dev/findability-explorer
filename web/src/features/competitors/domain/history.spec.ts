@@ -61,9 +61,9 @@ describe('the profile', () => {
   it('says since when a term is found, and what the map makes of it', () => {
     expect(sinceLabel(3, 3)).toBe('new in this scan')
     expect(sinceLabel(1, 3)).toBe('since scan 1')
-    expect(mapLabel({ inMap: true })).toBe('in the map')
-    expect(mapLabel({ inMap: false, closestTerm: 'eyelink belt' })).toBe('not in the map, closest: eyelink belt')
-    expect(mapLabel({ inMap: false })).toBe('not in the map')
+    expect(mapLabel({ inMap: true })).toBe('on the search term list')
+    expect(mapLabel({ inMap: false, closestTerm: 'eyelink belt' })).toBe('not on the search term list, closest: eyelink belt')
+    expect(mapLabel({ inMap: false })).toBe('not on the search term list')
   })
 })
 

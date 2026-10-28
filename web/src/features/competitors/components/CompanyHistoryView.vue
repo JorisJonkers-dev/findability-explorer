@@ -28,7 +28,7 @@ function columnProps(i: number) {
 </script>
 
 <template>
-  <SectionView section="competitors" :title="title" :back="{ to: companyPath(companyId), label: 'Back to the latest scan' }" :source="['Scans: live, from this app', 'Grouped by the terminology map']">
+  <SectionView section="competitors" :title="title" :back="{ to: companyPath(companyId), label: 'Back to the latest scan' }" :source="['Scans: live, from this app', 'Grouped by the search term list']">
     <div
       class="flex flex-col gap-10 stage:grid stage:min-h-0 stage:grid-rows-[minmax(0,1fr)] stage:gap-x-24 stage:gap-y-10"
       :style="{ gridTemplateColumns: columns.template.value }"

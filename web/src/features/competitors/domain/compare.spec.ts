@@ -165,7 +165,7 @@ describe('measuresOf', () => {
     expect(m.sitemap).toMatchObject({ themText: '50%', usText: '85%', scale: 1 })
     expect(m.sitemap?.text).toBe('Twentebelt’s sitemap lists 50% of the pages its newest scan read, against 85% on tribelt.nl.')
     expect(m.terms).toMatchObject({ themText: '12', usText: '1,200', scale: 1200 })
-    expect(m.terms?.text).toBe('tribelt.nl uses 1,200 of the 2,400 terms in the map. Twentebelt’s site uses 12.')
+    expect(m.terms?.text).toBe('tribelt.nl uses 1,200 of the 2,400 terms on the search term list. Twentebelt’s site uses 12.')
   })
 
   it('says what is not known', () => {
@@ -197,7 +197,7 @@ describe('detailFigures', () => {
     expect(detailFigures(measures)).toEqual([
       { big: '40%', text: 'of AI answers name it', note: 'Tribelt: 20%.' },
       { big: '3 of 5', text: 'AI readiness checks passed', note: 'Tribelt: 5 of 5.' },
-      { big: '12', text: 'search terms from the map on its site', note: 'Tribelt: 1,200.' },
+      { big: '12', text: 'search terms from the list on its site', note: 'Tribelt: 1,200.' },
     ])
   })
 })

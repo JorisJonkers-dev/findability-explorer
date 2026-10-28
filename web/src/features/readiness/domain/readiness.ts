@@ -177,15 +177,15 @@ export const BAND_LABELS: Record<Band, string> = {
 export type Gap = 'any' | `bot:${string}` | ReadinessCheck
 
 export const GAPS: readonly { value: Gap; label: string }[] = [
-  { value: 'any', label: 'Any gap' },
-  ...BOTS.map((b) => ({ value: `bot:${b.token}` as const, label: `Blocks ${b.token}` })),
-  { value: 'sitemapDeclared', label: 'No sitemap in robots.txt' },
-  { value: 'sitemapLanguages', label: 'Sitemaps miss a language' },
-  { value: 'llmsTxt', label: 'No llms.txt' },
-  { value: 'markdown', label: 'No Markdown versions' },
-  { value: 'organization', label: 'No Organization data' },
-  { value: 'product', label: 'No Product data' },
-  { value: 'languages', label: 'Misses a language version' },
+  { value: 'any', label: 'Companies with any gap' },
+  ...BOTS.map((b) => ({ value: `bot:${b.token}` as const, label: `Companies that block ${b.token}` })),
+  { value: 'sitemapDeclared', label: 'Companies with no sitemap in robots.txt' },
+  { value: 'sitemapLanguages', label: 'Companies whose sitemaps leave out Dutch, German or English' },
+  { value: 'llmsTxt', label: 'Companies with no llms.txt' },
+  { value: 'markdown', label: 'Companies with no Markdown versions' },
+  { value: 'organization', label: 'Companies with no Organization structured data' },
+  { value: 'product', label: 'Companies with no Product structured data' },
+  { value: 'languages', label: 'Companies whose site leaves out Dutch, German or English' },
 ]
 
 /** Whether a row has the gap; a row not checked has none. */
@@ -216,12 +216,14 @@ export function tableRows(rows: readonly AiReadinessRow[], sort: Sort<ReadinessC
 
 /** "Blocks GPTBot and ClaudeBot" and the like: what a site's robots.txt does to the crawlers, in a line. */
 export function policySummary(r: AiReadiness | undefined): string {
-  if (!r) return 'Not checked yet: the next scan records it.'
+  if (!r) return 'Not checked yet. The next scan will check it.'
   if (r.robots === 'unreachable') return 'Its robots.txt could not be read, so its crawler policy is unknown.'
   const blocked = r.bots.filter((b) => b.access === 'blocked').map((b) => b.bot)
   const partly = r.bots.filter((b) => b.access === 'partly').length
-  if (blocked.length > 0) return `Blocks ${joinWords(blocked)}${partly > 0 ? `, and keeps some pages from ${String(partly)} more` : ''}.`
-  return partly > 0 ? `Lets every search and AI crawler in, keeping some pages from ${String(partly)}.` : 'Lets every search and AI crawler in.'
+  const more = (n: number) => (n === 1 ? '1 more crawler' : `${String(n)} more crawlers`)
+  const some = (n: number) => (n === 1 ? '1 crawler' : `${String(n)} crawlers`)
+  if (blocked.length > 0) return `Blocks ${joinWords(blocked)}${partly > 0 ? `, and closes some pages to ${more(partly)}` : ''}.`
+  return partly > 0 ? `Lets every search and AI crawler in, but closes some pages to ${some(partly)}.` : 'Lets every search and AI crawler in.'
 }
 
 /** How many of the report's recommendations a site follows: "Follows 14 of 17 recommendations." */

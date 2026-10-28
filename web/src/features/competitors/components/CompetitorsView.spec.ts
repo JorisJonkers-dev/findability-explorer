@@ -503,7 +503,7 @@ describe('the AI readiness on a company card', () => {
 
   it('says when no scan has checked the company yet', async () => {
     const { wrapper } = await mountApp(api({ 'GET /api/v1/ai-readiness': () => json(readinessTable([])) }), '/competitors')
-    expect(wrapper.get('[data-testid="company-readiness"]').text()).toContain('Not checked yet: the next scan records it.')
+    expect(wrapper.get('[data-testid="company-readiness"]').text()).toContain('Not checked yet. The next scan will check it.')
   })
 })
 

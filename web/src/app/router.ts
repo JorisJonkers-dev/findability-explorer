@@ -8,11 +8,11 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
   const router = createRouter({
     history,
     routes: [
-      { path: '/', name: 'home', component: () => import('../features/home/components/HomePoster.vue'), meta: { title: 'Overview' } },
+      { path: '/', name: 'home', component: () => import('../features/home/components/HomeView.vue'), meta: { title: 'Overview' } },
       {
         path: '/numbers/:measure',
         name: 'number',
-        component: () => import('../features/home/components/NumberDetailView.vue'),
+        component: () => import('../features/numbers/components/NumberDetailView.vue'),
         props: (to) => ({ measure: String(to.params.measure) }),
         meta: { title: 'Number' },
       },

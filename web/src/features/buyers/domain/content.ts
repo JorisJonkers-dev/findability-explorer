@@ -16,6 +16,8 @@ export const USERS = [18_772, 640, 13] as const
 export const RETURNING_USERS = [254, 166, 3] as const
 /** Key events: the contacts (quotation requests, calls, e-mails) Google Analytics counted. */
 export const KEY_EVENTS = [11, 12, 0] as const
+/** Paid search's share of every user of the website, in percent, as the report counts it; the three channels are not all of them. */
+export const PAID_SHARE_OF_ALL_USERS = 78.89
 
 export type MetricId = 'users' | 'rate' | 'time' | 'sessions' | 'returning'
 
@@ -89,24 +91,3 @@ export const GOAL = {
     { label: 'Target', value: '0.5%', fraction: 1, fill: 'target' },
   ] satisfies GoalRow[],
 } as const
-
-/** One bar of the poster's Buyers tile. */
-export type PairBar = { label: string; value: string; fraction: number; fill: 'blue-grey' | 'orange' }
-
-/** The poster's Buyers tile: two pairs of bars, paid against organic. */
-export const HOME_PAIRS: readonly { title: string; bars: readonly PairBar[] }[] = [
-  {
-    title: 'Share of all website users',
-    bars: [
-      { label: 'Paid', value: '78.9%', fraction: 1, fill: 'blue-grey' },
-      { label: 'Organic', value: '2.7%', fraction: 2.69 / 78.89, fill: 'orange' },
-    ],
-  },
-  {
-    title: 'Users who contact Tribelt',
-    bars: [
-      { label: 'Paid', value: '0.04%', fraction: 0.04 / 1.73, fill: 'blue-grey' },
-      { label: 'Organic', value: '1.73%', fraction: 1, fill: 'orange' },
-    ],
-  },
-]

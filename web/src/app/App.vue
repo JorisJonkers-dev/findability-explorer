@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
+import SiteFooter from '../features/shell/components/SiteFooter.vue'
 import { useMe } from '../features/shell/composables/useMe'
 
 const route = useRoute()
@@ -25,4 +26,5 @@ watchEffect(() => {
     <p v-else-if="error" role="alert" class="m-0 p-8 text-lg">{{ error }}</p>
     <p v-else class="m-0 p-8 text-lg text-muted">Signing in…</p>
   </main>
+  <SiteFooter v-if="me" />
 </template>

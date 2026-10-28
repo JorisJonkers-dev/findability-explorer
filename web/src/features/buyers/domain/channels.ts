@@ -1,4 +1,4 @@
-import { CHANNELS, KEY_EVENTS, type Metric, type MetricFormat, METRICS, type MetricId, USERS } from './content'
+import { CHANNELS, KEY_EVENTS, PAID_SHARE_OF_ALL_USERS, type Metric, type MetricFormat, METRICS, type MetricId, USERS } from './content'
 
 /** Seconds as the chart writes them: 22 is "0:22", 64 is "1:04". */
 export function duration(seconds: number): string {
@@ -49,33 +49,38 @@ export function chartLabel(m: Metric): string {
   return `${m.label}: paid search ${paid}, organic search ${organic}, AI assistants ${ai}.`
 }
 
-/** A share as the volume-against-value bars write it; a sliver above nothing is "<0.1%". */
-export function shareLabel(share: number): string {
-  return share > 0 && share < 0.1 ? '<0.1%' : `${share.toFixed(1)}%`
+/** The index of the largest value; the first wins a tie. */
+function peak(values: readonly number[]): number {
+  return values.indexOf(Math.max(...values))
 }
 
-export type VolumeValue = {
-  channel: (typeof CHANNELS)[number]
-  visits: string
-  visitsFraction: number
-  contacts: string
-  contactsFraction: number
+/** The three figures at the top of the page, from the export: the users, the contact rate and the AI assistants. */
+export function buyerFigures(users: readonly number[] = USERS, events: readonly number[] = KEY_EVENTS): { big: string; text: string }[] {
+  const rate = metric('rate')
+  const [paidRate, organicRate] = rate.values
+  const ai = users[2] ?? 0
+  const aiContacts = events[2] ?? 0
+  return [
+    {
+      big: formatValue(users[0] ?? 0, 'count'),
+      text: `users came from paid search, ${String(Math.round(PAID_SHARE_OF_ALL_USERS))}% of all users`,
+    },
+    {
+      big: formatValue(organicRate, 'percent2'),
+      text: `of organic visitors got in touch, against ${formatValue(paidRate, 'percent2')} of paid visitors`,
+    },
+    {
+      big: formatValue(ai, 'count'),
+      text: `${ai === 1 ? 'user came' : 'users came'} from AI assistants${aiContacts === 0 ? ', and none of them got in touch' : ''}`,
+    },
+  ]
 }
 
-/** Of the three channels' visitors: each one's share of the visits and of the contacts. */
-export function volumeAgainstValue(users: readonly number[] = USERS, events: readonly number[] = KEY_EVENTS): VolumeValue[] {
-  const totalUsers = users.reduce((a, b) => a + b, 0)
-  const totalEvents = events.reduce((a, b) => a + b, 0)
-  const share = (part: number, total: number) => (total > 0 ? part / total : 0)
-  return CHANNELS.map((channel, i) => {
-    const visits = share(users[i] as number, totalUsers)
-    const contacts = share(events[i] as number, totalEvents)
-    return {
-      channel,
-      visits: shareLabel(visits * 100),
-      visitsFraction: visits,
-      contacts: shareLabel(contacts * 100),
-      contactsFraction: contacts,
-    }
-  })
+/** The overview's line about the channels: which brings the most visitors, and which the visitors who get in touch. */
+export function visitorsLine(): string {
+  const most = peak(USERS)
+  const contact = peak(metric('rate').values)
+  const first = CHANNELS[most] as string
+  if (most === contact) return `${first} brings the most visitors, and the most who get in touch.`
+  return `${first} brings the most visitors, but ${(CHANNELS[contact] as string).toLowerCase()} brings the visitors who get in touch.`
 }

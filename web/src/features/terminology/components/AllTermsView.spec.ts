@@ -48,11 +48,12 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('the search terms view', () => {
+describe('the page of every term', () => {
   it('ranks the whole map, titled by its size', async () => {
-    const { wrapper } = await mountApp(api, '/terms')
+    const { wrapper } = await mountApp(api, '/terms/all')
     expect(wrapper.get('h1').text()).toBe('5 ways to search for a metal belt.')
-    expect(document.title).toBe('Search terms · Findability Explorer')
+    expect(wrapper.text()).toContain('Back to Search terms')
+    expect(document.title).toBe('Every term · Findability Explorer')
     expect(wrapper.text()).toContain('Terminology map, our research')
     expect(ranked(wrapper)).toEqual(['AISI 304', 'Eyelink belt', 'Drahtösengliederband', 'eye link belt', 'belt tracking'])
     expect(status(wrapper)).toBe('5 of 5 terms')
@@ -64,7 +65,7 @@ describe('the search terms view', () => {
   })
 
   it('charts the languages and kinds, with what Tribelt uses', async () => {
-    const { wrapper } = await mountApp(api, '/terms')
+    const { wrapper } = await mountApp(api, '/terms/all')
     const languages = wrapper.get('[role="group"][aria-label="By language"]').findAll('button')
     expect(languages.map((b) => b.attributes('aria-label'))).toEqual(['English: 3 terms, tribelt.nl uses 1', 'German: 2 terms, tribelt.nl uses 1'])
     expect(languages[0]?.findAll('[aria-hidden="true"] span[style]').map((s) => s.attributes('style'))).toEqual([
@@ -83,7 +84,7 @@ describe('the search terms view', () => {
   })
 
   it("filters the ranking by language from above it, and names Tribelt's term for each", async () => {
-    const { wrapper, router } = await mountApp(api, '/terms')
+    const { wrapper, router } = await mountApp(api, '/terms/all')
     const pills = wrapper.get('[role="group"][aria-label="Language"]')
     expect(pills.findAll('button').map((b) => b.text())).toEqual(['All languages', 'English', 'German'])
     await pills.findAll('button')[2]?.trigger('click')
@@ -100,7 +101,7 @@ describe('the search terms view', () => {
   })
 
   it('filters by a language and a kind, with chips to remove them', async () => {
-    const { wrapper, router } = await mountApp(api, '/terms')
+    const { wrapper, router } = await mountApp(api, '/terms/all')
     await button(wrapper, 'German:').trigger('click')
     await settle()
     expect(router.currentRoute.value.query).toEqual({ language: 'de' })
@@ -121,7 +122,7 @@ describe('the search terms view', () => {
   })
 
   it('lists a company from the heatmap, Tribelt too', async () => {
-    const { wrapper, router } = await mountApp(api, '/terms')
+    const { wrapper, router } = await mountApp(api, '/terms/all')
     const rows = wrapper.get('ul[aria-label="Terms per company and kind"]').findAll('button')
     expect(rows.map((b) => b.attributes('aria-label'))).toEqual([
       'Ashworth: 2 marketing terms, 0 technical terms',
@@ -144,7 +145,7 @@ describe('the search terms view', () => {
   })
 
   it('switches between marketing and technical terms, and shows what Tribelt lacks', async () => {
-    const { wrapper, router } = await mountApp(api, '/terms')
+    const { wrapper, router } = await mountApp(api, '/terms/all')
     const pills = () => wrapper.get('[role="group"][aria-label="Terms"]').findAll('button')
     expect(pills().map((b) => [b.text(), b.attributes('aria-pressed')])).toEqual([
       ['All', 'true'],
@@ -176,7 +177,7 @@ describe('the search terms view', () => {
 
   it('searches once typing pauses, and marks the match', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    const { wrapper, router } = await mountApp(api, '/terms')
+    const { wrapper, router } = await mountApp(api, '/terms/all')
     await wrapper.get('input#terms-q').setValue('drahtösen')
     vi.advanceTimersByTime(SEARCH_DELAY_MS)
     await settle()
@@ -187,7 +188,7 @@ describe('the search terms view', () => {
 
   it("keeps the old terminology page's links working", async () => {
     const { wrapper, router } = await mountApp(api, '/terminology?q=AISI&user=Twentebelt%20(TwenteFlex)')
-    expect(router.currentRoute.value.path).toBe('/terms')
+    expect(router.currentRoute.value.path).toBe('/terms/all')
     expect(router.currentRoute.value.query).toEqual({ q: 'AISI', user: 'Twentebelt (TwenteFlex)' })
     expect((wrapper.get('input#terms-q').element as HTMLInputElement).value).toBe('AISI')
     expect(ranked(wrapper)).toEqual(['AISI 304'])
@@ -195,11 +196,11 @@ describe('the search terms view', () => {
   })
 
   it('says it is loading, and when the map cannot be loaded', async () => {
-    const { wrapper } = await mountApp(routes({ 'GET /api/v1/terms': () => new Promise<Response>(() => undefined) }), '/terms')
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/terms': () => new Promise<Response>(() => undefined) }), '/terms/all')
     expect(wrapper.get('h1').text()).toBe('Ways to search for a metal belt.')
     expect(status(wrapper)).toBe('Loading…')
     wrapper.unmount()
-    const failing = await mountApp(routes({ 'GET /api/v1/terms': () => problem(500, 'Internal Server Error', 'The map is not loaded.') }), '/terms')
+    const failing = await mountApp(routes({ 'GET /api/v1/terms': () => problem(500, 'Internal Server Error', 'The map is not loaded.') }), '/terms/all')
     expect(failing.wrapper.get('[role="alert"]').text()).toBe('The map is not loaded.')
   })
 })

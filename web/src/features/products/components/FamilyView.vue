@@ -57,7 +57,7 @@ const share = computed(() => (product.value ? aiShare(product.value) : undefined
         <section aria-labelledby="terms-title" class="flex min-w-0 flex-col gap-4 stage:min-h-0 stage:gap-8">
           <h2 id="terms-title" class="m-0 font-display text-2xl font-extrabold stage:text-[64px]">How buyers search for it</h2>
           <LanguageFilter :choices="languages" :selected="language" @select="(l) => (language = l)" />
-          <div class="relative overflow-auto stage:min-h-0 stage:flex-1">
+          <div tabindex="0" role="region" aria-labelledby="terms-title" class="relative overflow-auto stage:min-h-0 stage:flex-1">
             <table class="w-full border-collapse text-sm stage:text-[36px]">
               <caption class="sr-only">Search terms for {{ familyLabel(product.family) }}, the most used first</caption>
               <thead>

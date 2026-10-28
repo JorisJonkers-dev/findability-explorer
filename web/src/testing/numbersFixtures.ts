@@ -16,7 +16,7 @@ export function planFixture(): Plan {
     watched: [
       { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, max: 1, met: false },
       { target: 'twenteShareOfVoice', now: 0.2, goal: 0.5, max: 1, met: false },
-      { target: 'citations', now: 3, goal: 20 },
+      { target: 'citationShare', now: 3, goal: 20 },
       { target: 'readinessChecks', now: 3, goal: 5, max: 5, met: false },
       { target: 'termsUsed', now: 45, goal: 35, met: true },
     ],

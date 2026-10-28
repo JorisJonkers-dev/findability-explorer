@@ -44,12 +44,12 @@ const DEFINITIONS: Record<PlanTarget, Definition> = {
     eyeOn: 'twente',
     improvedBy: 'aiShareOfVoice',
   },
-  citations: {
+  citationShare: {
     slug: 'citationShare',
     label: 'Web answers that cite tribelt.nl',
-    counts: "how many of the newest Prompt run's web answers cite tribelt.nl.",
-    unit: 'termsUsed',
-    context: 'citationShare',
+    counts: "the share of the newest Prompt run's web answers that cite tribelt.nl.",
+    unit: 'citationShare',
+    compare: 'citationShare',
     improvedBy: 'citationShare',
   },
   readinessChecks: {

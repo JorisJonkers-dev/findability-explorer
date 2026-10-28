@@ -28,7 +28,7 @@ func Targets() []Target {
 // stood in October 2026 (5%, 16%, 3 of 5 checks, 45 terms and 36%): a target already reached is no
 // goal. 90 terms is twice the 45 of tribelt.nl's scan then, about three more terms per belt family
 // in each of the three languages. The citations are a share, not a count, since runs read
-// different numbers of web answers (ADR-0014).
+// different numbers of web answers (ADR-0015).
 func DefaultTargets() map[Target]float64 {
 	return map[Target]float64{
 		TargetShareOfVoice: 0.40, TargetTwenteShareOfVoice: 0.75, TargetReadiness: float64(ReadinessChecks()), TargetTermsUsed: 90,

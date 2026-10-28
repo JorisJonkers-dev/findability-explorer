@@ -5,11 +5,8 @@ import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
 import { useReadinessTable } from '../../readiness/composables/useReadiness'
 import { familyBars, figuresOf, headline, type Row } from '../domain/compare'
 import { readinessScore } from '../domain/compare'
-import { shareOf } from '../domain/roster'
+import { shareOf, CHIP_COUNT } from '../domain/roster'
 import { useCompanies } from './useCompanies'
-
-/** How many checks the readiness score counts until the standings say; the five that the chips show. */
-const FIVE_CHECKS = 5
 
 /**
  * What the Competitors page says: the competitors on the list, each with its share of AI answers
@@ -23,7 +20,7 @@ export function useCompetitorBoard() {
   const { readinessChecks } = useStandings()
   const { overview } = useOverview()
 
-  const outOf = computed(() => (readinessChecks.value > 0 ? readinessChecks.value : FIVE_CHECKS))
+  const outOf = computed(() => (readinessChecks.value > 0 ? readinessChecks.value : CHIP_COUNT))
   const active = computed(() => companies.value.filter((c) => !c.archived))
   const tribelt = computed(() => active.value.find((c) => c.role === 'tribelt'))
   /** The group's own companies, which the list leaves out. */

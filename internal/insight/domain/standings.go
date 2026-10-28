@@ -210,7 +210,7 @@ const (
 // ScoredChecks are the readiness checks ReadinessScore counts, in the order the pages list them:
 // every AI crawler let in (for search and for training), a sitemap, llms.txt, llms-full.txt,
 // Markdown pages, Organization structured data, pages in Dutch, German and English, and a sitemap
-// in each of the three languages (ADR-0014).
+// in each of the three languages (ADR-0015).
 func ScoredChecks() []ReadinessCheck {
 	return []ReadinessCheck{
 		CheckCrawlersLetIn, CheckHasSitemap, CheckHasLLMs, CheckHasLLMsFull, CheckHasMarkdown,

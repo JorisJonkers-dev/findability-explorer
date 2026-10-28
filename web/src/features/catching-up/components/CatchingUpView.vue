@@ -75,7 +75,7 @@ const LEGEND = [
             <span class="font-display text-3xl leading-none font-semibold text-orange-ink stage:text-[72px]">{{ i + 1 }}</span>
             <span class="flex flex-col gap-1">
               <strong class="font-semibold stage:text-[36px]">{{ it.title }}</strong>
-              <span class="text-sm text-ink-2 stage:text-[28px]">Moves {{ it.moves }}.</span>
+              <span class="text-sm text-ink-2 stage:text-[28px]">{{ it.moves }}</span>
               <span class="text-sm font-medium stage:text-[28px]">{{ statusLine(it, termsFrom) }}</span>
             </span>
             <RouterLink v-if="it.leader" :to="companyPath(it.leader.competitorId)" class="flex flex-col text-right no-underline">

@@ -24,7 +24,8 @@ const (
 )
 
 // Improvement is one item of the plan's ordered list: what to do, why, how, when it is done, the
-// measure it moves, and how a scan checks it, if one can.
+// measure it moves (Moves says what it improves, as a sentence), and how a scan checks it, if one
+// can.
 type Improvement struct {
 	ID       string
 	Title    string
@@ -40,7 +41,7 @@ type Improvement struct {
 func Improvements() []Improvement {
 	return []Improvement{
 		{
-			ID: "submit-search-engines", Title: "Submit tribelt.nl to Google and Bing", Moves: "AI answers in Gemini and Copilot",
+			ID: "submit-search-engines", Title: "Submit tribelt.nl to Google and Bing", Moves: "Helps Tribelt appear in Gemini and Copilot answers.",
 			Measure: MeasureShareOfVoice, Check: CheckNone,
 			Why: "Gemini answers from Google's index and Copilot from Bing's. A page these search engines don't know cannot turn up in their answers.",
 			Steps: []string{
@@ -51,7 +52,7 @@ func Improvements() []Improvement {
 			DoneWhen: "Both search engines show tribelt.nl as confirmed and have read its sitemap.",
 		},
 		{
-			ID: "sitemap-per-language", Title: "A sitemap for each language", Moves: "the pages search engines know of, in Dutch, German and English",
+			ID: "sitemap-per-language", Title: "A sitemap for each language", Moves: "Helps search engines find every page in Dutch, German and English.",
 			Measure: MeasureSitemapPages, Check: CheckSitemaps,
 			Why: "Search engines and AI crawlers find pages through the sitemap. German and English pages that no sitemap lists are found late, or not at all.",
 			Steps: []string{
@@ -62,7 +63,7 @@ func Improvements() []Improvement {
 			DoneWhen: "The sitemaps of tribelt.nl list pages in Dutch, German and English.",
 		},
 		{
-			ID: "llms-files", Title: "Add llms.txt and llms-full.txt", Moves: "AI readiness",
+			ID: "llms-files", Title: "Add llms.txt and llms-full.txt", Moves: "Improves AI readiness.",
 			Measure: MeasureReadiness, Check: CheckLLMsFiles,
 			Why: "llms.txt gives AI tools a short map of the site in plain text, and llms-full.txt gives them the content itself. Both help an assistant describe Tribelt's belts correctly.",
 			Steps: []string{
@@ -73,7 +74,7 @@ func Improvements() []Improvement {
 			DoneWhen: "tribelt.nl/llms.txt and tribelt.nl/llms-full.txt both open.",
 		},
 		{
-			ID: "markdown-pages", Title: "Offer each belt page as Markdown", Moves: "AI readiness",
+			ID: "markdown-pages", Title: "Offer each belt page as Markdown", Moves: "Improves AI readiness.",
 			Measure: MeasureReadiness, Check: CheckMarkdown,
 			Why: "AI tools read plain text more reliably than a page full of menus and scripts. A Markdown version of a belt page gives them the facts without the clutter.",
 			Steps: []string{
@@ -83,7 +84,7 @@ func Improvements() []Improvement {
 			DoneWhen: "tribelt.nl/index.md opens, or llms.txt links to Markdown pages.",
 		},
 		{
-			ID: "structured-data", Title: "Mark up products and FAQs", Moves: "AI readiness and how answers describe Tribelt",
+			ID: "structured-data", Title: "Mark up products and FAQs", Moves: "Improves AI readiness, and helps AI answers describe Tribelt correctly.",
 			Measure: MeasureReadiness, Check: CheckStructuredData,
 			Why: "Markup tells search engines and AI tools what a page is about: the product, its specifications and the questions it answers. They use it to describe a company in their answers.",
 			Steps: []string{
@@ -94,7 +95,7 @@ func Improvements() []Improvement {
 			DoneWhen: "The pages of tribelt.nl carry both Product and FAQ markup.",
 		},
 		{
-			ID: "buyer-words", Title: "Use the words buyers search for", Moves: "the search terms used on the site",
+			ID: "buyer-words", Title: "Use the words buyers search for", Moves: "Increases the number of search terms tribelt.nl uses.",
 			Measure: MeasureTermsUsed, Check: CheckNone,
 			Why: "Buyers search in their own words, which are often not Tribelt's product names. A page that uses their words turns up in their searches and in AI answers to them.",
 			Steps: []string{
@@ -105,7 +106,7 @@ func Improvements() []Improvement {
 			DoneWhen: "Each belt family's page uses the terms buyers search for most.",
 		},
 		{
-			ID: "family-pages", Title: "One page per belt family in each language", Moves: "answers to German and English questions",
+			ID: "family-pages", Title: "One page per belt family in each language", Moves: "Helps Tribelt appear in answers to German and English questions.",
 			Measure: MeasureShareOfVoice, Check: CheckNone,
 			Why: "Answers to German and English questions draw on pages in those languages. Without a page per belt family in each language, those answers name competitors instead.",
 			Steps: []string{
@@ -116,7 +117,7 @@ func Improvements() []Improvement {
 			DoneWhen: "Each of the five belt families has its own page in all three languages.",
 		},
 		{
-			ID: "listings", Title: "Get listed where answers find sources", Moves: "how often web answers cite tribelt.nl",
+			ID: "listings", Title: "Get listed where answers find sources", Moves: "Makes web answers cite tribelt.nl more often.",
 			Measure: MeasureCitationShare, Check: CheckNone,
 			Why: "Web answers cite sources they trust, such as trade directories, industry associations and articles. A listing there gives answers a reason to cite tribelt.nl.",
 			Steps: []string{

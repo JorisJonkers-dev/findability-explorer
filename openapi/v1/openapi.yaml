@@ -3870,8 +3870,8 @@ components:
         moves:
           type: string
           maxLength: 200
-          description: What it moves, in words.
-          example: AI readiness
+          description: What it improves, as a sentence.
+          example: Improves AI readiness.
         measure:
           $ref: "#/components/schemas/StandingMeasure"
         auto:

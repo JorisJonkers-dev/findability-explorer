@@ -1536,7 +1536,7 @@ export type PlanImprovement = {
      */
     title: string;
     /**
-     * What it moves, in words.
+     * What it improves, as a sentence.
      */
     moves: string;
     measure: StandingMeasure;

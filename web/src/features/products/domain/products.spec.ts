@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import type { Product } from '../../../infrastructure/api/types.gen'
 import { product } from '../../../testing/fixtures'
-import { aiShare, languagesOf, productHeadline, shareText, standoutText, topTerm } from './products'
+import {
+  aiShare,
+  familyHeadline,
+  familyLede,
+  familyTitle,
+  SELLERS_SHOWN,
+  shareText,
+  termLanguages,
+  termsOnlyOthers,
+  tribeltCalls,
+  visibleSellers,
+} from './products'
+
+const sellers = (n: number): Product['sellers'] => Array.from({ length: n }, (_, i) => ({ competitorId: `c${String(i)}`, name: `C${String(i)}`, names: ['x'] }))
 
 describe('a belt family', () => {
   it('has a share of answers naming Tribelt, once a run asked about it', () => {
@@ -11,36 +24,42 @@ describe('a belt family', () => {
     expect(shareText(undefined)).toBe('–')
   })
 
-  it('has a most used term and languages, Dutch, German and English first', () => {
-    expect(topTerm(product())).toBe('draadogenband')
-    expect(topTerm(product({ terms: [] }))).toBeUndefined()
-    expect(languagesOf(product())).toEqual(['nl', 'de', 'en', 'fr'])
-    expect(languagesOf(product({ terms: [{ term: 'b', language: 'sv', tier: 'product', usedBy: 1, usedByTribelt: false }, { term: 'a', language: 'fr', tier: 'product', usedBy: 1, usedByTribelt: false }] }))).toEqual(['fr', 'sv'])
+  it('has a title in the list of families', () => {
+    expect(familyTitle('eyelink')).toBe('Eyelink')
+    expect(familyTitle('tri_flex_turn_curve')).toBe('Tri-Flex, the curve-going belt')
   })
 
-  it('heads its page with who sells it and where buyers search', () => {
-    expect(productHeadline(product())).toBe('Eyelink. One competitor sells it, and buyers search for it in four languages.')
-    expect(productHeadline(product({ sellers: [...product().sellers, ...product().sellers], terms: [product().terms[0] as Product['terms'][number]] }))).toBe(
-      'Eyelink. Two competitors sell it, and buyers search for it in one language.',
-    )
-    expect(productHeadline(product({ terms: [] }))).toBe('Eyelink. One competitor sells it.')
+  it('says what Tribelt calls it, if anything', () => {
+    expect(tribeltCalls(product())).toBe('Tribelt calls it Draadogenbanden')
+    expect(tribeltCalls(product({ tribeltNames: ['A', 'B', 'C'] }))).toBe('Tribelt calls it A, B, and C')
+    expect(tribeltCalls(product({ tribeltNames: [] }))).toBe('Tribelt names none for it yet')
+    expect(familyLede(product())).toBe('Tribelt calls it Draadogenbanden.')
+    expect(familyLede(product({ tribeltNames: [] }))).toBe('Tribelt names none for it yet.')
   })
-})
 
-describe('what stands out', () => {
-  const products = [product(), product({ family: 'other', termsUsed: 0, sellers: [] })]
+  it('heads its page with how many competitors sell it', () => {
+    expect(familyHeadline(product())).toBe('One competitor sells eyelink belts.')
+    expect(familyHeadline(product({ family: 'open_spiral', sellers: sellers(3) }))).toBe('Three competitors sell open spiral belts.')
+    expect(familyHeadline(product({ sellers: sellers(12) }))).toBe('12 competitors sell eyelink belts.')
+    expect(familyHeadline(product({ family: 'other', sellers: [] }))).toBe('No competitor sells other belts.')
+  })
 
-  it('is written from the data', () => {
-    expect(standoutText({ finding: 'crowded', family: 'eyelink' }, products)).toEqual({
-      lead: 'Most competitors sell Eyelink.',
-      rest: '1 competitor sells it. tribelt.nl uses 1 of its 4 search terms.',
-    })
-    expect(standoutText({ finding: 'fewestTerms', family: 'other' }, products)).toEqual({
-      lead: 'tribelt.nl uses the fewest search terms for Other belts.',
-      rest: 'tribelt.nl uses none of its 4 search terms.',
-    })
-    expect(standoutText({ finding: 'bestInAI', family: 'eyelink' }, products)).toEqual({ lead: 'AI answers name Tribelt most for Eyelink.', rest: '30% of the answers about it name Tribelt.' })
-    expect(standoutText({ finding: 'bestInAI', family: 'closed_spiral' }, products).rest).toBe('– of the answers about it name Tribelt.')
-    expect(standoutText({ finding: 'crowded', family: 'closed_spiral' }, products).rest).toBe('0 competitors sell it.')
+  it('counts the terms only competitors use', () => {
+    expect(termsOnlyOthers(product())).toBe(3)
+    expect(termsOnlyOthers(product({ termsUsed: 9 }))).toBe(0)
+  })
+
+  it('shows the first sellers, or all of them when asked', () => {
+    const many = sellers(SELLERS_SHOWN + 2)
+    expect(visibleSellers(many, false)).toHaveLength(SELLERS_SHOWN)
+    expect(visibleSellers(many, true)).toEqual(many)
+    expect(visibleSellers(many, true)).not.toBe(many)
+  })
+
+  it('names the languages of its terms, Dutch, German, and English first', () => {
+    expect(termLanguages(product())).toBe('Terms in Dutch, German, English, and French.')
+    expect(termLanguages(product({ terms: [] }))).toBe('')
+    const t = (language: string) => ({ term: language, language, tier: 'product' as const, usedBy: 1, usedByTribelt: false })
+    expect(termLanguages(product({ terms: [t('sv'), t('fr'), t('en')] }))).toBe('Terms in English, French, and Swedish.')
   })
 })

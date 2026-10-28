@@ -81,6 +81,7 @@ const sliceColour = (value: string, tone: string): string => (value === pickedSl
                 :aria-label="`${s.label}: ${String(s.count)} terms`"
                 class="flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-xl border-2 bg-transparent px-3.5 text-black hover:bg-mist stage:min-h-[128px] stage:gap-8 stage:rounded-[32px] stage:border-[6px] stage:px-9"
                 :class="s.value === pickedSlice?.value ? 'border-black bg-white' : 'border-transparent'"
+                @click="chosen = s.value"
               >
                 <span aria-hidden="true" class="size-3.5 flex-none rounded-[4px] stage:size-9" :style="{ background: sliceColour(s.value, s.tone) }"></span>
                 <span class="flex-1 text-left text-base font-semibold stage:text-[44px]">{{ s.label }}</span>

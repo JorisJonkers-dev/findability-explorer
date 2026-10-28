@@ -3957,7 +3957,7 @@ components:
       description: One improvement of the plan.
       type: object
       additionalProperties: false
-      required: [id, title, moves, measure, auto, done, why, steps, doneWhen, parts]
+      required: [id, title, moves, measure, benefit, effort, auto, done, why, steps, doneWhen, parts]
       properties:
         id:
           type: string
@@ -3977,6 +3977,20 @@ components:
           example: Improves AI readiness.
         measure:
           $ref: "#/components/schemas/StandingMeasure"
+        benefit:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+          description: How much it helps, from 1 (very small) to 5 (very large).
+          example: 4
+        effort:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+          description: How much work it takes, from 1 (hours) to 5 (several weeks).
+          example: 1
         auto:
           type: boolean
           description: Whether the latest scan of tribelt.nl decides that it is done.
@@ -4115,7 +4129,7 @@ components:
         improvements:
           type: array
           maxItems: 50
-          description: The improvements, in order.
+          description: The improvements, best value first (the higher the benefit against the effort, the earlier).
           items:
             $ref: "#/components/schemas/PlanImprovement"
         watched:

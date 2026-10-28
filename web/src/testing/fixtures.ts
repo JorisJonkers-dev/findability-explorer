@@ -333,5 +333,7 @@ export const details = {
   why: 'It helps.',
   steps: ['Do the first thing.', 'Do the second thing.'],
   doneWhen: 'It is in place.',
+  benefit: 3,
+  effort: 2,
   parts: [] as { name: string; present: boolean }[],
 }

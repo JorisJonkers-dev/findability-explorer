@@ -1609,6 +1609,14 @@ export type PlanImprovement = {
     moves: string;
     measure: StandingMeasure;
     /**
+     * How much it helps, from 1 (very small) to 5 (very large).
+     */
+    benefit: number;
+    /**
+     * How much work it takes, from 1 (hours) to 5 (several weeks).
+     */
+    effort: number;
+    /**
      * Whether the latest scan of tribelt.nl decides that it is done.
      */
     auto: boolean;
@@ -1711,7 +1719,7 @@ export type Plan = {
      */
     catalogueVersion: number;
     /**
-     * The improvements, in order.
+     * The improvements, best value first (the higher the benefit against the effort, the earlier).
      */
     improvements: Array<PlanImprovement>;
     /**

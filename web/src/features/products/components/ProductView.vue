@@ -8,7 +8,7 @@ import LanguageFilter from '../../../shared/ui/LanguageFilter.vue'
 import { languageChoices, ofLanguage } from '../../terminology/domain/languages'
 import { scopeName } from '../../prompt-test/domain/results'
 import SectionView from '../../shell/components/SectionView.vue'
-import { companyPath, familyOfSlug, PRODUCT_TABS } from '../../shell/domain/sections'
+import { companyPath, familyOfSlug } from '../../shell/domain/sections'
 import { useProducts } from '../composables/useProducts'
 import { aiShare, productHeadline, shareText } from '../domain/products'
 
@@ -27,8 +27,8 @@ const terms = computed(() => ofLanguage(product.value?.terms ?? [], language.val
 </script>
 
 <template>
-  <SectionView section="products" :title="title" :tabs="PRODUCT_TABS">
-    <p v-if="!family" class="m-0 text-ink-2">Pick a belt family above.</p>
+  <SectionView section="terms" :title="title" :back="{ to: '/terms', label: 'Back to Search terms' }">
+    <p v-if="!family" class="m-0 text-ink-2">That belt family does not exist.</p>
     <p v-else-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading || !product" class="m-0 text-muted">Loading the belt family…</p>
     <div v-else class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,0.9fr)] stage:gap-24">
@@ -115,7 +115,7 @@ const terms = computed(() => ofLanguage(product.value?.terms ?? [], language.val
               </li>
             </ol>
           </div>
-          <RouterLink to="/ai-search/prompt-test" class="self-start font-medium underline underline-offset-4 stage:text-[26px]">All the answers in the Prompt test</RouterLink>
+          <RouterLink to="/ai-search/answers" class="self-start font-medium underline underline-offset-4 stage:text-[26px]">All the answers in the Prompt test</RouterLink>
         </template>
       </aside>
     </div>

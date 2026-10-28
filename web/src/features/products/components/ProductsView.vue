@@ -4,7 +4,7 @@ import { RouterLink } from 'vue-router'
 import { percent } from '../../../shared/percent'
 import { familyLabel } from '../../../shared/vocabulary'
 import SectionView from '../../shell/components/SectionView.vue'
-import { familySlug, PRODUCT_TABS } from '../../shell/domain/sections'
+import { familyPath } from '../../shell/domain/sections'
 import { useProducts } from '../composables/useProducts'
 import { aiShare, shareText, standoutText, topTerm } from '../domain/products'
 
@@ -13,7 +13,7 @@ const mostSellers = computed(() => Math.max(1, ...products.value.map((p) => p.se
 </script>
 
 <template>
-  <SectionView section="products" title="Tribelt's belt families against the field." :tabs="PRODUCT_TABS">
+  <SectionView section="terms" title="Tribelt's belt families against the field.">
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-muted">Loading the belt families…</p>
     <div v-else class="flex flex-col gap-10 stage:grid stage:min-h-0 stage:grid-rows-[minmax(0,1fr)_auto] stage:gap-14">
@@ -21,7 +21,7 @@ const mostSellers = computed(() => Math.max(1, ...products.value.map((p) => p.se
         <RouterLink
           v-for="p in products"
           :key="p.family"
-          :to="`/products/${familySlug(p.family)}`"
+          :to="familyPath(p.family)"
           class="flex flex-col gap-4 rounded-2xl bg-mist p-5 text-black no-underline hover:bg-grey hover:text-black stage:min-h-0 stage:gap-8 stage:rounded-[28px] stage:p-12"
         >
           <span class="flex flex-col gap-1">

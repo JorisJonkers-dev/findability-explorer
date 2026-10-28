@@ -12,7 +12,7 @@ import ScanResult from '../../scan/components/ScanResult.vue'
 import { useScan } from '../../scan/composables/useScan'
 import SectionView from '../../shell/components/SectionView.vue'
 import { useMe } from '../../shell/composables/useMe'
-import { companyTabs } from '../../shell/domain/sections'
+import { companyPath } from '../../shell/domain/sections'
 import { useTermMap } from '../../terminology/composables/useTermSearch'
 import { ofLanguage } from '../../terminology/domain/languages'
 import { useCompanies } from '../composables/useCompanies'
@@ -53,8 +53,9 @@ const title = computed(() => {
 </script>
 
 <template>
-  <SectionView section="competitors" :title="title" :tabs="companyTabs(companyId)">
+  <SectionView section="competitors" :title="title" :back="{ to: '/competitors', label: 'Back to Competitors' }">
     <template v-if="company" #aside>
+      <RouterLink :to="`${companyPath(companyId)}/history`" class="font-medium stage:text-[30px]">See how it changed over time</RouterLink>
       <p class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">{{ whereLine(company) }}</p>
     </template>
 
@@ -117,7 +118,7 @@ const title = computed(() => {
           </li>
         </ul>
         <p v-if="mentioned" class="m-0 text-sm text-ink-2 stage:text-[24px]">
-          {{ mentioned }} <RouterLink to="/ai-search/prompt-test" class="underline underline-offset-4">The Prompt test</RouterLink>
+          {{ mentioned }} <RouterLink to="/ai-search/answers" class="underline underline-offset-4">The Prompt test</RouterLink>
         </p>
         <CompanyAdmin v-if="isAdmin" :company="company" @removed="router.push('/competitors/all')" />
       </section>

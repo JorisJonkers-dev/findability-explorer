@@ -75,7 +75,7 @@ function saveFactSheet(): void {
         What every Prompt run asks, of which providers, and what it costs. The questions stay the same, so each run compares with
         the ones before.
       </p>
-      <p class="m-0"><RouterLink to="/ai-search/prompt-test" class="font-medium">The results</RouterLink></p>
+      <p class="m-0"><RouterLink to="/ai-search/answers" class="font-medium">The results</RouterLink></p>
     </template>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">

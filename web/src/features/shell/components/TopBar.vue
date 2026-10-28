@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { useBackToOverview, usePreviousPath } from '../composables/navigation'
 import { useMe } from '../composables/useMe'
 import { LOGOUT_ACTION } from '../domain/auth'
 import { NAV_SECTIONS, sectionOfPath } from '../domain/sections'
 
 const route = useRoute()
 const { isAdmin } = useMe()
-const back = useBackToOverview()
-// A page the poster zoomed into zooms back out to it; any other page links to the poster.
-const fromPoster = usePreviousPath().value === '/'
 const current = computed(() => sectionOfPath(route.path)?.id)
 const inSettings = computed(() => route.path === '/settings' || route.path.startsWith('/settings/'))
 
@@ -30,16 +26,6 @@ const LINK =
       <span aria-hidden="true" class="size-6 rounded-md bg-orange stage:size-10 stage:rounded-[10px]"></span>
       Findability Explorer
     </RouterLink>
-    <button
-      v-if="fromPoster"
-      type="button"
-      :class="LINK"
-      class="cursor-zoom-out border-0 bg-transparent font-sans text-ink-2 hover:text-black"
-      @click="back"
-    >
-      Overview
-    </button>
-    <RouterLink v-else to="/" :class="LINK" class="text-ink-2 hover:text-black">Overview</RouterLink>
     <RouterLink
       v-for="s in NAV_SECTIONS"
       :key="s.id"

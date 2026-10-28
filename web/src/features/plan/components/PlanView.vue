@@ -35,7 +35,7 @@ const TONE = { orange: 'bg-orange text-black', black: 'bg-black text-white', 'bl
 </script>
 
 <template>
-  <SectionView section="plan" title="Check every Monday. Fix one thing a week. Watch the numbers move.">
+  <SectionView section="recommendations" title="Check every Monday. Fix one thing a week. Watch the numbers move.">
     <div class="flex flex-col gap-14 stage:grid stage:min-h-0 stage:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,0.9fr)] stage:gap-24">
       <section aria-labelledby="week-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-7">
         <h2 id="week-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Every week, one hour</h2>

@@ -10,24 +10,25 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
     routes: [
       { path: '/', name: 'home', component: () => import('../features/home/components/HomePoster.vue'), meta: { title: 'Overview' } },
       {
-        path: '/catching-up',
-        name: 'catching-up',
-        component: () => import('../features/catching-up/components/CatchingUpView.vue'),
-        meta: { title: 'Catching up' },
+        path: '/numbers/:measure',
+        name: 'number',
+        component: () => import('../features/home/components/NumberDetailView.vue'),
+        props: (to) => ({ measure: String(to.params.measure) }),
+        meta: { title: 'Number' },
       },
       { path: '/buyers', name: 'buyers', component: () => import('../features/buyers/components/BuyersView.vue'), meta: { title: 'Buyers' } },
       { path: '/ai-search', name: 'ai-search', component: () => import('../features/ai-search/components/AiSearchView.vue'), meta: { title: 'AI search' } },
+      {
+        path: '/ai-search/answers',
+        name: 'ai-answers',
+        component: () => import('../features/prompt-test/components/PromptTestView.vue'),
+        meta: { title: 'Every answer' },
+      },
       {
         path: '/ai-search/readiness',
         name: 'ai-readiness',
         component: () => import('../features/readiness/components/ReadinessView.vue'),
         meta: { title: 'AI readiness' },
-      },
-      {
-        path: '/ai-search/prompt-test',
-        name: 'prompt-test',
-        component: () => import('../features/prompt-test/components/PromptTestView.vue'),
-        meta: { title: 'Prompt test' },
       },
       {
         path: '/settings/prompt-test',
@@ -37,12 +38,6 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       },
       // One view for the companies alone and for a scan beside them, so a started scan keeps the form.
       { path: '/competitors', name: 'competitors', component: competitors, meta: { title: 'Competitors' } },
-      {
-        path: '/competitors/all',
-        name: 'all-competitors',
-        component: () => import('../features/competitors/components/AllCompetitorsView.vue'),
-        meta: { title: 'All competitors' },
-      },
       { path: '/scan/:id', name: 'scan', component: competitors, props: (to) => ({ scanId: String(to.params.id) }), meta: { title: 'Scan' } },
       {
         path: '/competitors/:id',
@@ -51,7 +46,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         props: (to) => ({ companyId: String(to.params.id) }),
         meta: { title: 'Latest scan' },
       },
-      // A company's search terms and scan history, a section view of its own: the stage has no room beside the list.
+      // A company's search terms and scan history, a view of its own: the stage has no room beside the list.
       {
         path: '/competitors/:id/history',
         name: 'company-history',
@@ -59,16 +54,27 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         props: (to) => ({ companyId: String(to.params.id) }),
         meta: { title: 'Over time' },
       },
-      { path: '/products', name: 'products', component: () => import('../features/products/components/ProductsView.vue'), meta: { title: 'Products' } },
+      { path: '/terms', name: 'terms', component: () => import('../features/terminology/components/TermsView.vue'), meta: { title: 'Search terms' } },
       {
-        path: '/products/:family',
-        name: 'product',
+        path: '/terms/families/:family',
+        name: 'family',
         component: () => import('../features/products/components/ProductView.vue'),
         props: (to) => ({ slug: String(to.params.family) }),
-        meta: { title: 'Products' },
+        meta: { title: 'Belt family' },
       },
-      { path: '/terms', name: 'terms', component: () => import('../features/terminology/components/TermsView.vue'), meta: { title: 'Search terms' } },
-      { path: '/plan', name: 'plan', component: () => import('../features/plan/components/PlanView.vue'), meta: { title: 'The plan' } },
+      {
+        path: '/recommendations',
+        name: 'recommendations',
+        component: () => import('../features/plan/components/PlanView.vue'),
+        meta: { title: 'Recommendations' },
+      },
+      {
+        path: '/recommendations/:id',
+        name: 'recommendation',
+        component: () => import('../features/plan/components/RecommendationDetailView.vue'),
+        props: (to) => ({ id: String(to.params.id) }),
+        meta: { title: 'Recommendation' },
+      },
       { path: '/settings', name: 'settings', component: () => import('../features/settings/components/SettingsPage.vue'), meta: { title: 'Settings' } },
       { path: '/settings/terms', name: 'term-review', component: () => import('../features/review/components/TermReviewPage.vue'), meta: { title: 'Term review' } },
       // Earlier versions' addresses, which links and bookmarks may still carry.
@@ -78,6 +84,13 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         component: () => import('../features/competitors/components/CompetitorReviewPage.vue'),
         meta: { title: 'Competitor review' },
       },
+      // The first version's addresses, which links and bookmarks may still carry.
+      { path: '/catching-up', redirect: '/' },
+      { path: '/plan', redirect: '/recommendations' },
+      { path: '/products', redirect: '/terms' },
+      { path: '/products/:family', redirect: (to) => `/terms/families/${String(to.params.family)}` },
+      { path: '/ai-search/prompt-test', redirect: '/ai-search/answers' },
+      { path: '/competitors/all', redirect: '/competitors' },
       { path: '/settings/candidates', redirect: '/settings/competitors' },
       { path: '/terminology', redirect: (to) => ({ path: '/terms', query: to.query }) },
       { path: '/keywords', redirect: (to) => ({ path: '/terms', query: to.query }) },

@@ -4,7 +4,6 @@ import { RouterLink } from 'vue-router'
 import { percent } from '../../../shared/percent'
 import { formatValue, inWords } from '../../catching-up/domain/standings'
 import SectionView from '../../shell/components/SectionView.vue'
-import { AI_SEARCH_TABS } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../composables/useAiSearchSummary'
 import { ACCESS, CHART, chartLabel, isTribelt, keepingOutNote, linesOf, pct, scaleTop, shortDate, trendLine, tribeltNote, tribeltShares, yOf } from '../domain/summary'
 
@@ -23,7 +22,7 @@ const promptCard = computed(() => {
 </script>
 
 <template>
-  <SectionView section="ai-search" title="An AI assistant can only recommend what it has read." :tabs="AI_SEARCH_TABS">
+  <SectionView section="ai-search" title="An AI assistant can only recommend what it has read.">
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading || !summary" class="m-0 text-muted">Loading the summary…</p>
     <div
@@ -73,7 +72,7 @@ const promptCard = computed(() => {
           <text :x="CHART.right" y="636" text-anchor="end" font-size="24" class="fill-muted">{{ shortDate(summary.trend.at(-1)?.runStartedAt ?? '') }}</text>
         </svg>
         <RouterLink
-          to="/ai-search/prompt-test"
+          to="/ai-search/answers"
           class="flex flex-col gap-2 rounded-2xl bg-mist px-6 py-5 text-black no-underline hover:bg-grey hover:text-black stage:mt-auto stage:gap-2.5 stage:rounded-[28px] stage:px-12 stage:py-10"
         >
           <span class="flex items-center justify-between text-xl font-semibold stage:text-[40px]">

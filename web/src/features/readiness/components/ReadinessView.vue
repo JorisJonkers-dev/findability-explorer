@@ -8,7 +8,7 @@ import { directionOf, nextSort, type Sort } from '../../../shared/sort'
 import SortButton from '../../../shared/ui/SortButton.vue'
 import { hostOf } from '../../prompt-test/domain/grid'
 import SectionView from '../../shell/components/SectionView.vue'
-import { AI_SEARCH_TABS, companyPath } from '../../shell/domain/sections'
+import { companyPath } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
 import { useMe } from '../../shell/composables/useMe'
 import { useReadinessCheck, useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
@@ -120,7 +120,7 @@ function pick(r: AiReadinessRow): void {
 </script>
 
 <template>
-  <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(aiSearch?.ranking ?? [], aiSearch?.readinessChecks ?? 0)" :tabs="AI_SEARCH_TABS">
+  <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(aiSearch?.ranking ?? [], aiSearch?.readinessChecks ?? 0)" :back="{ to: '/ai-search', label: 'Back to AI search' }">
     <template #lede>
       <p class="m-0 max-w-[62ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">{{ fiveChecksLine(aiSearch) }}</p>
     </template>

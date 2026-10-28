@@ -126,7 +126,7 @@ type Invoker interface {
 	// Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the
 	// newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and
 	// what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared
-	// competitors by readiness checks passed out of five.
+	// competitors by readiness checks passed out of the readiness check count.
 	//
 	// GET /api/v1/ai-search
 	GetAiSearchSummary(ctx context.Context) (GetAiSearchSummaryRes, error)
@@ -346,8 +346,8 @@ type Invoker interface {
 	// SetPlanTargets invokes setPlanTargets operation.
 	//
 	// Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1,
-	// readiness checks 0 to 5 in halves, terms and citations whole numbers. 422 when one is out of range,
-	// and nothing is stored.
+	// readiness checks 0 to the readiness check count in halves, terms whole numbers. 422 when one is out
+	// of range, and nothing is stored.
 	//
 	// PUT /api/v1/admin/plan/targets
 	SetPlanTargets(ctx context.Context, request *PlanTargetsChange) (SetPlanTargetsRes, error)
@@ -2085,7 +2085,7 @@ func (c *Client) sendGetAiReadiness(ctx context.Context) (res GetAiReadinessRes,
 // Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the
 // newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and
 // what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared
-// competitors by readiness checks passed out of five.
+// competitors by readiness checks passed out of the readiness check count.
 //
 // GET /api/v1/ai-search
 func (c *Client) GetAiSearchSummary(ctx context.Context) (GetAiSearchSummaryRes, error) {
@@ -5666,8 +5666,8 @@ func (c *Client) sendSetActiveLlm(ctx context.Context, request *ActiveLlm) (res 
 // SetPlanTargets invokes setPlanTargets operation.
 //
 // Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1,
-// readiness checks 0 to 5 in halves, terms and citations whole numbers. 422 when one is out of range,
-// and nothing is stored.
+// readiness checks 0 to the readiness check count in halves, terms whole numbers. 422 when one is out
+// of range, and nothing is stored.
 //
 // PUT /api/v1/admin/plan/targets
 func (c *Client) SetPlanTargets(ctx context.Context, request *PlanTargetsChange) (SetPlanTargetsRes, error) {

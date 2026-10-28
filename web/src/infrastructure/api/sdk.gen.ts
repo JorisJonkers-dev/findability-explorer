@@ -24,7 +24,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 /**
  * Get the AI search summary
  *
- * Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared competitors by readiness checks passed out of five.
+ * Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared competitors by readiness checks passed out of the readiness check count.
  */
 export const getAiSearchSummary = <ThrowOnError extends boolean = false>(options?: Options<GetAiSearchSummaryData, ThrowOnError>): RequestResult<GetAiSearchSummaryResponses, GetAiSearchSummaryErrors, ThrowOnError> => (options?.client ?? client).get<GetAiSearchSummaryResponses, GetAiSearchSummaryErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({
@@ -91,7 +91,7 @@ export const tickImprovement = <ThrowOnError extends boolean = false>(options: O
 /**
  * Set the plan's targets
  *
- * Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1, readiness checks 0 to 5 in halves, terms and citations whole numbers. 422 when one is out of range, and nothing is stored.
+ * Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1, readiness checks 0 to the readiness check count in halves, terms whole numbers. 422 when one is out of range, and nothing is stored.
  */
 export const setPlanTargets = <ThrowOnError extends boolean = false>(options: Options<SetPlanTargetsData, ThrowOnError>): RequestResult<SetPlanTargetsResponses, SetPlanTargetsErrors, ThrowOnError> => (options.client ?? client).put<SetPlanTargetsResponses, SetPlanTargetsErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

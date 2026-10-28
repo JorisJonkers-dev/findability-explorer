@@ -8,18 +8,34 @@ function chip(label: string, state: Chip['state'], yes: string, no: string, part
   return { label, state, mark: state === 'yes' ? '✓' : state === 'partly' ? 'Some' : '✕', tip: state === 'yes' ? yes : state === 'partly' ? partly : no }
 }
 
-/** A site's five readiness chips: crawlers, sitemap, llms.txt, llms-full.txt and Markdown; none before a scan read it. */
+/** How many chips a site has, so how many checks the score counts until the standings say (the server's readinessChecks). */
+export const CHIP_COUNT = 8
+
+/** Whether the server judged a site to follow one piece of the report's advice (organization, languages, sitemapLanguages). */
+function advised(r: AiReadiness, check: string): boolean {
+  return r.advice.some((a) => a.check === check && a.ok)
+}
+
+/**
+ * A site's eight readiness chips, one for each check the score counts (ADR-0015): crawlers (for
+ * search and for training), sitemap, llms.txt, llms-full.txt, Markdown, structured data about the company, language
+ * versions and a sitemap in every language; none before a scan read it. The score is these chips
+ * added up, so what a page shows and what it counts cannot differ.
+ */
 export function chipsOf(r: AiReadiness | undefined): Chip[] {
   if (!r) return []
   const unreadable = r.robots === 'unreachable' || r.bots.length === 0
   const blocked = r.bots.filter((b) => b.access === 'blocked').length
   const crawlers: Chip['state'] = unreadable || blocked === r.bots.length ? 'no' : blocked > 0 ? 'partly' : 'yes'
   return [
-    chip('crawlers', crawlers, 'Lets every AI crawler in', unreadable ? 'robots.txt could not be read' : 'Keeps every AI crawler out', 'Keeps some AI crawlers out'),
+    chip('crawlers', crawlers, 'Lets every AI crawler in, for search and for training', unreadable ? 'robots.txt could not be read' : 'Keeps every AI search and training crawler out', 'Keeps some AI crawlers out'),
     chip('sitemap', r.sitemap.files > 0 ? 'yes' : 'no', 'Has a sitemap', 'No sitemap'),
     chip('llms.txt', r.llmsTxt.present ? 'yes' : 'no', 'Has llms.txt', 'No llms.txt'),
     chip('llms-full', r.llmsFullTxt ? 'yes' : 'no', 'Has llms-full.txt', 'No llms-full.txt'),
     chip('Markdown', r.markdown ? 'yes' : 'no', 'Has Markdown pages', 'No Markdown pages'),
+    chip('Structured data', advised(r, 'organization') ? 'yes' : 'no', 'Has structured data about the company on its home page', 'No structured data about the company on its home page'),
+    chip('languages', advised(r, 'languages') ? 'yes' : 'no', 'Offers its pages in Dutch, German, and English', 'Does not offer its pages in Dutch, German, and English'),
+    chip('sitemap languages', advised(r, 'sitemapLanguages') ? 'yes' : 'no', 'Its sitemaps list pages in Dutch, German, and English', 'Its sitemaps do not list pages in all three languages'),
   ]
 }
 

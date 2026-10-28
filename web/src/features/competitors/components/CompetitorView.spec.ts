@@ -108,6 +108,6 @@ describe('a competitor’s page', () => {
     const { wrapper } = await mountApp(api(), '/competitors/twentebelt')
     const chart = wrapper.get('section[aria-labelledby="compare-title"]')
     await chart.findAll('button').find((b) => b.text().startsWith('AI readiness checks passed'))?.trigger('click')
-    expect(chart.get('[aria-live="polite"]').text()).toContain('Both sites pass 5 of 5 of the AI readiness checks.')
+    expect(chart.get('[aria-live="polite"]').text()).toContain('Both sites pass 8 of 8 of the AI readiness checks.')
   })
 })

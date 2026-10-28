@@ -23,7 +23,7 @@ const summary: AiSearchSummary = {
   sites: 41,
   questions: 20,
   providers: 5,
-  readinessChecks: 5,
+  readinessChecks: 8,
   checks: [
     { check: 'crawlers', scored: true, passing: 30, tribelt: true },
     { check: 'llmsTxt', scored: true, passing: 12, tribelt: false },
@@ -36,10 +36,10 @@ const plan: Plan = {
   watched: [
     { target: 'aiShareOfVoice', goal: 0.5 },
     { target: 'twenteShareOfVoice', goal: 0.6 },
-    { target: 'citations', goal: 20 },
+    { target: 'citationShare', goal: 0.5 },
   ],
   eyeOn: [],
-  readinessChecks: 5,
+  readinessChecks: 8,
 }
 
 const api = (extra: Record<string, () => Response> = {}) =>
@@ -63,8 +63,8 @@ describe('the AI search page', () => {
     const figures = wrapper.findAll('section[aria-label="Key figures"] a')
     expect(figures.map((f) => [f.attributes('href'), f.text()])).toEqual([
       ['/numbers/aiShareOfVoice', '25%of AI answers name TribeltTarget 50%.'],
-      ['/numbers/citationShare', '17%of web answers cite tribelt.nlTarget 20 web answers in a run.'],
-      ['/ai-search/readiness', '3½ of 5AI readiness checks passedSee how AI readiness is checked.'],
+      ['/numbers/citationShare', '17%of web answers cite tribelt.nlTarget 50%.'],
+      ['/ai-search/readiness', '3½ of 8AI readiness checks passedSee how AI readiness is checked.'],
     ])
   })
 
@@ -100,7 +100,7 @@ describe('the AI search page', () => {
     const card = wrapper.findAll('a[href="/ai-search/readiness"]').at(-1)
     if (!card) throw new Error('no card')
     expect(card.text()).toContain('AI readiness by site')
-    expect(card.text()).toContain('Tribelt fails one of the five checks. See which ones.')
+    expect(card.text()).toContain('Tribelt fails one of the eight checks. See which ones.')
   })
 
   it('says so before the first Prompt run', async () => {

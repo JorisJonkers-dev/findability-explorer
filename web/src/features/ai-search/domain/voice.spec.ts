@@ -24,7 +24,7 @@ const summary = (change: Partial<AiSearchSummary> = {}): AiSearchSummary => ({
   sites: 41,
   questions: 20,
   providers: 5,
-  readinessChecks: 5,
+  readinessChecks: 8,
   checks: [
     { check: 'crawlers', scored: true, passing: 30, tribelt: true },
     { check: 'sitemap', scored: true, passing: 30, tribelt: false },
@@ -33,7 +33,7 @@ const summary = (change: Partial<AiSearchSummary> = {}): AiSearchSummary => ({
   ...change,
 })
 
-const plan = (watched: Plan['watched']): Plan => ({ catalogueVersion: 1, improvements: [], watched, eyeOn: [], readinessChecks: 5 })
+const plan = (watched: Plan['watched']): Plan => ({ catalogueVersion: 1, improvements: [], watched, eyeOn: [], readinessChecks: 8 })
 
 const cells = promptRun().cells
 
@@ -112,14 +112,14 @@ describe('the lede', () => {
 describe('the key figures', () => {
   const goals: Plan['watched'] = [
     { target: 'aiShareOfVoice', goal: 0.5 },
-    { target: 'citations', goal: 20 },
+    { target: 'citationShare', goal: 0.5 },
   ]
 
   it('write the share of answers naming Tribelt, the web answers citing it, and the checks it passes', () => {
     expect(figures(summary(), cells, plan(goals))).toEqual([
       { to: '/numbers/aiShareOfVoice', big: '25%', text: 'of AI answers name Tribelt', note: 'Target 50%.' },
-      { to: '/numbers/citationShare', big: '17%', text: 'of web answers cite tribelt.nl', note: 'Target 20 web answers in a run.' },
-      { to: '/ai-search/readiness', big: '3½ of 5', text: 'AI readiness checks passed', note: 'See how AI readiness is checked.' },
+      { to: '/numbers/citationShare', big: '17%', text: 'of web answers cite tribelt.nl', note: 'Target 50%.' },
+      { to: '/ai-search/readiness', big: '3½ of 8', text: 'AI readiness checks passed', note: 'See how AI readiness is checked.' },
     ])
   })
 
@@ -166,8 +166,8 @@ describe('the donut', () => {
 describe('the card to AI readiness', () => {
   it('says how Tribelt fares on the checks', () => {
     expect(readinessCard(summary({ checks: [] }))).toBe('See how each site is set up for AI.')
-    expect(readinessCard(summary())).toBe('Tribelt fails one of the five checks. See which ones.')
-    expect(readinessCard(summary({ checks: [{ check: 'crawlers', scored: true, passing: 3, tribelt: true }] }))).toBe('Tribelt passes all five checks. See how the other sites compare.')
+    expect(readinessCard(summary())).toBe('Tribelt fails one of the eight checks. See which ones.')
+    expect(readinessCard(summary({ checks: [{ check: 'crawlers', scored: true, passing: 3, tribelt: true }] }))).toBe('Tribelt passes all eight checks. See how the other sites compare.')
   })
 })
 

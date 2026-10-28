@@ -5,15 +5,20 @@ import { chipsOf, keeps, lastScanOf, parseRosterFilter, placeOf, roleLabel, rost
 const ALL = Object.fromEntries(bots().map((b) => [b.bot, 'blocked' as const]))
 
 describe('the readiness chips', () => {
-  it('mark the five checks by shape', () => {
-    expect(chipsOf(readiness()).map((c) => `${c.label}${c.mark}`)).toEqual(['crawlers✓', 'sitemap✓', 'llms.txt✓', 'llms-full✓', 'Markdown✓'])
+  it('mark the eight checks by shape', () => {
+    expect(chipsOf(readiness()).map((c) => `${c.label}${c.mark}`)).toEqual(['crawlers✓', 'sitemap✓', 'llms.txt✓', 'llms-full✓', 'Markdown✓', 'Structured data✓', 'languages✓', 'sitemap languages✓'])
     const some = chipsOf(readiness({ bots: bots({ GPTBot: 'blocked' }), markdown: false, llmsFullTxt: false }))
-    expect(some.map((c) => c.mark)).toEqual(['Some', '✓', '✓', '✕', '✕'])
+    expect(some.map((c) => c.mark)).toEqual(['Some', '✓', '✓', '✕', '✕', '✓', '✓', '✓'])
     expect(some[0]?.tip).toBe('Keeps some AI crawlers out')
-    expect(chipsOf(readiness({ bots: bots(ALL) }))[0]?.tip).toBe('Keeps every AI crawler out')
+    expect(chipsOf(readiness({ bots: bots(ALL) }))[0]?.tip).toBe('Keeps every AI search and training crawler out')
     expect(chipsOf(readiness({ robots: 'unreachable', bots: [] }))[0]?.tip).toBe('robots.txt could not be read')
     const none = chipsOf(readiness({ sitemap: { declared: false, files: 0, addresses: 0, languages: [] }, llmsTxt: { present: false, bytes: 0, links: 0 } }))
     expect(none.slice(1, 3).map((c) => c.tip)).toEqual(['No sitemap', 'No llms.txt'])
+    const bare = chipsOf(readiness({ advice: [] }))
+    expect(bare.slice(5).map((c) => [c.label, c.mark])).toEqual([['Structured data', '✕'], ['languages', '✕'], ['sitemap languages', '✕']])
+    expect(bare[5]?.tip).toBe('No structured data about the company on its home page')
+    expect(bare[7]?.tip).toBe('Its sitemaps do not list pages in all three languages')
+    expect(chipsOf(readiness())[6]?.tip).toBe('Offers its pages in Dutch, German, and English')
     expect(chipsOf(undefined)).toEqual([])
   })
 })

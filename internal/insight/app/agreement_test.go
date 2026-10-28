@@ -100,9 +100,9 @@ func TestThePlanWatchesTheSameTwenteShareAndCitationsAsTheAnswers(t *testing.T) 
 			t.Errorf("eyelink in Twente = %+v", s)
 		}
 	}
-	// One web answer of two cites tribelt.nl: the plan's count, Catching up's share.
-	if n, share := watchedNow(t, plan, domain.TargetCitations), standing(t, standings, domain.MeasureCitationShare); n != 1 || share != 0.5 {
-		t.Errorf("citations = %v, citation share = %v", n, share)
+	// One web answer of two cites tribelt.nl: the plan's target and Catching up show the same share.
+	if n, share := watchedNow(t, plan, domain.TargetCitationShare), standing(t, standings, domain.MeasureCitationShare); n != 0.5 || share != 0.5 {
+		t.Errorf("citation share in the plan = %v, in the standings = %v", n, share)
 	}
 }
 
@@ -210,7 +210,7 @@ func TestEveryPageNamesTheSameLeadersAndTypicalCompetitor(t *testing.T) {
 	}
 	// The company added since leads the readiness checks and the sitemap coverage; the group and
 	// the mirror, though better, never lead.
-	if l := leaders[domain.MeasureReadiness]; l == nil || l.CompanyID != "added" || l.Value != 4 {
+	if l := leaders[domain.MeasureReadiness]; l == nil || l.CompanyID != "added" || l.Value != 5 {
 		t.Errorf("readiness leader = %+v", l)
 	}
 	if l := leaders[domain.MeasureSitemapCoverage]; l == nil || l.CompanyID != "added" || l.Value != 1 {

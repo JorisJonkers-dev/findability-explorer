@@ -15,7 +15,7 @@ function plan(improvements: PlanImprovement[]): Plan {
     improvements,
     watched: [{ target: 'aiShareOfVoice', now: 0.24, goal: 0.4, max: 1, met: false }],
     tribeltTermsFrom: 'scan',
-    readinessChecks: 5,
+    readinessChecks: 8,
     eyeOn: [],
   }
 }
@@ -97,7 +97,7 @@ describe('a recommendation', () => {
           current = plan(base().map((i) => (i.id === 'a' ? { ...i, done: body.done, tickedBy: 'joris' } : i)))
           return json(current)
         },
-        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 5 }),
+        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 8 }),
       }),
       '/recommendations/a',
     )

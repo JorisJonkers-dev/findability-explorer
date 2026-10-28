@@ -139,7 +139,7 @@ func readinessOf(r analysisdomain.Readiness, at time.Time) insightdomain.Readine
 		advice[a.Check] = a.OK
 	}
 	out := insightdomain.Readiness{
-		Sitemap: r.Sitemap.Files > 0, SitemapInEachLanguage: advice[analysisdomain.CheckSitemapLanguages],
+		Sitemap: r.Sitemap.Files > 0, SitemapInEachLanguage: advice[analysisdomain.CheckSitemapLanguages], LanguageVersions: advice[analysisdomain.CheckLanguages],
 		Organization: advice[analysisdomain.CheckOrganization], Product: advice[analysisdomain.CheckProduct],
 		SitemapLanguages: r.Sitemap.Languages, LLMs: r.LLMs.Present, LLMsFull: r.LLMsFull, Markdown: r.Markdown,
 		StructuredData: r.StructuredData, ScannedAt: at, Bots: map[string]insightdomain.BotAccess{},

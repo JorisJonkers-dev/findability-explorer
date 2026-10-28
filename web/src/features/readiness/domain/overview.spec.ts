@@ -37,8 +37,8 @@ describe('the scans', () => {
       readinessRow('A', { scan: summary({ finishedAt: '2026-10-24T08:00:00Z' }), readiness: readiness({ checkedAt: '2026-10-27T18:30:00Z' }) }),
       readinessRow('B', { scan: summary({ finishedAt: '2026-10-27T08:00:00Z' }) }),
     ]
-    expect(scanNote(rows, 2)).toBe('2 sites. Last scans from 24 October 2026 to 27 October 2026. AI readiness checked again on 27 October 2026.')
-    expect(scanNote(rows.slice(1), 1)).toBe('1 site. Scanned on 27 October 2026.')
+    expect(scanNote(rows)).toBe('Last scans from 24 October 2026 to 27 October 2026. AI readiness checked again on 27 October 2026.')
+    expect(scanNote(rows.slice(1))).toBe('Scanned on 27 October 2026.')
   })
 })
 

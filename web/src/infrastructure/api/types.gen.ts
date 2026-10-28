@@ -1510,7 +1510,7 @@ export type ReadinessRank = {
     name: string;
     role: CompanyRole;
     /**
-     * Readiness checks passed out of five, in halves.
+     * Readiness checks passed, in halves, out of the readiness check count.
      */
     score: number;
 };
@@ -1568,9 +1568,9 @@ export type AiSearchSummary = {
 export type ReadinessCheckCount = number;
 
 /**
- * One thing a site's AI readiness is checked for - every AI crawler let in, a sitemap, llms.txt, llms-full.txt and Markdown pages are scored; sitemaps in Dutch, German and English, Organization and Product structured data are checked beside them.
+ * One thing a site's AI readiness is checked for - every AI crawler let in (for search and for training), a sitemap, llms.txt, llms-full.txt, Markdown pages, Organization structured data, language versions in Dutch, German and English, and sitemaps in all three languages are scored; Product structured data is checked beside them.
  */
-export type ReadinessCheckKind = 'crawlers' | 'sitemap' | 'llmsTxt' | 'llmsFullTxt' | 'markdown' | 'sitemapLanguages' | 'organization' | 'product';
+export type ReadinessCheckKind = 'crawlers' | 'sitemap' | 'llmsTxt' | 'llmsFullTxt' | 'markdown' | 'organization' | 'languages' | 'sitemapLanguages' | 'product';
 
 /**
  * How many of the sites with a recorded AI readiness pass one check in full.
@@ -1670,9 +1670,9 @@ export type PlanPart = {
 };
 
 /**
- * A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt), readinessChecks (out of five), termsUsed (map terms on tribelt.nl) or citations (web answers of a run citing tribelt.nl).
+ * A number to watch - aiShareOfVoice and twenteShareOfVoice (shares of answers naming Tribelt), readinessChecks (out of the readiness check count), termsUsed (map terms on tribelt.nl) or citationShare (the share of a run's web answers that cite tribelt.nl, from 0 to 1).
  */
-export type PlanTarget = 'aiShareOfVoice' | 'twenteShareOfVoice' | 'readinessChecks' | 'termsUsed' | 'citations';
+export type PlanTarget = 'aiShareOfVoice' | 'twenteShareOfVoice' | 'readinessChecks' | 'termsUsed' | 'citationShare';
 
 /**
  * A number to watch, now and its target.
@@ -1906,7 +1906,7 @@ export type ProductsOverview = {
 };
 
 /**
- * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of five (half for crawlers when some are kept out), sitemapCoverage the share of the pages its newest scan read that its sitemaps list (no value for a scan that did not measure it), and termsUsed the map terms its newest scan found.
+ * A measure Tribelt is compared on; higher is better on every one. aiShareOfVoice is the share of answers naming the company, citationShare the share of web answers citing its site, readinessChecks the AI readiness checks its site passes out of the readiness check count (half for crawlers when some are kept out), sitemapCoverage the share of the pages its newest scan read that its sitemaps list (no value for a scan that did not measure it), and termsUsed the map terms its newest scan found.
  */
 export type StandingMeasure = 'aiShareOfVoice' | 'citationShare' | 'readinessChecks' | 'sitemapCoverage' | 'termsUsed';
 

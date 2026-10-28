@@ -44,7 +44,7 @@ export const getAiSearchSummaryQueryKey = (options?: Options<GetAiSearchSummaryD
 /**
  * Get the AI search summary
  *
- * Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared competitors by readiness checks passed out of five.
+ * Tribelt's share of AI answers over the newest Prompt runs, oldest first, against the competitors the newest run names most; which crawlers tribelt.nl's newest scan lets in, with the lab behind each and what it feeds; the competitors that keep crawlers out; and Tribelt among the best-prepared competitors by readiness checks passed out of the readiness check count.
  */
 export const getAiSearchSummaryOptions = (options?: Options<GetAiSearchSummaryData>) => queryOptions<GetAiSearchSummaryResponse, GetAiSearchSummaryError, GetAiSearchSummaryResponse, ReturnType<typeof getAiSearchSummaryQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -101,7 +101,7 @@ export const tickImprovementMutation = (options?: Partial<Options<TickImprovemen
 /**
  * Set the plan's targets
  *
- * Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1, readiness checks 0 to 5 in halves, terms and citations whole numbers. 422 when one is out of range, and nothing is stored.
+ * Administrators only. Sets the targets given; the rest keep theirs. Shares are fractions from 0 to 1, readiness checks 0 to the readiness check count in halves, terms whole numbers. 422 when one is out of range, and nothing is stored.
  */
 export const setPlanTargetsMutation = (options?: Partial<Options<SetPlanTargetsData>>): UseMutationOptions<SetPlanTargetsResponse, SetPlanTargetsError, Options<SetPlanTargetsData>> => {
     const mutationOptions: UseMutationOptions<SetPlanTargetsResponse, SetPlanTargetsError, Options<SetPlanTargetsData>> = {

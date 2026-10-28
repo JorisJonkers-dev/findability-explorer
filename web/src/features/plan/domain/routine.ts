@@ -60,7 +60,7 @@ export const TARGETS: Record<PlanTarget, { label: string; format: (v: number) =>
   },
   readinessChecks: { label: "AI readiness checks tribelt.nl's newest scan passed", format: (v) => formatValue('readinessChecks', v), step: 0.5 },
   termsUsed: { label: "Search terms from our list found in tribelt.nl's newest scan", format: (v) => formatValue('termsUsed', v), step: 1 },
-  citations: { label: 'Web answers in the newest Prompt run that cite tribelt.nl', format: (v) => formatValue('termsUsed', v), step: 1 },
+  citationShare: { label: 'Web answers in the newest Prompt run that cite tribelt.nl', format: (v) => formatValue('citationShare', v), step: 0.01 },
 }
 
 /**

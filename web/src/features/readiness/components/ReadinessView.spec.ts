@@ -1,4 +1,4 @@
-import type { VueWrapper } from '@vue/test-utils'
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { AiReadiness } from '../../../infrastructure/api/types.gen'
 import { ANALYSIS_ID, bots, me, readiness, readinessRow, readinessTable } from '../../../testing/fixtures'
@@ -88,7 +88,8 @@ describe('the AI readiness view', () => {
   it('heads the page with the leader and counts the sites passing each check', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     expect(wrapper.get('h1').text()).toBe('ESFO leads with 5 of five checks. Tribelt passes 3½.')
-    expect(wrapper.text()).toMatch(/5 sites\.\s*Scanned on 22 October 2026\./)
+    expect(wrapper.text()).toContain('The five checks ask whether a site lets every AI crawler in, has a sitemap, has llms.txt, has llms-full.txt and has Markdown pages.')
+    expect(wrapper.text()).toContain('5 sites. Scanned on 22 October 2026.')
     const part = (label: string) =>
       wrapper.findAll(`section[aria-labelledby="sum-title"] tbody[aria-label="${label}"] tr`).map((r) => r.findAll('th, td').map((c) => c.text()))
     const counted = part('The five checks the ranking counts')
@@ -109,7 +110,13 @@ describe('the AI readiness view', () => {
   it('marks each crawler by shape, and opens the site in a new tab', async () => {
     const { wrapper } = await mountApp(api(), '/ai-search/readiness')
     const row = wrapper.findAll('section[aria-labelledby="sites-title"] tbody tr').find((r) => r.text().startsWith('Twentebelt'))
-    expect(row?.findAll('td').map((c) => c.text()).slice(0, 6)).toEqual(['AllowedGooglebot may read every page.', 'AllowedGoogle-Extended may read every page.', 'AllowedBingbot may read every page.', 'AllowedOAI-SearchBot may read every page.', 'AllowedChatGPT-User may read every page.', 'BlockedGPTBot may not read any page.'])
+    const marks = (cells: DOMWrapper<Element>[] | undefined) => cells?.map((c) => `${c.find('[data-mark]').attributes('data-mark') ?? ''} ${c.text()}`)
+    expect(marks(row?.findAll('td').slice(4, 6))).toEqual(['✓ ChatGPT-User may read every page.', '✕ GPTBot may not read any page.'])
+    expect(row?.findAll('td')[5]?.attributes('title')).toBe('GPTBot may not read any page.')
+    // The file columns tick and cross with the same symbols, after the sitemap.
+    expect(marks(row?.findAll('td').slice(11, 14))).toEqual(['✕ No llms.txt.', '✓ Has llms-full.txt.', '✓ Has Markdown pages.'])
+    const legend = wrapper.get('ul[aria-label="What the crawler columns say"]')
+    expect(marks(legend.findAll('li'))?.map((l) => l.slice(0, 1))).toEqual(['✓', '~', '✕', '–'])
     expect(row?.get('a[target="_blank"]').attributes('href')).toBe('https://www.twentebelt.com')
     expect(wrapper.text()).toContain('Not scanned yet')
   })
@@ -117,7 +124,7 @@ describe('the AI readiness view', () => {
   it("shows Tribelt's robots.txt and what it means, and another site's when picked", async () => {
     const { wrapper, router } = await mountApp(api(), '/ai-search/readiness')
     const panel = wrapper.get('section[aria-labelledby="sites-title"] [aria-live="polite"]')
-    expect(panel.text()).toContain('robots.txt of Tribelt B.V.')
+    expect(panel.text()).toContain("Tribelt B.V.'s robots.txt")
     expect(panel.get('pre').text()).toContain('Disallow: /')
     expect(panel.text()).toContain('Blocks GPTBot.')
     const esfo = wrapper.findAll('th[scope="row"] button').find((b) => b.text().startsWith('ESFO'))
@@ -129,7 +136,7 @@ describe('the AI readiness view', () => {
     const unibelt = wrapper.findAll('th[scope="row"] button').find((b) => b.text().startsWith('Unibelt'))
     await unibelt?.trigger('click')
     await settle()
-    expect(wrapper.get('section[aria-labelledby="sites-title"] [aria-live="polite"]').text()).toContain('No scan of it recorded its robots.txt yet.')
+    expect(wrapper.get('section[aria-labelledby="sites-title"] [aria-live="polite"]').text()).toContain('No scan has recorded its robots.txt yet.')
   })
 
   it('lets an administrator check every site again without a scan, and shows how far it has come', async () => {

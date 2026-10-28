@@ -49,6 +49,8 @@ const fromPoster = usePreviousPath().value === '/'
           >
             {{ title }}
           </h1>
+          <!-- A sentence under the title, saying what its figure counts. -->
+          <slot name="lede" />
         </div>
         <div
           v-if="tabs.length > 0 || source.length > 0 || $slots.aside"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bots, readiness, readinessRow, summary } from '../../../testing/fixtures'
-import { accessMark, checkedAgain, checkSummary, readinessCheckLine, readinessHeadline, scanRange, scanned } from './overview'
+import { ACCESS_LEGEND, accessMark, checkedAgain, checkSummary, fiveChecksLine, hasMark, readinessCheckLine, readinessHeadline, scanNote, scanRange, scanned } from './overview'
 
 describe('the summary', () => {
   it('counts the scanned sites passing each check, with Tribelt beside it', () => {
@@ -28,13 +28,22 @@ describe('the summary', () => {
 describe('the access marks', () => {
   it('differ in shape as well as colour', () => {
     const r = readiness({ bots: bots({ GPTBot: 'blocked', CCBot: 'partly' }) })
-    expect(['Googlebot', 'GPTBot', 'CCBot', 'Nobody'].map((b) => accessMark(r, b).mark)).toEqual(['Allowed', 'Blocked', 'Partly', 'Unknown'])
+    expect(['Googlebot', 'GPTBot', 'CCBot', 'Nobody'].map((b) => accessMark(r, b).mark)).toEqual(['✓', '✕', '~', '–'])
     expect(accessMark(r, 'CCBot').text).toBe('CCBot may read the site, except some pages robots.txt closes.')
     expect(accessMark(r, 'GPTBot').text).toBe('GPTBot may not read any page.')
     expect(accessMark(r, 'Googlebot').text).toBe('Googlebot may read every page.')
     expect(accessMark(r, 'Nobody').text).toBe('Nobody was not checked.')
-    expect(accessMark(readiness({ robots: 'unreachable' }), 'GPTBot')).toEqual({ mark: 'Unknown', text: 'robots.txt could not be read.', tone: 'unknown' })
+    expect(accessMark(readiness({ robots: 'unreachable' }), 'GPTBot')).toEqual({ mark: '–', text: 'robots.txt could not be read.', tone: 'unknown' })
     expect(accessMark(undefined, 'GPTBot')).toEqual({ mark: '–', text: 'Not scanned yet.', tone: 'unknown' })
+  })
+
+  it('has a legend line for each symbol the crawler columns show', () => {
+    expect(ACCESS_LEGEND.map((l) => l.mark)).toEqual(['✓', '~', '✕', '–'])
+  })
+
+  it('ticks and crosses the files a site has', () => {
+    expect(hasMark(true, 'llms.txt')).toEqual({ mark: '✓', text: 'Has llms.txt.', tone: 'ok' })
+    expect(hasMark(false, 'Markdown pages')).toEqual({ mark: '✕', text: 'No Markdown pages.', tone: 'no' })
   })
 })
 
@@ -61,8 +70,22 @@ describe('the scans and the headline', () => {
     expect(readinessHeadline([costacurta, { ...costacurta, competitorId: 'audubon', name: 'Audubon' }, tribelt(2)])).toBe(
       'Costacurta and Audubon lead with 3 of five checks. Tribelt passes 2.',
     )
+    const tied = ['Ammeraal Beltech', 'Averinox', 'Costacurta', 'Wire Belt'].map((name) => ({ ...costacurta, competitorId: name, name }))
+    expect(readinessHeadline([...tied, tribelt(3)])).toBe('Tribelt shares the lead with Ammeraal Beltech, Averinox and 2 more, at 3 of five checks.')
   })
 
+  it('names the five checks the headline scores', () => {
+    expect(fiveChecksLine()).toBe('The five checks ask whether a site lets every AI crawler in, has a sitemap, has llms.txt, has llms-full.txt and has Markdown pages.')
+  })
+
+  it('joins the count of sites and the scan days as sentences', () => {
+    const rows = [
+      readinessRow('A', { scan: summary({ finishedAt: '2026-10-24T08:00:00Z' }), readiness: readiness({ checkedAt: '2026-10-27T18:30:00Z' }) }),
+      readinessRow('B', { scan: summary({ finishedAt: '2026-10-27T08:00:00Z' }) }),
+    ]
+    expect(scanNote(rows)).toBe('2 sites. Last scans from 24 October 2026 to 27 October 2026. AI readiness checked again on 27 October 2026.')
+    expect(scanNote(rows.slice(1))).toBe('1 site. Scanned on 27 October 2026.')
+  })
 })
 
 describe('checking AI readiness again', () => {

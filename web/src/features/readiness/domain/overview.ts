@@ -2,13 +2,14 @@ import type { AiReadiness, AiReadinessRow, ReadinessCheckKind, ReadinessCheckSta
 
 /** What each readiness check is called in the summary. */
 export const CHECK_LABELS: Record<ReadinessCheckKind, string> = {
-  crawlers: 'Lets every AI crawler in',
+  crawlers: 'Every AI crawler allowed, for search and for training',
   sitemap: 'Has a sitemap',
   llmsTxt: 'Has llms.txt',
   llmsFullTxt: 'Has llms-full.txt',
   markdown: 'Has Markdown pages',
+  languages: 'Pages in Dutch, German, and English',
   sitemapLanguages: 'Sitemap in Dutch, German, and English',
-  organization: 'Organization markup',
+  organization: 'Organization markup on the home page',
   product: 'Product markup',
 }
 

@@ -4,11 +4,12 @@ import { CHECK_LABELS } from './overview'
 
 /** What each check means for Tribelt, in a sentence or two. */
 export const CHECK_WHAT: Record<ReadinessCheckKind, string> = {
-  crawlers: 'robots.txt lets every search and AI crawler read the site. A crawler that is kept out cannot learn about the site or cite it.',
+  crawlers: 'robots.txt lets every AI crawler read the site, the search crawlers and the training crawlers (GPTBot, ClaudeBot, Google-Extended, and CCBot). A crawler that is kept out cannot learn about the site or cite it.',
   sitemap: 'A sitemap lists the pages of a site, so crawlers find every page, including new ones.',
   llmsTxt: 'llms.txt is a short map of the site in plain text, written for AI tools.',
   llmsFullTxt: 'llms-full.txt holds the text of the main pages in one file, so an AI tool can read what Tribelt makes without crawling every page.',
   markdown: 'A Markdown version of a page gives AI tools the facts without the menus and scripts around them.',
+  languages: 'The site offers its pages in Dutch, German, and English, the three languages Tribelt’s buyers search in.',
   sitemapLanguages: 'The sitemap lists pages in all three languages Tribelt’s buyers search in.',
   organization: 'Markup on the home page that tells search engines the company’s name, address, and website.',
   product: 'Markup on a product page that tells search engines and AI tools what the product is and what it does.',
@@ -114,15 +115,16 @@ export function readinessFigures(summary: Pick<AiSearchSummary, 'ranking' | 'sit
 /** How a site stands on one check. */
 export type SiteCheck = { label: string; state: 'yes' | 'partly' | 'no' | 'unknown' }
 
-/** A site's five scored checks, read the way the server scores them. */
+/** A site's eight scored checks, read the way the server scores them. */
 export function siteChecks(row: Pick<AiReadinessRow, 'readiness'>): SiteCheck[] {
   const r = row.readiness
-  const scored: ReadinessCheckKind[] = ['crawlers', 'sitemap', 'llmsTxt', 'llmsFullTxt', 'markdown']
+  const scored: ReadinessCheckKind[] = ['crawlers', 'sitemap', 'llmsTxt', 'llmsFullTxt', 'markdown', 'organization', 'languages', 'sitemapLanguages']
   if (!r) return scored.map((kind) => ({ label: CHECK_LABELS[kind], state: 'unknown' }))
   const blocked = r.bots.filter((b) => b.access === 'blocked').length
   const crawlers: SiteCheck['state'] = r.robots === 'unreachable' ? 'unknown' : blocked === 0 ? 'yes' : blocked === r.bots.length ? 'no' : 'partly'
   const yes = (ok: boolean): SiteCheck['state'] => (ok ? 'yes' : 'no')
-  const states = [crawlers, yes(r.sitemap.files > 0), yes(r.llmsTxt.present), yes(r.llmsFullTxt), yes(r.markdown)]
+  const advised = (check: ReadinessCheckKind) => yes(r.advice.some((a) => a.check === check && a.ok))
+  const states = [crawlers, yes(r.sitemap.files > 0), yes(r.llmsTxt.present), yes(r.llmsFullTxt), yes(r.markdown), advised('organization'), advised('languages'), advised('sitemapLanguages')]
   return scored.map((kind, i) => ({ label: CHECK_LABELS[kind], state: states[i] as SiteCheck['state'] }))
 }
 

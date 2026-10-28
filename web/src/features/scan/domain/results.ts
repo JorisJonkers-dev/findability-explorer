@@ -65,7 +65,7 @@ function terms(n: number): string {
   return `${String(n)} ${n === 1 ? 'term' : 'terms'}`
 }
 
-/** The temper spectrum: how many of the site's known terms are of each kind of search. */
+/** The term mix: how many of the site's known terms are of each kind of search. */
 export function spectrum(knownTerms: readonly Pick<KnownTerm, 'tier'>[]): Spectrum {
   const bands = TIERS.map((tier) => ({
     tier,

@@ -105,7 +105,7 @@ describe('the company list', () => {
   it('lists every company with the families it offers, counting what is shown', async () => {
     const { wrapper } = await mountApp(api(), '/competitors')
     // The server counts the competitors the desk research found.
-    expect(wrapper.get('h1').text()).toBe('The desk research found 3 competitors. The same belts, other names.')
+    expect(wrapper.get('h1').text()).toBe('Our research found 3 competitors. The same belts, other names.')
     expect(rows(wrapper).map((r) => r.attributes('aria-label'))).toEqual([
       'Twentebelt, Netherlands: Tri-Flex; 2 scans',
       'Märtens, Germany: Eyelink; No scans',
@@ -152,7 +152,7 @@ describe('the company list', () => {
     const { wrapper } = await mountApp(api({ 'GET /api/v1/competitors': () => problem(500, 'Internal Server Error') }), '/competitors')
     expect(wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
     // The count is the server's, so it stays when the list fails.
-    expect(wrapper.get('h1').text()).toBe('The desk research found 3 competitors. The same belts, other names.')
+    expect(wrapper.get('h1').text()).toBe('Our research found 3 competitors. The same belts, other names.')
   })
 })
 
@@ -171,7 +171,7 @@ describe('the company card', () => {
       'Tri-FlexTwenteFlex spiral belts (and 1 more)',
       'Other beltsNot offered',
     ])
-    expect(card.text()).toContain('1 term from the map, credited by the desk research or found by its newest scan')
+    expect(card.text()).toContain('1 term from the map, from our research or found by its newest scan')
     expect(card.text()).toContain('TwenteFlex, Product')
     const stats = card.get('[data-testid="scan-stats"]').text()
     expect(stats).toContain('Scanned 2 times')

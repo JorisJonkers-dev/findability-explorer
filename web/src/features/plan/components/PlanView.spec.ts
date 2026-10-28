@@ -70,7 +70,7 @@ describe('the plan', () => {
     // A met target says so, draws no target behind its bar, and asks to be raised.
     expect(watch.text()).toContain("Search terms from the map found on tribelt.nl's newest scanMet: 45, target was 35")
     expect(watch.findAll('span.border-r-4')).toHaveLength(2)
-    expect(watch.text()).toContain('A met target is no goal any more. An administrator can raise it.')
+    expect(watch.text()).toContain('A target you have met is done. An administrator can raise it.')
     expect(watch.text()).toContain('Ashworth is named most in AI answers.')
     expect(watch.text()).toContain('Twentebelt is named most when buyers ask for Twente.')
     expect(watch.find('button').exists()).toBe(false)

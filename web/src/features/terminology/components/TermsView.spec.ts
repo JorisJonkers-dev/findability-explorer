@@ -52,7 +52,7 @@ describe('the search terms view', () => {
     const { wrapper } = await mountApp(api, '/terms')
     expect(wrapper.get('h1').text()).toBe('5 ways to search for a metal belt.')
     expect(document.title).toBe('Search terms · Findability Explorer')
-    expect(wrapper.text()).toContain('Terminology map, desk research')
+    expect(wrapper.text()).toContain('Terminology map, our research')
     expect(ranked(wrapper)).toEqual(['AISI 304', 'Eyelink belt', 'Drahtösengliederband', 'eye link belt', 'belt tracking'])
     expect(status(wrapper)).toBe('5 of 5 terms')
     const first = wrapper.get('ol[aria-label="Ranked terms"] li')

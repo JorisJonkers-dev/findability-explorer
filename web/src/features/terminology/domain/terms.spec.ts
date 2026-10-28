@@ -103,7 +103,7 @@ describe('the charts', () => {
 
   it('says how many terms tribelt.nl uses, and how that is known', () => {
     expect(usedLine(OVERVIEW)).toBe('The newest scan of tribelt.nl found 2 of the 5 terms.')
-    expect(usedLine({ ...OVERVIEW, from: 'research' })).toBe('The desk research credits Tribelt with 2 of the 5 terms.')
+    expect(usedLine({ ...OVERVIEW, from: 'research' })).toBe('Our research found 2 of the 5 terms for Tribelt.')
     expect(usedLine(undefined)).toBe('')
     expect(usedLine({ ...OVERVIEW, total: 0 })).toBe('')
   })

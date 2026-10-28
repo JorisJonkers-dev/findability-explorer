@@ -310,7 +310,7 @@ export function modeCost(plan: Pick<PromptRetryPlan, 'answerCosts'> | undefined,
 export function unknownLine(unknown: number): string | null {
   if (unknown === 0) return null
   const answers = unknown === 1 ? '1 missing answer' : `${String(unknown)} missing answers`
-  return `${answers} cannot be asked again. This run asked an earlier set of questions, and no answer kept them.`
+  return `${answers} cannot be asked again. This run used an earlier set of questions, and no answers were saved for them.`
 }
 
 /** Whether the answer was given but could not be read, so it can be read again without asking again. */

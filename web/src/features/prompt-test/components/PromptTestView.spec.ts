@@ -246,7 +246,7 @@ describe('asking again', () => {
       api(true, { [`GET /api/v1/admin/prompt-runs/${RUN_ID}/retry-plan`]: () => json(plan({ unknownTasks: 70 })) }),
       '/ai-search/prompt-test',
     )
-    expect(wrapper.text()).toContain('70 missing answers cannot be asked again. This run asked an earlier set of questions, and no answer kept them.')
+    expect(wrapper.text()).toContain('70 missing answers cannot be asked again. This run used an earlier set of questions, and no answers were saved for them.')
   })
 
   it('says why it cannot, and offers nothing to a viewer', async () => {

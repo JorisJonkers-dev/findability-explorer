@@ -21,9 +21,9 @@ describe('Catching up', () => {
     expect(wrapper.get('h1').text()).toBe('Tribelt trails the leaders on one of two measures.')
     const figures = wrapper.findAll('figure')
     expect(figures.map((f) => f.get('figcaption').text())).toEqual([
-      'Share of AI answers in the newest Prompt run that name the company Ashworth is ahead.',
-      'Search terms from the map found on the site by its newest scan Tribelt leads here.',
-      'Pages in the sitemap, on the newest scan Tribelt has no data here yet.',
+      'AI answers naming the company, in the newest Prompt run Ashworth is ahead.',
+      'Search terms from the map found on the site Tribelt leads here.',
+      'Pages in the sitemap Tribelt has no data here yet.',
     ])
     expect(figures[0]?.findAll('figcaption ~ div').map((d) => d.text())).toEqual(['Tribelt24%', 'Typical competitor17%', 'Ashworth57%'])
     expect(figures[1]?.text()).toContain('Märtens30')
@@ -40,7 +40,7 @@ describe('Catching up', () => {
     expect(todo.get('li a').attributes('href')).toBe('/competitors/ashworth')
     wrapper.unmount()
     const all = await mountApp(routes({ 'GET /api/v1/standings': () => json({ ...standings, open: [] }) }), '/catching-up')
-    expect(all.wrapper.text()).toContain('Every improvement of the plan is done.')
+    expect(all.wrapper.text()).toContain('All planned improvements are done.')
   })
 
   it('says when the comparison cannot be loaded', async () => {

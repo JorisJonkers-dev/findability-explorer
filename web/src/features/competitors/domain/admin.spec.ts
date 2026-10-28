@@ -117,7 +117,7 @@ describe("a re-scan", () => {
     ];
     expect(unscannedCandidates(companies).map((x) => x.id)).toEqual(["new"]);
     expect(leftOut(companies)).toBe(
-      "Left out of both: 2 companies without a website, 1 whose site turns scanners away.",
+      "Left out of both: 2 companies without a website, 1 whose site blocks the crawler.",
     );
     expect(leftOut([c("no-site", 0)])).toBe(
       "Left out of both: 1 company without a website.",

@@ -1,30 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bots, readiness, readinessRow, summary } from '../../../testing/fixtures'
-import { ACCESS_LEGEND, accessMark, checkedAgain, checkSummary, fiveChecksLine, hasMark, readinessCheckLine, readinessHeadline, scanNote, scanRange, scoredChecksTitle } from './overview'
-
-const CHECKS = [
-  { check: 'crawlers' as const, scored: true, passing: 2, tribelt: true },
-  { check: 'sitemap' as const, scored: true, passing: 3, tribelt: true },
-  { check: 'llmsTxt' as const, scored: true, passing: 2, tribelt: false },
-  { check: 'llmsFullTxt' as const, scored: true, passing: 3, tribelt: true },
-  { check: 'markdown' as const, scored: true, passing: 3, tribelt: true },
-  { check: 'product' as const, scored: false, passing: 1 },
-]
-
-describe('the summary', () => {
-  it("writes the server's count of the sites passing each check, with Tribelt beside it", () => {
-    expect(checkSummary({ checks: CHECKS, sites: 3 }).map((c) => [c.label, c.counted, c.passing, c.sites, c.tribelt])).toEqual([
-      ['Lets every AI crawler in', true, 2, 3, true],
-      ['Has a sitemap', true, 3, 3, true],
-      ['Has llms.txt', true, 2, 3, false],
-      ['Has llms-full.txt', true, 3, 3, true],
-      ['Has Markdown pages', true, 3, 3, true],
-      ['Product structured data', false, 1, 3, null],
-    ])
-    expect(checkSummary(undefined)).toEqual([])
-    expect(scoredChecksTitle(5)).toBe('The five checks the ranking counts')
-  })
-})
+import { ACCESS_LEGEND, accessMark, checkedAgain, hasMark, readinessCheckLine, scanNote, scanRange } from './overview'
 
 describe('the access marks', () => {
   it('differ in shape as well as colour', () => {
@@ -48,38 +24,12 @@ describe('the access marks', () => {
   })
 })
 
-describe('the scans and the headline', () => {
+describe('the scans', () => {
   it('say when the scans were made', () => {
     const rows = [readinessRow('A', { scan: summary({ finishedAt: '2026-10-24T08:00:00Z' }) }), readinessRow('B', { scan: summary({ finishedAt: '2026-10-27T08:00:00Z' }) })]
     expect(scanRange(rows)).toBe('Last scans from 24 October 2026 to 27 October 2026')
     expect(scanRange(rows.slice(0, 1))).toBe('Scanned on 24 October 2026')
     expect(scanRange([readinessRow('C', { scan: undefined })])).toBeNull()
-  })
-
-  it('names the leader of the backend ranking and where Tribelt stands', () => {
-    const ranking = [
-      { competitorId: 'martens', name: 'Märtens', role: 'competitor' as const, score: 5 },
-      { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt' as const, score: 3.5 },
-    ]
-    expect(readinessHeadline(ranking, 5)).toBe('Märtens leads with 5 of five checks. Tribelt passes 3½.')
-    expect(readinessHeadline(ranking.slice(0, 1), 5)).toBe('Märtens leads with 5 of five checks.')
-    expect(readinessHeadline(ranking.slice(1), 5)).toBe('Who lets search engines and AI assistants in.')
-    const costacurta = { competitorId: 'costacurta', name: 'Costacurta', role: 'competitor' as const, score: 3 }
-    const tribelt = (score: number) => ({ competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt' as const, score })
-    expect(readinessHeadline([costacurta, tribelt(3)], 5)).toBe('Tribelt shares the lead with Costacurta, at 3 of five checks.')
-    expect(readinessHeadline([costacurta, tribelt(4)], 5)).toBe('Tribelt leads with 4 of five checks. Next is Costacurta with 3.')
-    expect(readinessHeadline([costacurta, { ...costacurta, competitorId: 'audubon', name: 'Audubon' }, tribelt(2)], 5)).toBe(
-      'Costacurta and Audubon lead with 3 of five checks. Tribelt passes 2.',
-    )
-    const tied = ['Ammeraal Beltech', 'Averinox', 'Costacurta', 'Wire Belt'].map((name) => ({ ...costacurta, competitorId: name, name }))
-    expect(readinessHeadline([...tied, tribelt(3)], 5)).toBe('Tribelt shares the lead with Ammeraal Beltech, Averinox and 2 more, at 3 of five checks.')
-  })
-
-  it('names the five checks the headline scores', () => {
-    expect(fiveChecksLine({ checks: CHECKS, readinessChecks: 5 })).toBe(
-      'The five checks ask whether a site lets every AI crawler in, has a sitemap, has llms.txt, has llms-full.txt and has Markdown pages.',
-    )
-    expect(fiveChecksLine(undefined)).toBe('')
   })
 
   it('joins the count of sites and the scan days as sentences', () => {

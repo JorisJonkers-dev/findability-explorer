@@ -25,11 +25,11 @@ function grid(answers: PromptAnswer[], mode: PromptMode | 'all' = 'all') {
 }
 
 describe('the answer grid and its legend', () => {
-  it('shows every mark a square can show in the legend, with the same text, colours and border', () => {
+  it('shows every mark a square can show in the legend, with the same colours and border', () => {
     const wrapper = grid(everyMark())
-    const legend = wrapper.findAll('ul[aria-label="Legend"] li > span').map((s) => ({ text: s.text(), classes: s.attributes('class') }))
+    const legend = wrapper.findAll('ul[aria-label="What the squares mean"] li > span').map((s) => ({ text: s.text(), classes: s.attributes('class') }))
     const cells = wrapper.findAll('table button')
-    expect(new Set(cells.map((b) => b.text()))).toEqual(new Set(['1', '2', '3', '4', '5', '9', '?', '–', '✕']))
+    expect(new Set(cells.map((b) => b.text()))).toEqual(new Set(['1', '2', '3', '4', '5', '9', '•', '', '–']))
     for (const cell of cells) {
       const entry = legend.find((l) => l.classes === cell.attributes('class'))
       expect(entry, cell.attributes('aria-label')).toBeDefined()
@@ -38,43 +38,41 @@ describe('the answer grid and its legend', () => {
     }
   })
 
-  it('says what each mark and each column means', () => {
+  it('says what each mark means', () => {
     const wrapper = grid(everyMark())
-    expect(wrapper.findAll('ul[aria-label="Legend"] li').map((l) => l.text())).toEqual([
-      '1 Tribelt named first',
-      '2 Named 2nd or 3rd',
-      '4 Named 4th or later',
-      '? Named, place unknown',
-      '– Not named',
-      '✕ No answer. The model gave none, or it could not be read.',
-      'Own Own knowledge',
-      'Web With web search',
+    expect(wrapper.findAll('ul[aria-label="What the squares mean"] li').map((l) => l.text())).toEqual([
+      '1 Tribelt is named first',
+      '2 Tribelt is named second or third',
+      '4 Tribelt is named fourth or later',
+      '• Tribelt is named, but not in a ranked list',
+      'Tribelt is not named',
+      '– No answer came back',
     ])
     const heads = wrapper.findAll('thead tr:nth-child(2) th')
-    expect(heads.map((th) => th.attributes('title'))).toEqual(['Own knowledge', 'With web search', 'Own knowledge', 'With web search'])
-    expect(heads[0]?.get('.sr-only').text()).toBe('Own knowledge')
+    expect(heads.map((th) => th.attributes('title'))).toEqual(['from its own knowledge', 'with web search', 'from its own knowledge', 'with web search'])
+    expect(heads[0]?.get('.sr-only').text()).toBe('from its own knowledge')
   })
 
-  it('explains only the column it shows when narrowed to one mode', () => {
+  it('shows only the column of the mode it is narrowed to', () => {
     const wrapper = grid([at(1, 'web')], 'web')
-    expect(wrapper.findAll('ul[aria-label="Legend"] li').at(-1)?.text()).toBe('Web With web search')
-    expect(wrapper.findAll('ul[aria-label="Legend"] li').map((l) => l.text())).not.toContain('Own Own knowledge')
+    expect(wrapper.findAll('thead tr:nth-child(2) th').map((th) => th.attributes('title'))).toEqual(['with web search', 'with web search'])
   })
 
   it('describes every square in full, for hover and screen readers', () => {
     const wrapper = grid(everyMark(), 'knowledge')
     const labels = wrapper.findAll('table button').filter((b) => b.attributes('aria-label')?.startsWith('OpenAI'))
+    const head = 'OpenAI, from its own knowledge, Eyelink, Twente, in Dutch:'
     expect(labels.map((b) => b.attributes('aria-label'))).toEqual([
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named first',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 2nd',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 3rd',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 4th',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 5th',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named 9th',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt named, place unknown',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): Tribelt not named',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): No answer, the model gave none or it could not be read',
-      'OpenAI, own knowledge, Eyelink, Twente (Dutch): No answer, the model gave none or it could not be read',
+      `${head} Tribelt is named first.`,
+      `${head} Tribelt is named 2nd.`,
+      `${head} Tribelt is named 3rd.`,
+      `${head} Tribelt is named 4th.`,
+      `${head} Tribelt is named 5th.`,
+      `${head} Tribelt is named 9th.`,
+      `${head} Tribelt is named, but not in a ranked list.`,
+      `${head} Tribelt is not named.`,
+      `${head} No answer came back.`,
+      `${head} No answer came back.`,
     ])
     for (const b of labels) expect(b.attributes('title')).toBe(b.attributes('aria-label'))
   })

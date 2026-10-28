@@ -105,13 +105,13 @@ export function figures(summary: AiSearchSummary, cells: readonly PromptCell[], 
   const score = readinessScore(summary)
   return [
     {
-      to: '/numbers/ai-answers',
+      to: '/numbers/aiShareOfVoice',
       big: all.answers === 0 ? '–' : pct(all.named / all.answers),
       text: 'of AI answers name Tribelt',
       note: `Target ${pct(named)}.`,
     },
     {
-      to: '/numbers/web-citations',
+      to: '/numbers/citationShare',
       big: web.answers === 0 ? '–' : pct(web.cited / web.answers),
       text: 'of web answers cite tribelt.nl',
       note: cited === undefined ? '' : `Target ${String(cited)} web answers in a run.`,

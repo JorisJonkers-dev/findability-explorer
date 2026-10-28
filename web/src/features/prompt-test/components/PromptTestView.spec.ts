@@ -59,23 +59,23 @@ afterEach(() => {
 
 describe('the Prompt test grid', () => {
   it('shows every question against every provider and mode, coloured by Tribelt’s place', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/prompt-test')
-    expect(wrapper.get('h1').text()).toBe('Twente buyers hear of Tribelt. Everyone else hears of Twentebelt.')
-    expect(wrapper.findAll('tbody th').map((th) => th.text())).toEqual(['EyelinkTwente (Dutch)', 'EyelinkGerman, no region'])
-    expect(squares(wrapper).map((b) => b.text())).toEqual(['1', '3', '✕', '✕', '✕', '✕', '✕', '–'])
-    expect(squares(wrapper)[1]?.attributes('aria-label')).toBe('OpenAI, with web search, Eyelink, Twente (Dutch): Tribelt named 3rd')
-    expect(squares(wrapper)[2]?.attributes('aria-label')).toBe('Google, own knowledge, Eyelink, Twente (Dutch): No answer, the model gave none or it could not be read')
-    expect(wrapper.get('ul[aria-label="Legend"]').text()).toContain('Tribelt named first')
+    const { wrapper } = await mountApp(api(), '/ai-search/answers')
+    expect(wrapper.get('h1').text()).toBe('Twentebelt is the company AI responses list most often.')
+    expect(wrapper.findAll('tbody th').map((th) => th.text())).toEqual(['EyelinkTwente, in Dutch', 'EyelinkGerman, no region'])
+    expect(squares(wrapper).map((b) => b.text())).toEqual(['1', '3', '–', '–', '–', '–', '–', ''])
+    expect(squares(wrapper)[1]?.attributes('aria-label')).toBe('OpenAI, with web search, Eyelink, Twente, in Dutch: Tribelt is named 3rd.')
+    expect(squares(wrapper)[2]?.attributes('aria-label')).toBe('Google, from its own knowledge, Eyelink, Twente, in Dutch: No answer came back.')
+    expect(wrapper.get('ul[aria-label="What the squares mean"]').text()).toContain('Tribelt is named first')
     expect(wrapper.findAll('dl > div').map((d) => `${d.get('dd').text()} ${d.get('dt').text()}`)).toEqual([
-      '67% of answers name Tribelt',
-      '100% when the buyer asks for Twente',
-      '1 of 2 web answers cite tribelt.nl',
+      '358 answers in the newest run',
+      '2 providers asked: OpenAI and Google',
+      '$0.42 about what one run costs',
     ])
-    expect(wrapper.text()).toContain('360 of 360 answers, 2 without an answer. Done. Cost $0.42.')
+    expect(wrapper.text()).toContain('Prompt run of 1 Nov 2026. Finished.')
   })
 
   it('narrows to a mode and a scope, and keeps them in the address', async () => {
-    const { wrapper, router } = await mountApp(api(), '/ai-search/prompt-test')
+    const { wrapper, router } = await mountApp(api(), '/ai-search/answers')
     await wrapper.get('[aria-label="Search mode"] button:nth-child(3)').trigger('click')
     await settle()
     expect(router.currentRoute.value.query).toEqual({ mode: 'web' })
@@ -90,14 +90,16 @@ describe('the Prompt test grid', () => {
   })
 
   it('opens an answer: the companies it names with their websites, its sources, model, tokens and cost', async () => {
-    const { wrapper, router } = await mountApp(api(), '/ai-search/prompt-test')
-    expect(detail(wrapper).text()).toBe('Pick a square to read its answer.')
+    const { wrapper, router } = await mountApp(api(), '/ai-search/answers')
+    expect(detail(wrapper).text()).toBe('The answer you pickedPick a square to read the answer.')
     await squares(wrapper)[1]?.trigger('click')
     await settle()
     expect(router.currentRoute.value.query.answer).toBe('eyelink-application-twente|openai|web')
     expect(squares(wrapper)[1]?.attributes('aria-pressed')).toBe('true')
     const d = detail(wrapper)
-    expect(d.get('p.uppercase').findAll('span').map((s) => s.text())).toEqual(['OpenAI with web search', 'Eyelink', 'Twente (Dutch)'])
+    expect(d.get('h2').text()).toBe('Eyelink, Twente, in Dutch')
+    expect(d.text()).toContain('OpenAI, with web search.')
+    expect(d.text()).toContain('This answer names Tribelt second or third.')
     const names = d.findAll('ol[aria-label="Companies named"] li')
     expect(names.map((n) => n.text())).toEqual(['1Twentebeltits page', '2Ashworthnot a competitor yet', '3Tribelt B.V.'])
     expect(names[0]?.get('a[target="_blank"]').attributes('href')).toBe('https://www.twentebelt.com/')
@@ -108,31 +110,31 @@ describe('the Prompt test grid', () => {
   })
 
   it('shows the whole of a long answer on demand, and says when there is none', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/prompt-test?answer=eyelink-application-german|google|web')
-    expect(detail(wrapper).text()).toContain('…”')
+    const { wrapper } = await mountApp(api(), '/ai-search/answers?answer=eyelink-application-german|google|web')
+    expect(detail(wrapper).text()).toContain('…')
     await detail(wrapper).get('button').trigger('click')
-    expect(detail(wrapper).text()).not.toContain('…”')
+    expect(detail(wrapper).text()).not.toContain('…')
     expect(detail(wrapper).get('button').text()).toBe('Show less')
     await squares(wrapper)[2]?.trigger('click')
     await settle()
-    expect(detail(wrapper).text()).toContain('No answer to read. The model is rate limited.')
+    expect(detail(wrapper).text()).toContain('No answer came back for this question.The model is rate limited.')
   })
 
   it('opens an earlier run from the picker', async () => {
-    const { wrapper, router } = await mountApp(api(), '/ai-search/prompt-test?answer=x')
+    const { wrapper, router } = await mountApp(api(), '/ai-search/answers?answer=x')
     const select = wrapper.get('select')
     expect(select.findAll('option').map((o) => o.text())).toEqual(['1 Nov 2026 (done)', '25 Oct 2026 (stopped at the budget)'])
     await select.setValue(OLDER)
     await settle()
     expect(router.currentRoute.value.query).toEqual({ run: OLDER })
-    expect(wrapper.get('h1').text()).toBe('AI answers name ashworth most.')
+    expect(wrapper.get('h1').text()).toBe('ashworth is the company AI responses list most often.')
   })
 
   it("downloads the run's answers as CSV", async () => {
     const created = vi.fn<(blob: Blob) => string>(() => 'blob:csv')
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: created, revokeObjectURL: vi.fn() }))
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
-    const { wrapper } = await mountApp(api(), '/ai-search/prompt-test')
+    const { wrapper } = await mountApp(api(), '/ai-search/answers')
     await wrapper.findAll('button').find((b) => b.text() === 'Download as CSV')?.trigger('click')
     expect(click).toHaveBeenCalledOnce()
     const csv = await (created.mock.calls[0]?.[0] as Blob).text()
@@ -144,7 +146,7 @@ describe('the Prompt test grid', () => {
     let started = false
     const { wrapper } = await mountApp(
       api(true, { 'POST /api/v1/admin/prompt-runs': () => ((started = true), json(promptRun({ status: 'running' }), 202)) }),
-      '/ai-search/prompt-test',
+      '/ai-search/answers',
     )
     await wrapper.findAll('button').find((b) => b.text() === 'Run now')?.trigger('click')
     await settle()
@@ -153,7 +155,7 @@ describe('the Prompt test grid', () => {
   })
 
   it('offers no run button to a viewer', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/prompt-test')
+    const { wrapper } = await mountApp(api(), '/ai-search/answers')
     expect(wrapper.findAll('button').some((b) => b.text() === 'Run now')).toBe(false)
   })
 })
@@ -170,7 +172,7 @@ describe('asking again', () => {
           return json(retried(sent), 202)
         },
       }),
-      '/ai-search/prompt-test',
+      '/ai-search/answers',
     )
     const all = wrapper.findAll('button').find((b) => b.text().startsWith('Ask the'))
     expect(all?.text()).toBe('Ask the 357 missing answers again, about $0.43')
@@ -189,7 +191,7 @@ describe('asking again', () => {
           return json(retried(sent), 202)
         },
       }),
-      '/ai-search/prompt-test?answer=eyelink-application-twente|google|knowledge',
+      '/ai-search/answers?answer=eyelink-application-twente|google|knowledge',
     )
     const one = detail(wrapper).findAll('button').find((b) => b.text().startsWith('Ask Google again'))
     expect(one?.text()).toBe('Ask Google again, about $0.0012')
@@ -211,7 +213,7 @@ describe('asking again', () => {
           return json(retried(sent), 202)
         },
       }),
-      '/ai-search/prompt-test?answer=eyelink-application-twente|google|web',
+      '/ai-search/answers?answer=eyelink-application-twente|google|web',
     )
     expect(wrapper.findAll('button').some((b) => b.text().startsWith('Ask the'))).toBe(false)
     const one = detail(wrapper).findAll('button').find((b) => b.text().startsWith('Read this answer'))
@@ -234,7 +236,7 @@ describe('asking again', () => {
         [`GET /api/v1/admin/prompt-runs/${RUN_ID}/retry-plan`]: () => json(plan({ readTasks: 2 })),
         [`POST /api/v1/admin/prompt-runs/${RUN_ID}/reread`]: () => problem(409, 'Conflict', 'A Prompt run is running already.'),
       }),
-      '/ai-search/prompt-test',
+      '/ai-search/answers',
     )
     await wrapper.findAll('button').find((b) => b.text().startsWith('Read the'))?.trigger('click')
     await settle()
@@ -244,7 +246,7 @@ describe('asking again', () => {
   it('says when missing answers of an earlier set cannot be asked again', async () => {
     const { wrapper } = await mountApp(
       api(true, { [`GET /api/v1/admin/prompt-runs/${RUN_ID}/retry-plan`]: () => json(plan({ unknownTasks: 70 })) }),
-      '/ai-search/prompt-test',
+      '/ai-search/answers',
     )
     expect(wrapper.text()).toContain('70 missing answers cannot be asked again. This run used an earlier set of questions, and no answers were saved for them.')
   })
@@ -252,30 +254,30 @@ describe('asking again', () => {
   it('says why it cannot, and offers nothing to a viewer', async () => {
     const { wrapper } = await mountApp(
       api(true, { [`POST /api/v1/admin/prompt-runs/${RUN_ID}/retry`]: () => problem(409, 'Conflict', "The month's budget for Prompt runs is reached.") }),
-      '/ai-search/prompt-test',
+      '/ai-search/answers',
     )
     await wrapper.findAll('button').find((b) => b.text().startsWith('Ask the'))?.trigger('click')
     await settle()
     expect(wrapper.get('[role="alert"]').text()).toBe("The month's budget for Prompt runs is reached.")
     wrapper.unmount()
-    const viewer = await mountApp(api(), '/ai-search/prompt-test?answer=eyelink-application-twente|google|knowledge')
+    const viewer = await mountApp(api(), '/ai-search/answers?answer=eyelink-application-twente|google|knowledge')
     expect(viewer.wrapper.findAll('button').some((b) => b.text().startsWith('Ask'))).toBe(false)
   })
 })
 
 describe('before and around the grid', () => {
   it('says when no run has happened yet', async () => {
-    const { wrapper } = await mountApp(api(true, { 'GET /api/v1/prompt-test': () => json(promptResults({ runs: [] })) }), '/ai-search/prompt-test')
+    const { wrapper } = await mountApp(api(true, { 'GET /api/v1/prompt-test': () => json(promptResults({ runs: [] })) }), '/ai-search/answers')
     expect(wrapper.get('h1').text()).toBe('Do AI assistants name Tribelt?')
     expect(wrapper.text()).toContain('No Prompt run yet.')
     expect(wrapper.find('a[href="/settings/prompt-test"]').exists()).toBe(true)
   })
 
   it('says when the results or the answers cannot be loaded', async () => {
-    const broken = await mountApp(api(false, { 'GET /api/v1/prompt-test': () => problem(500, 'Internal Server Error', 'Down.') }), '/ai-search/prompt-test')
+    const broken = await mountApp(api(false, { 'GET /api/v1/prompt-test': () => problem(500, 'Internal Server Error', 'Down.') }), '/ai-search/answers')
     expect(broken.wrapper.get('[role="alert"]').text()).toContain('Down.')
     broken.wrapper.unmount()
-    const answersDown = await mountApp(api(false, { [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () => problem(500, 'Internal Server Error', 'Gone.') }), '/ai-search/prompt-test')
+    const answersDown = await mountApp(api(false, { [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () => problem(500, 'Internal Server Error', 'Gone.') }), '/ai-search/answers')
     expect(answersDown.wrapper.get('[role="alert"]').text()).toContain('Gone.')
   })
 })
@@ -293,10 +295,10 @@ describe('a company an answer names', () => {
           return json({ items: [{ name: 'Intralox', outcome: 'added', competitorId: 'intralox' }], scans: 0 })
         },
       }),
-      '/ai-search/prompt-test?answer=eyelink-application-twente|openai|web',
+      '/ai-search/answers?answer=eyelink-application-twente|openai|web',
     )
     const names = wrapper.findAll('ol[aria-label="Companies named"] li')
-    expect(names[1]?.find('a[href="/competitors/all"]').exists()).toBe(true)
+    expect(names[1]?.find('a[href="/competitors"]').exists()).toBe(true)
     await names[0]?.get('button').trigger('click')
     await settle()
     expect(sent).toEqual({ items: [{ name: 'Intralox', url: 'https://www.intralox.com' }], scan: false })

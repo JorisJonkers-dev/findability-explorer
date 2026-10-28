@@ -182,6 +182,7 @@ function pick(r: AiReadinessRow): void {
               :aria-label="c.aria"
               class="grid min-h-12 w-full cursor-pointer grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_2.5rem] items-center gap-3 rounded-xl border-2 bg-transparent px-2.5 py-1 text-left text-black hover:bg-mist sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_2.5rem_9.5rem] stage:min-h-[96px] stage:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_100px_360px] stage:gap-8 stage:rounded-[24px] stage:border-[3px] stage:px-5"
               :class="pickedCheck?.kind === c.kind ? 'border-black bg-white' : 'border-transparent'"
+              @click="picked = c.kind"
             >
               <span class="font-semibold stage:text-[32px]">{{ c.label }}</span>
               <span aria-hidden="true" class="relative block h-4 overflow-hidden rounded-lg bg-grey stage:h-8 stage:rounded-2xl">

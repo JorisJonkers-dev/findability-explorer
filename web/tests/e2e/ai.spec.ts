@@ -36,7 +36,7 @@ test.describe('at phone width', () => {
 
 test('the AI search summary lists every crawler and leads on to its pages', async ({ page }) => {
   await page.goto('/ai-search')
-  const labs = page.getByRole('region', { name: 'Which AI labs may read tribelt.nl' })
+  const labs = page.getByRole('region', { name: 'Which AI crawlers can read tribelt.nl' })
   await expect(labs.getByRole('rowheader')).toHaveCount(10)
   await expect(page.getByRole('region', { name: 'Ready for AI' })).toBeVisible()
   await expectAccessible(page)

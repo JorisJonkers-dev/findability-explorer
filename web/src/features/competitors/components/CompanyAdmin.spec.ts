@@ -116,7 +116,7 @@ describe('managing a company', () => {
     await button(wrapper, 'Archive').trigger('click')
     await settle()
     const confirm = wrapper.get('[role="group"][aria-label="Archive Example Belts?"]')
-    expect(confirm.text()).toContain('Archive this company? It leaves the list and the re-scans. Its scans stay, and it can be restored.')
+    expect(confirm.text()).toContain('Archive this company? It will be removed from the list and from re-scans. Its scans are kept, and it can be restored.')
     expect(document.activeElement?.textContent.trim()).toBe('Cancel')
     await button(wrapper, 'Archive').trigger('click')
     await settle()

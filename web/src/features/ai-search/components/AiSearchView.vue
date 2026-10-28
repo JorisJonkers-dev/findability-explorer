@@ -87,14 +87,14 @@ const promptCard = computed(() => {
       </section>
 
       <section aria-labelledby="labs-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-7">
-        <h2 id="labs-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Which AI labs may read tribelt.nl</h2>
+        <h2 id="labs-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Which AI crawlers can read tribelt.nl</h2>
         <div class="overflow-x-auto">
           <table class="w-full border-collapse text-sm stage:text-[28px]">
-            <caption class="sr-only">Each crawler, what letting it in gets Tribelt, and whether tribelt.nl lets it in</caption>
+            <caption class="sr-only">Each crawler, what it does for Tribelt, and whether tribelt.nl lets it in</caption>
             <thead>
               <tr class="border-b-[3px] border-black">
                 <th scope="col" class="py-2 text-left font-medium text-muted stage:py-3">Crawler</th>
-                <th scope="col" class="py-2 pl-4 text-left font-medium text-muted stage:py-3 stage:pl-5">What letting it in gets Tribelt</th>
+                <th scope="col" class="py-2 pl-4 text-left font-medium text-muted stage:py-3 stage:pl-5">What it does for Tribelt</th>
                 <th scope="col" class="py-2 pl-4 text-right font-medium text-muted stage:py-3 stage:pl-5">tribelt.nl</th>
               </tr>
             </thead>

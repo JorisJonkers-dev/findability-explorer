@@ -39,20 +39,20 @@ describe('the numbers to watch', () => {
       { target: 'termsUsed' as const, now: 45, goal: 35, met: true },
       { target: 'citations' as const, now: 3, goal: 50, met: false },
     ]
-    expect(metLine(watched, true)).toBe('A met target is no goal any more. Raise it under Change the targets.')
-    expect(metLine(watched, false)).toBe('A met target is no goal any more. An administrator can raise it.')
+    expect(metLine(watched, true)).toBe('A target you have met is done. Raise it under Change the targets.')
+    expect(metLine(watched, false)).toBe('A target you have met is done. An administrator can raise it.')
     expect(metLine(watched.slice(1), true)).toBe('')
   })
 
   it('name where the search terms come from before a scan of tribelt.nl', () => {
     expect(targetLabel('termsUsed', 'scan')).toBe("Search terms from the map found on tribelt.nl's newest scan")
-    expect(targetLabel('termsUsed', 'research')).toBe('Search terms from the map the desk research credits Tribelt with')
+    expect(targetLabel('termsUsed', 'research')).toBe('Search terms from the map found for Tribelt by our research')
     expect(watchedRow({ target: 'citations', goal: 50 }, 'research').label).toBe('Web answers in the newest Prompt run that cite tribelt.nl')
   })
 
   it('say why to keep an eye on a competitor', () => {
     expect(eyeOnText({ why: 'mostNamed' })).toBe('is named most in AI answers.')
-    expect(eyeOnText({ why: 'bestPrepared' })).toBe('has the best prepared website.')
+    expect(eyeOnText({ why: 'bestPrepared' })).toBe('is best prepared for AI.')
     expect(eyeOnText({ why: 'twente' })).toBe('is named most when buyers ask for Twente.')
   })
 })
@@ -68,7 +68,7 @@ describe('an improvement in words', () => {
     expect(standingLine({ measure: 'readinessChecks', tribelt: 2.5, leader })).toBe('tribelt.nl passes 2½ of five AI readiness checks. Märtens leads with 5.')
     expect(standingLine({ measure: 'sitemapPages', tribelt: 2140 })).toBe('The sitemaps of tribelt.nl list 2,140 pages.')
     expect(standingLine({ measure: 'termsUsed', tribelt: 45 })).toBe('The newest scan of tribelt.nl found 45 search terms from the map.')
-    expect(standingLine({ measure: 'termsUsed', tribelt: 12 }, 'research')).toBe('The desk research credits Tribelt with 12 search terms from the map.')
+    expect(standingLine({ measure: 'termsUsed', tribelt: 12 }, 'research')).toBe('Our research found 12 search terms from the map for Tribelt.')
     // Without data, it says what is missing.
     expect(standingLine({ measure: 'termsUsed', leader })).toBe('No scan of tribelt.nl yet. Märtens leads with 5.')
     expect(standingLine({ measure: 'citationShare' })).toBe('No Prompt run has finished yet.')

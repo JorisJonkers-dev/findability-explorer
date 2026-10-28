@@ -223,8 +223,8 @@ describe('asking again', () => {
 
   it('says when missing answers cannot be asked again', () => {
     expect(unknownLine(0)).toBeNull()
-    expect(unknownLine(1)).toBe('1 missing answer cannot be asked again. This run asked an earlier set of questions, and no answer kept them.')
-    expect(unknownLine(70)).toBe('70 missing answers cannot be asked again. This run asked an earlier set of questions, and no answer kept them.')
+    expect(unknownLine(1)).toBe('1 missing answer cannot be asked again. This run used an earlier set of questions, and no answers were saved for them.')
+    expect(unknownLine(70)).toBe('70 missing answers cannot be asked again. This run used an earlier set of questions, and no answers were saved for them.')
   })
 
   it('knows an answer that was given but not read', () => {

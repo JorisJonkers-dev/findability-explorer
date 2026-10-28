@@ -70,7 +70,7 @@ describe('the headline', () => {
 
 describe('where the search terms come from', () => {
   it('says so only while the desk research counts Tribelt\'s terms', () => {
-    expect(termsSourceLine('research')).toBe("tribelt.nl has not been scanned yet. Tribelt's bar counts the terms the desk research credits it with.")
+    expect(termsSourceLine('research')).toBe("tribelt.nl has not been scanned yet. Tribelt's bar counts the terms our research found for it.")
     expect(termsSourceLine('scan')).toBe('')
     expect(termsSourceLine(undefined)).toBe('')
   })

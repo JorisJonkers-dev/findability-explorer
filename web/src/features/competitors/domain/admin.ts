@@ -13,7 +13,7 @@ export const MAX_NAME_LENGTH = 200;
 export const ARCHIVE_ACTION = {
   button: "Archive",
   question:
-    "Archive this company? It leaves the list and the re-scans. Its scans stay, and it can be restored.",
+    "Archive this company? It will be removed from the list and from re-scans. Its scans are kept, and it can be restored.",
 } as const;
 
 /** Whether a company can also be deleted for good: only an added one; the research's record stays. */
@@ -134,7 +134,7 @@ export function leftOut(
     noSite > 0
       ? `${String(noSite)} ${noSite === 1 ? "company" : "companies"} without a website`
       : "",
-    blocked > 0 ? `${String(blocked)} whose site turns scanners away` : "",
+    blocked > 0 ? `${String(blocked)} whose site blocks the crawler` : "",
   ].filter((p) => p !== "");
   return parts.length === 0 ? null : `Left out of both: ${parts.join(", ")}.`;
 }

@@ -65,7 +65,7 @@ const LEGEND = [
 
       <section aria-labelledby="todo-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-7">
         <h2 id="todo-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">What to do, in order</h2>
-        <p v-if="!isLoading && !error && open.length === 0" class="m-0 text-ink-2">Every improvement of the plan is done.</p>
+        <p v-if="!isLoading && !error && open.length === 0" class="m-0 text-ink-2">All planned improvements are done.</p>
         <ol v-else class="m-0 flex list-none flex-col p-0">
           <li
             v-for="(it, i) in open"

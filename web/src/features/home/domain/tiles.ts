@@ -49,7 +49,7 @@ export function termsFigure(terms: OverviewTerms | undefined): { big: string; te
   if (!terms || terms.total === 0) return { big: '…', text: 'search terms in the terminology map.' }
   const used =
     terms.from === 'research'
-      ? `The desk research credits Tribelt with ${String(terms.tribelt)} of them.`
+      ? `Our research found ${String(terms.tribelt)} of them for Tribelt.`
       : `The newest scan of tribelt.nl found ${String(terms.tribelt)} of them.`
   return { big: String(terms.total), text: `search terms in ${String(terms.languages.length)} languages. ${used}` }
 }

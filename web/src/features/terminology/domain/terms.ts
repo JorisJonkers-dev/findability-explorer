@@ -75,7 +75,7 @@ export function tierRows(terms: OverviewTerms | undefined): ChartRow[] {
 export function usedLine(terms: OverviewTerms | undefined): string {
   if (!terms || terms.total === 0) return ''
   const of = `${String(terms.tribelt)} of the ${String(terms.total)} terms`
-  return terms.from === 'research' ? `The desk research credits Tribelt with ${of}.` : `The newest scan of tribelt.nl found ${of}.`
+  return terms.from === 'research' ? `Our research found ${of} for Tribelt.` : `The newest scan of tribelt.nl found ${of}.`
 }
 
 /** One cell of the heatmap: a company's terms of one kind. */

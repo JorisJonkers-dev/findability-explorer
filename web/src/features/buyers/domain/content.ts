@@ -47,7 +47,7 @@ export const METRICS: readonly Metric[] = [
     label: 'Engaged sessions',
     values: [0.34, 1.05, 1.15],
     format: 'ratio',
-    caption: 'Most paid visitors leave without engaging with a single page.',
+    caption: 'Most paid visitors leave after viewing just one page.',
   },
   {
     id: 'returning',

@@ -114,8 +114,8 @@ export function readinessCheckLine(check: ReadinessCheckState | undefined): stri
   const done = `Checked ${sites(read)} again.`
   if (check.failed === 0) return done
   return check.failed === 1
-    ? `${done} 1 site could not be read and keeps its scan's result.`
-    : `${done} ${String(check.failed)} sites could not be read and keep their scan's result.`
+    ? `${done} 1 site could not be read and keeps its previous result.`
+    : `${done} ${String(check.failed)} sites could not be read and keep their previous result.`
 }
 
 /**

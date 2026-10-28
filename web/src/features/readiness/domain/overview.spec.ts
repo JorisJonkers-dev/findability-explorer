@@ -95,8 +95,8 @@ describe('checking AI readiness again', () => {
     expect(readinessCheckLine({ running: true, checked: 0, failed: 0, total: 1 })).toBe('Checking 0 of 1 site again.')
     expect(readinessCheckLine({ running: true, checked: 12, failed: 0, total: 40 })).toBe('Checking 12 of 40 sites again.')
     expect(readinessCheckLine({ running: false, checked: 40, failed: 0, total: 40 })).toBe('Checked 40 sites again.')
-    expect(readinessCheckLine({ running: false, checked: 40, failed: 1, total: 40 })).toBe("Checked 39 sites again. 1 site could not be read and keeps its scan's result.")
-    expect(readinessCheckLine({ running: false, checked: 2, failed: 2, total: 2 })).toBe("Checked 0 sites again. 2 sites could not be read and keep their scan's result.")
+    expect(readinessCheckLine({ running: false, checked: 40, failed: 1, total: 40 })).toBe("Checked 39 sites again. 1 site could not be read and keeps its previous result.")
+    expect(readinessCheckLine({ running: false, checked: 2, failed: 2, total: 2 })).toBe("Checked 0 sites again. 2 sites could not be read and keep their previous result.")
   })
 
   it('names the newest day a site was checked again', () => {

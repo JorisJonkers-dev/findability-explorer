@@ -82,14 +82,14 @@ export function beltRows(company: Pick<Competitor, 'beltNames'>): BeltRow[] {
 
 /**
  * How many of the map's terms a company uses, and how that is known: "45 terms from the map, found
- * by the newest scan of tribelt.nl" for Tribelt, "12 terms from the map, credited by the desk
- * research or found by its newest scan" for another company.
+ * by the newest scan of tribelt.nl" for Tribelt, "12 terms from the map, from our research or found
+ * by its newest scan" for another company.
  */
 export function termsTitle(count: number, tribelt?: TermsSource): string {
   const terms = `${String(count)} ${count === 1 ? 'term' : 'terms'} from the map`
   if (tribelt === 'scan') return `${terms}, found by the newest scan of tribelt.nl`
-  if (tribelt === 'research') return `${terms}, credited by the desk research until tribelt.nl is scanned`
-  return `${terms}, credited by the desk research or found by its newest scan`
+  if (tribelt === 'research') return `${terms}, from our research until tribelt.nl is scanned`
+  return `${terms}, from our research or found by its newest scan`
 }
 
 /** The company the view opens on: Twentebelt, the Dutch maker closest to Tribelt. */

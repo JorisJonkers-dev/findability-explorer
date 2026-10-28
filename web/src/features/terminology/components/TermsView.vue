@@ -36,7 +36,7 @@ const { terms, total, error } = useTermMap()
 const { view, draft, toggle, clear, toggleGap } = useTermView()
 
 // Each column can be widened or minimised on the stage; the browser remembers the layout.
-const COLUMNS = ["Where Tribelt's words fall short", 'Terms per company', 'Ranked terms'] as const
+const COLUMNS = ["Terms Tribelt does not use", 'Terms per company', 'Ranked terms'] as const
 const columns = useColumnLayout('terms', [0.85, 1.1, 1.25])
 function columnProps(i: number) {
   return { title: COLUMNS[i] ?? '', state: columns.states.value[i] ?? 'normal', canMinimise: columns.canMinimise(i) }
@@ -96,13 +96,13 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_190px_150px_minmax(0,0.7fr
 </script>
 
 <template>
-  <SectionView section="terms" :title="title" :source="['Terminology map, desk research of 22 October 2026', 'Competitors: also found by live scans']">
+  <SectionView section="terms" :title="title" :source="['Terminology map, our research of 22 October 2026', 'Competitors: also found by live scans']">
     <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :style="{ gridTemplateColumns: columns.template.value }">
       <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5 stage:col-span-3">{{ error }}</p>
 
       <StageColumn v-bind="columnProps(0)" @widen="columns.widen(0)" @minimise="columns.minimise(0)" @restore="columns.restore(0)">
         <section aria-labelledby="terms-charts-title" class="flex flex-col gap-6 stage:min-h-0 stage:gap-8">
-          <SectionHeading id="terms-charts-title">Where Tribelt's words fall short</SectionHeading>
+          <SectionHeading id="terms-charts-title">Terms Tribelt does not use</SectionHeading>
           <p v-if="usedLine(overview?.terms)" class="m-0 text-base font-semibold stage:text-[30px]">
             {{ usedLine(overview?.terms) }}
           </p>
@@ -140,7 +140,7 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_190px_150px_minmax(0,0.7fr
           </div>
 
           <p class="m-0 rounded-2xl bg-mist p-5 stage:mt-auto stage:rounded-[28px] stage:px-10 stage:py-9 stage:text-[30px]">
-            A specifier who knows only the installed belt searches with the competitor's name for it.
+            A buyer who only knows the belt they already have searches using the competitor's name for it.
             <strong class="font-semibold">Recommendation 3:</strong> every Tribelt belt page names its competitor equivalents, in
             Dutch, German and English.
           </p>

@@ -66,7 +66,7 @@ export const TARGETS: Record<PlanTarget, { label: string; format: (v: number) =>
 
 /** The label of a number to watch; the search terms say so when the desk research counts them, before a scan of tribelt.nl. */
 export function targetLabel(target: PlanTarget, termsFrom?: TermsSource): string {
-  if (target === 'termsUsed' && termsFrom === 'research') return 'Search terms from the map the desk research credits Tribelt with'
+  if (target === 'termsUsed' && termsFrom === 'research') return 'Search terms from the map found for Tribelt by our research'
   return TARGETS[target].label
 }
 
@@ -108,8 +108,8 @@ export function watchedRow(w: WatchedNumber, termsFrom?: TermsSource): WatchedRo
 export function metLine(watched: readonly WatchedNumber[], isAdmin: boolean): string {
   if (!watched.some((w) => w.met === true && w.now !== undefined)) return ''
   return isAdmin
-    ? 'A met target is no goal any more. Raise it under Change the targets.'
-    : 'A met target is no goal any more. An administrator can raise it.'
+    ? 'A target you have met is done. Raise it under Change the targets.'
+    : 'A target you have met is done. An administrator can raise it.'
 }
 
 /** Why to keep an eye on a competitor, in a sentence after its name. */
@@ -118,7 +118,7 @@ export function eyeOnText(e: Pick<EyeOn, 'why'>): string {
     case 'mostNamed':
       return 'is named most in AI answers.'
     case 'bestPrepared':
-      return 'has the best prepared website.'
+      return 'is best prepared for AI.'
     case 'twente':
       return 'is named most when buyers ask for Twente.'
   }
@@ -137,7 +137,7 @@ const NOW: Record<StandingMeasure, { says: (value: string) => string; missing: s
 export function standingLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>, termsFrom?: TermsSource): string {
   const now = NOW[it.measure]
   const credited = it.measure === 'termsUsed' && termsFrom === 'research'
-  const says = (v: string) => (credited ? `The desk research credits Tribelt with ${v} search terms from the map.` : now.says(v))
+  const says = (v: string) => (credited ? `Our research found ${v} search terms from the map for Tribelt.` : now.says(v))
   const tribelt = it.tribelt === undefined ? now.missing : says(formatValue(it.measure, it.tribelt))
   return it.leader ? `${tribelt} ${it.leader.name} leads with ${formatValue(it.measure, it.leader.value)}.` : tribelt
 }

@@ -39,11 +39,11 @@ function columnProps(i: number) {
 const selected = computed(() =>
   selectedCompany([...companies.value, ...archived.value], typeof route.query.company === 'string' ? route.query.company : undefined),
 )
-// The server counts the competitors the desk research found, as the home page shows them.
+// The server counts the competitors our research found, as the home page shows them.
 const { overview } = useOverview()
 const title = computed(() => {
   const count = overview.value?.competitors.makers ?? 0
-  return count > 0 ? `The desk research found ${String(count)} competitors. The same belts, other names.` : 'The same belts, other names.'
+  return count > 0 ? `Our research found ${String(count)} competitors. The same belts, other names.` : 'The same belts, other names.'
 })
 
 /** Shows a company: the address keeps it, so a link or a reload shows the same one. */

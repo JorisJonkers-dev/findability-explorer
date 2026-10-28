@@ -57,7 +57,7 @@ describe('the search terms tile', () => {
 
   it('counts the terms and the languages, and says how many terms tribelt.nl uses and how that is known', () => {
     expect(termsFigure(terms)).toEqual({ big: '4', text: 'search terms in 3 languages. The newest scan of tribelt.nl found 2 of them.' })
-    expect(termsFigure({ ...terms, from: 'research' }).text).toBe('search terms in 3 languages. The desk research credits Tribelt with 2 of them.')
+    expect(termsFigure({ ...terms, from: 'research' }).text).toBe('search terms in 3 languages. Our research found 2 of them for Tribelt.')
     expect(termsFigure(undefined)).toEqual({ big: '…', text: 'search terms in the terminology map.' })
     expect(termsFigure({ total: 0, tribelt: 0, languages: [] }).big).toBe('…')
   })

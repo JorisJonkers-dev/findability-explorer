@@ -8,7 +8,7 @@ import { directionOf, nextSort, type Sort } from '../../../shared/sort'
 import SortButton from '../../../shared/ui/SortButton.vue'
 import { hostOf } from '../../prompt-test/domain/grid'
 import { formatValue } from '../../catching-up/domain/standings'
-import SectionView from '../../shell/components/SectionView.vue'
+import PageView from '../../shell/components/PageView.vue'
 import { companyPath } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
 import { usePlan } from '../../plan/composables/usePlan'
@@ -131,11 +131,11 @@ function pick(r: AiReadinessRow): void {
 </script>
 
 <template>
-  <SectionView eyebrow="02 AI search, AI readiness" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
+  <PageView section="ai-search" eyebrow="02 AI search, AI readiness" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
     <template #lede>
       <p class="m-0 max-w-[62ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">Each check is something a website can do to help search engines and AI assistants read it. The newest scan checked the sites of Tribelt and its competitors.</p>
     </template>
-    <template v-if="!isLoading && !error" #aside>
+    <div v-if="!isLoading && !error" class="flex flex-col gap-3">
       <div class="flex flex-col gap-3 stage:items-end stage:gap-5">
         <p class="m-0 max-w-[60ch] text-sm text-muted text-pretty stage:max-w-[1500px] stage:text-right stage:text-[26px]">{{ scanNote(rows, sites) }}</p>
         <div v-if="isAdmin" class="flex flex-wrap items-center gap-3 stage:flex-row-reverse stage:gap-6">
@@ -151,7 +151,7 @@ function pick(r: AiReadinessRow): void {
           <p v-if="checkError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ checkError }}</p>
         </div>
       </div>
-    </template>
+    </div>
 
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-muted">Loading the AI readiness…</p>
@@ -395,5 +395,5 @@ function pick(r: AiReadinessRow): void {
         </div>
       </section>
     </div>
-  </SectionView>
+  </PageView>
 </template>

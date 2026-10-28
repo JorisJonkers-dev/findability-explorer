@@ -8,11 +8,11 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
   const router = createRouter({
     history,
     routes: [
-      { path: '/', name: 'home', component: () => import('../features/home/components/HomePoster.vue'), meta: { title: 'Overview' } },
+      { path: '/', name: 'home', component: () => import('../features/home/components/HomeView.vue'), meta: { title: 'Overview' } },
       {
         path: '/numbers/:measure',
         name: 'number',
-        component: () => import('../features/home/components/NumberDetailView.vue'),
+        component: () => import('../features/numbers/components/NumberDetailView.vue'),
         props: (to) => ({ measure: String(to.params.measure) }),
         meta: { title: 'Number' },
       },
@@ -55,17 +55,19 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         meta: { title: 'Over time' },
       },
       { path: '/terms', name: 'terms', component: () => import('../features/terminology/components/TermsView.vue'), meta: { title: 'Search terms' } },
+      // Every term in the map, ranked, with its filters in the query: a page of its own, linked from Search terms.
+      { path: '/terms/all', name: 'all-terms', component: () => import('../features/terminology/components/AllTermsView.vue'), meta: { title: 'Every term' } },
       {
         path: '/terms/families/:family',
         name: 'family',
-        component: () => import('../features/products/components/ProductView.vue'),
+        component: () => import('../features/products/components/FamilyView.vue'),
         props: (to) => ({ slug: String(to.params.family) }),
         meta: { title: 'Belt family' },
       },
       {
         path: '/recommendations',
         name: 'recommendations',
-        component: () => import('../features/plan/components/PlanView.vue'),
+        component: () => import('../features/plan/components/RecommendationsView.vue'),
         meta: { title: 'Recommendations' },
       },
       {
@@ -92,8 +94,8 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       { path: '/ai-search/prompt-test', redirect: '/ai-search/answers' },
       { path: '/competitors/all', redirect: '/competitors' },
       { path: '/settings/candidates', redirect: '/settings/competitors' },
-      { path: '/terminology', redirect: (to) => ({ path: '/terms', query: to.query }) },
-      { path: '/keywords', redirect: (to) => ({ path: '/terms', query: to.query }) },
+      { path: '/terminology', redirect: (to) => ({ path: '/terms/all', query: to.query }) },
+      { path: '/keywords', redirect: (to) => ({ path: '/terms/all', query: to.query }) },
       { path: '/scan', redirect: (to) => ({ path: '/competitors', query: to.query }) },
       { path: '/analyses', redirect: (to) => ({ path: '/competitors', query: to.query }) },
       { path: '/analyses/:id', redirect: (to) => ({ path: `/scan/${String(to.params.id)}`, query: to.query }) },

@@ -13,8 +13,8 @@ const aria = computed(
 </script>
 
 <template>
-  <ul role="img" :aria-label="aria" class="m-0 flex list-none flex-col gap-3 p-0">
-    <li v-for="r in rows" :key="r.label" class="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3">
+  <div role="img" :aria-label="aria" class="flex flex-col gap-3">
+    <div v-for="r in rows" :key="r.label" class="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3">
       <span class="truncate text-sm" :class="r.highlight ? 'font-bold text-black' : 'text-ink-2'">{{ r.label }}</span>
       <span class="relative h-[22px]">
         <span class="absolute inset-x-0 top-1.5 h-2.5 rounded-[5px] bg-grey"></span>
@@ -27,6 +27,6 @@ const aria = computed(
         ></span>
       </span>
       <span class="text-sm tabular-nums" :class="r.highlight ? 'font-bold text-black' : 'text-ink-2'">{{ r.display }}</span>
-    </li>
-  </ul>
+    </div>
+  </div>
 </template>

@@ -81,8 +81,8 @@ describe('the settings page', () => {
   it('tells someone who is not an administrator, and shows no forms', async () => {
     const { wrapper, requests } = await mountApp(routes({ 'GET /api/v1/admin/llm': () => problem(403, 'Forbidden') }), '/settings')
     expect(wrapper.get('[role="alert"]').text()).toContain('Only administrators can change these settings.')
-    // Only the account's sign-out form is left.
-    expect(wrapper.findAll('form').map((f) => f.attributes('action'))).toEqual(['/auth/logout'])
+    // Only sign-out forms are left: the account's own, and the one in the footer.
+    expect(wrapper.findAll('form').map((f) => f.attributes('action'))).toEqual(['/auth/logout', '/auth/logout'])
     expect(wrapper.find('nav[aria-label="Account"] a[href="/settings"]').exists()).toBe(false)
     expect(requests()).toContain('GET /api/v1/admin/llm')
   })

@@ -6,7 +6,7 @@ import { saveText } from '../../../shared/download'
 import { useAddCompanies } from '../../competitors/composables/useCompanyAdmin'
 import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import { batchSummary } from '../../competitors/domain/tray'
-import SectionView from '../../shell/components/SectionView.vue'
+import PageView from '../../shell/components/PageView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { usePromptAnswers, usePromptResults, useRetryPlan, useRetryRun, useStartRun } from '../composables/usePromptTest'
 import {
@@ -85,13 +85,13 @@ function download(): void {
 </script>
 
 <template>
-  <SectionView eyebrow="02 AI search, every answer" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
+  <PageView section="ai-search" eyebrow="02 AI search, every answer" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
     <template #lede>
       <p class="m-0 max-w-[66ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">
         Each square is one answer from the newest Prompt run. Pick a square to read the answer and see which companies it names.
       </p>
     </template>
-    <template v-if="results && run" #aside>
+    <div v-if="results && run" class="flex flex-col gap-3">
       <div class="flex flex-wrap items-center gap-3 stage:justify-end stage:gap-4">
         <label class="inline-flex items-center gap-2 text-sm font-medium stage:gap-3 stage:text-[24px]">
           Run
@@ -145,7 +145,7 @@ function download(): void {
       <p v-if="startError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ startError }}</p>
       <p v-if="retryNotice" class="m-0 text-sm font-medium stage:text-[24px]" aria-live="polite">{{ retryNotice }}</p>
       <p v-if="retryError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ retryError }}</p>
-    </template>
+    </div>
 
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-muted">Loading the results…</p>
@@ -207,5 +207,5 @@ function download(): void {
         </AnswerDetail>
       </div>
     </div>
-  </SectionView>
+  </PageView>
 </template>

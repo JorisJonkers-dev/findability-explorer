@@ -5,7 +5,7 @@ import DonutChart from '../../../shared/ui/charts/DonutChart.vue'
 import PillButton from '../../../shared/ui/PillButton.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
 import { tally } from '../../prompt-test/domain/results'
-import SectionView from '../../shell/components/SectionView.vue'
+import PageView from '../../shell/components/PageView.vue'
 import { useAiSearchPage } from '../composables/useAiSearchPage'
 import { pct } from '../domain/summary'
 import { type Scope, slice } from '../domain/voice'
@@ -21,7 +21,7 @@ const total = computed(() => tally(page.cells.value).answers)
 </script>
 
 <template>
-  <SectionView section="ai-search" :title="page.headline.value">
+  <PageView section="ai-search" :title="page.headline.value">
     <template #lede>
       <p class="m-0 max-w-[64ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">{{ page.lede.value }}</p>
     </template>
@@ -113,5 +113,5 @@ const total = computed(() => tally(page.cells.value).answers)
         </RouterLink>
       </div>
     </div>
-  </SectionView>
+  </PageView>
 </template>

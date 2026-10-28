@@ -22,7 +22,7 @@ describe('signing in', () => {
     expect(wrapper.find('h1').exists()).toBe(false)
     answer(json(me()))
     await settle()
-    expect(wrapper.get('h1').text()).toBe('Check every Monday. Fix one thing a week. Watch the numbers move.')
+    expect(wrapper.get('h1').text()).toBe('Start with the changes that help Tribelt most.')
   })
 
   it('sends the browser to sign in when the session has ended, and back to the same page after', async () => {
@@ -146,9 +146,9 @@ describe('the routes', () => {
 
   it("sends earlier versions' addresses to their new views, keeping the query", async () => {
     const { router } = await mountApp(api, '/terminology?q=spiral&tier=product')
-    expect(router.currentRoute.value.fullPath).toBe('/terms?q=spiral&tier=product')
+    expect(router.currentRoute.value.fullPath).toBe('/terms/all?q=spiral&tier=product')
     await router.push('/keywords?q=mesh')
-    expect(router.currentRoute.value.fullPath).toBe('/terms?q=mesh')
+    expect(router.currentRoute.value.fullPath).toBe('/terms/all?q=mesh')
     await router.push('/scan?x=1')
     expect(router.currentRoute.value.fullPath).toBe('/competitors?x=1')
     await router.push('/analyses')

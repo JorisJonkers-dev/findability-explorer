@@ -45,8 +45,8 @@ describe('the numbers to watch', () => {
   })
 
   it('name where the search terms come from before a scan of tribelt.nl', () => {
-    expect(targetLabel('termsUsed', 5, 'scan')).toBe("Search terms from the map found on tribelt.nl's newest scan")
-    expect(targetLabel('termsUsed', 5, 'research')).toBe('Search terms from the map found for Tribelt by our research')
+    expect(targetLabel('termsUsed', 5, 'scan')).toBe("Search terms from our list found in tribelt.nl's newest scan")
+    expect(targetLabel('termsUsed', 5, 'research')).toBe('Search terms from our list found for Tribelt by our research')
     // The readiness checks say how many there are, as the server counts them.
     expect(targetLabel('readinessChecks', 5)).toMatch(/, out of five$/)
     expect(watchedRow({ target: 'readinessChecks', now: 3, goal: 6, max: 6 }, 6).label).toMatch(/, out of six$/)
@@ -73,8 +73,8 @@ describe('an improvement in words', () => {
       'The sitemaps of tribelt.nl list 60% of the pages its newest scan read. Märtens leads with 100%.',
     )
     expect(standingLine({ measure: 'sitemapCoverage' }, 5)).toBe('Not measured on tribelt.nl yet. Scan it again.')
-    expect(standingLine({ measure: 'termsUsed', tribelt: 45 }, 5)).toBe('The newest scan of tribelt.nl found 45 search terms from the map.')
-    expect(standingLine({ measure: 'termsUsed', tribelt: 12 }, 5, 'research')).toBe('Our research found 12 search terms from the map for Tribelt.')
+    expect(standingLine({ measure: 'termsUsed', tribelt: 45 }, 5)).toBe('The newest scan of tribelt.nl found 45 search terms from our list.')
+    expect(standingLine({ measure: 'termsUsed', tribelt: 12 }, 5, 'research')).toBe('Our research found 12 search terms from our list for Tribelt.')
     // Without data, it says what is missing.
     expect(standingLine({ measure: 'termsUsed', leader }, 5)).toBe('No scan of tribelt.nl yet. Märtens leads with 5.')
     expect(standingLine({ measure: 'citationShare' }, 5)).toBe('No Prompt run has finished yet.')
@@ -94,6 +94,6 @@ describe('an improvement in words', () => {
     expect(foundLine([part('a Dutch sitemap', true), part('a German sitemap', false), part('an English sitemap', true)])).toBe(
       'The latest scan found a Dutch sitemap and an English sitemap, but not a German sitemap.',
     )
-    expect(foundLine([part('Product markup', false), part('FAQ markup', true)])).toBe('The latest scan found FAQ markup, but not Product markup.')
+    expect(foundLine([part('Product structured data', false), part('FAQ structured data', true)])).toBe('The latest scan found FAQ structured data, but not Product structured data.')
   })
 })

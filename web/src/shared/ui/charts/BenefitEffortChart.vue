@@ -11,7 +11,7 @@ const placed = computed(() =>
   props.dots.map((d) => {
     const same = props.dots.filter((o) => o.benefit === d.benefit && o.effort === d.effort)
     const nudge = (same.indexOf(d) - (same.length - 1) / 2) * 7
-    return { ...d, x: 8 + ((d.effort - 1) / 4) * 84 + nudge, y: 8 + ((5 - d.benefit) / 4) * 80 }
+    return { ...d, x: ((d.effort - 1) / 4) * 100 + nudge, y: ((5 - d.benefit) / 4) * 100 }
   }),
 )
 </script>
@@ -25,20 +25,23 @@ const placed = computed(() =>
         <div class="bg-mist p-3 text-right text-[13px] font-bold text-muted">Big projects</div>
         <div class="flex items-end bg-mist p-3 text-[13px] font-bold text-muted">Small extras</div>
         <div class="flex items-end justify-end bg-white p-3 text-[13px] font-bold text-muted">Probably later</div>
-        <button
-          v-for="d in placed"
-          :key="d.id"
-          type="button"
-          :title="d.tip"
-          :aria-label="d.tip"
-          :aria-pressed="picked === d.id"
-          class="absolute size-10 cursor-pointer rounded-full border-solid p-0 text-[15px] font-extrabold text-black transition-transform hover:scale-110"
-          :class="picked === d.id ? 'border-[3px] border-black bg-orange shadow-[0_0_0_4px_#fff]' : 'border-2 border-black bg-white'"
-          :style="{ left: `calc(${String(d.x)}% - 20px)`, top: `calc(${String(d.y)}% - 4px)` }"
-          @click="emit('pick', d.id)"
-        >
-          {{ d.rank }}
-        </button>
+        <!-- Dots live in an inner box that stays clear of the corner labels. -->
+        <div class="pointer-events-none absolute inset-x-8 inset-y-16">
+          <button
+            v-for="d in placed"
+            :key="d.id"
+            type="button"
+            :title="d.tip"
+            :aria-label="d.tip"
+            :aria-pressed="picked === d.id"
+            class="pointer-events-auto absolute size-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-solid p-0 text-[15px] font-extrabold text-black transition-transform hover:scale-110"
+            :class="picked === d.id ? 'border-[3px] border-black bg-orange shadow-[0_0_0_4px_#fff]' : 'border-2 border-black bg-white'"
+            :style="{ left: `${String(d.x)}%`, top: `${String(d.y)}%` }"
+            @click="emit('pick', d.id)"
+          >
+            {{ d.rank }}
+          </button>
+        </div>
       </div>
       <div aria-hidden="true" class="text-center text-[13px] font-semibold text-muted">More work →</div>
     </div>

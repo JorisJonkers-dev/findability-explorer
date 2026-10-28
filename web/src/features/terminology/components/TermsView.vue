@@ -51,7 +51,7 @@ const sliceColour = (value: string, tone: string): string => (value === pickedSl
         </div>
       </section>
 
-      <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
+      <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
         <section aria-labelledby="lang-title" class="flex flex-col gap-5 rounded-[28px] border-2 border-mist p-6">
           <h2 id="lang-title" class="m-0 font-display text-2xl font-extrabold">The terms by language</h2>
           <div class="flex flex-wrap items-center gap-x-6 gap-y-4">

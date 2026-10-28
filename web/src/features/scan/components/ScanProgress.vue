@@ -12,10 +12,10 @@ const width = computed(() => (state.value.fraction === null ? '100%' : percent(M
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 rounded-2xl bg-white p-5 stage:gap-4 stage:rounded-[28px] stage:p-9">
-    <p aria-live="polite" class="m-0 text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[24px]">{{ state.label }}</p>
-    <p class="m-0 font-display text-2xl font-semibold stage:text-[56px]">{{ siteHost(summary.url) }}</p>
-    <p class="m-0 text-sm text-ink-2 stage:text-[28px]">
+  <div class="flex flex-col gap-3 rounded-2xl bg-white p-5">
+    <p aria-live="polite" class="m-0 text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase">{{ state.label }}</p>
+    <p class="m-0 font-display text-2xl font-semibold">{{ siteHost(summary.url) }}</p>
+    <p class="m-0 text-sm text-ink-2">
       The scan reads up to {{ summary.maxPages }} pages, respecting robots.txt, then ranks the phrases and matches the products.
     </p>
     <div
@@ -25,7 +25,7 @@ const width = computed(() => (state.value.fraction === null ? '100%' : percent(M
       :aria-valuemax="summary.maxPages"
       :aria-valuenow="state.fraction === null ? undefined : summary.pagesCrawled"
       :aria-valuetext="state.label"
-      class="h-3 overflow-hidden rounded-full bg-grey stage:h-5"
+      class="h-3 overflow-hidden rounded-full bg-grey"
     >
       <div class="belt h-full rounded-full" :class="{ 'opacity-40': state.fraction === null }" :style="{ width }"></div>
     </div>

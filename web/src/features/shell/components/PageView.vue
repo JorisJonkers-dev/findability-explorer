@@ -13,6 +13,8 @@ const props = defineProps<{
   /** A detail page's way back, such as "Back to Overview". */
   back?: { to: RouteLocationRaw; label: string }
   title: string
+  /** Where the figures come from, a line each. */
+  source?: readonly string[]
 }>()
 
 const eyebrowText = computed(() => {
@@ -30,7 +32,11 @@ const eyebrowText = computed(() => {
       <SectionEyebrow>{{ eyebrowText }}</SectionEyebrow>
       <h1 class="m-0 font-display text-4xl leading-[1.04] font-semibold tracking-[-0.02em] text-balance sm:text-6xl">{{ title }}</h1>
       <slot name="lede" />
+      <slot name="aside" />
     </header>
     <slot />
+    <p v-if="source?.length" class="m-0 text-sm text-muted">
+      <template v-for="(line, index) in source" :key="line"><br v-if="index > 0" />{{ line }}</template>
+    </p>
   </div>
 </template>

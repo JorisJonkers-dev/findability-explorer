@@ -18,8 +18,8 @@ const nameInput = useTemplateRef<HTMLInputElement>('nameInput')
 const cancelButton = useTemplateRef<HTMLButtonElement>('cancelButton')
 const action = computed(() => (mode.value === 'remove' ? removeAction(props.company) : ARCHIVE_ACTION))
 
-const BUTTON = 'min-h-11 rounded-full border-2 px-5 font-medium stage:min-h-[76px] stage:border-[3px] stage:px-8 stage:text-[26px]'
-const FIELD = 'h-11 min-w-0 rounded-xl border-2 border-grey bg-white px-3 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-5 stage:text-[28px]'
+const BUTTON = 'min-h-11 rounded-full border-2 px-5 font-medium'
+const FIELD = 'h-11 min-w-0 rounded-xl border-2 border-grey bg-white px-3 text-base text-black'
 
 async function edit(): Promise<void> {
   name.value = props.company.name
@@ -79,25 +79,25 @@ function confirm(): void {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 stage:gap-4">
-    <p v-if="saveError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[26px]">{{ saveError }}</p>
-    <p v-if="removeError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[26px]">{{ removeError }}</p>
+  <div class="flex flex-col gap-3">
+    <p v-if="saveError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ saveError }}</p>
+    <p v-if="removeError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ removeError }}</p>
     <form
       v-if="mode === 'edit'"
       novalidate
       :aria-label="`Edit ${company.name}`"
-      class="flex flex-col gap-3 rounded-2xl bg-mist p-4 stage:gap-4 stage:rounded-[28px] stage:p-8"
+      class="flex flex-col gap-3 rounded-2xl bg-mist p-4"
       @submit.prevent="save"
     >
-      <label class="flex flex-col gap-1.5 text-sm text-ink-2 stage:text-[26px]">
+      <label class="flex flex-col gap-1.5 text-sm text-ink-2">
         Name
         <input ref="nameInput" v-model="name" type="text" maxlength="200" :class="FIELD" />
       </label>
-      <label class="flex flex-col gap-1.5 text-sm text-ink-2 stage:text-[26px]">
+      <label class="flex flex-col gap-1.5 text-sm text-ink-2">
         Website
         <input v-model="website" type="url" inputmode="url" spellcheck="false" :class="FIELD" />
       </label>
-      <p v-if="formError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[26px]">{{ formError }}</p>
+      <p v-if="formError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ formError }}</p>
       <div class="flex flex-wrap gap-3">
         <button type="submit" :disabled="isSaving" :class="BUTTON" class="border-black bg-black text-white hover:bg-ink-2 disabled:opacity-70">
           {{ isSaving ? 'Saving…' : 'Save' }}
@@ -109,9 +109,9 @@ function confirm(): void {
       v-else-if="mode === 'archive' || mode === 'remove'"
       role="group"
       :aria-label="`${mode === 'archive' ? 'Archive' : 'Remove'} ${company.name}?`"
-      class="flex flex-wrap items-center gap-3 stage:gap-4"
+      class="flex flex-wrap items-center gap-3"
     >
-      <span class="font-medium stage:text-[26px]">{{ action.question }}</span>
+      <span class="font-medium">{{ action.question }}</span>
       <button
         type="button"
         :disabled="isRemoving || isSaving"
@@ -123,7 +123,7 @@ function confirm(): void {
       </button>
       <button ref="cancelButton" type="button" :class="BUTTON" class="border-grey bg-white text-black hover:border-black" @click="mode = 'idle'">Cancel</button>
     </div>
-    <div v-else role="group" aria-label="Manage this company" class="flex flex-wrap gap-3 stage:gap-4">
+    <div v-else role="group" aria-label="Manage this company" class="flex flex-wrap gap-3">
       <button v-if="company.archived" type="button" :disabled="isSaving" :class="BUTTON" class="border-black bg-white text-black hover:bg-black hover:text-white" @click="restore">
         Restore
       </button>

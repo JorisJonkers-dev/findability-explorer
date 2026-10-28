@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SectionView from '../../shell/components/SectionView.vue'
+import PageView from '../../shell/components/PageView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import ScanPanel from './ScanPanel.vue'
 
@@ -10,7 +10,7 @@ const { isAdmin } = useMe()
 </script>
 
 <template>
-  <SectionView section="competitors" title="What the scan found." :back="{ to: '/competitors', label: 'Back to Competitors' }" :source="['Scans: live, from this app']">
+  <PageView section="competitors" title="What the scan found." :back="{ to: '/competitors', label: 'Back to Competitors' }" :source="['Scans: live, from this app']">
     <ScanPanel :scan-id="scanId" :is-admin="isAdmin" />
-  </SectionView>
+  </PageView>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import SectionView from '../../shell/components/SectionView.vue'
+import PageView from '../../shell/components/PageView.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { companyPath } from '../../shell/domain/sections'
 import { usePlan } from '../composables/usePlan'
@@ -26,7 +26,7 @@ const back = { to: '/recommendations', label: 'Back to Recommendations' }
 </script>
 
 <template>
-  <SectionView section="recommendations" :title="it?.title ?? 'Recommendation'" :back="back">
+  <PageView section="recommendations" :title="it?.title ?? 'Recommendation'" :back="back">
     <template v-if="it" #lede>
       <p class="m-0 max-w-[66ch] text-lg text-ink-2">{{ it.why }}</p>
     </template>
@@ -149,5 +149,5 @@ const back = { to: '/recommendations', label: 'Back to Recommendations' }
         </div>
       </section>
     </div>
-  </SectionView>
+  </PageView>
 </template>

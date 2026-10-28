@@ -111,9 +111,9 @@ defineExpose({
 </script>
 
 <template>
-  <form novalidate aria-label="Scan a website" class="flex flex-col gap-3 stage:gap-4" @submit.prevent="submit">
+  <form novalidate aria-label="Scan a website" class="flex flex-col gap-3" @submit.prevent="submit">
     <div class="relative">
-      <label for="scan-url" class="mb-1.5 block text-sm text-ink-2 stage:mb-2 stage:text-[26px]">Website address</label>
+      <label for="scan-url" class="mb-1.5 block text-sm text-ink-2">Website address</label>
       <input
         id="scan-url"
         ref="input"
@@ -130,7 +130,7 @@ defineExpose({
         :aria-activedescendant="expanded && active >= 0 ? optionId(active) : undefined"
         :aria-invalid="urlError !== null"
         :aria-describedby="urlError !== null ? 'scan-url-error' : 'scan-url-company'"
-        class="h-12 w-full rounded-full border-2 bg-white px-5 text-base text-black stage:h-24 stage:border-[3px] stage:px-8 stage:text-[32px]"
+        class="h-12 w-full rounded-full border-2 bg-white px-5 text-base text-black"
         :class="urlError !== null ? 'border-orange-ink' : 'border-grey'"
         @input="typed"
         @keydown="onKeydown"
@@ -141,7 +141,7 @@ defineExpose({
         :id="LISTBOX"
         role="listbox"
         aria-label="Known companies"
-        class="absolute top-full right-0 left-0 z-10 m-0 mt-2 list-none rounded-2xl bg-white p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.18)] stage:rounded-[28px] stage:p-2 stage:shadow-[0_20px_48px_rgba(0,0,0,0.18)]"
+        class="absolute top-full right-0 left-0 z-10 m-0 mt-2 list-none rounded-2xl bg-white p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.18)]"
       >
         <li
           v-for="(company, index) in options"
@@ -150,7 +150,7 @@ defineExpose({
           role="option"
           tabindex="-1"
           :aria-selected="index === active"
-          class="flex cursor-pointer items-baseline justify-between gap-4 rounded-xl px-3 py-2.5 stage:gap-5 stage:rounded-[20px] stage:px-6 stage:py-[18px] stage:text-[30px]"
+          class="flex cursor-pointer items-baseline justify-between gap-4 rounded-xl px-3 py-2.5"
           :class="index === active ? 'bg-mist' : 'hover:bg-mist'"
           @mousedown.prevent="choose(company)"
         >
@@ -160,33 +160,33 @@ defineExpose({
       </ul>
     </div>
 
-    <p v-if="urlError !== null" id="scan-url-error" role="alert" class="m-0 text-sm text-orange-ink stage:text-[28px]">{{ urlError }}</p>
+    <p v-if="urlError !== null" id="scan-url-error" role="alert" class="m-0 text-sm text-orange-ink">{{ urlError }}</p>
     <div id="scan-url-company" aria-live="polite">
-      <p v-if="state.kind === 'known'" class="m-0 text-sm text-ink-2 stage:text-[28px]">
+      <p v-if="state.kind === 'known'" class="m-0 text-sm text-ink-2">
         <strong class="font-semibold text-black">{{ state.company.shortName }}</strong>,
         {{ state.company.groupCompany ? "in Tribelt's own group" : 'a known competitor' }}.
         {{ scanCountLabel(state.company.scans, isScanning(state.company)) }}.
       </p>
-      <div v-else-if="state.kind === 'new'" class="flex flex-col gap-1.5 stage:gap-2">
-        <label class="flex items-center gap-3 text-sm text-ink-2 stage:gap-5 stage:text-[26px]">
+      <div v-else-if="state.kind === 'new'" class="flex flex-col gap-1.5">
+        <label class="flex items-center gap-3 text-sm text-ink-2">
           New company
           <input
             v-model="newName"
             type="text"
             maxlength="200"
             autocomplete="organization"
-            class="h-10 min-w-0 flex-1 rounded-full border-2 border-grey bg-white px-4 text-base text-black stage:h-[76px] stage:border-[3px] stage:px-6 stage:text-[28px]"
+            class="h-10 min-w-0 flex-1 rounded-full border-2 border-grey bg-white px-4 text-base text-black"
             @input="newNameEdited = true"
           />
         </label>
-        <p class="m-0 text-sm text-muted stage:text-[24px]">Not in the list yet. The scan adds it as a new competitor.</p>
+        <p class="m-0 text-sm text-muted">Not in the list yet. The scan adds it as a new competitor.</p>
       </div>
     </div>
-    <p v-if="formError !== null" role="alert" class="m-0 text-sm text-orange-ink stage:text-[28px]">{{ formError }}</p>
+    <p v-if="formError !== null" role="alert" class="m-0 text-sm text-orange-ink">{{ formError }}</p>
     <button
       type="submit"
       :disabled="isStarting"
-      class="min-h-12 rounded-full border-0 bg-black text-base font-semibold text-white hover:bg-ink-2 disabled:opacity-70 stage:min-h-24 stage:text-[32px]"
+      class="min-h-12 rounded-full border-0 bg-black text-base font-semibold text-white hover:bg-ink-2 disabled:opacity-70"
     >
       {{ isStarting ? 'Starting…' : 'Scan website' }}
     </button>

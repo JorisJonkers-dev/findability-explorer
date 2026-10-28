@@ -48,7 +48,7 @@ describe('a recommendation', () => {
     const lead = wrapper.get('a[href="/competitors/ashworth"]')
     expect(lead.text()).toContain('Leads on this measure.')
     expect(wrapper.text()).toContain('An administrator marks this one as done')
-    expect(wrapper.get('header').text()).toContain('Back to Recommendations')
+    expect(wrapper.text()).toContain('Back to Recommendations')
     expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })
 

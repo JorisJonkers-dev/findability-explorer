@@ -49,7 +49,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         props: (to) => ({ companyId: String(to.params.id) }),
         meta: { title: 'Competitor' },
       },
-      // A company's search terms and scan history, a view of its own: the stage has no room beside the list.
+      // A company's search terms and scan history, a view of its own, with room for both.
       {
         path: '/competitors/:id/history',
         name: 'company-history',

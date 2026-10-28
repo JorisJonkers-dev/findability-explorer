@@ -118,10 +118,7 @@ test('Search terms shows the language split, the belt families and a way to ever
   await german.click()
   await expect(german).toHaveAttribute('aria-pressed', 'true')
   await expectAccessible(page)
-  // On a 1280 by 720 window the stage clips this link below the fold (reported), so it is followed from the keyboard.
-  const all = page.getByRole('link', { name: 'its own page' })
-  await all.focus()
-  await all.press('Enter')
+  await page.getByRole('link', { name: 'its own page' }).click()
   await expect(page).toHaveURL('/terms/all')
   await page.getByRole('link', { name: 'Back to Search terms' }).click()
   await page.getByRole('list', { name: 'Belt families' }).getByRole('link').first().click()

@@ -100,16 +100,16 @@ func Improvements() []Improvement {
 			DoneWhen: "tribelt.nl/index.md opens, or llms.txt links to Markdown pages.",
 		},
 		{
-			ID: "structured-data", Title: "Mark up products and FAQs", Moves: "Improves AI readiness, and helps AI answers describe Tribelt correctly.",
+			ID: "structured-data", Title: "Add structured data to the belt pages", Moves: "Improves AI readiness, and helps AI answers describe Tribelt correctly.",
 			Benefit: 3, Effort: 3,
 			Measure: MeasureReadiness, Check: CheckStructuredData,
-			Why: "Markup tells search engines and AI tools what a page is about: the product, its specifications and the questions it answers. They use it to describe a company in their answers.",
+			Why: "Structured data tells search engines and AI tools what a page is about: the product, its specifications, and the questions it answers. They use it to describe a company in their answers.",
 			Steps: []string{
-				"Add Product markup to each belt page, with the name, a description and the main specifications.",
-				"Add FAQPage markup to a page with buyers' common questions and their answers.",
+				"Add Product structured data to each belt page, with the name, a description, and the main specifications.",
+				"Add FAQPage structured data to a page with buyers' common questions and their answers.",
 				"Test the pages with Google's Rich Results Test.",
 			},
-			DoneWhen: "The pages of tribelt.nl carry both Product and FAQ markup.",
+			DoneWhen: "The pages of tribelt.nl carry both Product and FAQ structured data.",
 		},
 		{
 			ID: "buyer-words", Title: "Use the words buyers search for", Moves: "Increases the number of search terms tribelt.nl uses.",
@@ -193,7 +193,7 @@ func (c AutoCheck) Parts(r Readiness) []Part {
 	case CheckMarkdown:
 		return []Part{{"Markdown pages", r.Markdown}}
 	case CheckStructuredData:
-		return []Part{{"Product markup", r.Product}, {"FAQ markup", slices.Contains(r.StructuredData, "FAQPage")}}
+		return []Part{{"Product structured data", r.Product}, {"FAQ structured data", slices.Contains(r.StructuredData, "FAQPage")}}
 	case CheckNone:
 	}
 	return nil

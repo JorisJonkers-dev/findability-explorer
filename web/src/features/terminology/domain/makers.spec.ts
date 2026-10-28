@@ -27,6 +27,7 @@ describe('withMakers', () => {
     expect(first?.scanMakers).toEqual(['ESFO'])
     // A term without makers has no companies.
     expect(second).toMatchObject({ usedBy: [], scanMakers: [] })
+    expect(withMakers([term({ makers: undefined })], companies)[0]?.usedBy).toEqual([])
     expect(withMakers([term({ makers: [{ competitorId: 'pelger', fromScan: false }, { competitorId: 'pelger-again', fromScan: false }] })], companies)[0]?.usedBy).toEqual(['Pelger'])
   })
 })

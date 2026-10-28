@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Standing } from '../../../infrastructure/api/types.gen'
-import { barsOf, formatValue, headline, inWords, noteOf, termsSourceLine } from './standings'
+import { barsOf, formatValue, headline, inWords, measureLabel, MEASURES, noteOf, termsSourceLine } from './standings'
 
 const voice: Standing = {
   measure: 'aiShareOfVoice',
@@ -20,6 +20,11 @@ describe('the values', () => {
     expect(formatValue('readinessChecks', 5)).toBe('5')
     expect(formatValue('sitemapCoverage', 0.85)).toBe('85%')
     expect(formatValue('termsUsed', 18)).toBe('18')
+  })
+
+  it('label the readiness checks with how many there are, as the server counts them', () => {
+    expect(measureLabel('readinessChecks', 5)).toBe('AI readiness checks passed out of five, on the newest scan')
+    expect(measureLabel('termsUsed', 5)).toBe(MEASURES.termsUsed.label)
   })
 
   it('count small numbers in words', () => {

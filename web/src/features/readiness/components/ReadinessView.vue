@@ -275,7 +275,7 @@ function pick(r: AiReadinessRow): void {
             <p v-if="!selected.scan || missing" class="m-0 text-ink-2">No scan has recorded its robots.txt yet.</p>
             <p v-else-if="filesLoading" class="m-0 text-muted">Loading…</p>
             <p v-else-if="robots.length === 0" class="m-0 text-ink-2">The site serves no robots.txt.</p>
-            <pre v-else class="m-0 max-h-64 overflow-auto rounded-xl bg-white p-3 text-xs stage:max-h-[360px] stage:p-5 stage:text-[20px]"><code><span
+            <pre v-else tabindex="0" class="m-0 max-h-64 overflow-auto rounded-xl bg-white p-3 text-xs stage:max-h-[360px] stage:p-5 stage:text-[20px]"><code><span
               v-for="(line, i) in robots"
               :key="i"
               :class="line.ai ? 'bg-orange/25 font-semibold' : ''"

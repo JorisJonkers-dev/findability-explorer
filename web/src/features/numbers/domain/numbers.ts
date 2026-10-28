@@ -9,7 +9,7 @@ export function oxford(items: readonly string[]): string {
 
 /** What the page knows about each number to watch. The server decides which numbers there are and their targets. */
 type Definition = {
-  /** The address, `/numbers/:slug`. */
+  /** The address, `/numbers/:slug`: the standing measure's own name, or the target's when no standing measure matches (Twente). */
   slug: string
   label: string
   /** What the number counts, as a sentence. */
@@ -28,7 +28,7 @@ type Definition = {
 
 const DEFINITIONS: Record<PlanTarget, Definition> = {
   aiShareOfVoice: {
-    slug: 'ai-answers',
+    slug: 'aiShareOfVoice',
     label: 'AI answers that name Tribelt',
     counts: "the share of the newest Prompt run's answers that name Tribelt at least once.",
     unit: 'aiShareOfVoice',
@@ -36,7 +36,7 @@ const DEFINITIONS: Record<PlanTarget, Definition> = {
     improvedBy: 'aiShareOfVoice',
   },
   twenteShareOfVoice: {
-    slug: 'twente-answers',
+    slug: 'twenteShareOfVoice',
     label: 'Answers about Twente that name Tribelt',
     counts: "the share of the newest Prompt run's answers to questions about Twente that name Tribelt at least once.",
     unit: 'aiShareOfVoice',
@@ -44,7 +44,7 @@ const DEFINITIONS: Record<PlanTarget, Definition> = {
     improvedBy: 'aiShareOfVoice',
   },
   citations: {
-    slug: 'web-citations',
+    slug: 'citationShare',
     label: 'Web answers that cite tribelt.nl',
     counts: "how many of the newest Prompt run's web answers cite tribelt.nl.",
     unit: 'termsUsed',
@@ -52,7 +52,7 @@ const DEFINITIONS: Record<PlanTarget, Definition> = {
     improvedBy: 'citationShare',
   },
   readinessChecks: {
-    slug: 'ai-readiness',
+    slug: 'readinessChecks',
     label: 'AI readiness checks passed',
     counts: 'how many of the AI readiness checks the newest scan of tribelt.nl passes.',
     unit: 'readinessChecks',
@@ -60,7 +60,7 @@ const DEFINITIONS: Record<PlanTarget, Definition> = {
     improvedBy: 'readinessChecks',
   },
   termsUsed: {
-    slug: 'search-terms',
+    slug: 'termsUsed',
     label: 'Search terms tribelt.nl uses',
     counts: "how many of the map's search terms the newest scan of tribelt.nl found.",
     unit: 'termsUsed',

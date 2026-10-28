@@ -16,7 +16,7 @@ test('the recommendations are ranked, and an administrator marks one as done and
   await page.goto(`/recommendations/${mine.id}`)
   await expect(page).toHaveURL(`/recommendations/${mine.id}`)
   await expect(page.getByRole('heading', { level: 1, name: mine.title })).toBeVisible()
-  await expect(page.getByRole('list').getByRole('button', { name: /^\d/ }).first()).toBeVisible()
+  await expect(page.locator('ol button[aria-pressed]').first()).toBeVisible()
   await expectAccessible(page)
 
   await page.getByRole('button', { name: 'Mark as done' }).click()

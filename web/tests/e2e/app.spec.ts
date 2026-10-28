@@ -2,7 +2,7 @@ import { expect, expectAccessible, test } from './fixtures'
 
 const SECTIONS = [
   { path: '/buyers', title: 'Buyers', heading: 'Paid search buys traffic, not buyers.' },
-  { path: '/ai-search', title: 'AI search', heading: 'An AI assistant can only recommend what it has read.' },
+  { path: '/ai-search', title: 'AI search', heading: /^(Tribelt .* AI answers name|AI assistants, and what they say about Tribelt)/ },
   { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors are on our list\. The same belts, other names\.$/ },
   { path: '/terms', title: 'Search terms', heading: /^Competitors list belts using \d+ terms/ },
   { path: '/recommendations', title: 'Recommendations', heading: 'Start with the changes that help Tribelt most.' },

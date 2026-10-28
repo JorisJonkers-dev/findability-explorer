@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.12.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.11.1...v1.12.0) (2026-10-28)
+
+
+### Features
+
+* rank recommendations by benefit against effort ([#96](https://github.com/JorisJonkers-dev/findability-explorer/issues/96)) ([76cae3c](https://github.com/JorisJonkers-dev/findability-explorer/commit/76cae3c093d170cd29d5064aac6addc9ecd8dd61))
+* readiness out of eight checks, and web citations as a share ([#99](https://github.com/JorisJonkers-dev/findability-explorer/issues/99)) ([0213c53](https://github.com/JorisJonkers-dev/findability-explorer/commit/0213c537a239c931fe8b08871f9f42ea8c78987d))
+* redesign AI search, every answer and AI readiness by site ([#98](https://github.com/JorisJonkers-dev/findability-explorer/issues/98)) ([8575b88](https://github.com/JorisJonkers-dev/findability-explorer/commit/8575b884509c3aedbb079b42cb928fab59bfcb6c))
+* redesign Search terms and the belt family page ([#95](https://github.com/JorisJonkers-dev/findability-explorer/issues/95)) ([153180b](https://github.com/JorisJonkers-dev/findability-explorer/commit/153180b56e7f88926dd74b431e859f689f5359da))
+* **web:** new top bar, detail-page routes, and shared charts for the redesign ([#93](https://github.com/JorisJonkers-dev/findability-explorer/issues/93)) ([227924a](https://github.com/JorisJonkers-dev/findability-explorer/commit/227924a73633db49322d284776563c19daed508c))
+* **web:** overview dashboard, number pages, Buyers detail page and a footer on every page ([#94](https://github.com/JorisJonkers-dev/findability-explorer/issues/94)) ([77143f7](https://github.com/JorisJonkers-dev/findability-explorer/commit/77143f7f8b00eb5536052cae60c63099223caf12))
+* **web:** redesign Competitors and the competitor detail page ([#97](https://github.com/JorisJonkers-dev/findability-explorer/issues/97)) ([2e2631a](https://github.com/JorisJonkers-dev/findability-explorer/commit/2e2631aa90942123b2a98c2962e005934f1775de))
+
+
+### Bug Fixes
+
+* the poster says one belt has many names, not five ([#91](https://github.com/JorisJonkers-dev/findability-explorer/issues/91)) ([994cd29](https://github.com/JorisJonkers-dev/findability-explorer/commit/994cd29079ba2dfa92414e1843c0bf018830507c))
+* **web:** chart labels, figure cards and the language card sit cleanly ([#101](https://github.com/JorisJonkers-dev/findability-explorer/issues/101)) ([3cf1f31](https://github.com/JorisJonkers-dev/findability-explorer/commit/3cf1f31522c83f81adffba64613d405d4f5cab32))
+* **web:** plain scrolling pages with the footer for Search terms, Recommendations and Competitors ([#100](https://github.com/JorisJonkers-dev/findability-explorer/issues/100)) ([6d82ee2](https://github.com/JorisJonkers-dev/findability-explorer/commit/6d82ee2b463af7c2b7bf9e12ede44a40c81866bd))
+
 ## [1.11.1](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.11.0...v1.11.1) (2026-10-28)
 
 

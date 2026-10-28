@@ -99,13 +99,13 @@ func TestRankingKeepsTribeltInView(t *testing.T) {
 
 func TestTargetsHaveDefaultsAndRules(t *testing.T) {
 	d := domain.DefaultTargets()
-	if len(d) != len(domain.Targets()) || d[domain.TargetShareOfVoice] != 0.40 || d[domain.TargetTermsUsed] != 90 || d[domain.TargetCitations] != 50 {
+	if len(d) != len(domain.Targets()) || d[domain.TargetShareOfVoice] != 0.40 || d[domain.TargetTermsUsed] != 90 || d[domain.TargetCitationShare] != 0.50 {
 		t.Errorf("defaults = %v", d)
 	}
 	// Every default is above where Tribelt stood when they were set (October 2026): a target
 	// already reached is no goal.
 	for target, then := range map[domain.Target]float64{
-		domain.TargetShareOfVoice: 0.05, domain.TargetTwenteShareOfVoice: 0.16, domain.TargetReadiness: 3, domain.TargetTermsUsed: 45, domain.TargetCitations: 28,
+		domain.TargetShareOfVoice: 0.05, domain.TargetTwenteShareOfVoice: 0.16, domain.TargetReadiness: 3, domain.TargetTermsUsed: 45, domain.TargetCitationShare: 0.28,
 	} {
 		if d[target] <= then {
 			t.Errorf("the default for %s, %v, is not above %v", target, d[target], then)
@@ -119,11 +119,12 @@ func TestTargetsHaveDefaultsAndRules(t *testing.T) {
 		{domain.TargetShareOfVoice, 0.4, true},
 		{domain.TargetShareOfVoice, 1.2, false},
 		{domain.TargetTwenteShareOfVoice, 0, false},
-		{domain.TargetCitations, 20, true},
-		{domain.TargetCitations, 0.5, false},
+		{domain.TargetCitationShare, 0.5, true},
+		{domain.TargetCitationShare, 20, false},
 		{domain.TargetReadiness, 4.5, true},
 		{domain.TargetReadiness, 4.2, false},
-		{domain.TargetReadiness, 6, false},
+		{domain.TargetReadiness, 8, true},
+		{domain.TargetReadiness, 9, false},
 		{domain.TargetTermsUsed, 35, true},
 		{domain.TargetTermsUsed, 35.5, false},
 		{domain.TargetTermsUsed, 20_000, false},
@@ -141,7 +142,10 @@ func TestTargetsHaveDefaultsAndRules(t *testing.T) {
 	if most, ok := domain.MaxOf(domain.TargetTwenteShareOfVoice); !ok || most != 1 {
 		t.Errorf("a share's most = %v", most)
 	}
-	if _, ok := domain.MaxOf(domain.TargetCitations); ok {
+	if most, ok := domain.MaxOf(domain.TargetCitationShare); !ok || most != 1 {
+		t.Errorf("the citation share's most = %v", most)
+	}
+	if _, ok := domain.MaxOf(domain.TargetTermsUsed); ok {
 		t.Error("a count has a most")
 	}
 }

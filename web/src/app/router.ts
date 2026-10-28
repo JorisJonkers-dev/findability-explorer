@@ -65,7 +65,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/recommendations',
         name: 'recommendations',
-        component: () => import('../features/plan/components/PlanView.vue'),
+        component: () => import('../features/plan/components/RecommendationsView.vue'),
         meta: { title: 'Recommendations' },
       },
       {

@@ -12,7 +12,7 @@ import (
 
 // ImprovementsVersion is the version of the improvements catalogue. A change to which
 // improvements there are, or their order, is a new version, as the prompt set's is.
-const ImprovementsVersion = 1
+const ImprovementsVersion = 2
 
 // AutoCheck is how a scan of tribelt.nl shows an improvement done; empty for one only an
 // administrator can tick off.
@@ -38,13 +38,23 @@ type Improvement struct {
 	Why      string
 	Steps    []string
 	DoneWhen string
+	// Benefit is how much it helps, and Effort how much work it takes, each from ScoreMin to ScoreMax.
+	Benefit int
+	Effort  int
 }
+
+// ScoreMin and ScoreMax bound an improvement's benefit and effort.
+const (
+	ScoreMin = 1
+	ScoreMax = 5
+)
 
 // Improvements is the catalogue, in the order to work through it.
 func Improvements() []Improvement {
 	return []Improvement{
 		{
 			ID: "submit-search-engines", Title: "Submit tribelt.nl to Google and Bing", Moves: "Helps Tribelt appear in Gemini and Copilot answers.",
+			Benefit: 4, Effort: 1,
 			Measure: MeasureShareOfVoice, Check: CheckNone,
 			Why: "Gemini answers from Google's index and Copilot from Bing's. A page these search engines don't know cannot turn up in their answers.",
 			Steps: []string{
@@ -56,6 +66,7 @@ func Improvements() []Improvement {
 		},
 		{
 			ID: "sitemap-per-language", Title: "A sitemap for each language", Moves: "Helps search engines find every page in Dutch, German and English.",
+			Benefit: 2, Effort: 2,
 			Measure: MeasureSitemapCoverage, Check: CheckSitemaps,
 			Why: "Search engines and AI crawlers find pages through the sitemap. German and English pages that no sitemap lists are found late, or not at all.",
 			Steps: []string{
@@ -67,6 +78,7 @@ func Improvements() []Improvement {
 		},
 		{
 			ID: "llms-files", Title: "Add llms.txt and llms-full.txt", Moves: "Improves AI readiness.",
+			Benefit: 3, Effort: 1,
 			Measure: MeasureReadiness, Check: CheckLLMsFiles,
 			Why: "llms.txt gives AI tools a short map of the site in plain text, and llms-full.txt gives them the content itself. Both help an assistant describe Tribelt's belts correctly.",
 			Steps: []string{
@@ -78,6 +90,7 @@ func Improvements() []Improvement {
 		},
 		{
 			ID: "markdown-pages", Title: "Offer each belt page as Markdown", Moves: "Improves AI readiness.",
+			Benefit: 2, Effort: 3,
 			Measure: MeasureReadiness, Check: CheckMarkdown,
 			Why: "AI tools read plain text more reliably than a page full of menus and scripts. A Markdown version of a belt page gives them the facts without the clutter.",
 			Steps: []string{
@@ -88,6 +101,7 @@ func Improvements() []Improvement {
 		},
 		{
 			ID: "structured-data", Title: "Mark up products and FAQs", Moves: "Improves AI readiness, and helps AI answers describe Tribelt correctly.",
+			Benefit: 3, Effort: 3,
 			Measure: MeasureReadiness, Check: CheckStructuredData,
 			Why: "Markup tells search engines and AI tools what a page is about: the product, its specifications and the questions it answers. They use it to describe a company in their answers.",
 			Steps: []string{
@@ -99,6 +113,7 @@ func Improvements() []Improvement {
 		},
 		{
 			ID: "buyer-words", Title: "Use the words buyers search for", Moves: "Increases the number of search terms tribelt.nl uses.",
+			Benefit: 4, Effort: 3,
 			Measure: MeasureTermsUsed, Check: CheckNone,
 			Why: "Buyers search in their own words, which are often not Tribelt's product names. A page that uses their words turns up in their searches and in AI answers to them.",
 			Steps: []string{
@@ -110,6 +125,7 @@ func Improvements() []Improvement {
 		},
 		{
 			ID: "family-pages", Title: "One page per belt family in each language", Moves: "Helps Tribelt appear in answers to German and English questions.",
+			Benefit: 5, Effort: 5,
 			Measure: MeasureShareOfVoice, Check: CheckNone,
 			Why: "Answers to German and English questions draw on pages in those languages. Without a page per belt family in each language, those answers name competitors instead.",
 			Steps: []string{
@@ -121,6 +137,7 @@ func Improvements() []Improvement {
 		},
 		{
 			ID: "listings", Title: "Get listed where answers find sources", Moves: "Makes web answers cite tribelt.nl more often.",
+			Benefit: 5, Effort: 4,
 			Measure: MeasureCitationShare, Check: CheckNone,
 			Why: "Web answers cite sources they trust, such as trade directories, industry associations and articles. A listing there gives answers a reason to cite tribelt.nl.",
 			Steps: []string{
@@ -131,6 +148,19 @@ func Improvements() []Improvement {
 			DoneWhen: "Tribelt is listed on the sites the web answers cite most.",
 		},
 	}
+}
+
+// ByValue returns the improvements best value first: the higher the benefit against the effort, the
+// earlier. A tie goes to the larger benefit, then to the catalogue's order.
+func ByValue(imps []Improvement) []Improvement {
+	out := slices.Clone(imps)
+	slices.SortStableFunc(out, func(a, b Improvement) int {
+		if c := b.Benefit*a.Effort - a.Benefit*b.Effort; c != 0 {
+			return c
+		}
+		return b.Benefit - a.Benefit
+	})
+	return out
 }
 
 // InWords is a small count in words, as the catalogue writes it: "five"; a larger one in digits.
@@ -201,7 +231,7 @@ type PlanItem struct {
 // can check it, or by an administrator's tick otherwise; each names its measure's leader.
 func PlanItems(ticks []Tick, tribelt *Readiness, standings []Standing) []PlanItem {
 	out := make([]PlanItem, 0, len(Improvements()))
-	for _, imp := range Improvements() {
+	for _, imp := range ByValue(Improvements()) {
 		item := PlanItem{Improvement: imp, Leader: LeaderOf(standings, imp.Measure), Tribelt: tribeltOn(standings, imp.Measure)}
 		if !imp.Manual() {
 			item.Auto = true

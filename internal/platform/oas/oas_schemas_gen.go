@@ -7320,7 +7320,7 @@ func (s *OverviewTier) SetTribelt(val int32) {
 type Plan struct {
 	// The version of the improvements catalogue.
 	CatalogueVersion int32 `json:"catalogueVersion"`
-	// The improvements, in order.
+	// The improvements, best value first (the higher the benefit against the effort, the earlier).
 	Improvements []PlanImprovement `json:"improvements"`
 	// The numbers to watch.
 	Watched []WatchedNumber `json:"watched"`
@@ -7404,6 +7404,10 @@ type PlanImprovement struct {
 	// What it improves, as a sentence.
 	Moves   string          `json:"moves"`
 	Measure StandingMeasure `json:"measure"`
+	// How much it helps, from 1 (very small) to 5 (very large).
+	Benefit int32 `json:"benefit"`
+	// How much work it takes, from 1 (hours) to 5 (several weeks).
+	Effort int32 `json:"effort"`
 	// Whether the latest scan of tribelt.nl decides that it is done.
 	Auto bool `json:"auto"`
 	// Whether it is done.
@@ -7444,6 +7448,16 @@ func (s *PlanImprovement) GetMoves() string {
 // GetMeasure returns the value of Measure.
 func (s *PlanImprovement) GetMeasure() StandingMeasure {
 	return s.Measure
+}
+
+// GetBenefit returns the value of Benefit.
+func (s *PlanImprovement) GetBenefit() int32 {
+	return s.Benefit
+}
+
+// GetEffort returns the value of Effort.
+func (s *PlanImprovement) GetEffort() int32 {
+	return s.Effort
 }
 
 // GetAuto returns the value of Auto.
@@ -7514,6 +7528,16 @@ func (s *PlanImprovement) SetMoves(val string) {
 // SetMeasure sets the value of Measure.
 func (s *PlanImprovement) SetMeasure(val StandingMeasure) {
 	s.Measure = val
+}
+
+// SetBenefit sets the value of Benefit.
+func (s *PlanImprovement) SetBenefit(val int32) {
+	s.Benefit = val
+}
+
+// SetEffort sets the value of Effort.
+func (s *PlanImprovement) SetEffort(val int32) {
+	s.Effort = val
 }
 
 // SetAuto sets the value of Auto.

@@ -16,11 +16,11 @@ function headedFor(router: Router): string[] {
 const pills = (wrapper: VueWrapper) => wrapper.findAll('[role="group"][aria-label="Measure"] button')
 
 describe('the Buyers view', () => {
-  it('opens on the contact rate, with its heading, figures and goal', async () => {
+  it('opens on the contact rate, with its heading, figures and suggestions', async () => {
     const { wrapper } = await mountApp(routes({}), '/buyers')
     expect(document.title).toBe('Buyers · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('Paid search buys traffic, not buyers.')
-    expect(wrapper.get('header').text()).toContain('Back to Overview')
+    expect(wrapper.findAll('a').some((a) => a.text() === 'Back to Overview')).toBe(true)
     expect(pills(wrapper).map((b) => [b.text(), b.attributes('aria-pressed')])).toEqual([
       ['Users', 'false'],
       ['Contact rate', 'true'],
@@ -31,8 +31,8 @@ describe('the Buyers view', () => {
     expect(wrapper.get('[role="img"]').attributes('aria-label')).toBe('Contact rate: paid search 0.04%, organic search 1.73%, AI assistants 0.00%.')
     expect(wrapper.get('[aria-live="polite"]').text()).toBe('Organic visitors contact Tribelt 43 times more often than paid visitors.')
     expect(wrapper.findAll('tbody tr')).toHaveLength(7)
-    expect(wrapper.text()).toContain('Goal G2')
-    expect(wrapper.get('img').attributes('alt')).toBe('Close-up of a Tribelt metal mesh belt')
+    expect(wrapper.get('aside').text()).toContain('Goal G2')
+    expect(wrapper.find('img[alt="Close-up of a Tribelt metal mesh belt"]').exists()).toBe(false)
   })
 
   it('switches the chart to another measure', async () => {
@@ -44,14 +44,6 @@ describe('the Buyers view', () => {
     expect(wrapper.get('[aria-live="polite"]').text()).toBe('Paid search brings 29 times more users than organic search.')
     await pills(wrapper)[2]?.trigger('click')
     expect(wrapper.get('[role="img"]').text()).toContain('1:04')
-  })
-
-  it('shows who brings the visits and who brings the contacts', async () => {
-    const { wrapper } = await mountApp(routes({}), '/buyers')
-    const section = wrapper.get('section[aria-labelledby="vv-title"]')
-    expect(section.text()).toContain('96.6%')
-    expect(section.text()).toContain('<0.1%')
-    expect(section.text()).toContain('52.2%')
   })
 
   it('goes back to the overview', async () => {

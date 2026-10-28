@@ -7,8 +7,8 @@ function plan(done = false): Plan {
   return {
     catalogueVersion: 1,
     improvements: [
-      { id: 'submit-search-engines', title: 'Submit tribelt.nl to Google and Bing', moves: 'AI answers in Gemini and Copilot', measure: 'aiShareOfVoice', auto: false, done, ...details, why: 'Gemini answers from Google’s index.', tribelt: 0.24, ...(done ? { tickedBy: 'joris', tickedAt: '2026-11-02T09:00:00Z' } : {}), leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.57 } },
-      { id: 'llms-files', title: 'Add llms.txt and llms-full.txt', moves: 'AI readiness', measure: 'readinessChecks', auto: true, done: true, ...details, parts: [{ name: 'llms.txt', present: true }, { name: 'llms-full.txt', present: false }], tribelt: 3, leader: { competitorId: 'martens', name: 'Märtens', value: 5 } },
+      { id: 'submit-search-engines', title: 'Submit tribelt.nl to Google and Bing', moves: 'Helps Tribelt appear in Gemini and Copilot answers.', measure: 'aiShareOfVoice', auto: false, done, ...details, why: 'Gemini answers from Google’s index.', tribelt: 0.24, ...(done ? { tickedBy: 'joris', tickedAt: '2026-11-02T09:00:00Z' } : {}), leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.57 } },
+      { id: 'llms-files', title: 'Add llms.txt and llms-full.txt', moves: 'Improves AI readiness.', measure: 'readinessChecks', auto: true, done: true, ...details, parts: [{ name: 'llms.txt', present: true }, { name: 'llms-full.txt', present: false }], tribelt: 3, leader: { competitorId: 'martens', name: 'Märtens', value: 5 } },
     ],
     watched: [
       { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, met: false },
@@ -47,7 +47,7 @@ describe('the plan', () => {
     expect(items).toHaveLength(2)
     expect(items[0]?.text()).toContain('1. Submit tribelt.nl to Google and Bing')
     expect(items[0]?.text()).toContain('Gemini answers from Google’s index.')
-    expect(items[0]?.text()).toContain('Moves AI answers in Gemini and Copilot. 24% of the AI answers in the newest Prompt run name Tribelt. Ashworth leads with 57%.')
+    expect(items[0]?.text()).toContain('Helps Tribelt appear in Gemini and Copilot answers. 24% of the AI answers in the newest Prompt run name Tribelt. Ashworth leads with 57%.')
     expect(items[0]?.get('details summary').text()).toBe('How to do it')
     expect(items[0]?.findAll('details ol li').map((li) => li.text())).toEqual(['Do the first thing.', 'Do the second thing.'])
     expect(items[0]?.get('details').text()).toContain('Done whenIt is in place.')

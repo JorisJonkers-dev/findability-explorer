@@ -10,8 +10,8 @@ const standings = {
   ],
   trailing: 1,
   open: [
-    { id: 'sitemap-per-language', title: 'A sitemap for each language', moves: 'the pages search engines know of', measure: 'sitemapPages', auto: true, done: false, ...details, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 2140 } },
-    { id: 'listings', title: 'Get listed where answers find sources', moves: 'how often web answers cite tribelt.nl', measure: 'citationShare', auto: false, done: false, ...details },
+    { id: 'sitemap-per-language', title: 'A sitemap for each language', moves: 'Helps search engines find every page.', measure: 'sitemapPages', auto: true, done: false, ...details, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 2140 } },
+    { id: 'listings', title: 'Get listed where answers find sources', moves: 'Makes web answers cite tribelt.nl more often.', measure: 'citationShare', auto: false, done: false, ...details },
   ],
 }
 
@@ -34,8 +34,8 @@ describe('Catching up', () => {
     const { wrapper } = await mountApp(routes({ 'GET /api/v1/standings': () => json(standings) }), '/catching-up')
     const todo = wrapper.get('section[aria-labelledby="todo-title"]')
     expect(todo.findAll('li').map((l) => l.text())).toEqual([
-      '1A sitemap for each languageMoves the pages search engines know of.No scan of tribelt.nl yet. Ashworth leads with 2,140.Look atAshworth',
-      '2Get listed where answers find sourcesMoves how often web answers cite tribelt.nl.No Prompt run has finished yet.',
+      '1A sitemap for each languageHelps search engines find every page.No scan of tribelt.nl yet. Ashworth leads with 2,140.Look atAshworth',
+      '2Get listed where answers find sourcesMakes web answers cite tribelt.nl more often.No Prompt run has finished yet.',
     ])
     expect(todo.get('li a').attributes('href')).toBe('/competitors/ashworth')
     wrapper.unmount()

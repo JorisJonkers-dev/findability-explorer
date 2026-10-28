@@ -106,7 +106,7 @@ const TONE = { orange: 'bg-orange text-black', black: 'bg-black text-white', 'bl
               </label>
               <p class="m-0 text-sm stage:text-[26px]">{{ it.why }}</p>
               <p class="m-0 text-sm text-ink-2 stage:text-[24px]">
-                {{ [`Moves ${it.moves}.`, standingLine(it, plan.tribeltTermsFrom)].filter(Boolean).join(' ') }}
+                {{ [it.moves, standingLine(it, plan.tribeltTermsFrom)].filter(Boolean).join(' ') }}
               </p>
               <p v-if="foundLine(it.parts)" class="m-0 text-sm font-medium stage:text-[24px]">{{ foundLine(it.parts) }}</p>
               <details class="group text-sm stage:text-[24px]">

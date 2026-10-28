@@ -7331,7 +7331,7 @@ type PlanImprovement struct {
 	ID string `json:"id"`
 	// What to do.
 	Title string `json:"title"`
-	// What it moves, in words.
+	// What it improves, as a sentence.
 	Moves   string          `json:"moves"`
 	Measure StandingMeasure `json:"measure"`
 	// Whether the latest scan of tribelt.nl decides that it is done.

@@ -112,7 +112,7 @@ func Improvements() []Improvement {
 			DoneWhen: "The pages of tribelt.nl carry both Product and FAQ structured data.",
 		},
 		{
-			ID: "buyer-words", Title: "Use the words buyers search for", Moves: "Increases the number of search terms tribelt.nl uses.",
+			ID: "buyer-words", Title: "Add missing search terms", Moves: "The terms competitors use that tribelt.nl lacks, so more searches list Tribelt.",
 			Benefit: 4, Effort: 3,
 			Measure: MeasureTermsUsed, Check: CheckNone,
 			Why: "Buyers search in their own words, which are often not Tribelt's product names. A page that uses their words turns up in their searches and in AI answers to them.",

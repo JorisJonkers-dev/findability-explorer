@@ -1,205 +1,91 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Term } from '../../../infrastructure/api/types.gen'
-import { competitor, overview, term, termSearch } from '../../../testing/fixtures'
+import { describe, expect, it } from 'vitest'
+import type { Plan } from '../../../infrastructure/api/types.gen'
+import { competitor, details, overview, product, term, termSearch } from '../../../testing/fixtures'
 import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
-import { SEARCH_DELAY_MS } from '../composables/useTermView'
 
-const MAP: Term[] = [
-  term({ term: 'Eyelink belt', language: 'en', family: 'eyelink', tier: 'product', usedBy: ['Twentebelt', 'Ashworth', 'Tribelt'], tribeltUses: true }),
-  term({ term: 'eye link belt', language: 'en-US', family: 'eyelink', tier: 'broad', usedBy: ['Ashworth'] }),
-  term({ term: 'Drahtösengliederband', language: 'de', family: 'eyelink', tier: 'product', usedBy: ['Märtens', 'Tribelt (Drahtösengliederbänder)'], tribeltUses: true }),
-  term({ term: 'AISI 304', language: 'de', family: 'spec_all', tier: 'spec', usedBy: ['Märtens', 'Twentebelt'] }),
-  term({ term: 'belt tracking', language: 'en', family: 'all', tier: 'problem', usedBy: [] }),
-]
+const plan = (): Plan => ({
+  catalogueVersion: 1,
+  improvements: [{ id: 'listings', title: 'Get listed', moves: 'citations', measure: 'citationShare', auto: false, done: false, ...details }],
+  watched: [{ target: 'termsUsed', now: 4, goal: 20 }],
+  eyeOn: [],
+  readinessChecks: 5,
+})
 
-// The server's figures for the same map: the charts and the count of what tribelt.nl uses are its.
 const FIGURES = overview({
   terms: {
-    total: 5,
-    tribelt: 2,
+    total: 10,
+    tribelt: 4,
     from: 'scan',
     languages: [
-      { language: 'en', terms: 3, tribelt: 1 },
-      { language: 'de', terms: 2, tribelt: 1 },
+      { language: 'en', terms: 5, tribelt: 2 },
+      { language: 'de', terms: 3, tribelt: 1 },
+      { language: 'nl', terms: 2, tribelt: 1 },
     ],
-    tiers: [
-      { tier: 'spec', terms: 1, tribelt: 0 },
-      { tier: 'product', terms: 2, tribelt: 2 },
-      { tier: 'problem', terms: 1, tribelt: 0 },
-      { tier: 'broad', terms: 1, tribelt: 0 },
-    ],
+    tiers: [],
   },
 })
 
-const api = routes({
-  'GET /api/v1/terms': () => json(termSearch(MAP, { total: MAP.length, tribeltFrom: 'scan' })),
-  'GET /api/v1/competitors': () => json({ items: [competitor('Twentebelt'), competitor('Ashworth'), competitor('Märtens')] }),
-  'GET /api/v1/overview': () => json(FIGURES),
-})
-
-/** The terms in the ranked list, in order. */
-const ranked = (wrapper: VueWrapper) =>
-  wrapper.get('ol[aria-label="Ranked terms"]').findAll('li').map((li) => li.get('span.font-medium').text())
-const status = (wrapper: VueWrapper) => wrapper.get('[aria-live="polite"]').text()
-const button = (wrapper: VueWrapper, label: string) => wrapper.get(`button[aria-label^="${label}"]`)
-
-afterEach(() => {
-  vi.useRealTimers()
-})
-
-describe('the search terms view', () => {
-  it('ranks the whole map, titled by its size', async () => {
-    const { wrapper } = await mountApp(api, '/terms')
-    expect(wrapper.get('h1').text()).toBe('5 ways to search for a metal belt.')
-    expect(document.title).toBe('Search terms · Findability Explorer')
-    expect(wrapper.text()).toContain('Terminology map, our research')
-    expect(ranked(wrapper)).toEqual(['AISI 304', 'Eyelink belt', 'Drahtösengliederband', 'eye link belt', 'belt tracking'])
-    expect(status(wrapper)).toBe('5 of 5 terms')
-    const first = wrapper.get('ol[aria-label="Ranked terms"] li')
-    expect(first.text()).toContain('German · Any belt · Märtens, Twentebelt')
-    expect(first.text()).toContain('Lacks it')
-    expect(first.attributes('tabindex')).toBeUndefined()
-    expect(wrapper.get('ol[aria-label="Ranked terms"]').attributes('tabindex')).toBe('0')
+const api = (extra = {}) =>
+  routes({
+    'GET /api/v1/overview': () => json(FIGURES),
+    'GET /api/v1/plan': () => json(plan()),
+    'GET /api/v1/terms': () => json(termSearch([term({ language: 'en-US' }), term({ term: 'b', language: 'en' })])),
+    'GET /api/v1/competitors': () => json({ items: [competitor('Twentebelt')] }),
+    'GET /api/v1/products': () =>
+      json({ items: [product(), product({ family: 'open_spiral', tribeltNames: [], termsUsed: 0, terms: [] })], standouts: [] }),
+    ...extra,
   })
 
-  it('charts the languages and kinds, with what Tribelt uses', async () => {
-    const { wrapper } = await mountApp(api, '/terms')
-    const languages = wrapper.get('[role="group"][aria-label="By language"]').findAll('button')
-    expect(languages.map((b) => b.attributes('aria-label'))).toEqual(['English: 3 terms, tribelt.nl uses 1', 'German: 2 terms, tribelt.nl uses 1'])
-    expect(languages[0]?.findAll('[aria-hidden="true"] span[style]').map((s) => s.attributes('style'))).toEqual([
-      'width: 33.33%;',
-      'width: 66.67%;',
+describe('the Search terms page', () => {
+  it('heads itself with the size of the map and what tribelt.nl uses, with three figures', async () => {
+    const { wrapper } = await mountApp(api(), '/terms')
+    expect(wrapper.get('h1').text()).toBe('Competitors list belts using 10 terms, tribelt.nl uses only 4 of them.')
+    const figures = wrapper.get('section[aria-label="Key figures"]').findAll(':scope > div').map((d) => d.text())
+    expect(figures).toEqual([
+      '10terms in the search term listIn English, German, and Dutch.',
+      '4are used on tribelt.nlThe target is 20.',
+      '6are used only by competitorsEach one is a search in which Tribelt does not turn up.',
     ])
-    // Above a bar, on hover: what Tribelt uses and what only others still have; at its end, a fraction.
-    expect(languages[0]?.get('[data-testid="bar-info"]').text()).toBe('tribelt.nl uses 1, only others use 2')
-    const tiers = wrapper.get('[role="group"][aria-label="By kind of search"]').findAll('button')
-    const ends = (b: (typeof tiers)[number]) => {
-      const parts = b.findAll(':scope > span')
-      return `${parts[0]?.text() ?? ''} ${parts[2]?.text() ?? ''}`
-    }
-    expect(tiers.map(ends)).toEqual(['Broad 0/1', 'Product 2/2', 'Application 0/0', 'Specification 0/1', 'Problem 0/1'])
-    expect(wrapper.text()).toContain('The newest scan of tribelt.nl found 2 of the 5 terms.')
   })
 
-  it("filters the ranking by language from above it, and names Tribelt's term for each", async () => {
-    const { wrapper, router } = await mountApp(api, '/terms')
-    const pills = wrapper.get('[role="group"][aria-label="Language"]')
-    expect(pills.findAll('button').map((b) => b.text())).toEqual(['All languages', 'English', 'German'])
-    await pills.findAll('button')[2]?.trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({ language: 'de' })
-    expect(ranked(wrapper)).toEqual(['AISI 304', 'Drahtösengliederband'])
-    // The chart on the left agrees.
-    expect(button(wrapper, 'German:').attributes('aria-pressed')).toBe('true')
-    const cells = wrapper.get('ol[aria-label="Ranked terms"]').findAll('li').map((li) => li.text())
-    expect(cells.some((t) => t.includes('Tribelt: Lacks it'))).toBe(true)
-    await pills.findAll('button')[0]?.trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({})
-  })
-
-  it('filters by a language and a kind, with chips to remove them', async () => {
-    const { wrapper, router } = await mountApp(api, '/terms')
-    await button(wrapper, 'German:').trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({ language: 'de' })
-    expect(button(wrapper, 'German:').attributes('aria-pressed')).toBe('true')
-    expect(ranked(wrapper)).toEqual(['AISI 304', 'Drahtösengliederband'])
-    await button(wrapper, 'Specification:').trigger('click')
-    await settle()
-    expect(ranked(wrapper)).toEqual(['AISI 304'])
-    expect(status(wrapper)).toBe('1 of 5 terms')
-    await button(wrapper, 'Remove the filter German').trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({ tier: 'spec' })
-    // Pressing a chart row again unsets it.
-    await button(wrapper, 'Specification:').trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({})
-    expect(wrapper.findAll('button[aria-label^="Remove the filter"]')).toHaveLength(0)
-  })
-
-  it('lists a company from the heatmap, Tribelt too', async () => {
-    const { wrapper, router } = await mountApp(api, '/terms')
-    const rows = wrapper.get('ul[aria-label="Terms per company and kind"]').findAll('button')
-    expect(rows.map((b) => b.attributes('aria-label'))).toEqual([
-      'Ashworth: 2 marketing terms, 0 technical terms',
-      'Märtens: 1 marketing terms, 1 technical terms',
-      'Tribelt: 2 marketing terms, 0 technical terms',
-      'Twentebelt: 1 marketing terms, 1 technical terms',
-    ])
-    // A cell with terms is shaded; an empty one is grey and blank.
-    const ashworth = rows[0]?.findAll('span.h-8')
-    expect(ashworth?.[0]?.attributes('style')).toContain('background-color')
-    expect(ashworth?.[2]?.text()).toBe('')
-    await button(wrapper, 'Tribelt:').trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({ user: 'Tribelt' })
-    expect(button(wrapper, 'Tribelt:').attributes('aria-pressed')).toBe('true')
-    expect(ranked(wrapper)).toEqual(['Eyelink belt', 'Drahtösengliederband'])
-    await button(wrapper, 'Remove the filter Tribelt').trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({})
-  })
-
-  it('switches between marketing and technical terms, and shows what Tribelt lacks', async () => {
-    const { wrapper, router } = await mountApp(api, '/terms')
-    const pills = () => wrapper.get('[role="group"][aria-label="Terms"]').findAll('button')
-    expect(pills().map((b) => [b.text(), b.attributes('aria-pressed')])).toEqual([
-      ['All', 'true'],
-      ['Marketing', 'false'],
-      ['Technical', 'false'],
-    ])
-    await pills()[2]?.trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({ group: 'technical' })
-    expect(ranked(wrapper)).toEqual(['AISI 304', 'belt tracking'])
-    // Pressing the pressed one keeps it.
-    await pills()[2]?.trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({ group: 'technical' })
-    await pills()[1]?.trigger('click')
-    await settle()
-    expect(ranked(wrapper)).toEqual(['Eyelink belt', 'Drahtösengliederband', 'eye link belt'])
-    await pills()[0]?.trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({})
-
-    const gap = wrapper.findAll('button').find((b) => b.text() === 'Only terms Tribelt lacks')
-    await gap?.trigger('click')
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({ gap: '1' })
-    expect(gap?.attributes('aria-pressed')).toBe('true')
-    expect(ranked(wrapper)).toEqual(['AISI 304', 'eye link belt', 'belt tracking'])
-  })
-
-  it('searches once typing pauses, and marks the match', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    const { wrapper, router } = await mountApp(api, '/terms')
-    await wrapper.get('input#terms-q').setValue('drahtösen')
-    vi.advanceTimersByTime(SEARCH_DELAY_MS)
-    await settle()
-    expect(router.currentRoute.value.query).toEqual({ q: 'drahtösen' })
-    expect(ranked(wrapper)).toEqual(['Drahtösengliederband'])
-    expect(wrapper.get('ol[aria-label="Ranked terms"] mark').text()).toBe('Drahtösen')
-  })
-
-  it("keeps the old terminology page's links working", async () => {
-    const { wrapper, router } = await mountApp(api, '/terminology?q=AISI&user=Twentebelt%20(TwenteFlex)')
-    expect(router.currentRoute.value.path).toBe('/terms')
-    expect(router.currentRoute.value.query).toEqual({ q: 'AISI', user: 'Twentebelt (TwenteFlex)' })
-    expect((wrapper.get('input#terms-q').element as HTMLInputElement).value).toBe('AISI')
-    expect(ranked(wrapper)).toEqual(['AISI 304'])
-    expect(button(wrapper, 'Twentebelt:').attributes('aria-pressed')).toBe('true')
-  })
-
-  it('says it is loading, and when the map cannot be loaded', async () => {
-    const { wrapper } = await mountApp(routes({ 'GET /api/v1/terms': () => new Promise<Response>(() => undefined) }), '/terms')
+  it('is neutral before the figures load', async () => {
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/overview': () => new Promise<Response>(() => undefined) }), '/terms')
     expect(wrapper.get('h1').text()).toBe('Ways to search for a metal belt.')
-    expect(status(wrapper)).toBe('Loading…')
-    wrapper.unmount()
-    const failing = await mountApp(routes({ 'GET /api/v1/terms': () => problem(500, 'Internal Server Error', 'The map is not loaded.') }), '/terms')
-    expect(failing.wrapper.get('[role="alert"]').text()).toBe('The map is not loaded.')
+  })
+
+  it('stresses the language with the most terms, and another when its legend button is pressed', async () => {
+    const { wrapper } = await mountApp(api(), '/terms')
+    const legend = () => wrapper.get('[role="group"][aria-label="Pick a language"]').findAll('button')
+    expect(legend().map((b) => [b.attributes('aria-label'), b.attributes('aria-pressed')])).toEqual([
+      ['English: 5 terms', 'true'],
+      ['German: 3 terms', 'false'],
+      ['Dutch: 2 terms', 'false'],
+    ])
+    expect(wrapper.get('svg[role="img"]').attributes('aria-label')).toBe('The 10 terms by language: English 5, German 3, Dutch 2.')
+    expect(wrapper.text()).toContain('English, 50% of the list')
+    expect(wrapper.text()).toContain('5 terms, 1 of them American English. tribelt.nl uses 2 of them.')
+    await legend()[1]?.trigger('click')
+    await settle()
+    expect(legend().map((b) => b.attributes('aria-pressed'))).toEqual(['false', 'true', 'false'])
+    expect(wrapper.text()).toContain('German, 30% of the list')
+    expect(wrapper.text()).toContain('Germany is where Tribelt wants to grow.')
+  })
+
+  it('lists the belt families, each linking to its page, and links to every term', async () => {
+    const { wrapper } = await mountApp(api(), '/terms')
+    const families = wrapper.get('ul[aria-label="Belt families"]').findAll('a')
+    expect(families.map((a) => a.attributes('href'))).toEqual(['/terms/families/eyelink', '/terms/families/open-spiral'])
+    expect(families[0]?.text()).toBe('EyelinkTribelt calls it Draadogenbanden1 of 4terms tribelt.nl uses')
+    expect(families[1]?.text()).toContain('Tribelt names none for it yet')
+    expect(wrapper.get('a[href="/terms/all"]').text()).toBe('its own page')
+  })
+
+  it('shows no target when the plan holds none, and says when the families cannot be loaded', async () => {
+    const { wrapper } = await mountApp(
+      api({ 'GET /api/v1/plan': () => json({ ...plan(), watched: [] }), 'GET /api/v1/products': () => problem(500, 'Internal Server Error', 'Down.') }),
+      '/terms',
+    )
+    expect(wrapper.text()).not.toContain('The target is')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Down.')
   })
 })

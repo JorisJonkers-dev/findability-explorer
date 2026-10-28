@@ -4,7 +4,7 @@ const SECTIONS = [
   { path: '/buyers', title: 'Buyers', heading: 'Paid search buys traffic, not buyers.' },
   { path: '/ai-search', title: 'AI search', heading: 'An AI assistant can only recommend what it has read.' },
   { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors are on our list\. The same belts, other names\.$/ },
-  { path: '/terms', title: 'Search terms', heading: /ways to search for a metal belt\.$/ },
+  { path: '/terms', title: 'Search terms', heading: /^Competitors list belts using \d+ terms/ },
   { path: '/recommendations', title: 'Recommendations', heading: 'Check every Monday. Fix one thing a week. Watch the numbers move.' },
 ] as const
 
@@ -85,8 +85,25 @@ test('the scan form refuses an address it cannot scan', async ({ page }) => {
   await expect(page).toHaveURL('/competitors')
 })
 
-test('the terms view filters by language and survives a reload', async ({ page }) => {
+test('Search terms shows the language split, the belt families and a way to every term', async ({ page }) => {
   await page.goto('/terms')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Competitors list belts using \d+ terms/)
+  const german = page.getByRole('button', { name: /^German: \d+ terms/ })
+  await german.click()
+  await expect(german).toHaveAttribute('aria-pressed', 'true')
+  await expectAccessible(page)
+  // On a 1280 by 720 window the stage clips this link below the fold (reported), so it is followed from the keyboard.
+  const all = page.getByRole('link', { name: 'its own page' })
+  await all.focus()
+  await all.press('Enter')
+  await expect(page).toHaveURL('/terms/all')
+  await page.getByRole('link', { name: 'Back to Search terms' }).click()
+  await page.getByRole('list', { name: 'Belt families' }).getByRole('link').first().click()
+  await expect(page).toHaveURL(/\/terms\/families\//)
+})
+
+test('the page of every term filters by language and survives a reload', async ({ page }) => {
+  await page.goto('/terms/all')
   await page.getByRole('button', { name: /^German: \d+ terms/ }).click()
   await expect(page).toHaveURL(/[?&]language=de(&|$)/)
   await expect(page.getByRole('button', { name: /^Remove the filter German/ })).toBeVisible()
@@ -110,7 +127,7 @@ test('unknown routes go to the poster, and old addresses to their new views', as
   await page.goto('/no/such/page')
   await expect(page).toHaveURL('/')
   await page.goto('/terminology?q=spiral')
-  await expect(page).toHaveURL('/terms?q=spiral')
+  await expect(page).toHaveURL('/terms/all?q=spiral')
   await page.goto('/analyses')
   await expect(page).toHaveURL('/competitors')
 })

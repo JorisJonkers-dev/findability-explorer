@@ -145,6 +145,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		scans{repo: analysisRepo},
 		now,
 	)
+	terminology.WithCompetitors(func(ctx context.Context) ([]terminologydomain.Listed, error) {
+		return listedCompetitors(ctx, companies)
+	})
 	limits, err := limitsOf(getenv)
 	if err != nil {
 		return err
@@ -682,6 +685,22 @@ func sightings(ctx context.Context, repo *persistence.Repository) ([]terminology
 
 // tribeltScanned tells the terminology context whether tribelt.nl has a finished scan, the scan
 // its sightings come from.
+// listedCompetitors are the competitors on the list now, not archived, researched or added since,
+// as the terminology context counts a term's makers among them.
+func listedCompetitors(ctx context.Context, companies *companiesapp.Service) ([]terminologydomain.Listed, error) {
+	listed, err := companies.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []terminologydomain.Listed
+	for _, l := range listed {
+		if !l.Archived && l.Role() == companiesdomain.RoleCompetitor {
+			out = append(out, terminologydomain.Listed{ID: l.ID, Name: l.Name})
+		}
+	}
+	return out, nil
+}
+
 func tribeltScanned(ctx context.Context, repo *persistence.Repository) (bool, error) {
 	scans, err := repo.ListByCompetitor(ctx, terminologydomain.TribeltID, analysisapp.MaxHistory)
 	if err != nil {

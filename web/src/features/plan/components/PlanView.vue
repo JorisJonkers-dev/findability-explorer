@@ -106,7 +106,7 @@ const TONE = { orange: 'bg-orange text-black', black: 'bg-black text-white', 'bl
               </label>
               <p class="m-0 text-sm stage:text-[26px]">{{ it.why }}</p>
               <p class="m-0 text-sm text-ink-2 stage:text-[24px]">
-                {{ [it.moves, standingLine(it, plan.tribeltTermsFrom)].filter(Boolean).join(' ') }}
+                {{ [it.moves, standingLine(it, plan.readinessChecks, plan.tribeltTermsFrom)].filter(Boolean).join(' ') }}
               </p>
               <p v-if="foundLine(it.parts)" class="m-0 text-sm font-medium stage:text-[24px]">{{ foundLine(it.parts) }}</p>
               <details class="group text-sm stage:text-[24px]">
@@ -151,12 +151,12 @@ const TONE = { orange: 'bg-orange text-black', black: 'bg-black text-white', 'bl
         </ul>
         <form v-if="editing && plan" aria-label="Targets" class="flex flex-col gap-3" @submit.prevent="save">
           <label v-for="w in plan.watched" :key="w.target" class="flex items-center justify-between gap-3 text-sm stage:text-[24px]">
-            {{ targetLabel(w.target, plan.tribeltTermsFrom) }}
+            {{ targetLabel(w.target, plan.readinessChecks, plan.tribeltTermsFrom) }}
             <input
               v-model="draft[w.target]"
               type="number"
               min="0"
-              :max="TARGETS[w.target].max"
+              :max="w.max"
               :step="TARGETS[w.target].step"
               class="h-10 w-28 rounded-lg border-2 border-silver px-2 stage:h-14 stage:w-40"
             />
@@ -168,7 +168,7 @@ const TONE = { orange: 'bg-orange text-black', black: 'bg-black text-white', 'bl
           </div>
         </form>
         <div v-else-if="plan" class="flex flex-col gap-4">
-          <div v-for="row in plan.watched.map((w) => watchedRow(w, plan?.tribeltTermsFrom))" :key="row.label" class="flex flex-col gap-1.5">
+          <div v-for="row in plan.watched.map((w) => watchedRow(w, plan?.readinessChecks ?? 0, plan?.tribeltTermsFrom))" :key="row.label" class="flex flex-col gap-1.5">
             <span class="flex flex-wrap justify-between gap-2 text-sm stage:text-[26px]">
               <span>{{ row.label }}</span>
               <strong v-if="row.met" class="text-orange-ink">{{ row.status }}</strong>

@@ -11,11 +11,12 @@ function plan(done = false): Plan {
       { id: 'llms-files', title: 'Add llms.txt and llms-full.txt', moves: 'Improves AI readiness.', measure: 'readinessChecks', auto: true, done: true, ...details, parts: [{ name: 'llms.txt', present: true }, { name: 'llms-full.txt', present: false }], tribelt: 3, leader: { competitorId: 'martens', name: 'Märtens', value: 5 } },
     ],
     watched: [
-      { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, met: false },
+      { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, max: 1, met: false },
       { target: 'citations', goal: 20 },
       { target: 'termsUsed', now: 45, goal: 35, met: true },
     ],
     tribeltTermsFrom: 'scan',
+    readinessChecks: 5,
     eyeOn: [
       { why: 'mostNamed', leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.57 } },
       { why: 'twente', leader: { competitorId: 'twentebelt', name: 'Twentebelt', value: 0.6 } },
@@ -88,7 +89,7 @@ describe('the plan', () => {
           sent.push(await r.json())
           return json(plan(true))
         },
-        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [] }),
+        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 5 }),
       }),
       '/plan',
     )

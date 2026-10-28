@@ -35,8 +35,9 @@ type AiSearch struct {
 	Crawlers   []CrawlerRow
 	KeepingOut []domain.KeepingOut
 	Ranking    []domain.Ranked
-	// Sites is how many sites have a recorded AI readiness.
-	Sites int
+	// Sites is how many sites have a recorded AI readiness; Checks how many of them pass each check.
+	Sites  int
+	Checks []domain.CheckSummary
 	// Questions and Providers are what the newest run asked; zero before any run.
 	Questions int
 	Providers int
@@ -64,6 +65,7 @@ func (s *Service) AiSearch(ctx context.Context) (AiSearch, error) {
 	out := AiSearch{
 		Goal: targets[domain.TargetShareOfVoice], KeepingOut: domain.KeepOut(companies, readiness),
 		Ranking: domain.Ranking(companies, readiness, RankingRows), Sites: len(readiness),
+		Checks: domain.SummariseChecks(readiness),
 	}
 	byID := map[string]domain.Company{}
 	for _, c := range companies {

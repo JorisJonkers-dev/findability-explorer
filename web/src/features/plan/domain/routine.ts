@@ -1,5 +1,5 @@
 import type { EyeOn, PlanImprovement, PlanPart, PlanTarget, StandingMeasure, TermsSource, WatchedNumber } from '../../../infrastructure/api/types.gen'
-import { formatValue } from '../../catching-up/domain/standings'
+import { formatValue, inWords } from '../../catching-up/domain/standings'
 import { joinWords } from '../../../shared/words'
 
 /** One step of the weekly routine: what to do, when, what to look for, and the page to open. */
@@ -50,23 +50,26 @@ export const YEAR: readonly { label: string; start: number; span: number; tone: 
 
 export const MONTHS = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'] as const
 
-/** What each number to watch is called, and how its values read. */
-export const TARGETS: Record<PlanTarget, { label: string; format: (v: number) => string; step: number; max?: number }> = {
-  aiShareOfVoice: { label: 'AI answers in the newest Prompt run that name Tribelt', format: (v) => formatValue('aiShareOfVoice', v), step: 0.01, max: 1 },
+/** What each number to watch is called, and how its values read; the server says how high each can go. */
+export const TARGETS: Record<PlanTarget, { label: string; format: (v: number) => string; step: number }> = {
+  aiShareOfVoice: { label: 'AI answers in the newest Prompt run that name Tribelt', format: (v) => formatValue('aiShareOfVoice', v), step: 0.01 },
   twenteShareOfVoice: {
     label: 'Answers about Twente in the newest Prompt run that name Tribelt',
     format: (v) => formatValue('aiShareOfVoice', v),
     step: 0.01,
-    max: 1,
   },
-  readinessChecks: { label: "AI readiness checks tribelt.nl's newest scan passed, out of five", format: (v) => formatValue('readinessChecks', v), step: 0.5, max: 5 },
+  readinessChecks: { label: "AI readiness checks tribelt.nl's newest scan passed", format: (v) => formatValue('readinessChecks', v), step: 0.5 },
   termsUsed: { label: "Search terms from the map found on tribelt.nl's newest scan", format: (v) => formatValue('termsUsed', v), step: 1 },
   citations: { label: 'Web answers in the newest Prompt run that cite tribelt.nl', format: (v) => formatValue('termsUsed', v), step: 1 },
 }
 
-/** The label of a number to watch; the search terms say so when the desk research counts them, before a scan of tribelt.nl. */
-export function targetLabel(target: PlanTarget, termsFrom?: TermsSource): string {
+/**
+ * The label of a number to watch: the readiness checks say how many there are, and the search
+ * terms say so when the desk research counts them, before a scan of tribelt.nl.
+ */
+export function targetLabel(target: PlanTarget, readinessChecks: number, termsFrom?: TermsSource): string {
   if (target === 'termsUsed' && termsFrom === 'research') return 'Search terms from the map found for Tribelt by our research'
+  if (target === 'readinessChecks') return `${TARGETS[target].label}, out of ${inWords(readinessChecks)}`
   return TARGETS[target].label
 }
 
@@ -87,14 +90,14 @@ export type WatchedRow = {
  * A number to watch, now against its target. The bar's scale reaches the target, or past the value
  * when the value has passed it, so a met target fills the bar rather than drawing a target behind it.
  */
-export function watchedRow(w: WatchedNumber, termsFrom?: TermsSource): WatchedRow {
+export function watchedRow(w: WatchedNumber, readinessChecks: number, termsFrom?: TermsSource): WatchedRow {
   const t = TARGETS[w.target]
   const met = w.met === true && w.now !== undefined
-  const max = t.max ?? Math.max(w.goal, w.now ?? 0) * 1.15
+  const max = w.max ?? Math.max(w.goal, w.now ?? 0) * 1.15
   const now = w.now === undefined ? 'No data yet' : t.format(w.now)
   const goal = t.format(w.goal)
   return {
-    label: targetLabel(w.target, termsFrom),
+    label: targetLabel(w.target, readinessChecks, termsFrom),
     now,
     goal,
     status: met ? `Met: ${now}, target was ${goal}` : `${now} to ${goal}`,
@@ -125,10 +128,10 @@ export function eyeOnText(e: Pick<EyeOn, 'why'>): string {
 }
 
 /** Tribelt's value on each measure in a sentence, and what is missing without one. */
-const NOW: Record<StandingMeasure, { says: (value: string) => string; missing: string }> = {
+const NOW: Record<StandingMeasure, { says: (value: string, readinessChecks: number) => string; missing: string }> = {
   aiShareOfVoice: { says: (v) => `${v} of the AI answers in the newest Prompt run name Tribelt.`, missing: 'No Prompt run has finished yet.' },
   citationShare: { says: (v) => `${v} of the web answers in the newest Prompt run cite tribelt.nl.`, missing: 'No Prompt run has finished yet.' },
-  readinessChecks: { says: (v) => `tribelt.nl passes ${v} of five AI readiness checks.`, missing: 'No scan of tribelt.nl yet.' },
+  readinessChecks: { says: (v, checks) => `tribelt.nl passes ${v} of ${inWords(checks)} AI readiness checks.`, missing: 'No scan of tribelt.nl yet.' },
   sitemapCoverage: {
     says: (v) => `The sitemaps of tribelt.nl list ${v} of the pages its newest scan read.`,
     missing: 'Not measured on tribelt.nl yet. Scan it again.',
@@ -137,17 +140,17 @@ const NOW: Record<StandingMeasure, { says: (value: string) => string; missing: s
 }
 
 /** Where Tribelt stands on the measure an improvement moves, and who leads, in sentences. */
-export function standingLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>, termsFrom?: TermsSource): string {
+export function standingLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader'>, readinessChecks: number, termsFrom?: TermsSource): string {
   const now = NOW[it.measure]
   const credited = it.measure === 'termsUsed' && termsFrom === 'research'
-  const says = (v: string) => (credited ? `Our research found ${v} search terms from the map for Tribelt.` : now.says(v))
+  const says = (v: string) => (credited ? `Our research found ${v} search terms from the map for Tribelt.` : now.says(v, readinessChecks))
   const tribelt = it.tribelt === undefined ? now.missing : says(formatValue(it.measure, it.tribelt))
   return it.leader ? `${tribelt} ${it.leader.name} leads with ${formatValue(it.measure, it.leader.value)}.` : tribelt
 }
 
 /** An improvement's status now: what the latest scan found when a scan checks it, else where Tribelt stands. */
-export function statusLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader' | 'parts'>, termsFrom?: TermsSource): string {
-  return foundLine(it.parts) || standingLine(it, termsFrom)
+export function statusLine(it: Pick<PlanImprovement, 'measure' | 'tribelt' | 'leader' | 'parts'>, readinessChecks: number, termsFrom?: TermsSource): string {
+  return foundLine(it.parts) || standingLine(it, readinessChecks, termsFrom)
 }
 
 /** What the latest scan of tribelt.nl found of an improvement it checks, and what it did not. */

@@ -22,8 +22,9 @@ func TestTheAutomaticChecksFollowTribeltsScan(t *testing.T) {
 		{"llms.txt alone", domain.CheckLLMsFiles, domain.Readiness{LLMs: true}, false},
 		{"Markdown pages", domain.CheckMarkdown, domain.Readiness{Markdown: true}, true},
 		{"no Markdown", domain.CheckMarkdown, domain.Readiness{}, false},
-		{"products and FAQs", domain.CheckStructuredData, domain.Readiness{StructuredData: []string{"FAQPage", "ProductGroup"}}, true},
-		{"products alone", domain.CheckStructuredData, domain.Readiness{StructuredData: []string{"Product"}}, false},
+		// Product markup is what the AI readiness page counts as such (Readiness.Product).
+		{"products and FAQs", domain.CheckStructuredData, domain.Readiness{Product: true, StructuredData: []string{"FAQPage", "IndividualProduct"}}, true},
+		{"products alone", domain.CheckStructuredData, domain.Readiness{Product: true, StructuredData: []string{"Product"}}, false},
 		{"a manual improvement", domain.CheckNone, domain.Readiness{Markdown: true}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -137,7 +138,7 @@ func TestTheAutomaticChecksSayWhatIsInPlaceAndWhatIsMissing(t *testing.T) {
 		},
 		{
 			"products alone", domain.CheckStructuredData,
-			domain.Readiness{StructuredData: []string{"ProductModel"}},
+			domain.Readiness{Product: true, StructuredData: []string{"ProductModel"}},
 			[]domain.Part{{Name: "Product markup", Present: true}, {Name: "FAQ markup"}},
 		},
 		{"a manual improvement", domain.CheckNone, domain.Readiness{Markdown: true}, nil},
@@ -173,5 +174,15 @@ func TestPlanItemsCarryTribeltsValueAndWhatTheScanFound(t *testing.T) {
 	}
 	if none := domain.PlanItems(nil, nil, nil); none[2].Parts != nil || none[2].Tribelt != nil {
 		t.Errorf("before any scan = %+v", none[2])
+	}
+}
+
+func TestTheCatalogueCountsTheFamiliesAndLanguagesItNames(t *testing.T) {
+	imp, _ := domain.ImprovementByID("family-pages")
+	if imp.DoneWhen != "Each of the five belt families has its own page in all three languages." {
+		t.Errorf("done when = %q", imp.DoneWhen)
+	}
+	if domain.InWords(0) != "no" || domain.InWords(10) != "ten" || domain.InWords(11) != "11" || domain.InWords(-1) != "-1" {
+		t.Error("InWords writes small counts in words and others in digits")
 	}
 }

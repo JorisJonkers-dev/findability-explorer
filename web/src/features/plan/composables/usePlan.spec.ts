@@ -11,6 +11,7 @@ const plan = (done: boolean): Plan => ({
   improvements: [{ id: 'listings', title: 'Get listed', moves: 'citations', measure: 'citationShare', auto: false, done, ...details }],
   watched: [],
   eyeOn: [],
+  readinessChecks: 5,
 })
 
 describe('usePlan', () => {

@@ -4,7 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"time"
+
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 )
 
 // ImprovementsVersion is the version of the improvements catalogue. A change to which
@@ -114,7 +117,7 @@ func Improvements() []Improvement {
 				"Use the terms buyers in each language search for.",
 				"Link each page to its versions in the other languages.",
 			},
-			DoneWhen: "Each of the five belt families has its own page in all three languages.",
+			DoneWhen: "Each of the " + InWords(len(Families())) + " belt families has its own page in all " + InWords(len(lang.Focus())) + " languages.",
 		},
 		{
 			ID: "listings", Title: "Get listed where answers find sources", Moves: "Makes web answers cite tribelt.nl more often.",
@@ -128,6 +131,15 @@ func Improvements() []Improvement {
 			DoneWhen: "Tribelt is listed on the sites the web answers cite most.",
 		},
 	}
+}
+
+// InWords is a small count in words, as the catalogue writes it: "five"; a larger one in digits.
+func InWords(n int) string {
+	words := []string{"no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"}
+	if n >= 0 && n < len(words) {
+		return words[n]
+	}
+	return strconv.Itoa(n)
 }
 
 // Manual reports whether only an administrator can tick the improvement off: no scan checks it.
@@ -151,8 +163,7 @@ func (c AutoCheck) Parts(r Readiness) []Part {
 	case CheckMarkdown:
 		return []Part{{"Markdown pages", r.Markdown}}
 	case CheckStructuredData:
-		product := slices.ContainsFunc(r.StructuredData, func(t string) bool { return slices.Contains([]string{"Product", "ProductGroup", "ProductModel"}, t) })
-		return []Part{{"Product markup", product}, {"FAQ markup", slices.Contains(r.StructuredData, "FAQPage")}}
+		return []Part{{"Product markup", r.Product}, {"FAQ markup", slices.Contains(r.StructuredData, "FAQPage")}}
 	case CheckNone:
 	}
 	return nil

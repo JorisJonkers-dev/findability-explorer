@@ -1,39 +1,41 @@
-import type { AiReadiness, AiReadinessRow, ReadinessCheckState, ReadinessRank } from '../../../infrastructure/api/types.gen'
+import type { AiReadiness, AiReadinessRow, AiSearchSummary, ReadinessCheckKind, ReadinessCheckState, ReadinessRank } from '../../../infrastructure/api/types.gen'
 import { nameList } from '../../ai-search/domain/summary'
-import { formatValue } from '../../catching-up/domain/standings'
+import { formatValue, inWords } from '../../catching-up/domain/standings'
 import { joinWords } from '../../../shared/words'
 
-/**
- * The checks the summary lists, and whether a site passes each. The five counted ones are the
- * checks the ranking and the headline score (the crawlers count half when only some are kept out).
- */
-export const CHECKS: readonly { label: string; counted: boolean; passes: (r: AiReadiness) => boolean }[] = [
-  { label: 'Lets every AI crawler in', counted: true, passes: (r) => r.robots !== 'unreachable' && r.bots.length > 0 && r.bots.every((b) => b.access !== 'blocked') },
-  { label: 'Has a sitemap', counted: true, passes: (r) => r.sitemap.files > 0 },
-  { label: 'Has llms.txt', counted: true, passes: (r) => r.llmsTxt.present },
-  { label: 'Has llms-full.txt', counted: true, passes: (r) => r.llmsFullTxt },
-  { label: 'Has Markdown pages', counted: true, passes: (r) => r.markdown },
-  { label: 'Sitemap in Dutch, German and English', counted: false, passes: (r) => r.advice.some((a) => a.check === 'sitemapLanguages' && a.ok) },
-  { label: 'Organization structured data', counted: false, passes: (r) => r.advice.some((a) => a.check === 'organization' && a.ok) },
-  { label: 'Product structured data', counted: false, passes: (r) => r.advice.some((a) => a.check === 'product' && a.ok) },
-]
-
-/** The rows a scan has read: the sites the page counts. */
-export function scanned(rows: readonly AiReadinessRow[]): (AiReadinessRow & { readiness: AiReadiness })[] {
-  return rows.filter((r): r is AiReadinessRow & { readiness: AiReadiness } => r.readiness !== undefined)
+/** What each readiness check is called in the summary. */
+export const CHECK_LABELS: Record<ReadinessCheckKind, string> = {
+  crawlers: 'Lets every AI crawler in',
+  sitemap: 'Has a sitemap',
+  llmsTxt: 'Has llms.txt',
+  llmsFullTxt: 'Has llms-full.txt',
+  markdown: 'Has Markdown pages',
+  sitemapLanguages: 'Sitemap in Dutch, German and English',
+  organization: 'Organization structured data',
+  product: 'Product structured data',
 }
 
-/** Per check, how many of the scanned sites pass it, and whether Tribelt does (null when not scanned). */
-export function checkSummary(rows: readonly AiReadinessRow[]): { label: string; counted: boolean; passing: number; sites: number; tribelt: boolean | null }[] {
-  const sites = scanned(rows)
-  const tribelt = sites.find((r) => r.role === 'tribelt')
-  return CHECKS.map((c) => ({
-    label: c.label,
-    counted: c.counted,
-    passing: sites.filter((r) => c.passes(r.readiness)).length,
-    sites: sites.length,
-    tribelt: tribelt ? c.passes(tribelt.readiness) : null,
+/**
+ * Per check, how many of the sites with a recorded AI readiness pass it, and whether Tribelt does
+ * (null when not scanned), as the server counts them; the scored ones first. Nothing before the
+ * summary loads.
+ */
+export function checkSummary(
+  summary: Pick<AiSearchSummary, 'checks' | 'sites'> | undefined,
+): { label: string; counted: boolean; passing: number; sites: number; tribelt: boolean | null }[] {
+  if (!summary) return []
+  return summary.checks.map((c) => ({
+    label: CHECK_LABELS[c.check],
+    counted: c.scored,
+    passing: c.passing,
+    sites: summary.sites,
+    tribelt: c.tribelt ?? null,
   }))
+}
+
+/** The heading over the scored checks: "The five checks the ranking counts". */
+export function scoredChecksTitle(readinessChecks: number): string {
+  return `The ${inWords(readinessChecks)} checks the ranking counts`
 }
 
 /** How a mark in the table looks: allowed or present, partly, blocked, absent, or unknown. */
@@ -66,15 +68,18 @@ export function hasMark(present: boolean, what: string): Mark {
   return present ? { mark: '✓', text: `Has ${what}.`, tone: 'ok' } : { mark: '✕', text: `No ${what}.`, tone: 'no' }
 }
 
-/** The five checks the headline scores, as one sentence. */
-export function fiveChecksLine(): string {
-  const checks = CHECKS.filter((c) => c.counted).map((c) => c.label.charAt(0).toLowerCase() + c.label.slice(1))
-  return `The five checks ask whether a site ${joinWords(checks)}.`
+/** The checks the headline scores, as one sentence, as the server names them; empty before it loads. */
+export function fiveChecksLine(summary: Pick<AiSearchSummary, 'checks' | 'readinessChecks'> | undefined): string {
+  if (!summary) return ''
+  const checks = summary.checks.filter((c) => c.scored).map((c) => CHECK_LABELS[c.check].charAt(0).toLowerCase() + CHECK_LABELS[c.check].slice(1))
+  return `The ${inWords(summary.readinessChecks)} checks ask whether a site ${joinWords(checks)}.`
 }
 
-/** How many sites the page counts, when they were scanned and when they were checked again, as sentences. */
-export function scanNote(rows: readonly AiReadinessRow[]): string {
-  const sites = scanned(rows).length
+/**
+ * How many sites the page counts (the server's count of the sites with a recorded AI readiness),
+ * when they were scanned and when they were checked again, as sentences.
+ */
+export function scanNote(rows: readonly AiReadinessRow[], sites: number): string {
   return [sites === 1 ? '1 site' : `${String(sites)} sites`, scanRange(rows), checkedAgain(rows)]
     .filter((s): s is string => s !== null)
     .map((s) => `${s}.`)
@@ -120,19 +125,20 @@ export function readinessCheckLine(check: ReadinessCheckState | undefined): stri
 
 /**
  * The page's headline, from the readiness ranking the AI search summary serves: who leads on the
- * five checks, the first two companies tied for the lead and how many more, and where Tribelt
+ * scored checks, the first two companies tied for the lead and how many more, and where Tribelt
  * stands. Tribelt tied with the best competitors shares the lead.
  */
-export function readinessHeadline(ranking: readonly ReadinessRank[]): string {
+export function readinessHeadline(ranking: readonly ReadinessRank[], readinessChecks: number): string {
   const competitors = ranking.filter((r) => r.role === 'competitor')
   const tribelt = ranking.find((r) => r.role === 'tribelt')
   if (competitors.length === 0) return 'Who lets search engines and AI assistants in.'
   const top = Math.max(...competitors.map((r) => r.score))
   const leaders = nameList(competitors.filter((r) => r.score === top).map((r) => r.name), 2)
   const checks = (score: number) => formatValue('readinessChecks', score)
+  const of = `of ${inWords(readinessChecks)} checks`
   const many = competitors.filter((r) => r.score === top).length > 1
-  if (tribelt && tribelt.score > top) return `Tribelt leads with ${checks(tribelt.score)} of five checks. Next is ${leaders} with ${checks(top)}.`
-  if (tribelt && tribelt.score === top) return `Tribelt shares the lead with ${leaders}, at ${checks(top)} of five checks.`
-  const lead = `${leaders} ${many ? 'lead' : 'leads'} with ${checks(top)} of five checks.`
+  if (tribelt && tribelt.score > top) return `Tribelt leads with ${checks(tribelt.score)} ${of}. Next is ${leaders} with ${checks(top)}.`
+  if (tribelt && tribelt.score === top) return `Tribelt shares the lead with ${leaders}, at ${checks(top)} ${of}.`
+  const lead = `${leaders} ${many ? 'lead' : 'leads'} with ${checks(top)} ${of}.`
   return tribelt ? `${lead} Tribelt passes ${checks(tribelt.score)}.` : lead
 }

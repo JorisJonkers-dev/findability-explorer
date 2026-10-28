@@ -75,6 +75,7 @@ func (h *Handler) GetPromptTestResults(ctx context.Context) (oas.GetPromptTestRe
 		out.Mentions = append(out.Mentions, oas.PromptMention{
 			CompetitorId: oas.CompetitorId(m.CompetitorID), Name: m.Name, Role: oas.CompanyRole(m.Role),
 			Answers: int32(m.Answers), First: int32(m.First), AveragePosition: m.AveragePosition(), //nolint:gosec // answers of one run
+			Share: m.Share,
 		})
 	}
 	for _, w := range res.WrongClaims {

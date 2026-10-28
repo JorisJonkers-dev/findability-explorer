@@ -12,16 +12,19 @@ import { AI_SEARCH_TABS, companyPath } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
 import { useMe } from '../../shell/composables/useMe'
 import { useReadinessCheck, useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
-import { ACCESS_LEGEND, accessMark, checkSummary, fiveChecksLine, hasMark, type MarkTone, readinessCheckLine, readinessHeadline, scanned, scanNote } from '../domain/overview'
+import { ACCESS_LEGEND, accessMark, checkSummary, fiveChecksLine, hasMark, type MarkTone, readinessCheckLine, readinessHeadline, scanNote, scoredChecksTitle } from '../domain/overview'
 import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary, type ReadinessColumn, sitemapCoverage, tableRows } from '../domain/readiness'
 
 const route = useRoute()
 const router = useRouter()
-const { rows, check, isLoading, error } = useReadinessTable()
+const { rows, check, isLoading: tableLoading, error: tableError } = useReadinessTable()
 const { isAdmin } = useMe()
 const { isStarting, error: checkError, start: startCheck } = useReadinessCheck()
 const checkLine = computed(() => readinessCheckLine(check.value))
-const { summary: aiSearch } = useAiSearchSummary()
+// The headline, the checks summary and the count of sites are the server's, from the AI search summary.
+const { summary: aiSearch, isLoading: summaryLoading, error: summaryError } = useAiSearchSummary()
+const isLoading = computed(() => tableLoading.value || summaryLoading.value)
+const error = computed(() => tableError.value ?? summaryError.value)
 
 // Sorted by a column while one is picked; Tribelt and the mirror stay on top whatever the sort.
 const sort = ref<Sort<ReadinessColumn>>(null)
@@ -50,13 +53,13 @@ function headClass(column: ReadinessColumn, centred = false): string {
   const on = directionOf(sort.value, column) !== null
   return `-mx-1.5 rounded-lg px-1.5 py-1 hover:bg-mist hover:text-black [&>span]:whitespace-normal stage:-mx-3 stage:rounded-xl stage:px-3 stage:py-2 ${centred ? 'text-center' : 'text-left'} ${on ? 'text-orange-ink' : ''}`
 }
-const summary = computed(() => checkSummary(rows.value))
-/** The five checks the headline and the ranking score, then the ones listed beside them. */
-const SUMMARY_PARTS = [
-  { title: 'The five checks the ranking counts', counted: true },
+const summary = computed(() => checkSummary(aiSearch.value))
+/** The checks the headline and the ranking score, then the ones listed beside them. */
+const SUMMARY_PARTS = computed(() => [
+  { title: scoredChecksTitle(aiSearch.value?.readinessChecks ?? 0), counted: true },
   { title: 'Also checked', counted: false },
-] as const
-const sites = computed(() => scanned(rows.value).length)
+])
+const sites = computed(() => aiSearch.value?.sites ?? 0)
 // The site picked lives in the address; Tribelt's own until another is picked.
 const selected = computed<AiReadinessRow | undefined>(
   () => rows.value.find((r) => r.competitorId === route.query.site) ?? rows.value.find((r) => r.role === 'tribelt'),
@@ -117,13 +120,13 @@ function pick(r: AiReadinessRow): void {
 </script>
 
 <template>
-  <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(aiSearch?.ranking ?? [])" :tabs="AI_SEARCH_TABS">
+  <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(aiSearch?.ranking ?? [], aiSearch?.readinessChecks ?? 0)" :tabs="AI_SEARCH_TABS">
     <template #lede>
-      <p class="m-0 max-w-[62ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">{{ fiveChecksLine() }}</p>
+      <p class="m-0 max-w-[62ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">{{ fiveChecksLine(aiSearch) }}</p>
     </template>
     <template v-if="!isLoading && !error" #aside>
       <div class="flex flex-col gap-3 stage:items-end stage:gap-5">
-        <p class="m-0 max-w-[60ch] text-sm text-muted text-pretty stage:max-w-[1500px] stage:text-right stage:text-[26px]">{{ scanNote(rows) }}</p>
+        <p class="m-0 max-w-[60ch] text-sm text-muted text-pretty stage:max-w-[1500px] stage:text-right stage:text-[26px]">{{ scanNote(rows, sites) }}</p>
         <div v-if="isAdmin" class="flex flex-wrap items-center gap-3 stage:flex-row-reverse stage:gap-6">
           <button
             type="button"

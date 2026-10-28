@@ -6,9 +6,9 @@ import SectionView from '../../shell/components/SectionView.vue'
 import { statusLine } from '../../plan/domain/routine'
 import { companyPath } from '../../shell/domain/sections'
 import { useStandings } from '../composables/useStandings'
-import { barsOf, headline, MEASURES, noteOf, termsSourceLine } from '../domain/standings'
+import { barsOf, headline, measureLabel, noteOf, termsSourceLine } from '../domain/standings'
 
-const { measures, trailing, open, termsFrom, isLoading, error } = useStandings()
+const { measures, trailing, open, termsFrom, readinessChecks, isLoading, error } = useStandings()
 const title = computed(() => (isLoading.value || error.value ? 'Where Tribelt trails the leaders.' : headline(measures.value, trailing.value)))
 
 const FILL = { tribelt: 'bg-orange', typical: 'bg-blue-grey', leader: 'bg-black' } as const
@@ -41,7 +41,7 @@ const LEGEND = [
           class="m-0 flex flex-col gap-2 border-t-2 border-grey pt-4 stage:gap-2 stage:pt-5"
         >
           <figcaption class="flex flex-wrap items-baseline justify-between gap-x-4 font-semibold stage:text-[34px]">
-            {{ MEASURES[m.measure].label }}
+            {{ measureLabel(m.measure, readinessChecks) }}
             <span class="text-sm font-normal stage:text-[26px]" :class="m.leads ? 'font-semibold text-orange-ink' : 'text-muted'">{{ noteOf(m) }}</span>
           </figcaption>
           <div
@@ -76,7 +76,7 @@ const LEGEND = [
             <span class="flex flex-col gap-1">
               <strong class="font-semibold stage:text-[36px]">{{ it.title }}</strong>
               <span class="text-sm text-ink-2 stage:text-[28px]">{{ it.moves }}</span>
-              <span class="text-sm font-medium stage:text-[28px]">{{ statusLine(it, termsFrom) }}</span>
+              <span class="text-sm font-medium stage:text-[28px]">{{ statusLine(it, readinessChecks, termsFrom) }}</span>
             </span>
             <RouterLink v-if="it.leader" :to="companyPath(it.leader.competitorId)" class="flex flex-col text-right no-underline">
               <span class="text-xs text-muted stage:text-[22px]">Look at</span>

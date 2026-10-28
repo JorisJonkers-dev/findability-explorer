@@ -4,9 +4,15 @@ import type { Standing, StandingMeasure, TermsSource } from '../../../infrastruc
 export const MEASURES: Record<StandingMeasure, { label: string; short: string; unit: 'share' | 'score' | 'count'; missing?: string }> = {
   aiShareOfVoice: { label: 'AI answers naming the company, in the newest Prompt run', short: 'AI answers', unit: 'share' },
   citationShare: { label: 'Web answers citing its website, in the newest Prompt run', short: 'Citations', unit: 'share' },
-  readinessChecks: { label: 'AI readiness checks passed, out of five', short: 'AI readiness', unit: 'score' },
+  readinessChecks: { label: 'AI readiness checks passed', short: 'AI readiness', unit: 'score' },
   sitemapCoverage: { label: "Share of the site's pages its sitemap lists", short: 'Sitemap', unit: 'share', missing: 'Not measured yet. Scan the site again.' },
   termsUsed: { label: 'Search terms from the map found on the site', short: 'Search terms', unit: 'count' },
+}
+
+/** A measure's label; the readiness checks say how many there are, as the server counts them. */
+export function measureLabel(measure: StandingMeasure, readinessChecks: number): string {
+  if (measure === 'readinessChecks') return `${MEASURES.readinessChecks.label}, out of ${inWords(readinessChecks)}`
+  return MEASURES[measure].label
 }
 
 /** A note under the search terms when tribelt.nl has no scan yet and the desk research counts Tribelt's terms; empty otherwise. */

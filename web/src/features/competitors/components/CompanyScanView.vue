@@ -3,6 +3,7 @@ import { computed, ref, toRef } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { tierFill } from '../../../shared/tiers'
 import { tierLabel } from '../../../shared/vocabulary'
+import { inWords } from '../../catching-up/domain/standings'
 import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
 import { mentionLine } from '../../prompt-test/domain/results'
 import CompanyReadiness from '../../readiness/components/CompanyReadiness.vue'
@@ -47,7 +48,7 @@ const title = computed(() => {
   if (!c) return 'A competitor’s latest scan.'
   const sold = rows.value.filter((r) => r.offered).length
   const owner = c.role === 'tribelt' ? 'Tribelt' : c.shortName
-  return sold === 0 ? `${owner}, as its latest scan found it.` : `${owner} sells ${String(sold)} of Tribelt's five belt families.`
+  return sold === 0 ? `${owner}, as its latest scan found it.` : `${owner} sells ${String(sold)} of Tribelt's ${inWords(rows.value.length)} belt families.`
 })
 </script>
 

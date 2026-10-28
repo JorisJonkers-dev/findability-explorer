@@ -1810,11 +1810,23 @@ components:
         usedBy:
           type: array
           maxItems: 20
-          description: The companies that use the term.
+          description: >-
+            The companies the desk research or the review credits with the term, by the names
+            the map credits them under. Every count of a term's companies counts makers instead.
           items:
             type: string
             maxLength: 200
             example: Märtens
+        makers:
+          type: array
+          maxItems: 10000
+          description: >-
+            The competitors on the list now (not archived, researched or added since) that use
+            the term - those its credits name and those whose newest finished scan found it, by
+            id. A credit to a company no longer on the list, or to Tribelt, makes no maker. The
+            search sets it; every page that counts or lists a term's competitors reads it.
+          items:
+            $ref: "#/components/schemas/TermMaker"
         foundBy:
           type: array
           maxItems: 10000
@@ -1835,6 +1847,17 @@ components:
           maxLength: 500
           description: The page the term was taken from.
           example: https://www.martens-belts.com/de/produkte/metallfoerderband
+    TermMaker:
+      description: A competitor on the list that uses a term.
+      type: object
+      additionalProperties: false
+      required: [competitorId, fromScan]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        fromScan:
+          type: boolean
+          description: True when only its newest scan says so, and no credit names it.
     FacetCount:
       description: How many matching terms have one value of a facet.
       type: object
@@ -3823,7 +3846,7 @@ components:
       description: The AI search summary.
       type: object
       additionalProperties: false
-      required: [goal, followed, trend, crawlers, keepingOut, ranking, sites, questions, providers]
+      required: [goal, followed, trend, crawlers, keepingOut, ranking, sites, questions, providers, readinessChecks, checks]
       properties:
         goal:
           type: number
@@ -3883,6 +3906,53 @@ components:
           maximum: 100
           description: How many providers the newest run asked; 0 before any run.
           example: 5
+        readinessChecks:
+          $ref: "#/components/schemas/ReadinessCheckCount"
+        checks:
+          type: array
+          maxItems: 20
+          description: >-
+            Each readiness check, the scored ones first, with how many of the sites with a recorded
+            AI readiness pass it and whether tribelt.nl does.
+          items:
+            $ref: "#/components/schemas/ReadinessCheckSummary"
+    ReadinessCheckCount:
+      description: >-
+        How many readiness checks the readiness score counts, so the most a site can score. Every
+        page that writes "out of" this number reads it here.
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 20
+      example: 5
+    ReadinessCheckKind:
+      description: >-
+        One thing a site's AI readiness is checked for - every AI crawler let in, a sitemap,
+        llms.txt, llms-full.txt and Markdown pages are scored; sitemaps in Dutch, German and
+        English, Organization and Product structured data are checked beside them.
+      type: string
+      enum: [crawlers, sitemap, llmsTxt, llmsFullTxt, markdown, sitemapLanguages, organization, product]
+    ReadinessCheckSummary:
+      description: How many of the sites with a recorded AI readiness pass one check in full.
+      type: object
+      additionalProperties: false
+      required: [check, scored, passing]
+      properties:
+        check:
+          $ref: "#/components/schemas/ReadinessCheckKind"
+        scored:
+          type: boolean
+          description: True for a check the readiness score counts.
+        passing:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many of the sites pass it.
+          example: 12
+        tribelt:
+          type: boolean
+          description: Whether tribelt.nl passes it; absent before a scan of tribelt.nl recorded its readiness.
     PlanImprovement:
       description: One improvement of the plan.
       type: object
@@ -4002,6 +4072,14 @@ components:
           minimum: 0
           description: Its target.
           example: 0.4
+        max:
+          type: number
+          format: double
+          minimum: 0
+          description: >-
+            The most the number can be - 1 for a share, the readiness checks for the readiness
+            score; absent for a count, which has no most. A target may not exceed it.
+          example: 1
         met:
           type: boolean
           description: >-
@@ -4025,7 +4103,7 @@ components:
       description: The plan as it stands.
       type: object
       additionalProperties: false
-      required: [catalogueVersion, improvements, watched, eyeOn]
+      required: [catalogueVersion, improvements, watched, eyeOn, readinessChecks]
       properties:
         catalogueVersion:
           type: integer
@@ -4054,6 +4132,8 @@ components:
             $ref: "#/components/schemas/EyeOn"
         tribeltTermsFrom:
           $ref: "#/components/schemas/TermsSource"
+        readinessChecks:
+          $ref: "#/components/schemas/ReadinessCheckCount"
     ImprovementTick:
       description: Whether an improvement is done.
       type: object
@@ -4143,7 +4223,8 @@ components:
           format: int32
           minimum: 0
           maximum: 1000
-          description: How many companies use it.
+          description: >-
+            How many competitors on the list now use it - the makers the term search gives it.
           example: 9
         usedByTribelt:
           type: boolean
@@ -4361,7 +4442,7 @@ components:
       description: How Tribelt stands against its competitors now.
       type: object
       additionalProperties: false
-      required: [measures, trailing, open]
+      required: [measures, trailing, open, readinessChecks]
       properties:
         measures:
           type: array
@@ -4390,6 +4471,8 @@ components:
           example: "2026-11-02T06:00:00Z"
         tribeltTermsFrom:
           $ref: "#/components/schemas/TermsSource"
+        readinessChecks:
+          $ref: "#/components/schemas/ReadinessCheckCount"
     Overview:
       description: The figures of the home page.
       type: object
@@ -5064,7 +5147,7 @@ components:
       description: How often the answers of the newest run with any name one company on the list.
       type: object
       additionalProperties: false
-      required: [competitorId, name, role, answers, first, averagePosition]
+      required: [competitorId, name, role, answers, first, averagePosition, share]
       properties:
         competitorId:
           $ref: "#/components/schemas/CompetitorId"
@@ -5096,6 +5179,15 @@ components:
           maximum: 1000
           description: Its average place in the answers that name it, from 1.
           example: 1.8
+        share:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: >-
+            The share of the run's answers that count that name it - its AI share of voice, the
+            same share the home page, Catching up and AI search show.
+          example: 0.33
     PromptWrongClaim:
       description: A claim about Tribelt an answer made that the fact sheet contradicts.
       type: object

@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Term } from '../../../infrastructure/api/types.gen'
-import { overview, term, termSearch } from '../../../testing/fixtures'
+import { competitor, overview, term, termSearch } from '../../../testing/fixtures'
 import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { SEARCH_DELAY_MS } from '../composables/useTermView'
 
@@ -34,6 +34,7 @@ const FIGURES = overview({
 
 const api = routes({
   'GET /api/v1/terms': () => json(termSearch(MAP, { total: MAP.length, tribeltFrom: 'scan' })),
+  'GET /api/v1/competitors': () => json({ items: [competitor('Twentebelt'), competitor('Ashworth'), competitor('Märtens')] }),
   'GET /api/v1/overview': () => json(FIGURES),
 })
 

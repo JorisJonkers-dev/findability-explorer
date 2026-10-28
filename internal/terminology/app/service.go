@@ -49,6 +49,10 @@ type Sightings func(ctx context.Context) ([]domain.Sighting, error)
 // TribeltScanned reports whether tribelt.nl has a finished scan; the analysis context provides it.
 type TribeltScanned func(ctx context.Context) (bool, error)
 
+// Competitors returns the competitors on the list now, not archived, researched or added since;
+// the companies context provides it.
+type Competitors func(ctx context.Context) ([]domain.Listed, error)
+
 // Service runs the terminology use cases against the catalogue and the accepted terms.
 type Service struct {
 	catalogue Catalogue
@@ -59,6 +63,8 @@ type Service struct {
 
 	// tribeltScanned is nil until WithTribeltScans: tribelt.nl counts as never scanned.
 	tribeltScanned TribeltScanned
+	// competitors is nil until WithCompetitors: no term has a maker.
+	competitors Competitors
 
 	mu       sync.RWMutex
 	accepted []domain.Term
@@ -92,8 +98,16 @@ func (s *Service) WithTribeltScans(scanned TribeltScanned) *Service {
 	return s
 }
 
+// WithCompetitors tells the service which competitors are on the list now, so SiteUse knows each
+// term's makers.
+func (s *Service) WithCompetitors(competitors Competitors) *Service {
+	s.competitors = competitors
+	return s
+}
+
 // SiteUse is which of the map's terms the companies' sites use: the companies whose newest finished
-// scan found each term, and whether tribelt.nl has a finished scan (domain.SiteUse.TribeltUses).
+// scan found each term, whether tribelt.nl has a finished scan (domain.SiteUse.TribeltUses), and
+// the competitors on the list now with the names the map credits them by (domain.SiteUse.Makers).
 func (s *Service) SiteUse(ctx context.Context) (domain.SiteUse, error) {
 	found, err := s.FoundBy(ctx)
 	if err != nil {
@@ -104,6 +118,13 @@ func (s *Service) SiteUse(ctx context.Context) (domain.SiteUse, error) {
 		if u.TribeltScanned, err = s.tribeltScanned(ctx); err != nil {
 			return domain.SiteUse{}, fmt.Errorf("whether tribelt.nl was scanned: %w", err)
 		}
+	}
+	if s.competitors != nil {
+		listed, err := s.competitors(ctx)
+		if err != nil {
+			return domain.SiteUse{}, fmt.Errorf("the competitors on the list: %w", err)
+		}
+		u.Competitors = domain.CreditNames(s.Terms(), listed)
 	}
 	return u, nil
 }

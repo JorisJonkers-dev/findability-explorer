@@ -11,6 +11,7 @@ const api = routes({
         { measure: 'termsUsed', tribelt: 38, median: 10, leader: { competitorId: 'b', name: 'B', value: 30 }, competitors: 3, trails: false, leads: true },
       ],
       trailing: 1,
+      readinessChecks: 5,
       open: [],
     }),
   'GET /api/v1/overview': () =>

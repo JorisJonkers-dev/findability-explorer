@@ -19,13 +19,23 @@ import type {
 
 export const ANALYSIS_ID = '5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c'
 
+/**
+ * A term of the map. Unless told otherwise, its makers are the companies it credits, by the id
+ * their name slugs to, as the server resolves the credits to the competitors on the list.
+ */
 export function term(overrides: Partial<Term> = {}): Term {
+  const usedBy = overrides.usedBy ?? ['Twentebelt']
+  const makers = usedBy
+    .map((credit) => credit.replace(/\s*\([^()]*\)\s*$/, '').trim())
+    .filter((name) => name !== 'Tribelt')
+    .map((name) => ({ competitorId: slug(name), fromScan: false }))
   return {
     term: 'TwenteFlex',
     language: 'en',
     family: 'tri_flex_turn_curve',
     tier: 'product',
-    usedBy: ['Twentebelt'],
+    usedBy,
+    makers,
     source: 'https://www.twentebelt.com/conveyor-belts/',
     origin: 'research',
     ...overrides,
@@ -244,8 +254,8 @@ export function promptResults(overrides: Partial<PromptTestResults> = {}): Promp
     promptSetVersion: 1,
     runs: [promptRun()],
     mentions: [
-      { competitorId: 'twentebelt', name: 'Twentebelt', role: 'competitor', answers: 9, first: 4, averagePosition: 1.6 },
-      { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', answers: 3, first: 1, averagePosition: 2 },
+      { competitorId: 'twentebelt', name: 'Twentebelt', role: 'competitor', answers: 9, first: 4, averagePosition: 1.6, share: 0.75 },
+      { competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt', answers: 3, first: 1, averagePosition: 2, share: 0.25 },
     ],
     wrongClaims: [
       { answerId: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', runId: RUN_ID, at: '2026-11-01T06:10:00Z', provider: 'openai', model: 'openai/gpt-oss-20b', promptId: 'eyelink-supplier-twente', mode: 'knowledge', correctness: 'wrong', claim: 'Tribelt is in Hengelo.' },

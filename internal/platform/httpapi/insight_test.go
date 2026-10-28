@@ -57,6 +57,10 @@ func (c *insightCases) AiSearch(context.Context) (app.AiSearch, error) {
 		KeepingOut: []domain.KeepingOut{{CompanyID: "wire-belt", Name: "Wire Belt", Blocked: []string{"GPTBot"}}},
 		Ranking:    []domain.Ranked{{CompanyID: "martens", Name: "Märtens", Role: domain.RoleCompetitor, Score: 3.5}},
 		Sites:      41, Questions: 20, Providers: 5,
+		Checks: []domain.CheckSummary{
+			{Check: domain.CheckCrawlersLetIn, Scored: true, Passing: 30, Tribelt: new(true)},
+			{Check: domain.CheckProduct, Passing: 4},
+		},
 	}, c.err
 }
 
@@ -66,6 +70,13 @@ func TestTheAiSearchSummaryIsForEveryoneSignedIn(t *testing.T) {
 	r := callAs(t, srv, http.MethodGet, "/api/v1/ai-search", "", "tester")
 	if r.code != http.StatusOK || r.body["goal"].(float64) != 0.4 || r.body["sites"].(float64) != 41 || r.body["providers"].(float64) != 5 {
 		t.Fatalf("summary = %d %v", r.code, r.body)
+	}
+	checks := r.body["checks"].([]any)
+	if c := checks[0].(map[string]any); r.body["readinessChecks"].(float64) != 5 || c["check"] != "crawlers" || c["scored"] != true || c["passing"].(float64) != 30 || c["tribelt"] != true {
+		t.Errorf("checks = %v of %v", checks, r.body["readinessChecks"])
+	}
+	if c := checks[1].(map[string]any); c["scored"] != false || c["tribelt"] != nil {
+		t.Errorf("a check beside = %v", c)
 	}
 	trend := r.body["trend"].([]any)[0].(map[string]any)
 	if trend["runStartedAt"] != "2026-11-02T06:00:00Z" || trend["shares"].([]any)[1].(float64) != 0.57 {
@@ -226,7 +237,8 @@ func TestThePlanIsForEveryoneAndTickedByAdministrators(t *testing.T) {
 	}
 	watched := r.body["watched"].([]any)
 	if watched[0].(map[string]any)["now"].(float64) != 0.24 || watched[1].(map[string]any)["now"] != nil || watched[0].(map[string]any)["met"] != false ||
-		watched[2].(map[string]any)["met"] != true || r.body["tribeltTermsFrom"] != "scan" {
+		watched[2].(map[string]any)["met"] != true || r.body["tribeltTermsFrom"] != "scan" ||
+		watched[0].(map[string]any)["max"].(float64) != 1 || watched[2].(map[string]any)["max"] != nil || r.body["readinessChecks"].(float64) != 5 {
 		t.Errorf("watched = %v", watched)
 	}
 	if eye := r.body["eyeOn"].([]any)[0].(map[string]any); eye["why"] != "twente" || eye["leader"].(map[string]any)["competitorId"] != "twentebelt" {
@@ -280,7 +292,8 @@ func TestStandingsAreForEveryoneSignedIn(t *testing.T) {
 	srv := serve(t, a)
 	r := callAs(t, srv, http.MethodGet, "/api/v1/standings", "", "tester")
 	measures, _ := r.body["measures"].([]any)
-	if r.code != http.StatusOK || len(measures) != 2 || r.body["trailing"].(float64) != 1 || r.body["runStartedAt"] != nil || r.body["tribeltTermsFrom"] != "scan" {
+	if r.code != http.StatusOK || len(measures) != 2 || r.body["trailing"].(float64) != 1 || r.body["runStartedAt"] != nil || r.body["tribeltTermsFrom"] != "scan" ||
+		r.body["readinessChecks"].(float64) != 5 {
 		t.Fatalf("standings = %d %v", r.code, r.body)
 	}
 	voice := measures[0].(map[string]any)

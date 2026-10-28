@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { percent } from '../../../shared/percent'
-import { formatValue } from '../../catching-up/domain/standings'
+import { formatValue, inWords } from '../../catching-up/domain/standings'
 import SectionView from '../../shell/components/SectionView.vue'
 import { AI_SEARCH_TABS } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../composables/useAiSearchSummary'
@@ -132,7 +132,7 @@ const promptCard = computed(() => {
 
       <section aria-labelledby="ready-title" class="flex flex-col gap-5 stage:min-h-0 stage:gap-7">
         <h2 id="ready-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em] stage:text-[56px]">Ready for AI</h2>
-        <span class="text-ink-2 stage:text-[28px]">Checks passed out of five</span>
+        <span class="text-ink-2 stage:text-[28px]">Checks passed out of {{ inWords(summary.readinessChecks) }}</span>
         <p v-if="summary.ranking.length === 0" class="m-0 text-muted">No site has been scanned yet.</p>
         <ol v-else class="m-0 flex list-none flex-col gap-2 p-0">
           <li

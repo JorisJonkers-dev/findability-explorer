@@ -9,6 +9,7 @@ const standings = {
     { measure: 'sitemapCoverage', competitors: 0, trails: false, leads: false },
   ],
   trailing: 1,
+  readinessChecks: 5,
   open: [
     { id: 'sitemap-per-language', title: 'A sitemap for each language', moves: 'Helps search engines find every page.', measure: 'sitemapCoverage', auto: true, done: false, ...details, leader: { competitorId: 'ashworth', name: 'Ashworth', value: 0.9 } },
     { id: 'listings', title: 'Get listed where answers find sources', moves: 'Makes web answers cite tribelt.nl more often.', measure: 'citationShare', auto: false, done: false, ...details },

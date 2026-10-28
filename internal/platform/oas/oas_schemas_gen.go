@@ -442,7 +442,11 @@ type AiSearchSummary struct {
 	// How many buyer questions the newest run asked; 0 before any run.
 	Questions int32 `json:"questions"`
 	// How many providers the newest run asked; 0 before any run.
-	Providers int32 `json:"providers"`
+	Providers       int32               `json:"providers"`
+	ReadinessChecks ReadinessCheckCount `json:"readinessChecks"`
+	// Each readiness check, the scored ones first, with how many of the sites with a recorded AI readiness
+	// pass it and whether tribelt.nl does.
+	Checks []ReadinessCheckSummary `json:"checks"`
 }
 
 // GetGoal returns the value of Goal.
@@ -490,6 +494,16 @@ func (s *AiSearchSummary) GetProviders() int32 {
 	return s.Providers
 }
 
+// GetReadinessChecks returns the value of ReadinessChecks.
+func (s *AiSearchSummary) GetReadinessChecks() ReadinessCheckCount {
+	return s.ReadinessChecks
+}
+
+// GetChecks returns the value of Checks.
+func (s *AiSearchSummary) GetChecks() []ReadinessCheckSummary {
+	return s.Checks
+}
+
 // SetGoal sets the value of Goal.
 func (s *AiSearchSummary) SetGoal(val float64) {
 	s.Goal = val
@@ -533,6 +547,16 @@ func (s *AiSearchSummary) SetQuestions(val int32) {
 // SetProviders sets the value of Providers.
 func (s *AiSearchSummary) SetProviders(val int32) {
 	s.Providers = val
+}
+
+// SetReadinessChecks sets the value of ReadinessChecks.
+func (s *AiSearchSummary) SetReadinessChecks(val ReadinessCheckCount) {
+	s.ReadinessChecks = val
+}
+
+// SetChecks sets the value of Checks.
+func (s *AiSearchSummary) SetChecks(val []ReadinessCheckSummary) {
+	s.Checks = val
 }
 
 func (*AiSearchSummary) getAiSearchSummaryRes() {}
@@ -7301,8 +7325,9 @@ type Plan struct {
 	// The numbers to watch.
 	Watched []WatchedNumber `json:"watched"`
 	// The competitors to keep an eye on.
-	EyeOn            []EyeOn        `json:"eyeOn"`
-	TribeltTermsFrom OptTermsSource `json:"tribeltTermsFrom"`
+	EyeOn            []EyeOn             `json:"eyeOn"`
+	TribeltTermsFrom OptTermsSource      `json:"tribeltTermsFrom"`
+	ReadinessChecks  ReadinessCheckCount `json:"readinessChecks"`
 }
 
 // GetCatalogueVersion returns the value of CatalogueVersion.
@@ -7330,6 +7355,11 @@ func (s *Plan) GetTribeltTermsFrom() OptTermsSource {
 	return s.TribeltTermsFrom
 }
 
+// GetReadinessChecks returns the value of ReadinessChecks.
+func (s *Plan) GetReadinessChecks() ReadinessCheckCount {
+	return s.ReadinessChecks
+}
+
 // SetCatalogueVersion sets the value of CatalogueVersion.
 func (s *Plan) SetCatalogueVersion(val int32) {
 	s.CatalogueVersion = val
@@ -7353,6 +7383,11 @@ func (s *Plan) SetEyeOn(val []EyeOn) {
 // SetTribeltTermsFrom sets the value of TribeltTermsFrom.
 func (s *Plan) SetTribeltTermsFrom(val OptTermsSource) {
 	s.TribeltTermsFrom = val
+}
+
+// SetReadinessChecks sets the value of ReadinessChecks.
+func (s *Plan) SetReadinessChecks(val ReadinessCheckCount) {
+	s.ReadinessChecks = val
 }
 
 func (*Plan) getPlanRes()         {}
@@ -8103,7 +8138,7 @@ type ProductTerm struct {
 	// Its language.
 	Language string     `json:"language"`
 	Tier     IntentTier `json:"tier"`
-	// How many companies use it.
+	// How many competitors on the list now use it - the makers the term search gives it.
 	UsedBy int32 `json:"usedBy"`
 	// Whether Tribelt's own site uses it.
 	UsedByTribelt bool `json:"usedByTribelt"`
@@ -9174,6 +9209,9 @@ type PromptMention struct {
 	First int32 `json:"first"`
 	// Its average place in the answers that name it, from 1.
 	AveragePosition float64 `json:"averagePosition"`
+	// The share of the run's answers that count that name it - its AI share of voice, the same share the
+	// home page, Catching up and AI search show.
+	Share float64 `json:"share"`
 }
 
 // GetCompetitorId returns the value of CompetitorId.
@@ -9206,6 +9244,11 @@ func (s *PromptMention) GetAveragePosition() float64 {
 	return s.AveragePosition
 }
 
+// GetShare returns the value of Share.
+func (s *PromptMention) GetShare() float64 {
+	return s.Share
+}
+
 // SetCompetitorId sets the value of CompetitorId.
 func (s *PromptMention) SetCompetitorId(val CompetitorId) {
 	s.CompetitorId = val
@@ -9234,6 +9277,11 @@ func (s *PromptMention) SetFirst(val int32) {
 // SetAveragePosition sets the value of AveragePosition.
 func (s *PromptMention) SetAveragePosition(val float64) {
 	s.AveragePosition = val
+}
+
+// SetShare sets the value of Share.
+func (s *PromptMention) SetShare(val float64) {
+	s.Share = val
 }
 
 // How a prompt is asked - from the model's own knowledge, or with live web search.
@@ -10862,6 +10910,95 @@ func (s *ReadinessCheck) UnmarshalText(data []byte) error {
 	}
 }
 
+type ReadinessCheckCount int32
+
+// One thing a site's AI readiness is checked for - every AI crawler let in, a sitemap, llms.txt,
+// llms-full.txt and Markdown pages are scored; sitemaps in Dutch, German and English, Organization and
+// Product structured data are checked beside them.
+// Ref: #/components/schemas/ReadinessCheckKind
+type ReadinessCheckKind string
+
+const (
+	ReadinessCheckKindCrawlers         ReadinessCheckKind = "crawlers"
+	ReadinessCheckKindSitemap          ReadinessCheckKind = "sitemap"
+	ReadinessCheckKindLlmsTxt          ReadinessCheckKind = "llmsTxt"
+	ReadinessCheckKindLlmsFullTxt      ReadinessCheckKind = "llmsFullTxt"
+	ReadinessCheckKindMarkdown         ReadinessCheckKind = "markdown"
+	ReadinessCheckKindSitemapLanguages ReadinessCheckKind = "sitemapLanguages"
+	ReadinessCheckKindOrganization     ReadinessCheckKind = "organization"
+	ReadinessCheckKindProduct          ReadinessCheckKind = "product"
+)
+
+// AllValues returns all ReadinessCheckKind values.
+func (ReadinessCheckKind) AllValues() []ReadinessCheckKind {
+	return []ReadinessCheckKind{
+		ReadinessCheckKindCrawlers,
+		ReadinessCheckKindSitemap,
+		ReadinessCheckKindLlmsTxt,
+		ReadinessCheckKindLlmsFullTxt,
+		ReadinessCheckKindMarkdown,
+		ReadinessCheckKindSitemapLanguages,
+		ReadinessCheckKindOrganization,
+		ReadinessCheckKindProduct,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ReadinessCheckKind) MarshalText() ([]byte, error) {
+	switch s {
+	case ReadinessCheckKindCrawlers:
+		return []byte(s), nil
+	case ReadinessCheckKindSitemap:
+		return []byte(s), nil
+	case ReadinessCheckKindLlmsTxt:
+		return []byte(s), nil
+	case ReadinessCheckKindLlmsFullTxt:
+		return []byte(s), nil
+	case ReadinessCheckKindMarkdown:
+		return []byte(s), nil
+	case ReadinessCheckKindSitemapLanguages:
+		return []byte(s), nil
+	case ReadinessCheckKindOrganization:
+		return []byte(s), nil
+	case ReadinessCheckKindProduct:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ReadinessCheckKind) UnmarshalText(data []byte) error {
+	switch ReadinessCheckKind(data) {
+	case ReadinessCheckKindCrawlers:
+		*s = ReadinessCheckKindCrawlers
+		return nil
+	case ReadinessCheckKindSitemap:
+		*s = ReadinessCheckKindSitemap
+		return nil
+	case ReadinessCheckKindLlmsTxt:
+		*s = ReadinessCheckKindLlmsTxt
+		return nil
+	case ReadinessCheckKindLlmsFullTxt:
+		*s = ReadinessCheckKindLlmsFullTxt
+		return nil
+	case ReadinessCheckKindMarkdown:
+		*s = ReadinessCheckKindMarkdown
+		return nil
+	case ReadinessCheckKindSitemapLanguages:
+		*s = ReadinessCheckKindSitemapLanguages
+		return nil
+	case ReadinessCheckKindOrganization:
+		*s = ReadinessCheckKindOrganization
+		return nil
+	case ReadinessCheckKindProduct:
+		*s = ReadinessCheckKindProduct
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // How far checking every scanned company's AI readiness again has come, or how the last check ended;
 // all zero when none ran since the server started.
 // Ref: #/components/schemas/ReadinessCheckState
@@ -10917,6 +11054,58 @@ func (s *ReadinessCheckState) SetTotal(val int32) {
 }
 
 func (*ReadinessCheckState) startReadinessCheckRes() {}
+
+// How many of the sites with a recorded AI readiness pass one check in full.
+// Ref: #/components/schemas/ReadinessCheckSummary
+type ReadinessCheckSummary struct {
+	Check ReadinessCheckKind `json:"check"`
+	// True for a check the readiness score counts.
+	Scored bool `json:"scored"`
+	// How many of the sites pass it.
+	Passing int32 `json:"passing"`
+	// Whether tribelt.nl passes it; absent before a scan of tribelt.nl recorded its readiness.
+	Tribelt OptBool `json:"tribelt"`
+}
+
+// GetCheck returns the value of Check.
+func (s *ReadinessCheckSummary) GetCheck() ReadinessCheckKind {
+	return s.Check
+}
+
+// GetScored returns the value of Scored.
+func (s *ReadinessCheckSummary) GetScored() bool {
+	return s.Scored
+}
+
+// GetPassing returns the value of Passing.
+func (s *ReadinessCheckSummary) GetPassing() int32 {
+	return s.Passing
+}
+
+// GetTribelt returns the value of Tribelt.
+func (s *ReadinessCheckSummary) GetTribelt() OptBool {
+	return s.Tribelt
+}
+
+// SetCheck sets the value of Check.
+func (s *ReadinessCheckSummary) SetCheck(val ReadinessCheckKind) {
+	s.Check = val
+}
+
+// SetScored sets the value of Scored.
+func (s *ReadinessCheckSummary) SetScored(val bool) {
+	s.Scored = val
+}
+
+// SetPassing sets the value of Passing.
+func (s *ReadinessCheckSummary) SetPassing(val int32) {
+	s.Passing = val
+}
+
+// SetTribelt sets the value of Tribelt.
+func (s *ReadinessCheckSummary) SetTribelt(val OptBool) {
+	s.Tribelt = val
+}
 
 // The raw files a scan read its AI readiness from; empty when the site served none.
 // Ref: #/components/schemas/ReadinessFiles
@@ -11807,8 +11996,9 @@ type Standings struct {
 	// The first improvements of the plan not done yet, in order.
 	Open []PlanImprovement `json:"open"`
 	// When the Prompt run the AI measures come from started; absent before any.
-	RunStartedAt     OptDateTime    `json:"runStartedAt"`
-	TribeltTermsFrom OptTermsSource `json:"tribeltTermsFrom"`
+	RunStartedAt     OptDateTime         `json:"runStartedAt"`
+	TribeltTermsFrom OptTermsSource      `json:"tribeltTermsFrom"`
+	ReadinessChecks  ReadinessCheckCount `json:"readinessChecks"`
 }
 
 // GetMeasures returns the value of Measures.
@@ -11836,6 +12026,11 @@ func (s *Standings) GetTribeltTermsFrom() OptTermsSource {
 	return s.TribeltTermsFrom
 }
 
+// GetReadinessChecks returns the value of ReadinessChecks.
+func (s *Standings) GetReadinessChecks() ReadinessCheckCount {
+	return s.ReadinessChecks
+}
+
 // SetMeasures sets the value of Measures.
 func (s *Standings) SetMeasures(val []Standing) {
 	s.Measures = val
@@ -11859,6 +12054,11 @@ func (s *Standings) SetRunStartedAt(val OptDateTime) {
 // SetTribeltTermsFrom sets the value of TribeltTermsFrom.
 func (s *Standings) SetTribeltTermsFrom(val OptTermsSource) {
 	s.TribeltTermsFrom = val
+}
+
+// SetReadinessChecks sets the value of ReadinessChecks.
+func (s *Standings) SetReadinessChecks(val ReadinessCheckCount) {
+	s.ReadinessChecks = val
 }
 
 func (*Standings) getStandingsRes() {}
@@ -11956,8 +12156,14 @@ type Term struct {
 	Language Language   `json:"language"`
 	Family   BeltFamily `json:"family"`
 	Tier     IntentTier `json:"tier"`
-	// The companies that use the term.
+	// The companies the desk research or the review credits with the term, by the names the map credits
+	// them under. Every count of a term's companies counts makers instead.
 	UsedBy []string `json:"usedBy"`
+	// The competitors on the list now (not archived, researched or added since) that use the term - those
+	// its credits name and those whose newest finished scan found it, by id. A credit to a company no
+	// longer on the list, or to Tribelt, makes no maker. The search sets it; every page that counts or
+	// lists a term's competitors reads it.
+	Makers []TermMaker `json:"makers"`
 	// The companies whose newest finished scan found the term on their site, by id. They use it too,
 	// though the desk research or the review did not name them; absent when no scan found it.
 	FoundBy []CompetitorId `json:"foundBy"`
@@ -11997,6 +12203,11 @@ func (s *Term) GetTier() IntentTier {
 // GetUsedBy returns the value of UsedBy.
 func (s *Term) GetUsedBy() []string {
 	return s.UsedBy
+}
+
+// GetMakers returns the value of Makers.
+func (s *Term) GetMakers() []TermMaker {
+	return s.Makers
 }
 
 // GetFoundBy returns the value of FoundBy.
@@ -12042,6 +12253,11 @@ func (s *Term) SetTier(val IntentTier) {
 // SetUsedBy sets the value of UsedBy.
 func (s *Term) SetUsedBy(val []string) {
 	s.UsedBy = val
+}
+
+// SetMakers sets the value of Makers.
+func (s *Term) SetMakers(val []TermMaker) {
+	s.Makers = val
 }
 
 // SetFoundBy sets the value of FoundBy.
@@ -12590,6 +12806,34 @@ func (s *TermDecision) SetAt(val time.Time) {
 // SetTerm sets the value of Term.
 func (s *TermDecision) SetTerm(val OptTerm) {
 	s.Term = val
+}
+
+// A competitor on the list that uses a term.
+// Ref: #/components/schemas/TermMaker
+type TermMaker struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// True when only its newest scan says so, and no credit names it.
+	FromScan bool `json:"fromScan"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *TermMaker) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetFromScan returns the value of FromScan.
+func (s *TermMaker) GetFromScan() bool {
+	return s.FromScan
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *TermMaker) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetFromScan sets the value of FromScan.
+func (s *TermMaker) SetFromScan(val bool) {
+	s.FromScan = val
 }
 
 // Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator
@@ -13154,6 +13398,9 @@ type WatchedNumber struct {
 	Now OptFloat64 `json:"now"`
 	// Its target.
 	Goal float64 `json:"goal"`
+	// The most the number can be - 1 for a share, the readiness checks for the readiness score; absent for
+	// a count, which has no most. A target may not exceed it.
+	Max OptFloat64 `json:"max"`
 	// Whether the value now has reached the target. A met target is no goal any more until an
 	// administrator raises it.
 	Met OptBool `json:"met"`
@@ -13174,6 +13421,11 @@ func (s *WatchedNumber) GetGoal() float64 {
 	return s.Goal
 }
 
+// GetMax returns the value of Max.
+func (s *WatchedNumber) GetMax() OptFloat64 {
+	return s.Max
+}
+
 // GetMet returns the value of Met.
 func (s *WatchedNumber) GetMet() OptBool {
 	return s.Met
@@ -13192,6 +13444,11 @@ func (s *WatchedNumber) SetNow(val OptFloat64) {
 // SetGoal sets the value of Goal.
 func (s *WatchedNumber) SetGoal(val float64) {
 	s.Goal = val
+}
+
+// SetMax sets the value of Max.
+func (s *WatchedNumber) SetMax(val OptFloat64) {
+	s.Max = val
 }
 
 // SetMet sets the value of Met.

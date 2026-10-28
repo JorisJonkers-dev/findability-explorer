@@ -134,8 +134,13 @@ func (r readiness) Readiness(ctx context.Context) (map[string]insightdomain.Read
 }
 
 func readinessOf(r analysisdomain.Readiness, at time.Time) insightdomain.Readiness {
+	advice := map[analysisdomain.Check]bool{}
+	for _, a := range r.Advice() {
+		advice[a.Check] = a.OK
+	}
 	out := insightdomain.Readiness{
-		Sitemap: r.Sitemap.Files > 0,
+		Sitemap: r.Sitemap.Files > 0, SitemapInEachLanguage: advice[analysisdomain.CheckSitemapLanguages],
+		Organization: advice[analysisdomain.CheckOrganization], Product: advice[analysisdomain.CheckProduct],
 		SitemapLanguages: r.Sitemap.Languages, LLMs: r.LLMs.Present, LLMsFull: r.LLMsFull, Markdown: r.Markdown,
 		StructuredData: r.StructuredData, ScannedAt: at, Bots: map[string]insightdomain.BotAccess{},
 	}
@@ -179,7 +184,7 @@ func (t termsUsed) TermMap(ctx context.Context) (insightdomain.TermMap, error) {
 	for _, term := range t.terminology.Terms() {
 		out.Terms = append(out.Terms, insightdomain.MapTerm{
 			Text: term.Text, Language: string(term.Language), Family: string(term.Family), Tier: string(term.Tier),
-			UsedBy: len(term.UsedBy), UsedByTribelt: use.TribeltUses(term), FoundBy: use.FoundBy[term.Key()],
+			UsedBy: len(use.Makers(term)), UsedByTribelt: use.TribeltUses(term), FoundBy: use.FoundBy[term.Key()],
 		})
 	}
 	return out, nil

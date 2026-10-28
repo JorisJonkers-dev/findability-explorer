@@ -40,6 +40,42 @@ func TestMedianIsTheMiddleValueOrTheMeanOfTheTwo(t *testing.T) {
 	}
 }
 
+func TestTheChecksArePointedOneByOne(t *testing.T) {
+	if domain.ReadinessChecks() != 5 || len(domain.AlsoChecked()) != 3 {
+		t.Fatalf("checks = %d scored, %d beside", domain.ReadinessChecks(), len(domain.AlsoChecked()))
+	}
+	all := domain.Readiness{
+		Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true,
+		SitemapInEachLanguage: true, Organization: true, Product: true,
+	}
+	for _, c := range append(domain.ScoredChecks(), domain.AlsoChecked()...) {
+		if !all.Passes(c) || (domain.Readiness{}).Passes(c) {
+			t.Errorf("%s does not follow its field", c)
+		}
+	}
+	some := domain.Readiness{Crawlers: domain.AccessSome}
+	if some.Points(domain.CheckCrawlersLetIn) != 0.5 || some.Passes(domain.CheckCrawlersLetIn) {
+		t.Error("some crawlers kept out is a half, not a pass")
+	}
+	if (domain.Readiness{}).Points("unheard of") != 0 {
+		t.Error("an unknown check gives points")
+	}
+}
+
+func TestSummariseChecksCountsTheSitesPassingEachInFull(t *testing.T) {
+	got := domain.SummariseChecks(map[string]domain.Readiness{
+		"tribelt":  {Crawlers: domain.AccessSome, Sitemap: true, Product: true},
+		"ashworth": {Crawlers: domain.AccessOpen, Sitemap: true},
+	})
+	if len(got) != 8 || got[0].Check != domain.CheckCrawlersLetIn || !got[0].Scored || got[0].Passing != 1 || *got[0].Tribelt ||
+		got[1].Passing != 2 || !*got[1].Tribelt || got[5].Scored || got[7].Check != domain.CheckProduct || got[7].Passing != 1 || !*got[7].Tribelt {
+		t.Errorf("summary = %+v", got)
+	}
+	if none := domain.SummariseChecks(map[string]domain.Readiness{"ashworth": {}}); none[0].Tribelt != nil || none[0].Passing != 0 {
+		t.Errorf("before a scan of tribelt.nl = %+v", none[0])
+	}
+}
+
 func TestReadinessScoreCountsTheFiveChecks(t *testing.T) {
 	for _, tc := range []struct {
 		name string

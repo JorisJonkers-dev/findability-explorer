@@ -37,7 +37,7 @@ describe('the plan', () => {
     expect(steps.map((s) => s.attributes('aria-pressed'))).toEqual(['true', 'false', 'false', 'false'])
     expect(wrapper.get('[aria-live="polite"] a').attributes('href')).toBe('/ai-search')
     await steps[1]?.trigger('click')
-    expect(wrapper.get('[aria-live="polite"]').text()).toContain('Catching up shows where Tribelt trails the leaders.')
+    expect(wrapper.get('[aria-live="polite"]').text()).toContain('The overview shows where Tribelt trails the leaders.')
     expect(wrapper.get('[aria-live="polite"] a').attributes('href')).toBe('/')
   })
 

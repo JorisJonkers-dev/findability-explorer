@@ -19,7 +19,7 @@ export const ROUTINE: readonly Step[] = [
     number: '2',
     title: 'See who is ahead',
     when: 'Monday, 15 minutes',
-    what: 'Catching up shows where Tribelt trails the leaders. Each competitor has its own page with its website, terms and AI readiness.',
+    what: 'The overview shows where Tribelt trails the leaders. Each competitor has its own page with its website, terms and AI readiness.',
     look: 'Pick the biggest gap, and the competitor who does it best.',
     link: { label: 'Open the overview', path: '/' },
   },

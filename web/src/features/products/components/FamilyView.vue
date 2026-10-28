@@ -25,7 +25,7 @@ const share = computed(() => (product.value ? aiShare(product.value) : undefined
 </script>
 
 <template>
-  <SectionView section="terms" :title="title" :back="{ to: '/terms', label: 'Back to Search terms' }" :source="['Terminology map, our research of 22 October 2026']">
+  <SectionView section="terms" :title="title" :back="{ to: '/terms', label: 'Back to Search terms' }" :source="['Search term list, our research of 22 October 2026']">
     <template v-if="product" #lede>
       <p class="m-0 max-w-[68ch] text-base text-ink-2 stage:text-[40px]">{{ familyLede(product) }}</p>
     </template>

@@ -42,7 +42,7 @@ describe('the Search terms page', () => {
     expect(wrapper.get('h1').text()).toBe('Competitors list belts using 10 terms, tribelt.nl uses only 4 of them.')
     const figures = wrapper.get('section[aria-label="Key figures"]').findAll(':scope > div').map((d) => d.text())
     expect(figures).toEqual([
-      '10terms in the mapIn English, German, and Dutch.',
+      '10terms in the search term listIn English, German, and Dutch.',
       '4are used on tribelt.nlThe target is 20.',
       '6are used only by competitorsEach one is a search in which Tribelt does not turn up.',
     ])
@@ -62,12 +62,12 @@ describe('the Search terms page', () => {
       ['Dutch: 2 terms', 'false'],
     ])
     expect(wrapper.get('svg[role="img"]').attributes('aria-label')).toBe('The 10 terms by language: English 5, German 3, Dutch 2.')
-    expect(wrapper.text()).toContain('English, 50% of the map')
+    expect(wrapper.text()).toContain('English, 50% of the list')
     expect(wrapper.text()).toContain('5 terms, 1 of them American English. tribelt.nl uses 2 of them.')
     await legend()[1]?.trigger('click')
     await settle()
     expect(legend().map((b) => b.attributes('aria-pressed'))).toEqual(['false', 'true', 'false'])
-    expect(wrapper.text()).toContain('German, 30% of the map')
+    expect(wrapper.text()).toContain('German, 30% of the list')
     expect(wrapper.text()).toContain('Germany is where Tribelt wants to grow.')
   })
 

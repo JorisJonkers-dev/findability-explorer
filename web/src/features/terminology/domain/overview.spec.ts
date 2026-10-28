@@ -39,7 +39,7 @@ describe('the headline', () => {
 describe('the figures', () => {
   it('count the map, what tribelt.nl uses against its target, and what only competitors use', () => {
     expect(termsFigures(terms(), 20)).toEqual([
-      { big: '10', text: 'terms in the map', note: 'In Dutch, German, and English.' },
+      { big: '10', text: 'terms in the search term list', note: 'In Dutch, German, and English.' },
       { big: '4', text: 'are used on tribelt.nl', note: 'The target is 20.' },
       { big: '6', text: 'are used only by competitors', note: 'Each one is a search in which Tribelt does not turn up.' },
     ])
@@ -47,7 +47,7 @@ describe('the figures', () => {
 
   it('have no notes without languages or a target, and are zero before the figures load', () => {
     const [map, used, others] = termsFigures(undefined, undefined)
-    expect(map).toEqual({ big: '0', text: 'terms in the map', note: '' })
+    expect(map).toEqual({ big: '0', text: 'terms in the search term list', note: '' })
     expect(used?.note).toBe('')
     expect(others?.big).toBe('0')
     expect(termsFigures(terms({ total: 2, tribelt: 5 }), undefined)[2]?.big).toBe('0')
@@ -106,7 +106,7 @@ describe('the picked language', () => {
   })
 
   it('says its share and what tribelt.nl uses', () => {
-    expect(pickedLanguage(nl, 0)).toEqual({ title: 'Dutch, 50% of the map', text: '5 terms. tribelt.nl uses 2 of them.' })
+    expect(pickedLanguage(nl, 0)).toEqual({ title: 'Dutch, 50% of the list', text: '5 terms. tribelt.nl uses 2 of them.' })
   })
 
   it('says that Germany is where Tribelt wants to grow', () => {

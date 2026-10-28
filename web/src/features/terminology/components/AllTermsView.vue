@@ -96,7 +96,7 @@ const rankGrid = 'stage:grid-cols-[64px_minmax(0,1fr)_190px_150px_minmax(0,0.7fr
 </script>
 
 <template>
-  <SectionView section="terms" :title="title" :back="{ to: '/terms', label: 'Back to Search terms' }" :source="['Terminology map, our research of 22 October 2026', 'Competitors: also found by live scans']">
+  <SectionView section="terms" :title="title" :back="{ to: '/terms', label: 'Back to Search terms' }" :source="['Search term list, our research of 22 October 2026', 'Competitors: also found by live scans']">
     <div class="flex flex-col gap-12 stage:grid stage:min-h-0 stage:gap-24" :style="{ gridTemplateColumns: columns.template.value }">
       <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5 stage:col-span-3">{{ error }}</p>
 

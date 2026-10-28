@@ -18,13 +18,13 @@ export function termsHeadline(terms: OverviewTerms | undefined): string {
 /** A figure on the main page: a big number, what it counts and a note under it. */
 export type TermsFigure = { big: string; text: string; note: string }
 
-/** The three figures: the terms in the map, those tribelt.nl uses (against its target) and those only competitors use. */
+/** The three figures: the terms in the search term list, those tribelt.nl uses (against its target) and those only competitors use. */
 export function termsFigures(terms: OverviewTerms | undefined, goal: number | undefined): TermsFigure[] {
   const total = terms?.total ?? 0
   const used = terms?.tribelt ?? 0
   const languages = (terms?.languages ?? []).map((l) => languageLabel(l.language))
   return [
-    { big: String(total), text: 'terms in the map', note: languages.length > 0 ? `In ${listOf(languages)}.` : '' },
+    { big: String(total), text: 'terms in the search term list', note: languages.length > 0 ? `In ${listOf(languages)}.` : '' },
     { big: String(used), text: 'are used on tribelt.nl', note: goal === undefined ? '' : `The target is ${String(goal)}.` },
     {
       big: String(Math.max(0, total - used)),
@@ -87,7 +87,7 @@ export function pickedLanguage(slice: LanguageSlice | undefined, americanEnglish
   const american = slice.value === 'en' && americanEnglish > 0 ? `, ${String(americanEnglish)} of them American English` : ''
   const grow = slice.value === 'de' ? ' Germany is where Tribelt wants to grow.' : ''
   return {
-    title: `${slice.label}, ${String(Math.round(slice.share * 100))}% of the map`,
+    title: `${slice.label}, ${String(Math.round(slice.share * 100))}% of the list`,
     text: `${terms}${american}.${grow} tribelt.nl uses ${String(slice.tribelt)} of them.`,
   }
 }

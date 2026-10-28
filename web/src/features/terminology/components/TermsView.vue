@@ -33,10 +33,10 @@ const sliceColour = (value: string, tone: string): string => (value === pickedSl
 </script>
 
 <template>
-  <SectionView section="terms" :title="title" :source="['Terminology map, our research of 22 October 2026', 'Competitors: also found by live scans']">
+  <SectionView section="terms" :title="title" :source="['Search term list, our research of 22 October 2026', 'Competitors: also found by live scans']">
     <template #lede>
       <p class="m-0 max-w-[64ch] text-base text-ink-2 stage:text-[40px]">
-        The terminology map holds the words buyers and competitors use for metal conveyor belts. When tribelt.nl doesn't use a term, Tribelt doesn't turn up for
+        The list of search terms buyers use for metal conveyor belts also holds the words competitors use. When tribelt.nl doesn't use a term, Tribelt doesn't turn up for
         that search.
       </p>
     </template>
@@ -121,7 +121,7 @@ const sliceColour = (value: string, tone: string): string => (value === pickedSl
             </li>
           </ul>
           <p class="m-0 text-sm text-muted stage:text-[36px]">
-            Every term in the map, ranked by how many competitors use it, is on
+            Every term in the search term list, ranked by how many competitors use it, is on
             <RouterLink to="/terms/all" class="font-bold">its own page</RouterLink>.
           </p>
         </section>

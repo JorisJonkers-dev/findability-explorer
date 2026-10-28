@@ -88,7 +88,9 @@ async function stubHistory(page: Page): Promise<void> {
 
 test('a company’s search terms, scan history and comparison render', async ({ page }) => {
   await page.goto('/competitors/twentebelt')
-  // The history is stubbed once the page is open: the stub's scans have no pages of their own to read.
+  // The history is stubbed once the page has finished loading: the stub's scans have no pages of their own to read,
+  // so a company page still asking for its data would be answered with scans it cannot fetch (a 404).
+  await page.waitForLoadState('networkidle')
   await stubHistory(page)
   await page.getByRole('link', { name: 'See how it changed over time' }).first().click()
   await expect(page).toHaveURL('/competitors/twentebelt/history')

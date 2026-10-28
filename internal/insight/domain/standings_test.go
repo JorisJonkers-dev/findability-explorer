@@ -41,12 +41,12 @@ func TestMedianIsTheMiddleValueOrTheMeanOfTheTwo(t *testing.T) {
 }
 
 func TestTheChecksArePointedOneByOne(t *testing.T) {
-	if domain.ReadinessChecks() != 5 || len(domain.AlsoChecked()) != 3 {
+	if domain.ReadinessChecks() != 8 || len(domain.AlsoChecked()) != 1 {
 		t.Fatalf("checks = %d scored, %d beside", domain.ReadinessChecks(), len(domain.AlsoChecked()))
 	}
 	all := domain.Readiness{
 		Crawlers: domain.AccessOpen, Sitemap: true, LLMs: true, LLMsFull: true, Markdown: true,
-		SitemapInEachLanguage: true, Organization: true, Product: true,
+		SitemapInEachLanguage: true, LanguageVersions: true, Organization: true, Product: true,
 	}
 	for _, c := range append(domain.ScoredChecks(), domain.AlsoChecked()...) {
 		if !all.Passes(c) || (domain.Readiness{}).Passes(c) {
@@ -110,10 +110,6 @@ func TestSharesCountAnswersAndWebAnswers(t *testing.T) {
 	}
 	if _, ok := domain.CitationShare(answers[:1], "tribelt"); ok {
 		t.Error("a run without web answers has no citation share")
-	}
-	// The count the plan watches is the count the share is a share of.
-	if n := domain.Citations(answers, "tribelt"); n != 1 || domain.Citations(answers[:1], "tribelt") != 0 {
-		t.Errorf("citations = %d", n)
 	}
 	answers[1].Scope, answers[2].Scope = domain.ScopeTwente, domain.ScopeTwente
 	if v, ok := domain.TwenteShare(domain.Run{Answers: answers}, "tribelt"); v != 0.5 || !ok {

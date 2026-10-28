@@ -297,15 +297,14 @@ func (f Facts) watched(t Target) (float64, bool) {
 		return f.Value(MeasureReadiness, TribeltID)
 	case TargetTermsUsed:
 		return f.Value(MeasureTermsUsed, TribeltID)
-	case TargetTwenteShareOfVoice, TargetCitations:
+	case TargetCitationShare:
+		return f.Value(MeasureCitationShare, TribeltID)
+	case TargetTwenteShareOfVoice:
 	}
 	if f.Run == nil {
 		return 0, false
 	}
-	if t == TargetTwenteShareOfVoice {
-		return TwenteShare(*f.Run, TribeltID)
-	}
-	return float64(Citations(f.Run.Answers, TribeltID)), true
+	return TwenteShare(*f.Run, TribeltID)
 }
 
 // Watchout is a competitor to keep an eye on, and why.

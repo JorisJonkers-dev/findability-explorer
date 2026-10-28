@@ -8297,7 +8297,7 @@ func (s PlanTarget) Validate() error {
 		return nil
 	case "termsUsed":
 		return nil
-	case "citations":
+	case "citationShare":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -12860,9 +12860,11 @@ func (s ReadinessCheckKind) Validate() error {
 		return nil
 	case "markdown":
 		return nil
-	case "sitemapLanguages":
-		return nil
 	case "organization":
+		return nil
+	case "languages":
+		return nil
+	case "sitemapLanguages":
 		return nil
 	case "product":
 		return nil
@@ -13127,7 +13129,7 @@ func (s *ReadinessRank) Validate() error {
 			MinSet:        true,
 			Min:           0,
 			MaxSet:        true,
-			Max:           5,
+			Max:           20,
 			MinExclusive:  false,
 			MaxExclusive:  false,
 			MultipleOfSet: false,

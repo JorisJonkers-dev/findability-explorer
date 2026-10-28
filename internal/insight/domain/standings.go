@@ -98,18 +98,6 @@ func CitationShare(answers []Answer, id string) (float64, bool) {
 	return share(webAnswers(answers), func(a Answer) bool { return slices.Contains(a.Cited, id) })
 }
 
-// Citations counts the web answers that cite the company's site: the count CitationShare is a
-// share of.
-func Citations(answers []Answer, id string) int {
-	n := 0
-	for _, a := range webAnswers(answers) {
-		if slices.Contains(a.Cited, id) {
-			n++
-		}
-	}
-	return n
-}
-
 func webAnswers(answers []Answer) []Answer {
 	var web []Answer
 	for _, a := range answers {
@@ -190,10 +178,11 @@ type Readiness struct {
 	// 0 to 1 (ADR-0013); nil when that scan did not measure it.
 	SitemapCoverage  *float64
 	SitemapLanguages []string
-	// SitemapInEachLanguage, Organization and Product are whether the site follows the report's
-	// advice on them, as the analysis context judges it: sitemaps in Dutch, German and English,
-	// and Organization and Product structured data.
+	// SitemapInEachLanguage, Organization, Product and LanguageVersions are whether the site follows
+	// the report's advice on them, as the analysis context judges it: sitemaps in Dutch, German and
+	// English, Organization and Product structured data, and pages in the three languages.
 	SitemapInEachLanguage bool
+	LanguageVersions      bool
 	Organization          bool
 	Product               bool
 	LLMs                  bool
@@ -213,19 +202,25 @@ const (
 	CheckHasLLMsFull      ReadinessCheck = "llmsFullTxt"
 	CheckHasMarkdown      ReadinessCheck = "markdown"
 	CheckSitemapLanguages ReadinessCheck = "sitemapLanguages"
+	CheckLanguages        ReadinessCheck = "languages"
 	CheckOrganization     ReadinessCheck = "organization"
 	CheckProduct          ReadinessCheck = "product"
 )
 
 // ScoredChecks are the readiness checks ReadinessScore counts, in the order the pages list them:
-// every AI crawler let in, a sitemap, llms.txt, llms-full.txt and Markdown pages.
+// every AI crawler let in (for search and for training), a sitemap, llms.txt, llms-full.txt,
+// Markdown pages, Organization structured data, pages in Dutch, German and English, and a sitemap
+// in each of the three languages (ADR-0014).
 func ScoredChecks() []ReadinessCheck {
-	return []ReadinessCheck{CheckCrawlersLetIn, CheckHasSitemap, CheckHasLLMs, CheckHasLLMsFull, CheckHasMarkdown}
+	return []ReadinessCheck{
+		CheckCrawlersLetIn, CheckHasSitemap, CheckHasLLMs, CheckHasLLMsFull, CheckHasMarkdown,
+		CheckOrganization, CheckLanguages, CheckSitemapLanguages,
+	}
 }
 
 // AlsoChecked are the readiness checks the pages list beside the scored ones, which no score counts.
 func AlsoChecked() []ReadinessCheck {
-	return []ReadinessCheck{CheckSitemapLanguages, CheckOrganization, CheckProduct}
+	return []ReadinessCheck{CheckProduct}
 }
 
 // ReadinessChecks is how many checks ReadinessScore counts: the most a site can score.
@@ -251,6 +246,8 @@ func (r Readiness) Points(c ReadinessCheck) float64 {
 		pass = r.Markdown
 	case CheckSitemapLanguages:
 		pass = r.SitemapInEachLanguage
+	case CheckLanguages:
+		pass = r.LanguageVersions
 	case CheckOrganization:
 		pass = r.Organization
 	case CheckProduct:

@@ -77,7 +77,7 @@ func toStandings(in []domain.Standing) []oas.Standing {
 
 // readinessChecks is how many checks the readiness score counts, as every page writes it.
 func readinessChecks() oas.ReadinessCheckCount {
-	return oas.ReadinessCheckCount(domain.ReadinessChecks()) //nolint:gosec // five
+	return oas.ReadinessCheckCount(domain.ReadinessChecks()) //nolint:gosec // at most 20
 }
 
 // GetAiSearchSummary implements getAiSearchSummary.
@@ -252,7 +252,7 @@ func (h *Handler) SetPlanTargets(ctx context.Context, req *oas.PlanTargetsChange
 		return &oas.SetPlanTargetsUnprocessableEntity{
 			StatusCode: http.StatusUnprocessableEntity,
 			Response: httpx.Problem(http.StatusUnprocessableEntity,
-				fmt.Sprintf("A share is from 0 to 1, readiness checks from 0 to %d in halves, and terms and citations are whole numbers.",
+				fmt.Sprintf("A share is from 0 to 1, readiness checks from 0 to %d in halves, and terms are whole numbers.",
 					domain.ReadinessChecks())),
 		}, nil
 	case err != nil:

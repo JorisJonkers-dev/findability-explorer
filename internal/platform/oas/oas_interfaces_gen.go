@@ -193,6 +193,10 @@ type StartTermReviewRes interface {
 	startTermReviewRes()
 }
 
+type StopPromptRunRes interface {
+	stopPromptRunRes()
+}
+
 type TestLlmCredentialRes interface {
 	testLlmCredentialRes()
 }

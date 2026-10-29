@@ -4469,6 +4469,52 @@ export type RetryPromptRunResponses = {
 
 export type RetryPromptRunResponse = RetryPromptRunResponses[keyof RetryPromptRunResponses];
 
+export type StopPromptRunData = {
+    body?: never;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/prompt-runs/{runId}/stop';
+};
+
+export type StopPromptRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopPromptRunError = StopPromptRunErrors[keyof StopPromptRunErrors];
+
+export type StopPromptRunResponses = {
+    /**
+     * The run was asked to stop.
+     */
+    204: void;
+};
+
+export type StopPromptRunResponse = StopPromptRunResponses[keyof StopPromptRunResponses];
+
 export type GetPromptRetryPlanData = {
     body?: never;
     path: {

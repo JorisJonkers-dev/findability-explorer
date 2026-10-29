@@ -54,6 +54,7 @@ const (
 	StartReadinessCheckOperation        OperationName = "StartReadinessCheck"
 	StartRescansOperation               OperationName = "StartRescans"
 	StartTermReviewOperation            OperationName = "StartTermReview"
+	StopPromptRunOperation              OperationName = "StopPromptRun"
 	TestLlmCredentialOperation          OperationName = "TestLlmCredential"
 	TickImprovementOperation            OperationName = "TickImprovement"
 	UndoCompetitorCandidateOperation    OperationName = "UndoCompetitorCandidate"

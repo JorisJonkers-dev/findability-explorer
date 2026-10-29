@@ -391,3 +391,41 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 		t.Errorf("tokens later = %d", n)
 	}
 }
+
+func TestAStopIsStoredForARunningRunAndClearedWhenTheRunIsAskedAgain(t *testing.T) {
+	t.Parallel()
+	repo := repository(t)
+	ctx := t.Context()
+	r := run(domain.TriggerManual)
+	if err := repo.CreateRun(ctx, r, "a", at); err != nil {
+		t.Fatal(err)
+	}
+	if stop, err := repo.StopRequested(ctx, r.ID); stop || err != nil {
+		t.Fatalf("a new run's stop = %v, %v", stop, err)
+	}
+	if ok, err := repo.RequestStop(ctx, r.ID, at.Add(time.Minute)); !ok || err != nil {
+		t.Fatalf("stopping a running run = %v, %v", ok, err)
+	}
+	if stop, err := repo.StopRequested(ctx, r.ID); !stop || err != nil {
+		t.Fatalf("the stop asked for = %v, %v", stop, err)
+	}
+	if err := repo.FinishRun(ctx, r.ID, domain.RunStopped, domain.StoppedByHand, at.Add(2*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := repo.RequestStop(ctx, r.ID, at.Add(3*time.Minute)); ok || err != nil {
+		t.Errorf("stopping a finished run = %v, %v", ok, err)
+	}
+	if ok, err := repo.RequestStop(ctx, uuid.New(), at); ok || err != nil {
+		t.Errorf("stopping no run = %v, %v", ok, err)
+	}
+	if stop, err := repo.StopRequested(ctx, uuid.New()); stop || err != nil {
+		t.Errorf("the stop of no run = %v, %v", stop, err)
+	}
+	// A retry runs the run again, and the stop of before does not stop it.
+	if err := repo.ReopenRun(ctx, r.ID, "a", at.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if stop, err := repo.StopRequested(ctx, r.ID); stop || err != nil {
+		t.Errorf("the reopened run's stop = %v, %v", stop, err)
+	}
+}

@@ -30,6 +30,8 @@ type promptTests struct {
 	change    app.Change
 	actor     string
 	filter    app.AnswerFilter
+	stopErr   error
+	stopped   uuid.UUID
 }
 
 func (a *analyses) prompts() *promptTests {
@@ -123,6 +125,14 @@ func (p *promptTests) RetryPlan(_ context.Context, id uuid.UUID) (app.Plan, erro
 		Ask: 7, AskCost: 84_000, Unknown: 3, Read: 2, ReadCost: 300, Reading: 150,
 		Costs: []domain.ModeCost{{Provider: "openai", Mode: domain.ModeWeb, Cost: 20_150}},
 	}, p.planErr
+}
+
+func (p *promptTests) StopRun(_ context.Context, actor string, id uuid.UUID) error {
+	if id != runID {
+		return domain.ErrNotFound
+	}
+	p.actor, p.stopped = actor, id
+	return p.stopErr
 }
 
 func view() app.View {
@@ -556,5 +566,25 @@ func TestThePlanOfAskingAgainIsForAdministrators(t *testing.T) {
 	a.prompts().planErr = errors.New("broken")
 	if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusInternalServerError {
 		t.Errorf("a failing plan = %d", r.code)
+	}
+}
+
+func TestAnAdministratorStopsARunningRun(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	path := "/api/v1/admin/prompt-runs/" + runID.String() + "/stop"
+	if r := callAs(t, srv, http.MethodPost, path, "", "tester"); r.code != http.StatusForbidden || a.prompts().stopped != uuid.Nil {
+		t.Errorf("a viewer stopped the run: %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPost, path, "", "admin"); r.code != http.StatusNoContent || a.prompts().stopped != runID || a.prompts().actor == "" {
+		t.Errorf("stop = %d, stopped %v by %q", r.code, a.prompts().stopped, a.prompts().actor)
+	}
+	r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-runs/"+uuid.NewString()+"/stop", "", "admin")
+	if r.code != http.StatusNotFound || r.body["detail"] != "No Prompt run with this id is running." {
+		t.Errorf("stopping a run that is not running = %d %v", r.code, r.body)
+	}
+	a.prompts().stopErr = errors.New("broken")
+	if r := callAs(t, srv, http.MethodPost, path, "", "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("a failing stop = %d", r.code)
 	}
 }

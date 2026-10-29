@@ -34,6 +34,7 @@ type execution struct {
 	reader  reader
 	spent   domain.Micros
 	stopped domain.RunStatus // set when the budget is reached; empty otherwise
+	byHand  bool             // set when an administrator asked the run to stop
 	lost    bool             // set when another instance took the run over
 	failure error            // the first answer that could not be stored
 }
@@ -81,6 +82,9 @@ func (s *Service) execute(ctx context.Context, run domain.Run, r *redo) error {
 		stop()
 		heart.Wait()
 	}()
+	// A stop asked for before the run got here, as while it waited to be taken over, is honoured
+	// before the first question.
+	e.checkStop(ctx)
 	for _, a := range unread {
 		if e.halted() {
 			break
@@ -327,7 +331,7 @@ func (e *execution) heartbeat(ctx context.Context, interval time.Duration) {
 }
 
 // beat records that this instance still runs the run; it marks the run lost when another
-// instance took it, and halts it when the record fails.
+// instance took it, halts it when the record fails, and stops it when an administrator asked to.
 func (e *execution) beat(ctx context.Context) {
 	held, err := e.s.repo.Heartbeat(ctx, e.run.ID, e.s.cfg.Owner, e.s.now())
 	switch {
@@ -336,6 +340,19 @@ func (e *execution) beat(ctx context.Context) {
 	case err == nil && !held:
 		e.mu.Lock()
 		e.lost = true
+		e.mu.Unlock()
+	case err == nil:
+		e.checkStop(ctx)
+	}
+}
+
+// checkStop stops the run when an administrator asked to stop it. The request is stored, so it
+// reaches the run whichever instance received it. A request that cannot be read is read again at
+// the next heartbeat, so the run goes on meanwhile.
+func (e *execution) checkStop(ctx context.Context) {
+	if stop, err := e.s.repo.StopRequested(ctx, e.run.ID); err == nil && stop {
+		e.mu.Lock()
+		e.byHand = true
 		e.mu.Unlock()
 	}
 }
@@ -349,19 +366,19 @@ func (e *execution) halt(err error) {
 	}
 }
 
-// halted reports whether the run should ask nothing more: the budget is reached, another
-// instance took it over, or something could not be recorded.
+// halted reports whether the run should ask nothing more: an administrator stopped it, the budget
+// is reached, another instance took it over, or something could not be recorded.
 func (e *execution) halted() bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	return e.stopped != "" || e.lost || e.failure != nil || e.spent >= e.budget
+	return e.byHand || e.stopped != "" || e.lost || e.failure != nil || e.spent >= e.budget
 }
 
-// finish records how the run ended: done, stopped by the budget, or failed when something could
-// not be recorded. A run another instance took over is its to finish.
+// finish records how the run ended: done, stopped by hand or by the budget, or failed when
+// something could not be recorded. A run another instance took over is its to finish.
 func (e *execution) finish(ctx context.Context) error {
 	e.mu.Lock()
-	lost, failure, stopped, over := e.lost, e.failure, e.stopped, e.spent >= e.budget
+	lost, failure, byHand, stopped, over := e.lost, e.failure, e.byHand, e.stopped, e.spent >= e.budget
 	e.mu.Unlock()
 	switch {
 	case lost:
@@ -369,8 +386,10 @@ func (e *execution) finish(ctx context.Context) error {
 	case failure != nil:
 		_ = e.s.fail(ctx, e.run.ID, failure)
 		return failure
+	case byHand:
+		return e.s.repo.FinishRun(ctx, e.run.ID, domain.RunStopped, domain.StoppedByHand, e.s.now())
 	case stopped != "" || over:
-		return e.s.repo.FinishRun(ctx, e.run.ID, domain.RunStopped, "The month's budget for Prompt runs was reached; the answers so far are kept.", e.s.now())
+		return e.s.repo.FinishRun(ctx, e.run.ID, domain.RunStopped, domain.StoppedByBudget, e.s.now())
 	default:
 		return e.s.repo.FinishRun(ctx, e.run.ID, domain.RunDone, "", e.s.now())
 	}

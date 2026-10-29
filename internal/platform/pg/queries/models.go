@@ -319,6 +319,7 @@ type PromptRun struct {
 	Tasks            int64
 	Owner            string
 	HeartbeatAt      time.Time
+	StopRequestedAt  pgtype.Timestamptz
 }
 
 type PromptRunModel struct {

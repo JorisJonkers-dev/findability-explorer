@@ -57,6 +57,17 @@ UPDATE prompt_runs
 SET heartbeat_at = @at
 WHERE id = @id AND owner = @owner AND status = 'running';
 
+-- name: RequestPromptRunStop :execrows
+-- An administrator asks a running run to stop; the instance running it reads this at its heartbeat.
+UPDATE prompt_runs
+SET stop_requested_at = @at
+WHERE id = @id AND status = 'running';
+
+-- name: PromptRunStopRequested :one
+SELECT (stop_requested_at IS NOT NULL)::boolean AS requested
+FROM prompt_runs
+WHERE id = @id;
+
 -- name: FinishPromptRun :exec
 UPDATE prompt_runs
 SET status = @status, failure = sqlc.narg(failure), finished_at = @finished_at
@@ -65,7 +76,7 @@ WHERE id = @id AND status = 'running';
 -- name: ReopenPromptRun :execrows
 -- Runs a finished run again, held by owner, unless any run is running: the run lock.
 UPDATE prompt_runs AS p
-SET status = 'running', finished_at = NULL, failure = NULL, owner = @owner, heartbeat_at = @at
+SET status = 'running', finished_at = NULL, failure = NULL, stop_requested_at = NULL, owner = @owner, heartbeat_at = @at
 WHERE p.id = @id AND p.status <> 'running' AND NOT EXISTS (SELECT 1 FROM prompt_runs AS r WHERE r.status = 'running');
 
 -- name: GetPromptRun :one

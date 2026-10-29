@@ -428,6 +428,15 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/term-candidates/review
 	StartTermReview(ctx context.Context) (StartTermReviewRes, error)
+	// StopPromptRun invokes stopPromptRun operation.
+	//
+	// Administrators only. Asks a running run to stop. The request is stored, so the instance running the
+	// run, whichever it is, stops it at its next heartbeat, within a minute: no question is asked after
+	// it, the responses so far are kept, and the run is recorded as stopped by hand. retryPromptRun
+	// finishes it, asking only the questions it did not get. 404 when no run with this id is running.
+	//
+	// POST /api/v1/admin/prompt-runs/{runId}/stop
+	StopPromptRun(ctx context.Context, params StopPromptRunParams) (StopPromptRunRes, error)
 	// TestLlmCredential invokes testLlmCredential operation.
 	//
 	// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
@@ -6735,6 +6744,141 @@ func (c *Client) sendStartTermReview(ctx context.Context) (res StartTermReviewRe
 
 	stage = "DecodeResponse"
 	result, err := decodeStartTermReviewResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// StopPromptRun invokes stopPromptRun operation.
+//
+// Administrators only. Asks a running run to stop. The request is stored, so the instance running the
+// run, whichever it is, stops it at its next heartbeat, within a minute: no question is asked after
+// it, the responses so far are kept, and the run is recorded as stopped by hand. retryPromptRun
+// finishes it, asking only the questions it did not get. 404 when no run with this id is running.
+//
+// POST /api/v1/admin/prompt-runs/{runId}/stop
+func (c *Client) StopPromptRun(ctx context.Context, params StopPromptRunParams) (StopPromptRunRes, error) {
+	res, err := c.sendStopPromptRun(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendStopPromptRun(ctx context.Context, params StopPromptRunParams) (res StopPromptRunRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("stopPromptRun"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/prompt-runs/{runId}/stop"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StopPromptRunOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/prompt-runs/"
+	{
+		// Encode "runId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "runId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RunId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/stop"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, StopPromptRunOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStopPromptRunResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -12180,6 +12180,27 @@ type StartTermReviewUnauthorized ProblemStatusCode
 
 func (*StartTermReviewUnauthorized) startTermReviewRes() {}
 
+type StopPromptRunBadRequest ProblemStatusCode
+
+func (*StopPromptRunBadRequest) stopPromptRunRes() {}
+
+type StopPromptRunForbidden ProblemStatusCode
+
+func (*StopPromptRunForbidden) stopPromptRunRes() {}
+
+// StopPromptRunNoContent is response for StopPromptRun operation.
+type StopPromptRunNoContent struct{}
+
+func (*StopPromptRunNoContent) stopPromptRunRes() {}
+
+type StopPromptRunNotFound ProblemStatusCode
+
+func (*StopPromptRunNotFound) stopPromptRunRes() {}
+
+type StopPromptRunUnauthorized ProblemStatusCode
+
+func (*StopPromptRunUnauthorized) stopPromptRunRes() {}
+
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term
 type Term struct {

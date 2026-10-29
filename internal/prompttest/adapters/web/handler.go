@@ -25,6 +25,7 @@ type UseCases interface {
 	Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
 	Reread(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
 	RetryPlan(ctx context.Context, runID uuid.UUID) (app.Plan, error)
+	StopRun(ctx context.Context, actor string, runID uuid.UUID) error
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error)
@@ -172,6 +173,18 @@ func (h *Handler) RereadPromptRun(ctx context.Context, req *oas.PromptRetryReque
 	}
 	out := toRetry(r)
 	return &out, nil
+}
+
+// StopPromptRun implements stopPromptRun.
+func (h *Handler) StopPromptRun(ctx context.Context, params oas.StopPromptRunParams) (oas.StopPromptRunRes, error) {
+	err := h.uc.StopRun(ctx, h.actor(ctx), params.RunId)
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.StopPromptRunNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No Prompt run with this id is running.")}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.StopPromptRunNoContent{}, nil
 }
 
 // GetPromptRetryPlan implements getPromptRetryPlan.

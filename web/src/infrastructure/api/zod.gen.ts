@@ -2164,6 +2164,15 @@ export const zRetryPromptRunPath = z.object({
  */
 export const zRetryPromptRunResponse = zPromptRetry;
 
+export const zStopPromptRunPath = z.object({
+    runId: z.uuid().max(36)
+});
+
+/**
+ * The run was asked to stop.
+ */
+export const zStopPromptRunResponse = z.void();
+
 export const zGetPromptRetryPlanPath = z.object({
     runId: z.uuid().max(36)
 });

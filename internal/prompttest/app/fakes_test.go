@@ -33,6 +33,8 @@ type repo struct {
 	// taken over by another instance.
 	heartbeatsLeft int
 	beats          int
+	// stops are the runs an administrator asked to stop.
+	stops map[uuid.UUID]bool
 }
 
 type storedRun struct {
@@ -148,6 +150,30 @@ func (r *repo) Heartbeat(_ context.Context, id uuid.UUID, owner string, at time.
 	return false, nil
 }
 
+func (r *repo) RequestStop(_ context.Context, id uuid.UUID, _ time.Time) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("RequestStop"); err != nil {
+		return false, err
+	}
+	for _, s := range r.runs {
+		if s.run.ID == id && s.run.Status == domain.RunRunning {
+			if r.stops == nil {
+				r.stops = map[uuid.UUID]bool{}
+			}
+			r.stops[id] = true
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *repo) StopRequested(_ context.Context, id uuid.UUID) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.stops[id], r.err("StopRequested")
+}
+
 func (r *repo) FinishRun(_ context.Context, id uuid.UUID, status domain.RunStatus, failure string, at time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -216,6 +242,7 @@ func (r *repo) ReopenRun(_ context.Context, id uuid.UUID, owner string, at time.
 	for _, s := range r.runs {
 		if s.run.ID == id {
 			s.run.Status, s.run.FinishedAt, s.run.Failure, s.owner, s.heartbeat = domain.RunRunning, time.Time{}, "", owner, at
+			delete(r.stops, id)
 		}
 	}
 	return nil
@@ -416,6 +443,9 @@ type gateway struct {
 	extracted   int
 	// slow is how long each call to Ask takes.
 	slow time.Duration
+	// onAsk, when set, is called with the number of the call as each call to Ask begins.
+	onAsk func(n int)
+	calls int
 }
 
 func newGateway() *gateway {
@@ -434,6 +464,13 @@ func (g *gateway) Models(context.Context) ([]domain.CatalogueModel, error) {
 }
 
 func (g *gateway) Ask(_ context.Context, model, prompt string, web bool) (domain.Reply, error) {
+	g.mu.Lock()
+	g.calls++
+	n, on := g.calls, g.onAsk
+	g.mu.Unlock()
+	if on != nil {
+		on(n)
+	}
 	time.Sleep(g.slow)
 	g.mu.Lock()
 	defer g.mu.Unlock()

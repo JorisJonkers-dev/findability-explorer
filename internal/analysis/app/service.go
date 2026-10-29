@@ -412,6 +412,13 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return s.fail(ctx, id, err.Error())
 	}
+	return s.scan(ctx, run, id, target, a.MaxPages)
+}
+
+// scan reads the site's readiness and pages under run and records what it finds under ctx. A
+// stop is looked for after each step and between pages; the scan then ends, keeping what it
+// recorded.
+func (s *Service) scan(ctx, run context.Context, id uuid.UUID, target domain.Target, maxPages int) error {
 	// The readiness files come first, so a site that turns the page crawl away still shows its
 	// crawler policy. When ctx ends while they are read, the crawl below ends too.
 	files, readErr := s.crawler.Readiness(run, target)
@@ -425,20 +432,7 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	}
 	glossary := s.glossary(ctx)
 	lexicon := domain.NewLexicon(glossary)
-	var pages []domain.Page
-	var recordErr error
-	crawlErr := s.crawler.Crawl(run, target, a.MaxPages, domain.NewLinkScorer(lexicon), func(p domain.Page) error {
-		if err := s.repo.AddPage(ctx, id, domain.Summarise(p, lexicon)); err != nil {
-			recordErr = fmt.Errorf("add page: %w", err)
-			return recordErr
-		}
-		pages = append(pages, p)
-		// A stop asked on any instance is seen between pages.
-		if s.stopped(ctx, run, id) {
-			return errStopped
-		}
-		return nil
-	})
+	pages, crawlErr, recordErr := s.crawl(ctx, run, id, target, maxPages, lexicon)
 	if recordErr != nil {
 		return s.abort(ctx, id, recordErr)
 	}
@@ -467,6 +461,24 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 		return s.abort(ctx, id, fmt.Errorf("finish analysis: %w", err))
 	}
 	return nil
+}
+
+// crawl reads the site's pages under run and records each under ctx, until a stop is seen. It
+// returns the pages read, why the crawl ended early, and why a page could not be recorded.
+func (s *Service) crawl(ctx, run context.Context, id uuid.UUID, target domain.Target, maxPages int, lexicon domain.Lexicon) (pages []domain.Page, crawlErr, recordErr error) {
+	crawlErr = s.crawler.Crawl(run, target, maxPages, domain.NewLinkScorer(lexicon), func(p domain.Page) error {
+		if err := s.repo.AddPage(ctx, id, domain.Summarise(p, lexicon)); err != nil {
+			recordErr = fmt.Errorf("add page: %w", err)
+			return recordErr
+		}
+		pages = append(pages, p)
+		// A stop asked on any instance is seen between pages.
+		if s.stopped(ctx, run, id) {
+			return errStopped
+		}
+		return nil
+	})
+	return pages, crawlErr, recordErr
 }
 
 // saveCoverage records how many of the pages read the sitemaps list, when the readiness was read.

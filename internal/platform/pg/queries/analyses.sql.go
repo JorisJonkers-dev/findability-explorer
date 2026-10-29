@@ -1345,33 +1345,41 @@ func (q *Queries) SetSitemapCoverage(ctx context.Context, arg SetSitemapCoverage
 
 const tokensPerMatchedScan = `-- name: TokensPerMatchedScan :one
 SELECT count(*)::bigint AS scans,
-    coalesce(round(avg(llm_input_tokens + llm_output_tokens)), 0)::bigint AS average
+    coalesce(round(avg(llm_input_tokens)), 0)::bigint AS average_input,
+    coalesce(round(avg(llm_output_tokens)), 0)::bigint AS average_output
 FROM analyses
 WHERE matching = 'done' AND llm_input_tokens + llm_output_tokens > 0
 `
 
 type TokensPerMatchedScanRow struct {
-	Scans   int64
-	Average int64
+	Scans         int64
+	AverageInput  int64
+	AverageOutput int64
 }
 
-// How many scans the language model answered for, and the tokens one of them used on average.
+// How many scans the language model answered for, and the tokens in and out one of them used on average.
 func (q *Queries) TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error) {
 	row := q.db.QueryRow(ctx, tokensPerMatchedScan)
 	var i TokensPerMatchedScanRow
-	err := row.Scan(&i.Scans, &i.Average)
+	err := row.Scan(&i.Scans, &i.AverageInput, &i.AverageOutput)
 	return i, err
 }
 
 const tokensSince = `-- name: TokensSince :one
-SELECT coalesce(sum(llm_input_tokens + llm_output_tokens), 0)::bigint
+SELECT coalesce(sum(llm_input_tokens), 0)::bigint AS input, coalesce(sum(llm_output_tokens), 0)::bigint AS output
 FROM analyses
 WHERE created_at >= $1
 `
 
-func (q *Queries) TokensSince(ctx context.Context, createdAt time.Time) (int64, error) {
+type TokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+// The language-model tokens in and out of analyses created since a moment.
+func (q *Queries) TokensSince(ctx context.Context, createdAt time.Time) (TokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, tokensSince, createdAt)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
+	var i TokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
 }

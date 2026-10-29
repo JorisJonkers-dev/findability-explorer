@@ -29,7 +29,7 @@ type execution struct {
 	answered []domain.Answer
 
 	mu sync.Mutex
-	// reader reads the answers: Claude Haiku until the month's language-model tokens are spent,
+	// reader reads the answers: Claude Haiku until the month's Anthropic budget is spent,
 	// OpenRouter from then on.
 	reader  reader
 	spent   domain.Micros
@@ -249,7 +249,7 @@ func (e *execution) read(ctx context.Context, a domain.Answer) {
 
 // extract has the extractor read an answer, trying twice; an answer it cannot read is marked
 // failed, never dropped. What every try used is counted, and what Claude Haiku used counts towards
-// the month's language-model tokens.
+// the month's Anthropic budget.
 func (e *execution) extract(ctx context.Context, a domain.Answer) domain.Extraction {
 	in := ExtractInput{Prompt: a.Prompt.Text, Answer: a.Text, Citations: a.Citations, FactSheet: e.run.FactSheet}
 	r := e.currentReader(ctx)
@@ -272,7 +272,7 @@ func (e *execution) extract(ctx context.Context, a domain.Answer) domain.Extract
 }
 
 // currentReader is the reader for the next answer: Claude Haiku hands over to OpenRouter for the
-// rest of the run once the month's language-model tokens are spent. A budget that cannot be read
+// rest of the run once the month's Anthropic budget is spent. A budget that cannot be read
 // leaves the reader as it is.
 func (e *execution) currentReader(ctx context.Context) reader {
 	e.mu.Lock()
@@ -291,7 +291,7 @@ func (e *execution) currentReader(ctx context.Context) reader {
 	return r
 }
 
-// haikuTokens is what a reading used that counts towards the month's language-model tokens.
+// haikuTokens is what a reading used that counts towards the month's Anthropic budget.
 func haikuTokens(r reader, used domain.Reply) int64 {
 	if !r.haiku {
 		return 0

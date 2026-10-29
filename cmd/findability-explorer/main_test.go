@@ -10,11 +10,15 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/oidc/oidctest"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/providers"
 	llmapp "github.com/JorisJonkers-dev/findability-explorer/internal/llm/app"
 	llmdomain "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
+	prompttestpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
+	terminologypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/persistence"
 )
 
 var sessionKeyValue = strings.Repeat("k", 32)
@@ -46,19 +50,12 @@ func TestStartWithADatabase(t *testing.T) {
 			t.Fatalf("start with an invalid ADDR = %d, want 1", code)
 		}
 	})
-	for _, key := range []string{"LLM_MONTHLY_TOKENS"} {
-		t.Run("bad "+key, func(t *testing.T) {
-			if code := start(t.Context(), env(map[string]string{"DATABASE_URL": url, "DEV_USER": "dev", key: "lots"})); code != 1 {
-				t.Fatalf("start with %s=lots = %d, want 1", key, code)
-			}
-		})
-	}
 	t.Run("serves with matching enabled until cancelled", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 		defer cancel()
 		vars := map[string]string{
 			"DATABASE_URL": url, "ADDR": "127.0.0.1:0", "ANTHROPIC_API_KEY": "test-key", "DEV_USER": "dev",
-			"DEV_ROLES": "ROLE_ADMIN", "SESSION_KEY": sessionKeyValue, "LLM_MONTHLY_TOKENS": "1000",
+			"DEV_ROLES": "ROLE_ADMIN", "SESSION_KEY": sessionKeyValue,
 		}
 		if code := start(ctx, env(vars)); code != 0 {
 			t.Fatalf("start after a clean shutdown = %d, want 0", code)
@@ -156,6 +153,31 @@ func (s *settings) AddEvent(context.Context, llmdomain.Event) error        { ret
 func (s *settings) Events(context.Context, int) ([]llmdomain.Event, error) { return nil, nil }
 func (s *settings) LastTests(context.Context) (map[string]llmdomain.Test, error) {
 	return map[string]llmdomain.Test{}, nil
+}
+func (s *settings) Budget(context.Context) (llmdomain.Micros, error) { return 0, nil }
+func (s *settings) SaveBudget(context.Context, llmdomain.Micros, string, time.Time) error {
+	return nil
+}
+
+func TestTheMonthsSpendingIsEveryClaudeJobPricedAsHaiku(t *testing.T) {
+	store, err := pg.Open(t.Context(), pgtest.URL(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sp := spenders{persistence.New(store), terminologypersistence.New(store), prompttestpersistence.New(store)}
+	s, err := spending(t.Context(), sp, monthStart(time.Now()))
+	if err != nil || len(s.ThisMonth) != 4 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
+		t.Fatalf("spending of an empty month = %+v, %v", s, err)
+	}
+	for _, u := range s.ThisMonth {
+		if u.Model != llmdomain.DefaultModel || u.Tokens() != 0 {
+			t.Fatalf("use = %+v", u)
+		}
+	}
+	store.Close()
+	if _, err := spending(t.Context(), sp, monthStart(time.Now())); err == nil {
+		t.Fatal("spending without a database did not fail")
+	}
 }
 
 func TestMatchersPreferHaikuUnlessMatchingIsOff(t *testing.T) {

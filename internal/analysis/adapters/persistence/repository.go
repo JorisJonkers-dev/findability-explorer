@@ -216,23 +216,23 @@ func (r *Repository) MatchedProducts(ctx context.Context) ([]domain.MatchedProdu
 	return out, nil
 }
 
-// TokensSince sums the language-model tokens of analyses created at or after since.
-func (r *Repository) TokensSince(ctx context.Context, since time.Time) (int64, error) {
-	n, err := r.store.Queries().TokensSince(ctx, since)
+// TokensSince sums the language-model tokens in and out of analyses created at or after since.
+func (r *Repository) TokensSince(ctx context.Context, since time.Time) (input, output int64, err error) {
+	row, err := r.store.Queries().TokensSince(ctx, since)
 	if err != nil {
-		return 0, fmt.Errorf("sum tokens: %w", err)
+		return 0, 0, fmt.Errorf("sum tokens: %w", err)
 	}
-	return n, nil
+	return row.Input, row.Output, nil
 }
 
-// TokensPerScan returns how many scans the language model answered for, and the tokens one of them
-// used on average; scans with matching off or skipped used none and are left out.
-func (r *Repository) TokensPerScan(ctx context.Context) (scans int, average int64, err error) {
+// TokensPerScan returns how many scans the language model answered for, and the tokens in and out
+// one of them used on average; scans with matching off or skipped used none and are left out.
+func (r *Repository) TokensPerScan(ctx context.Context) (scans int, input, output int64, err error) {
 	row, err := r.store.Queries().TokensPerMatchedScan(ctx)
 	if err != nil {
-		return 0, 0, fmt.Errorf("average tokens per scan: %w", err)
+		return 0, 0, 0, fmt.Errorf("average tokens per scan: %w", err)
 	}
-	return int(row.Scans), row.Average, nil
+	return int(row.Scans), row.AverageInput, row.AverageOutput, nil
 }
 
 // Queued returns the ids of every queued analysis, oldest first.

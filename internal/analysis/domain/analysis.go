@@ -166,8 +166,6 @@ type Repository interface {
 	CountActive(ctx context.Context, competitorID string) (int, error)
 	// FirstScans returns, per phrase, the number of the company's first finished scan that found it.
 	FirstScans(ctx context.Context, competitorID string) (map[PhraseKey]int, error)
-	// TokensSince sums the language-model tokens of analyses created at or after since.
-	TokensSince(ctx context.Context, since time.Time) (int64, error)
 	// Queued returns the ids of every queued analysis, oldest first.
 	Queued(ctx context.Context) ([]uuid.UUID, error)
 	// FailRunning marks every running analysis failed with reason; a restart interrupted them.

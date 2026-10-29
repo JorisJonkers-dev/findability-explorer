@@ -156,6 +156,31 @@ func TestActiveSetting(t *testing.T) {
 	}
 }
 
+func TestTheAnthropicBudgetIsStoredInMicros(t *testing.T) {
+	t.Parallel()
+	_, r := open(t)
+	ctx := t.Context()
+	if m, err := r.Budget(ctx); err != nil || m != 0 {
+		t.Fatalf("before an admin sets one = %d, %v", m, err)
+	}
+	for _, m := range []domain.Micros{25_000_000, domain.MinBudget} {
+		if err := r.SaveBudget(ctx, m, "joris", at); err != nil {
+			t.Fatal(err)
+		}
+		if got, err := r.Budget(ctx); err != nil || got != m {
+			t.Fatalf("budget = %d, %v, want %d", got, err, m)
+		}
+	}
+	if err := r.SaveBudget(ctx, domain.MaxBudget+1, "joris", at); err == nil {
+		t.Fatal("a budget over $1,000 was stored")
+	}
+	if err := r.AddEvent(ctx, domain.Event{
+		At: at, Actor: "joris", Action: domain.ActionBudgetSet, Provider: domain.Anthropic, Message: "Anthropic budget set to $25.00.",
+	}); err != nil {
+		t.Fatalf("the budget's event: %v", err)
+	}
+}
+
 func TestEvents(t *testing.T) {
 	t.Parallel()
 	_, r := open(t)
@@ -215,6 +240,12 @@ func TestDatabaseFailures(t *testing.T) {
 	}
 	if _, err := r.LastTests(ctx); err == nil {
 		t.Error("LastTests")
+	}
+	if _, err := r.Budget(ctx); err == nil {
+		t.Error("Budget")
+	}
+	if err := r.SaveBudget(ctx, domain.DefaultBudget, "joris", at); err == nil {
+		t.Error("SaveBudget")
 	}
 }
 

@@ -35,7 +35,7 @@ const (
 var (
 	// ErrNoReviewer is returned by Review when no Anthropic key is set up.
 	ErrNoReviewer = errors.New("no Anthropic key is set up")
-	// ErrBudgetSpent is returned by Review when the month's language-model tokens are spent.
+	// ErrBudgetSpent is returned by Review when the month's Anthropic budget is spent.
 	ErrBudgetSpent = errors.New("this month's language-model budget is spent")
 )
 
@@ -110,7 +110,7 @@ func (s *Service) startIn(ctx context.Context, st *runState, work func(context.C
 
 // Review has the model merge the candidates that are one company, then check each waiting company
 // it has not checked, and records the decisions its sure verdicts make. ErrNoReviewer when no
-// Anthropic key is set up; ErrBudgetSpent when the month's language-model tokens are spent before
+// Anthropic key is set up; ErrBudgetSpent when the month's Anthropic budget is spent before
 // the merge or a batch, with what was checked before kept.
 func (s *Service) Review(ctx context.Context) error {
 	r, model, err := s.reviewer(ctx)
@@ -160,7 +160,7 @@ func (s *Service) reviewer(ctx context.Context) (Reviewer, string, error) {
 	return r, model, nil
 }
 
-// tokensLeft is ErrBudgetSpent once the month's language-model tokens are spent.
+// tokensLeft is ErrBudgetSpent once the month's Anthropic budget is spent.
 func (s *Service) tokensLeft(ctx context.Context) error {
 	spent, err := s.tokensSpent(ctx)
 	if err != nil {

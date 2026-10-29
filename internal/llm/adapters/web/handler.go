@@ -25,6 +25,7 @@ type UseCases interface {
 	Models(ctx context.Context, id string) ([]domain.Model, error)
 	SetActive(ctx context.Context, actor, credentialID, model string) (app.Settings, error)
 	ClearActive(ctx context.Context, actor string) (app.Settings, error)
+	SetBudget(ctx context.Context, actor string, monthly domain.Micros) (app.Settings, error)
 	Usage(ctx context.Context, id string) (domain.Usage, error)
 }
 
@@ -189,6 +190,21 @@ func (h *Handler) SetActiveLlm(ctx context.Context, req *oas.ActiveLlm) (oas.Set
 	return &out, nil
 }
 
+// UpdateLlmBudget implements updateLlmBudget.
+func (h *Handler) UpdateLlmBudget(ctx context.Context, req *oas.LlmBudgetChange) (oas.UpdateLlmBudgetRes, error) {
+	s, err := h.uc.SetBudget(ctx, h.actor(ctx), domain.MicrosOf(req.MonthlyBudgetUsd))
+	switch {
+	case app.IsInputError(err):
+		return &oas.UpdateLlmBudgetUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, detail(err)),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := toSettings(s)
+	return &out, nil
+}
+
 // ClearActiveLlm implements clearActiveLlm.
 func (h *Handler) ClearActiveLlm(ctx context.Context) (oas.ClearActiveLlmRes, error) {
 	s, err := h.uc.ClearActive(ctx, h.actor(ctx))
@@ -226,8 +242,10 @@ func toSettings(s app.Settings) oas.LlmSettings {
 	out := oas.LlmSettings{
 		Credentials: creds, Choice: oas.LlmChoice(s.Choice), MatchingEnabled: s.MatchingEnabled, Events: events,
 		Budget: oas.LlmBudget{
-			MonthlyTokens: s.Budget.MonthlyTokens, UsedThisMonth: s.Budget.UsedThisMonth,
-			AverageTokensPerScan: s.Budget.AveragePerScan, ScansMatched: int64(s.Budget.ScansMatched),
+			MonthlyBudgetUsd: oas.Usd(s.Budget.Monthly.Dollars()), SpentThisMonthUsd: oas.Usd(s.Budget.Spent.Dollars()),
+			LeftUsd: oas.Usd(s.Budget.Left.Dollars()), TokensThisMonth: s.Budget.TokensThisMonth,
+			AverageTokensPerScan: s.Budget.AveragePerScan, AverageScanUsd: oas.Usd(s.Budget.AverageScanCost.Dollars()),
+			ScansMatched: int64(s.Budget.ScansMatched),
 		},
 	}
 	if s.Active != nil {

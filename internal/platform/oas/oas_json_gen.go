@@ -7856,16 +7856,28 @@ func (s *LlmBudget) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *LlmBudget) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("monthlyTokens")
-		e.Int64(s.MonthlyTokens)
+		e.FieldStart("monthlyBudgetUsd")
+		s.MonthlyBudgetUsd.Encode(e)
 	}
 	{
-		e.FieldStart("usedThisMonth")
-		e.Int64(s.UsedThisMonth)
+		e.FieldStart("spentThisMonthUsd")
+		s.SpentThisMonthUsd.Encode(e)
+	}
+	{
+		e.FieldStart("leftUsd")
+		s.LeftUsd.Encode(e)
+	}
+	{
+		e.FieldStart("tokensThisMonth")
+		e.Int64(s.TokensThisMonth)
 	}
 	{
 		e.FieldStart("averageTokensPerScan")
 		e.Int64(s.AverageTokensPerScan)
+	}
+	{
+		e.FieldStart("averageScanUsd")
+		s.AverageScanUsd.Encode(e)
 	}
 	{
 		e.FieldStart("scansMatched")
@@ -7873,11 +7885,14 @@ func (s *LlmBudget) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLlmBudget = [4]string{
-	0: "monthlyTokens",
-	1: "usedThisMonth",
-	2: "averageTokensPerScan",
-	3: "scansMatched",
+var jsonFieldsNameOfLlmBudget = [7]string{
+	0: "monthlyBudgetUsd",
+	1: "spentThisMonthUsd",
+	2: "leftUsd",
+	3: "tokensThisMonth",
+	4: "averageTokensPerScan",
+	5: "averageScanUsd",
+	6: "scansMatched",
 }
 
 // Decode decodes LlmBudget from json.
@@ -7889,32 +7904,50 @@ func (s *LlmBudget) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "monthlyTokens":
+		case "monthlyBudgetUsd":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := d.Int64()
-				s.MonthlyTokens = int64(v)
-				if err != nil {
+				if err := s.MonthlyBudgetUsd.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"monthlyTokens\"")
+				return errors.Wrap(err, "decode field \"monthlyBudgetUsd\"")
 			}
-		case "usedThisMonth":
+		case "spentThisMonthUsd":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
+				if err := s.SpentThisMonthUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"spentThisMonthUsd\"")
+			}
+		case "leftUsd":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.LeftUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"leftUsd\"")
+			}
+		case "tokensThisMonth":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
 				v, err := d.Int64()
-				s.UsedThisMonth = int64(v)
+				s.TokensThisMonth = int64(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"usedThisMonth\"")
+				return errors.Wrap(err, "decode field \"tokensThisMonth\"")
 			}
 		case "averageTokensPerScan":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int64()
 				s.AverageTokensPerScan = int64(v)
@@ -7925,8 +7958,18 @@ func (s *LlmBudget) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"averageTokensPerScan\"")
 			}
+		case "averageScanUsd":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.AverageScanUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"averageScanUsd\"")
+			}
 		case "scansMatched":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Int64()
 				s.ScansMatched = int64(v)
@@ -7947,7 +7990,7 @@ func (s *LlmBudget) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -7989,6 +8032,102 @@ func (s *LlmBudget) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *LlmBudget) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LlmBudgetChange) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LlmBudgetChange) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("monthlyBudgetUsd")
+		e.Float64(s.MonthlyBudgetUsd)
+	}
+}
+
+var jsonFieldsNameOfLlmBudgetChange = [1]string{
+	0: "monthlyBudgetUsd",
+}
+
+// Decode decodes LlmBudgetChange from json.
+func (s *LlmBudgetChange) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LlmBudgetChange to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "monthlyBudgetUsd":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Float64()
+				s.MonthlyBudgetUsd = float64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"monthlyBudgetUsd\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LlmBudgetChange")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLlmBudgetChange) {
+					name = jsonFieldsNameOfLlmBudgetChange[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LlmBudgetChange) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LlmBudgetChange) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -8581,6 +8720,8 @@ func (s *LlmEventAction) Decode(d *jx.Decoder) error {
 		*s = LlmEventActionActiveSet
 	case LlmEventActionActiveCleared:
 		*s = LlmEventActionActiveCleared
+	case LlmEventActionBudgetSet:
+		*s = LlmEventActionBudgetSet
 	default:
 		*s = LlmEventAction(v)
 	}

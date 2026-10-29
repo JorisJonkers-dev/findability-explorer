@@ -221,6 +221,10 @@ type UpdateCompetitorRes interface {
 	updateCompetitorRes()
 }
 
+type UpdateLlmBudgetRes interface {
+	updateLlmBudgetRes()
+}
+
 type UpdatePromptTestSettingsRes interface {
 	updatePromptTestSettingsRes()
 }

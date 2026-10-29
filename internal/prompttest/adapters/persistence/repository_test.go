@@ -193,11 +193,12 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if err := repo.SetExtraction(ctx, read.ID, domain.Extraction{}, at); !errors.Is(err, domain.ErrRead) {
 		t.Fatalf("an answer read already = %v", err)
 	}
-	if n, err := repo.ReadingTokensSince(ctx, at); err != nil || n != 10 {
-		t.Errorf("reading tokens = %d, %v", n, err)
+	// Only Claude Haiku's readings count, not the one OpenRouter read.
+	if in, out, err := repo.ReadingTokensSince(ctx, at); err != nil || in != 5 || out != 5 {
+		t.Errorf("reading tokens = %d in, %d out, %v", in, out, err)
 	}
-	if n, _ := repo.ReadingTokensSince(ctx, at.Add(time.Hour)); n != 0 {
-		t.Errorf("reading tokens later = %d", n)
+	if in, out, _ := repo.ReadingTokensSince(ctx, at.Add(time.Hour)); in != 0 || out != 0 {
+		t.Errorf("reading tokens later = %d in, %d out", in, out)
 	}
 	answers, err := repo.Answers(ctx, r.ID, true)
 	if err != nil || len(answers) != 3 {
@@ -384,11 +385,11 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 	if err := r.SaveReviewUsage(ctx, []domain.ReviewUsage{{InputTokens: 900, OutputTokens: 100, At: at}, {InputTokens: 5, OutputTokens: 5, At: at.Add(time.Hour)}}); err != nil {
 		t.Fatal(err)
 	}
-	if n, err := r.ReviewTokensSince(ctx, at); err != nil || n != 1010 {
-		t.Errorf("tokens = %d, %v", n, err)
+	if in, out, err := r.ReviewTokensSince(ctx, at); err != nil || in != 905 || out != 105 {
+		t.Errorf("tokens = %d in, %d out, %v", in, out, err)
 	}
-	if n, _ := r.ReviewTokensSince(ctx, at.Add(time.Minute)); n != 10 {
-		t.Errorf("tokens later = %d", n)
+	if in, out, _ := r.ReviewTokensSince(ctx, at.Add(time.Minute)); in != 5 || out != 5 {
+		t.Errorf("tokens later = %d in, %d out", in, out)
 	}
 }
 

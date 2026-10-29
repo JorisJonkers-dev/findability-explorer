@@ -23,6 +23,9 @@ var (
 	rn14AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
+	rn83AllowedHeaders = map[string]string{
+		"PATCH": "Content-Type",
+	}
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
@@ -512,6 +515,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											allowedHeaders: rn14AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 'b': // Prefix: "budget"
+
+								if l := len("budget"); len(elem) >= l && elem[0:l] == "budget" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "PATCH":
+										s.handleUpdateLlmBudgetRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "PATCH",
+											allowedHeaders: rn83AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "application/json",
 										})
 									}
 
@@ -2336,6 +2364,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.operationID = "setActiveLlm"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/admin/llm/active"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 'b': // Prefix: "budget"
+
+								if l := len("budget"); len(elem) >= l && elem[0:l] == "budget" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "PATCH":
+										r.name = UpdateLlmBudgetOperation
+										r.summary = "Set the Anthropic key's monthly budget"
+										r.operationID = "updateLlmBudget"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/admin/llm/budget"
 										r.args = args
 										r.count = 0
 										return r, true

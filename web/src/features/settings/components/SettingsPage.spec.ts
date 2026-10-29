@@ -68,10 +68,10 @@ describe('the settings page', () => {
     expect(button(stored, 'Test').attributes('disabled')).toBeDefined()
 
     expect(wrapper.text()).toContain('claude-haiku-5-5 with Vault key (Anthropic (Claude)), the default.')
-    expect(wrapper.text()).toContain('48,211 of 10,000,000 tokens used this month (0%)')
+    expect(wrapper.text()).toContain('$0.48 of $15.00 spent this month (3%), $14.52 left')
     expect(wrapper.text()).not.toContain('per hour')
     expect(wrapper.get('[data-testid="per-scan"]').text()).toBe(
-      'A company scan uses 29,137 tokens on average, over 2 scans.What is left this month covers about 341 more scans.',
+      'A company scan costs $0.0044 on average (29,137 tokens), over 2 scans.What is left this month covers about 3,300 more scans.',
     )
     const events = wrapper.get('section[aria-labelledby="events-title"]').findAll('li')
     expect(events.map((e) => e.text())[0]).toContain('Tested anthropic key "Vault key": accepted.')

@@ -64,7 +64,7 @@ type Extraction struct {
 	OutputTokens int64
 	Cost         Micros
 	// HaikuTokens are the tokens Claude Haiku on an Anthropic key used reading the answer; they
-	// count towards the month's language-model tokens. 0 when OpenRouter read it.
+	// count towards the month's Anthropic budget. 0 when OpenRouter read it.
 	HaikuTokens int64
 }
 

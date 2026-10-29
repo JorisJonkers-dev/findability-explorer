@@ -68,7 +68,7 @@ type Service struct {
 	review review
 	// extractors read the answers instead of OpenRouter when they hand one out; nil until WithExtractors.
 	extractors Extractors
-	// budget stops Claude Haiku once the month's language-model tokens are spent; nil until WithBudget.
+	// budget stops Claude Haiku once the month's Anthropic budget is spent; nil until WithBudget.
 	budget BudgetSpent
 }
 
@@ -92,7 +92,7 @@ func WithExtractors(e Extractors) Option {
 	return func(s *Service) { s.extractors = e }
 }
 
-// WithBudget stops Claude Haiku once the month's language-model tokens are spent: the review of the
+// WithBudget stops Claude Haiku once the month's Anthropic budget is spent: the review of the
 // candidates stops, and OpenRouter reads the answers instead. Without it, Haiku does not stop.
 func WithBudget(spent BudgetSpent) Option {
 	return func(s *Service) { s.budget = spent }
@@ -223,7 +223,7 @@ func (s *Service) catalogue(ctx context.Context, credentialID string) []domain.C
 }
 
 // reader is what reads the answers: the extractor, its model, and whether it is Claude Haiku,
-// whose tokens count towards the month's language-model tokens.
+// whose tokens count towards the month's Anthropic budget.
 type reader struct {
 	extractor Extractor
 	model     string
@@ -231,7 +231,7 @@ type reader struct {
 }
 
 // extractor is what reads the answers: Claude Haiku while an Anthropic key works and the month's
-// language-model tokens are not spent, else OpenRouter through gw with domain.ExtractorModel.
+// Anthropic budget is not spent, else OpenRouter through gw with domain.ExtractorModel.
 func (s *Service) extractor(ctx context.Context, gw Gateway) (reader, error) {
 	if s.extractors != nil {
 		x, model, err := s.extractors.Current(ctx)
@@ -251,14 +251,14 @@ func (s *Service) extractor(ctx context.Context, gw Gateway) (reader, error) {
 	return reader{extractor: openRouterExtractor{gw: gw}, model: domain.ExtractorModel}, nil
 }
 
-// tokensSpent reports whether the month's language-model tokens are spent; never without a budget.
+// tokensSpent reports whether the month's Anthropic budget is spent; never without a budget.
 func (s *Service) tokensSpent(ctx context.Context) (bool, error) {
 	if s.budget == nil {
 		return false, nil
 	}
 	spent, err := s.budget(ctx)
 	if err != nil {
-		return false, fmt.Errorf("this month's language-model tokens: %w", err)
+		return false, fmt.Errorf("this month's Anthropic budget: %w", err)
 	}
 	return spent, nil
 }

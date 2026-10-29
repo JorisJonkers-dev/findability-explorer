@@ -965,30 +965,41 @@ func (q *Queries) PromptNamings(ctx context.Context) ([]PromptNamingsRow, error)
 }
 
 const promptReadingTokensSince = `-- name: PromptReadingTokensSince :one
-SELECT coalesce(sum(haiku_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_extractions
-WHERE extracted_at >= $1
+WHERE extracted_at >= $1 AND haiku_tokens > 0
 `
 
-// The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
-func (q *Queries) PromptReadingTokensSince(ctx context.Context, since time.Time) (int64, error) {
+type PromptReadingTokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+// The tokens in and out Claude Haiku on an Anthropic key used reading answers since a moment: the
+// readings whose tokens count as Haiku's.
+func (q *Queries) PromptReadingTokensSince(ctx context.Context, since time.Time) (PromptReadingTokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, promptReadingTokensSince, since)
-	var tokens int64
-	err := row.Scan(&tokens)
-	return tokens, err
+	var i PromptReadingTokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
 }
 
 const promptReviewTokensSince = `-- name: PromptReviewTokensSince :one
-SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_review_usage
 WHERE used_at >= $1
 `
 
-func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) (int64, error) {
+type PromptReviewTokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, promptReviewTokensSince, since)
-	var tokens int64
-	err := row.Scan(&tokens)
-	return tokens, err
+	var i PromptReviewTokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
 }
 
 const promptRunStopRequested = `-- name: PromptRunStopRequested :one

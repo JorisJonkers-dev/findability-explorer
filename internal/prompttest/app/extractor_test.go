@@ -129,7 +129,7 @@ func (h *haiku) reads() int {
 func TestHaikuHandsTheReadingToOpenRouterOnceTheMonthsTokensAreSpent(t *testing.T) {
 	e := newEnv(t, newRepo(), "a")
 	h := &haiku{}
-	// The month's tokens are spent after Haiku's tenth reading.
+	// The month's Anthropic budget is spent after Haiku's tenth reading.
 	e.svc = e.withExtractors(extractors{x: h}, app.WithBudget(func(context.Context) (bool, error) { return h.reads() >= 10, nil }))
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)

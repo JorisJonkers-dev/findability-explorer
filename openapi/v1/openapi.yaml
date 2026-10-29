@@ -1537,7 +1537,8 @@ paths:
       summary: Get the language-model settings
       description: >-
         Returns every credential (never a secret), the model product matching uses now, the
-        token budget, and the latest 50 changes and tests, newest first.
+        Anthropic key's monthly budget in dollars with what was spent and is left of it, and the
+        latest 50 changes and tests, newest first.
       tags: [admin]
       responses:
         "200":
@@ -1707,6 +1708,41 @@ paths:
         "422":
           $ref: "#/components/responses/Problem"
         "502":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/budget:
+    patch:
+      operationId: updateLlmBudget
+      summary: Set the Anthropic key's monthly budget
+      description: >-
+        Administrators only. Sets what every job a Claude model does may spend in a month together,
+        in dollars, from one cent to $1,000, and records the change in the events. Work already
+        spent past a lower budget stops at its next step and keeps what it did.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The new budget.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LlmBudgetChange"
+            example:
+              monthlyBudgetUsd: 15
+      responses:
+        "200":
+          description: The settings after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmSettings"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -2873,7 +2909,7 @@ components:
     LlmEventAction:
       description: What an event records.
       type: string
-      enum: [credential_added, credential_deleted, credential_tested, active_set, active_cleared]
+      enum: [credential_added, credential_deleted, credential_tested, active_set, active_cleared, budget_set]
     LlmEvent:
       description: One change to or test of the language-model settings.
       type: object
@@ -2912,26 +2948,27 @@ components:
           example: Added openrouter key "Course budget key" (3a7bd3e2360a).
     LlmBudget:
       description: >-
-        What every job on the language model may spend in a month together - the scans' product
-        matching, the term review, the competitor review and Claude Haiku's reading of Prompt
-        answers. Each stops when the month's tokens are spent.
+        What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does
+        - the scans' product matching, the term review, the competitor review and Claude Haiku's
+        reading of Prompt answers - and what they spent, priced at the models' list prices from
+        their stored token counts. Each job stops once the month's spend reaches the budget, and
+        keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
       type: object
       additionalProperties: false
-      required: [monthlyTokens, usedThisMonth, averageTokensPerScan, scansMatched]
+      required: [monthlyBudgetUsd, spentThisMonthUsd, leftUsd, tokensThisMonth, averageTokensPerScan, averageScanUsd, scansMatched]
       properties:
-        monthlyTokens:
+        monthlyBudgetUsd:
+          $ref: "#/components/schemas/Usd"
+        spentThisMonthUsd:
+          $ref: "#/components/schemas/Usd"
+        leftUsd:
+          $ref: "#/components/schemas/Usd"
+        tokensThisMonth:
           type: integer
           format: int64
           minimum: 0
           maximum: 1000000000000
-          description: The tokens every job together may use in a calendar month (UTC).
-          example: 10000000
-        usedThisMonth:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 1000000000000
-          description: The tokens every job used this month so far.
+          description: The tokens, in and out, every job used this month so far.
           example: 48211
         averageTokensPerScan:
           type: integer
@@ -2942,6 +2979,8 @@ components:
             The tokens one scan's product matching used on average, over every scan the language
             model answered for; 0 before the first.
           example: 29137
+        averageScanUsd:
+          $ref: "#/components/schemas/Usd"
         scansMatched:
           type: integer
           format: int64
@@ -2949,6 +2988,19 @@ components:
           maximum: 1000000000000
           description: How many scans the average is over.
           example: 2
+    LlmBudgetChange:
+      description: The Anthropic key's new monthly budget.
+      type: object
+      additionalProperties: false
+      required: [monthlyBudgetUsd]
+      properties:
+        monthlyBudgetUsd:
+          type: number
+          format: double
+          minimum: 0.01
+          maximum: 1000
+          description: The month's budget in dollars.
+          example: 15
     LlmSettings:
       description: The language-model settings.
       type: object
@@ -3484,7 +3536,7 @@ components:
         problem:
           description: >-
             Why its last review stopped short - noModel (no Anthropic key is set up), budget (the
-            month's language-model tokens are spent) or failed (the model or its provider failed).
+            month's Anthropic budget is spent) or failed (the model or its provider failed).
             Absent when it went well.
           type: string
           enum: [noModel, budget, failed]
@@ -6065,7 +6117,7 @@ components:
         problem:
           description: >-
             Why its last review stopped short - noKey (no Anthropic key is set up), budget (the
-            month's language-model tokens are spent) or failed (the model or its provider failed).
+            month's Anthropic budget is spent) or failed (the model or its provider failed).
             Absent when it went well.
           type: string
           enum: [noKey, budget, failed]

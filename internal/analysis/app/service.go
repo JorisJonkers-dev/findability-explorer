@@ -40,11 +40,9 @@ const MaxHistory = 100
 
 // Limits bound what analyses may cost.
 type Limits struct {
-	// MonthlyTokens is how many language-model tokens all analyses of a calendar month may use.
-	MonthlyTokens int64
-	// BudgetSpent, when set, reports whether the month's language-model tokens of every job
-	// together (the term review, the competitor review and the reading of Prompt answers too) are
-	// spent; matching then stops at that shared total instead of the analyses' own tokens.
+	// BudgetSpent, when set, reports whether the month's Anthropic budget is spent, in dollars, by
+	// every job together (the term review, the competitor review and the reading of Prompt answers
+	// too); matching then stops, and the scan keeps what it found. Without it, there is no budget.
 	BudgetSpent func(ctx context.Context) (bool, error)
 	// SiteTextChars is how much site text the language model reads per analysis.
 	SiteTextChars int
@@ -520,15 +518,12 @@ func (s *Service) match(ctx context.Context, pages []domain.Page) (domain.Matchi
 	return domain.MatchingDone, model, eqs, usage
 }
 
-// budgetSpent reports whether the month's tokens are spent: of every job together when the limits
-// say how, else of the analyses alone.
+// budgetSpent reports whether the month's budget is spent, as the limits say; never without one.
 func (s *Service) budgetSpent(ctx context.Context) (bool, error) {
-	if s.limits.BudgetSpent != nil {
-		return s.limits.BudgetSpent(ctx)
+	if s.limits.BudgetSpent == nil {
+		return false, nil
 	}
-	now := s.now().UTC()
-	spent, err := s.repo.TokensSince(ctx, time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC))
-	return spent >= s.limits.MonthlyTokens, err
+	return s.limits.BudgetSpent(ctx)
 }
 
 func (s *Service) fail(ctx context.Context, id uuid.UUID, reason string) error {

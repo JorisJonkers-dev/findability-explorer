@@ -196,8 +196,9 @@ func (UnimplementedHandler) GetLlmKeyUsage(ctx context.Context, params GetLlmKey
 
 // GetLlmSettings implements getLlmSettings operation.
 //
-// Returns every credential (never a secret), the model product matching uses now, the token budget,
-// and the latest 50 changes and tests, newest first.
+// Returns every credential (never a secret), the model product matching uses now, the Anthropic key's
+// monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and
+// tests, newest first.
 //
 // GET /api/v1/admin/llm
 func (UnimplementedHandler) GetLlmSettings(ctx context.Context) (r GetLlmSettingsRes, _ error) {
@@ -632,6 +633,17 @@ func (UnimplementedHandler) UndoTermDecision(ctx context.Context, params UndoTer
 //
 // PATCH /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (r UpdateCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateLlmBudget implements updateLlmBudget operation.
+//
+// Administrators only. Sets what every job a Claude model does may spend in a month together, in
+// dollars, from one cent to $1,000, and records the change in the events. Work already spent past a
+// lower budget stops at its next step and keeps what it did.
+//
+// PATCH /api/v1/admin/llm/budget
+func (UnimplementedHandler) UpdateLlmBudget(ctx context.Context, req *LlmBudgetChange) (r UpdateLlmBudgetRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

@@ -27,6 +27,7 @@ type UseCases interface {
 	RetryPlan(ctx context.Context, runID uuid.UUID) (app.Plan, error)
 	StopRun(ctx context.Context, actor string, runID uuid.UUID) error
 	History(ctx context.Context) (app.HistoryView, error)
+	PromptSets(ctx context.Context) (app.PromptSets, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error)
@@ -67,7 +68,7 @@ func (h *Handler) GetPromptTestResults(ctx context.Context) (oas.GetPromptTestRe
 		return nil, err
 	}
 	out := &oas.PromptTestResults{
-		PromptSetVersion: domain.PromptSetVersion, Runs: make([]oas.PromptRun, 0, len(res.Runs)),
+		PromptSetVersion: int32(res.PromptSetVersion), Runs: make([]oas.PromptRun, 0, len(res.Runs)), //nolint:gosec // small versions
 		Mentions: make([]oas.PromptMention, 0, len(res.Mentions)), WrongClaims: make([]oas.PromptWrongClaim, 0, len(res.WrongClaims)),
 	}
 	for _, r := range res.Runs {
@@ -118,6 +119,42 @@ func (h *Handler) GetPromptTestHistory(ctx context.Context) (oas.GetPromptTestHi
 		out.Runs = append(out.Runs, r)
 	}
 	return out, nil
+}
+
+// ListPromptSets implements listPromptSets.
+func (h *Handler) ListPromptSets(ctx context.Context) (oas.ListPromptSetsRes, error) {
+	v, err := h.uc.PromptSets(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.PromptSets{Versions: make([]oas.PublishedPromptSet, 0, len(v.Sets)), Scopes: make([]oas.PromptSetScope, 0, len(v.Scopes))}
+	for _, set := range v.Sets {
+		p := oas.PublishedPromptSet{
+			Version: int32(set.Version), PublishedAt: set.PublishedAt, Note: set.Note, //nolint:gosec // small versions
+			Questions: make([]oas.PromptSetQuestion, 0, len(set.Questions)),
+		}
+		for _, q := range set.Questions {
+			p.Questions = append(p.Questions, oas.PromptSetQuestion{
+				ID: q.ID, Family: oas.PromptFamily(q.Family), Intent: oas.IntentTier(q.Intent), Scope: oas.PromptSetScopeId(q.Scope.ID),
+				ScopeName: q.Scope.Name, Language: q.Scope.Language, Region: optText(q.Scope.Region), Text: q.Text, English: optText(q.English),
+			})
+		}
+		out.Versions = append(out.Versions, p)
+	}
+	for _, s := range v.Scopes {
+		out.Scopes = append(out.Scopes, oas.PromptSetScope{
+			ID: oas.PromptSetScopeId(s.ID), Name: s.Name, Language: s.Language, Region: optText(s.Region),
+		})
+	}
+	return out, nil
+}
+
+// optText is a text, absent when empty.
+func optText(s string) oas.OptString {
+	if s == "" {
+		return oas.OptString{}
+	}
+	return oas.NewOptString(s)
 }
 
 // optShare is a share, absent when there was nothing to measure.

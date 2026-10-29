@@ -299,6 +299,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/prompt-runs/{runId}/answers
 	ListPromptAnswers(ctx context.Context, params ListPromptAnswersParams) (ListPromptAnswersRes, error)
+	// ListPromptSets invokes listPromptSets operation.
+	//
+	// Returns every published version of the Prompt set, newest first, each with when it was published,
+	// its note, and its questions in order: belt family, buyer intent, scope, and text, with an English
+	// translation when one is known. Also returns every scope a question can be asked in: a language, with
+	// or without a region.
+	//
+	// GET /api/v1/prompt-test/prompt-sets
+	ListPromptSets(ctx context.Context) (ListPromptSetsRes, error)
 	// ListTermCandidates invokes listTermCandidates operation.
 	//
 	// Administrators only. Every phrase a finished scan found that the terminology map did not hold in its
@@ -4900,6 +4909,122 @@ func (c *Client) sendListPromptAnswers(ctx context.Context, params ListPromptAns
 
 	stage = "DecodeResponse"
 	result, err := decodeListPromptAnswersResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPromptSets invokes listPromptSets operation.
+//
+// Returns every published version of the Prompt set, newest first, each with when it was published,
+// its note, and its questions in order: belt family, buyer intent, scope, and text, with an English
+// translation when one is known. Also returns every scope a question can be asked in: a language, with
+// or without a region.
+//
+// GET /api/v1/prompt-test/prompt-sets
+func (c *Client) ListPromptSets(ctx context.Context) (ListPromptSetsRes, error) {
+	res, err := c.sendListPromptSets(ctx)
+	return res, err
+}
+
+func (c *Client) sendListPromptSets(ctx context.Context) (res ListPromptSetsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listPromptSets"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/prompt-test/prompt-sets"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPromptSetsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/prompt-test/prompt-sets"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListPromptSetsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPromptSetsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

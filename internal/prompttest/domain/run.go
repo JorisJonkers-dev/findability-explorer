@@ -186,12 +186,14 @@ var (
 	ErrCompanyKnown = errors.New("another company has this website")
 )
 
-// QuestionsOf is the prompt set a run asked: the current one when the run asked it, else the
-// questions its answers kept, since every answer, a failed one too, keeps its question's text. A
-// question of an earlier set that no answer kept is not known any more, so it is left out.
-func QuestionsOf(run Run, answers []Answer) PromptSet {
-	if run.PromptSetVersion == PromptSetVersion {
-		return CurrentPromptSet()
+// QuestionsOf is the prompt set a run asked: its version as published, else the questions its
+// answers kept, since every answer, a failed one too, keeps its question's text. A question of a
+// set that is not published and no answer kept is not known, so it is left out.
+func QuestionsOf(run Run, sets []PublishedSet, answers []Answer) PromptSet {
+	for _, s := range sets {
+		if s.Version == run.PromptSetVersion {
+			return s.PromptSet()
+		}
 	}
 	set := PromptSet{Version: run.PromptSetVersion}
 	seen := map[string]bool{}

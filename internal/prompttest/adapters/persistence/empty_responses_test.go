@@ -12,6 +12,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 // The migration runs on a database migrated past it, so the test holds when later ones are added;
@@ -30,7 +31,7 @@ func TestTheMigrationMarksStoredEmptyResponsesFailedAndRemovesTheirReadings(t *t
 	if err := repo.CreateRun(ctx, r, "a", at); err != nil {
 		t.Fatal(err)
 	}
-	prompts := domain.CurrentPromptSet().Prompts
+	prompts := domaintest.Version2().PromptSet().Prompts
 	answer := func(p domain.Prompt, text, failure string) domain.Answer {
 		return domain.Answer{
 			ID: uuid.New(), RunID: r.ID, Prompt: p, PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeKnowledge,

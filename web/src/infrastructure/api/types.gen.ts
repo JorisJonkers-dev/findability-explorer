@@ -2556,6 +2556,99 @@ export type PromptTestHistory = {
 };
 
 /**
+ * The published Prompt sets, newest first, and every scope.
+ */
+export type PromptSets = {
+    /**
+     * Every published version, newest first.
+     */
+    versions: Array<PublishedPromptSet>;
+    /**
+     * Every scope a question can be asked in, by name.
+     */
+    scopes: Array<PromptSetScope>;
+};
+
+/**
+ * One published version of the Prompt set, with its questions.
+ */
+export type PublishedPromptSet = {
+    /**
+     * The version.
+     */
+    version: number;
+    /**
+     * When it was published.
+     */
+    publishedAt: string;
+    /**
+     * What it asks, or what it changed.
+     */
+    note: string;
+    /**
+     * Its questions, in order.
+     */
+    questions: Array<PromptSetQuestion>;
+};
+
+/**
+ * One question of a published Prompt set.
+ */
+export type PromptSetQuestion = {
+    /**
+     * Its id, which the responses to it record.
+     */
+    id: string;
+    family: PromptFamily;
+    intent: IntentTier;
+    scope: PromptSetScopeId;
+    /**
+     * Its scope's name.
+     */
+    scopeName: string;
+    /**
+     * The language it is asked in, its scope's.
+     */
+    language: string;
+    /**
+     * The region it asks about, its scope's; absent for none.
+     */
+    region?: string;
+    /**
+     * The question, as it is asked.
+     */
+    text: string;
+    /**
+     * Its English translation; absent when it is in English or none is known.
+     */
+    english?: string;
+};
+
+/**
+ * A scope's id, which the responses to its questions record as their scope.
+ */
+export type PromptSetScopeId = string;
+
+/**
+ * A scope - a language a question is asked in, with or without a region.
+ */
+export type PromptSetScope = {
+    id: PromptSetScopeId;
+    /**
+     * Its name.
+     */
+    name: string;
+    /**
+     * The language it asks in.
+     */
+    language: string;
+    /**
+     * The region it asks about; absent for none.
+     */
+    region?: string;
+};
+
+/**
  * One published Prompt set.
  */
 export type PromptSetVersionInfo = {
@@ -4438,6 +4531,35 @@ export type GetPromptTestHistoryResponses = {
 };
 
 export type GetPromptTestHistoryResponse = GetPromptTestHistoryResponses[keyof GetPromptTestHistoryResponses];
+
+export type ListPromptSetsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/prompt-test/prompt-sets';
+};
+
+export type ListPromptSetsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListPromptSetsError = ListPromptSetsErrors[keyof ListPromptSetsErrors];
+
+export type ListPromptSetsResponses = {
+    /**
+     * The published Prompt sets and the scopes.
+     */
+    200: PromptSets;
+};
+
+export type ListPromptSetsResponse = ListPromptSetsResponses[keyof ListPromptSetsResponses];
 
 export type ListPromptAnswersData = {
     body?: never;

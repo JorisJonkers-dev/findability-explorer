@@ -971,6 +971,27 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/prompt-test/prompt-sets:
+    get:
+      operationId: listPromptSets
+      summary: List the published Prompt sets
+      description: >-
+        Returns every published version of the Prompt set, newest first, each with when it was
+        published, its note, and its questions in order: belt family, buyer intent, scope, and
+        text, with an English translation when one is known. Also returns every scope a question
+        can be asked in: a language, with or without a region.
+      tags: [prompt-test]
+      responses:
+        "200":
+          description: The published Prompt sets and the scopes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptSets"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/prompt-runs/{runId}/answers:
     get:
       operationId: listPromptAnswers
@@ -5352,6 +5373,132 @@ components:
           description: Every run of the latest with at least one response read, oldest first.
           items:
             $ref: "#/components/schemas/PromptRunFigures"
+    PromptSets:
+      description: The published Prompt sets, newest first, and every scope.
+      type: object
+      additionalProperties: false
+      required: [versions, scopes]
+      properties:
+        versions:
+          type: array
+          maxItems: 1000
+          description: Every published version, newest first.
+          items:
+            $ref: "#/components/schemas/PublishedPromptSet"
+        scopes:
+          type: array
+          maxItems: 200
+          description: Every scope a question can be asked in, by name.
+          items:
+            $ref: "#/components/schemas/PromptSetScope"
+    PublishedPromptSet:
+      description: One published version of the Prompt set, with its questions.
+      type: object
+      additionalProperties: false
+      required: [version, publishedAt, note, questions]
+      properties:
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version.
+          example: 2
+        publishedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it was published.
+          example: "2026-10-27T06:35:33Z"
+        note:
+          type: string
+          maxLength: 300
+          description: What it asks, or what it changed.
+          example: Kept the application question a buyer most often asks, in four scopes.
+        questions:
+          type: array
+          maxItems: 1000
+          description: Its questions, in order.
+          items:
+            $ref: "#/components/schemas/PromptSetQuestion"
+    PromptSetQuestion:
+      description: One question of a published Prompt set.
+      type: object
+      additionalProperties: false
+      required: [id, family, intent, scope, scopeName, language, text]
+      properties:
+        id:
+          type: string
+          maxLength: 80
+          description: Its id, which the responses to it record.
+          example: eyelink-application-twente
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+        intent:
+          $ref: "#/components/schemas/IntentTier"
+        scope:
+          $ref: "#/components/schemas/PromptSetScopeId"
+        scopeName:
+          type: string
+          maxLength: 100
+          description: Its scope's name.
+          example: Twente (Dutch)
+        language:
+          type: string
+          maxLength: 2
+          pattern: "^[a-z]{2}$"
+          description: The language it is asked in, its scope's.
+          example: nl
+        region:
+          type: string
+          maxLength: 100
+          description: The region it asks about, its scope's; absent for none.
+          example: Twente
+        text:
+          type: string
+          maxLength: 1000
+          description: The question, as it is asked.
+          example: >-
+            We bouwen een doorloopoven voor een industriële bakkerij. Wat voor transportband moeten
+            we daarvoor gebruiken, en welke fabrikanten in de regio Twente kunnen die leveren?
+        english:
+          type: string
+          maxLength: 1000
+          description: Its English translation; absent when it is in English or none is known.
+          example: >-
+            We are building a tunnel oven for an industrial bakery. What kind of conveyor belt
+            should we use, and which manufacturers in the Twente region can supply it?
+    PromptSetScopeId:
+      description: >-
+        A scope's id, which the responses to its questions record as their scope.
+      type: string
+      maxLength: 40
+      pattern: "^[a-z][a-z0-9_-]*$"
+      example: twente
+    PromptSetScope:
+      description: A scope - a language a question is asked in, with or without a region.
+      type: object
+      additionalProperties: false
+      required: [id, name, language]
+      properties:
+        id:
+          $ref: "#/components/schemas/PromptSetScopeId"
+        name:
+          type: string
+          maxLength: 100
+          description: Its name.
+          example: Twente (Dutch)
+        language:
+          type: string
+          maxLength: 2
+          pattern: "^[a-z]{2}$"
+          description: The language it asks in.
+          example: nl
+        region:
+          type: string
+          maxLength: 100
+          description: The region it asks about; absent for none.
+          example: Twente
     PromptSetVersionInfo:
       description: One published Prompt set.
       type: object

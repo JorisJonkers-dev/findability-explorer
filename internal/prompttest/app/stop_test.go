@@ -65,7 +65,7 @@ func TestARetryOfARunStoppedByHandAsksOnlyTheQuestionsItDidNotGet(t *testing.T) 
 
 func TestAStopRequestedBeforeTheFirstQuestionAsksNothing(t *testing.T) {
 	e := newEnv(t, newRepo(), "a")
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 2, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 	e.repo.runs = append(e.repo.runs, &storedRun{run: run, owner: "a"})
 	if err := e.svc.StopRun(t.Context(), "joris", run.ID); err != nil {
 		t.Fatal(err)
@@ -82,7 +82,7 @@ func TestAStopReachesARunWhileItWaitsOnASlowModel(t *testing.T) {
 	r := newRepo()
 	e := newEnv(t, r, "a")
 	e.gw.slow = 40 * time.Millisecond
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 2, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
 	svc := app.New(r, gateways{gw: e.gw}, e.dir, time.Now, app.Config{Owner: "a", Stale: 8 * time.Millisecond}, func(uuid.UUID, error) {},
 		app.WithSleep(e.sleeps.Sleep))

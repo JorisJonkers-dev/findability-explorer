@@ -15,15 +15,17 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
 
-// System tells the extractor how to read an answer.
-const System = `You read an AI assistant's answer to a buyer's question about metal conveyor belts and report, in the JSON schema given, exactly what it says:
-- companies: every company the answer names as a maker or supplier, in the order it first names them, with the web address it gives for that company ("" when none).
-- addresses: every web address the answer cites or links to.
+// System tells the extractor how to read a response. Claims the fact sheet contradicts and facts
+// the response leaves out are two lists, so only the wrong claims become fact sheet corrections.
+const System = `You read an AI assistant's response to a buyer's question about metal conveyor belts and report, in the JSON schema given, exactly what it says:
+- companies: every company the response names as a maker or supplier, in the order it first names them, with the web address it gives for that company ("" when none).
+- addresses: every web address the response cites or links to.
 - namesTribelt: whether it names Tribelt (Tribelt B.V.).
 - citesTribelt: whether it cites or links a Tribelt web address.
-- correctness: when it names Tribelt, whether what it says about Tribelt agrees with the fact sheet: "correct", "partly" (some of it wrong) or "wrong"; "none" when it does not name Tribelt.
-- wrongClaims: each claim about Tribelt the fact sheet contradicts, quoted from the answer; empty when there is none.
-Report only what the answer says. Do not add companies it does not name.`
+- correctness: when it names Tribelt, whether what it says about Tribelt agrees with the fact sheet: "correct" (the fact sheet contradicts none of it), "partly" (it contradicts some of it) or "wrong" (it contradicts most or all of it); "none" when it does not name Tribelt. What the response leaves out does not make it less correct.
+- wrongClaims: each claim the response makes about Tribelt that the fact sheet contradicts, quoted from the response; empty when there is none. A fact from the fact sheet the response does not mention is not a wrong claim: it belongs in leftOut.
+- leftOut: when it names Tribelt, each fact from the fact sheet that a buyer asking this question would want to know and the response does not mention, as a short sentence; empty when it does not name Tribelt or leaves nothing out. A claim the fact sheet contradicts is not left out: it belongs in wrongClaims.
+Report only what the response says. Do not add companies it does not name.`
 
 // SchemaName names the strict format.
 const SchemaName = "answer_reading"
@@ -33,7 +35,7 @@ func Schema() map[string]any {
 	str := map[string]any{"type": "string"}
 	return map[string]any{
 		"type": "object", "additionalProperties": false,
-		"required": []string{"companies", "addresses", "namesTribelt", "citesTribelt", "correctness", "wrongClaims"},
+		"required": []string{"companies", "addresses", "namesTribelt", "citesTribelt", "correctness", "wrongClaims", "leftOut"},
 		"properties": map[string]any{
 			"companies": map[string]any{"type": "array", "items": map[string]any{
 				"type": "object", "additionalProperties": false, "required": []string{"name", "url"},
@@ -44,16 +46,17 @@ func Schema() map[string]any {
 			"citesTribelt": map[string]any{"type": "boolean"},
 			"correctness":  map[string]any{"type": "string", "enum": []string{"none", "correct", "partly", "wrong"}},
 			"wrongClaims":  map[string]any{"type": "array", "items": str},
+			"leftOut":      map[string]any{"type": "array", "items": str},
 		},
 	}
 }
 
-// User is what the extractor is given to read: the fact sheet, the question, the answer and its
+// User is what the extractor is given to read: the fact sheet, the question, the response and its
 // cited sources.
 func User(in app.ExtractInput) string {
-	user := "Fact sheet about Tribelt:\n" + in.FactSheet + "\n\nThe buyer's question:\n" + in.Prompt + "\n\nThe answer:\n" + in.Answer
+	user := "Fact sheet about Tribelt:\n" + in.FactSheet + "\n\nThe buyer's question:\n" + in.Prompt + "\n\nThe response:\n" + in.Answer
 	if len(in.Citations) > 0 {
-		user += "\n\nThe answer's cited sources:\n" + strings.Join(in.Citations, "\n")
+		user += "\n\nThe response's cited sources:\n" + strings.Join(in.Citations, "\n")
 	}
 	return user
 }
@@ -79,6 +82,9 @@ func Parse(text string) (domain.Extracted, error) {
 		CitesTribelt bool     `json:"citesTribelt"`
 		Correctness  string   `json:"correctness"`
 		WrongClaims  []string `json:"wrongClaims"`
+		// LeftOut is absent from a reply in the format before wrong claims and facts left out
+		// were told apart.
+		LeftOut []string `json:"leftOut"`
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), &raw); err != nil {
 		return domain.Extracted{}, fmt.Errorf("the extractor's answer is not the format asked: %w", err)
@@ -99,6 +105,9 @@ func Parse(text string) (domain.Extracted, error) {
 	}
 	for _, claim := range raw.WrongClaims[:min(len(raw.WrongClaims), maxClaims)] {
 		x.WrongClaims = append(x.WrongClaims, clip(claim, maxText))
+	}
+	for _, fact := range raw.LeftOut[:min(len(raw.LeftOut), maxClaims)] {
+		x.LeftOut = append(x.LeftOut, clip(fact, maxText))
 	}
 	return x, nil
 }

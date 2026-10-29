@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -103,8 +104,15 @@ func TestARunAsksEveryPromptOfEveryModelInBothModesAndReadsEveryAnswer(t *testin
 		res.Mentions[0].Name != "Twentebelt" || res.Mentions[1].Role != domain.RoleTribelt {
 		t.Errorf("mentions = %+v", res.Mentions)
 	}
+	// Only the claims wrong about Tribelt are listed; the facts the responses left out are not.
 	if len(res.WrongClaims) != 20 || res.WrongClaims[0].Claim != "Tribelt is in Hengelo." {
 		t.Errorf("%d wrong claims", len(res.WrongClaims))
+	}
+	for _, a := range e.repo.answers {
+		if x := a.Extraction; x.NamesTribelt && (!slices.Equal(x.WrongClaims, []string{"Tribelt is in Hengelo."}) ||
+			!slices.Equal(x.LeftOut, []string{"Tribelt makes eyelink belts to measure."})) {
+			t.Errorf("a response naming Tribelt stored wrong %v, left out %v", x.WrongClaims, x.LeftOut)
+		}
 	}
 	run2, answers2, err := e.svc.Answers(t.Context(), run.ID, app.AnswerFilter{})
 	if err != nil || run2.Run.ID != run.ID || run2.Progress.Answered != 80 || len(answers2) != 80 || answers2[0].Text == "" {

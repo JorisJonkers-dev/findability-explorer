@@ -8983,9 +8983,13 @@ type PromptExtraction struct {
 	// True when it cites a Tribelt address.
 	CitesTribelt bool                 `json:"citesTribelt"`
 	Correctness  OptPromptCorrectness `json:"correctness"`
-	// Each claim about Tribelt the fact sheet contradicts, quoted.
+	// Each claim about Tribelt the fact sheet contradicts, quoted: what the response got wrong about
+	// Tribelt, and the only claims that become fact sheet corrections.
 	WrongClaims []string `json:"wrongClaims"`
-	CostUsd     Usd      `json:"costUsd"`
+	// Each fact from the fact sheet a response naming Tribelt does not mention; empty when it does not
+	// name Tribelt, and for a response read before wrong claims and facts left out were told apart.
+	LeftOut []string `json:"leftOut"`
+	CostUsd Usd      `json:"costUsd"`
 }
 
 // GetFailed returns the value of Failed.
@@ -9021,6 +9025,11 @@ func (s *PromptExtraction) GetCorrectness() OptPromptCorrectness {
 // GetWrongClaims returns the value of WrongClaims.
 func (s *PromptExtraction) GetWrongClaims() []string {
 	return s.WrongClaims
+}
+
+// GetLeftOut returns the value of LeftOut.
+func (s *PromptExtraction) GetLeftOut() []string {
+	return s.LeftOut
 }
 
 // GetCostUsd returns the value of CostUsd.
@@ -9061,6 +9070,11 @@ func (s *PromptExtraction) SetCorrectness(val OptPromptCorrectness) {
 // SetWrongClaims sets the value of WrongClaims.
 func (s *PromptExtraction) SetWrongClaims(val []string) {
 	s.WrongClaims = val
+}
+
+// SetLeftOut sets the value of LeftOut.
+func (s *PromptExtraction) SetLeftOut(val []string) {
+	s.LeftOut = val
 }
 
 // SetCostUsd sets the value of CostUsd.

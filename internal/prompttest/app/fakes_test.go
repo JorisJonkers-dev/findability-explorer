@@ -523,6 +523,7 @@ func (g *gateway) Extract(_ context.Context, model string, in app.ExtractInput) 
 	if strings.Contains(in.Answer, "Tribelt") {
 		x.Companies = append([]domain.Named{{Name: "Tribelt"}}, x.Companies...)
 		x.NamesTribelt, x.Correctness, x.WrongClaims = true, domain.CorrectnessPartly, []string{"Tribelt is in Hengelo."}
+		x.LeftOut = []string{"Tribelt makes eyelink belts to measure."}
 	}
 	return x, domain.Reply{InputTokens: 50, OutputTokens: 20, Cost: 2}, nil
 }

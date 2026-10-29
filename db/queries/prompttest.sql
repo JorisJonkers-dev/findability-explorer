@@ -120,17 +120,17 @@ RETURNING id;
 -- An extraction, or, for an answer whose reading failed, that reading replaced: what the failed
 -- reading used stays counted. An answer read already keeps its reading, and no row is touched.
 INSERT INTO prompt_extractions (
-    answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, input_tokens, output_tokens,
-    cost_micros, haiku_tokens, extracted_at
+    answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, left_out, input_tokens,
+    output_tokens, cost_micros, haiku_tokens, extracted_at
 )
 VALUES (
-    @answer_id, @failed, @addresses, @names_tribelt, @cites_tribelt, @correctness, @wrong_claims, @input_tokens,
+    @answer_id, @failed, @addresses, @names_tribelt, @cites_tribelt, @correctness, @wrong_claims, @left_out, @input_tokens,
     @output_tokens, @cost_micros, @haiku_tokens, @extracted_at
 )
 ON CONFLICT (answer_id) DO UPDATE
 SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = excluded.names_tribelt,
     cites_tribelt = excluded.cites_tribelt, correctness = excluded.correctness, wrong_claims = excluded.wrong_claims,
-    input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
+    left_out = excluded.left_out, input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
     output_tokens = prompt_extractions.output_tokens + excluded.output_tokens,
     cost_micros = prompt_extractions.cost_micros + excluded.cost_micros,
     haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at
@@ -148,7 +148,8 @@ SELECT a.id, a.prompt_id, a.family, a.kind, a.scope, a.language, a.prompt_text, 
     (x.answer_id IS NOT NULL)::boolean AS extracted, coalesce(x.failed, false)::boolean AS extraction_failed,
     coalesce(x.addresses, '{}')::text [] AS addresses, coalesce(x.names_tribelt, false)::boolean AS names_tribelt,
     coalesce(x.cites_tribelt, false)::boolean AS cites_tribelt, coalesce(x.correctness, '')::text AS correctness,
-    coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
+    coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.left_out, '{}')::text [] AS left_out,
+    coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
     coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros
 FROM prompt_answers AS a
 LEFT JOIN prompt_extractions AS x ON x.answer_id = a.id

@@ -372,6 +372,18 @@ func (UnimplementedHandler) ListPromptAnswers(ctx context.Context, params ListPr
 	return r, ht.ErrNotImplemented
 }
 
+// ListPromptSets implements listPromptSets operation.
+//
+// Returns every published version of the Prompt set, newest first, each with when it was published,
+// its note, and its questions in order: belt family, buyer intent, scope, and text, with an English
+// translation when one is known. Also returns every scope a question can be asked in: a language, with
+// or without a region.
+//
+// GET /api/v1/prompt-test/prompt-sets
+func (UnimplementedHandler) ListPromptSets(ctx context.Context) (r ListPromptSetsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListTermCandidates implements listTermCandidates operation.
 //
 // Administrators only. Every phrase a finished scan found that the terminology map did not hold in its

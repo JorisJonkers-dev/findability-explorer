@@ -54,7 +54,11 @@ func (s *Service) RetryPlan(ctx context.Context, runID uuid.UUID) (Plan, error) 
 	if err != nil {
 		return Plan{}, err
 	}
-	set := domain.QuestionsOf(run, answers)
+	sets, err := s.promptSets(ctx)
+	if err != nil {
+		return Plan{}, err
+	}
+	set := domain.QuestionsOf(run, sets, answers)
 	ask := domain.Unanswered(set, run.Models, answers)
 	unread := len(domain.Unread(answers))
 	return Plan{
@@ -64,8 +68,7 @@ func (s *Service) RetryPlan(ctx context.Context, runID uuid.UUID) (Plan, error) 
 }
 
 // Retry asks a finished run's failed answers again, or the one task named, in the same run: with
-// the questions the run asked (domain.QuestionsOf, so a run of an earlier prompt set asks the
-// questions its answers kept) and its models, each new answer replacing the failed one. It refuses while a
+// the questions of the version the run asked (domain.QuestionsOf) and its models, each new answer replacing the failed one. It refuses while a
 // run is running (domain.ErrRunActive) or once the month's budget is spent
 // (domain.ErrBudgetReached), and stops at the budget like any run. The answers are asked in the
 // background.
@@ -74,7 +77,11 @@ func (s *Service) Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskK
 	if err != nil {
 		return Retry{}, err
 	}
-	tasks := domain.Unanswered(domain.QuestionsOf(run, answers), run.Models, answers)
+	sets, err := s.promptSets(ctx)
+	if err != nil {
+		return Retry{}, err
+	}
+	tasks := domain.Unanswered(domain.QuestionsOf(run, sets, answers), run.Models, answers)
 	if task != nil {
 		tasks = keep(tasks, *task)
 	}

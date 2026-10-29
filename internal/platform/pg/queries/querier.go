@@ -115,6 +115,12 @@ type Querier interface {
 	ListPromptCompanyChecks(ctx context.Context) ([]PromptCompanyCheck, error)
 	ListPromptRunModels(ctx context.Context, ids []uuid.UUID) ([]ListPromptRunModelsRow, error)
 	ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRunsRow, error)
+	// Every scope a question can be asked in, by name.
+	ListPromptScopes(ctx context.Context) ([]ListPromptScopesRow, error)
+	// Every question of every published set with its scope, the newest set first, each set in order.
+	ListPromptSetQuestions(ctx context.Context) ([]ListPromptSetQuestionsRow, error)
+	// Every published Prompt set, newest first.
+	ListPromptSets(ctx context.Context) ([]PromptSet, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
 	ListTermVerdicts(ctx context.Context) ([]TermVerdict, error)
 	// The schedule's next due time, locked until the transaction ends; no row before any was saved.

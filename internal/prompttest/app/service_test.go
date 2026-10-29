@@ -11,6 +11,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 var start = time.Date(2026, 10, 26, 9, 0, 0, 0, time.UTC)
@@ -78,7 +79,7 @@ func TestARunAsksEveryPromptOfEveryModelInBothModesAndReadsEveryAnswer(t *testin
 		t.Errorf("free model paced %v, want a second before each of its 40 calls", e.sleeps.total)
 	}
 	a := e.repo.answers[0]
-	if a.PromptSetVersion != domain.PromptSetVersion || a.Model == "" || a.Extraction == nil || a.Extraction.Failed {
+	if a.PromptSetVersion != 2 || a.Model == "" || a.Extraction == nil || a.Extraction.Failed {
 		t.Errorf("answer = %+v", a)
 	}
 
@@ -359,9 +360,9 @@ func TestARunThatCannotBeRecordedFails(t *testing.T) {
 	// An unread answer whose extraction cannot be stored stops the run before it asks more.
 	r := newRepo("SetExtraction")
 	e := newEnv(t, r, "a")
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 2, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
-	r.answers = []domain.Answer{{ID: uuid.New(), RunID: run.ID, Prompt: domain.CurrentPromptSet().Prompts[0], Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Text: "x"}}}
+	r.answers = []domain.Answer{{ID: uuid.New(), RunID: run.ID, Prompt: domaintest.Version2().PromptSet().Prompts[0], Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Text: "x"}}}
 	if err := e.svc.Execute(t.Context(), run); !errors.Is(err, errBoom) || e.run(t).Status != domain.RunFailed || len(r.answers) != 1 {
 		t.Errorf("Execute = %v, status %s", err, e.run(t).Status)
 	}
@@ -369,16 +370,17 @@ func TestARunThatCannotBeRecordedFails(t *testing.T) {
 
 func TestARunThatCannotStartIsFailed(t *testing.T) {
 	cases := map[string]func(*env, *domain.Run){
-		"no key":       func(e *env, _ *domain.Run) { e.repo.settings.CredentialID = "" },
-		"no companies": func(e *env, _ *domain.Run) { e.dir.err = errBoom },
-		"no spend":     func(e *env, _ *domain.Run) { e.repo.failOn["SpentSince"] = true },
-		"no answers":   func(e *env, _ *domain.Run) { e.repo.failOn["Answers"] = true },
-		"no settings":  func(e *env, _ *domain.Run) { e.repo.failOn["Settings"] = true },
+		"no key":         func(e *env, _ *domain.Run) { e.repo.settings.CredentialID = "" },
+		"no companies":   func(e *env, _ *domain.Run) { e.dir.err = errBoom },
+		"no spend":       func(e *env, _ *domain.Run) { e.repo.failOn["SpentSince"] = true },
+		"no answers":     func(e *env, _ *domain.Run) { e.repo.failOn["Answers"] = true },
+		"no settings":    func(e *env, _ *domain.Run) { e.repo.failOn["Settings"] = true },
+		"no prompt sets": func(e *env, _ *domain.Run) { e.repo.failOn["PromptSets"] = true },
 	}
 	for name, change := range cases {
 		t.Run(name, func(t *testing.T) {
 			e := newEnv(t, newRepo(), "a")
-			run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+			run := domain.Run{ID: uuid.New(), PromptSetVersion: 2, Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 			e.repo.runs = append(e.repo.runs, &storedRun{run: run, owner: "a"})
 			change(e, &run)
 			if err := e.svc.Execute(t.Context(), run); err != nil {
@@ -402,7 +404,7 @@ func TestARunEndsWhenItsContextDoes(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	svc := app.New(e.repo, gateways{gw: e.gw}, e.dir, e.clock.Now, app.Config{}, func(uuid.UUID, error) {},
 		app.WithSleep(func(ctx context.Context, _ time.Duration) error { cancel(); return ctx.Err() }))
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 2, Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true}}}
 	e.repo.runs = append(e.repo.runs, &storedRun{run: run, owner: "a"})
 	if err := svc.Execute(ctx, run); err != nil || len(e.repo.answers) != 0 {
 		t.Errorf("Execute = %v with %d answers", err, len(e.repo.answers))
@@ -465,9 +467,9 @@ func TestAResumedRunOverBudgetReadsAndAsksNoMore(t *testing.T) {
 	r := newRepo()
 	e := newEnv(t, r, "a")
 	r.settings.MonthlyBudget = 1
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 2, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
-	prompt := domain.CurrentPromptSet().Prompts[0]
+	prompt := domaintest.Version2().PromptSet().Prompts[0]
 	for _, mode := range domain.Modes() {
 		r.answers = append(r.answers, domain.Answer{ID: uuid.New(), RunID: run.ID, Prompt: prompt, Provider: "openai", Mode: mode, Reply: domain.Reply{Text: "x", Cost: 5}})
 	}
@@ -512,11 +514,11 @@ func TestASlowRunStaysHeldWhileItWaitsOnAModel(t *testing.T) {
 	e := newEnv(t, r, "a")
 	r.settings.Providers = []string{"openai"}
 	e.gw.slow = 30 * time.Millisecond
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 2, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
 	r.answers = nil
 	// Only two prompts are left to ask, each slower than the stale window.
-	set := domain.CurrentPromptSet()
+	set := domaintest.Version2().PromptSet()
 	for _, task := range domain.Tasks(set, run.Models)[2:] {
 		r.answers = append(r.answers, domain.Answer{ID: uuid.New(), RunID: run.ID, Prompt: task.Prompt, Provider: task.Provider, Mode: task.Mode, Failure: "x"})
 	}
@@ -535,9 +537,9 @@ func TestAResumedProviderKeepsToItsPaidFallback(t *testing.T) {
 	r := newRepo()
 	e := newEnv(t, r, "a")
 	choice := domain.ModelChoice{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini-flash-lite"}
-	run := domain.Run{ID: uuid.New(), PromptSetVersion: domain.PromptSetVersion, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{choice}}
+	run := domain.Run{ID: uuid.New(), PromptSetVersion: 2, FactSheet: "facts", Status: domain.RunRunning, Models: []domain.ModelChoice{choice}}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
-	first := domain.Tasks(domain.CurrentPromptSet(), run.Models)[0]
+	first := domain.Tasks(domaintest.Version2().PromptSet(), run.Models)[0]
 	r.answers = []domain.Answer{{ID: uuid.New(), RunID: run.ID, Prompt: first.Prompt, Provider: "google", Model: choice.Fallback, Mode: first.Mode, Failure: "x"}}
 	if err := e.svc.Execute(t.Context(), run); err != nil {
 		t.Fatal(err)

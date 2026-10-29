@@ -1528,6 +1528,54 @@ export const zPromptTestResults = z.object({
 });
 
 /**
+ * A scope's id, which the responses to its questions record as their scope.
+ */
+export const zPromptSetScopeId = z.string().max(40).regex(/^[a-z][a-z0-9_-]*$/);
+
+/**
+ * One question of a published Prompt set.
+ */
+export const zPromptSetQuestion = z.object({
+    id: z.string().max(80),
+    family: zPromptFamily,
+    intent: zIntentTier,
+    scope: zPromptSetScopeId,
+    scopeName: z.string().max(100),
+    language: z.string().max(2).regex(/^[a-z]{2}$/),
+    region: z.string().max(100).optional(),
+    text: z.string().max(1000),
+    english: z.string().max(1000).optional()
+});
+
+/**
+ * One published version of the Prompt set, with its questions.
+ */
+export const zPublishedPromptSet = z.object({
+    version: z.int().gte(1).lte(100000),
+    publishedAt: z.iso.datetime({ offset: true }).max(64),
+    note: z.string().max(300),
+    questions: z.array(zPromptSetQuestion).max(1000)
+});
+
+/**
+ * A scope - a language a question is asked in, with or without a region.
+ */
+export const zPromptSetScope = z.object({
+    id: zPromptSetScopeId,
+    name: z.string().max(100),
+    language: z.string().max(2).regex(/^[a-z]{2}$/),
+    region: z.string().max(100).optional()
+});
+
+/**
+ * The published Prompt sets, newest first, and every scope.
+ */
+export const zPromptSets = z.object({
+    versions: z.array(zPublishedPromptSet).max(1000),
+    scopes: z.array(zPromptSetScope).max(200)
+});
+
+/**
  * One published Prompt set.
  */
 export const zPromptSetVersionInfo = z.object({
@@ -2197,6 +2245,11 @@ export const zGetPromptTestResultsResponse = zPromptTestResults;
  * The figures per run.
  */
 export const zGetPromptTestHistoryResponse = zPromptTestHistory;
+
+/**
+ * The published Prompt sets and the scopes.
+ */
+export const zListPromptSetsResponse = zPromptSets;
 
 export const zListPromptAnswersPath = z.object({
     runId: z.uuid().max(36)

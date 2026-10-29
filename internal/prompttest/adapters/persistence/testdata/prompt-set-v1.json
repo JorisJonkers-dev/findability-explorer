@@ -1,0 +1,726 @@
+{
+ "version": 1,
+ "source": "findability-explorer commit de6f134, internal/prompttest/domain/prompts.go",
+ "questions": [
+  {
+   "id": "eyelink-supplier-twente",
+   "family": "eyelink",
+   "kind": "supplier",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke bedrijven leveren draadogenbanden (metalen transportbanden van gelaste draadogen) in Twente? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "eyelink-supplier-netherlands",
+   "family": "eyelink",
+   "kind": "supplier",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke bedrijven leveren draadogenbanden (metalen transportbanden van gelaste draadogen) in Nederland? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "eyelink-supplier-germany",
+   "family": "eyelink",
+   "kind": "supplier",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welche Firmen liefern Drahtösengliederbänder (Förderbänder aus geschweißten Drahtösen) in Deutschland? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "eyelink-supplier-dutch",
+   "family": "eyelink",
+   "kind": "supplier",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke bedrijven leveren draadogenbanden (metalen transportbanden van gelaste draadogen)? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "eyelink-supplier-german",
+   "family": "eyelink",
+   "kind": "supplier",
+   "scope": "german",
+   "language": "de",
+   "text": "Welche Firmen liefern Drahtösengliederbänder (Förderbänder aus geschweißten Drahtösen)? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "eyelink-supplier-english",
+   "family": "eyelink",
+   "kind": "supplier",
+   "scope": "english",
+   "language": "en",
+   "text": "Which companies supply wire eyelink conveyor belts? Name manufacturers and suppliers."
+  },
+  {
+   "id": "eyelink-application-twente",
+   "family": "eyelink",
+   "kind": "application",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor een doorloopoven in een industriële bakkerij, en wie levert die in Twente?"
+  },
+  {
+   "id": "eyelink-application-netherlands",
+   "family": "eyelink",
+   "kind": "application",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor een doorloopoven in een industriële bakkerij, en wie levert die in Nederland?"
+  },
+  {
+   "id": "eyelink-application-germany",
+   "family": "eyelink",
+   "kind": "application",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für einen Durchlaufofen in einer Großbäckerei, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "eyelink-application-dutch",
+   "family": "eyelink",
+   "kind": "application",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor een doorloopoven in een industriële bakkerij, en wie levert die?"
+  },
+  {
+   "id": "eyelink-application-german",
+   "family": "eyelink",
+   "kind": "application",
+   "scope": "german",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für einen Durchlaufofen in einer Großbäckerei, und wer liefert es?"
+  },
+  {
+   "id": "eyelink-application-english",
+   "family": "eyelink",
+   "kind": "application",
+   "scope": "english",
+   "language": "en",
+   "text": "Which conveyor belt suits a tunnel oven in an industrial bakery, and who supplies it?"
+  },
+  {
+   "id": "eyelink-problem-twente",
+   "family": "eyelink",
+   "kind": "problem",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Onze ovenband van draadogen loopt steeds uit het spoor. Waar ligt dat aan, welke band is beter, en wie levert die in Twente?"
+  },
+  {
+   "id": "eyelink-problem-netherlands",
+   "family": "eyelink",
+   "kind": "problem",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Onze ovenband van draadogen loopt steeds uit het spoor. Waar ligt dat aan, welke band is beter, en wie levert die in Nederland?"
+  },
+  {
+   "id": "eyelink-problem-germany",
+   "family": "eyelink",
+   "kind": "problem",
+   "scope": "germany",
+   "language": "de",
+   "text": "Unser Ofenband aus Drahtösen läuft immer wieder aus der Spur. Woran liegt das, welches Band wäre besser, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "eyelink-problem-dutch",
+   "family": "eyelink",
+   "kind": "problem",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Onze ovenband van draadogen loopt steeds uit het spoor. Waar ligt dat aan, welke band is beter, en wie levert die?"
+  },
+  {
+   "id": "eyelink-problem-german",
+   "family": "eyelink",
+   "kind": "problem",
+   "scope": "german",
+   "language": "de",
+   "text": "Unser Ofenband aus Drahtösen läuft immer wieder aus der Spur. Woran liegt das, welches Band wäre besser, und wer liefert es?"
+  },
+  {
+   "id": "eyelink-problem-english",
+   "family": "eyelink",
+   "kind": "problem",
+   "scope": "english",
+   "language": "en",
+   "text": "Our eyelink oven belt keeps running off track. What causes this, which belt would be better, and who supplies it?"
+  },
+  {
+   "id": "open_spiral-supplier-twente",
+   "family": "open_spiral",
+   "kind": "supplier",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke bedrijven leveren open spiraalbanden van metaal (open geweven gaasbanden) in Twente? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "open_spiral-supplier-netherlands",
+   "family": "open_spiral",
+   "kind": "supplier",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke bedrijven leveren open spiraalbanden van metaal (open geweven gaasbanden) in Nederland? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "open_spiral-supplier-germany",
+   "family": "open_spiral",
+   "kind": "supplier",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welche Firmen liefern Weitspiralbänder aus Metall (offen geflochtene Drahtgewebebänder) in Deutschland? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "open_spiral-supplier-dutch",
+   "family": "open_spiral",
+   "kind": "supplier",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke bedrijven leveren open spiraalbanden van metaal (open geweven gaasbanden)? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "open_spiral-supplier-german",
+   "family": "open_spiral",
+   "kind": "supplier",
+   "scope": "german",
+   "language": "de",
+   "text": "Welche Firmen liefern Weitspiralbänder aus Metall (offen geflochtene Drahtgewebebänder)? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "open_spiral-supplier-english",
+   "family": "open_spiral",
+   "kind": "supplier",
+   "scope": "english",
+   "language": "en",
+   "text": "Which companies supply open spiral (balanced weave) metal conveyor belts? Name manufacturers and suppliers."
+  },
+  {
+   "id": "open_spiral-application-twente",
+   "family": "open_spiral",
+   "kind": "application",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor het drogen en koelen van producten op een open band, en wie levert die in Twente?"
+  },
+  {
+   "id": "open_spiral-application-netherlands",
+   "family": "open_spiral",
+   "kind": "application",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor het drogen en koelen van producten op een open band, en wie levert die in Nederland?"
+  },
+  {
+   "id": "open_spiral-application-germany",
+   "family": "open_spiral",
+   "kind": "application",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für das Trocknen und Kühlen von Produkten auf einem offenen Band, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "open_spiral-application-dutch",
+   "family": "open_spiral",
+   "kind": "application",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor het drogen en koelen van producten op een open band, en wie levert die?"
+  },
+  {
+   "id": "open_spiral-application-german",
+   "family": "open_spiral",
+   "kind": "application",
+   "scope": "german",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für das Trocknen und Kühlen von Produkten auf einem offenen Band, und wer liefert es?"
+  },
+  {
+   "id": "open_spiral-application-english",
+   "family": "open_spiral",
+   "kind": "application",
+   "scope": "english",
+   "language": "en",
+   "text": "Which conveyor belt suits drying and cooling products on an open belt, and who supplies it?"
+  },
+  {
+   "id": "open_spiral-problem-twente",
+   "family": "open_spiral",
+   "kind": "problem",
+   "scope": "twente",
+   "language": "nl",
+   "text": "In onze metalen gaasband breken steeds draden. Waar ligt dat aan, welke band is beter, en wie levert die in Twente?"
+  },
+  {
+   "id": "open_spiral-problem-netherlands",
+   "family": "open_spiral",
+   "kind": "problem",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "In onze metalen gaasband breken steeds draden. Waar ligt dat aan, welke band is beter, en wie levert die in Nederland?"
+  },
+  {
+   "id": "open_spiral-problem-germany",
+   "family": "open_spiral",
+   "kind": "problem",
+   "scope": "germany",
+   "language": "de",
+   "text": "In unserem Drahtgewebeband brechen immer wieder Drähte. Woran liegt das, welches Band wäre besser, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "open_spiral-problem-dutch",
+   "family": "open_spiral",
+   "kind": "problem",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "In onze metalen gaasband breken steeds draden. Waar ligt dat aan, welke band is beter, en wie levert die?"
+  },
+  {
+   "id": "open_spiral-problem-german",
+   "family": "open_spiral",
+   "kind": "problem",
+   "scope": "german",
+   "language": "de",
+   "text": "In unserem Drahtgewebeband brechen immer wieder Drähte. Woran liegt das, welches Band wäre besser, und wer liefert es?"
+  },
+  {
+   "id": "open_spiral-problem-english",
+   "family": "open_spiral",
+   "kind": "problem",
+   "scope": "english",
+   "language": "en",
+   "text": "Wires keep breaking in our woven wire mesh belt. What causes this, which belt would be better, and who supplies it?"
+  },
+  {
+   "id": "closed_spiral-supplier-twente",
+   "family": "closed_spiral",
+   "kind": "supplier",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke bedrijven leveren gesloten spiraalbanden (dicht geweven metalen transportbanden) in Twente? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "closed_spiral-supplier-netherlands",
+   "family": "closed_spiral",
+   "kind": "supplier",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke bedrijven leveren gesloten spiraalbanden (dicht geweven metalen transportbanden) in Nederland? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "closed_spiral-supplier-germany",
+   "family": "closed_spiral",
+   "kind": "supplier",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welche Firmen liefern Engspiralbänder (dicht geflochtene Metallförderbänder) in Deutschland? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "closed_spiral-supplier-dutch",
+   "family": "closed_spiral",
+   "kind": "supplier",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke bedrijven leveren gesloten spiraalbanden (dicht geweven metalen transportbanden)? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "closed_spiral-supplier-german",
+   "family": "closed_spiral",
+   "kind": "supplier",
+   "scope": "german",
+   "language": "de",
+   "text": "Welche Firmen liefern Engspiralbänder (dicht geflochtene Metallförderbänder)? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "closed_spiral-supplier-english",
+   "family": "closed_spiral",
+   "kind": "supplier",
+   "scope": "english",
+   "language": "en",
+   "text": "Which companies supply closed spiral (compound balanced) metal conveyor belts? Name manufacturers and suppliers."
+  },
+  {
+   "id": "closed_spiral-application-twente",
+   "family": "closed_spiral",
+   "kind": "application",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor het transport van kleine onderdelen door een oven, en wie levert die in Twente?"
+  },
+  {
+   "id": "closed_spiral-application-netherlands",
+   "family": "closed_spiral",
+   "kind": "application",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor het transport van kleine onderdelen door een oven, en wie levert die in Nederland?"
+  },
+  {
+   "id": "closed_spiral-application-germany",
+   "family": "closed_spiral",
+   "kind": "application",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für den Transport kleiner Teile durch einen Ofen, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "closed_spiral-application-dutch",
+   "family": "closed_spiral",
+   "kind": "application",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor het transport van kleine onderdelen door een oven, en wie levert die?"
+  },
+  {
+   "id": "closed_spiral-application-german",
+   "family": "closed_spiral",
+   "kind": "application",
+   "scope": "german",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für den Transport kleiner Teile durch einen Ofen, und wer liefert es?"
+  },
+  {
+   "id": "closed_spiral-application-english",
+   "family": "closed_spiral",
+   "kind": "application",
+   "scope": "english",
+   "language": "en",
+   "text": "Which conveyor belt suits carrying small parts through an oven, and who supplies it?"
+  },
+  {
+   "id": "closed_spiral-problem-twente",
+   "family": "closed_spiral",
+   "kind": "problem",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Kleine producten vallen door onze metalen transportband heen. Waar ligt dat aan, welke band is beter, en wie levert die in Twente?"
+  },
+  {
+   "id": "closed_spiral-problem-netherlands",
+   "family": "closed_spiral",
+   "kind": "problem",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Kleine producten vallen door onze metalen transportband heen. Waar ligt dat aan, welke band is beter, en wie levert die in Nederland?"
+  },
+  {
+   "id": "closed_spiral-problem-germany",
+   "family": "closed_spiral",
+   "kind": "problem",
+   "scope": "germany",
+   "language": "de",
+   "text": "Kleine Produkte fallen durch unser Metallförderband. Woran liegt das, welches Band wäre besser, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "closed_spiral-problem-dutch",
+   "family": "closed_spiral",
+   "kind": "problem",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Kleine producten vallen door onze metalen transportband heen. Waar ligt dat aan, welke band is beter, en wie levert die?"
+  },
+  {
+   "id": "closed_spiral-problem-german",
+   "family": "closed_spiral",
+   "kind": "problem",
+   "scope": "german",
+   "language": "de",
+   "text": "Kleine Produkte fallen durch unser Metallförderband. Woran liegt das, welches Band wäre besser, und wer liefert es?"
+  },
+  {
+   "id": "closed_spiral-problem-english",
+   "family": "closed_spiral",
+   "kind": "problem",
+   "scope": "english",
+   "language": "en",
+   "text": "Small products fall through our metal conveyor belt. What causes this, which belt would be better, and who supplies it?"
+  },
+  {
+   "id": "tri_flex_turn_curve-supplier-twente",
+   "family": "tri_flex_turn_curve",
+   "kind": "supplier",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke bedrijven leveren bochtgaande roestvrijstalen spiraaltransportbanden voor spiraaltorens in Twente? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "tri_flex_turn_curve-supplier-netherlands",
+   "family": "tri_flex_turn_curve",
+   "kind": "supplier",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke bedrijven leveren bochtgaande roestvrijstalen spiraaltransportbanden voor spiraaltorens in Nederland? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "tri_flex_turn_curve-supplier-germany",
+   "family": "tri_flex_turn_curve",
+   "kind": "supplier",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welche Firmen liefern kurvengängige Edelstahl-Spiralförderbänder für Spiraltürme in Deutschland? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "tri_flex_turn_curve-supplier-dutch",
+   "family": "tri_flex_turn_curve",
+   "kind": "supplier",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke bedrijven leveren bochtgaande roestvrijstalen spiraaltransportbanden voor spiraaltorens? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "tri_flex_turn_curve-supplier-german",
+   "family": "tri_flex_turn_curve",
+   "kind": "supplier",
+   "scope": "german",
+   "language": "de",
+   "text": "Welche Firmen liefern kurvengängige Edelstahl-Spiralförderbänder für Spiraltürme? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "tri_flex_turn_curve-supplier-english",
+   "family": "tri_flex_turn_curve",
+   "kind": "supplier",
+   "scope": "english",
+   "language": "en",
+   "text": "Which companies supply curve-going stainless steel belts for spiral towers? Name manufacturers and suppliers."
+  },
+  {
+   "id": "tri_flex_turn_curve-application-twente",
+   "family": "tri_flex_turn_curve",
+   "kind": "application",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor een spiraalvriezer of spiraalkoeler, en wie levert die in Twente?"
+  },
+  {
+   "id": "tri_flex_turn_curve-application-netherlands",
+   "family": "tri_flex_turn_curve",
+   "kind": "application",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor een spiraalvriezer of spiraalkoeler, en wie levert die in Nederland?"
+  },
+  {
+   "id": "tri_flex_turn_curve-application-germany",
+   "family": "tri_flex_turn_curve",
+   "kind": "application",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für einen Spiralfroster oder Spiralkühler, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "tri_flex_turn_curve-application-dutch",
+   "family": "tri_flex_turn_curve",
+   "kind": "application",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor een spiraalvriezer of spiraalkoeler, en wie levert die?"
+  },
+  {
+   "id": "tri_flex_turn_curve-application-german",
+   "family": "tri_flex_turn_curve",
+   "kind": "application",
+   "scope": "german",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für einen Spiralfroster oder Spiralkühler, und wer liefert es?"
+  },
+  {
+   "id": "tri_flex_turn_curve-application-english",
+   "family": "tri_flex_turn_curve",
+   "kind": "application",
+   "scope": "english",
+   "language": "en",
+   "text": "Which conveyor belt suits a spiral freezer or spiral cooler, and who supplies it?"
+  },
+  {
+   "id": "tri_flex_turn_curve-problem-twente",
+   "family": "tri_flex_turn_curve",
+   "kind": "problem",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Onze band in de spiraalvriezer loopt vast in de bochten. Waar ligt dat aan, welke band is beter, en wie levert die in Twente?"
+  },
+  {
+   "id": "tri_flex_turn_curve-problem-netherlands",
+   "family": "tri_flex_turn_curve",
+   "kind": "problem",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Onze band in de spiraalvriezer loopt vast in de bochten. Waar ligt dat aan, welke band is beter, en wie levert die in Nederland?"
+  },
+  {
+   "id": "tri_flex_turn_curve-problem-germany",
+   "family": "tri_flex_turn_curve",
+   "kind": "problem",
+   "scope": "germany",
+   "language": "de",
+   "text": "Unser Band im Spiralfroster verklemmt sich in den Kurven. Woran liegt das, welches Band wäre besser, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "tri_flex_turn_curve-problem-dutch",
+   "family": "tri_flex_turn_curve",
+   "kind": "problem",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Onze band in de spiraalvriezer loopt vast in de bochten. Waar ligt dat aan, welke band is beter, en wie levert die?"
+  },
+  {
+   "id": "tri_flex_turn_curve-problem-german",
+   "family": "tri_flex_turn_curve",
+   "kind": "problem",
+   "scope": "german",
+   "language": "de",
+   "text": "Unser Band im Spiralfroster verklemmt sich in den Kurven. Woran liegt das, welches Band wäre besser, und wer liefert es?"
+  },
+  {
+   "id": "tri_flex_turn_curve-problem-english",
+   "family": "tri_flex_turn_curve",
+   "kind": "problem",
+   "scope": "english",
+   "language": "en",
+   "text": "Our spiral freezer belt jams in the curves. What causes this, which belt would be better, and who supplies it?"
+  },
+  {
+   "id": "other-supplier-twente",
+   "family": "other",
+   "kind": "supplier",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke bedrijven leveren metalen transportbanden zoals staafbanden, vlakdraadbanden en kettingbanden in Twente? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "other-supplier-netherlands",
+   "family": "other",
+   "kind": "supplier",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke bedrijven leveren metalen transportbanden zoals staafbanden, vlakdraadbanden en kettingbanden in Nederland? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "other-supplier-germany",
+   "family": "other",
+   "kind": "supplier",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welche Firmen liefern Metallförderbänder wie Stabgliederbänder, Flachdrahtbänder und Kettenbänder in Deutschland? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "other-supplier-dutch",
+   "family": "other",
+   "kind": "supplier",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke bedrijven leveren metalen transportbanden zoals staafbanden, vlakdraadbanden en kettingbanden? Noem fabrikanten en leveranciers."
+  },
+  {
+   "id": "other-supplier-german",
+   "family": "other",
+   "kind": "supplier",
+   "scope": "german",
+   "language": "de",
+   "text": "Welche Firmen liefern Metallförderbänder wie Stabgliederbänder, Flachdrahtbänder und Kettenbänder? Nenne Hersteller und Lieferanten."
+  },
+  {
+   "id": "other-supplier-english",
+   "family": "other",
+   "kind": "supplier",
+   "scope": "english",
+   "language": "en",
+   "text": "Which companies supply metal conveyor belts such as rod belts, flat wire belts and chain belts? Name manufacturers and suppliers."
+  },
+  {
+   "id": "other-application-twente",
+   "family": "other",
+   "kind": "application",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor zware, hete producten in een hardingsoven, en wie levert die in Twente?"
+  },
+  {
+   "id": "other-application-netherlands",
+   "family": "other",
+   "kind": "application",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor zware, hete producten in een hardingsoven, en wie levert die in Nederland?"
+  },
+  {
+   "id": "other-application-germany",
+   "family": "other",
+   "kind": "application",
+   "scope": "germany",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für schwere, heiße Teile in einem Härteofen, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "other-application-dutch",
+   "family": "other",
+   "kind": "application",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Welke transportband is geschikt voor zware, hete producten in een hardingsoven, en wie levert die?"
+  },
+  {
+   "id": "other-application-german",
+   "family": "other",
+   "kind": "application",
+   "scope": "german",
+   "language": "de",
+   "text": "Welches Förderband eignet sich für schwere, heiße Teile in einem Härteofen, und wer liefert es?"
+  },
+  {
+   "id": "other-application-english",
+   "family": "other",
+   "kind": "application",
+   "scope": "english",
+   "language": "en",
+   "text": "Which conveyor belt suits heavy, hot parts in a hardening furnace, and who supplies it?"
+  },
+  {
+   "id": "other-problem-twente",
+   "family": "other",
+   "kind": "problem",
+   "scope": "twente",
+   "language": "nl",
+   "text": "Onze metalen band slijt snel onder zware, hete lasten. Waar ligt dat aan, welke band is beter, en wie levert die in Twente?"
+  },
+  {
+   "id": "other-problem-netherlands",
+   "family": "other",
+   "kind": "problem",
+   "scope": "netherlands",
+   "language": "nl",
+   "text": "Onze metalen band slijt snel onder zware, hete lasten. Waar ligt dat aan, welke band is beter, en wie levert die in Nederland?"
+  },
+  {
+   "id": "other-problem-germany",
+   "family": "other",
+   "kind": "problem",
+   "scope": "germany",
+   "language": "de",
+   "text": "Unser Metallförderband verschleißt schnell unter schweren, heißen Lasten. Woran liegt das, welches Band wäre besser, und wer liefert es in Deutschland?"
+  },
+  {
+   "id": "other-problem-dutch",
+   "family": "other",
+   "kind": "problem",
+   "scope": "dutch",
+   "language": "nl",
+   "text": "Onze metalen band slijt snel onder zware, hete lasten. Waar ligt dat aan, welke band is beter, en wie levert die?"
+  },
+  {
+   "id": "other-problem-german",
+   "family": "other",
+   "kind": "problem",
+   "scope": "german",
+   "language": "de",
+   "text": "Unser Metallförderband verschleißt schnell unter schweren, heißen Lasten. Woran liegt das, welches Band wäre besser, und wer liefert es?"
+  },
+  {
+   "id": "other-problem-english",
+   "family": "other",
+   "kind": "problem",
+   "scope": "english",
+   "language": "en",
+   "text": "Our metal conveyor belt wears out quickly under heavy, hot loads. What causes this, which belt would be better, and who supplies it?"
+  }
+ ]
+}

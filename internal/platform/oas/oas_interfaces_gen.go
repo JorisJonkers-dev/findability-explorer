@@ -133,6 +133,10 @@ type ListPromptAnswersRes interface {
 	listPromptAnswersRes()
 }
 
+type ListPromptSetsRes interface {
+	listPromptSetsRes()
+}
+
 type ListTermCandidatesRes interface {
 	listTermCandidatesRes()
 }

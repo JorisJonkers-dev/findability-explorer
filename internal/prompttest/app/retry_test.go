@@ -8,6 +8,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 // failedRun runs one provider's run whose first prompt fails in both modes, and returns the env.
@@ -19,7 +20,7 @@ func failedRun(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	// Mark the first prompt's two answers failed, as a rate limit would leave them.
-	first := domain.CurrentPromptSet().Prompts[0].ID
+	first := domaintest.Version2().PromptSet().Prompts[0].ID
 	for i, a := range e.repo.answers {
 		if a.Prompt.ID == first {
 			a.Failure, a.Extraction, a.Text = "Rate limited.", nil, ""
@@ -65,12 +66,12 @@ func TestRetryAsksEveryFailedAnswerAgainInTheSameRun(t *testing.T) {
 func TestRetryAsksOneQuestionOfOneModel(t *testing.T) {
 	e := failedRun(t)
 	run := e.run(t)
-	key := domain.TaskKey{PromptID: domain.CurrentPromptSet().Prompts[0].ID, Provider: "openai", Mode: domain.ModeWeb}
+	key := domain.TaskKey{PromptID: domaintest.Version2().PromptSet().Prompts[0].ID, Provider: "openai", Mode: domain.ModeWeb}
 	got, err := e.svc.Retry(t.Context(), run.ID, &key)
 	if err != nil || got.Tasks != 1 || failures(e) != 1 {
 		t.Fatalf("retry = %+v, %v, %d failures left", got, err, failures(e))
 	}
-	answered := domain.TaskKey{PromptID: domain.CurrentPromptSet().Prompts[1].ID, Provider: "openai", Mode: domain.ModeWeb}
+	answered := domain.TaskKey{PromptID: domaintest.Version2().PromptSet().Prompts[1].ID, Provider: "openai", Mode: domain.ModeWeb}
 	if _, err := e.svc.Retry(t.Context(), run.ID, &answered); !errors.Is(err, app.ErrNothingFailed) || !app.IsInputError(err) {
 		t.Errorf("asking an answered question again = %v", err)
 	}
@@ -167,7 +168,7 @@ func TestRetryAsksARunOfAnEarlierSetWithTheQuestionsItKept(t *testing.T) {
 func unreadRun(t *testing.T) (*env, domain.TaskKey) {
 	t.Helper()
 	e := failedRun(t)
-	key := domain.TaskKey{PromptID: domain.CurrentPromptSet().Prompts[1].ID, Provider: "openai", Mode: domain.ModeWeb}
+	key := domain.TaskKey{PromptID: domaintest.Version2().PromptSet().Prompts[1].ID, Provider: "openai", Mode: domain.ModeWeb}
 	for i, a := range e.repo.answers {
 		if a.Key() == key {
 			e.repo.answers[i].Extraction = &domain.Extraction{Failed: true, Cost: 1}

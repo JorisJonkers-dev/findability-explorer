@@ -29,9 +29,11 @@ type RunResult struct {
 // (the trends); how often the answers of the newest run with any name each company; and the
 // claims about Tribelt the answers got wrong, newest first.
 type Results struct {
-	Runs        []RunResult
-	Mentions    []NamedMention
-	WrongClaims []domain.WrongClaim
+	// PromptSetVersion is the newest published Prompt set's version, the one a new run asks.
+	PromptSetVersion int
+	Runs             []RunResult
+	Mentions         []NamedMention
+	WrongClaims      []domain.WrongClaim
 }
 
 // NamedMention is a mention with the name and role of the company it counts, and its share of
@@ -71,11 +73,15 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 	if err != nil {
 		return Results{}, fmt.Errorf("list the runs: %w", err)
 	}
+	set, err := s.newestSet(ctx)
+	if err != nil {
+		return Results{}, err
+	}
 	m, companies, err := s.matcher(ctx)
 	if err != nil {
 		return Results{}, err
 	}
-	out := Results{Runs: make([]RunResult, 0, len(runs)), Mentions: []NamedMention{}, WrongClaims: []domain.WrongClaim{}}
+	out := Results{PromptSetVersion: set.Version, Runs: make([]RunResult, 0, len(runs)), Mentions: []NamedMention{}, WrongClaims: []domain.WrongClaim{}}
 	mentioned := false
 	for _, r := range runs {
 		answers, err := s.repo.Answers(ctx, r.ID, false)

@@ -1526,6 +1526,44 @@ export const zPromptTestResults = z.object({
 });
 
 /**
+ * One published Prompt set.
+ */
+export const zPromptSetVersionInfo = z.object({
+    version: z.int().gte(1).lte(100000),
+    publishedAt: z.iso.datetime({ offset: true }).max(64),
+    questions: z.int().gte(0).lte(100000),
+    note: z.string().max(300)
+});
+
+/**
+ * One run's figures: the share of the responses read that name Tribelt, overall, per language, and for Twente, and the share of web responses that cite tribelt.nl. A share is absent when the run read no response to measure it on.
+ */
+export const zPromptRunFigures = z.object({
+    runId: z.uuid().max(36),
+    startedAt: z.iso.datetime({ offset: true }).max(64),
+    promptSetVersion: z.int().gte(1).lte(100000),
+    tasks: z.int().gte(0).lte(100000),
+    answered: z.int().gte(0).lte(100000),
+    read: z.int().gte(0).lte(100000),
+    partial: z.boolean(),
+    failure: z.string().max(300).optional(),
+    all: z.number().gte(0).lte(1).optional(),
+    dutch: z.number().gte(0).lte(1).optional(),
+    german: z.number().gte(0).lte(1).optional(),
+    english: z.number().gte(0).lte(1).optional(),
+    twente: z.number().gte(0).lte(1).optional(),
+    citation: z.number().gte(0).lte(1).optional()
+});
+
+/**
+ * The Prompt test's figures per run, with the Prompt set versions they asked.
+ */
+export const zPromptTestHistory = z.object({
+    versions: z.array(zPromptSetVersionInfo).max(100),
+    runs: z.array(zPromptRunFigures).max(500)
+});
+
+/**
  * A company an answer names, matched to the company list when it is on it.
  */
 export const zPromptNamedCompany = z.object({
@@ -2128,6 +2166,11 @@ export const zGetReadinessFilesResponse = zReadinessFiles;
  * The results.
  */
 export const zGetPromptTestResultsResponse = zPromptTestResults;
+
+/**
+ * The figures per run.
+ */
+export const zGetPromptTestHistoryResponse = zPromptTestHistory;
 
 export const zListPromptAnswersPath = z.object({
     runId: z.uuid().max(36)

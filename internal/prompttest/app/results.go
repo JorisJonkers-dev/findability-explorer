@@ -16,11 +16,13 @@ const MaxRuns = 24
 // MaxWrongClaims is how many wrong claims the results list.
 const MaxWrongClaims = 1000
 
-// RunResult is one run with how far it got and its measures.
+// RunResult is one run with how far it got, its measures, and the reason most of its failed
+// answers give ("" when none failed).
 type RunResult struct {
-	Run      domain.Run
-	Progress domain.Progress
-	Cells    []domain.Cell
+	Run           domain.Run
+	Progress      domain.Progress
+	Cells         []domain.Cell
+	CommonFailure string
 }
 
 // Results are the Prompt test's results: the latest runs, newest first, each with its measures
@@ -82,7 +84,7 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 		}
 		answers = rematched(answers, m)
 		cells := domain.Cells(answers)
-		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells})
+		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells, CommonFailure: domain.CommonestFailure(answers)})
 		if !mentioned && len(cells) > 0 {
 			out.Mentions, mentioned = named(domain.WithTribelt(domain.Mentions(answers), answers, companies), answers, companies), true
 		}
@@ -127,7 +129,9 @@ func (s *Service) Answers(ctx context.Context, runID uuid.UUID, filter AnswerFil
 			kept = append(kept, a)
 		}
 	}
-	return RunResult{Run: run, Progress: domain.Progressed(answers, run.Models), Cells: domain.Cells(answers)}, kept, nil
+	return RunResult{
+		Run: run, Progress: domain.Progressed(answers, run.Models), Cells: domain.Cells(answers), CommonFailure: domain.CommonestFailure(answers),
+	}, kept, nil
 }
 
 // RunAnswers is a run with the answers that count, without their text.

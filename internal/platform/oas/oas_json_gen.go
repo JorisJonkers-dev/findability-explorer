@@ -1645,6 +1645,12 @@ func (s *AnalysisSummary) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.StoppedByHand.Set {
+			e.FieldStart("stoppedByHand")
+			s.StoppedByHand.Encode(e)
+		}
+	}
+	{
 		if s.AiReadiness.Set {
 			e.FieldStart("aiReadiness")
 			s.AiReadiness.Encode(e)
@@ -1670,7 +1676,7 @@ func (s *AnalysisSummary) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfAnalysisSummary = [13]string{
+var jsonFieldsNameOfAnalysisSummary = [14]string{
 	0:  "competitorId",
 	1:  "number",
 	2:  "matchingModel",
@@ -1679,11 +1685,12 @@ var jsonFieldsNameOfAnalysisSummary = [13]string{
 	5:  "status",
 	6:  "failure",
 	7:  "blocked",
-	8:  "aiReadiness",
-	9:  "maxPages",
-	10: "pagesCrawled",
-	11: "createdAt",
-	12: "finishedAt",
+	8:  "stoppedByHand",
+	9:  "aiReadiness",
+	10: "maxPages",
+	11: "pagesCrawled",
+	12: "createdAt",
+	13: "finishedAt",
 }
 
 // Decode decodes AnalysisSummary from json.
@@ -1779,6 +1786,16 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"blocked\"")
 			}
+		case "stoppedByHand":
+			if err := func() error {
+				s.StoppedByHand.Reset()
+				if err := s.StoppedByHand.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"stoppedByHand\"")
+			}
 		case "aiReadiness":
 			if err := func() error {
 				s.AiReadiness.Reset()
@@ -1790,7 +1807,7 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"aiReadiness\"")
 			}
 		case "maxPages":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int32()
 				s.MaxPages = int32(v)
@@ -1802,7 +1819,7 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"maxPages\"")
 			}
 		case "pagesCrawled":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int32()
 				s.PagesCrawled = int32(v)
@@ -1814,7 +1831,7 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"pagesCrawled\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -1846,7 +1863,7 @@ func (s *AnalysisSummary) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b00111000,
-		0b00001110,
+		0b00011100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -21458,13 +21475,20 @@ func (s *ReadinessCheckState) encodeFields(e *jx.Encoder) {
 		e.FieldStart("total")
 		e.Int32(s.Total)
 	}
+	{
+		if s.Stopped.Set {
+			e.FieldStart("stopped")
+			s.Stopped.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfReadinessCheckState = [4]string{
+var jsonFieldsNameOfReadinessCheckState = [5]string{
 	0: "running",
 	1: "checked",
 	2: "failed",
 	3: "total",
+	4: "stopped",
 }
 
 // Decode decodes ReadinessCheckState from json.
@@ -21523,6 +21547,16 @@ func (s *ReadinessCheckState) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"total\"")
+			}
+		case "stopped":
+			if err := func() error {
+				s.Stopped.Reset()
+				if err := s.Stopped.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"stopped\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

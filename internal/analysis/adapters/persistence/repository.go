@@ -463,6 +463,38 @@ func (r *Repository) Fail(ctx context.Context, id uuid.UUID, reason string, at t
 	return nil
 }
 
+// StopQueued records the queued analyses scope picks as failed with reason and returns their ids.
+func (r *Repository) StopQueued(ctx context.Context, scope domain.StopScope, reason string, at time.Time) ([]uuid.UUID, error) {
+	ids, err := r.store.Queries().StopQueuedAnalyses(ctx, queries.StopQueuedAnalysesParams{
+		Failure: text(clip(reason, 500)), StoppedAt: timestamp(at),
+		AnyID: scope.ID == uuid.Nil, ID: scope.ID, RescanOnly: scope.RescanOnly,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("stop queued analyses: %w", err)
+	}
+	return ids, nil
+}
+
+// RequestStop records that the running analyses scope picks are to stop and returns their ids.
+func (r *Repository) RequestStop(ctx context.Context, scope domain.StopScope, at time.Time) ([]uuid.UUID, error) {
+	ids, err := r.store.Queries().RequestAnalysesStop(ctx, queries.RequestAnalysesStopParams{
+		StoppedAt: timestamp(at), AnyID: scope.ID == uuid.Nil, ID: scope.ID, RescanOnly: scope.RescanOnly,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ask running analyses to stop: %w", err)
+	}
+	return ids, nil
+}
+
+// StopRequested reports whether a stop of the analysis was asked.
+func (r *Repository) StopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	asked, err := r.store.Queries().AnalysisStopRequested(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("read the analysis's stop: %w", err)
+	}
+	return asked, nil
+}
+
 func toAnalysis(row queries.ListAnalysesRow) domain.Analysis {
 	a := domain.Analysis{
 		ID: row.ID, URL: row.Url, MaxPages: int(row.MaxPages), Status: domain.Status(row.Status),

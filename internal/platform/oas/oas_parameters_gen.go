@@ -2478,25 +2478,25 @@ func decodeSplitCompetitorCandidateParams(args [1]string, argsEscaped bool, r *h
 	return params, nil
 }
 
-// StopPromptRunParams is parameters of stopPromptRun operation.
-type StopPromptRunParams struct {
-	// The Prompt run's id.
-	RunId uuid.UUID
+// StopAnalysisParams is parameters of stopAnalysis operation.
+type StopAnalysisParams struct {
+	// The scan's id.
+	AnalysisId uuid.UUID
 }
 
-func unpackStopPromptRunParams(packed middleware.Parameters) (params StopPromptRunParams) {
+func unpackStopAnalysisParams(packed middleware.Parameters) (params StopAnalysisParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "runId",
+			Name: "analysisId",
 			In:   "path",
 		}
-		params.RunId = packed[key].(uuid.UUID)
+		params.AnalysisId = packed[key].(uuid.UUID)
 	}
 	return params
 }
 
-func decodeStopPromptRunParams(args [1]string, argsEscaped bool, r *http.Request) (params StopPromptRunParams, _ error) {
-	// Decode path: runId.
+func decodeStopAnalysisParams(args [1]string, argsEscaped bool, r *http.Request) (params StopAnalysisParams, _ error) {
+	// Decode path: analysisId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -2508,7 +2508,7 @@ func decodeStopPromptRunParams(args [1]string, argsEscaped bool, r *http.Request
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "runId",
+				Param:   "analysisId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -2525,7 +2525,7 @@ func decodeStopPromptRunParams(args [1]string, argsEscaped bool, r *http.Request
 					return err
 				}
 
-				params.RunId = c
+				params.AnalysisId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -2536,7 +2536,7 @@ func decodeStopPromptRunParams(args [1]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "runId",
+			Name: "analysisId",
 			In:   "path",
 			Err:  err,
 		}

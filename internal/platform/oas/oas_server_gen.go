@@ -191,16 +191,6 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/prompt-runs/{runId}/retry-plan
 	GetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (GetPromptRetryPlanRes, error)
-	// GetPromptTestHistory implements getPromptTestHistory operation.
-	//
-	// Returns the published Prompt sets, oldest first, and every one of the latest runs with at least one
-	// response read, oldest first: its Prompt set version, whether it is partial (it got fewer than half
-	// its responses) and, for a partial run, the reason most of its failed responses give, and the shares
-	// of the responses read that name Tribelt, overall, per language, and for Twente, with the share of
-	// web responses that cite tribelt.nl.
-	//
-	// GET /api/v1/prompt-test/history
-	GetPromptTestHistory(ctx context.Context) (GetPromptTestHistoryRes, error)
 	// GetPromptTestResults implements getPromptTestResults operation.
 	//
 	// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
@@ -294,6 +284,13 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/term-candidates/{candidateId}/reject
 	RejectTermCandidate(ctx context.Context, params RejectTermCandidateParams) (RejectTermCandidateRes, error)
+	// RemoveQueuedAnalyses implements removeQueuedAnalyses operation.
+	//
+	// Administrators only. Takes every scan that waits off the queue, each recorded as stopped by hand;
+	// the running ones run on. 404 when no scan waits.
+	//
+	// DELETE /api/v1/admin/analyses/queue
+	RemoveQueuedAnalyses(ctx context.Context) (RemoveQueuedAnalysesRes, error)
 	// RereadPromptRun implements rereadPromptRun operation.
 	//
 	// Administrators only. Reads a finished run's answers whose reading failed again, or only the one
@@ -417,15 +414,31 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/term-candidates/review
 	StartTermReview(ctx context.Context) (StartTermReviewRes, error)
-	// StopPromptRun implements stopPromptRun operation.
+	// StopAnalysis implements stopAnalysis operation.
 	//
-	// Administrators only. Asks a running run to stop. The request is stored, so the instance running the
-	// run, whichever it is, stops it at its next heartbeat, within a minute: no question is asked after
-	// it, the responses so far are kept, and the run is recorded as stopped by hand. retryPromptRun
-	// finishes it, asking only the questions it did not get. 404 when no run with this id is running.
+	// Administrators only. A waiting scan is taken off the queue; a running one ends after the page it
+	// reads, on whichever instance runs it, and keeps the pages it read so far. Either is recorded as
+	// stopped by hand. 404 when no waiting or running scan has this id.
 	//
-	// POST /api/v1/admin/prompt-runs/{runId}/stop
-	StopPromptRun(ctx context.Context, params StopPromptRunParams) (StopPromptRunRes, error)
+	// POST /api/v1/admin/analyses/{analysisId}/stop
+	StopAnalysis(ctx context.Context, params StopAnalysisParams) (StopAnalysisRes, error)
+	// StopReadinessCheck implements stopReadinessCheck operation.
+	//
+	// Administrators only. Stops the check of every company's AI readiness that runs: it reads no further
+	// site. The sites it checked keep what it recorded, the others what their scan recorded, and the
+	// check's state says it was stopped. 404 when no check runs.
+	//
+	// POST /api/v1/admin/readiness-checks/stop
+	StopReadinessCheck(ctx context.Context) (StopReadinessCheckRes, error)
+	// StopRescan implements stopRescan operation.
+	//
+	// Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting one is
+	// taken off the queue, a running one ends after the page it reads and keeps the pages it read so far.
+	// Each is recorded as stopped by hand. A scan started on its own runs on. 404 when no scan of a
+	// re-scan waits or runs.
+	//
+	// POST /api/v1/admin/rescans/stop
+	StopRescan(ctx context.Context) (StopRescanRes, error)
 	// TestLlmCredential implements testLlmCredential operation.
 	//
 	// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the

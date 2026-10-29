@@ -757,8 +757,11 @@ type AnalysisSummary struct {
 	// True when the analysis failed because its site turned automated readers away (bot protection)
 	// although people can open it; only then is it present. The scan still records the site's AI
 	// readiness.
-	Blocked     OptBool             `json:"blocked"`
-	AiReadiness OptAiReadinessBrief `json:"aiReadiness"`
+	Blocked OptBool `json:"blocked"`
+	// True when an administrator stopped the scan, or took it off the queue; only then is it present. Its
+	// status is failed, and it keeps the pages it read.
+	StoppedByHand OptBool             `json:"stoppedByHand"`
+	AiReadiness   OptAiReadinessBrief `json:"aiReadiness"`
 	// The most pages the crawl fetches.
 	MaxPages int32 `json:"maxPages"`
 	// How many pages were fetched so far.
@@ -807,6 +810,11 @@ func (s *AnalysisSummary) GetFailure() OptString {
 // GetBlocked returns the value of Blocked.
 func (s *AnalysisSummary) GetBlocked() OptBool {
 	return s.Blocked
+}
+
+// GetStoppedByHand returns the value of StoppedByHand.
+func (s *AnalysisSummary) GetStoppedByHand() OptBool {
+	return s.StoppedByHand
 }
 
 // GetAiReadiness returns the value of AiReadiness.
@@ -872,6 +880,11 @@ func (s *AnalysisSummary) SetFailure(val OptString) {
 // SetBlocked sets the value of Blocked.
 func (s *AnalysisSummary) SetBlocked(val OptBool) {
 	s.Blocked = val
+}
+
+// SetStoppedByHand sets the value of StoppedByHand.
+func (s *AnalysisSummary) SetStoppedByHand(val OptBool) {
+	s.StoppedByHand = val
 }
 
 // SetAiReadiness sets the value of AiReadiness.
@@ -7815,7 +7828,6 @@ func (*ProblemStatusCode) getMeRes()                {}
 func (*ProblemStatusCode) getOverviewRes()          {}
 func (*ProblemStatusCode) getPlanRes()              {}
 func (*ProblemStatusCode) getProductsRes()          {}
-func (*ProblemStatusCode) getPromptTestHistoryRes() {}
 func (*ProblemStatusCode) getPromptTestResultsRes() {}
 func (*ProblemStatusCode) getStandingsRes()         {}
 func (*ProblemStatusCode) listAnalysesRes()         {}
@@ -10209,181 +10221,6 @@ func (s *PromptRun) SetCells(val []PromptCell) {
 
 func (*PromptRun) startPromptRunRes() {}
 
-// One run's figures: the share of the responses read that name Tribelt, overall, per language, and for
-// Twente, and the share of web responses that cite tribelt.nl. A share is absent when the run read no
-// response to measure it on.
-// Ref: #/components/schemas/PromptRunFigures
-type PromptRunFigures struct {
-	// The run's id.
-	RunId uuid.UUID `json:"runId"`
-	// When it started.
-	StartedAt time.Time `json:"startedAt"`
-	// The version of the Prompt set it asked.
-	PromptSetVersion int32 `json:"promptSetVersion"`
-	// How many responses it asked for.
-	Tasks int32 `json:"tasks"`
-	// How many requests got a response.
-	Answered int32 `json:"answered"`
-	// How many responses were read, which the shares count.
-	Read int32 `json:"read"`
-	// Whether it got fewer than half its responses.
-	Partial bool `json:"partial"`
-	// The reason most of a partial run's failed responses give; absent for a run that is not partial.
-	Failure OptString `json:"failure"`
-	// The share of the responses read that name Tribelt.
-	All OptFloat64 `json:"all"`
-	// The share of the Dutch responses read that name Tribelt.
-	Dutch OptFloat64 `json:"dutch"`
-	// The share of the German responses read that name Tribelt.
-	German OptFloat64 `json:"german"`
-	// The share of the English responses read that name Tribelt.
-	English OptFloat64 `json:"english"`
-	// The share of the responses read to the Twente questions that name Tribelt.
-	Twente OptFloat64 `json:"twente"`
-	// The share of the web responses read that cite tribelt.nl.
-	Citation OptFloat64 `json:"citation"`
-}
-
-// GetRunId returns the value of RunId.
-func (s *PromptRunFigures) GetRunId() uuid.UUID {
-	return s.RunId
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *PromptRunFigures) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// GetPromptSetVersion returns the value of PromptSetVersion.
-func (s *PromptRunFigures) GetPromptSetVersion() int32 {
-	return s.PromptSetVersion
-}
-
-// GetTasks returns the value of Tasks.
-func (s *PromptRunFigures) GetTasks() int32 {
-	return s.Tasks
-}
-
-// GetAnswered returns the value of Answered.
-func (s *PromptRunFigures) GetAnswered() int32 {
-	return s.Answered
-}
-
-// GetRead returns the value of Read.
-func (s *PromptRunFigures) GetRead() int32 {
-	return s.Read
-}
-
-// GetPartial returns the value of Partial.
-func (s *PromptRunFigures) GetPartial() bool {
-	return s.Partial
-}
-
-// GetFailure returns the value of Failure.
-func (s *PromptRunFigures) GetFailure() OptString {
-	return s.Failure
-}
-
-// GetAll returns the value of All.
-func (s *PromptRunFigures) GetAll() OptFloat64 {
-	return s.All
-}
-
-// GetDutch returns the value of Dutch.
-func (s *PromptRunFigures) GetDutch() OptFloat64 {
-	return s.Dutch
-}
-
-// GetGerman returns the value of German.
-func (s *PromptRunFigures) GetGerman() OptFloat64 {
-	return s.German
-}
-
-// GetEnglish returns the value of English.
-func (s *PromptRunFigures) GetEnglish() OptFloat64 {
-	return s.English
-}
-
-// GetTwente returns the value of Twente.
-func (s *PromptRunFigures) GetTwente() OptFloat64 {
-	return s.Twente
-}
-
-// GetCitation returns the value of Citation.
-func (s *PromptRunFigures) GetCitation() OptFloat64 {
-	return s.Citation
-}
-
-// SetRunId sets the value of RunId.
-func (s *PromptRunFigures) SetRunId(val uuid.UUID) {
-	s.RunId = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *PromptRunFigures) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// SetPromptSetVersion sets the value of PromptSetVersion.
-func (s *PromptRunFigures) SetPromptSetVersion(val int32) {
-	s.PromptSetVersion = val
-}
-
-// SetTasks sets the value of Tasks.
-func (s *PromptRunFigures) SetTasks(val int32) {
-	s.Tasks = val
-}
-
-// SetAnswered sets the value of Answered.
-func (s *PromptRunFigures) SetAnswered(val int32) {
-	s.Answered = val
-}
-
-// SetRead sets the value of Read.
-func (s *PromptRunFigures) SetRead(val int32) {
-	s.Read = val
-}
-
-// SetPartial sets the value of Partial.
-func (s *PromptRunFigures) SetPartial(val bool) {
-	s.Partial = val
-}
-
-// SetFailure sets the value of Failure.
-func (s *PromptRunFigures) SetFailure(val OptString) {
-	s.Failure = val
-}
-
-// SetAll sets the value of All.
-func (s *PromptRunFigures) SetAll(val OptFloat64) {
-	s.All = val
-}
-
-// SetDutch sets the value of Dutch.
-func (s *PromptRunFigures) SetDutch(val OptFloat64) {
-	s.Dutch = val
-}
-
-// SetGerman sets the value of German.
-func (s *PromptRunFigures) SetGerman(val OptFloat64) {
-	s.German = val
-}
-
-// SetEnglish sets the value of English.
-func (s *PromptRunFigures) SetEnglish(val OptFloat64) {
-	s.English = val
-}
-
-// SetTwente sets the value of Twente.
-func (s *PromptRunFigures) SetTwente(val OptFloat64) {
-	s.Twente = val
-}
-
-// SetCitation sets the value of Citation.
-func (s *PromptRunFigures) SetCitation(val OptFloat64) {
-	s.Citation = val
-}
-
 // Where a Prompt run is - running, done, stopped (the month's budget was reached; its answers are
 // kept) or failed.
 // Ref: #/components/schemas/PromptRunStatus
@@ -10542,90 +10379,6 @@ func (s *PromptSet) SetVersion(val int32) {
 func (s *PromptSet) SetPrompts(val []PromptQuestion) {
 	s.Prompts = val
 }
-
-// One published Prompt set.
-// Ref: #/components/schemas/PromptSetVersionInfo
-type PromptSetVersionInfo struct {
-	// The version.
-	Version int32 `json:"version"`
-	// When it was published.
-	PublishedAt time.Time `json:"publishedAt"`
-	// How many questions it asks.
-	Questions int32 `json:"questions"`
-	// What it asks, or what it changed.
-	Note string `json:"note"`
-}
-
-// GetVersion returns the value of Version.
-func (s *PromptSetVersionInfo) GetVersion() int32 {
-	return s.Version
-}
-
-// GetPublishedAt returns the value of PublishedAt.
-func (s *PromptSetVersionInfo) GetPublishedAt() time.Time {
-	return s.PublishedAt
-}
-
-// GetQuestions returns the value of Questions.
-func (s *PromptSetVersionInfo) GetQuestions() int32 {
-	return s.Questions
-}
-
-// GetNote returns the value of Note.
-func (s *PromptSetVersionInfo) GetNote() string {
-	return s.Note
-}
-
-// SetVersion sets the value of Version.
-func (s *PromptSetVersionInfo) SetVersion(val int32) {
-	s.Version = val
-}
-
-// SetPublishedAt sets the value of PublishedAt.
-func (s *PromptSetVersionInfo) SetPublishedAt(val time.Time) {
-	s.PublishedAt = val
-}
-
-// SetQuestions sets the value of Questions.
-func (s *PromptSetVersionInfo) SetQuestions(val int32) {
-	s.Questions = val
-}
-
-// SetNote sets the value of Note.
-func (s *PromptSetVersionInfo) SetNote(val string) {
-	s.Note = val
-}
-
-// The Prompt test's figures per run, with the Prompt set versions they asked.
-// Ref: #/components/schemas/PromptTestHistory
-type PromptTestHistory struct {
-	// The published Prompt sets, oldest first.
-	Versions []PromptSetVersionInfo `json:"versions"`
-	// Every run of the latest with at least one response read, oldest first.
-	Runs []PromptRunFigures `json:"runs"`
-}
-
-// GetVersions returns the value of Versions.
-func (s *PromptTestHistory) GetVersions() []PromptSetVersionInfo {
-	return s.Versions
-}
-
-// GetRuns returns the value of Runs.
-func (s *PromptTestHistory) GetRuns() []PromptRunFigures {
-	return s.Runs
-}
-
-// SetVersions sets the value of Versions.
-func (s *PromptTestHistory) SetVersions(val []PromptSetVersionInfo) {
-	s.Versions = val
-}
-
-// SetRuns sets the value of Runs.
-func (s *PromptTestHistory) SetRuns(val []PromptRunFigures) {
-	s.Runs = val
-}
-
-func (*PromptTestHistory) getPromptTestHistoryRes() {}
 
 // The Prompt test's results.
 // Ref: #/components/schemas/PromptTestResults
@@ -11303,6 +11056,9 @@ type ReadinessCheckState struct {
 	Failed int32 `json:"failed"`
 	// How many sites it checks.
 	Total int32 `json:"total"`
+	// True when an administrator stopped the check; only then is it present. The sites it checked keep
+	// what it recorded, the others what their scan recorded.
+	Stopped OptBool `json:"stopped"`
 }
 
 // GetRunning returns the value of Running.
@@ -11325,6 +11081,11 @@ func (s *ReadinessCheckState) GetTotal() int32 {
 	return s.Total
 }
 
+// GetStopped returns the value of Stopped.
+func (s *ReadinessCheckState) GetStopped() OptBool {
+	return s.Stopped
+}
+
 // SetRunning sets the value of Running.
 func (s *ReadinessCheckState) SetRunning(val bool) {
 	s.Running = val
@@ -11343,6 +11104,11 @@ func (s *ReadinessCheckState) SetFailed(val int32) {
 // SetTotal sets the value of Total.
 func (s *ReadinessCheckState) SetTotal(val int32) {
 	s.Total = val
+}
+
+// SetStopped sets the value of Stopped.
+func (s *ReadinessCheckState) SetStopped(val OptBool) {
+	s.Stopped = val
 }
 
 func (*ReadinessCheckState) startReadinessCheckRes() {}
@@ -11548,6 +11314,23 @@ func (*RejectTermCandidateNotFound) rejectTermCandidateRes() {}
 type RejectTermCandidateUnauthorized ProblemStatusCode
 
 func (*RejectTermCandidateUnauthorized) rejectTermCandidateRes() {}
+
+type RemoveQueuedAnalysesForbidden ProblemStatusCode
+
+func (*RemoveQueuedAnalysesForbidden) removeQueuedAnalysesRes() {}
+
+// RemoveQueuedAnalysesNoContent is response for RemoveQueuedAnalyses operation.
+type RemoveQueuedAnalysesNoContent struct{}
+
+func (*RemoveQueuedAnalysesNoContent) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesNotFound ProblemStatusCode
+
+func (*RemoveQueuedAnalysesNotFound) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesUnauthorized ProblemStatusCode
+
+func (*RemoveQueuedAnalysesUnauthorized) removeQueuedAnalysesRes() {}
 
 type RereadPromptRunBadRequest ProblemStatusCode
 
@@ -12440,26 +12223,60 @@ type StartTermReviewUnauthorized ProblemStatusCode
 
 func (*StartTermReviewUnauthorized) startTermReviewRes() {}
 
-type StopPromptRunBadRequest ProblemStatusCode
+type StopAnalysisBadRequest ProblemStatusCode
 
-func (*StopPromptRunBadRequest) stopPromptRunRes() {}
+func (*StopAnalysisBadRequest) stopAnalysisRes() {}
 
-type StopPromptRunForbidden ProblemStatusCode
+type StopAnalysisForbidden ProblemStatusCode
 
-func (*StopPromptRunForbidden) stopPromptRunRes() {}
+func (*StopAnalysisForbidden) stopAnalysisRes() {}
 
-// StopPromptRunNoContent is response for StopPromptRun operation.
-type StopPromptRunNoContent struct{}
+// StopAnalysisNoContent is response for StopAnalysis operation.
+type StopAnalysisNoContent struct{}
 
-func (*StopPromptRunNoContent) stopPromptRunRes() {}
+func (*StopAnalysisNoContent) stopAnalysisRes() {}
 
-type StopPromptRunNotFound ProblemStatusCode
+type StopAnalysisNotFound ProblemStatusCode
 
-func (*StopPromptRunNotFound) stopPromptRunRes() {}
+func (*StopAnalysisNotFound) stopAnalysisRes() {}
 
-type StopPromptRunUnauthorized ProblemStatusCode
+type StopAnalysisUnauthorized ProblemStatusCode
 
-func (*StopPromptRunUnauthorized) stopPromptRunRes() {}
+func (*StopAnalysisUnauthorized) stopAnalysisRes() {}
+
+type StopReadinessCheckForbidden ProblemStatusCode
+
+func (*StopReadinessCheckForbidden) stopReadinessCheckRes() {}
+
+// StopReadinessCheckNoContent is response for StopReadinessCheck operation.
+type StopReadinessCheckNoContent struct{}
+
+func (*StopReadinessCheckNoContent) stopReadinessCheckRes() {}
+
+type StopReadinessCheckNotFound ProblemStatusCode
+
+func (*StopReadinessCheckNotFound) stopReadinessCheckRes() {}
+
+type StopReadinessCheckUnauthorized ProblemStatusCode
+
+func (*StopReadinessCheckUnauthorized) stopReadinessCheckRes() {}
+
+type StopRescanForbidden ProblemStatusCode
+
+func (*StopRescanForbidden) stopRescanRes() {}
+
+// StopRescanNoContent is response for StopRescan operation.
+type StopRescanNoContent struct{}
+
+func (*StopRescanNoContent) stopRescanRes() {}
+
+type StopRescanNotFound ProblemStatusCode
+
+func (*StopRescanNotFound) stopRescanRes() {}
+
+type StopRescanUnauthorized ProblemStatusCode
+
+func (*StopRescanUnauthorized) stopRescanRes() {}
 
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term

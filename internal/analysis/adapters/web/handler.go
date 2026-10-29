@@ -28,6 +28,10 @@ type UseCases interface {
 	ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.RawFiles, error)
 	StartReadinessCheck(ctx context.Context) (app.ReadinessCheck, error)
 	ReadinessCheckState() app.ReadinessCheck
+	StopScan(ctx context.Context, id uuid.UUID) error
+	RemoveWaitingScans(ctx context.Context) error
+	StopRescan(ctx context.Context) error
+	StopReadinessCheck(ctx context.Context) error
 }
 
 // Handler implements the analysis operations. Business rules stay in the use cases.
@@ -221,8 +225,17 @@ func (h *Handler) StartReadinessCheck(ctx context.Context) (oas.StartReadinessCh
 func toCheck(c app.ReadinessCheck) oas.ReadinessCheckState {
 	return oas.ReadinessCheckState{
 		Running: c.Running, Checked: int32(min(c.Checked, 1000)), Failed: int32(min(c.Failed, 1000)), //nolint:gosec // capped
-		Total: int32(min(c.Total, 1000)), //nolint:gosec // capped
+		Total:   int32(min(c.Total, 1000)), //nolint:gosec // capped
+		Stopped: optionalTrue(c.Stopped),
 	}
+}
+
+// optionalTrue is present only when b is true.
+func optionalTrue(b bool) oas.OptBool {
+	if !b {
+		return oas.OptBool{}
+	}
+	return oas.NewOptBool(true)
 }
 
 // GetReadinessFiles implements getReadinessFiles.
@@ -364,9 +377,8 @@ func toSummary(a domain.Analysis) oas.AnalysisSummary {
 	if a.Failure != "" {
 		s.Failure = oas.NewOptString(a.Failure)
 	}
-	if a.Blocked() {
-		s.Blocked = oas.NewOptBool(true)
-	}
+	s.Blocked = optionalTrue(a.Blocked())
+	s.StoppedByHand = optionalTrue(a.StoppedByHand())
 	if a.Readiness != nil {
 		s.AiReadiness = oas.NewOptAiReadinessBrief(toBrief(*a.Readiness))
 	}

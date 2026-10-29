@@ -1110,6 +1110,7 @@ export const zAnalysisSummary = z.object({
     status: zAnalysisStatus,
     failure: z.string().max(500).optional(),
     blocked: z.boolean().optional(),
+    stoppedByHand: z.boolean().optional(),
     aiReadiness: zAiReadinessBrief.optional(),
     maxPages: z.int().gte(1).lte(100),
     pagesCrawled: z.int().gte(0).lte(100),
@@ -1215,7 +1216,8 @@ export const zReadinessCheckState = z.object({
     running: z.boolean(),
     checked: z.int().gte(0).lte(1000),
     failed: z.int().gte(0).lte(1000),
-    total: z.int().gte(0).lte(1000)
+    total: z.int().gte(0).lte(1000),
+    stopped: z.boolean().optional()
 });
 
 /**
@@ -2078,6 +2080,30 @@ export const zStartRescansBody = zRescanRequest;
  * The queued scans and the skipped companies.
  */
 export const zStartRescansResponse = zRescanBatch;
+
+/**
+ * Stopped.
+ */
+export const zStopRescanResponse = z.void();
+
+/**
+ * Stopped.
+ */
+export const zStopReadinessCheckResponse = z.void();
+
+/**
+ * Removed.
+ */
+export const zRemoveQueuedAnalysesResponse = z.void();
+
+export const zStopAnalysisPath = z.object({
+    analysisId: z.uuid().max(36)
+});
+
+/**
+ * Stopped.
+ */
+export const zStopAnalysisResponse = z.void();
 
 export const zListTermCandidatesQuery = z.object({
     status: zTermCandidateStatus.optional()

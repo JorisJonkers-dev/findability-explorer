@@ -93,10 +93,6 @@ type GetPromptRetryPlanRes interface {
 	getPromptRetryPlanRes()
 }
 
-type GetPromptTestHistoryRes interface {
-	getPromptTestHistoryRes()
-}
-
 type GetPromptTestResultsRes interface {
 	getPromptTestResultsRes()
 }
@@ -143,6 +139,10 @@ type ListTermCandidatesRes interface {
 
 type RejectTermCandidateRes interface {
 	rejectTermCandidateRes()
+}
+
+type RemoveQueuedAnalysesRes interface {
+	removeQueuedAnalysesRes()
 }
 
 type RereadPromptRunRes interface {
@@ -197,8 +197,16 @@ type StartTermReviewRes interface {
 	startTermReviewRes()
 }
 
-type StopPromptRunRes interface {
-	stopPromptRunRes()
+type StopAnalysisRes interface {
+	stopAnalysisRes()
+}
+
+type StopReadinessCheckRes interface {
+	stopReadinessCheckRes()
+}
+
+type StopRescanRes interface {
+	stopRescanRes()
 }
 
 type TestLlmCredentialRes interface {

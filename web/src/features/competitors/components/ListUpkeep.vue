@@ -22,7 +22,7 @@ const SMALL = 'min-h-11 cursor-pointer rounded-full border-2 px-4 text-sm font-s
     <h3 id="upkeep-title" class="m-0 text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase">Haiku’s check of the list</h3>
     <div v-if="review" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-white p-4">
       <p class="m-0 font-medium">{{ listCheckLine(review, unchecked) }}</p>
-      <RouterLink v-if="review.problem === 'noKey'" to="/settings" class="font-medium">Add one in Language models</RouterLink>
+      <RouterLink v-if="review.problem === 'noKey'" to="/manage/keys" class="font-medium">Add one in Keys and spending</RouterLink>
       <button v-else type="button" :class="SMALL" class="border-black bg-black text-white hover:bg-ink-2" :disabled="review.running || isStarting" @click="start">
         Check the list with Haiku
       </button>

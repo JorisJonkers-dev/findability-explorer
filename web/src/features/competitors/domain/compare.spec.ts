@@ -158,7 +158,7 @@ describe('measuresOf', () => {
   it('sets the competitor against Tribelt on four measures', () => {
     const m = by(known)
     expect(Object.keys(m)).toEqual(['answers', 'ready', 'sitemap', 'terms'])
-    expect(m.answers).toMatchObject({ themText: '40%', usText: '20%', scale: 0.4, path: '/ai-search/answers' })
+    expect(m.answers).toMatchObject({ themText: '40%', usText: '20%', scale: 0.4, path: '/ai-responses/all' })
     expect(m.answers?.text).toBe('Twentebelt is named in 40% of the answers in the newest Prompt run, and Tribelt in 20%.')
     expect(m.ready).toMatchObject({ themText: '3½ of 5', usText: '5 of 5', scale: 5 })
     expect(m.ready?.text).toBe('Twentebelt’s site passes 3½ of 5 of the AI readiness checks, and tribelt.nl passes 5 of 5.')

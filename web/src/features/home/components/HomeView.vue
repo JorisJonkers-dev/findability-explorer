@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { visitorsLine } from '../../buyers/domain/channels'
 import { headline } from '../../catching-up/domain/standings'
 import { numberRows } from '../../numbers/domain/numbers'
 import PageView from '../../shell/components/PageView.vue'
@@ -89,18 +88,6 @@ const title = computed(() => (facts.value ? headline(facts.value.standings.measu
           </li>
         </ul>
       </section>
-
-      <RouterLink
-        to="/buyers"
-        class="grid grid-cols-1 items-center gap-6 rounded-3xl bg-orange-pale px-8 py-7 text-black no-underline hover:text-black hover:brightness-95 md:grid-cols-[minmax(0,1fr)_auto]"
-      >
-        <span class="flex flex-col gap-2">
-          <span class="text-sm font-bold tracking-[0.06em] text-orange-ink">WHERE VISITORS COME FROM</span>
-          <span class="max-w-[50ch] font-display text-2xl leading-tight font-semibold">{{ visitorsLine() }}</span>
-          <span class="text-ink-2">See how the channels compare.</span>
-        </span>
-        <span class="inline-flex min-h-12 items-center rounded-full bg-black px-6 font-bold whitespace-nowrap text-white">See the visitor figures</span>
-      </RouterLink>
     </template>
   </PageView>
 </template>

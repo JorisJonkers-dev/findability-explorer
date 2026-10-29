@@ -180,7 +180,7 @@ export function measuresOf(input: Known & Coverage & Terms): Measure[] {
         input.share === undefined || input.tribeltShare === undefined
           ? `No Prompt run has counted the answers that name ${name} or Tribelt yet.`
           : `${name} is named in ${shareText(input.share)} of the answers in the newest Prompt run, and Tribelt in ${shareText(input.tribeltShare)}.`,
-      path: '/ai-search/answers',
+      path: '/ai-responses/all',
       pathLabel: 'Open every answer',
     },
     {
@@ -197,7 +197,7 @@ export function measuresOf(input: Known & Coverage & Terms): Measure[] {
           : input.ready === input.tribeltReady
             ? `Both sites pass ${scoreText(input.ready, input.outOf)} of the AI readiness checks.`
             : `${name}’s site passes ${scoreText(input.ready, input.outOf)} of the AI readiness checks, and tribelt.nl ${input.tribeltReady === undefined ? 'has not been scanned yet' : `passes ${scoreText(input.tribeltReady, input.outOf)}`}.`,
-      path: '/ai-search/readiness',
+      path: '/ai-readiness',
       pathLabel: 'Open the AI readiness table',
     },
     {
@@ -212,7 +212,7 @@ export function measuresOf(input: Known & Coverage & Terms): Measure[] {
         input.sitemap === undefined
           ? `How many of ${name}’s pages its sitemap lists is not known. Scan its site again to measure it.`
           : `${name}’s sitemap lists ${shareText(input.sitemap)} of the pages its newest scan read, against ${pct(input.tribeltSitemap)} on tribelt.nl.`,
-      path: '/ai-search/readiness',
+      path: '/ai-readiness',
       pathLabel: 'Open the AI readiness table',
     },
     {

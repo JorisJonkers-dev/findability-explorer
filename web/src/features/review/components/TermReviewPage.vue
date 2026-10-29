@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TermCandidateStatus } from '../../../infrastructure/api/types.gen'
 import LanguageFilter from '../../../shared/ui/LanguageFilter.vue'
-import SettingsShell from '../../shell/components/SettingsShell.vue'
+import ManageLayout from '../../shell/components/ManageLayout.vue'
 import { languageChoices, parseLanguage, withLanguage } from '../../terminology/domain/languages'
 import { useStartReview, useTermCandidates, useTermDecision } from '../composables/useTermReview'
 import { candidatesIn, parseStatus, reviewLine, STATUSES, statusTab } from '../domain/candidates'
@@ -32,14 +32,15 @@ const FORBIDDEN = 'Only administrators can review terms.'
 </script>
 
 <template>
-  <SettingsShell title="Term review">
-    <template #lead>
-      <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-        A language model reviews every phrase the scans find that the terminology map does not hold yet. It adds the
-        ones buyers search for to the map and leaves the rest out. The phrases it is unsure about wait here for you,
-        and any of its decisions can be undone.
-      </p>
-    </template>
+  <ManageLayout
+    title="Waiting terms"
+    purpose="The search terms the scans found that the search term list does not hold yet, and what the language model decided about each."
+    :results="{ to: '/terms', label: 'See the search terms' }"
+  >
+    <p class="m-0 max-w-[62ch] text-ink-2">
+      A language model adds the ones buyers search for to the list and leaves the rest out. The ones it is unsure about wait here for
+      you, and any of its decisions can be undone.
+    </p>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
       <p class="m-0 text-xl font-semibold">{{ FORBIDDEN }}</p>
@@ -48,7 +49,7 @@ const FORBIDDEN = 'Only administrators can review terms.'
     <template v-else>
       <section v-if="review" aria-label="The language model's review" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-mist p-4 sm:p-5">
         <p class="m-0 font-medium" aria-live="polite">{{ reviewLine(review) }}</p>
-        <RouterLink v-if="review.problem === 'noModel'" to="/settings" class="font-medium">Add one in Language models</RouterLink>
+        <RouterLink v-if="review.problem === 'noModel'" to="/manage/keys" class="font-medium">Add one in Keys and spending</RouterLink>
         <button
           v-else-if="!review.running && review.waiting > 0"
           type="button"
@@ -91,5 +92,5 @@ const FORBIDDEN = 'Only administrators can review terms.'
         />
       </ul>
     </template>
-  </SettingsShell>
+  </ManageLayout>
 </template>

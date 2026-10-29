@@ -6,7 +6,7 @@ const ok = { 'GET /api/v1/plan': () => json(planFixture()), 'GET /api/v1/standin
 
 describe('the page of a number', () => {
   it('shows the headline, the key figures, the comparison and what improves it', async () => {
-    const { wrapper } = await mountApp(routes(ok), '/numbers/aiShareOfVoice')
+    const { wrapper } = await mountApp(routes(ok), '/goals/aiShareOfVoice')
     expect(wrapper.get('h1').text()).toBe("Ashworth is ahead with 57%, against Tribelt's 24%.")
     expect(wrapper.findAll('a').some((a) => a.text() === 'Back to Overview')).toBe(true)
     expect(wrapper.text()).toContain("This number is the share of the newest Prompt run's answers that name Tribelt at least once.")
@@ -24,27 +24,27 @@ describe('the page of a number', () => {
   })
 
   it('says when nothing improves a number, and marks a done improvement', async () => {
-    const { wrapper } = await mountApp(routes(ok), '/numbers/termsUsed')
+    const { wrapper } = await mountApp(routes(ok), '/goals/termsUsed')
     expect(wrapper.text()).toContain('No recommendation improves this number yet.')
-    const readiness = await mountApp(routes(ok), '/numbers/readinessChecks')
+    const readiness = await mountApp(routes(ok), '/goals/readinessChecks')
     expect(readiness.wrapper.get('section[aria-labelledby="improves-title"] li').text()).toContain('Done. Improves AI readiness.')
   })
 
   it('goes back to the Overview', async () => {
-    const { wrapper, router } = await mountApp(routes(ok), '/numbers/aiShareOfVoice')
+    const { wrapper, router } = await mountApp(routes(ok), '/goals/aiShareOfVoice')
     await wrapper.findAll('a').find((a) => a.text() === 'Back to Overview')?.trigger('click')
     await settle()
     expect(router.currentRoute.value.fullPath).toBe('/')
   })
 
   it('says so at an address that is not a number', async () => {
-    const { wrapper } = await mountApp(routes(ok), '/numbers/nothing')
+    const { wrapper } = await mountApp(routes(ok), '/goals/nothing')
     expect(wrapper.get('h1').text()).toBe('Number to watch')
     expect(wrapper.text()).toContain('There is no number to watch at this address.')
   })
 
   it('says when the numbers fail to load', async () => {
-    const { wrapper } = await mountApp(routes({ ...ok, 'GET /api/v1/standings': () => problem(500, 'Internal Server Error', 'Down.') }), '/numbers/aiShareOfVoice')
+    const { wrapper } = await mountApp(routes({ ...ok, 'GET /api/v1/standings': () => problem(500, 'Internal Server Error', 'Down.') }), '/goals/aiShareOfVoice')
     expect(wrapper.get('[role="alert"]').text()).toContain('Down.')
   })
 })

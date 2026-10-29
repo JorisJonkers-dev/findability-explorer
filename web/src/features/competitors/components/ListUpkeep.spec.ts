@@ -71,8 +71,8 @@ describe('the upkeep of the list', () => {
     expect(button(upkeep(running.wrapper), 'Check the list').attributes('disabled')).toBeDefined()
     running.wrapper.unmount()
     const noKey = await mountApp(api([], { 'GET /api/v1/admin/competitor-checks': () => json({ items: [], unchecked: 0, review: { running: false, problem: 'noKey' } }) }), '/competitors')
-    const settings = upkeep(noKey.wrapper).get('a[href="/settings"]')
-    expect(settings.text()).toBe('Add one in Language models')
+    const settings = upkeep(noKey.wrapper).get('a[href="/manage/keys"]')
+    expect(settings.text()).toBe('Add one in Keys and spending')
     expect(noKey.wrapper.findAll('button').some((b) => b.text() === 'Check the list with Haiku')).toBe(false)
   })
 

@@ -21,8 +21,8 @@ export function sectionCards(overview: Overview, plan: Plan): SectionCard[] {
   const first = plan.improvements[0]
   return [
     named === undefined
-      ? card('ai-search', '–', 'No Prompt run has finished yet. Open it to see how AI answers name Tribelt.')
-      : card('ai-search', `${String(Math.round(named * 100))}%`, 'of AI answers name Tribelt. Open it to see who they name instead.'),
+      ? card('ai-responses', '–', 'No Prompt run has finished yet. Open it to see how AI answers name Tribelt.')
+      : card('ai-responses', `${String(Math.round(named * 100))}%`, 'of AI answers name Tribelt. Open it to see who they name instead.'),
     card('competitors', String(overview.competitors.makers), 'competitors on the list. Open one to see how AI answers name it.'),
     card('terms', String(overview.terms.tribelt), `of the ${String(overview.terms.total)} terms buyers search with appear on tribelt.nl.`),
     card(

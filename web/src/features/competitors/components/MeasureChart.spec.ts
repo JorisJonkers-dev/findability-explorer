@@ -33,7 +33,7 @@ describe('the measure chart', () => {
     const reading = wrapper.get('[aria-live="polite"]')
     expect(buttons.map((b) => b.attributes('aria-pressed'))).toEqual(['true', 'false', 'false', 'false'])
     expect(reading.text()).toContain('Twentebelt is named in 40% of the answers')
-    expect(reading.getComponent(RouterLinkStub).props('to')).toBe('/ai-search/answers')
+    expect(reading.getComponent(RouterLinkStub).props('to')).toBe('/ai-responses/all')
     await buttons[3]?.trigger('click')
     expect(buttons.map((b) => b.attributes('aria-pressed'))).toEqual(['false', 'false', 'false', 'true'])
     expect(reading.text()).toContain('tribelt.nl uses 1,200 of the 2,400 terms on the search term list.')

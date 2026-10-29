@@ -75,7 +75,7 @@ const bands = (wrapper: VueWrapper) =>
 
 describe('the AI readiness view', () => {
   it('pins Tribelt and the mirror above the group and the competitors', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     expect(document.title).toBe('AI readiness · Findability Explorer')
     expect(bands(wrapper)).toEqual([
       'Tribelt today, and the target: Tribelt B.V., Mirror of tribelt.nl',
@@ -85,7 +85,7 @@ describe('the AI readiness view', () => {
   })
 
   it('sorts a band by any column, and back, keeping Tribelt and the mirror on top', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     const gptbot = wrapper.get('button[aria-label^="GPTBot (OpenAI training)"]')
     await gptbot.trigger('click')
     expect(gptbot.attributes('aria-label')).toBe('GPTBot (OpenAI training), sorted descending')
@@ -98,7 +98,7 @@ describe('the AI readiness view', () => {
   })
 
   it('filters the group and the competitors by a gap', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     await wrapper.get('select').setValue('bot:GPTBot')
     expect(bands(wrapper)).toEqual([
       'Tribelt today, and the target: Tribelt B.V., Mirror of tribelt.nl',
@@ -110,7 +110,7 @@ describe('the AI readiness view', () => {
   })
 
   it('heads the page with how many checks Tribelt passes, and counts the sites', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     expect(wrapper.get('h1').text()).toBe('Tribelt passes three and a half of the eight readiness checks, fewer than its best competitors')
     expect(wrapper.text()).toContain('Scanned on 22 October 2026.')
     expect(wrapper.findAll('dl[aria-label="Key figures"] > div').map((d) => `${d.get('dd').text()} ${d.get('dt').text()}`)).toEqual([
@@ -122,7 +122,7 @@ describe('the AI readiness view', () => {
   })
 
   it('writes the server’s count of the sites passing each check, in two groups, with Tribelt beside it', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     expect(wrapper.get('#checks-title').text()).toBe('How many of the 5 sites pass each check')
     const group = (label: string) => wrapper.findAll(`[role="group"][aria-label="${label}"] button`).map((b) => b.get('span').text())
     expect(group('The eight checks in the score')).toEqual(['Lets every AI crawler in, for search and for training', 'Has a sitemap', 'Has llms.txt', 'Has llms-full.txt', 'Has Markdown pages'])
@@ -135,7 +135,7 @@ describe('the AI readiness view', () => {
   })
 
   it('opens on the first check Tribelt fails, and explains another when picked, with the recommendation that fixes it', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     const panel = () => wrapper.get('aside[aria-live="polite"]')
     expect(panel().get('h2').text()).toBe('Lets every AI crawler in, for search and for training')
     expect(panel().text()).toContain('Tribelt does not pass.')
@@ -148,7 +148,7 @@ describe('the AI readiness view', () => {
   })
 
   it('shows the sites with the best score, and what each one passes on request', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     const best = wrapper.get('section[aria-labelledby="best-title"]')
     expect(best.findAll('li > div').map((r) => r.text())).toEqual(['ESFO5 of 8Show the checks', 'Tribelt B.V.3½ of 8Show the checks'])
     const show = best.get('button[aria-label="Show the checks for ESFO"]')
@@ -173,7 +173,7 @@ describe('the AI readiness view', () => {
             ],
           }),
       }),
-      '/ai-search/readiness',
+      '/ai-readiness',
     )
     const rows = wrapper.findAll('section[aria-labelledby="crawlers-title"] tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
     expect(rows[0]?.[0]).toBe('OAI-SearchBotOpenAI')
@@ -181,7 +181,7 @@ describe('the AI readiness view', () => {
   })
 
   it('marks each crawler by shape, and opens the site in a new tab', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     const row = wrapper.findAll('section[aria-labelledby="sites-title"] tbody tr').find((r) => r.text().startsWith('Twentebelt'))
     const marks = (cells: DOMWrapper<Element>[] | undefined) => cells?.map((c) => `${c.find('[data-mark]').attributes('data-mark') ?? ''} ${c.text()}`)
     expect(marks(row?.findAll('td').slice(4, 6))).toEqual(['✓ ChatGPT-User may read every page.', '✕ GPTBot may not read any page.'])
@@ -195,7 +195,7 @@ describe('the AI readiness view', () => {
   })
 
   it("shows Tribelt's robots.txt and what it means, and another site's when picked", async () => {
-    const { wrapper, router } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper, router } = await mountApp(api(), '/ai-readiness')
     const panel = wrapper.get('section[aria-labelledby="sites-title"] [aria-live="polite"]')
     expect(panel.text()).toContain("Tribelt B.V.'s robots.txt")
     expect(panel.get('pre').text()).toContain('Disallow: /')
@@ -224,7 +224,7 @@ describe('the AI readiness view', () => {
           return json({ running: true, checked: 0, failed: 0, total: 5 }, 202)
         },
       }),
-      '/ai-search/readiness',
+      '/ai-readiness',
     )
     const check = wrapper.findAll('button').find((b) => b.text() === 'Check AI readiness again')
     if (!check) throw new Error('no check button')
@@ -235,12 +235,12 @@ describe('the AI readiness view', () => {
   })
 
   it('shows no check to an account that is no administrator', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    const { wrapper } = await mountApp(api(), '/ai-readiness')
     expect(wrapper.findAll('button').some((b) => b.text() === 'Check AI readiness again')).toBe(false)
   })
 
   it('says when the table cannot load', async () => {
-    const { wrapper } = await mountApp(routes({ 'GET /api/v1/ai-readiness': () => problem(500, 'Internal Server Error', 'Down.') }), '/ai-search/readiness')
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/ai-readiness': () => problem(500, 'Internal Server Error', 'Down.') }), '/ai-readiness')
     expect(wrapper.get('[role="alert"]').text()).toContain('Down.')
   })
 })

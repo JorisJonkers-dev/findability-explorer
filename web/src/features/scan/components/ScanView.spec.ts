@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { Analysis } from '../../../infrastructure/api/types.gen'
-import { ANALYSIS_ID, analysis, competitor, me } from '../../../testing/fixtures'
+import { ANALYSIS_ID, analysis, competitor, me, summary } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 function api(extra: Record<string, Handler> = {}) {
@@ -23,18 +23,29 @@ const pill = (wrapper: VueWrapper, group: string, label: string) => {
 const scan = (overrides: Partial<Analysis>) => api({ [`GET /api/v1/analyses/${ANALYSIS_ID}`]: () => json(analysis(overrides)) })
 
 describe('a scan', () => {
-  it('has a page of its own, with a way back to Competitors', async () => {
-    const { wrapper, router } = await mountApp(api(), `/scan/${ANALYSIS_ID}`)
+  it('has a page of its own in Manage, with a way back to Website scans', async () => {
+    const { wrapper, router } = await mountApp(api(), `/manage/scans/${ANALYSIS_ID}`)
     expect(document.title).toBe('Scan · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('What the scan found.')
-    const back = wrapper.findAll('a').find((a) => a.text().includes('Back to Competitors'))
+    expect(wrapper.get('nav[aria-label="Manage"] [data-open]').text()).toContain('Website scans')
+    const back = wrapper.findAll('a').find((a) => a.text().includes('Back to Website scans'))
     await back?.trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/competitors')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/scans')
+  })
+
+  it('opens Website scans on the form and the recent scans', async () => {
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/analyses': () => json({ items: [summary()] }) }), '/manage/scans')
+    expect(document.title).toBe('Website scans · Findability Explorer')
+    expect(wrapper.get('h1').text()).toBe('Website scans')
+    expect(wrapper.get('nav[aria-label="Manage"] a[aria-current="page"]').text()).toBe('Website scans')
+    expect(wrapper.find('form[aria-label="Scan a website"]').exists()).toBe(true)
+    expect(wrapper.get('section[aria-labelledby="recent-title"] a').attributes('href')).toBe(`/manage/scans/${ANALYSIS_ID}`)
+    expect(wrapper.text()).not.toContain('Back to Website scans')
   })
 
   it('shows a finished scan: what Tribelt is missing, the ranked phrases and the matched products', async () => {
-    const { wrapper } = await mountApp(api(), `/scan/${ANALYSIS_ID}`)
+    const { wrapper } = await mountApp(api(), `/manage/scans/${ANALYSIS_ID}`)
     expect(wrapper.text()).toContain('Tribelt is missing:')
     expect(wrapper.text()).toContain('balanced weave belt, Product')
     const phrases = () => wrapper.findAll('ol[aria-label="Ranked phrases"] li').map((li) => li.text())
@@ -54,10 +65,10 @@ describe('a scan', () => {
   })
 
   it('names the model that matched, says what became of matching, and handles a scan with no phrases', async () => {
-    const withModel = await mountApp(scan({ matchingModel: 'openrouter/anthropic/claude-haiku' }), `/scan/${ANALYSIS_ID}`)
+    const withModel = await mountApp(scan({ matchingModel: 'openrouter/anthropic/claude-haiku' }), `/manage/scans/${ANALYSIS_ID}`)
     expect(withModel.wrapper.get('details').text()).toContain('Matched by openrouter/anthropic/claude-haiku')
     withModel.wrapper.unmount()
-    const disabled = await mountApp(scan({ matching: 'disabled', equivalents: [], keywords: [], knownTerms: [] }), `/scan/${ANALYSIS_ID}`)
+    const disabled = await mountApp(scan({ matching: 'disabled', equivalents: [], keywords: [], knownTerms: [] }), `/manage/scans/${ANALYSIS_ID}`)
     expect(disabled.wrapper.text()).toContain('Product matching is off')
     expect(disabled.wrapper.text()).toContain('Tribelt uses every map term this site uses.')
     expect(disabled.wrapper.text()).toContain('No phrases of this kind.')
@@ -67,36 +78,37 @@ describe('a scan', () => {
   it('says why a scan failed, or could not be loaded', async () => {
     const failed = await mountApp(
       api({ [`GET /api/v1/analyses/${ANALYSIS_ID}`]: () => json(analysis({}, { status: 'failed', failure: 'robots.txt forbids it.' })) }),
-      `/scan/${ANALYSIS_ID}`,
+      `/manage/scans/${ANALYSIS_ID}`,
     )
     expect(failed.wrapper.text()).toContain('Scan failed')
     expect(failed.wrapper.get('[role="alert"]').text()).toBe('robots.txt forbids it.')
     failed.wrapper.unmount()
-    const silent = await mountApp(api({ [`GET /api/v1/analyses/${ANALYSIS_ID}`]: () => json(analysis({}, { status: 'failed' })) }), `/scan/${ANALYSIS_ID}`)
+    const silent = await mountApp(api({ [`GET /api/v1/analyses/${ANALYSIS_ID}`]: () => json(analysis({}, { status: 'failed' })) }), `/manage/scans/${ANALYSIS_ID}`)
     expect(silent.wrapper.get('[role="alert"]').text()).toBe('The scan stopped before it read a page.')
     silent.wrapper.unmount()
-    const missing = await mountApp(api({ [`GET /api/v1/analyses/${ANALYSIS_ID}`]: () => problem(404, 'Not Found', 'No such scan.') }), `/scan/${ANALYSIS_ID}`)
+    const missing = await mountApp(api({ [`GET /api/v1/analyses/${ANALYSIS_ID}`]: () => problem(404, 'Not Found', 'No such scan.') }), `/manage/scans/${ANALYSIS_ID}`)
     expect(missing.wrapper.get('[role="alert"]').text()).toBe('No such scan.')
   })
 
   it('shows a scan reading pages, and goes back to the recent scans', async () => {
     const { wrapper, router } = await mountApp(
       api({ [`GET /api/v1/analyses/${ANALYSIS_ID}`]: () => json(analysis({}, { status: 'running', pagesCrawled: 3, maxPages: 30 })) }),
-      `/scan/${ANALYSIS_ID}`,
+      `/manage/scans/${ANALYSIS_ID}`,
     )
     expect(wrapper.get('[role="progressbar"]').attributes('aria-valuetext')).toBe('Reading page 4 of 30')
     await wrapper.findAll('a').find((a) => a.text() === 'Show the recent scans')?.trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/competitors')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/scans')
   })
 
-  it('offers an administrator the form to scan another website, and a viewer only the scan', async () => {
-    const admin = await mountApp(api(), `/scan/${ANALYSIS_ID}`)
+  it('offers an administrator the form to scan another website, and a viewer nothing, as scans are in Manage', async () => {
+    const admin = await mountApp(api(), `/manage/scans/${ANALYSIS_ID}`)
     expect(admin.wrapper.get('#scan-title').text()).toBe('Scan a competitor')
     expect(admin.wrapper.find('form[aria-label="Scan a website"]').exists()).toBe(true)
     admin.wrapper.unmount()
-    const viewer = await mountApp(api({ 'GET /api/v1/me': () => json(me()) }), `/scan/${ANALYSIS_ID}`)
-    expect(viewer.wrapper.get('#scan-title').text()).toBe('Scans')
+    const viewer = await mountApp(api({ 'GET /api/v1/me': () => json(me()) }), `/manage/scans/${ANALYSIS_ID}`)
+    expect(viewer.wrapper.text()).toContain('Only administrators can start, stop, and change the work behind the results.')
+    expect(viewer.wrapper.find('#scan-title').exists()).toBe(false)
     expect(viewer.wrapper.find('form[aria-label="Scan a website"]').exists()).toBe(false)
   })
 })

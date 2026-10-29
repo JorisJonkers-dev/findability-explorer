@@ -16780,12 +16780,20 @@ func (s *PromptExtraction) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
+		e.FieldStart("leftOut")
+		e.ArrStart()
+		for _, elem := range s.LeftOut {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("costUsd")
 		s.CostUsd.Encode(e)
 	}
 }
 
-var jsonFieldsNameOfPromptExtraction = [8]string{
+var jsonFieldsNameOfPromptExtraction = [9]string{
 	0: "failed",
 	1: "companies",
 	2: "addresses",
@@ -16793,7 +16801,8 @@ var jsonFieldsNameOfPromptExtraction = [8]string{
 	4: "citesTribelt",
 	5: "correctness",
 	6: "wrongClaims",
-	7: "costUsd",
+	7: "leftOut",
+	8: "costUsd",
 }
 
 // Decode decodes PromptExtraction from json.
@@ -16801,7 +16810,7 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode PromptExtraction to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -16909,8 +16918,28 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"wrongClaims\"")
 			}
-		case "costUsd":
+		case "leftOut":
 			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				s.LeftOut = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.LeftOut = append(s.LeftOut, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"leftOut\"")
+			}
+		case "costUsd":
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.CostUsd.Decode(d); err != nil {
 					return err
@@ -16928,8 +16957,9 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
+	for i, mask := range [2]uint8{
 		0b11011111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

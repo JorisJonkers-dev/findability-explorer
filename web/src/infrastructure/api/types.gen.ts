@@ -2785,9 +2785,13 @@ export type PromptExtraction = {
     citesTribelt: boolean;
     correctness?: PromptCorrectness;
     /**
-     * Each claim about Tribelt the fact sheet contradicts, quoted.
+     * Each claim about Tribelt the fact sheet contradicts, quoted: what the response got wrong about Tribelt, and the only claims that become fact sheet corrections.
      */
     wrongClaims: Array<string>;
+    /**
+     * Each fact from the fact sheet a response naming Tribelt does not mention; empty when it does not name Tribelt, and for a response read before wrong claims and facts left out were told apart.
+     */
+    leftOut: Array<string>;
     costUsd: Usd;
 };
 

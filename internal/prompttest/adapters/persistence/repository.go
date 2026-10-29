@@ -280,6 +280,7 @@ func addExtraction(ctx context.Context, q *queries.Queries, id uuid.UUID, x doma
 	n, err := q.AddPromptExtraction(ctx, queries.AddPromptExtractionParams{
 		AnswerID: id, Failed: x.Failed, Addresses: clipAll(x.Addresses, 200, 500), NamesTribelt: x.NamesTribelt,
 		CitesTribelt: x.CitesTribelt, Correctness: string(x.Correctness), WrongClaims: clipAll(x.WrongClaims, 10, 500),
+		LeftOut:     clipAll(x.LeftOut, 10, 500),
 		InputTokens: x.InputTokens, OutputTokens: x.OutputTokens, CostMicros: max(int64(x.Cost), 0),
 		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at,
 	})
@@ -333,6 +334,7 @@ func (r *Repository) Answers(ctx context.Context, runID uuid.UUID, withText bool
 			a.Extraction = &domain.Extraction{
 				Failed: row.ExtractionFailed, Companies: named[row.ID], Addresses: row.Addresses, NamesTribelt: row.NamesTribelt,
 				CitesTribelt: row.CitesTribelt, Correctness: domain.Correctness(row.Correctness), WrongClaims: row.WrongClaims,
+				LeftOut:     row.LeftOut,
 				InputTokens: row.ExtractionInputTokens, OutputTokens: row.ExtractionOutputTokens, Cost: domain.Micros(row.ExtractionCostMicros),
 			}
 		}

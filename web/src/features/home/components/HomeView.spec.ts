@@ -9,17 +9,17 @@ const ok = {
 }
 
 describe('the Overview', () => {
-  it('leads with the standings, then the numbers to watch, the sections and the visitors', async () => {
+  it('leads with the standings, then the numbers to watch and the sections', async () => {
     const { wrapper } = await mountApp(routes(ok), '/')
     expect(document.title).toBe('Overview · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('Tribelt trails the leaders on three of four measures.')
     const rows = wrapper.findAll('section[aria-labelledby="watch-title"] > ul:last-child > li a')
     expect(rows.map((a) => a.attributes('href'))).toEqual([
-      '/numbers/aiShareOfVoice',
-      '/numbers/twenteShareOfVoice',
-      '/numbers/citationShare',
-      '/numbers/readinessChecks',
-      '/numbers/termsUsed',
+      '/goals/aiShareOfVoice',
+      '/goals/twenteShareOfVoice',
+      '/goals/citationShare',
+      '/goals/readinessChecks',
+      '/goals/termsUsed',
     ])
     expect(rows[0]?.text()).toContain('AI answers that name Tribelt')
     expect(rows[0]?.text()).toContain('24%')
@@ -28,12 +28,12 @@ describe('the Overview', () => {
     expect(rows[3]?.text()).toContain('3 of 8')
   })
 
-  it('shows a card for each section, and a way to the Buyers page', async () => {
+  it('shows a card for each section, and no way to the dropped Buyers page', async () => {
     const { wrapper } = await mountApp(routes(ok), '/')
     const cards = wrapper.findAll('section[aria-labelledby="sections-title"] li a')
-    expect(cards.map((a) => a.attributes('href'))).toEqual(['/ai-search', '/competitors', '/terms', '/recommendations'])
+    expect(cards.map((a) => a.attributes('href'))).toEqual(['/ai-responses', '/competitors', '/terms', '/recommendations'])
     expect(cards[1]?.text()).toContain('24')
-    expect(wrapper.get('a[href="/buyers"]').text()).toContain('See the visitor figures')
+    expect(wrapper.find('a[href="/buyers"]').exists()).toBe(false)
     expect(wrapper.get('footer').text()).toContain('Digital Strategy')
   })
 
@@ -45,8 +45,8 @@ describe('the Overview', () => {
 
   it('opens a number from its row', async () => {
     const { wrapper, router } = await mountApp(routes(ok), '/')
-    await wrapper.get('a[href="/numbers/readinessChecks"]').trigger('click')
+    await wrapper.get('a[href="/goals/readinessChecks"]').trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/numbers/readinessChecks')
+    expect(router.currentRoute.value.fullPath).toBe('/goals/readinessChecks')
   })
 })

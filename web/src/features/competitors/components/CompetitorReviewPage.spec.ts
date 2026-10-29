@@ -82,11 +82,11 @@ const rows = (wrapper: VueWrapper) => wrapper.findAll('ul[aria-label="Companies"
 const calls = (sent: Sent[]) => sent.map((s) => `${s.method} ${s.path}`)
 
 describe('the competitor review', () => {
-  it('lists one row per company, with its other names, website and Haiku’s check, under its own settings tab', async () => {
+  it('lists one row per company, with its other names, website and Haiku’s check, under its own entry in the Manage menu', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/settings/competitors')
-    expect(document.title).toBe('Competitor review · Findability Explorer')
-    expect(wrapper.get('nav[aria-label="Settings"] a[href="/settings/competitors"]').text()).toBe('Competitor review 2')
+    const { wrapper } = await mountApp(api(sent), '/manage/competitors/candidates')
+    expect(document.title).toBe('Candidates · Findability Explorer')
+    expect(wrapper.get('nav[aria-label="Manage"] a[href="/manage/competitors/candidates"]').text()).toBe('Candidates 2 waiting')
     const review = wrapper.get('section[aria-label="Haiku\'s review"]')
     expect(review.text()).toContain('Haiku has not checked 3 companies yet.')
     const first = rows(wrapper)[0]
@@ -103,7 +103,7 @@ describe('the competitor review', () => {
   })
 
   it('searches names and websites, and filters on Haiku’s check', async () => {
-    const { wrapper } = await mountApp(api([]), '/settings/competitors')
+    const { wrapper } = await mountApp(api([]), '/manage/competitors/candidates')
     await wrapper.get('input[type="search"]').setValue('metiz wire')
     expect(rows(wrapper).map((r) => r.get('h3').text())).toEqual(['Taiwan Metiz Alliance'])
     await wrapper.get('input[type="search"]').setValue('')
@@ -115,7 +115,7 @@ describe('the competitor review', () => {
 
   it('adds a company in one click when its website is known, and asks for one when not', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/settings/competitors')
+    const { wrapper } = await mountApp(api(sent), '/manage/competitors/candidates')
     await button(wrapper, 'Add').trigger('click')
     await settle()
     expect(sent[0]).toEqual({ method: 'POST', path: `/api/v1/admin/competitor-candidates/${METIZ}/add`, body: { name: 'Taiwan Metiz Alliance', url: 'https://metiz.tw/' } })
@@ -131,7 +131,7 @@ describe('the competitor review', () => {
 
   it('moves, selects and dismisses by keyboard', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/settings/competitors')
+    const { wrapper } = await mountApp(api(sent), '/manage/competitors/candidates')
     const first = rows(wrapper)[0]
     if (!first) throw new Error('no rows')
     ;(first.element as HTMLElement).focus()
@@ -151,7 +151,7 @@ describe('the competitor review', () => {
 
   it('adds or dismisses several at once, and says which it skipped', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/settings/competitors')
+    const { wrapper } = await mountApp(api(sent), '/manage/competitors/candidates')
     await wrapper.get('input[type="checkbox"]').setValue(true)
     expect(wrapper.text()).toContain('2 selected')
     await button(wrapper, 'Add with their websites').trigger('click')
@@ -164,7 +164,7 @@ describe('the competitor review', () => {
 
   it('splits a merged name off its company', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/settings/competitors')
+    const { wrapper } = await mountApp(api(sent), '/manage/competitors/candidates')
     await button(wrapper, 'Split off Metiz Wire').trigger('click')
     await settle()
     expect(calls(sent)).toEqual(['POST /api/v1/admin/competitor-candidates/3a7bd3e2360a9f03/split'])
@@ -173,7 +173,7 @@ describe('the competitor review', () => {
 
   it('shows who decided, links an added company, and undoes a decision', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/settings/competitors?status=added')
+    const { wrapper } = await mountApp(api(sent), '/manage/competitors/candidates?status=added')
     const item = rows(wrapper)[0]
     expect(item?.text()).toContain('Added by joris, 2 Nov 2026, 09:00 UTC')
     expect(item?.get('a[href="/competitors/wire-belt"]').text()).toBe('Open its page')
@@ -183,10 +183,10 @@ describe('the competitor review', () => {
   })
 
   it('says when no Anthropic key is set up, and is closed to an account that is no administrator', async () => {
-    const none = await mountApp(api([], { running: false, problem: 'noKey' }), '/settings/competitors')
-    expect(none.wrapper.get('section[aria-label="Haiku\'s review"] a').attributes('href')).toBe('/settings')
+    const none = await mountApp(api([], { running: false, problem: 'noKey' }), '/manage/competitors/candidates')
+    expect(none.wrapper.get('section[aria-label="Haiku\'s review"] a').attributes('href')).toBe('/manage/keys')
     none.wrapper.unmount()
-    const { wrapper } = await mountApp(api([], { running: false }, { 'GET /api/v1/admin/competitor-candidates': () => problem(403, 'Forbidden') }), '/settings/competitors')
+    const { wrapper } = await mountApp(api([], { running: false }, { 'GET /api/v1/admin/competitor-candidates': () => problem(403, 'Forbidden') }), '/manage/competitors/candidates')
     expect(wrapper.text()).toContain('Only administrators can review competitors.')
   })
 })

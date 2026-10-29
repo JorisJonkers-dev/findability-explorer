@@ -50,8 +50,8 @@ const figures = computed(() => detailFigures(measures.value))
           See its scan history
         </RouterLink>
         <RouterLink
-          v-if="latestScan"
-          :to="`/scan/${latestScan.id}`"
+          v-if="isAdmin && latestScan"
+          :to="`/manage/scans/${latestScan.id}`"
           class="inline-flex min-h-11 items-center rounded-full border-2 border-silver px-5 font-medium text-black no-underline hover:border-black"
         >
           Open its latest scan

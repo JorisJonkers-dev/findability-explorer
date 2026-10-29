@@ -28,7 +28,7 @@ const readiness = computed(() => rowOf(props.companyId)?.readiness)
           </template>
         </dl>
       </template>
-      <RouterLink to="/ai-search/readiness" class="self-start text-sm font-medium stage:text-[26px]">Compare with Tribelt and the others</RouterLink>
+      <RouterLink to="/ai-readiness" class="self-start text-sm font-medium stage:text-[26px]">Compare with Tribelt and the others</RouterLink>
     </template>
   </section>
 </template>

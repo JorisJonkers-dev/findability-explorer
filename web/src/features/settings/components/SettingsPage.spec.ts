@@ -49,10 +49,10 @@ describe('the settings page', () => {
         { at: '2026-10-21T08:00:00Z', actor: 'ada', action: 'credential_tested', ok: false, message: 'Tested mistral key "Old": refused.' },
       ],
     })
-    const { wrapper } = await mountApp(server(settings).handle, '/settings')
-    expect(document.title).toBe('Settings · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Language models')
-    expect(wrapper.get('header').text()).toContain('Signed in as Ada')
+    const { wrapper } = await mountApp(server(settings).handle, '/manage/keys')
+    expect(document.title).toBe('Keys and spending · Findability Explorer')
+    expect(wrapper.get('h1').text()).toBe('Keys and spending')
+    expect(wrapper.get('nav[aria-label="Account"]').text()).toContain('Signed in as Ada')
 
     const vault = keyItem(wrapper, 'Vault key (Anthropic (Claude))')
     expect(vault.text()).toContain('Vault')
@@ -79,35 +79,42 @@ describe('the settings page', () => {
   })
 
   it('tells someone who is not an administrator, and shows no forms', async () => {
-    const { wrapper, requests } = await mountApp(routes({ 'GET /api/v1/admin/llm': () => problem(403, 'Forbidden') }), '/settings')
+    const reader = await mountApp(routes({}), '/manage/keys')
+    expect(reader.wrapper.text()).toContain('Only administrators can start, stop, and change the work behind the results.')
+    expect(reader.wrapper.find('nav[aria-label="Account"] a[href="/manage"]').exists()).toBe(false)
+    reader.wrapper.unmount()
+    // An account whose administrator role was taken away during the visit is told by the server.
+    const { wrapper, requests } = await mountApp(
+      routes({ 'GET /api/v1/me': () => json(me({ isAdmin: true })), 'GET /api/v1/admin/llm': () => problem(403, 'Forbidden') }),
+      '/manage/keys',
+    )
     expect(wrapper.get('[role="alert"]').text()).toContain('Only administrators can change these settings.')
     // Only sign-out forms are left: the account's own, and the one in the footer.
     expect(wrapper.findAll('form').map((f) => f.attributes('action'))).toEqual(['/auth/logout', '/auth/logout'])
-    expect(wrapper.find('nav[aria-label="Account"] a[href="/settings"]').exists()).toBe(false)
     expect(requests()).toContain('GET /api/v1/admin/llm')
   })
 
   it('says when the settings cannot be read', async () => {
-    const { wrapper } = await mountApp(routes({ ...ADMIN, 'GET /api/v1/admin/llm': () => problem(500, 'Internal Server Error') }), '/settings')
+    const { wrapper } = await mountApp(routes({ ...ADMIN, 'GET /api/v1/admin/llm': () => problem(500, 'Internal Server Error') }), '/manage/keys')
     expect(wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
   })
 
   it('says Haiku matches products while an Anthropic key works, and what takes over without one', async () => {
     const haiku = { credentialId: 'vault-anthropic', model: 'claude-haiku-5-5' }
     const chosen = llmSettings({ haiku, choice: 'chosen', active: { credentialId: STORED_ID, model: 'mistralai/mistral-small' } })
-    const { wrapper } = await mountApp(server(chosen).handle, '/settings')
+    const { wrapper } = await mountApp(server(chosen).handle, '/manage/keys')
     const now = wrapper.get('section[aria-labelledby="model-title"]').text()
     expect(now).toContain('claude-haiku-5-5 with Vault key (Anthropic (Claude)), as long as an Anthropic key works.')
     expect(now).toContain('When no Anthropic key works, scans use mistralai/mistral-small with Course budget key (OpenRouter).')
     expect(wrapper.findAll('button').some((b) => b.text() === 'Turn matching off')).toBe(true)
 
-    const none = await mountApp(server(llmSettings({ haiku, choice: 'chosen', active: undefined })).handle, '/settings')
+    const none = await mountApp(server(llmSettings({ haiku, choice: 'chosen', active: undefined })).handle, '/manage/keys')
     expect(none.wrapper.text()).toContain('When no Anthropic key works, scans run without product matching.')
   })
 
   it('says matching is off when an administrator turned it off, Haiku or not', async () => {
     const haiku = { credentialId: 'vault-anthropic', model: 'claude-haiku-5-5' }
-    const { wrapper } = await mountApp(server(llmSettings({ haiku, choice: 'off', active: undefined, matchingEnabled: false })).handle, '/settings')
+    const { wrapper } = await mountApp(server(llmSettings({ haiku, choice: 'off', active: undefined, matchingEnabled: false })).handle, '/manage/keys')
     const now = wrapper.get('section[aria-labelledby="model-title"]').text()
     expect(now).toContain('Product matching is off. Scans run without it until a model is chosen below.')
     expect(now).not.toContain('as long as an Anthropic key works')
@@ -115,7 +122,7 @@ describe('the settings page', () => {
   })
 
   it('says when there is no key and nothing in use', async () => {
-    const { wrapper } = await mountApp(server(llmSettings({ credentials: [], active: undefined, events: [] })).handle, '/settings')
+    const { wrapper } = await mountApp(server(llmSettings({ credentials: [], active: undefined, events: [] })).handle, '/manage/keys')
     expect(wrapper.text()).toContain('No keys yet. Add one below.')
     expect(wrapper.text()).toContain('No model is chosen, so scans run without product matching.')
     expect(wrapper.text()).toContain('Add a key first')
@@ -127,7 +134,7 @@ describe('adding a key', () => {
   const form = (wrapper: VueWrapper) => wrapper.get('form[aria-labelledby="add-title"]')
 
   it('checks the name and key before sending them', async () => {
-    const { wrapper, requests } = await mountApp(server().handle, '/settings')
+    const { wrapper, requests } = await mountApp(server().handle, '/manage/keys')
     await form(wrapper).trigger('submit')
     expect(form(wrapper).get('[role="alert"]').text()).toBe('Give the key a name, to tell it apart from others.')
     await form(wrapper).get('input[type="text"]').setValue('Mistral key')
@@ -140,7 +147,7 @@ describe('adding a key', () => {
 
   it('sends the key, then forgets it', async () => {
     const { handle, bodies } = server()
-    const { wrapper } = await mountApp(handle, '/settings')
+    const { wrapper } = await mountApp(handle, '/manage/keys')
     const key = form(wrapper).get('input[type="password"]')
     expect(key.attributes('autocomplete')).toBe('off')
     expect(form(wrapper).findAll('option').map((o) => o.text())).toEqual(['OpenRouter', 'Mistral', 'Anthropic (Claude)', 'Anthropic Admin key'])
@@ -156,7 +163,7 @@ describe('adding a key', () => {
 
   it("shows the provider's reason for refusing it", async () => {
     const refuse = { 'POST /api/v1/admin/llm/credentials': () => problem(422, 'Unprocessable Entity', 'invalid api key') }
-    const { wrapper } = await mountApp(server(llmSettings(), refuse).handle, '/settings')
+    const { wrapper } = await mountApp(server(llmSettings(), refuse).handle, '/manage/keys')
     await form(wrapper).get('input[type="text"]').setValue('Bad key')
     await form(wrapper).get('input[type="password"]').setValue('sk-0123456789')
     await form(wrapper).trigger('submit')
@@ -169,7 +176,7 @@ describe('adding a key', () => {
 
 describe('testing and removing a key', () => {
   it("tests a key and shows the provider's answer", async () => {
-    const { wrapper } = await mountApp(server().handle, '/settings')
+    const { wrapper } = await mountApp(server().handle, '/manage/keys')
     const stored = () => keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored(), 'Test').trigger('click')
     await settle()
@@ -178,7 +185,7 @@ describe('testing and removing a key', () => {
 
   it('shows a refusal, and a test that could not run', async () => {
     let answer = (): Response => json({ ok: false, at: '2026-10-23T11:00:00Z', message: 'invalid x-api-key' })
-    const { wrapper } = await mountApp(server(llmSettings(), { [`POST /api/v1/admin/llm/credentials/${STORED_ID}/test`]: () => answer() }).handle, '/settings')
+    const { wrapper } = await mountApp(server(llmSettings(), { [`POST /api/v1/admin/llm/credentials/${STORED_ID}/test`]: () => answer() }).handle, '/manage/keys')
     const stored = () => keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored(), 'Test').trigger('click')
     await settle()
@@ -190,7 +197,7 @@ describe('testing and removing a key', () => {
   })
 
   it('asks before removing a key, in place', async () => {
-    const { wrapper, requests } = await mountApp(server().handle, '/settings')
+    const { wrapper, requests } = await mountApp(server().handle, '/manage/keys')
     const stored = () => keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored(), 'Remove').trigger('click')
     await settle()
@@ -210,7 +217,7 @@ describe('testing and removing a key', () => {
   })
 
   it('says why a key could not be removed', async () => {
-    const { wrapper } = await mountApp(server(llmSettings(), { [`DELETE /api/v1/admin/llm/credentials/${STORED_ID}`]: () => problem(404, 'Not Found') }).handle, '/settings')
+    const { wrapper } = await mountApp(server(llmSettings(), { [`DELETE /api/v1/admin/llm/credentials/${STORED_ID}`]: () => problem(404, 'Not Found') }).handle, '/manage/keys')
     const stored = () => keyItem(wrapper, 'Course budget key (OpenRouter)')
     await button(stored(), 'Remove').trigger('click')
     await settle()
@@ -225,7 +232,7 @@ describe('choosing the model', () => {
 
   it("loads a key's models, finds one and makes it the one in use", async () => {
     const { handle, bodies } = server()
-    const { wrapper, requests } = await mountApp(handle, '/settings')
+    const { wrapper, requests } = await mountApp(handle, '/manage/keys')
     // The key in use is picked to begin with, and its model.
     expect((chooser(wrapper).get('select').element as HTMLSelectElement).value).toBe('vault-anthropic')
     await chooser(wrapper).get('select').setValue(STORED_ID)
@@ -246,7 +253,7 @@ describe('choosing the model', () => {
   })
 
   it('says when no model matches the search', async () => {
-    const { wrapper } = await mountApp(server().handle, '/settings')
+    const { wrapper } = await mountApp(server().handle, '/manage/keys')
     await chooser(wrapper).get('select').setValue(STORED_ID)
     await settle()
     await chooser(wrapper).get('input[type="search"]').setValue('llama')
@@ -256,7 +263,7 @@ describe('choosing the model', () => {
 
   it('lists hundreds of models a page at a time', async () => {
     const many = Array.from({ length: 312 }, (_, i) => ({ id: `vendor/model-${String(i)}`, name: `Model ${String(i)}` }))
-    const { wrapper } = await mountApp(server(llmSettings(), { [`GET /api/v1/admin/llm/credentials/${STORED_ID}/models`]: () => json({ items: many }) }).handle, '/settings')
+    const { wrapper } = await mountApp(server(llmSettings(), { [`GET /api/v1/admin/llm/credentials/${STORED_ID}/models`]: () => json({ items: many }) }).handle, '/manage/keys')
     await chooser(wrapper).get('select').setValue(STORED_ID)
     await settle()
     expect(chooser(wrapper).findAll('input[type="radio"]')).toHaveLength(50)
@@ -264,14 +271,14 @@ describe('choosing the model', () => {
   })
 
   it('says when the provider did not answer', async () => {
-    const { wrapper } = await mountApp(server(llmSettings(), { [`GET /api/v1/admin/llm/credentials/${STORED_ID}/models`]: () => problem(502, 'Bad Gateway') }).handle, '/settings')
+    const { wrapper } = await mountApp(server(llmSettings(), { [`GET /api/v1/admin/llm/credentials/${STORED_ID}/models`]: () => problem(502, 'Bad Gateway') }).handle, '/manage/keys')
     await chooser(wrapper).get('select').setValue(STORED_ID)
     await settle()
     expect(chooser(wrapper).get('[role="alert"]').text()).toBe('The provider did not answer. Try again in a minute.')
   })
 
   it('turns matching off', async () => {
-    const { wrapper, requests } = await mountApp(server().handle, '/settings')
+    const { wrapper, requests } = await mountApp(server().handle, '/manage/keys')
     await button(chooser(wrapper), 'Turn matching off').trigger('click')
     await settle()
     expect(requests()).toContain('DELETE /api/v1/admin/llm/active')
@@ -291,7 +298,7 @@ describe('choosing the model', () => {
         'PUT /api/v1/admin/llm/active': () => problem(422, 'Unprocessable Entity'),
         'GET /api/v1/admin/llm/credentials/vault-anthropic/models': () => json({ items: models() }),
       }).handle,
-      '/settings',
+      '/manage/keys',
     )
     expect(chooser(wrapper).text()).toContain('Its key can no longer be read')
     // The unreadable key is not offered, so nothing is picked to begin with.
@@ -313,7 +320,7 @@ describe('a key’s usage and cost', () => {
           json({ source: 'openrouter', message: "OpenRouter's own figures for this key, in dollars.", models: [], totalUsd: 3, dailyUsd: 0.5, weeklyUsd: 1, monthlyUsd: 2 }),
         'GET /api/v1/admin/llm/credentials/vault-anthropic/usage': () => problem(502, 'Bad Gateway', 'Anthropic answered 500.'),
       }).handle,
-      '/settings',
+      '/manage/keys',
     )
     expect(requests().some((r) => r.endsWith('/usage'))).toBe(false)
     const stored = keyItem(wrapper, 'Course budget key (OpenRouter)')

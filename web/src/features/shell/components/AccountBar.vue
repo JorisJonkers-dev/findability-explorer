@@ -17,11 +17,11 @@ const { me } = useMe()
     <span>Signed in as <span class="font-medium" :class="tone === 'dark' ? 'text-white' : 'text-black'">{{ me.name }}</span></span>
     <RouterLink
       v-if="me.isAdmin"
-      to="/settings"
+      to="/manage"
       class="font-medium"
       :class="tone === 'dark' ? 'text-white hover:text-silver' : ''"
     >
-      Settings
+      Manage
     </RouterLink>
     <form method="post" :action="LOGOUT_ACTION" class="m-0 inline">
       <button

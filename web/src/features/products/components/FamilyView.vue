@@ -49,7 +49,7 @@ const share = computed(() => (product.value ? aiShare(product.value) : undefined
           <span class="text-base font-semibold">
             {{ share === undefined ? 'No Prompt run has asked about it yet' : `of AI answers about ${familyLabel(product.family)} belts name Tribelt` }}
           </span>
-          <RouterLink to="/ai-search/answers" class="text-sm font-bold">Read those answers</RouterLink>
+          <RouterLink to="/ai-responses/all" class="text-sm font-bold">Read those answers</RouterLink>
         </div>
       </section>
 

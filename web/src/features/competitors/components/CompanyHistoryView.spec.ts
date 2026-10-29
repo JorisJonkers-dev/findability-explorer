@@ -64,8 +64,15 @@ const group = (wrapper: VueWrapper, label: string) => {
 }
 
 describe('a company’s search terms and history', () => {
+  it('names the scans without opening them for someone who is no administrator, as a scan’s page is in Manage', async () => {
+    const { wrapper } = await mountApp(api(), '/competitors/twentebelt/history')
+    const timeline = wrapper.get('ol[aria-label="Scans, newest first"]')
+    expect(timeline.findAll('li')).toHaveLength(3)
+    expect(timeline.find('a').exists()).toBe(false)
+  })
+
   it('shows the latest scan’s terms by family and language, the scans, and the latest two compared', async () => {
-    const { wrapper, requests } = await mountApp(api(), '/competitors/twentebelt/history')
+    const { wrapper, requests } = await mountApp(api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/competitors/twentebelt/history')
     expect(document.title).toBe('Over time · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('How Twentebelt changed, scan by scan.')
     expect(wrapper.text()).toContain('From Scan 3 of 23 Oct 2026, the latest of 2 finished scans.')
@@ -86,7 +93,7 @@ describe('a company’s search terms and history', () => {
       'Scan 2, Failed22 Oct 2026. Failed. 0 of 15 pages.no model',
       'Scan 1, Finished22 Oct 2026. Finished. 15 of 15 pages.no model',
     ])
-    expect(timeline.get('a').attributes('href')).toBe(`/scan/${SCAN_3}?company=twentebelt`)
+    expect(timeline.get('a').attributes('href')).toBe(`/manage/scans/${SCAN_3}?company=twentebelt`)
 
     expect(requests()).toContain(`GET /api/v1/competitors/twentebelt/scans/compare?from=${SCAN_1}&to=${SCAN_3}`)
     const compare = wrapper.get('section[aria-labelledby="compare-title"]')

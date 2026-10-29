@@ -8,7 +8,7 @@ import { NAV_SECTIONS, sectionOfPath } from '../domain/sections'
 const route = useRoute()
 const { isAdmin } = useMe()
 const current = computed(() => sectionOfPath(route.path)?.id)
-const inSettings = computed(() => route.path === '/settings' || route.path.startsWith('/settings/'))
+const inManage = computed(() => route.path === '/manage' || route.path.startsWith('/manage/'))
 
 const LINK =
   'inline-flex min-h-11 items-center rounded-full px-3 text-[15px] font-medium no-underline stage:min-h-[72px] stage:px-7 stage:text-[30px]'
@@ -38,16 +38,16 @@ const LINK =
     <span class="ml-auto inline-flex flex-wrap items-center gap-1 stage:gap-3">
       <RouterLink
         v-if="isAdmin"
-        to="/settings"
-        :aria-current="inSettings ? 'page' : undefined"
-        :class="[LINK, inSettings ? 'border-black bg-black text-white hover:text-white' : 'border-silver text-black hover:text-black']"
+        to="/manage"
+        :aria-current="inManage ? 'page' : undefined"
+        :class="[LINK, inManage ? 'border-black bg-black text-white hover:text-white' : 'border-silver text-black hover:text-black']"
         class="gap-2 border-2 border-solid stage:gap-3"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" class="size-4 stage:size-[30px]" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3" />
           <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke-linecap="round" />
         </svg>
-        Settings
+        Manage
       </RouterLink>
       <form method="post" :action="LOGOUT_ACTION" class="m-0 inline">
         <button type="submit" :class="LINK" class="border-0 bg-transparent font-sans text-ink-2 underline underline-offset-4 hover:text-black">

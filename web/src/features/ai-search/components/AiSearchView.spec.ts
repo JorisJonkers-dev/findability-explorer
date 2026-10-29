@@ -52,24 +52,24 @@ const api = (extra: Record<string, () => Response> = {}) =>
 
 describe('the AI search page', () => {
   it('heads the page with where Tribelt ranks among the companies the answers name, and says what the newest run asked', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search')
-    expect(document.title).toBe('AI search · Findability Explorer')
+    const { wrapper } = await mountApp(api(), '/ai-responses')
+    expect(document.title).toBe('AI responses · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('Tribelt ranks second among the companies AI answers name.')
     expect(wrapper.text()).toContain("In the newest Prompt run, AI assistants from two providers gave 12 answers to buyers' questions. OpenAI names Tribelt most often, in 3 of its 6 answers.")
   })
 
   it('shows three key figures that lead to the numbers and to AI readiness', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search')
+    const { wrapper } = await mountApp(api(), '/ai-responses')
     const figures = wrapper.findAll('section[aria-label="Key figures"] a')
     expect(figures.map((f) => [f.attributes('href'), f.text()])).toEqual([
-      ['/numbers/aiShareOfVoice', '25%of AI answers name TribeltTarget 50%.'],
-      ['/numbers/citationShare', '17%of web answers cite tribelt.nlTarget 50%.'],
-      ['/ai-search/readiness', '3½ of 8AI readiness checks passedSee how AI readiness is checked.'],
+      ['/goals/aiShareOfVoice', '25%of AI answers name TribeltTarget 50%.'],
+      ['/goals/citationShare', '17%of web answers cite tribelt.nlTarget 50%.'],
+      ['/ai-readiness', '3½ of 8AI readiness checks passedSee how AI readiness is checked.'],
     ])
   })
 
   it('shows the share of answers naming Tribelt, for all answers or those about Twente', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search')
+    const { wrapper } = await mountApp(api(), '/ai-responses')
     const donut = wrapper.get('section[aria-labelledby="donut-title"]')
     expect(donut.text()).toContain('25%')
     expect(donut.text()).toContain('3 of 12')
@@ -83,11 +83,11 @@ describe('the AI search page', () => {
     await pills[1]?.trigger('click')
     expect(donut.text()).toContain('3 of 6')
     expect(donut.text()).toContain('The target for the year is 60% of the answers about Twente.')
-    expect(donut.get('a').attributes('href')).toBe('/ai-search/answers')
+    expect(donut.get('a').attributes('href')).toBe('/ai-responses/all')
   })
 
   it('lists who the answers name, the most named first, with a page for each competitor', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search')
+    const { wrapper } = await mountApp(api(), '/ai-responses')
     const named = wrapper.get('section[aria-labelledby="named-title"]')
     expect(named.text()).toContain('Share of the 12 answers that name each company')
     expect(named.findAll('li').map((l) => l.text())).toEqual(['1Ashworth57%', '2Tribelt B.V.Target 40%24%', '3LesjöforsA group company of Tribelt, not a competitor10%'])
@@ -96,25 +96,25 @@ describe('the AI search page', () => {
   })
 
   it('leads on to AI readiness by site, saying how Tribelt fares', async () => {
-    const { wrapper } = await mountApp(api(), '/ai-search')
-    const card = wrapper.findAll('a[href="/ai-search/readiness"]').at(-1)
+    const { wrapper } = await mountApp(api(), '/ai-responses')
+    const card = wrapper.findAll('a[href="/ai-readiness"]').at(-1)
     if (!card) throw new Error('no card')
     expect(card.text()).toContain('AI readiness by site')
     expect(card.text()).toContain('Tribelt fails one of the eight checks. See which ones.')
   })
 
   it('says so before the first Prompt run', async () => {
-    const { wrapper } = await mountApp(api({ 'GET /api/v1/ai-search': () => json({ ...summary, trend: [], ranking: [] }), 'GET /api/v1/prompt-test': () => json(promptResults({ runs: [promptRun({ cells: [] })] })) }), '/ai-search')
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/ai-search': () => json({ ...summary, trend: [], ranking: [] }), 'GET /api/v1/prompt-test': () => json(promptResults({ runs: [promptRun({ cells: [] })] })) }), '/ai-responses')
     await settle()
     expect(wrapper.get('h1').text()).toBe('AI assistants have not been asked about Tribelt yet.')
     expect(wrapper.text()).toContain('No Prompt run has finished yet.')
   })
 
   it('says when the summary or the results cannot be loaded', async () => {
-    const summaryDown = await mountApp(api({ 'GET /api/v1/ai-search': () => problem(500, 'Internal Server Error', 'Down.') }), '/ai-search')
+    const summaryDown = await mountApp(api({ 'GET /api/v1/ai-search': () => problem(500, 'Internal Server Error', 'Down.') }), '/ai-responses')
     expect(summaryDown.wrapper.get('[role="alert"]').text()).toContain('Down.')
     summaryDown.wrapper.unmount()
-    const resultsDown = await mountApp(api({ 'GET /api/v1/prompt-test': () => problem(500, 'Internal Server Error', 'Gone.') }), '/ai-search')
+    const resultsDown = await mountApp(api({ 'GET /api/v1/prompt-test': () => problem(500, 'Internal Server Error', 'Gone.') }), '/ai-responses')
     expect(resultsDown.wrapper.get('[role="alert"]').text()).toContain('Gone.')
   })
 })

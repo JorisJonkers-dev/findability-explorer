@@ -66,9 +66,9 @@ const button = (wrapper: VueWrapper, text: string) => {
 
 describe('the term review', () => {
   it('lists the pending candidates with their evidence and the suggestion', async () => {
-    const { wrapper } = await mountApp(api([]), '/settings/terms')
-    expect(document.title).toBe('Term review · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Term review')
+    const { wrapper } = await mountApp(api([]), '/manage/terms/waiting')
+    expect(document.title).toBe('Waiting terms · Findability Explorer')
+    expect(wrapper.get('h1').text()).toBe('Waiting terms')
     expect(wrapper.get('[role="group"][aria-label="Show"]').findAll('button').map((b) => [b.text(), b.attributes('aria-pressed')])).toEqual([
       ['To review (1)', 'true'],
       ['Accepted (1)', 'false'],
@@ -85,7 +85,7 @@ describe('the term review', () => {
 
   it('accepts a candidate with the fields as edited, and checks them first', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/settings/terms')
+    const { wrapper } = await mountApp(api(sent), '/manage/terms/waiting')
     await button(wrapper, 'Accept…').trigger('click')
     await settle()
     const form = wrapper.get('form[aria-label="Accept spiral freezer belt"]')
@@ -116,7 +116,7 @@ describe('the term review', () => {
 
   it('rejects a candidate, and cancels an acceptance', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent), '/settings/terms')
+    const { wrapper } = await mountApp(api(sent), '/manage/terms/waiting')
     await button(wrapper, 'Accept…').trigger('click')
     await settle()
     await button(wrapper, 'Cancel').trigger('click')
@@ -129,10 +129,10 @@ describe('the term review', () => {
 
   it('shows who decided, and undoes a decision', async () => {
     const sent: Sent[] = []
-    const { wrapper, router } = await mountApp(api(sent), '/settings/terms')
+    const { wrapper, router } = await mountApp(api(sent), '/manage/terms/waiting')
     await button(wrapper, 'Accepted (1)').trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/settings/terms?status=accepted')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/terms/waiting?status=accepted')
     const item = wrapper.get('ul[aria-label="Candidates"] li')
     expect(item.text()).toContain('Accepted by joris, 23 Oct 2026, 10:00 UTC')
     expect(item.text()).toContain('In the map as “wire mesh belt”, English, Product, Other belts.')
@@ -146,18 +146,18 @@ describe('the term review', () => {
     expect(wrapper.text()).toContain('Nothing here.')
     await button(wrapper, 'To review (1)').trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/settings/terms')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/terms/waiting')
   })
 
   it('filters the candidates by language, kept in the address, and offers only their own language to accept in', async () => {
     const german = candidate({ id: 'aaaaaaaaaaaaaaaa', phrase: 'transportband', languages: ['de'] })
     const list = (): Response => json({ items: [candidate(), german], counts, review: { running: false, waiting: 0 } } satisfies TermCandidateList)
-    const { wrapper, router } = await mountApp(api([], { 'GET /api/v1/admin/term-candidates': list }), '/settings/terms')
+    const { wrapper, router } = await mountApp(api([], { 'GET /api/v1/admin/term-candidates': list }), '/manage/terms/waiting')
     const group = wrapper.get('[role="group"][aria-label="Language"]')
     expect(group.findAll('button').map((b) => b.text())).toEqual(['All languages', 'German', 'English', 'Portuguese'])
     await button(wrapper, 'German').trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/settings/terms?language=de')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/terms/waiting?language=de')
     expect(wrapper.findAll('ul[aria-label="Candidates"] h3').map((h) => h.text())).toEqual(['transportband'])
     await button(wrapper, 'Accept…').trigger('click')
     await settle()
@@ -165,16 +165,16 @@ describe('the term review', () => {
     expect(language?.findAll('option').map((o) => o.text())).toEqual(['German'])
     await button(wrapper, 'Accepted (1)').trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/settings/terms?status=accepted&language=de')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/terms/waiting?status=accepted&language=de')
     await button(wrapper, 'All languages').trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/settings/terms?status=accepted')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/terms/waiting?status=accepted')
   })
 
   it('says why a decision failed', async () => {
     const { wrapper } = await mountApp(
       api([], { [`POST /api/v1/admin/term-candidates/${ID}/reject`]: () => problem(409, 'Conflict', 'This candidate was decided already.') }),
-      '/settings/terms',
+      '/manage/terms/waiting',
     )
     await button(wrapper, 'Reject').trigger('click')
     await settle()
@@ -182,22 +182,23 @@ describe('the term review', () => {
   })
 
   it('is closed to an account that is no administrator, and says when the list fails', async () => {
-    const viewer = await mountApp(
-      api([], { 'GET /api/v1/me': () => json(me()), 'GET /api/v1/admin/term-candidates': () => problem(403, 'Forbidden') }),
-      '/settings/terms',
-    )
-    expect(viewer.wrapper.get('[role="alert"]').text()).toContain('Only administrators can review terms.')
+    const viewer = await mountApp(api([], { 'GET /api/v1/me': () => json(me()) }), '/manage/terms/waiting')
+    expect(viewer.wrapper.text()).toContain('Only administrators can start, stop, and change the work behind the results.')
     expect(viewer.wrapper.find('ul[aria-label="Candidates"]').exists()).toBe(false)
     viewer.wrapper.unmount()
+    // An account whose administrator role was taken away during the visit is told by the server.
+    const refused = await mountApp(api([], { 'GET /api/v1/admin/term-candidates': () => problem(403, 'Forbidden') }), '/manage/terms/waiting')
+    expect(refused.wrapper.get('[role="alert"]').text()).toContain('Only administrators can review terms.')
+    refused.wrapper.unmount()
     // A refusal is not asked again, so it shows at once.
-    const failing = await mountApp(api([], { 'GET /api/v1/admin/term-candidates': () => problem(400, 'Bad Request') }), '/settings/terms')
+    const failing = await mountApp(api([], { 'GET /api/v1/admin/term-candidates': () => problem(400, 'Bad Request') }), '/manage/terms/waiting')
     expect(failing.wrapper.get('[role="alert"]').text()).toBe('Bad Request')
     expect(failing.wrapper.get('[role="group"][aria-label="Show"]').findAll('button')[0]?.text()).toBe('To review')
   })
 
   it('shows how far the language model is, and starts it on the waiting phrases', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent, {}, { running: false, waiting: 3 }), '/settings/terms')
+    const { wrapper } = await mountApp(api(sent, {}, { running: false, waiting: 3 }), '/manage/terms/waiting')
     const status = wrapper.get('section[aria-label="The language model\'s review"]')
     expect(status.text()).toContain('3 phrases wait for the language model.')
     await button(wrapper, 'Review them now').trigger('click')
@@ -205,10 +206,10 @@ describe('the term review', () => {
     expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual(['POST /api/v1/admin/term-candidates/review'])
     wrapper.unmount()
 
-    const none = await mountApp(api([], {}, { running: false, waiting: 3, problem: 'noModel' }), '/settings/terms')
+    const none = await mountApp(api([], {}, { running: false, waiting: 3, problem: 'noModel' }), '/manage/terms/waiting')
     const link = none.wrapper.get('section[aria-label="The language model\'s review"] a')
-    expect(link.text()).toBe('Add one in Language models')
-    expect(link.attributes('href')).toBe('/settings')
+    expect(link.text()).toBe('Add one in Keys and spending')
+    expect(link.attributes('href')).toBe('/manage/keys')
     expect(none.wrapper.findAll('button').some((b) => b.text() === 'Review them now')).toBe(false)
   })
 
@@ -220,7 +221,7 @@ describe('the term review', () => {
         term: { term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'application' },
       },
     })
-    const { wrapper } = await mountApp(api(sent, {}, { running: false, waiting: 0 }, unsure), '/settings/terms')
+    const { wrapper } = await mountApp(api(sent, {}, { running: false, waiting: 0 }, unsure), '/manage/terms/waiting')
     const item = wrapper.get('ul[aria-label="Candidates"] li')
     expect(item.text()).toContain('The language model was unsure. Could go either way.')
     expect(item.text()).toContain('It suggests “spiral freezer belt”, English, Application,')

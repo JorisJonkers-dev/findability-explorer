@@ -19,7 +19,7 @@ const { companies } = useCompanies()
     <ul v-else class="m-0 flex list-none flex-wrap gap-2 p-0">
       <li v-for="scan in scans" :key="scan.id">
         <RouterLink
-          :to="{ path: `/scan/${scan.id}`, query: route.query }"
+          :to="{ path: `/manage/scans/${scan.id}`, query: route.query }"
           class="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-black bg-white px-4 text-sm font-medium text-black no-underline hover:bg-black hover:text-white"
         >
           <span>{{ scanCompany(scan, companies).name }}</span><span class="sr-only">, </span>

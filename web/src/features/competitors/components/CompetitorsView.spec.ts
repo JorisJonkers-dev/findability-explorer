@@ -99,7 +99,7 @@ describe('the competitors page', () => {
     const { wrapper, router } = await mountApp(api(), '/competitors')
     await type(wrapper, 'https://www.example-belts.de')
     await submit(wrapper)
-    expect(router.currentRoute.value.fullPath).toBe(`/scan/${NEW_ID}`)
+    expect(router.currentRoute.value.fullPath).toBe(`/manage/scans/${NEW_ID}`)
     expect(wrapper.get('h1').text()).toBe('What the scan found.')
   })
 

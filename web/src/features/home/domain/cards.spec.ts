@@ -13,10 +13,10 @@ describe('sectionCards', () => {
   it('shows a figure from each section, with the way in', () => {
     const cards = sectionCards(overviewFixture(), planFixture())
     expect(cards.map((c) => [c.id, c.number, c.label, c.big, c.cta, c.path])).toEqual([
-      ['ai-search', '02', 'AI SEARCH', '24%', 'Open AI search', '/ai-search'],
-      ['competitors', '03', 'COMPETITORS', '24', 'Open Competitors', '/competitors'],
+      ['ai-responses', '02', 'AI RESPONSES', '24%', 'Open AI responses', '/ai-responses'],
+      ['competitors', '05', 'COMPETITORS', '24', 'Open Competitors', '/competitors'],
       ['terms', '04', 'SEARCH TERMS', '30', 'Open Search terms', '/terms'],
-      ['recommendations', '05', 'RECOMMENDATIONS', '4', 'Open Recommendations', '/recommendations'],
+      ['recommendations', '06', 'RECOMMENDATIONS', '4', 'Open Recommendations', '/recommendations'],
     ])
     expect(cards[2]?.text).toBe('of the 387 terms buyers search with appear on tribelt.nl.')
     expect(cards[3]?.text).toBe('changes to tribelt.nl, ranked. The first is to submit tribelt.nl to Google and Bing.')

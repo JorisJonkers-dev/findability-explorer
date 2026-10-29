@@ -85,7 +85,7 @@ function download(): void {
 </script>
 
 <template>
-  <PageView section="ai-search" eyebrow="02 AI search, every answer" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
+  <PageView section="ai-responses" eyebrow="02 AI responses, every response" :title="title" :back="{ to: '/ai-responses', label: 'Back to AI responses' }">
     <template #lede>
       <p class="m-0 max-w-[66ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">
         Each square is one answer from the newest Prompt run. Pick a square to read the answer and see which companies it names.
@@ -152,7 +152,7 @@ function download(): void {
     <div v-else-if="!run" class="flex flex-col gap-4">
       <p class="m-0 text-ink-2 stage:text-[30px]">
         No Prompt run yet. The first starts on the schedule, or when an administrator starts one<template v-if="isAdmin">
-          in <RouterLink to="/settings/prompt-test" class="underline underline-offset-4">the Prompt test settings</RouterLink></template>.
+          in <RouterLink to="/manage/prompt-test" class="underline underline-offset-4">the Prompt test settings</RouterLink></template>.
       </p>
     </div>
     <div

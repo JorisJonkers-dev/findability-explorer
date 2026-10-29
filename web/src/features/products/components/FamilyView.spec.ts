@@ -21,7 +21,7 @@ describe('a belt family page', () => {
     expect(figures[0]).toBe('1competitors sell itNot counting Tribelt or its group companies.')
     expect(figures[1]).toBe('1 of 4of its search terms are used on tribelt.nlTerms in Dutch, German, English, and French.')
     expect(figures[2]).toBe('30%of AI answers about Eyelink belts name TribeltRead those answers')
-    expect(wrapper.get('a[href="/ai-search/answers"]').text()).toBe('Read those answers')
+    expect(wrapper.get('a[href="/ai-responses/all"]').text()).toBe('Read those answers')
   })
 
   it('says when no Prompt run has asked about it, and when no competitor sells it', async () => {

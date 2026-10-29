@@ -240,7 +240,7 @@ describe('the administrator tools', () => {
     // The scan running now, by company, with its own bar; the one waiting is counted.
     const now = panel.get('ul[aria-label="Scanning now"]')
     expect(now.findAll('li').map((li) => li.text())).toEqual(['TwentebeltReading page 4 of 15'])
-    expect(now.get('a').attributes('href')).toBe(`/scan/${ANALYSIS_ID}`)
+    expect(now.get('a').attributes('href')).toBe(`/manage/scans/${ANALYSIS_ID}`)
     expect(now.get('[aria-label="Scan of Twentebelt"]').attributes('aria-valuenow')).toBe('20')
     expect(panel.text()).toContain('1 company waits its turn.')
     expect(button(wrapper, 'Re-scan all 2 companies with data').attributes('disabled')).toBeDefined()

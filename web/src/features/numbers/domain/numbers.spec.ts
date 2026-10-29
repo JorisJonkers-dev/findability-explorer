@@ -23,8 +23,8 @@ describe('oxford', () => {
 
 describe('addresses', () => {
   it('maps every number to an address and back', () => {
-    for (const t of TARGETS) expect(targetOfSlug(pathOfTarget(t).replace('/numbers/', ''))).toBe(t)
-    expect(pathOfTarget('aiShareOfVoice')).toBe('/numbers/aiShareOfVoice')
+    for (const t of TARGETS) expect(targetOfSlug(pathOfTarget(t).replace('/goals/', ''))).toBe(t)
+    expect(pathOfTarget('aiShareOfVoice')).toBe('/goals/aiShareOfVoice')
     expect(targetOfSlug('nothing')).toBeUndefined()
   })
 })
@@ -54,7 +54,7 @@ describe('numberRows', () => {
     const rows = numberRows(facts())
     expect(rows.map((r) => r.target)).toEqual(TARGETS)
     const ai = rows[0]
-    expect(ai).toMatchObject({ path: '/numbers/aiShareOfVoice', now: '24%', goal: '40%', measured: true, improvedBy: 'Improved by recommendations 1 and 4' })
+    expect(ai).toMatchObject({ path: '/goals/aiShareOfVoice', now: '24%', goal: '40%', measured: true, improvedBy: 'Improved by recommendations 1 and 4' })
     expect(ai?.progress).toBe('60% of the way to the target. Ashworth is at 57%.')
     expect(ai?.fill).toBeCloseTo((0.24 / (0.57 * 1.08)) * 100)
     expect(ai?.leaderAt).toBeCloseTo(100 / 1.08)

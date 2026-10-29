@@ -44,8 +44,9 @@ describe('the budget meter', () => {
     )
   })
 
-  it('fills at most the whole bar', () => {
+  it('fills at most the whole bar, and copes with a budget of nothing', () => {
     expect(budgetMeter(budget({ monthlyBudgetUsd: 1, spentThisMonthUsd: 2.5, leftUsd: 0 })).fraction).toBe(1)
     expect(budgetMeter(budget({})).fraction).toBe(0)
+    expect(budgetMeter(budget({ monthlyBudgetUsd: 0, leftUsd: 0 })).fraction).toBe(0)
   })
 })

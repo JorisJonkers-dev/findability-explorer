@@ -556,6 +556,18 @@ func (UnimplementedHandler) StartTermReview(ctx context.Context) (r StartTermRev
 	return r, ht.ErrNotImplemented
 }
 
+// StopPromptRun implements stopPromptRun operation.
+//
+// Administrators only. Asks a running run to stop. The request is stored, so the instance running the
+// run, whichever it is, stops it at its next heartbeat, within a minute: no question is asked after
+// it, the responses so far are kept, and the run is recorded as stopped by hand. retryPromptRun
+// finishes it, asking only the questions it did not get. 404 when no run with this id is running.
+//
+// POST /api/v1/admin/prompt-runs/{runId}/stop
+func (UnimplementedHandler) StopPromptRun(ctx context.Context, params StopPromptRunParams) (r StopPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // TestLlmCredential implements testLlmCredential operation.
 //
 // Asks the provider whether it accepts the key (by listing its models) and records the outcome on the

@@ -154,6 +154,13 @@ func (a Answer) Key() TaskKey {
 	return TaskKey{PromptID: a.Prompt.ID, Provider: a.Provider, Mode: a.Mode}
 }
 
+// How a stopped run says why it stopped: the month's budget was reached, or an administrator
+// stopped it. Either way its responses are kept, and a retry finishes it.
+const (
+	StoppedByBudget = "The month's budget for Prompt runs was reached; the answers so far are kept."
+	StoppedByHand   = "Stopped by hand. The responses so far are kept, and a retry finishes the run."
+)
+
 // Errors the ports return.
 var (
 	// ErrRateLimited is returned when the provider asks to slow down (a 429).

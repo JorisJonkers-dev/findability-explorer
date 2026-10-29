@@ -88,6 +88,11 @@ type Repository interface {
 	AdoptStale(ctx context.Context, owner string, staleBefore, now time.Time) (*domain.Run, error)
 	// Heartbeat records that owner still runs the run; false when another instance took it.
 	Heartbeat(ctx context.Context, id uuid.UUID, owner string, at time.Time) (bool, error)
+	// RequestStop stores that an administrator asked a running run to stop, so the instance that
+	// runs it sees it at its next heartbeat; false when the run is not running.
+	RequestStop(ctx context.Context, id uuid.UUID, at time.Time) (bool, error)
+	// StopRequested reports whether a stop of the run was asked for since it last started.
+	StopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	FinishRun(ctx context.Context, id uuid.UUID, status domain.RunStatus, failure string, at time.Time) error
 	// ReopenRun runs a finished run again, held by owner, or returns domain.ErrRunActive when a run
 	// is running.

@@ -1074,6 +1074,32 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-runs/{runId}/stop:
+    post:
+      operationId: stopPromptRun
+      summary: Stop a running Prompt run
+      description: >-
+        Administrators only. Asks a running run to stop. The request is stored, so the instance
+        running the run, whichever it is, stops it at its next heartbeat, within a minute: no
+        question is asked after it, the responses so far are kept, and the run is recorded as
+        stopped by hand. retryPromptRun finishes it, asking only the questions it did not get. 404
+        when no run with this id is running.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "204":
+          description: The run was asked to stop.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/prompt-runs/{runId}/retry-plan:
     get:
       operationId: getPromptRetryPlan

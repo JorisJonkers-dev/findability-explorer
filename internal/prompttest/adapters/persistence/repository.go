@@ -146,6 +146,29 @@ func (r *Repository) Heartbeat(ctx context.Context, id uuid.UUID, owner string, 
 	return n > 0, nil
 }
 
+// RequestStop stores that an administrator asked a running run to stop; false when the run is not
+// running.
+func (r *Repository) RequestStop(ctx context.Context, id uuid.UUID, at time.Time) (bool, error) {
+	n, err := r.store.Queries().RequestPromptRunStop(ctx, queries.RequestPromptRunStopParams{ID: id, At: optionalTime(at)})
+	if err != nil {
+		return false, fmt.Errorf("request a stop of the prompt run: %w", err)
+	}
+	return n > 0, nil
+}
+
+// StopRequested reports whether a stop of the run was asked for since it last started; false for
+// a run there is not.
+func (r *Repository) StopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	stop, err := r.store.Queries().PromptRunStopRequested(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("read the stop request of the prompt run: %w", err)
+	}
+	return stop, nil
+}
+
 // FinishRun ends a running run.
 func (r *Repository) FinishRun(ctx context.Context, id uuid.UUID, status domain.RunStatus, failure string, at time.Time) error {
 	if err := r.store.Queries().FinishPromptRun(ctx, queries.FinishPromptRunParams{

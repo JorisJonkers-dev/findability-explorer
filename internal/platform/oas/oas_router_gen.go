@@ -26,7 +26,7 @@ var (
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn76AllowedHeaders = map[string]string{
+	rn78AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
 	rn65AllowedHeaders = map[string]string{
@@ -731,7 +731,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn76AllowedHeaders,
+											allowedHeaders: rn78AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -824,9 +824,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										break
 									}
 									switch elem[0] {
-									case '/': // Prefix: "/re"
+									case '/': // Prefix: "/"
 
-										if l := len("/re"); len(elem) >= l && elem[0:l] == "/re" {
+										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 											elem = elem[l:]
 										} else {
 											break
@@ -836,9 +836,105 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											break
 										}
 										switch elem[0] {
-										case 'r': // Prefix: "read"
+										case 'r': // Prefix: "re"
 
-											if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
+											if l := len("re"); len(elem) >= l && elem[0:l] == "re" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												break
+											}
+											switch elem[0] {
+											case 'r': // Prefix: "read"
+
+												if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch r.Method {
+													case "POST":
+														s.handleRereadPromptRunRequest([1]string{
+															args[0],
+														}, elemIsEscaped, w, r)
+													default:
+														s.notAllowed(w, r, notAllowedParams{
+															allowedMethods: "POST",
+															allowedHeaders: rn61AllowedHeaders,
+															acceptPost:     "application/json",
+															acceptPatch:    "",
+														})
+													}
+
+													return
+												}
+
+											case 't': // Prefix: "try"
+
+												if l := len("try"); len(elem) >= l && elem[0:l] == "try" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													switch r.Method {
+													case "POST":
+														s.handleRetryPromptRunRequest([1]string{
+															args[0],
+														}, elemIsEscaped, w, r)
+													default:
+														s.notAllowed(w, r, notAllowedParams{
+															allowedMethods: "POST",
+															allowedHeaders: rn62AllowedHeaders,
+															acceptPost:     "application/json",
+															acceptPatch:    "",
+														})
+													}
+
+													return
+												}
+												switch elem[0] {
+												case '-': // Prefix: "-plan"
+
+													if l := len("-plan"); len(elem) >= l && elem[0:l] == "-plan" {
+														elem = elem[l:]
+													} else {
+														break
+													}
+
+													if len(elem) == 0 {
+														// Leaf node.
+														switch r.Method {
+														case "GET":
+															s.handleGetPromptRetryPlanRequest([1]string{
+																args[0],
+															}, elemIsEscaped, w, r)
+														default:
+															s.notAllowed(w, r, notAllowedParams{
+																allowedMethods: "GET",
+																allowedHeaders: nil,
+																acceptPost:     "",
+																acceptPatch:    "",
+															})
+														}
+
+														return
+													}
+
+												}
+
+											}
+
+										case 's': // Prefix: "stop"
+
+											if l := len("stop"); len(elem) >= l && elem[0:l] == "stop" {
 												elem = elem[l:]
 											} else {
 												break
@@ -848,74 +944,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												// Leaf node.
 												switch r.Method {
 												case "POST":
-													s.handleRereadPromptRunRequest([1]string{
+													s.handleStopPromptRunRequest([1]string{
 														args[0],
 													}, elemIsEscaped, w, r)
 												default:
 													s.notAllowed(w, r, notAllowedParams{
 														allowedMethods: "POST",
-														allowedHeaders: rn61AllowedHeaders,
-														acceptPost:     "application/json",
+														allowedHeaders: nil,
+														acceptPost:     "",
 														acceptPatch:    "",
 													})
 												}
 
 												return
-											}
-
-										case 't': // Prefix: "try"
-
-											if l := len("try"); len(elem) >= l && elem[0:l] == "try" {
-												elem = elem[l:]
-											} else {
-												break
-											}
-
-											if len(elem) == 0 {
-												switch r.Method {
-												case "POST":
-													s.handleRetryPromptRunRequest([1]string{
-														args[0],
-													}, elemIsEscaped, w, r)
-												default:
-													s.notAllowed(w, r, notAllowedParams{
-														allowedMethods: "POST",
-														allowedHeaders: rn62AllowedHeaders,
-														acceptPost:     "application/json",
-														acceptPatch:    "",
-													})
-												}
-
-												return
-											}
-											switch elem[0] {
-											case '-': // Prefix: "-plan"
-
-												if l := len("-plan"); len(elem) >= l && elem[0:l] == "-plan" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													// Leaf node.
-													switch r.Method {
-													case "GET":
-														s.handleGetPromptRetryPlanRequest([1]string{
-															args[0],
-														}, elemIsEscaped, w, r)
-													default:
-														s.notAllowed(w, r, notAllowedParams{
-															allowedMethods: "GET",
-															allowedHeaders: nil,
-															acceptPost:     "",
-															acceptPatch:    "",
-														})
-													}
-
-													return
-												}
-
 											}
 
 										}
@@ -2573,9 +2614,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										break
 									}
 									switch elem[0] {
-									case '/': // Prefix: "/re"
+									case '/': // Prefix: "/"
 
-										if l := len("/re"); len(elem) >= l && elem[0:l] == "/re" {
+										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 											elem = elem[l:]
 										} else {
 											break
@@ -2585,9 +2626,99 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											break
 										}
 										switch elem[0] {
-										case 'r': // Prefix: "read"
+										case 'r': // Prefix: "re"
 
-											if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
+											if l := len("re"); len(elem) >= l && elem[0:l] == "re" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												break
+											}
+											switch elem[0] {
+											case 'r': // Prefix: "read"
+
+												if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch method {
+													case "POST":
+														r.name = RereadPromptRunOperation
+														r.summary = "Read a Prompt run's answers again whose reading failed"
+														r.operationID = "rereadPromptRun"
+														r.operationGroup = ""
+														r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/reread"
+														r.args = args
+														r.count = 1
+														return r, true
+													default:
+														return
+													}
+												}
+
+											case 't': // Prefix: "try"
+
+												if l := len("try"); len(elem) >= l && elem[0:l] == "try" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													switch method {
+													case "POST":
+														r.name = RetryPromptRunOperation
+														r.summary = "Ask a Prompt run's failed answers again"
+														r.operationID = "retryPromptRun"
+														r.operationGroup = ""
+														r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/retry"
+														r.args = args
+														r.count = 1
+														return r, true
+													default:
+														return
+													}
+												}
+												switch elem[0] {
+												case '-': // Prefix: "-plan"
+
+													if l := len("-plan"); len(elem) >= l && elem[0:l] == "-plan" {
+														elem = elem[l:]
+													} else {
+														break
+													}
+
+													if len(elem) == 0 {
+														// Leaf node.
+														switch method {
+														case "GET":
+															r.name = GetPromptRetryPlanOperation
+															r.summary = "What asking a Prompt run again would cost"
+															r.operationID = "getPromptRetryPlan"
+															r.operationGroup = ""
+															r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/retry-plan"
+															r.args = args
+															r.count = 1
+															return r, true
+														default:
+															return
+														}
+													}
+
+												}
+
+											}
+
+										case 's': // Prefix: "stop"
+
+											if l := len("stop"); len(elem) >= l && elem[0:l] == "stop" {
 												elem = elem[l:]
 											} else {
 												break
@@ -2597,68 +2728,17 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												// Leaf node.
 												switch method {
 												case "POST":
-													r.name = RereadPromptRunOperation
-													r.summary = "Read a Prompt run's answers again whose reading failed"
-													r.operationID = "rereadPromptRun"
+													r.name = StopPromptRunOperation
+													r.summary = "Stop a running Prompt run"
+													r.operationID = "stopPromptRun"
 													r.operationGroup = ""
-													r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/reread"
+													r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/stop"
 													r.args = args
 													r.count = 1
 													return r, true
 												default:
 													return
 												}
-											}
-
-										case 't': // Prefix: "try"
-
-											if l := len("try"); len(elem) >= l && elem[0:l] == "try" {
-												elem = elem[l:]
-											} else {
-												break
-											}
-
-											if len(elem) == 0 {
-												switch method {
-												case "POST":
-													r.name = RetryPromptRunOperation
-													r.summary = "Ask a Prompt run's failed answers again"
-													r.operationID = "retryPromptRun"
-													r.operationGroup = ""
-													r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/retry"
-													r.args = args
-													r.count = 1
-													return r, true
-												default:
-													return
-												}
-											}
-											switch elem[0] {
-											case '-': // Prefix: "-plan"
-
-												if l := len("-plan"); len(elem) >= l && elem[0:l] == "-plan" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													// Leaf node.
-													switch method {
-													case "GET":
-														r.name = GetPromptRetryPlanOperation
-														r.summary = "What asking a Prompt run again would cost"
-														r.operationID = "getPromptRetryPlan"
-														r.operationGroup = ""
-														r.pathPattern = "/api/v1/admin/prompt-runs/{runId}/retry-plan"
-														r.args = args
-														r.count = 1
-														return r, true
-													default:
-														return
-													}
-												}
-
 											}
 
 										}

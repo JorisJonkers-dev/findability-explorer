@@ -127,6 +127,7 @@ type Querier interface {
 	// The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
 	PromptReadingTokensSince(ctx context.Context, since time.Time) (int64, error)
 	PromptReviewTokensSince(ctx context.Context, since time.Time) (int64, error)
+	PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)
 	// What answers and extractions cost since a moment, in millionths of a dollar.
@@ -134,6 +135,8 @@ type Querier interface {
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
 	// Runs a finished run again, held by owner, unless any run is running: the run lock.
 	ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error)
+	// An administrator asks a running run to stop; the instance running it reads this at its heartbeat.
+	RequestPromptRunStop(ctx context.Context, arg RequestPromptRunStopParams) (int64, error)
 	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
 	SavePromptCandidateCheck(ctx context.Context, arg SavePromptCandidateCheckParams) error
 	SavePromptCandidateMerge(ctx context.Context, arg SavePromptCandidateMergeParams) error

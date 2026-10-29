@@ -991,6 +991,19 @@ func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) 
 	return tokens, err
 }
 
+const promptRunStopRequested = `-- name: PromptRunStopRequested :one
+SELECT (stop_requested_at IS NOT NULL)::boolean AS requested
+FROM prompt_runs
+WHERE id = $1
+`
+
+func (q *Queries) PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, promptRunStopRequested, id)
+	var requested bool
+	err := row.Scan(&requested)
+	return requested, err
+}
+
 const promptSightings = `-- name: PromptSightings :many
 SELECT c.answer_id, c.name, c.url, a.provider, a.model, a.answered_at
 FROM prompt_answer_companies AS c
@@ -1053,7 +1066,7 @@ func (q *Queries) PromptSpentSince(ctx context.Context, since time.Time) (int64,
 
 const reopenPromptRun = `-- name: ReopenPromptRun :execrows
 UPDATE prompt_runs AS p
-SET status = 'running', finished_at = NULL, failure = NULL, owner = $1, heartbeat_at = $2
+SET status = 'running', finished_at = NULL, failure = NULL, stop_requested_at = NULL, owner = $1, heartbeat_at = $2
 WHERE p.id = $3 AND p.status <> 'running' AND NOT EXISTS (SELECT 1 FROM prompt_runs AS r WHERE r.status = 'running')
 `
 
@@ -1066,6 +1079,26 @@ type ReopenPromptRunParams struct {
 // Runs a finished run again, held by owner, unless any run is running: the run lock.
 func (q *Queries) ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error) {
 	result, err := q.db.Exec(ctx, reopenPromptRun, arg.Owner, arg.At, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const requestPromptRunStop = `-- name: RequestPromptRunStop :execrows
+UPDATE prompt_runs
+SET stop_requested_at = $1
+WHERE id = $2 AND status = 'running'
+`
+
+type RequestPromptRunStopParams struct {
+	At pgtype.Timestamptz
+	ID uuid.UUID
+}
+
+// An administrator asks a running run to stop; the instance running it reads this at its heartbeat.
+func (q *Queries) RequestPromptRunStop(ctx context.Context, arg RequestPromptRunStopParams) (int64, error) {
+	result, err := q.db.Exec(ctx, requestPromptRunStop, arg.At, arg.ID)
 	if err != nil {
 		return 0, err
 	}

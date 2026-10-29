@@ -253,7 +253,7 @@ func (r *Repository) AddAnswer(ctx context.Context, a domain.Answer) error {
 			ID: a.ID, RunID: a.RunID, PromptID: a.Prompt.ID, Family: string(a.Prompt.Family), Kind: string(a.Prompt.Kind),
 			Scope: string(a.Prompt.Scope), Language: a.Prompt.Language, PromptText: clip(a.Prompt.Text, 1000),
 			PromptSetVersion: int64(a.PromptSetVersion), Provider: a.Provider, Model: clip(a.Model, 200), Mode: string(a.Mode),
-			Answer: clip(clean(a.Text), 100_000), Citations: clipAll(a.Citations, 100, 500), InputTokens: a.InputTokens,
+			Answer: clip(clean(a.Text), 100_000), Citations: clipAll(a.Citations, 100), InputTokens: a.InputTokens,
 			OutputTokens: a.OutputTokens, CostMicros: max(int64(a.Cost), 0), Failure: optionalText(clip(a.Failure, 300)),
 			AnsweredAt: a.At,
 		})
@@ -278,9 +278,9 @@ func (r *Repository) SetExtraction(ctx context.Context, answerID uuid.UUID, x do
 
 func addExtraction(ctx context.Context, q *queries.Queries, id uuid.UUID, x domain.Extraction, at time.Time) error {
 	n, err := q.AddPromptExtraction(ctx, queries.AddPromptExtractionParams{
-		AnswerID: id, Failed: x.Failed, Addresses: clipAll(x.Addresses, 200, 500), NamesTribelt: x.NamesTribelt,
-		CitesTribelt: x.CitesTribelt, Correctness: string(x.Correctness), WrongClaims: clipAll(x.WrongClaims, 10, 500),
-		LeftOut:     clipAll(x.LeftOut, 10, 500),
+		AnswerID: id, Failed: x.Failed, Addresses: clipAll(x.Addresses, 200), NamesTribelt: x.NamesTribelt,
+		CitesTribelt: x.CitesTribelt, Correctness: string(x.Correctness), WrongClaims: clipAll(x.WrongClaims, 10),
+		LeftOut:     clipAll(x.LeftOut, 10),
 		InputTokens: x.InputTokens, OutputTokens: x.OutputTokens, CostMicros: max(int64(x.Cost), 0),
 		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at,
 	})
@@ -581,11 +581,15 @@ func clip(s string, n int) string {
 	return s
 }
 
-// clipAll keeps at most n items, each at most chars characters.
-func clipAll(items []string, n, chars int) []string {
+// maxItem is how many characters an address, a cited source, a wrong claim or a fact left out
+// keeps.
+const maxItem = 500
+
+// clipAll keeps at most n items, each at most maxItem characters.
+func clipAll(items []string, n int) []string {
 	out := make([]string, 0, min(len(items), n))
 	for _, s := range items[:min(len(items), n)] {
-		out = append(out, clip(s, chars))
+		out = append(out, clip(s, maxItem))
 	}
 	return out
 }

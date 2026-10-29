@@ -146,6 +146,9 @@ func (c *Client) Ask(ctx context.Context, model, prompt string, web bool) (domai
 			reply.Citations = append(reply.Citations, a.URLCitation.URL)
 		}
 	}
+	if strings.TrimSpace(reply.Text) == "" {
+		return reply, domain.ErrEmptyAnswer
+	}
 	return reply, nil
 }
 

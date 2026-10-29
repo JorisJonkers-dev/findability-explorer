@@ -158,6 +158,9 @@ func (a Answer) Key() TaskKey {
 var (
 	// ErrRateLimited is returned when the provider asks to slow down (a 429).
 	ErrRateLimited = errors.New("the model is rate limited")
+	// ErrEmptyAnswer is a reply with no text, such as a reasoning model that spent its token limit
+	// thinking. It is a failed answer: never read, never counted, asked again by a retry.
+	ErrEmptyAnswer = errors.New("the model gave no text")
 	// ErrRunActive is returned when a run is running already.
 	ErrRunActive = errors.New("a Prompt run is running already")
 	// ErrNoKey is returned when no OpenRouter key is chosen for Prompt runs, or it cannot be read.

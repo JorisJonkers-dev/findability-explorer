@@ -402,12 +402,14 @@ func (r *repo) Undecide(_ context.Context, id string) error {
 }
 
 // gateway answers every prompt: each model's answer names Twentebelt and, for Twente prompts,
-// Tribelt; a model in limited is always rate limited; extraction fails failExtract times first.
+// Tribelt; a model in limited is always rate limited; a model in empty answers with no text, as a
+// reasoning model that spent its token limit does; extraction fails failExtract times first.
 type gateway struct {
 	mu          sync.Mutex
 	catalogue   []domain.CatalogueModel
 	modelsErr   error
 	limited     map[string]bool
+	empty       map[string]bool
 	askErr      error
 	failExtract int
 	asked       map[string]int
@@ -423,7 +425,7 @@ func newGateway() *gateway {
 			{ID: "google/gemma:free", InputModalities: []string{"text"}, OutputModalities: []string{"text"}},
 			{ID: "google/gemini-flash-lite", PromptPrice: 0.0000001, CompletionPrice: 0.0000004, InputModalities: []string{"text"}, OutputModalities: []string{"text"}},
 		},
-		limited: map[string]bool{}, asked: map[string]int{},
+		limited: map[string]bool{}, empty: map[string]bool{}, asked: map[string]int{},
 	}
 }
 
@@ -441,6 +443,9 @@ func (g *gateway) Ask(_ context.Context, model, prompt string, web bool) (domain
 	}
 	if g.askErr != nil {
 		return domain.Reply{}, g.askErr
+	}
+	if g.empty[model] {
+		return domain.Reply{InputTokens: 20, OutputTokens: 2000, Cost: 10}, domain.ErrEmptyAnswer
 	}
 	text := "Twentebelt makes these belts."
 	if strings.Contains(prompt, "Twente") {

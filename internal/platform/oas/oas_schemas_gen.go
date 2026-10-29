@@ -1459,8 +1459,7 @@ type CandidateReviewState struct {
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-	// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
-	// well.
+	// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
 	Problem OptCandidateReviewStateProblem `json:"problem"`
 }
 
@@ -1488,8 +1487,7 @@ func (*CandidateReviewState) startCandidateReviewRes() {}
 func (*CandidateReviewState) startCompetitorCheckRes() {}
 
 // Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
-// well.
+// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
 type CandidateReviewStateProblem string
 
 const (
@@ -3808,30 +3806,44 @@ type ListTermCandidatesUnauthorized ProblemStatusCode
 
 func (*ListTermCandidatesUnauthorized) listTermCandidatesRes() {}
 
-// What every job on the language model may spend in a month together - the scans' product matching,
-// the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when
-// the month's tokens are spent.
+// What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the
+// scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt
+// answers - and what they spent, priced at the models' list prices from their stored token counts.
+// Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter
+// key's budget is the Prompt test's (PromptTestSettings).
 // Ref: #/components/schemas/LlmBudget
 type LlmBudget struct {
-	// The tokens every job together may use in a calendar month (UTC).
-	MonthlyTokens int64 `json:"monthlyTokens"`
-	// The tokens every job used this month so far.
-	UsedThisMonth int64 `json:"usedThisMonth"`
+	MonthlyBudgetUsd  Usd `json:"monthlyBudgetUsd"`
+	SpentThisMonthUsd Usd `json:"spentThisMonthUsd"`
+	LeftUsd           Usd `json:"leftUsd"`
+	// The tokens, in and out, every job used this month so far.
+	TokensThisMonth int64 `json:"tokensThisMonth"`
 	// The tokens one scan's product matching used on average, over every scan the language model answered
 	// for; 0 before the first.
 	AverageTokensPerScan int64 `json:"averageTokensPerScan"`
+	AverageScanUsd       Usd   `json:"averageScanUsd"`
 	// How many scans the average is over.
 	ScansMatched int64 `json:"scansMatched"`
 }
 
-// GetMonthlyTokens returns the value of MonthlyTokens.
-func (s *LlmBudget) GetMonthlyTokens() int64 {
-	return s.MonthlyTokens
+// GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
+func (s *LlmBudget) GetMonthlyBudgetUsd() Usd {
+	return s.MonthlyBudgetUsd
 }
 
-// GetUsedThisMonth returns the value of UsedThisMonth.
-func (s *LlmBudget) GetUsedThisMonth() int64 {
-	return s.UsedThisMonth
+// GetSpentThisMonthUsd returns the value of SpentThisMonthUsd.
+func (s *LlmBudget) GetSpentThisMonthUsd() Usd {
+	return s.SpentThisMonthUsd
+}
+
+// GetLeftUsd returns the value of LeftUsd.
+func (s *LlmBudget) GetLeftUsd() Usd {
+	return s.LeftUsd
+}
+
+// GetTokensThisMonth returns the value of TokensThisMonth.
+func (s *LlmBudget) GetTokensThisMonth() int64 {
+	return s.TokensThisMonth
 }
 
 // GetAverageTokensPerScan returns the value of AverageTokensPerScan.
@@ -3839,19 +3851,34 @@ func (s *LlmBudget) GetAverageTokensPerScan() int64 {
 	return s.AverageTokensPerScan
 }
 
+// GetAverageScanUsd returns the value of AverageScanUsd.
+func (s *LlmBudget) GetAverageScanUsd() Usd {
+	return s.AverageScanUsd
+}
+
 // GetScansMatched returns the value of ScansMatched.
 func (s *LlmBudget) GetScansMatched() int64 {
 	return s.ScansMatched
 }
 
-// SetMonthlyTokens sets the value of MonthlyTokens.
-func (s *LlmBudget) SetMonthlyTokens(val int64) {
-	s.MonthlyTokens = val
+// SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
+func (s *LlmBudget) SetMonthlyBudgetUsd(val Usd) {
+	s.MonthlyBudgetUsd = val
 }
 
-// SetUsedThisMonth sets the value of UsedThisMonth.
-func (s *LlmBudget) SetUsedThisMonth(val int64) {
-	s.UsedThisMonth = val
+// SetSpentThisMonthUsd sets the value of SpentThisMonthUsd.
+func (s *LlmBudget) SetSpentThisMonthUsd(val Usd) {
+	s.SpentThisMonthUsd = val
+}
+
+// SetLeftUsd sets the value of LeftUsd.
+func (s *LlmBudget) SetLeftUsd(val Usd) {
+	s.LeftUsd = val
+}
+
+// SetTokensThisMonth sets the value of TokensThisMonth.
+func (s *LlmBudget) SetTokensThisMonth(val int64) {
+	s.TokensThisMonth = val
 }
 
 // SetAverageTokensPerScan sets the value of AverageTokensPerScan.
@@ -3859,9 +3886,31 @@ func (s *LlmBudget) SetAverageTokensPerScan(val int64) {
 	s.AverageTokensPerScan = val
 }
 
+// SetAverageScanUsd sets the value of AverageScanUsd.
+func (s *LlmBudget) SetAverageScanUsd(val Usd) {
+	s.AverageScanUsd = val
+}
+
 // SetScansMatched sets the value of ScansMatched.
 func (s *LlmBudget) SetScansMatched(val int64) {
 	s.ScansMatched = val
+}
+
+// The Anthropic key's new monthly budget.
+// Ref: #/components/schemas/LlmBudgetChange
+type LlmBudgetChange struct {
+	// The month's budget in dollars.
+	MonthlyBudgetUsd float64 `json:"monthlyBudgetUsd"`
+}
+
+// GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
+func (s *LlmBudgetChange) GetMonthlyBudgetUsd() float64 {
+	return s.MonthlyBudgetUsd
+}
+
+// SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
+func (s *LlmBudgetChange) SetMonthlyBudgetUsd(val float64) {
+	s.MonthlyBudgetUsd = val
 }
 
 // How the active model was decided - `default` (nobody chose; the Vault key with claude-haiku-5-5 when
@@ -4180,6 +4229,7 @@ const (
 	LlmEventActionCredentialTested  LlmEventAction = "credential_tested"
 	LlmEventActionActiveSet         LlmEventAction = "active_set"
 	LlmEventActionActiveCleared     LlmEventAction = "active_cleared"
+	LlmEventActionBudgetSet         LlmEventAction = "budget_set"
 )
 
 // AllValues returns all LlmEventAction values.
@@ -4190,6 +4240,7 @@ func (LlmEventAction) AllValues() []LlmEventAction {
 		LlmEventActionCredentialTested,
 		LlmEventActionActiveSet,
 		LlmEventActionActiveCleared,
+		LlmEventActionBudgetSet,
 	}
 }
 
@@ -4205,6 +4256,8 @@ func (s LlmEventAction) MarshalText() ([]byte, error) {
 	case LlmEventActionActiveSet:
 		return []byte(s), nil
 	case LlmEventActionActiveCleared:
+		return []byte(s), nil
+	case LlmEventActionBudgetSet:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -4228,6 +4281,9 @@ func (s *LlmEventAction) UnmarshalText(data []byte) error {
 		return nil
 	case LlmEventActionActiveCleared:
 		*s = LlmEventActionActiveCleared
+		return nil
+	case LlmEventActionBudgetSet:
+		*s = LlmEventActionBudgetSet
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4685,9 +4741,10 @@ func (s *LlmSettings) SetEvents(val []LlmEvent) {
 	s.Events = val
 }
 
-func (*LlmSettings) clearActiveLlmRes() {}
-func (*LlmSettings) getLlmSettingsRes() {}
-func (*LlmSettings) setActiveLlmRes()   {}
+func (*LlmSettings) clearActiveLlmRes()  {}
+func (*LlmSettings) getLlmSettingsRes()  {}
+func (*LlmSettings) setActiveLlmRes()    {}
+func (*LlmSettings) updateLlmBudgetRes() {}
 
 // The outcome of asking the provider whether it accepts a key.
 // Ref: #/components/schemas/LlmTest
@@ -13465,8 +13522,7 @@ type TermReviewState struct {
 	// How many waiting candidates it has not reviewed yet.
 	Waiting int32 `json:"waiting"`
 	// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-	// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
-	// well.
+	// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
 	Problem OptTermReviewStateProblem `json:"problem"`
 }
 
@@ -13503,8 +13559,7 @@ func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
 func (*TermReviewState) startTermReviewRes() {}
 
 // Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
-// well.
+// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
 type TermReviewStateProblem string
 
 const (
@@ -13948,6 +14003,22 @@ func (*UpdateCompetitorUnauthorized) updateCompetitorRes() {}
 type UpdateCompetitorUnprocessableEntity ProblemStatusCode
 
 func (*UpdateCompetitorUnprocessableEntity) updateCompetitorRes() {}
+
+type UpdateLlmBudgetBadRequest ProblemStatusCode
+
+func (*UpdateLlmBudgetBadRequest) updateLlmBudgetRes() {}
+
+type UpdateLlmBudgetForbidden ProblemStatusCode
+
+func (*UpdateLlmBudgetForbidden) updateLlmBudgetRes() {}
+
+type UpdateLlmBudgetUnauthorized ProblemStatusCode
+
+func (*UpdateLlmBudgetUnauthorized) updateLlmBudgetRes() {}
+
+type UpdateLlmBudgetUnprocessableEntity ProblemStatusCode
+
+func (*UpdateLlmBudgetUnprocessableEntity) updateLlmBudgetRes() {}
 
 type UpdatePromptTestSettingsBadRequest ProblemStatusCode
 

@@ -37,24 +37,35 @@ type Repository interface {
 	Events(ctx context.Context, limit int) ([]domain.Event, error)
 	// LastTests returns the latest test of each credential, by id.
 	LastTests(ctx context.Context) (map[string]domain.Test, error)
+	// Budget returns the Anthropic key's monthly budget, 0 before an admin sets one.
+	Budget(ctx context.Context) (domain.Micros, error)
+	// SaveBudget stores the Anthropic key's monthly budget.
+	SaveBudget(ctx context.Context, m domain.Micros, actor string, at time.Time) error
 }
 
-// Budget is what every job on the language model may spend in a month (the scans' product matching,
-// the term review, the competitor review and Haiku's reading of Prompt answers), and what one scan
-// uses on average.
+// Budget is what the Anthropic key may spend in a month on every job a Claude model does (the
+// scans' product matching, the term review, the competitor review and Haiku's reading of Prompt
+// answers), what they spent this month, priced at the models' list prices, and what one scan costs
+// on average.
 type Budget struct {
-	MonthlyTokens int64
-	UsedThisMonth int64
-	// AveragePerScan is the tokens one scan's matching used on average, over ScansMatched scans
-	// the language model answered for; both are 0 before the first.
-	AveragePerScan int64
-	ScansMatched   int
+	Monthly domain.Micros
+	Spent   domain.Micros
+	// Left is what remains of Monthly this month, never less than nothing.
+	Left            domain.Micros
+	TokensThisMonth int64
+	// AveragePerScan and AverageScanCost are the tokens one scan's matching used on average and
+	// what they cost, over ScansMatched scans the language model answered for; all are 0 before
+	// the first.
+	AveragePerScan  int64
+	AverageScanCost domain.Micros
+	ScansMatched    int
 }
 
-// Spending is what the jobs used: this month's tokens, all together, and the average of a scan.
+// Spending is what the jobs used this month, per job and model, and what one scan's matching used
+// on average.
 type Spending struct {
-	ThisMonth      int64
-	AveragePerScan int64
+	ThisMonth      []domain.TokenUse
+	AveragePerScan domain.TokenUse
 	ScansMatched   int
 }
 
@@ -64,8 +75,7 @@ type Spent func(ctx context.Context) (Spending, error)
 // Config is the service's fixed settings.
 type Config struct {
 	// VaultKey is ANTHROPIC_API_KEY, empty when Vault delivers none.
-	VaultKey      string
-	MonthlyTokens int64
+	VaultKey string
 }
 
 // Settings is everything the admin settings show.
@@ -114,9 +124,9 @@ func (s *Service) Settings(ctx context.Context) (Settings, error) {
 		return Settings{}, fmt.Errorf("read the active model: %w", err)
 	}
 	choice, active := domain.Resolve(setting, s.cfg.VaultKey != "")
-	spent, err := s.spent(ctx)
+	budget, err := s.budget(ctx)
 	if err != nil {
-		return Settings{}, fmt.Errorf("sum this month's tokens: %w", err)
+		return Settings{}, err
 	}
 	events, err := s.repo.Events(ctx, domain.MaxEvents)
 	if err != nil {
@@ -132,21 +142,64 @@ func (s *Service) Settings(ctx context.Context) (Settings, error) {
 	return Settings{
 		Credentials: creds, Choice: choice, Active: active, Haiku: haiku, Events: events,
 		MatchingEnabled: choice != domain.ChoiceOff && (enabled || haiku != nil),
-		Budget: Budget{
-			MonthlyTokens: s.cfg.MonthlyTokens, UsedThisMonth: spent.ThisMonth,
-			AveragePerScan: spent.AveragePerScan, ScansMatched: spent.ScansMatched,
-		},
+		Budget:          budget,
 	}, nil
 }
 
-// BudgetSpent reports whether this month's tokens, of every job together, reached the monthly
-// budget, as the settings show them. Every job on the language model stops when it has.
-func (s *Service) BudgetSpent(ctx context.Context) (bool, error) {
+// budget is the Anthropic key's monthly budget (domain.DefaultBudget until an admin sets one)
+// against what every job spent this month.
+func (s *Service) budget(ctx context.Context) (Budget, error) {
+	monthly, err := s.repo.Budget(ctx)
+	if err != nil {
+		return Budget{}, fmt.Errorf("read the monthly budget: %w", err)
+	}
+	if monthly == 0 {
+		monthly = domain.DefaultBudget
+	}
 	spent, err := s.spent(ctx)
 	if err != nil {
-		return false, fmt.Errorf("sum this month's tokens: %w", err)
+		return Budget{}, fmt.Errorf("sum this month's spending: %w", err)
 	}
-	return spent.ThisMonth >= s.cfg.MonthlyTokens, nil
+	b := Budget{
+		Monthly: monthly, AveragePerScan: spent.AveragePerScan.Tokens(), AverageScanCost: spent.AveragePerScan.Cost(),
+		ScansMatched: spent.ScansMatched,
+	}
+	for _, u := range spent.ThisMonth {
+		b.Spent += u.Cost()
+		b.TokensThisMonth += u.Tokens()
+	}
+	b.Left = max(b.Monthly-b.Spent, 0)
+	return b, nil
+}
+
+// BudgetSpent reports whether this month's dollars, of every job together, reached the Anthropic
+// key's monthly budget, as the settings show them. Every job on a Claude model stops when it has,
+// and keeps what it did.
+func (s *Service) BudgetSpent(ctx context.Context) (bool, error) {
+	b, err := s.budget(ctx)
+	if err != nil {
+		return false, err
+	}
+	return b.Spent >= b.Monthly, nil
+}
+
+// SetBudget sets the Anthropic key's monthly budget, from one cent to $1,000, and records it.
+func (s *Service) SetBudget(ctx context.Context, actor string, monthly domain.Micros) (Settings, error) {
+	monthly, err := domain.CheckBudget(monthly)
+	if err != nil {
+		return Settings{}, err
+	}
+	now := s.now()
+	if err := s.repo.SaveBudget(ctx, monthly, actor, now); err != nil {
+		return Settings{}, fmt.Errorf("save the monthly budget: %w", err)
+	}
+	if err := s.record(ctx, domain.Event{
+		At: now, Actor: actor, Action: domain.ActionBudgetSet, Provider: domain.Anthropic,
+		Message: "Anthropic budget set to " + monthly.String() + ".",
+	}); err != nil {
+		return Settings{}, err
+	}
+	return s.Settings(ctx)
 }
 
 // credentials is the Vault credential, when there is one, then the stored ones oldest first,

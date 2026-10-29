@@ -179,6 +179,13 @@ type LlmActive struct {
 	UpdatedAt    time.Time
 }
 
+type LlmBudget struct {
+	Singleton           bool
+	MonthlyBudgetMicros int64
+	UpdatedBy           string
+	UpdatedAt           time.Time
+}
+
 type LlmCredential struct {
 	ID          uuid.UUID
 	Provider    string

@@ -96,6 +96,7 @@ var operationRolesSessionCookie = map[string][]string{
 	UndoCompetitorCandidateOperation:    []string{},
 	UndoTermDecisionOperation:           []string{},
 	UpdateCompetitorOperation:           []string{},
+	UpdateLlmBudgetOperation:            []string{},
 	UpdatePromptTestSettingsOperation:   []string{},
 }
 

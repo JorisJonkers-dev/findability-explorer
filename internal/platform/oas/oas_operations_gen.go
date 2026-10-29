@@ -64,5 +64,6 @@ const (
 	UndoCompetitorCandidateOperation    OperationName = "UndoCompetitorCandidate"
 	UndoTermDecisionOperation           OperationName = "UndoTermDecision"
 	UpdateCompetitorOperation           OperationName = "UpdateCompetitor"
+	UpdateLlmBudgetOperation            OperationName = "UpdateLlmBudget"
 	UpdatePromptTestSettingsOperation   OperationName = "UpdatePromptTestSettings"
 )

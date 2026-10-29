@@ -949,6 +949,28 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/prompt-test/history:
+    get:
+      operationId: getPromptTestHistory
+      summary: Get the Prompt test's figures per run
+      description: >-
+        Returns the published Prompt sets, oldest first, and every one of the latest runs with at
+        least one response read, oldest first: its Prompt set version, whether it is partial (it
+        got fewer than half its responses) and, for a partial run, the reason most of its failed
+        responses give, and the shares of the responses read that name Tribelt, overall, per
+        language, and for Twente, with the share of web responses that cite tribelt.nl.
+      tags: [prompt-test]
+      responses:
+        "200":
+          description: The figures per run.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptTestHistory"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/prompt-runs/{runId}/answers:
     get:
       operationId: listPromptAnswers
@@ -5312,6 +5334,155 @@ components:
           description: The claims about Tribelt the answers got wrong, newest first.
           items:
             $ref: "#/components/schemas/PromptWrongClaim"
+    PromptTestHistory:
+      description: The Prompt test's figures per run, with the Prompt set versions they asked.
+      type: object
+      additionalProperties: false
+      required: [versions, runs]
+      properties:
+        versions:
+          type: array
+          maxItems: 100
+          description: The published Prompt sets, oldest first.
+          items:
+            $ref: "#/components/schemas/PromptSetVersionInfo"
+        runs:
+          type: array
+          maxItems: 500
+          description: Every run of the latest with at least one response read, oldest first.
+          items:
+            $ref: "#/components/schemas/PromptRunFigures"
+    PromptSetVersionInfo:
+      description: One published Prompt set.
+      type: object
+      additionalProperties: false
+      required: [version, publishedAt, questions, note]
+      properties:
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version.
+          example: 2
+        publishedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it was published.
+          example: "2026-10-27T06:35:33Z"
+        questions:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many questions it asks.
+          example: 20
+        note:
+          type: string
+          maxLength: 300
+          description: What it asks, or what it changed.
+          example: Kept the application question a buyer most often asks, in four scopes.
+    PromptRunFigures:
+      description: >-
+        One run's figures: the share of the responses read that name Tribelt, overall, per
+        language, and for Twente, and the share of web responses that cite tribelt.nl. A share is
+        absent when the run read no response to measure it on.
+      type: object
+      additionalProperties: false
+      required: [runId, startedAt, promptSetVersion, tasks, answered, read, partial]
+      properties:
+        runId:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: The run's id.
+          example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
+        startedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it started.
+          example: "2026-11-01T06:00:00Z"
+        promptSetVersion:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version of the Prompt set it asked.
+          example: 2
+        tasks:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many responses it asked for.
+          example: 200
+        answered:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many requests got a response.
+          example: 196
+        read:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many responses were read, which the shares count.
+          example: 194
+        partial:
+          type: boolean
+          description: Whether it got fewer than half its responses.
+          example: false
+        failure:
+          type: string
+          maxLength: 300
+          description: The reason most of a partial run's failed responses give; absent for a run that is not partial.
+          example: "OpenRouter answered 401: User not found."
+        all:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the responses read that name Tribelt.
+          example: 0.12
+        dutch:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the Dutch responses read that name Tribelt.
+          example: 0.2
+        german:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the German responses read that name Tribelt.
+          example: 0.05
+        english:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the English responses read that name Tribelt.
+          example: 0.02
+        twente:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the responses read to the Twente questions that name Tribelt.
+          example: 0.4
+        citation:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: The share of the web responses read that cite tribelt.nl.
+          example: 0.3
     PromptNamedCompany:
       description: A company an answer names, matched to the company list when it is on it.
       type: object

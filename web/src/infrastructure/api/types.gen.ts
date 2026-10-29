@@ -2542,6 +2542,104 @@ export type PromptTestResults = {
 };
 
 /**
+ * The Prompt test's figures per run, with the Prompt set versions they asked.
+ */
+export type PromptTestHistory = {
+    /**
+     * The published Prompt sets, oldest first.
+     */
+    versions: Array<PromptSetVersionInfo>;
+    /**
+     * Every run of the latest with at least one response read, oldest first.
+     */
+    runs: Array<PromptRunFigures>;
+};
+
+/**
+ * One published Prompt set.
+ */
+export type PromptSetVersionInfo = {
+    /**
+     * The version.
+     */
+    version: number;
+    /**
+     * When it was published.
+     */
+    publishedAt: string;
+    /**
+     * How many questions it asks.
+     */
+    questions: number;
+    /**
+     * What it asks, or what it changed.
+     */
+    note: string;
+};
+
+/**
+ * One run's figures: the share of the responses read that name Tribelt, overall, per language, and for Twente, and the share of web responses that cite tribelt.nl. A share is absent when the run read no response to measure it on.
+ */
+export type PromptRunFigures = {
+    /**
+     * The run's id.
+     */
+    runId: string;
+    /**
+     * When it started.
+     */
+    startedAt: string;
+    /**
+     * The version of the Prompt set it asked.
+     */
+    promptSetVersion: number;
+    /**
+     * How many responses it asked for.
+     */
+    tasks: number;
+    /**
+     * How many requests got a response.
+     */
+    answered: number;
+    /**
+     * How many responses were read, which the shares count.
+     */
+    read: number;
+    /**
+     * Whether it got fewer than half its responses.
+     */
+    partial: boolean;
+    /**
+     * The reason most of a partial run's failed responses give; absent for a run that is not partial.
+     */
+    failure?: string;
+    /**
+     * The share of the responses read that name Tribelt.
+     */
+    all?: number;
+    /**
+     * The share of the Dutch responses read that name Tribelt.
+     */
+    dutch?: number;
+    /**
+     * The share of the German responses read that name Tribelt.
+     */
+    german?: number;
+    /**
+     * The share of the English responses read that name Tribelt.
+     */
+    english?: number;
+    /**
+     * The share of the responses read to the Twente questions that name Tribelt.
+     */
+    twente?: number;
+    /**
+     * The share of the web responses read that cite tribelt.nl.
+     */
+    citation?: number;
+};
+
+/**
  * A company an answer names, matched to the company list when it is on it.
  */
 export type PromptNamedCompany = {
@@ -4311,6 +4409,35 @@ export type GetPromptTestResultsResponses = {
 };
 
 export type GetPromptTestResultsResponse = GetPromptTestResultsResponses[keyof GetPromptTestResultsResponses];
+
+export type GetPromptTestHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/prompt-test/history';
+};
+
+export type GetPromptTestHistoryErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptTestHistoryError = GetPromptTestHistoryErrors[keyof GetPromptTestHistoryErrors];
+
+export type GetPromptTestHistoryResponses = {
+    /**
+     * The figures per run.
+     */
+    200: PromptTestHistory;
+};
+
+export type GetPromptTestHistoryResponse = GetPromptTestHistoryResponses[keyof GetPromptTestHistoryResponses];
 
 export type ListPromptAnswersData = {
     body?: never;

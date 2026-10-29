@@ -265,6 +265,19 @@ func (UnimplementedHandler) GetPromptRetryPlan(ctx context.Context, params GetPr
 	return r, ht.ErrNotImplemented
 }
 
+// GetPromptTestHistory implements getPromptTestHistory operation.
+//
+// Returns the published Prompt sets, oldest first, and every one of the latest runs with at least one
+// response read, oldest first: its Prompt set version, whether it is partial (it got fewer than half
+// its responses) and, for a partial run, the reason most of its failed responses give, and the shares
+// of the responses read that name Tribelt, overall, per language, and for Twente, with the share of
+// web responses that cite tribelt.nl.
+//
+// GET /api/v1/prompt-test/history
+func (UnimplementedHandler) GetPromptTestHistory(ctx context.Context) (r GetPromptTestHistoryRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetPromptTestResults implements getPromptTestResults operation.
 //
 // Returns the latest Prompt runs, newest first, each with its progress and its answers counted per

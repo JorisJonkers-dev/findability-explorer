@@ -29,6 +29,7 @@ const (
 	GetPlanOperation                    OperationName = "GetPlan"
 	GetProductsOperation                OperationName = "GetProducts"
 	GetPromptRetryPlanOperation         OperationName = "GetPromptRetryPlan"
+	GetPromptTestHistoryOperation       OperationName = "GetPromptTestHistory"
 	GetPromptTestResultsOperation       OperationName = "GetPromptTestResults"
 	GetPromptTestSettingsOperation      OperationName = "GetPromptTestSettings"
 	GetReadinessFilesOperation          OperationName = "GetReadinessFiles"

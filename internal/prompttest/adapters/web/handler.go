@@ -26,6 +26,7 @@ type UseCases interface {
 	Reread(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
 	RetryPlan(ctx context.Context, runID uuid.UUID) (app.Plan, error)
 	StopRun(ctx context.Context, actor string, runID uuid.UUID) error
+	History(ctx context.Context) (app.HistoryView, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error)
@@ -90,6 +91,41 @@ func (h *Handler) GetPromptTestResults(ctx context.Context) (oas.GetPromptTestRe
 		out.WrongClaims = append(out.WrongClaims, claim)
 	}
 	return out, nil
+}
+
+// GetPromptTestHistory implements getPromptTestHistory.
+func (h *Handler) GetPromptTestHistory(ctx context.Context) (oas.GetPromptTestHistoryRes, error) {
+	v, err := h.uc.History(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.PromptTestHistory{Versions: make([]oas.PromptSetVersionInfo, 0, len(v.Versions)), Runs: make([]oas.PromptRunFigures, 0, len(v.Runs))}
+	for _, x := range v.Versions {
+		out.Versions = append(out.Versions, oas.PromptSetVersionInfo{
+			Version: int32(x.Number), PublishedAt: x.PublishedAt, Questions: int32(x.Questions), Note: x.Note, //nolint:gosec // small numbers
+		})
+	}
+	for _, f := range v.Runs {
+		r := oas.PromptRunFigures{
+			RunId: f.RunID, StartedAt: f.StartedAt, PromptSetVersion: int32(f.Version), Partial: f.Partial, //nolint:gosec // small versions
+			Tasks: int32(f.Tasks), Answered: int32(f.Answered), Read: int32(f.Read), //nolint:gosec // at most a few thousand
+			All: optShare(f.All), Dutch: optShare(f.Dutch), German: optShare(f.German), English: optShare(f.English),
+			Twente: optShare(f.Twente), Citation: optShare(f.Citation),
+		}
+		if why := v.FailureOf[f.RunID]; why != "" {
+			r.Failure = oas.NewOptString(why)
+		}
+		out.Runs = append(out.Runs, r)
+	}
+	return out, nil
+}
+
+// optShare is a share, absent when there was nothing to measure.
+func optShare(v *float64) oas.OptFloat64 {
+	if v == nil {
+		return oas.OptFloat64{}
+	}
+	return oas.NewOptFloat64(*v)
 }
 
 // ListPromptAnswers implements listPromptAnswers.

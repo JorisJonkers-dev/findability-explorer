@@ -93,6 +93,10 @@ type GetPromptRetryPlanRes interface {
 	getPromptRetryPlanRes()
 }
 
+type GetPromptTestHistoryRes interface {
+	getPromptTestHistoryRes()
+}
+
 type GetPromptTestResultsRes interface {
 	getPromptTestResultsRes()
 }

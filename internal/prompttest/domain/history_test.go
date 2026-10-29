@@ -1,0 +1,112 @@
+package domain_test
+
+import (
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+)
+
+func cell(scope domain.Scope, mode domain.Mode, answers, named, cited int) domain.Cell {
+	return domain.Cell{Provider: "openai", Scope: scope, Family: domain.FamilyEyelink, Mode: mode, Answers: answers, Named: named, Cited: cited}
+}
+
+func TestHistoryGivesTheSharesOverallPerLanguageForTwenteAndOfCitations(t *testing.T) {
+	at := time.Date(2026, 10, 27, 8, 0, 0, 0, time.UTC)
+	id := uuid.New()
+	got := domain.History([]domain.RunFigureInput{{
+		Run:      domain.Run{ID: id, PromptSetVersion: 2, StartedAt: at, Tasks: 40},
+		Progress: domain.Progress{Answered: 40},
+		Cells: []domain.Cell{
+			cell(domain.ScopeTwente, domain.ModeKnowledge, 10, 5, 0),
+			cell(domain.ScopeDutch, domain.ModeWeb, 10, 3, 4),
+			cell(domain.ScopeGerman, domain.ModeWeb, 10, 1, 1),
+			cell(domain.ScopeEnglish, domain.ModeKnowledge, 10, 0, 0),
+		},
+	}})
+	if len(got) != 1 {
+		t.Fatalf("got %d runs", len(got))
+	}
+	r := got[0]
+	want := map[string]float64{"all": 9.0 / 40, "nl": 8.0 / 20, "de": 0.1, "en": 0, "twente": 0.5, "citation": 5.0 / 20}
+	shares := map[string]*float64{"all": r.All, "nl": r.Dutch, "de": r.German, "en": r.English, "twente": r.Twente, "citation": r.Citation}
+	for k, w := range want {
+		if shares[k] == nil || *shares[k] != w {
+			t.Errorf("%s = %v, want %v", k, shares[k], w)
+		}
+	}
+	if r.RunID != id || !r.StartedAt.Equal(at) || r.Version != 2 || r.Tasks != 40 || r.Answered != 40 || r.Read != 40 || r.Partial {
+		t.Errorf("figures = %+v", r)
+	}
+}
+
+func TestARunWithFewerThanHalfItsResponsesIsPartialAndHasNoShareWhereNothingWasRead(t *testing.T) {
+	got := domain.History([]domain.RunFigureInput{{
+		Run:      domain.Run{ID: uuid.New(), PromptSetVersion: 1, Tasks: 1260},
+		Progress: domain.Progress{Answered: 62},
+		Cells:    []domain.Cell{cell(domain.ScopeNetherlands, domain.ModeKnowledge, 47, 19, 0)},
+	}})
+	r := got[0]
+	if !r.Partial || r.Read != 47 || r.Dutch == nil || r.English != nil || r.German != nil || r.Twente != nil || r.Citation != nil {
+		t.Fatalf("figures = %+v", r)
+	}
+	// Half its responses is not partial.
+	half := domain.History([]domain.RunFigureInput{{
+		Run: domain.Run{ID: uuid.New(), Tasks: 80}, Progress: domain.Progress{Answered: 40},
+		Cells: []domain.Cell{cell(domain.ScopeGermany, domain.ModeWeb, 40, 0, 0)},
+	}})
+	if half[0].Partial || half[0].German == nil || *half[0].German != 0 || half[0].Citation == nil || *half[0].Citation != 0 {
+		t.Errorf("half = %+v", half[0])
+	}
+}
+
+func TestHistoryLeavesOutARunWithNothingReadAndKeepsTheOrderGiven(t *testing.T) {
+	first, last := uuid.New(), uuid.New()
+	got := domain.History([]domain.RunFigureInput{
+		{Run: domain.Run{ID: first, Tasks: 40}, Progress: domain.Progress{Answered: 40}, Cells: []domain.Cell{cell(domain.ScopeTwente, domain.ModeWeb, 40, 40, 0)}},
+		{Run: domain.Run{ID: uuid.New(), Tasks: 200}},
+		{Run: domain.Run{ID: last, Tasks: 40}, Progress: domain.Progress{Answered: 40}, Cells: []domain.Cell{cell(domain.ScopeTwente, domain.ModeWeb, 40, 20, 0)}},
+	})
+	if len(got) != 2 || got[0].RunID != first || got[1].RunID != last {
+		t.Fatalf("history = %+v, want the two runs with responses read, in order", got)
+	}
+	if empty := domain.History(nil); empty == nil || len(empty) != 0 {
+		t.Errorf("no runs = %#v, want an empty list", empty)
+	}
+}
+
+func TestTheVersionsAreListedOldestFirstWithWhatTheyAsk(t *testing.T) {
+	v := domain.Versions()
+	if len(v) != 2 || v[0].Number != 1 || v[1].Number != domain.PromptSetVersion {
+		t.Fatalf("versions = %+v", v)
+	}
+	if !v[0].PublishedAt.Equal(time.Date(2026, 10, 26, 15, 4, 51, 0, time.UTC)) || !v[1].PublishedAt.Equal(time.Date(2026, 10, 27, 6, 35, 33, 0, time.UTC)) {
+		t.Errorf("published %v and %v", v[0].PublishedAt, v[1].PublishedAt)
+	}
+	if v[0].Questions != 90 || v[1].Questions != len(domain.CurrentPromptSet().Prompts) || v[1].Questions != 20 {
+		t.Errorf("questions %d and %d", v[0].Questions, v[1].Questions)
+	}
+	if v[0].Note != "A supplier, an application, and a problem question for each belt family, in six scopes." ||
+		v[1].Note != "Kept the application question a buyer most often asks, in four scopes." {
+		t.Errorf("notes %q and %q", v[0].Note, v[1].Note)
+	}
+}
+
+func TestTheCommonestFailureIsTheReasonMostFailedResponsesGive(t *testing.T) {
+	answers := []domain.Answer{
+		{Failure: "The model is rate limited."},
+		{Failure: "OpenRouter answered 401."},
+		{},
+		{Failure: "OpenRouter answered 401."},
+		{Failure: "The model is rate limited."},
+		{Failure: "A."},
+	}
+	if got := domain.CommonestFailure(answers); got != "OpenRouter answered 401." {
+		t.Errorf("commonest = %q, a tie goes to the first alphabetically", got)
+	}
+	if got := domain.CommonestFailure([]domain.Answer{{}}); got != "" {
+		t.Errorf("no failure = %q", got)
+	}
+}

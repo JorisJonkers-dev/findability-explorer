@@ -15,23 +15,24 @@ import (
 
 // promptTests is a stand-in for the prompt-test use cases, so these tests exercise the contract.
 type promptTests struct {
-	err       error
-	retryErr  error
-	retried   *domain.TaskKey
-	reread    *domain.TaskKey
-	planErr   error
-	startErr  error
-	updateErr error
-	decideErr error
-	decided   domain.CandidateStatus
-	reviewing bool
-	checking  bool
-	problem   app.ReviewProblem
-	change    app.Change
-	actor     string
-	filter    app.AnswerFilter
-	stopErr   error
-	stopped   uuid.UUID
+	err        error
+	retryErr   error
+	retried    *domain.TaskKey
+	reread     *domain.TaskKey
+	planErr    error
+	startErr   error
+	updateErr  error
+	decideErr  error
+	decided    domain.CandidateStatus
+	reviewing  bool
+	checking   bool
+	problem    app.ReviewProblem
+	change     app.Change
+	actor      string
+	filter     app.AnswerFilter
+	stopErr    error
+	stopped    uuid.UUID
+	historyErr error
 }
 
 func (a *analyses) prompts() *promptTests {
@@ -133,6 +134,24 @@ func (p *promptTests) StopRun(_ context.Context, actor string, id uuid.UUID) err
 	}
 	p.actor, p.stopped = actor, id
 	return p.stopErr
+}
+
+// partialID is the run the history gives as partial.
+var partialID = uuid.MustParse("0c9d8e7f-6a5b-4c3d-9e2f-1a0b9c8d7e6f")
+
+func (p *promptTests) History(context.Context) (app.HistoryView, error) {
+	share := func(v float64) *float64 { return &v }
+	return app.HistoryView{
+		Versions: domain.Versions(),
+		Runs: []domain.RunFigures{
+			{RunID: partialID, StartedAt: answered.Add(-48 * time.Hour), Version: 1, Tasks: 1260, Answered: 62, Read: 47, Partial: true, All: share(0.4), Dutch: share(0.4)},
+			{
+				RunID: runID, StartedAt: answered, Version: 2, Tasks: 200, Answered: 196, Read: 194,
+				All: share(0.25), Dutch: share(0.3), German: share(0.2), English: share(0.1), Twente: share(0.5), Citation: share(0.35),
+			},
+		},
+		FailureOf: map[uuid.UUID]string{partialID: "OpenRouter answered 401: User not found."},
+	}, p.historyErr
 }
 
 func view() app.View {
@@ -586,5 +605,45 @@ func TestAnAdministratorStopsARunningRun(t *testing.T) {
 	a.prompts().stopErr = errors.New("broken")
 	if r := callAs(t, srv, http.MethodPost, path, "", "admin"); r.code != http.StatusInternalServerError {
 		t.Errorf("a failing stop = %d", r.code)
+	}
+}
+
+func TestEverySignedInAccountReadsThePromptTestHistory(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/history", "", false); r.code != http.StatusUnauthorized {
+		t.Errorf("without a session = %d", r.code)
+	}
+	r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/history", "", true)
+	versions, _ := r.body["versions"].([]any)
+	runs, _ := r.body["runs"].([]any)
+	if r.code != http.StatusOK || len(versions) != 2 || len(runs) != 2 {
+		t.Fatalf("history = %d %v", r.code, r.body)
+	}
+	v := versions[1].(map[string]any)
+	if v["version"].(float64) != 2 || v["publishedAt"] != "2026-10-27T06:35:33Z" || v["questions"].(float64) != 20 || v["note"] == "" {
+		t.Errorf("version 2 = %v", v)
+	}
+	partial, full := runs[0].(map[string]any), runs[1].(map[string]any)
+	if partial["runId"] != partialID.String() || partial["partial"] != true || partial["promptSetVersion"].(float64) != 1 || partial["tasks"].(float64) != 1260 ||
+		partial["answered"].(float64) != 62 || partial["read"].(float64) != 47 || partial["failure"] != "OpenRouter answered 401: User not found." ||
+		partial["all"].(float64) != 0.4 || partial["dutch"].(float64) != 0.4 {
+		t.Errorf("partial run = %v", partial)
+	}
+	for _, k := range []string{"german", "english", "twente", "citation"} {
+		if _, ok := partial[k]; ok {
+			t.Errorf("the partial run has a %s share it had nothing to measure on", k)
+		}
+	}
+	if full["runId"] != runID.String() || full["partial"] != false || full["citation"].(float64) != 0.35 || full["twente"].(float64) != 0.5 ||
+		full["english"].(float64) != 0.1 || full["german"].(float64) != 0.2 || full["startedAt"] != "2026-11-01T06:10:00Z" {
+		t.Errorf("full run = %v", full)
+	}
+	if _, ok := full["failure"]; ok {
+		t.Errorf("a full run has a failure: %v", full)
+	}
+	a.prompts().historyErr = errors.New("broken")
+	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/history", "", true); r.code != http.StatusInternalServerError {
+		t.Errorf("a failing history = %d", r.code)
 	}
 }

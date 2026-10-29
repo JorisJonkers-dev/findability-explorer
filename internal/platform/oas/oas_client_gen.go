@@ -212,6 +212,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/admin/prompt-runs/{runId}/retry-plan
 	GetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (GetPromptRetryPlanRes, error)
+	// GetPromptTestHistory invokes getPromptTestHistory operation.
+	//
+	// Returns the published Prompt sets, oldest first, and every one of the latest runs with at least one
+	// response read, oldest first: its Prompt set version, whether it is partial (it got fewer than half
+	// its responses) and, for a partial run, the reason most of its failed responses give, and the shares
+	// of the responses read that name Tribelt, overall, per language, and for Twente, with the share of
+	// web responses that cite tribelt.nl.
+	//
+	// GET /api/v1/prompt-test/history
+	GetPromptTestHistory(ctx context.Context) (GetPromptTestHistoryRes, error)
 	// GetPromptTestResults invokes getPromptTestResults operation.
 	//
 	// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
@@ -3452,6 +3462,123 @@ func (c *Client) sendGetPromptRetryPlan(ctx context.Context, params GetPromptRet
 
 	stage = "DecodeResponse"
 	result, err := decodeGetPromptRetryPlanResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetPromptTestHistory invokes getPromptTestHistory operation.
+//
+// Returns the published Prompt sets, oldest first, and every one of the latest runs with at least one
+// response read, oldest first: its Prompt set version, whether it is partial (it got fewer than half
+// its responses) and, for a partial run, the reason most of its failed responses give, and the shares
+// of the responses read that name Tribelt, overall, per language, and for Twente, with the share of
+// web responses that cite tribelt.nl.
+//
+// GET /api/v1/prompt-test/history
+func (c *Client) GetPromptTestHistory(ctx context.Context) (GetPromptTestHistoryRes, error) {
+	res, err := c.sendGetPromptTestHistory(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetPromptTestHistory(ctx context.Context) (res GetPromptTestHistoryRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getPromptTestHistory"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/prompt-test/history"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPromptTestHistoryOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/prompt-test/history"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetPromptTestHistoryOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPromptTestHistoryResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -64,7 +64,7 @@ const answer = (mode: 'knowledge' | 'web', id: string, failed: boolean) => ({
     : {
         extraction: {
           failed: false, companies: [{ name: 'Tribelt', competitorId: 'tribelt', position: 1 }], addresses: ['https://www.tribelt.nl/'],
-          namesTribelt: true, citesTribelt: true, wrongClaims: [], costUsd: 0.0002,
+          namesTribelt: true, citesTribelt: true, wrongClaims: [], leftOut: [], costUsd: 0.0002,
         },
       }),
 })

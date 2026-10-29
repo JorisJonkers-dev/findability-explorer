@@ -5613,7 +5613,7 @@ components:
       description: How the extractor read an answer; failed when it could not, after a retry.
       type: object
       additionalProperties: false
-      required: [failed, companies, addresses, namesTribelt, citesTribelt, wrongClaims, costUsd]
+      required: [failed, companies, addresses, namesTribelt, citesTribelt, wrongClaims, leftOut, costUsd]
       properties:
         failed:
           type: boolean
@@ -5643,11 +5643,24 @@ components:
         wrongClaims:
           type: array
           maxItems: 10
-          description: Each claim about Tribelt the fact sheet contradicts, quoted.
+          description: >-
+            Each claim about Tribelt the fact sheet contradicts, quoted: what the response got wrong
+            about Tribelt, and the only claims that become fact sheet corrections.
           items:
             type: string
             maxLength: 500
             example: Tribelt is in Hengelo.
+        leftOut:
+          type: array
+          maxItems: 10
+          description: >-
+            Each fact from the fact sheet a response naming Tribelt does not mention; empty when it
+            does not name Tribelt, and for a response read before wrong claims and facts left out
+            were told apart.
+          items:
+            type: string
+            maxLength: 500
+            example: Tribelt makes eyelink belts to measure.
         costUsd:
           $ref: "#/components/schemas/Usd"
     PromptAnswer:

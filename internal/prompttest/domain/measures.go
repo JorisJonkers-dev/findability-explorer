@@ -162,6 +162,7 @@ type WrongClaim struct {
 }
 
 // WrongClaims lists every claim the extractor quoted as wrong or partly wrong, newest answer first.
+// A fact a response left out is never one: only wrong claims become fact sheet corrections.
 func WrongClaims(answers []Answer) []WrongClaim {
 	var out []WrongClaim
 	for _, a := range answers {

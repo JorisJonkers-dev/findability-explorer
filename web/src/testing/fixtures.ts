@@ -300,6 +300,7 @@ export function promptAnswer(
       namesTribelt: companies.some((c) => c.endsWith(':tribelt')),
       citesTribelt: false,
       wrongClaims: [],
+      leftOut: [],
       costUsd: 0.0002,
       ...extraction,
     },

@@ -297,6 +297,7 @@ type PromptExtraction struct {
 	CostMicros   int64
 	ExtractedAt  time.Time
 	HaikuTokens  int64
+	LeftOut      []string
 }
 
 type PromptReviewUsage struct {

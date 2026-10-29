@@ -508,7 +508,8 @@ func toAnswer(a domain.Answer) oas.PromptAnswer {
 		out.OutputTokens += x.OutputTokens
 		e := oas.PromptExtraction{
 			Failed: x.Failed, Companies: make([]oas.PromptNamedCompany, 0, len(x.Companies)), Addresses: orEmpty(x.Addresses),
-			NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, WrongClaims: orEmpty(x.WrongClaims), CostUsd: oas.Usd(x.Cost.Dollars()),
+			NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, WrongClaims: orEmpty(x.WrongClaims), LeftOut: orEmpty(x.LeftOut),
+			CostUsd: oas.Usd(x.Cost.Dollars()),
 		}
 		if x.Correctness != domain.CorrectnessNone {
 			e.Correctness = oas.NewOptPromptCorrectness(oas.PromptCorrectness(x.Correctness))

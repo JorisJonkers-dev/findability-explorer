@@ -550,3 +550,26 @@ func TestQuestionsOfARunAreItsSetOrWhatItsAnswersKept(t *testing.T) {
 		t.Errorf("unanswered = %d", len(missing))
 	}
 }
+
+func TestAReadingKeepsClaimsWrongAboutTribeltApartFromFactsLeftOut(t *testing.T) {
+	x := domain.Extracted{
+		Companies: []domain.Named{{Name: "Tribelt"}}, Correctness: domain.CorrectnessPartly,
+		WrongClaims: []string{"Tribelt is in Hengelo."}, LeftOut: []string{"Tribelt makes eyelink belts."},
+	}
+	got := domain.Read(x, nil, directory())
+	if !slices.Equal(got.WrongClaims, []string{"Tribelt is in Hengelo."}) || !slices.Equal(got.LeftOut, []string{"Tribelt makes eyelink belts."}) {
+		t.Errorf("a response naming Tribelt = wrong %v, left out %v", got.WrongClaims, got.LeftOut)
+	}
+	x.Companies = []domain.Named{{Name: "Twentebelt"}}
+	if got := domain.Read(x, nil, directory()); got.WrongClaims != nil || got.LeftOut != nil {
+		t.Errorf("a response not naming Tribelt leaves nothing out, yet wrong %v, left out %v", got.WrongClaims, got.LeftOut)
+	}
+	// Only claims wrong about Tribelt are listed as wrong; a fact left out never is.
+	read := domain.Read(domain.Extracted{
+		Companies: []domain.Named{{Name: "Tribelt"}}, Correctness: domain.CorrectnessCorrect, LeftOut: []string{"Tribelt is in Haaksbergen."},
+	}, nil, directory())
+	claims := domain.WrongClaims([]domain.Answer{answer("openai", domain.ScopeTwente, domain.ModeWeb, &read)})
+	if len(claims) != 0 {
+		t.Errorf("a fact left out became a wrong claim: %+v", claims)
+	}
+}

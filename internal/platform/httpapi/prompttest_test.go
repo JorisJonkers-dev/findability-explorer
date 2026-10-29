@@ -66,7 +66,7 @@ func promptAnswers() []domain.Answer {
 				Companies:    []domain.Company{{Name: "Tribelt", CompetitorID: "tribelt", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
 				Addresses:    []string{"https://www.tribelt.nl/"},
 				NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."}, Cost: 500_000,
-				InputTokens: 300, OutputTokens: 20,
+				LeftOut: []string{"Tribelt makes eyelink belts to measure."}, InputTokens: 300, OutputTokens: 20,
 			},
 		},
 		{ID: uuid.New(), RunID: runID, Prompt: set.Prompts[1], PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeKnowledge, Failure: "Rate limited.", At: answered},
@@ -262,8 +262,10 @@ func TestPromptTestResultsAreForEveryoneSignedIn(t *testing.T) {
 	if mention["name"] != "Tribelt B.V." || mention["role"] != "tribelt" || mention["averagePosition"].(float64) != 1 || mention["share"].(float64) != 0.5 {
 		t.Errorf("mention = %v", mention)
 	}
-	if claim := r.body["wrongClaims"].([]any)[0].(map[string]any); claim["claim"] != "Tribelt is in Hengelo." || claim["correctness"] != "wrong" {
-		t.Errorf("claim = %v", claim)
+	// Only the claims wrong about Tribelt are listed; the facts a response left out are not.
+	if claims := r.body["wrongClaims"].([]any); len(claims) != 1 || claims[0].(map[string]any)["claim"] != "Tribelt is in Hengelo." ||
+		claims[0].(map[string]any)["correctness"] != "wrong" {
+		t.Errorf("claims = %v", claims)
 	}
 	a.prompts().err = errors.New("down")
 	if r := callAs(t, srv, http.MethodGet, "/api/v1/prompt-test", "", "tester"); r.code != http.StatusInternalServerError {
@@ -287,6 +289,11 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	}
 	if second := items[1].(map[string]any); second["failure"] != "Rate limited." || second["extraction"] != nil {
 		t.Errorf("failed answer = %v", second)
+	}
+	// One response shows what it got wrong about Tribelt apart from what it left out.
+	if wrong, left := x["wrongClaims"].([]any), x["leftOut"].([]any); len(wrong) != 1 || wrong[0] != "Tribelt is in Hengelo." ||
+		len(left) != 1 || left[0] != "Tribelt makes eyelink belts to measure." {
+		t.Errorf("wrong %v, left out %v", x["wrongClaims"], x["leftOut"])
 	}
 	callAs(t, srv, http.MethodGet, "/api/v1/prompt-runs/"+runID.String()+"/answers?provider=google&scope=twente&family=eyelink&mode=knowledge", "", "tester")
 	if f := a.prompts().filter; f != (app.AnswerFilter{Provider: "google", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeKnowledge}) {

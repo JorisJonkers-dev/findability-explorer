@@ -1586,6 +1586,7 @@ export const zPromptExtraction = z.object({
     citesTribelt: z.boolean(),
     correctness: zPromptCorrectness.optional(),
     wrongClaims: z.array(z.string().max(500)).max(10),
+    leftOut: z.array(z.string().max(500)).max(10),
     costUsd: zUsd
 });
 

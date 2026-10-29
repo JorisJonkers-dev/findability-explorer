@@ -7,556 +7,565 @@ its figures come from, how old they are, and how to start, stop, tune, and pay f
 them.
 
 **The app becomes a tool with two views, Results and Manage, both organised around the same four
-processes.** This document is the spec for that redesign. The words follow the glossary
-(`CONTEXT.md` in the course repo), which gained Prompt set, Model list, Recommendation run,
-Competitor definition, Results, and Manage for it.
+processes.** This spec describes the redesign as it was reviewed in an interactive prototype (an
+artifact on claude.ai, reviewed page by page between 28 and 29 October 2026, version 24). Where this
+text and the prototype differ, the prototype's behaviour and copy win, and this text is corrected.
 
 The audience for Manage is a marketer with no technical background, so every button says what it
 does, what it costs, and what stopping it keeps.
+
+Figures in the examples below are placeholders such as *n*; the repository is public, and the live
+figures stay in the app.
 
 ## 1. Decisions
 
 | # | Decision |
 |---|---|
 | 1 | Two views. **Results** is for everyone signed in; **Manage** is for administrators only. |
-| 2 | Both views are organised by process: asking AI assistants, checking websites, search terms, and recommendations. Each Results page links to its Manage page for administrators, and back. |
-| 3 | The poster rule goes. Every page has the same frame (section 3) and then the sections it needs: tables, filters, and charts where they help. Each page still says something different. |
-| 4 | Same look: the colours, fonts, and logos stay. Type gets smaller, content is narrower, and the very large headlines and full-bleed blocks go. |
-| 5 | Every piece of work can be stopped, by a button named for it ("Stop the Prompt run"). There is no umbrella word such as job or task. |
-| 6 | Every piece of work shows a dollar estimate before it starts. When the estimate is more than the budget has left, the button says the work will stop when the budget runs out and asks for a second click. The budget stop stays. |
-| 7 | Two monthly budgets, both in dollars, both in Keys and spending: OpenRouter (the Prompt test) and Anthropic (everything Haiku or Sonnet does). The Anthropic budget replaces the `LLM_MONTHLY_TOKENS` limit. |
-| 8 | Results always show the newest **complete** Prompt run. A stopped run is kept and listed in Manage, where a retry finishes it. |
-| 9 | The prompt set is edited as a draft and published as a new version. Publishing shows the change in cost per run and per year. Scopes can be added, such as French or Polish with no region. |
-| 10 | The model list is chosen from OpenRouter's whole catalogue. Free models are added in one click, each provider's cheapest model is marked Recommended, and any model can be added under its provider. A provider can have several models; each model is its own column in Results. |
-| 11 | Trends over time break where the prompt set or the model list changed, with a note saying which. Each model's own line runs on while it stays on the list. |
+| 2 | Both views are organised by process: the Prompt test (asking AI assistants), website scans (checking websites), search terms, and recommendations. Each Results page links to its Manage page for administrators, and back. |
+| 3 | The poster rule goes. Every page has the same frame (section 4) and then the sections it needs: tables, filters, and charts where they help. Things that fit side by side sit side by side; a page is not spread out. |
+| 4 | Same look: the colours, fonts, and logos stay. Mist blocks with rounded corners, an orange dash before section titles, pills used sparingly. |
+| 5 | Every piece of work can be stopped, by a button named for it ("Stop the Prompt run"). There is no umbrella word such as job or task. Stop first says what it keeps. |
+| 6 | Every piece of work shows a dollar estimate before it starts. When the estimate is more than the budget has left, a line says so before the button is pressed, and the button asks for a second click. The budget stop stays. |
+| 7 | Two monthly budgets, both in dollars: OpenRouter (the Prompt test) and Anthropic (everything a Claude model does). The Anthropic budget replaces the `LLM_MONTHLY_TOKENS` limit. |
+| 8 | Results always show the newest **complete** Prompt run. A stopped or failed run is kept and listed in Manage, where a retry finishes it. |
+| 9 | The Prompt set is edited as a draft, grouped by belt family, and published as a new version. Publishing says what changes and what it costs per run and per year. A new scope (a language, with or without a region) is made from the same editor. |
+| 10 | The Model list is chosen from OpenRouter's whole catalogue of text models, read again daily. The cheapest model of each of the five providers whose assistants buyers use most (OpenAI, Google, Anthropic, Mistral, DeepSeek) is marked Recommended and listed first. A provider can have several models; each model is its own column in Results. |
+| 11 | Trends over time break where the Prompt set or the Model list changed, with a note saying which. The charts can be filtered to one Prompt set version. A run that got fewer than half its responses is shown as a partial run, with a note. |
 | 12 | Other languages follow later: the readiness check "pages in Dutch, German, and English" and the search term list stay three languages, built so a language can be added. |
-| 13 | The hand-written recommendations stay in code. A **Recommendation run** writes the rest: rules find and score the gaps, a chosen model (Haiku 5.5 by default, Sonnet 5.5 as the option) reads the newest tribelt.nl scan to place and word each one, and may move a score by one point with a written reason. |
-| 14 | Kinds of generated recommendation: search terms to add and where, pages to add, sites to get listed on, fact sheet corrections, and the specifics of AI readiness (such as the pages with no Markdown version). |
-| 15 | Whether a recommendation is done is decided by rules, never by a model: a term on the page it named, a page for that family or application in that language, a listing fetched and found to name Tribelt, a readiness check passing. Only what no scan can see is ticked by hand. |
-| 16 | A Recommendation run starts by hand. Activity says when its inputs are newer than the last run. A new run replaces the open generated recommendations and keeps those done or edited. |
-| 17 | The fact check separates "wrong about Tribelt" from "left out", and only wrong claims become fact sheet corrections. The newest run is read again. |
-| 18 | Scans record which page each term is on, and keep tribelt.nl's page text for the Recommendation run. |
+| 13 | The hand-written recommendations stay in code. A **Recommendation run** writes the rest: rules find and score the gaps, a Claude model places and words each one, and may move a score by one point with a written reason. |
+| 14 | Kinds of generated recommendation: search terms to add and where, pages to add, sites to get listed on, fact sheet corrections, and the specifics of AI readiness. |
+| 15 | Whether a recommendation is done is decided by rules, never by a model. Only what no scan can see is ticked by hand, and a tick can be undone. |
+| 16 | A Recommendation run starts by hand. Activity says when its inputs are newer than the last run. A new run replaces the open generated recommendations, keeps those done or edited, and says beforehand how many it replaces. |
+| 17 | The fact check separates "wrong about Tribelt" from "left out"; only wrong claims become fact sheet corrections. |
+| 18 | Scans record which page each term is on, keep tribelt.nl's page text for the Recommendation run, and keep the files they fetched (robots.txt, the sitemap, llms.txt, llms-full.txt) to read in the app. |
 | 19 | The competitor definition is edited in Manage, with versions. Saving offers a recheck with its estimate; it does not start one. |
 | 20 | Administrators can add and remove search terms by hand. A hand-added term is marked as such. |
 | 21 | The term review stays automatic, with an on and off switch, its month's spend, and Stop. |
-| 22 | Makers of plastic or fabric belts (Habasit, Forbo Siegling, Intralox, and others) are archived. AI answers still show them under "Who the answers name", marked "Not a competitor". |
+| 22 | Makers of plastic or fabric belts are archived. AI responses still show them under "Who the responses name", marked "Not a competitor". |
 | 23 | Buyers is dropped. `/buyers` redirects to the Overview. |
 | 24 | Tribelt adds its own OpenRouter and Anthropic keys. Everyone signs in with an auth-api account; the Viewer Key waits. |
-| 25 | "Numbers to watch" becomes **Targets**, edited in Manage, Recommendations. The deck keeps "Five targets to hit". |
-| 26 | Every page opens with one sentence on what it shows and links to its section of How this tool works. Manage explains each button next to it. |
-| 27 | Before building, the whole site is built as an interactive prototype in an artifact, on the live export of 28 October with the plastic and fabric makers archived and sample data where the app has none yet. |
+| 25 | "Numbers to watch" becomes **Goals**, edited in Manage, Recommendations. |
+| 26 | Every page opens with one sentence on what it shows. Help replaces How it works: short topics, searchable, each linking to where the thing is done. |
+| 27 | **Every Claude step has its model and instructions in the app** (section 8), with versions. The one exception: the instructions for reading responses stay in code, so every run is read the same way; only that step's model is chosen in the app. The data each step gets and the format of its reply stay in code. |
+| 28 | **An empty response counts as failed.** A model that returns no text (for example a reasoning model that spent its token limit) gets a failed response, which a retry asks again. It is never read, and never counts as naming anyone. |
+| 29 | **The history of the Prompt test is imported** from the live database with its Prompt set versions (section 9). |
+| 30 | The words: "response", never "answer"; "search term", never "phrase"; "best competitor", never "leader"; "buyer intent", never "intent tier"; "goal", never "target". British spelling, the Oxford comma, no colons or middle dots in headings or buttons, no em dashes. |
 
-## 2. The site map
+## 2. Words
+
+The glossary (`CONTEXT.md` in the course repo) holds these words, and the app uses them the same way:
+
+- **Response**: what an AI assistant replies to one question of a Prompt run.
+- **Search term**: what a buyer types into a search engine; the search term list holds them.
+- **Buyer intent**: the kind of search a search term or question represents: specification, product,
+  application, problem, or broad. Each has one plain sentence of explanation in the app.
+- **Best competitor**: the competitor with the best value on a measure in the latest data. A tie goes
+  to the name first alphabetically. Tribelt, its group companies, and the mirror are never it.
+- **Typical competitor**: the middle value across all competitors on the list.
+- **Goal**: a value Tribelt is measured against; there are five.
+- **Scope**: a language, with or without a region, that a question is asked in.
+- **Claude step**: one piece of work a Claude model does, such as reading responses.
+- **Partial run**: a Prompt run that got fewer than half its responses.
+
+## 3. The site map
 
 ### Results
 
-The top bar reads Overview, AI answers, AI readiness, Search terms, Competitors, Recommendations and
-How it works, with Manage on the right for administrators and the account menu after it.
+The top bar reads Overview, AI responses, AI readiness, Search terms, Competitors, Recommendations,
+and Help, with Manage on the right for administrators and the account menu after it.
 
 | Page | Address | Reached from |
 |---|---|---|
 | Overview | `/` | the top bar |
-| A target | `/targets/:measure` | a row of Targets on the Overview |
-| AI answers | `/ai-answers` | the top bar |
-| Every answer | `/ai-answers/all` | AI answers, a target page |
-| One answer | `/ai-answers/:id` | a square of Every answer, a cell of the family and scope table, a competitor page |
+| A goal | `/goals/:measure` | a row of Goals on the Overview |
+| AI responses | `/ai-responses` | the top bar |
+| Every response | `/ai-responses/all` | AI responses, a goal page |
+| One response | `/ai-responses/:id` | a square of Every response, a cell of the family and scope table, a competitor page |
 | AI readiness | `/ai-readiness` | the top bar |
 | One site | `/ai-readiness/:id` | a row of Every site, a competitor page, a readiness recommendation |
+| Files found on a site | `/ai-readiness/:id/files` | one site |
 | Search terms | `/terms` | the top bar |
 | Every term | `/terms/all` | Search terms |
-| A belt family | `/terms/families/:family` | Search terms, AI answers, a competitor page |
-| One term | `/terms/:id` | Every term, a belt family, a competitor page, a term recommendation |
+| A belt family | `/terms/families/:family` | Search terms, AI responses, a competitor page |
+| One search term | `/terms/:id` | Every term, a belt family, a competitor page, a term recommendation |
 | Competitors | `/competitors` | the top bar |
-| A competitor | `/competitors/:id` | Competitors, Who the answers name |
+| A competitor | `/competitors/:id` | Competitors, Who the responses name |
 | Its scan history | `/competitors/:id/history` | a competitor page, a site page |
-| Recommendations | `/recommendations` | the top bar, Do these next on the Overview |
-| One recommendation | `/recommendations/:id` | Recommendations, a target page, a term page, a failed check |
-| How this tool works | `/how-it-works` | the top bar, every page's "How this is measured" |
+| Recommendations | `/recommendations` | the top bar, the Overview |
+| One recommendation | `/recommendations/:id` | Recommendations, a goal page, a term page, a failed check |
+| Help | `/help`, and a topic at `/help/:topic` | the top bar, every page's "How this is measured, in Help" |
 
 ### Manage
 
-Manage has its own menu down the left: Activity, Prompt test, Website scans, Competitor list,
-Search term list, Recommendations, and Keys and spending.
+Manage has its own menu down the left. A section folds out to its subpages when it is open. A
+section's count (running work, waiting candidates, waiting search terms) shows on the section while
+it is folded, and moves to the subpage it belongs to when the section is open.
 
-| Page | Address |
-|---|---|
-| Activity | `/manage` |
-| Prompt test | `/manage/prompt-test`, with `/questions`, `/models`, `/schedule`, `/fact-sheet` and `/runs` |
-| Website scans | `/manage/scans`, and a scan at `/manage/scans/:id` |
-| Competitor list | `/manage/competitors` |
-| Search term list | `/manage/terms` |
-| Recommendations | `/manage/recommendations` |
-| Keys and spending | `/manage/keys` |
+| Section | Address | Subpages |
+|---|---|---|
+| Activity | `/manage` | |
+| Prompt test | `/manage/prompt-test` | Questions, Models, Schedule, Fact sheet, Runs, Reading responses |
+| Website scans | `/manage/scans` | Scan queue, Recent scans, Scan settings, Matching products; a scan at `/manage/scans/:id` |
+| Competitor list | `/manage/competitors` | Companies (one at `/manage/competitors/companies/:id`), Candidates, Check the list, Competitor definition, Tidying names, Checking companies |
+| Search term list | `/manage/terms` | Term review, Waiting terms, Add or remove terms, Reviewing terms |
+| Recommendations | `/manage/recommendations` | Recommendation runs, Tick off yourself, Edit a recommendation, Goals, Writing recommendations |
+| Keys and spending | `/manage/keys` | OpenRouter key, Anthropic key, Budgets, Events, Models and instructions |
+
+Each subpage has its own address under its section, such as `/manage/prompt-test/questions`. The
+Claude steps (section 8) are at `/manage/claude-steps/:step`, listed in the menu under the section
+each belongs to, and all six at `/manage/claude-steps`.
 
 ### Old addresses
 
-Every address of 1.12.0 and earlier redirects: `/numbers/:measure` to `/targets/:measure`,
-`/ai-search` to `/ai-answers`, `/ai-search/answers` to `/ai-answers/all`, `/ai-search/readiness` to
-`/ai-readiness`, `/buyers` to `/`, `/scan/:id` to `/manage/scans/:id`, `/settings` to `/manage/keys`,
-`/settings/prompt-test` to `/manage/prompt-test`, `/settings/terms` to `/manage/terms`, and
-`/settings/competitors` to `/manage/competitors`. The redirects 1.12.0 already has stay.
+Every address of 1.12.0 and earlier redirects: `/numbers/:measure` to `/goals/:measure`,
+`/ai-search` to `/ai-responses`, `/ai-search/answers` to `/ai-responses/all`, `/ai-search/readiness`
+to `/ai-readiness`, `/buyers` to `/`, `/scan/:id` to `/manage/scans/:id`, `/settings` to
+`/manage/keys`, `/settings/prompt-test` to `/manage/prompt-test`, `/settings/terms` to
+`/manage/terms`, and `/settings/competitors` to `/manage/competitors`. The redirects 1.12.0 already
+has stay.
 
-## 3. The page frame
+## 4. The page frame
 
 Every page, in both views, has, in this order:
 
-1. **The title.**
-2. **One sentence on what the page shows.**
-3. **The data line**: where its figures come from and when, such as "From the Prompt run of 1
-   October 2026: 20 questions asked of 5 models, 200 answers."
-4. **For administrators, a link to its Manage page** on the right, and on a Manage page a link to
-   its Results page.
-5. **Its sections.**
-6. **"How this is measured"**, a link to its process's section of How this tool works.
+1. **A back link** to the page it came from, on a detail page. In Manage it goes to the parent page.
+2. **The title.**
+3. **One sentence on what the page shows.**
+4. **The data line**: where its figures come from and when, such as "From the Prompt run of *date*:
+   20 questions to 5 models, each from the model's own knowledge and with web search, 200 responses
+   in all. Prompt set version 2."
+5. **For administrators, a link to its Manage page** on the right; on a Manage page, a link to its
+   Results page.
+6. **Its sections.**
+7. **"How this is measured, in Help"**, a link to its process's topic.
 
-A detail page has a back link to the page it came from above the title. The team footer stays.
-Empty states are sentences that say what is missing and, for administrators, where to start it,
-such as "No Prompt run has finished yet. Start one in Manage, Prompt test."
+Empty states are sentences that say what is missing and, for administrators, where to start it.
+Sample data the app does not have yet is never shown in the app; the prototype marks its samples.
 
-## 4. Results, page by page
+Manage pages are built from widgets on a twelve-column grid: a mist block with a title, an optional
+action on the right, a body, and a footer for its buttons. A widget alone on a row stretches to fill
+it. A long editor can keep its companion widget (such as Publish) in view while scrolling.
 
-The figures here are samples from the export; every figure on a real page comes from the API.
+Tables sort by any column, search when they have more than twelve rows, and show a limited number of
+rows with "Show all" where the list is long. Headings wrap when a table is short of room; row buttons
+wrap rather than run past the table's edge. Folds stay open or closed when the page redraws.
+
+## 5. Results, page by page
 
 ### Overview
 
 > **Overview**
-> How easily buyers find Tribelt in search and AI assistants, measured against five targets.
-> *From the Prompt run of 1 October 2026 and the scans up to 27 October 2026.*
+> How easily buyers find Tribelt in search and AI assistants, measured against five goals.
+> *From the Prompt run of date and the scans up to date.*
 
-1. **Summary.** One sentence written by rules from the data, such as "AI answers name six
-   competitors more often than Tribelt, and tribelt.nl uses 45 of the 387 search terms buyers use."
-2. **Targets.** A row per target: its name, Tribelt's value, the target, the leader and its value,
-   and a progress bar. Each row opens its target page. The five are: AI answers that name Tribelt;
-   AI answers about Twente that name Tribelt; web answers that cite tribelt.nl; AI readiness checks
-   passed; search terms tribelt.nl uses.
-3. **What changed.** Against the previous complete Prompt run and tribelt.nl scan, such as "Since
-   the Prompt run of 1 September, AI answers that name Tribelt went from 4% to 5%." With nothing to
-   compare: "This is the first complete Prompt run, so there is nothing to compare yet."
-4. **Do these next.** The three open recommendations with the best benefit against effort, each
-   with its kind, and "See all recommendations".
-5. **How fresh the data is.** A row per process: the last complete Prompt run and the next
-   scheduled one; the newest tribelt.nl scan and how many competitors were scanned in the last 30
-   days; the last term review; the last Recommendation run.
+1. **Summary.** One sentence written by rules from the data.
+2. **Goals.** A row per goal: its name, Tribelt's value, the goal, the best competitor and its value,
+   and a progress bar marking Tribelt now, the best competitor, and the goal. Each row opens its goal
+   page. The five: AI responses that name Tribelt; AI responses about the Twente region name
+   Tribelt; web responses that cite tribelt.nl; AI readiness checks passed; search terms tribelt.nl
+   uses.
+3. **Numbered tiles**, one per part of the app (AI responses, AI readiness, search terms,
+   competitors, recommendations), each with its key figure, opening that part.
+4. **Latest runs and scans.** A row per process: when it last ran, what comes next, and, for
+   administrators, Manage.
 
-### A target
+### A goal
 
-> **AI answers that name Tribelt**
-> The share of a Prompt run's answers that name Tribelt. The target is 40%.
+> **AI responses that name Tribelt**
+> The share of a Prompt run's responses that name Tribelt.
 
-1. **Tribelt against the competitors.** Bars for Tribelt, the typical competitor, the leader and
-   the target.
-2. **Over time.** A line over the complete Prompt runs (or tribelt.nl scans, for readiness and
-   terms). Where the prompt set or the model list changed, the line breaks, with the note "The
-   questions changed here, so the figures before and after are not the same measure" or "The model
-   list changed here".
-3. **Broken down.** For the answer targets, by model, by scope, and by belt family; for readiness,
-   by check; for search terms, by language.
-4. **What improves it.** The recommendations aimed at this target.
+The summary says whether Tribelt or the best competitor is ahead, and the goal. Then, side by side,
+**Tribelt against the competitors** (bars for Tribelt, the typical competitor, the best competitor,
+and the goal) and **Over time** (one point per run, with the Prompt set filter of section 5's AI
+responses, or per tribelt.nl scan for readiness and terms). Then **Broken down** (by model, scope, and
+belt family; by check; by language) and **What improves it**, the recommendations aimed at it.
 
-### AI answers
+### AI responses
 
-> **AI answers**
-> How often AI assistants name and cite Tribelt when a buyer describes a job and asks which metal
-> conveyor belt to use and who makes it.
-> *From the Prompt run of 1 October 2026: 20 questions asked of 5 models, each from the model's own
-> knowledge and with web search, 200 answers in all. Prompt set version 2.*
+> **AI responses**
+> How often AI assistants name and cite Tribelt when buyers ask which metal conveyor belt to use and
+> who makes it.
 
-1. **Three figures:** answers that name Tribelt (5%, target 40%); answers about Twente that name
-   Tribelt (16%); web answers that cite tribelt.nl (28%).
-2. **Who the answers name.** Companies ranked by the share of answers that name them. Tribelt is
-   highlighted, group companies are marked "Group company", archived makers "Not a competitor".
-   Competitors link to their pages.
-3. **By model.** A row per model on the model list, named by provider and model ("Google, Gemini
-   2.5 Flash"), with three columns: named from its own knowledge, named with web search, and cited.
-4. **By belt family and scope.** Five families against the scopes, with the share that names
-   Tribelt in each cell. A cell opens Every answer filtered to it.
-5. **The questions asked.** Every question in its own language, with an English translation under
-   it.
-6. **See every answer.**
+1. **Three figures**: responses that name Tribelt, responses about the Twente region that name
+   Tribelt, and web responses that cite tribelt.nl, each against its goal.
+2. **See every response**, a button.
+3. **Over time.** A line per language and one for all, with the goal, and the end labels joined to
+   their last points. Above it, the **Prompt set filter**: All versions, Version 2 (current), Version
+   1. All versions shows a shaded band labelled with the version where the questions changed; one
+   version shows only its runs, with a line saying when it was published, how many questions it
+   asks, and what it asks. A partial run has a dashed ring and a note: "a partial run of version 1.
+   Only *n* of its *n* requests got a response (the rest failed because the OpenRouter key was
+   refused), and *n* of those could be read, so its figure rests on few responses." The figures as a
+   table, folded away.
+4. **Who the responses name.** Companies ranked by the share of responses that name them. Tribelt
+   highlighted, group companies marked "Group company", archived makers "Not a competitor".
+5. **By model**, side by side with **the questions asked**: a row per model ("OpenAI, gpt-oss-20b")
+   with named from its own knowledge, named with web search, and cited; each question in its own
+   language with an English translation, per belt family, folded.
+6. **By belt family and scope.** Rows "Eyelink, Twente, application" with the buyer intent explained
+   on hover; a cell opens Every response filtered to it.
 
-### Every answer
+### Every response
 
-> **Every answer**
-> Each square is one model's answer to one question. Its colour shows whether the answer names
+> **Every response**
+> Each square is one model's response to one question. Its colour shows whether the response names
 > Tribelt, and where.
 
-- Filters: search mode, scope, belt family, model, and "Names Tribelt".
-- A run picker: earlier runs by date and prompt set version. A stopped run is listed and marked,
-  such as "Stopped after 140 of 200 answers".
-- The legend in sentences: "Tribelt is named first", "Tribelt is named, but not first", "Tribelt is
-  not named", "The answer failed".
-- Download the shown answers as CSV, for everyone signed in.
-- A square opens One answer.
+A grid with models as column groups and the two modes under each. Filters: search mode, scope, belt
+family, model, and names Tribelt; a run picker by date and Prompt set version, with a stopped run
+marked. The key sits inside the grid's panel, with "*n* responses shown". Download the shown
+responses as CSV. A square opens One response.
 
-### One answer
+### One response
 
-> **Gemini 2.5 Flash, with web search**
-> The answer to "We are building a tunnel oven for an industrial bakery. What kind of conveyor belt
-> should we use, and which manufacturers can supply it?" in the Prompt run of 1 October 2026.
+> **OpenAI, gpt-oss-20b, with web search**
+> The response to "question" in the Prompt run of date.
 
-1. **The answer**, in full.
-2. **Companies named**, in order, with Tribelt highlighted.
+1. **The response**, in full, with its Markdown rendered.
+2. **Companies named**, in order, with Tribelt highlighted and its place ("Tribelt is named, number
+   2").
 3. **Sources cited**, with tribelt.nl's addresses marked.
-4. **Checked against the fact sheet**, in two lists: "Wrong about Tribelt" (claims that contradict
-   the fact sheet) and "Left out" (facts the answer did not mention).
-5. **Read by** Haiku 5.5, or Gemini 2.5 Flash Lite when Haiku could not.
+4. **Checked against the fact sheet**: "Wrong about Tribelt" and "Left out".
+5. **Checked by** the model that read it, or "No model has checked this response yet."
 
 ### AI readiness
 
 > **AI readiness**
-> What each website tells search engines and AI assistants about itself, scored out of eight
-> checks. A site that passes more of them is easier for an assistant to read, understand, and cite.
-> *From each site's newest scan, checked again on 27 October 2026. 65 sites.*
+> How well search engines and AI assistants read, understand, and cite each website, scored out of
+> eight checks.
 
-1. **Tribelt's checks.** The eight, each passed or not, each with a sentence on what it is and why
-   it matters ("llms-full.txt is the whole site as one plain text file, so an assistant can read it
-   in one go"). A failed check links to the recommendation that fixes it. The crawler check links
-   to tribelt.nl's site page.
-2. **How the sites compare.** A bar per check: how many of the 65 sites pass it, with Tribelt's
-   result beside it.
-3. **Every site.** A sortable table: name, score, a tick or cross per check, and the platform, with
-   a filter for competitors, group companies, or all. A row opens the site page.
+1. **Tribelt's checks.** The eight, each passed or not, with a sentence on what it is and why it
+   matters. A failed check links to the recommendation that fixes it.
+2. **How tribelt.nl compares with the competitors.** Per check: tribelt.nl passes or fails, and how
+   many competitors pass, as a bar.
+3. **Every site.** Name, score, a tick or cross per check, and the platform; 15 rows with Show all;
+   a filter for competitors or all sites. A row opens the site page.
 
-### One site
+### One site, and the files found
 
-> **Ammeraal Beltech's AI readiness**
-> ammeraalbeltech.com passes 5 of the 8 checks.
-> *From scan 3 of 12 October 2026.*
+One site shows, in two columns, the eight checks with their evidence, the structured data found,
+and the files as found (left), and the crawler policy (right): each search and AI crawler, what it
+does for the company, and whether robots.txt allows it, blocks it, or does not mention it.
 
-1. **The eight checks, with the evidence**, such as "A sitemap at /sitemap.xml lists 412 pages, in
-   Dutch, German, and English."
-2. **Crawler policy.** Each search and AI crawler: what it does for the company, and whether
-   robots.txt allows it, blocks it, or does not mention it.
-3. **The files as found**: robots.txt, llms.txt, llms-full.txt, and the sitemap.
-4. **The structured data found**, with product structured data shown but not scored.
-5. Links to its competitor page (if it has one) and its scan history.
+**Files found on a site** shows the files a scan fetched, one tab each (robots.txt, sitemap.xml,
+llms.txt, llms-full.txt), in a viewer with line numbers and a search that highlights its matches.
+The file's lines, size, and matches are listed in its header, with Copy and Download. A scan picker
+shows the files of an earlier scan. Files a scan did not find are listed as not found.
 
 ### Search terms
 
 > **Search terms**
-> The words buyers use when they look for metal conveyor belts, and how many of them tribelt.nl
-> uses. A page that uses a buyer's words is more likely to be found for them.
-> *From the search term list (387 terms, last reviewed on 27 October 2026) and each site's newest
-> scan.*
+> The words buyers use to look for metal conveyor belts, and how many of them tribelt.nl uses.
 
-1. **Three figures:** 387 terms in the search term list; 45 used on tribelt.nl (target 90); 342
-   used only by competitors.
-2. **By language.** Dutch, German, and English: terms in the list, used by tribelt.nl, used only by
+1. **Three figures**: terms in the list, used on tribelt.nl (against its goal), used only by
    competitors.
-3. **By belt family.** Each family: Tribelt's own names, its terms and how many tribelt.nl uses,
-   and a link to its page.
-4. **Terms competitors use and tribelt.nl does not.** The top 15 by the number of competitors that
-   use them. Each opens its term page and shows its recommendation if there is one.
-5. **See every term.**
+2. **Search term adoption over time**: the share of the list tribelt.nl uses, at each scan, for all
+   terms and per language.
+3. **By language** and **by belt family** (each family as "*n* of 5" with its own names), side by
+   side where they fit.
+4. **What buyer intent means**, folded: one sentence per kind.
+5. **Terms competitors use and tribelt.nl does not**, the top ones, each opening its term page.
 
-### Every term
-
-A table of term, language, belt family, intent tier, the competitors that use it, and whether
-tribelt.nl does (with the page), with a filter per column and a search. A row opens its term page.
-Hand-added terms are marked.
-
-### A belt family
-
-> **Eyelink belts**
-> Tribelt sells these as [its names]. The terms buyers use for them, and the names competitors sell
-> them under.
-
-1. **Terms, by language**, each marked used or not on tribelt.nl.
-2. **Who sells them**: each competitor and its name for the belt.
-3. **AI answers about eyelink belts**: the share that names Tribelt per scope, and a link to them.
-
-### One term
-
-> **Ösenband**
-> A German term for eyelink belts, of the product intent tier. 12 of the 69 competitors use it, and
-> tribelt.nl does not.
-
-1. **Where competitors use it**: each company, the pages it is on, and how often. A scan from
-   before pages were recorded says "Scanned before pages were recorded".
-2. **On tribelt.nl**: the pages that use it, or "No tribelt.nl page uses this term."
-3. **Related terms** of the same family and language.
-4. **The recommendation** to add it, if a Recommendation run wrote one, with the page it names.
+**Every term** is a table of term, language, belt family, buyer intent, the competitors that use it,
+and whether tribelt.nl does, with filters and a search; hand-added terms are marked. **A belt family**
+has one purpose sentence, its terms by language, Tribelt's own names, who sells it, and the AI
+responses about it. **One search term** says its language, family, and buyer intent in a sentence, and
+shows, in two columns, where competitors use it and on tribelt.nl, related terms, and its
+recommendation.
 
 ### Competitors
 
-> **Competitors**
-> The companies that make metal conveyor belts Tribelt's prospects could buy instead, and how each
-> compares with Tribelt in AI answers, AI readiness, and search terms.
-> *69 competitors on the competitor list. Newest scans up to 27 October 2026.*
+One table: name, country, the belt families it sells (as "*n* of 5", with the names on hover), the
+share of AI responses that name it, its readiness score, the search terms it uses, and when it was
+last scanned. Tribelt is pinned at the top. A summary line counts the competitors and the archived
+companies, which can be shown. A row opens the competitor.
 
-One table: name, country, the belt families it sells, the share of AI answers that name it, its
-readiness score, the search terms it uses, and when it was last scanned. Tribelt is pinned at the
-top as the row to compare with. It sorts by any column, filters by belt family and country, and
-searches by name. A row opens the competitor.
-
-### A competitor
-
-> **Ammeraal Beltech**
-> ammeraalbeltech.com, on the competitor list since 3 October 2026. It sells eyelink and open
-> spiral belts.
-
-1. **Against Tribelt.** Paired bars: AI answers that name it, web answers that cite it, readiness
-   checks passed, and search terms used.
-2. **Where it is ahead of Tribelt.** A sentence per measure it leads on, written by rules from the
-   gaps ("Named in 16% of AI answers, against Tribelt's 5%"; "Has llms-full.txt, which tribelt.nl
-   does not").
-3. **What it sells, and what it calls it**: each belt family with its own product names.
-4. **Search terms it uses and tribelt.nl does not**, each linking to its term page.
-5. **In AI answers**: how often each model names it, with a link to those answers.
-6. Links to its AI readiness page, its scan history, and its website.
-
-### Its scan history
-
-Each scan, with its date, the pages read, and the readiness score. Picking two compares them: the
-terms gained and lost, and the checks that changed.
+**A competitor** shows, side by side where they fit: against Tribelt (paired bars), where it is ahead
+of Tribelt, what it sells and what it calls it, the search terms it uses and tribelt.nl does not, and
+how often each model names it. **Its scan history** lists each scan and compares two.
 
 ### Recommendations
 
 > **Recommendations**
-> Changes to make on tribelt.nl, ranked by benefit against effort. Some apply in general; the rest
-> come from the latest Recommendation run and name a specific page, search term, or site.
-> *From the Recommendation run of 28 October 2026, on the Prompt run of 1 October and the tribelt.nl
-> scan of 27 October.*
+> Changes to make on tribelt.nl, ranked by benefit against effort.
 
-1. **The benefit against effort chart**, as in 1.12.0.
-2. **The list**, one ranking (ADR 0014). Each row: a short title, where on tribelt.nl, its kind,
-   benefit and effort, the target it improves, and "New" when it is new since the last run. A
-   filter narrows it to one kind: Search terms to add, Pages to add, Sites to get listed on, Fact
-   sheet corrections, AI readiness, General.
-3. **Done**, folded away: each with when and how it was marked done.
+1. **Benefit against effort**, a five-by-five grid of bubbles; a bubble narrows the list to its cell.
+2. **The ranked list**, scrollable, with a count and a scroll cue; a filter by kind.
+3. **Done**, folded away.
 
-### One recommendation
+**One recommendation**: where and how; why it ranks here; the goal it improves (written correctly
+whether Tribelt is ahead of or behind the best competitor); steps; when it counts as done; and, for
+one no scan can check, Mark as done.
 
-> **Use "Ösenband" on the German eyelink page**
-> Add the term to tribelt.nl/de/oesenbaender. 12 competitors use it, and buyers search for it when
-> they look for a product.
+### Help
 
-1. **Where, and how**: the page, and a suggested sentence or place on it, worded by the model.
-2. **Why it ranks here**: the rules' evidence, and how benefit and effort were scored. When the
-   model moved a score, its reason ("Effort raised from 1 to 2: the German page has no section
-   about applications yet").
-3. **The target it improves**, as a progress bar.
-4. **Steps**, a checklist, such as the 14 pages that still need a Markdown version.
-5. **When it counts as done**, such as "The next tribelt.nl scan finds Ösenband on this page", and
-   where it stands now.
-6. **The leader to look at.**
+Topics in nine groups (Getting started, Reading the results, the Prompt test, Websites and AI
+readiness, Search terms, Competitors, Recommendations, Costs and budgets, Words used in this tool),
+one group shown at a time with a search over all. Topics sit two across. Each topic is a few plain
+sentences and links to where the thing is done (Manage links only for administrators). The words are
+a two-column glossary. Figures in topics, such as what a run costs, come from the app's own
+estimates.
 
-### How this tool works
+## 6. Manage, page by page
 
-> **How this tool works**
-> What the Findability Explorer measures, where each figure comes from, and how often it is
-> refreshed.
-
-1. **A section per process**, Asking AI assistants, Checking websites, Search terms, and
-   Recommendations, each with: what it does, what it reads, how often it runs, roughly what it
-   costs, where its results are, and where administrators run it.
-2. **The five targets**, and why each matters.
-3. **Words used in this tool**: the glossary terms a reader meets (Prompt run, scope, AI share of
-   voice, citation share, leader, gap, scan, and so on).
-
-## 5. Manage, page by page
+Every section opens on an index page: its key figures, its start buttons first, and a card per
+subpage with that subpage's figure and a link.
 
 ### Activity
 
 > **Activity**
-> What the Findability Explorer is doing now, what it will do next, and what is waiting for you.
+> See what is running, what comes next, and what is waiting for you.
 
-1. **Running now.** A row per piece of work ("Prompt run, 140 of 200 answers, $0.81 so far, about
-   $0.34 to go"), with its Stop button. Stop says first what it keeps: "Stopping keeps the 140
-   answers so far. You can finish the run later with a retry." Empty: "Nothing is running."
-2. **Coming up.** The next scheduled Prompt run and its estimate; whether the term review is on;
-   how many scans wait in the queue.
-3. **Waiting for you.** Term candidates and competitor candidates to review; "New data since the
-   last Recommendation run"; a missing key, and what cannot start without it.
-4. **This month's spending.** A bar each for OpenRouter and Anthropic: dollars spent against the
-   budget, split by kind of work.
-5. **Recent work.** The last 20 pieces of work: how each ended (done, stopped by hand, stopped by
-   the budget, failed), its cost, and a link.
+1. **Running now**: a widget per piece of work with its meter, cost so far and to go, and its Stop.
+2. **Coming up**: the next scheduled Prompt run and its estimate; whether the term review is on; the
+   scan queue.
+3. **Waiting for you**: search terms and competitor candidates waiting; new data since the last
+   Recommendation run; a missing key.
+4. **The two budgets**, each spent against its limit.
+5. **Spending by kind of work**: Prompt runs, scans, reading responses, the term review, candidate
+   checks, and Recommendation runs, with the key that paid.
+6. **Recent work**: the last 20 pieces of work, how each ended (done, done with failed responses,
+   stopped by hand, stopped by the budget, failed), what it did, and its cost.
 
 ### Prompt test
 
-> **Prompt test**
-> Ask AI assistants the buyer questions, and see what a run costs before you start it.
+The index: last run, next run, cost per run, budget left; **Start a Prompt run** with its estimate
+first; then a card per subpage, including Reading responses.
 
-The top card: "A run asks 20 questions of 6 models, each from its own knowledge and with web
-search: 240 answers. It will cost about $1.32, from the last run. $8.68 of this month's $10 is
-left." with **Start a Prompt run**. Its subpages:
-
-- **Questions.** The published prompt set, grouped by belt family and scope, with an English
-  translation beside each question. The draft edits, adds, and removes questions and adds a scope (a
-  language, with or without a region). The publish panel says what changes and what it costs:
-  "Adds 5 questions in French. A run will cost about $0.33 more, or $3.96 more a year on a monthly
-  schedule." The versions are listed.
-- **Models.** The model list: provider, model, price per run, free or not, and Remove. **Add a
-  model** opens OpenRouter's catalogue with a search, a provider filter, and a switch for free
-  models, sorted by price; each provider's cheapest is marked Recommended. The new estimate shows
-  before saving.
-- **Schedule.** Off, monthly, or weekly, the next run's date, and the cost over a year.
-- **Fact sheet.** The text and its versions.
-- **Runs.** Each run: date, prompt set version, models, answers, how it ended, and cost; **Retry
-  the failed answers** and **Read the failed answers again**, each with its estimate; Stop.
+- **Questions.** One editor grouped by belt family: each question with its scope and Remove on one
+  line and its text below, at full width. Under each family, **+ Add a question** opens a row: a
+  scope picker that starts on a scope that family has no question in yet, ending with "A new scope…",
+  which shows a language and a region; then the question; then Add the question and Cancel. After a
+  question in a new scope, a note offers to add one in that scope for every other belt family. The
+  published set is a fold above the editor. Beside it, **Publish as version *n***, kept in view, says
+  what changes ("Adds *n* questions (*n* in French) … Adds 1 scope (French, Lyon). A run will cost
+  about $*x* more, or $*y* more a year on a monthly schedule.") with Discard the draft. The version
+  history lists every version with its questions, and restores one into the draft.
+- **Models.** The model list (provider, model, cost per run, free or not, Remove) beside **Save the
+  model list**, which says the new cost and that the charts will mark the date. **Add a model**:
+  every text model on OpenRouter, read again daily, with the date it was listed; a search, a provider
+  filter with counts, and Free only; the recommended five first, the rest cheapest first; a column
+  for when each model arrived on OpenRouter. Models already asked show what their runs cost; the
+  rest are estimated from the list price for a typical response (300 tokens in, 900 out), plus the
+  model's own web search fee, or OpenRouter's search fee.
+- **Schedule.** Off, monthly, or weekly; the next run; the cost over a year. When a schedule would
+  cost more than the budget, the warning offers "Set to monthly" and "Change the budget".
+- **Fact sheet.** The text, how it is used, and its versions.
+- **Runs.** Figures (runs, those needing a retry, the run status); a panel per run with failed
+  responses, offering **Retry the *n* failed responses** and **Read them again with Claude Haiku**,
+  each with its estimate; all runs with prompt set version, models, responses, how it ended, and
+  cost.
+- **Reading responses**, a Claude step (section 8).
 
 ### Website scans
 
-> **Website scans**
-> Read the websites of tribelt.nl and its competitors: their pages, the search terms they use, the
-> belts they sell, and their AI readiness.
+The index: last scan, budget, readiness checked; then four ways to start, each with its estimate:
+**Scan tribelt.nl**, **Scan one site** (a company or an address, and the pages, 1 to 100),
+**Rescan competitors** (all, not scanned in 30 days, or never scanned), and **Check AI readiness
+again** (free). Then the running work and the cards.
 
-1. **Four ways to start**, each with its estimate beside the button:
-   - **Scan tribelt.nl**: "Reads up to 60 pages. Product matching costs about $0.02; reading pages
-     is free. It takes about five minutes."
-   - **Scan one site**: pick a company or type an address, and the number of pages (1 to 100).
-   - **Rescan competitors**: all, those not scanned in 30 days, or those never scanned ("41 scans,
-     about $0.85, roughly 25 minutes with three at a time").
-   - **Check AI readiness again**: "Fetches robots.txt, the llms files, and the sitemaps again for
-     every site's newest scan. Free."
-2. **The queue.** Scans running, each with Stop; scans waiting, each with Remove, and **Remove all
-   waiting scans**.
-3. **Recent scans**, each opening its scan page.
-4. **Settings**: the default number of pages; product matching on or off; the matching model
-   (Haiku by default) and the fallback when no Anthropic key works. Each with a sentence on what it
-   changes.
+- **Scan queue**: scans running, each with Stop; scans waiting, each with Remove, and Remove all.
+- **Recent scans**: each company's newest scan, opening its scan page.
+- **Scan settings**: the default number of pages; product matching on or off; the model and
+  instructions (a summary and link to the Claude step); the fallback model when no Anthropic key
+  works.
+- **Matching products**, a Claude step.
+- **A scan**: its company, number, date, pages read, matching model, readiness score, and Scan
+  again.
 
 ### Competitor list
 
-> **Competitor list**
-> Which companies count as competitors. AI answers keep naming new companies; this is where they are
-> added or dismissed.
+The index: competitors, waiting candidates, the definition's version, the checks running; a card
+per subpage.
 
-1. **The list.** Add a company, paste several, edit the name, website, or country, archive and
-   restore.
-2. **Candidates from AI answers.** How many wait; **Check the candidates** (Haiku), with its
-   estimate and Stop; add, dismiss, or split each one, and undo.
-3. **Check the list.** Haiku checks the companies on the list against the competitor definition
-   and archives those it is sure do not compete, each with its reason and Restore.
-4. **The competitor definition.** The text Haiku is given, edited here; each save is a version.
-   Saving says "69 competitors and 383 candidates were checked against an older version" and
-   offers **Check again** with its estimate.
+- **Companies**: the list at full width (archive, restore, open), and below it Add a company and
+  paste several. **One company**: details (name, website, country) with Save, archive with an
+  optional reason, and where it shows.
+- **Candidates**: figures (waiting, added, dismissed, decided by an administrator); **Classify
+  automatically** (only the waiting ones, or also recheck what Claude Haiku decided) and **Check the
+  candidates** (advice only), each with its estimate; all candidates with a status filter, and Add,
+  Dismiss, Split, Back to waiting, and Undo the split on every row. Decisions an administrator made
+  are never changed by a model.
+- **Check the list**: Claude archives the companies it is sure do not compete, each with its reason
+  and Restore.
+- **Competitor definition**: the text with its versions; saving offers Check again with its
+  estimate.
+- **Tidying names** and **Checking companies**, Claude steps.
 
 ### Search term list
 
-> **Search term list**
-> The list of search terms buyers use for metal conveyor belts. Scans find new phrases, and the term
-> review decides which join the list.
-
-1. **Term review.** The automatic switch, **Review now** with its estimate, Stop, this month's
-   spend, and how many wait.
-2. **Waiting phrases.** Accept, reject, and undo.
-3. **The list.** Add a term (term, language, family, intent tier) and remove one. Hand-added terms
-   are marked.
+- **Term review**: Review now with its estimate, the automatic switch, this month's spend.
+- **Waiting terms**: a table at full width: term, languages, companies, the suggested belt family
+  ("No belt family" when there is none) and buyer intent, the closest term on the list, and Accept,
+  Reject, and Undo.
+- **Add or remove terms**: add a term (term, language, family, buyer intent, with what buyer intent
+  means) and remove one; hand-added terms are listed.
+- **Reviewing terms**, a Claude step.
 
 ### Recommendations
 
-> **Recommendations**
-> Write recommendations from the latest data, mark the ones a scan cannot check, and set the
-> targets.
-
-1. **Start a Recommendation run.** Its inputs ("the Prompt run of 1 October, the tribelt.nl scan of
-   27 October and the search term list of 27 October"), a warning when one is out of date
-   ("tribelt.nl was last scanned before the newest Prompt run"), the model, its estimate, and Stop.
-2. **Past Recommendation runs**: what each added, replaced, and kept.
-3. **To mark by hand**: open recommendations no scan can check, such as "Submit tribelt.nl to Google
-   and Bing", or a listing on a site that blocks fetching.
-4. **Edit a recommendation**: a generated one's wording and scores. An edited one is kept when the
-   next run replaces the others.
-5. **Targets**: the five values.
+- **Recommendation runs**: a warning when tribelt.nl was last scanned before the newest Prompt run;
+  **Start a Recommendation run** with its inputs, "This replaces *n* open recommendations. Those you
+  marked as done or edited stay.", and its estimate; the model and instructions (a summary and link);
+  past runs (added, replaced, kept, model, cost).
+- **Tick off yourself**: open recommendations no scan can check, each with Mark as done; a Done list
+  with Undo.
+- **Edit a recommendation**: the generated ones at full width; one opens its wording and scores.
+  An edited one is kept when the next run replaces the others.
+- **Goals**: the five values, with Save and a toast.
+- **Writing recommendations**, a Claude step.
 
 ### Keys and spending
 
-> **Keys and spending**
-> The API keys the Findability Explorer uses to ask language models, and how much it may spend each
-> month.
+- **OpenRouter key** and **Anthropic key**: the key (its name and last four characters), Test the
+  key, and Replace the key (a fold with Label and Key, then Save the new key); what it pays for;
+  spent this month; the monthly budget. The Anthropic key page adds the optional Admin key for usage
+  reports.
+- **Budgets**: per key, spent and left, and the budget in dollars with Save.
+- **Events**: the log of key changes, tests, and budget changes.
+- **Models and instructions**: the six Claude steps (section 8).
 
-1. **Getting started**, while a key is missing: add an OpenRouter key (it pays for the Prompt test);
-   add an Anthropic key (it pays for product matching, reading answers, the reviews, and the
-   Recommendation runs); set both budgets.
-2. **OpenRouter**: the key, Test, OpenRouter's own record of the month's spend, and the monthly
-   budget in dollars.
-3. **Anthropic**: the key, the optional Admin key for usage reports, Test, and the monthly budget in
-   dollars.
-4. **Events**: the log.
+## 7. The Prompt set filter and the charts
 
-## 6. The Recommendation run
+The line charts draw runs at even spacing, with the date under each point and the time when two runs
+share a day. A Prompt set change is a shaded band from the change to the right edge, labelled with
+the version. End labels sit in the right margin at their value, pushed at least 17 pixels apart, each
+joined to its last point by a short line in the series colour. A run that is alone in the chosen
+version sits at the right edge, beside its labels, and the note says "It has one run so far, so there
+is no line yet." Charts redraw at their container's width.
+
+## 8. Claude steps
+
+Six steps ask a Claude model, all paid by the Anthropic key:
+
+| Step | Section | Gets (from) | Replies |
+|---|---|---|---|
+| Reading responses | Prompt test | the fact sheet in use when the run started; the buyer's question; the response; its cited sources | companies, addresses, namesTribelt, citesTribelt, correctness, wrongClaims |
+| Matching products | Website scans | the five belt families (fixed); the text of the scanned pages, cut at a length limit | product, family, reason, searchTerms |
+| Tidying names | Competitor list | the competitor list; the candidate names with spellings, websites, and response counts | clusters |
+| Checking companies | Competitor list | the competitor definition in use; each company's names, websites, response count, and home page text | competitor, sure, reason |
+| Reviewing terms | Search term list | the belt families; examples from the list; the search terms to review with who uses them and the closest term | accept, term, language, family, buyer intent, sure, reason |
+| Writing recommendations | Recommendations | the gaps with their figures and scores; the tribelt.nl pages; the search term list | title, where, why, steps, doneWhen, benefit, effort, scoreReason |
+
+Each step's page has:
+
+1. **Instructions**: the system message, in an editable box, saved as versions. The data goes in a
+   separate message after it, and the reply format is a strict JSON schema in code, so editing the
+   text cannot break the step. **Back to the original** restores the text the tool came with. For
+   **reading responses**, the instructions are read-only and marked "Set in the code": they change
+   only with a release, so runs stay comparable.
+2. **Model**: every Anthropic model on the catalogue, cheapest first, Claude Haiku 5.5 the default,
+   with the cost of one job of that step with the chosen model and the difference from now, and what
+   a change does. Reading responses has its own Save the model and Undo.
+3. **What the model gets** (each part with where it comes from) and **What the model replies** (each
+   field with what it means), side by side.
+4. **The version history** (for reading responses, the model history); restoring copies a version
+   into the editor, and saving makes a new version.
+
+A step's cost is the tool's own estimate for Claude Haiku 5.5, scaled by the chosen model's price for
+the step's typical mix of tokens read and written. Every other estimate that includes the step
+(scans, the Prompt run's reading, the term review, candidate checks, the Recommendation run) scales
+the same way. Changing the model for reading responses marks a break on the AI responses charts.
+The starting instructions are the live app's prompts, reworded to the app's words; the
+Recommendation run's are new.
+
+## 9. The Prompt test history and its import
+
+The live database holds runs of two Prompt set versions. Version 1 asked 90 questions (a supplier,
+an application, and a problem question for each belt family, in six scopes: Twente, the Netherlands,
+Germany, Dutch, German, English); version 2 asks 20 (one application question per family, in four
+scopes). The questions live in code; each stored response keeps its own question text, kind, scope,
+and version.
+
+1. **The export** (`handoff/prompt-export` in the course repo) reads every run, response, reading,
+   candidate decision, and the company list, read only. Both versions' questions are rebuilt from git
+   (commits de6f134 and a5a484c).
+2. **The Prompt set becomes data**: version 1 and version 2 are stored as published versions with
+   their questions, version 1 published on 26 October 2026 and version 2 on 27 October 2026.
+3. **Mapping version 1**: the kind "supplier" becomes the buyer intent "product"; the scopes
+   Netherlands and Germany become Dutch with the region Netherlands and German with the region
+   Germany, shown only in version 1's history.
+4. **Partial runs**: version 1's only run is kept in the history and marked partial.
+5. **Empty responses**: existing responses with no text are marked failed during the migration, so
+   they are retried, not counted (decision 28).
+
+## 10. The Recommendation run
 
 1. **Rules find the gaps**, from the newest complete Prompt run, each company's newest scan, and the
-   search term list:
-   - **Search terms**: terms in the list that competitors use and tribelt.nl does not.
-   - **Pages**: a belt family or application with no tribelt.nl page in a language, where
-     competitors have one.
-   - **Listings**: sites the web answers cite that name competitors but not Tribelt.
-   - **Fact sheet corrections**: claims marked "wrong about Tribelt" by the fact check.
-   - **AI readiness**: each failed check, with its specifics (the pages with no Markdown version,
-     the languages missing from the sitemap).
-2. **Rules score each gap** from 1 to 5. Benefit grows with the evidence: how many competitors use
-   a term, its intent tier, the belt family's gap in AI answers, how often a listing is cited.
-   Effort follows the kind: a term on an existing page is small, a new page larger.
-3. **The model places and words each gap** from the newest tribelt.nl scan's page text: the page it
-   belongs on, and a suggested sentence or place. It may move a score by one point, and must then
-   give its reason. A gap it cannot place stays, with its page left blank and "Where to put this is
-   for the web agency to decide".
-4. **The run replaces** the open generated recommendations, keeps the done and edited ones, and
-   marks the new ones "New".
-5. **Rules decide done**: the next tribelt.nl scan finds the term on the named page; a page for
-   that family or application in that language; the listing's page names Tribelt or links to
-   tribelt.nl (fetched in the readiness check); the readiness check passes. Anything else is ticked
-   by hand.
+   search term list: search terms competitors use and tribelt.nl does not; a belt family or
+   application with no tribelt.nl page in a language where competitors have one; sites the web
+   responses cite that name competitors but not Tribelt; claims the fact check marked wrong; each
+   failed readiness check with its specifics.
+2. **Rules score each gap** from 1 to 5 for benefit (how many competitors use a term, its buyer
+   intent, the family's gap in AI responses, how often a listing is cited) and effort (a term on an
+   existing page is small, a new page larger).
+3. **The model places and words each gap** from the newest tribelt.nl page text (section 8), and may
+   move a score by one point with a reason. A gap it cannot place keeps its page blank, with "Where
+   to put this is for the web agency to decide".
+4. **The run replaces** the open generated recommendations, keeps the done and edited ones, and marks
+   the new ones "New".
+5. **Rules decide done**: the next tribelt.nl scan finds the term on the named page; a page for that
+   family or application in that language; the listing names Tribelt or links to tribelt.nl; the
+   readiness check passes. Anything else is ticked by hand.
 
-The readiness recommendations in code stay the general ones; their specifics become their steps.
+## 11. Changes to the backend
 
-## 7. Changes to the backend
+1. **Stopping**: a stop for Prompt runs (reusing the budget halt), scans (and removing a queued
+   scan), rescans, readiness checks, term reviews, candidate reviews, competitor checks, and
+   Recommendation runs, each recorded as "stopped by hand".
+2. **Estimates and budgets**: a dollar estimate for every start operation; Anthropic usage priced in
+   dollars from the stored token counts, against a budget per key.
+3. **The Prompt set** in the database: drafts, published versions with notes, scopes; imported as in
+   section 9.
+4. **The Model list**: stored models replacing the cheapest per provider; a catalogue endpoint from
+   OpenRouter's model list (text in, text out; no aliases or routers), refreshed daily, with prices,
+   web search fees, the date each model was listed, and the recommended five.
+5. **Empty responses** are failures (decision 28), in new runs and in the migration.
+6. **History**: figures per run (all, per language, Twente, citation) with the version and whether it
+   was partial; per tribelt.nl scan for readiness and terms.
+7. **Claude steps**: stored versions of model and instructions per step, the read-only reading
+   instructions, and each call site taking its step's current version; the cost scaling.
+8. **Pages per term, page text, and fetched files** in scans.
+9. **The Recommendation run**: rules, the model call, storage of runs and generated
+   recommendations, edits, and the done checks.
+10. **The fact check** separates wrong from left out.
+11. **The competitor definition** as stored versions.
+12. **Hand-added and removed terms.**
+13. **Activity**: one endpoint for what runs, what is scheduled, what waits, and the month's spending
+    by kind.
+14. **Data**: the plastic and fabric makers archived.
 
-1. **Stopping.** A stop operation for Prompt runs (reusing the budget halt), scans (a cancel per
-   scan, and removing a queued scan), rescans (every scan of the batch), readiness checks, term
-   reviews, candidate reviews, competitor checks, and Recommendation runs. Each records "stopped
-   by hand".
-2. **Estimates and budgets.** A dollar estimate for every start operation. The Anthropic usage is
-   priced in dollars from the token counts already stored, against a budget set in Manage. Start
-   operations return the estimate and what is left, and the start of a Prompt run checks it.
-3. **The prompt set** moves from code to the database: drafts, published versions, and scopes as
-   data. The current set is version 2's 20 questions.
-4. **The model list** replaces `ChooseModels`: stored models, a catalogue endpoint with prices and
-   the cheapest per provider, and an estimate per change.
-5. **Pages per term.** Scans record the page of each known term, and keep tribelt.nl's page text.
-6. **The Recommendation run**: rules, the model call, storage of runs and generated
-   recommendations, edits, and the done checks, including fetching listings.
-7. **The fact check** separates wrong from left out; the newest run is read again.
-8. **The competitor definition** moves from `TargetMarket` to stored versions, and the check
-   version follows it.
-9. **Hand-added terms** in the search term list.
-10. **History and change**: figures per complete Prompt run and tribelt.nl scan for "Over time" and
-    "What changed", with the version breaks.
-11. **Activity**: one endpoint listing what runs, what is scheduled, what waits, and the month's
-    spending by kind.
-12. **Data**: the plastic and fabric makers archived; the oven and freezer patch from the handoff
-    landed first, as it changes the competitor list.
+## 12. ADRs to write
 
-## 8. ADRs to write
-
-- **The prompt set is edited and published in the app**, superseding the fixed set of 0004.
-- **The Prompt test asks the model list**, superseding the cheapest model per provider of 0004.
+- **The Prompt set is edited and published in the app**, superseding the fixed set of 0004.
+- **The Prompt test asks the Model list**, superseding the cheapest model per provider of 0004.
+- **The model that reads responses is chosen in the app; its instructions stay in code**, amending
+  0004 and 0007.
+- **Claude steps keep their model and instructions in the app; data and reply format stay in code.**
+- **An empty response is a failed response.**
 - **Language model spending is budgeted in dollars**, amending 0007's token limit.
 - **The Recommendation run writes recommendations, and rules decide when they are done**, amending
   0014.
 - **The competitor definition is edited in the app**, amending 0009.
 - **Search terms can be added by hand**, amending 0003.
 
-## 9. How it gets built
+## 13. How it gets built
 
-1. **The prototype.** The whole site, both views, as one interactive artifact on claude.ai: every
-   page reachable, the filters and pickers working, Start and Stop changing what Activity shows, the
-   estimates and budget warnings working, and a switch between a reader and an administrator. It
-   runs on the export of 28 October with the plastic and fabric makers archived, and sample data
-   for what the app does not have yet (history, Recommendation runs, running work). The owner goes
-   through it page by page, and its copy and behaviour become final there.
-2. **The plan**, from this spec and the reviewed prototype, splitting the work so agents can build
-   in parallel: the frame and navigation; the Results pages; the Manage pages; and each backend
-   change above.
-3. **The build**, in worktrees, with the coverage gate, `task check`, and the e2e tests, through the
-   lock script.
+The prototype is reviewed. The implementation plan (kept outside the repository, as planning
+artifacts are) splits the work so agents build in parallel in worktrees, with the coverage gate,
+`task check`, and the e2e tests. The whole spec ships by Monday 2 November 2026, 09:00. The work
+is tracked as tickets under the course repo's issue #5, each a vertical slice with its blockers: first
+the frame, the Manage layout, and the addresses; then, in parallel, the Results pages, Manage, empty
+responses failing, stopping a Prompt run by hand, and the history per run; then the Prompt set in the
+database with its import (section 9) and its editor, the Model list, the Claude steps (section 8),
+dollar budgets and stopping all work, scans that keep more, hand-added terms, the competitor
+definition's versions, the fact check's split, and the Recommendation run (section 10). The release
+ticket waits for every other ticket.
 
-## 10. Not in this redesign
+## 14. Not in this redesign
 
-- More languages beyond the prompt set (decision 12).
+- More languages beyond the Prompt set (decision 12).
 - The Viewer Key.
 - Recommendations from Buyers' analytics.
-- A design canvas of artboards; the prototype replaces it.
+- Automatic translation of new questions into English.

@@ -8,7 +8,7 @@ import { useStartRun, usePromptResults, usePromptSettings, useUpdatePromptSettin
 import { answerCost } from '../domain/grid'
 import { costLabel, progressLabel, providerName, runDate, statusName } from '../domain/results'
 import { addProvider, basisLine, modelLine, momentLabel, openRouterKeys, parseBudget, promptGroups } from '../domain/settings'
-import SettingsShell from '../../shell/components/SettingsShell.vue'
+import ManageLayout from '../../shell/components/ManageLayout.vue'
 
 const { settings, isLoading, forbidden, error } = usePromptSettings()
 const llm = useLlmSettings()
@@ -69,14 +69,12 @@ function saveFactSheet(): void {
 </script>
 
 <template>
-  <SettingsShell title="Prompt test">
-    <template #lead>
-      <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-        What every Prompt run asks, of which providers, and what it costs. The questions stay the same, so each run compares with
-        the ones before.
-      </p>
-      <p class="m-0"><RouterLink to="/ai-search/answers" class="font-medium">The results</RouterLink></p>
-    </template>
+  <ManageLayout
+    title="Prompt test"
+    purpose="What every Prompt run asks, of which providers, and what it costs."
+    :results="{ to: '/ai-responses', label: 'See the AI responses' }"
+  >
+    <p class="m-0 max-w-[62ch] text-ink-2">The questions stay the same, so each run compares with the ones before.</p>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
       <p class="m-0 text-xl font-semibold">Only administrators can change these settings.</p>
@@ -86,7 +84,7 @@ function saveFactSheet(): void {
     <template v-else-if="settings">
       <div v-if="!settings.keyWorks" role="alert" class="flex flex-col gap-1 rounded-2xl border-2 border-orange-ink bg-orange-pale p-5">
         <p class="m-0 font-semibold">The OpenRouter key does not work, so no Prompt run can start.</p>
-        <p class="m-0">Choose a working key below, or add one in <RouterLink to="/settings" class="underline underline-offset-4">Language models</RouterLink>.</p>
+        <p class="m-0">Choose a working key below, or add one in <RouterLink to="/manage/keys" class="underline underline-offset-4">Keys and spending</RouterLink>.</p>
       </div>
 
       <section aria-labelledby="price-title" class="flex flex-col gap-4">
@@ -188,7 +186,7 @@ function saveFactSheet(): void {
             <option v-for="k in keys" :key="k.id" :value="k.id">{{ credentialName(k) }}</option>
           </select>
           <span v-if="keys.length === 0" class="text-sm font-normal text-ink-2">
-            Add an OpenRouter key in <RouterLink to="/settings" class="underline underline-offset-4">the language-model settings</RouterLink> first.
+            Add an OpenRouter key in <RouterLink to="/manage/keys" class="underline underline-offset-4">Keys and spending</RouterLink> first.
           </span>
         </label>
         <fieldset class="m-0 flex flex-col gap-2 border-0 p-0">
@@ -275,5 +273,5 @@ function saveFactSheet(): void {
         </details>
       </section>
     </template>
-  </SettingsShell>
+  </ManageLayout>
 </template>

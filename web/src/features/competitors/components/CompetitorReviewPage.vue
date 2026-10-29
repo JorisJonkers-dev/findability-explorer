@@ -4,7 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { CompetitorCandidate, CompetitorCandidateStatus } from '../../../infrastructure/api/types.gen'
 import { useCandidateDecision, useCompetitorCandidates } from '../../prompt-test/composables/usePromptTest'
 import { CANDIDATE_STATUSES, candidateTab, parseCandidateStatus } from '../../prompt-test/domain/settings'
-import SettingsShell from '../../shell/components/SettingsShell.vue'
+import ManageLayout from '../../shell/components/ManageLayout.vue'
 import { CHECK_FILTERS, type CheckFilter, idsOf, keptBy, matchesSearch, reviewLine } from '../domain/candidates'
 import CandidateRow from './CandidateRow.vue'
 
@@ -96,14 +96,15 @@ function onKey(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <SettingsShell title="Competitor review">
-    <template #lead>
-      <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-        Companies the AI answers name that are not on the competitor list yet, the most named first. Names on one website
-        are one company, and Haiku merges the other duplicates. Haiku adds the companies it is sure make metal process belts
-        like Tribelt's, and dismisses the ones it is sure do not. You decide the rest, and you can undo any of its decisions.
-      </p>
-    </template>
+  <ManageLayout
+    title="Candidates"
+    purpose="The companies the AI responses name that are not on the competitor list yet, the most named first."
+    :results="{ to: '/competitors', label: 'See the competitors' }"
+  >
+    <p class="m-0 max-w-[62ch] text-ink-2">
+      Names on one website are one company, and Haiku merges the other duplicates. Haiku adds the companies it is sure make metal
+      process belts like Tribelt's, and dismisses the ones it is sure do not. You decide the rest, and you can undo any of its decisions.
+    </p>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
       <p class="m-0 text-xl font-semibold">Only administrators can review competitors.</p>
@@ -112,7 +113,7 @@ function onKey(event: KeyboardEvent): void {
     <template v-else>
       <section v-if="review && counts" aria-label="Haiku's review" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-mist p-4">
         <p class="m-0 font-medium">{{ reviewLine(review, counts.unchecked) }}</p>
-        <RouterLink v-if="review.problem === 'noKey'" to="/settings" class="font-medium">Add one in Language models</RouterLink>
+        <RouterLink v-if="review.problem === 'noKey'" to="/manage/keys" class="font-medium">Add one in Keys and spending</RouterLink>
         <button
           v-else
           type="button"
@@ -219,5 +220,5 @@ function onKey(event: KeyboardEvent): void {
         </ul>
       </template>
     </template>
-  </SettingsShell>
+  </ManageLayout>
 </template>

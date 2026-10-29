@@ -21,7 +21,7 @@ const { scan, error } = useScan(id)
 
 /** A started scan opens in the panel, beside the same company. */
 function started(next: string): void {
-  void router.push({ path: `/scan/${next}`, query: route.query })
+  void router.push({ path: `/manage/scans/${next}`, query: route.query })
 }
 
 defineExpose({
@@ -62,7 +62,7 @@ defineExpose({
       </div>
       <ScanResult v-else-if="scan" :key="scan.summary.id" :scan="scan" />
       <p v-else class="m-0 text-muted">Loading the scan…</p>
-      <RouterLink :to="{ path: '/competitors', query: route.query }" class="self-start text-sm font-medium">
+      <RouterLink :to="{ path: '/manage/scans', query: route.query }" class="self-start text-sm font-medium">
         Show the recent scans
       </RouterLink>
     </template>

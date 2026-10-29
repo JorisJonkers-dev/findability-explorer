@@ -228,7 +228,7 @@ function send(): void {
         </li>
       </ul>
       <p v-if="decisionError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ decisionError }}</p>
-      <RouterLink to="/settings/competitors" class="self-start text-sm font-medium">Review every company named in AI answers</RouterLink>
+      <RouterLink to="/manage/competitors/candidates" class="self-start text-sm font-medium">Review every company named in AI answers</RouterLink>
     </div>
   </section>
 </template>

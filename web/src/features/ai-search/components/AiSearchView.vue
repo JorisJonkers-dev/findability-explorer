@@ -21,7 +21,7 @@ const total = computed(() => tally(page.cells.value).answers)
 </script>
 
 <template>
-  <PageView section="ai-search" :title="page.headline.value">
+  <PageView section="ai-responses" :title="page.headline.value">
     <template #lede>
       <p class="m-0 max-w-[64ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">{{ page.lede.value }}</p>
     </template>
@@ -60,7 +60,7 @@ const total = computed(() => tally(page.cells.value).answers)
           </div>
           <p v-if="shown.goal" class="m-0 text-ink-2 stage:text-[30px]">{{ shown.goal }}</p>
           <RouterLink
-            to="/ai-search/answers"
+            to="/ai-responses/all"
             class="inline-flex min-h-12 items-center self-start rounded-full bg-black px-6 font-bold text-white no-underline hover:bg-orange-ink hover:text-white stage:min-h-[96px] stage:px-12 stage:text-[34px]"
           >
             See every answer
@@ -100,7 +100,7 @@ const total = computed(() => tally(page.cells.value).answers)
         </section>
 
         <RouterLink
-          to="/ai-search/readiness"
+          to="/ai-readiness"
           class="flex items-center justify-between gap-6 rounded-3xl bg-mist px-7 py-6 text-black no-underline hover:bg-grey hover:text-black stage:mt-auto stage:rounded-[40px] stage:px-14 stage:py-10"
         >
           <span class="flex flex-col gap-1.5">

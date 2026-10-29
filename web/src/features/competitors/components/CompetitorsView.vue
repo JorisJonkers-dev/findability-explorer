@@ -23,7 +23,7 @@ const active = computed(() => companies.value.filter((c) => !c.archived && c.rol
 
 /** A started scan opens on its own page. */
 function started(id: string): void {
-  void router.push(`/scan/${id}`)
+  void router.push(`/manage/scans/${id}`)
 }
 </script>
 

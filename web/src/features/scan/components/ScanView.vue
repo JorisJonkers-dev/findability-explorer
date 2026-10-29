@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import PageView from '../../shell/components/PageView.vue'
-import { useMe } from '../../shell/composables/useMe'
+import ManageLayout from '../../shell/components/ManageLayout.vue'
 import ScanPanel from './ScanPanel.vue'
 
-/** One scan: what the crawl found on a website, while it runs and once it is done. */
-defineProps<{ scanId: string }>()
-
-const { isAdmin } = useMe()
+/** Website scans in Manage: without a scan, the form and the recent scans; with one, what the crawl found, while it runs and once it is done. */
+withDefaults(defineProps<{ scanId?: string }>(), { scanId: undefined })
 </script>
 
 <template>
-  <PageView section="competitors" title="What the scan found." :back="{ to: '/competitors', label: 'Back to Competitors' }" :source="['Scans: live, from this app']">
-    <ScanPanel :scan-id="scanId" :is-admin="isAdmin" />
-  </PageView>
+  <ManageLayout
+    :title="scanId ? 'What the scan found.' : 'Website scans'"
+    :purpose="scanId ? 'What a scan read on a website, and the search terms its pages are built around.' : 'Scan a website, and open the recent scans.'"
+    data-line="Scans, live from this app"
+    :back="scanId ? { to: '/manage/scans', label: 'Back to Website scans' } : undefined"
+    :results="{ to: '/ai-readiness', label: 'See AI readiness' }"
+  >
+    <ScanPanel :scan-id="scanId" is-admin />
+  </ManageLayout>
 </template>

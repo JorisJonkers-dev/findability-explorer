@@ -41,11 +41,14 @@ describe('a competitor’s page', () => {
     expect(wrapper.text()).toContain('Back to Competitors')
   })
 
-  it('opens its newest finished scan', async () => {
-    const { wrapper, router } = await mountApp(api(), '/competitors/twentebelt')
+  it('opens its newest finished scan for an administrator only, as a scan’s page is in Manage', async () => {
+    const reader = await mountApp(api(), '/competitors/twentebelt')
+    expect(link(reader.wrapper, 'Open its latest scan')).toBeUndefined()
+    reader.wrapper.unmount()
+    const { wrapper, router } = await mountApp(api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/competitors/twentebelt')
     await link(wrapper, 'Open its latest scan')?.trigger('click')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/scan/5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/scans/5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c')
   })
 
   it('says when no scan has read the website, and has no latest scan to open', async () => {

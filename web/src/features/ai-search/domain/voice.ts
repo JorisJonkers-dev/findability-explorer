@@ -105,19 +105,19 @@ export function figures(summary: AiSearchSummary, cells: readonly PromptCell[], 
   const score = readinessScore(summary)
   return [
     {
-      to: '/numbers/aiShareOfVoice',
+      to: '/goals/aiShareOfVoice',
       big: all.answers === 0 ? '–' : pct(all.named / all.answers),
       text: 'of AI answers name Tribelt',
       note: `Target ${pct(named)}.`,
     },
     {
-      to: '/numbers/citationShare',
+      to: '/goals/citationShare',
       big: web.answers === 0 ? '–' : pct(web.cited / web.answers),
       text: 'of web answers cite tribelt.nl',
       note: cited === undefined ? '' : `Target ${pct(cited)}.`,
     },
     {
-      to: '/ai-search/readiness',
+      to: '/ai-readiness',
       big: score === undefined ? '–' : `${formatValue('readinessChecks', score)} of ${String(summary.readinessChecks)}`,
       text: 'AI readiness checks passed',
       note: 'See how AI readiness is checked.',

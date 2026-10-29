@@ -407,6 +407,16 @@ func (UnimplementedHandler) RejectTermCandidate(ctx context.Context, params Reje
 	return r, ht.ErrNotImplemented
 }
 
+// RemoveQueuedAnalyses implements removeQueuedAnalyses operation.
+//
+// Administrators only. Takes every scan that waits off the queue, each recorded as stopped by hand;
+// the running ones run on. 404 when no scan waits.
+//
+// DELETE /api/v1/admin/analyses/queue
+func (UnimplementedHandler) RemoveQueuedAnalyses(ctx context.Context) (r RemoveQueuedAnalysesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RereadPromptRun implements rereadPromptRun operation.
 //
 // Administrators only. Reads a finished run's answers whose reading failed again, or only the one
@@ -569,6 +579,17 @@ func (UnimplementedHandler) StartTermReview(ctx context.Context) (r StartTermRev
 	return r, ht.ErrNotImplemented
 }
 
+// StopAnalysis implements stopAnalysis operation.
+//
+// Administrators only. A waiting scan is taken off the queue; a running one ends after the page it
+// reads, on whichever instance runs it, and keeps the pages it read so far. Either is recorded as
+// stopped by hand. 404 when no waiting or running scan has this id.
+//
+// POST /api/v1/admin/analyses/{analysisId}/stop
+func (UnimplementedHandler) StopAnalysis(ctx context.Context, params StopAnalysisParams) (r StopAnalysisRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StopPromptRun implements stopPromptRun operation.
 //
 // Administrators only. Asks a running run to stop. The request is stored, so the instance running the
@@ -578,6 +599,29 @@ func (UnimplementedHandler) StartTermReview(ctx context.Context) (r StartTermRev
 //
 // POST /api/v1/admin/prompt-runs/{runId}/stop
 func (UnimplementedHandler) StopPromptRun(ctx context.Context, params StopPromptRunParams) (r StopPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopReadinessCheck implements stopReadinessCheck operation.
+//
+// Administrators only. Stops the check of every company's AI readiness that runs: it reads no further
+// site. The sites it checked keep what it recorded, the others what their scan recorded, and the
+// check's state says it was stopped. 404 when no check runs.
+//
+// POST /api/v1/admin/readiness-checks/stop
+func (UnimplementedHandler) StopReadinessCheck(ctx context.Context) (r StopReadinessCheckRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopRescan implements stopRescan operation.
+//
+// Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting one is
+// taken off the queue, a running one ends after the page it reads and keeps the pages it read so far.
+// Each is recorded as stopped by hand. A scan started on its own runs on. 404 when no scan of a
+// re-scan waits or runs.
+//
+// POST /api/v1/admin/rescans/stop
+func (UnimplementedHandler) StopRescan(ctx context.Context) (r StopRescanRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

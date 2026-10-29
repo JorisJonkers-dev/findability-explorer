@@ -49,6 +49,7 @@ type Analysis struct {
 	MatchingModel   pgtype.Text
 	ScanNumber      pgtype.Int8
 	Rescan          bool
+	StopRequestedAt pgtype.Timestamptz
 }
 
 type AnalysisBotRule struct {

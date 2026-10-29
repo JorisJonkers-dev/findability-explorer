@@ -304,6 +304,17 @@ func (q *Queries) AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStat
 	return items, nil
 }
 
+const analysisStopRequested = `-- name: AnalysisStopRequested :one
+SELECT EXISTS (SELECT 1 FROM analyses WHERE id = $1 AND stop_requested_at IS NOT NULL)
+`
+
+func (q *Queries) AnalysisStopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, analysisStopRequested, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const candidateEvidence = `-- name: CandidateEvidence :many
 SELECT a.id AS analysis_id, a.competitor_id::text AS competitor_id, a.url, a.created_at, k.phrase, k.language, k.score,
     k.pages, coalesce(k.tier, 'broad')::text AS tier, coalesce(k.family, '')::text AS family,
@@ -1297,6 +1308,49 @@ func (q *Queries) QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error) {
 	return items, nil
 }
 
+const requestAnalysesStop = `-- name: RequestAnalysesStop :many
+UPDATE analyses
+SET stop_requested_at = coalesce(stop_requested_at, $1)
+WHERE status = 'running'
+    AND ($2::boolean OR id = $3::uuid)
+    AND (NOT $4::boolean OR rescan)
+RETURNING id
+`
+
+type RequestAnalysesStopParams struct {
+	StoppedAt  pgtype.Timestamptz
+	AnyID      bool
+	ID         uuid.UUID
+	RescanOnly bool
+}
+
+// Asks the running scans a stop picks to stop, as StopQueuedAnalyses picks them; the first request
+// stays.
+func (q *Queries) RequestAnalysesStop(ctx context.Context, arg RequestAnalysesStopParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, requestAnalysesStop,
+		arg.StoppedAt,
+		arg.AnyID,
+		arg.ID,
+		arg.RescanOnly,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setAnalysisMatching = `-- name: SetAnalysisMatching :exec
 UPDATE analyses
 SET matching = $2, llm_input_tokens = $3, llm_output_tokens = $4, matching_model = $5
@@ -1341,6 +1395,52 @@ func (q *Queries) SetSitemapCoverage(ctx context.Context, arg SetSitemapCoverage
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const stopQueuedAnalyses = `-- name: StopQueuedAnalyses :many
+UPDATE analyses
+SET status = 'failed', failure = $1, finished_at = $2,
+    stop_requested_at = $2
+WHERE status = 'queued'
+    AND ($3::boolean OR id = $4::uuid)
+    AND (NOT $5::boolean OR rescan)
+RETURNING id
+`
+
+type StopQueuedAnalysesParams struct {
+	Failure    pgtype.Text
+	StoppedAt  pgtype.Timestamptz
+	AnyID      bool
+	ID         uuid.UUID
+	RescanOnly bool
+}
+
+// Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,
+// and only the re-scans when rescan_only is set.
+func (q *Queries) StopQueuedAnalyses(ctx context.Context, arg StopQueuedAnalysesParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, stopQueuedAnalyses,
+		arg.Failure,
+		arg.StoppedAt,
+		arg.AnyID,
+		arg.ID,
+		arg.RescanOnly,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const tokensPerMatchedScan = `-- name: TokensPerMatchedScan :one

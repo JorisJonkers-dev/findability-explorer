@@ -638,6 +638,97 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/rescans/stop:
+    post:
+      operationId: stopRescan
+      summary: Stop the re-scan
+      description: >-
+        Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting
+        one is taken off the queue, a running one ends after the page it reads and keeps the pages
+        it read so far. Each is recorded as stopped by hand. A scan started on its own runs on. 404
+        when no scan of a re-scan waits or runs.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/readiness-checks/stop:
+    post:
+      operationId: stopReadinessCheck
+      summary: Stop the AI readiness check
+      description: >-
+        Administrators only. Stops the check of every company's AI readiness that runs: it reads no
+        further site. The sites it checked keep what it recorded, the others what their scan
+        recorded, and the check's state says it was stopped. 404 when no check runs.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/analyses/queue:
+    delete:
+      operationId: removeQueuedAnalyses
+      summary: Remove every waiting scan
+      description: >-
+        Administrators only. Takes every scan that waits off the queue, each recorded as stopped by
+        hand; the running ones run on. 404 when no scan waits.
+      tags: [admin]
+      responses:
+        "204":
+          description: Removed.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/analyses/{analysisId}/stop:
+    post:
+      operationId: stopAnalysis
+      summary: Stop a scan, or take it off the queue
+      description: >-
+        Administrators only. A waiting scan is taken off the queue; a running one ends after the
+        page it reads, on whichever instance runs it, and keeps the pages it read so far. Either is
+        recorded as stopped by hand. 404 when no waiting or running scan has this id.
+      tags: [admin]
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          description: The scan's id.
+          schema:
+            type: string
+            format: uuid
+            maxLength: 36
+      responses:
+        "204":
+          description: Stopped.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/term-candidates:
     get:
       operationId: listTermCandidates
@@ -2315,6 +2406,11 @@ components:
             True when the analysis failed because its site turned automated readers away (bot
             protection) although people can open it; only then is it present. The scan still
             records the site's AI readiness.
+        stoppedByHand:
+          type: boolean
+          description: >-
+            True when an administrator stopped the scan, or took it off the queue; only then is it
+            present. Its status is failed, and it keeps the pages it read.
         aiReadiness:
           $ref: "#/components/schemas/AiReadinessBrief"
         maxPages:
@@ -4814,6 +4910,11 @@ components:
           maximum: 1000
           description: How many sites it checks.
           example: 40
+        stopped:
+          type: boolean
+          description: >-
+            True when an administrator stopped the check; only then is it present. The sites it
+            checked keep what it recorded, the others what their scan recorded.
     ReadinessChange:
       description: >-
         One field of AI readiness that differs between two scans: a crawler (bot:GPTBot), robots,

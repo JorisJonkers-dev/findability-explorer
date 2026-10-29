@@ -141,6 +141,10 @@ type RejectTermCandidateRes interface {
 	rejectTermCandidateRes()
 }
 
+type RemoveQueuedAnalysesRes interface {
+	removeQueuedAnalysesRes()
+}
+
 type RereadPromptRunRes interface {
 	rereadPromptRunRes()
 }
@@ -191,6 +195,18 @@ type StartRescansRes interface {
 
 type StartTermReviewRes interface {
 	startTermReviewRes()
+}
+
+type StopAnalysisRes interface {
+	stopAnalysisRes()
+}
+
+type StopReadinessCheckRes interface {
+	stopReadinessCheckRes()
+}
+
+type StopRescanRes interface {
+	stopRescanRes()
 }
 
 type TestLlmCredentialRes interface {

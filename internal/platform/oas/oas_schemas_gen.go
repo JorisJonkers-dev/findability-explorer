@@ -757,8 +757,11 @@ type AnalysisSummary struct {
 	// True when the analysis failed because its site turned automated readers away (bot protection)
 	// although people can open it; only then is it present. The scan still records the site's AI
 	// readiness.
-	Blocked     OptBool             `json:"blocked"`
-	AiReadiness OptAiReadinessBrief `json:"aiReadiness"`
+	Blocked OptBool `json:"blocked"`
+	// True when an administrator stopped the scan, or took it off the queue; only then is it present. Its
+	// status is failed, and it keeps the pages it read.
+	StoppedByHand OptBool             `json:"stoppedByHand"`
+	AiReadiness   OptAiReadinessBrief `json:"aiReadiness"`
 	// The most pages the crawl fetches.
 	MaxPages int32 `json:"maxPages"`
 	// How many pages were fetched so far.
@@ -807,6 +810,11 @@ func (s *AnalysisSummary) GetFailure() OptString {
 // GetBlocked returns the value of Blocked.
 func (s *AnalysisSummary) GetBlocked() OptBool {
 	return s.Blocked
+}
+
+// GetStoppedByHand returns the value of StoppedByHand.
+func (s *AnalysisSummary) GetStoppedByHand() OptBool {
+	return s.StoppedByHand
 }
 
 // GetAiReadiness returns the value of AiReadiness.
@@ -872,6 +880,11 @@ func (s *AnalysisSummary) SetFailure(val OptString) {
 // SetBlocked sets the value of Blocked.
 func (s *AnalysisSummary) SetBlocked(val OptBool) {
 	s.Blocked = val
+}
+
+// SetStoppedByHand sets the value of StoppedByHand.
+func (s *AnalysisSummary) SetStoppedByHand(val OptBool) {
+	s.StoppedByHand = val
 }
 
 // SetAiReadiness sets the value of AiReadiness.
@@ -11043,6 +11056,9 @@ type ReadinessCheckState struct {
 	Failed int32 `json:"failed"`
 	// How many sites it checks.
 	Total int32 `json:"total"`
+	// True when an administrator stopped the check; only then is it present. The sites it checked keep
+	// what it recorded, the others what their scan recorded.
+	Stopped OptBool `json:"stopped"`
 }
 
 // GetRunning returns the value of Running.
@@ -11065,6 +11081,11 @@ func (s *ReadinessCheckState) GetTotal() int32 {
 	return s.Total
 }
 
+// GetStopped returns the value of Stopped.
+func (s *ReadinessCheckState) GetStopped() OptBool {
+	return s.Stopped
+}
+
 // SetRunning sets the value of Running.
 func (s *ReadinessCheckState) SetRunning(val bool) {
 	s.Running = val
@@ -11083,6 +11104,11 @@ func (s *ReadinessCheckState) SetFailed(val int32) {
 // SetTotal sets the value of Total.
 func (s *ReadinessCheckState) SetTotal(val int32) {
 	s.Total = val
+}
+
+// SetStopped sets the value of Stopped.
+func (s *ReadinessCheckState) SetStopped(val OptBool) {
+	s.Stopped = val
 }
 
 func (*ReadinessCheckState) startReadinessCheckRes() {}
@@ -11288,6 +11314,23 @@ func (*RejectTermCandidateNotFound) rejectTermCandidateRes() {}
 type RejectTermCandidateUnauthorized ProblemStatusCode
 
 func (*RejectTermCandidateUnauthorized) rejectTermCandidateRes() {}
+
+type RemoveQueuedAnalysesForbidden ProblemStatusCode
+
+func (*RemoveQueuedAnalysesForbidden) removeQueuedAnalysesRes() {}
+
+// RemoveQueuedAnalysesNoContent is response for RemoveQueuedAnalyses operation.
+type RemoveQueuedAnalysesNoContent struct{}
+
+func (*RemoveQueuedAnalysesNoContent) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesNotFound ProblemStatusCode
+
+func (*RemoveQueuedAnalysesNotFound) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesUnauthorized ProblemStatusCode
+
+func (*RemoveQueuedAnalysesUnauthorized) removeQueuedAnalysesRes() {}
 
 type RereadPromptRunBadRequest ProblemStatusCode
 
@@ -12179,6 +12222,61 @@ func (*StartTermReviewForbidden) startTermReviewRes() {}
 type StartTermReviewUnauthorized ProblemStatusCode
 
 func (*StartTermReviewUnauthorized) startTermReviewRes() {}
+
+type StopAnalysisBadRequest ProblemStatusCode
+
+func (*StopAnalysisBadRequest) stopAnalysisRes() {}
+
+type StopAnalysisForbidden ProblemStatusCode
+
+func (*StopAnalysisForbidden) stopAnalysisRes() {}
+
+// StopAnalysisNoContent is response for StopAnalysis operation.
+type StopAnalysisNoContent struct{}
+
+func (*StopAnalysisNoContent) stopAnalysisRes() {}
+
+type StopAnalysisNotFound ProblemStatusCode
+
+func (*StopAnalysisNotFound) stopAnalysisRes() {}
+
+type StopAnalysisUnauthorized ProblemStatusCode
+
+func (*StopAnalysisUnauthorized) stopAnalysisRes() {}
+
+type StopReadinessCheckForbidden ProblemStatusCode
+
+func (*StopReadinessCheckForbidden) stopReadinessCheckRes() {}
+
+// StopReadinessCheckNoContent is response for StopReadinessCheck operation.
+type StopReadinessCheckNoContent struct{}
+
+func (*StopReadinessCheckNoContent) stopReadinessCheckRes() {}
+
+type StopReadinessCheckNotFound ProblemStatusCode
+
+func (*StopReadinessCheckNotFound) stopReadinessCheckRes() {}
+
+type StopReadinessCheckUnauthorized ProblemStatusCode
+
+func (*StopReadinessCheckUnauthorized) stopReadinessCheckRes() {}
+
+type StopRescanForbidden ProblemStatusCode
+
+func (*StopRescanForbidden) stopRescanRes() {}
+
+// StopRescanNoContent is response for StopRescan operation.
+type StopRescanNoContent struct{}
+
+func (*StopRescanNoContent) stopRescanRes() {}
+
+type StopRescanNotFound ProblemStatusCode
+
+func (*StopRescanNotFound) stopRescanRes() {}
+
+type StopRescanUnauthorized ProblemStatusCode
+
+func (*StopRescanUnauthorized) stopRescanRes() {}
 
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term

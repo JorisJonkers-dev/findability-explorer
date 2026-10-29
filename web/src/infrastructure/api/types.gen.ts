@@ -369,6 +369,10 @@ export type AnalysisSummary = {
      * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. The scan still records the site's AI readiness.
      */
     blocked?: boolean;
+    /**
+     * True when an administrator stopped the scan, or took it off the queue; only then is it present. Its status is failed, and it keeps the pages it read.
+     */
+    stoppedByHand?: boolean;
     aiReadiness?: AiReadinessBrief;
     /**
      * The most pages the crawl fetches.
@@ -2162,6 +2166,10 @@ export type ReadinessCheckState = {
      * How many sites it checks.
      */
     total: number;
+    /**
+     * True when an administrator stopped the check; only then is it present. The sites it checked keep what it recorded, the others what their scan recorded.
+     */
+    stopped?: boolean;
 };
 
 /**
@@ -3884,6 +3892,163 @@ export type StartRescansResponses = {
 };
 
 export type StartRescansResponse = StartRescansResponses[keyof StartRescansResponses];
+
+export type StopRescanData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/rescans/stop';
+};
+
+export type StopRescanErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopRescanError = StopRescanErrors[keyof StopRescanErrors];
+
+export type StopRescanResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopRescanResponse = StopRescanResponses[keyof StopRescanResponses];
+
+export type StopReadinessCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/readiness-checks/stop';
+};
+
+export type StopReadinessCheckErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopReadinessCheckError = StopReadinessCheckErrors[keyof StopReadinessCheckErrors];
+
+export type StopReadinessCheckResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopReadinessCheckResponse = StopReadinessCheckResponses[keyof StopReadinessCheckResponses];
+
+export type RemoveQueuedAnalysesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/analyses/queue';
+};
+
+export type RemoveQueuedAnalysesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RemoveQueuedAnalysesError = RemoveQueuedAnalysesErrors[keyof RemoveQueuedAnalysesErrors];
+
+export type RemoveQueuedAnalysesResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type RemoveQueuedAnalysesResponse = RemoveQueuedAnalysesResponses[keyof RemoveQueuedAnalysesResponses];
+
+export type StopAnalysisData = {
+    body?: never;
+    path: {
+        /**
+         * The scan's id.
+         */
+        analysisId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/analyses/{analysisId}/stop';
+};
+
+export type StopAnalysisErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopAnalysisError = StopAnalysisErrors[keyof StopAnalysisErrors];
+
+export type StopAnalysisResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopAnalysisResponse = StopAnalysisResponses[keyof StopAnalysisResponses];
 
 export type ListTermCandidatesData = {
     body?: never;

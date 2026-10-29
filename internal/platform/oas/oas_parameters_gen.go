@@ -2478,6 +2478,72 @@ func decodeSplitCompetitorCandidateParams(args [1]string, argsEscaped bool, r *h
 	return params, nil
 }
 
+// StopAnalysisParams is parameters of stopAnalysis operation.
+type StopAnalysisParams struct {
+	// The scan's id.
+	AnalysisId uuid.UUID
+}
+
+func unpackStopAnalysisParams(packed middleware.Parameters) (params StopAnalysisParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "analysisId",
+			In:   "path",
+		}
+		params.AnalysisId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeStopAnalysisParams(args [1]string, argsEscaped bool, r *http.Request) (params StopAnalysisParams, _ error) {
+	// Decode path: analysisId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "analysisId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.AnalysisId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "analysisId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // TestLlmCredentialParams is parameters of testLlmCredential operation.
 type TestLlmCredentialParams struct {
 	// The credential's id.

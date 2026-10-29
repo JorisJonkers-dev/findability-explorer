@@ -66,6 +66,7 @@ type Service struct {
 	limits    Limits
 	queue     *queue
 	check     readinessCheck
+	runs      runs
 }
 
 // New returns a Service. matchers names the matcher each analysis uses when it runs.
@@ -398,6 +399,12 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if a.Status != domain.StatusQueued {
 		return nil
 	}
+	// run ends when an administrator stops the scan here; the site and the language model are
+	// asked under it, while the records are written under ctx, so a stop is still recorded.
+	run, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	s.runs.add(id, cancel)
+	defer s.runs.drop(id)
 	if err := s.repo.MarkRunning(ctx, id); err != nil {
 		return fmt.Errorf("mark running: %w", err)
 	}
@@ -407,26 +414,36 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	}
 	// The readiness files come first, so a site that turns the page crawl away still shows its
 	// crawler policy. When ctx ends while they are read, the crawl below ends too.
-	files, readErr := s.crawler.Readiness(ctx, target)
+	files, readErr := s.crawler.Readiness(run, target)
 	if readErr == nil {
 		if err := s.repo.SaveReadiness(ctx, id, domain.AssessReadiness(files), domain.RawFilesOf(files)); err != nil {
 			return s.abort(ctx, id, fmt.Errorf("save readiness: %w", err))
 		}
 	}
+	if s.stopped(ctx, run, id) {
+		return s.fail(ctx, id, domain.StoppedByHandReason)
+	}
 	glossary := s.glossary(ctx)
 	lexicon := domain.NewLexicon(glossary)
 	var pages []domain.Page
 	var recordErr error
-	crawlErr := s.crawler.Crawl(ctx, target, a.MaxPages, domain.NewLinkScorer(lexicon), func(p domain.Page) error {
+	crawlErr := s.crawler.Crawl(run, target, a.MaxPages, domain.NewLinkScorer(lexicon), func(p domain.Page) error {
 		if err := s.repo.AddPage(ctx, id, domain.Summarise(p, lexicon)); err != nil {
 			recordErr = fmt.Errorf("add page: %w", err)
 			return recordErr
 		}
 		pages = append(pages, p)
+		// A stop asked on any instance is seen between pages.
+		if s.stopped(ctx, run, id) {
+			return errStopped
+		}
 		return nil
 	})
 	if recordErr != nil {
 		return s.abort(ctx, id, recordErr)
+	}
+	if s.stopped(ctx, run, id) {
+		return s.fail(ctx, id, domain.StoppedByHandReason)
 	}
 	if len(pages) == 0 {
 		return s.fail(ctx, id, noPages(crawlErr))
@@ -439,7 +456,10 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.SaveFindings(ctx, id, keywords, domain.FindKnownTerms(pages, glossary)); err != nil {
 		return s.abort(ctx, id, fmt.Errorf("save findings: %w", err))
 	}
-	matching, model, eqs, usage := s.match(ctx, pages)
+	matching, model, eqs, usage := s.match(run, pages)
+	if s.stopped(ctx, run, id) {
+		return s.fail(ctx, id, domain.StoppedByHandReason)
+	}
 	if err := s.repo.SaveMatching(ctx, id, matching, model, eqs, usage); err != nil {
 		return s.abort(ctx, id, fmt.Errorf("save matching: %w", err))
 	}

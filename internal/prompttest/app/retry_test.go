@@ -291,3 +291,48 @@ func TestRereadRefusals(t *testing.T) {
 		t.Errorf("a running run = %v", err)
 	}
 }
+
+func TestAnEmptyResponseFailsUncountedAndARetryAsksItAgain(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	const model = "openai/gpt-oss-20b"
+	e.gw.empty[model] = true
+	run, err := e.svc.Start(t.Context(), "joris")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(e.repo.answers) != 40 || e.gw.extracted != 0 {
+		t.Fatalf("%d answers, %d read: an empty response is never read", len(e.repo.answers), e.gw.extracted)
+	}
+	for _, a := range e.repo.answers {
+		if a.Failure != "The model gave no text." || a.Extraction != nil || a.Counts() || a.OutputTokens != 2000 || a.Cost != 10 {
+			t.Fatalf("an empty response must be stored failed, unread, with what it used: %+v", a)
+		}
+	}
+	res, err := e.svc.Results(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := res.Runs[0].Progress; p.Failed != 40 || p.Answered != 0 {
+		t.Errorf("progress = %+v: the run needs a retry", p)
+	}
+	for _, c := range res.Runs[0].Cells {
+		if c.Answers != 0 || c.Named != 0 || c.Cited != 0 {
+			t.Errorf("a failed response counts in a share: %+v", c)
+		}
+	}
+
+	e.gw.empty[model] = false
+	got, err := e.svc.Retry(t.Context(), run.ID, nil)
+	if err != nil || got.Tasks != 40 {
+		t.Fatalf("retry = %+v, %v", got, err)
+	}
+	if failures(e) != 0 || len(e.repo.answers) != 40 || e.gw.extracted != 40 {
+		t.Errorf("after the retry: %d failures in %d answers, %d read", failures(e), len(e.repo.answers), e.gw.extracted)
+	}
+	for _, a := range e.repo.answers {
+		if !a.Counts() {
+			t.Fatalf("the retry must ask every empty response again: %+v", a)
+		}
+	}
+}

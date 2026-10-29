@@ -81,6 +81,19 @@ func TestAskReadsTheAnswerItsCitationsAndCost(t *testing.T) {
 	}
 }
 
+func TestAskTellsAnAnswerWithNoTextAsAnEmptyAnswerAndStillCountsWhatItUsed(t *testing.T) {
+	srv, _ := server(t, func(w http.ResponseWriter, _ map[string]any) {
+		_, _ = io.WriteString(w, `{"choices":[{"message":{"content":" \n "}}],"usage":{"prompt_tokens":20,"completion_tokens":2000,"cost":0.0001}}`)
+	})
+	reply, err := openrouter.New(srv.URL, "sk-or-test", nil).Ask(t.Context(), "openai/gpt-oss-20b", "Who makes eyelink belts?", false)
+	if !errors.Is(err, domain.ErrEmptyAnswer) {
+		t.Fatalf("err = %v, want the empty answer", err)
+	}
+	if reply.InputTokens != 20 || reply.OutputTokens != 2000 || reply.Cost != 100 {
+		t.Errorf("the tokens and cost of an empty answer are still counted: %+v", reply)
+	}
+}
+
 func TestAskTellsARateLimitFromOtherFailures(t *testing.T) {
 	cases := map[string]struct {
 		status  int

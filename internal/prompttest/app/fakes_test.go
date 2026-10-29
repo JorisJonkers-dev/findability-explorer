@@ -12,6 +12,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 var errBoom = errors.New("boom")
@@ -28,7 +29,9 @@ type repo struct {
 	verdicts  []domain.CompanyVerdict
 	checks    []domain.ListCheck
 	usage     []domain.ReviewUsage
-	failOn    map[string]bool
+	// sets are the published Prompt sets, version 2 unless a test publishes others.
+	sets   []domain.PublishedSet
+	failOn map[string]bool
 	// heartbeatsLeft, when not negative, is how many heartbeats succeed before the run is
 	// taken over by another instance.
 	heartbeatsLeft int
@@ -44,7 +47,7 @@ type storedRun struct {
 }
 
 func newRepo(failOn ...string) *repo {
-	r := &repo{failOn: map[string]bool{}, heartbeatsLeft: -1}
+	r := &repo{failOn: map[string]bool{}, heartbeatsLeft: -1, sets: []domain.PublishedSet{domaintest.Version2()}}
 	for _, f := range failOn {
 		r.failOn[f] = true
 	}
@@ -56,6 +59,16 @@ func (r *repo) err(op string) error {
 		return errBoom
 	}
 	return nil
+}
+
+func (r *repo) PromptSets(context.Context) ([]domain.PublishedSet, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.sets), r.err("PromptSets")
+}
+
+func (r *repo) PromptScopes(context.Context) ([]domain.ScopeInfo, error) {
+	return domaintest.Scopes(), r.err("PromptScopes")
 }
 
 func (r *repo) Settings(context.Context) (domain.Settings, bool, error) {

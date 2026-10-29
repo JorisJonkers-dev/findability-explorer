@@ -12,6 +12,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 func repository(t *testing.T) *persistence.Repository {
@@ -154,7 +155,7 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if err := repo.CreateRun(ctx, r, "a", at); err != nil {
 		t.Fatal(err)
 	}
-	prompt := domain.CurrentPromptSet().Prompts[0]
+	prompt := domaintest.Version2().PromptSet().Prompts[0]
 	read := domain.Answer{
 		ID: uuid.New(), RunID: r.ID, Prompt: prompt, PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeWeb,
 		Reply: domain.Reply{Text: "Twentebelt and Ashworth.\x00", Citations: []string{"https://twentebelt.com"}, InputTokens: 10, OutputTokens: 20, Cost: 1500},
@@ -269,7 +270,7 @@ func TestAFinishedRunIsAskedAgainUnderTheLock(t *testing.T) {
 	if err := repo.ReopenRun(ctx, r.ID, "a", at); !errors.Is(err, domain.ErrRunActive) {
 		t.Fatalf("reopening a running run = %v", err)
 	}
-	prompt := domain.CurrentPromptSet().Prompts[0]
+	prompt := domaintest.Version2().PromptSet().Prompts[0]
 	failed := domain.Answer{
 		ID: uuid.New(), RunID: r.ID, Prompt: prompt, PromptSetVersion: 2, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeWeb,
 		Reply: domain.Reply{InputTokens: 10, Cost: 300}, Failure: "Rate limited.", At: at,

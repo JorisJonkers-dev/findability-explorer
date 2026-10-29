@@ -332,6 +332,31 @@ type PromptRunModel struct {
 	Fallback string
 }
 
+type PromptScope struct {
+	ID       string
+	Language string
+	Region   pgtype.Text
+	Name     string
+}
+
+type PromptSet struct {
+	Version     int64
+	PublishedAt time.Time
+	PublishedBy string
+	Note        string
+}
+
+type PromptSetQuestion struct {
+	Version  int64
+	Position int64
+	PromptID string
+	Family   string
+	Intent   string
+	ScopeID  string
+	Text     string
+	English  pgtype.Text
+}
+
 type PromptSetting struct {
 	Singleton           bool
 	CredentialID        pgtype.Text

@@ -884,6 +884,130 @@ func (q *Queries) ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRu
 	return items, nil
 }
 
+const listPromptScopes = `-- name: ListPromptScopes :many
+SELECT id, language, coalesce(region, '')::text AS region, name
+FROM prompt_scopes
+ORDER BY name
+`
+
+type ListPromptScopesRow struct {
+	ID       string
+	Language string
+	Region   string
+	Name     string
+}
+
+// Every scope a question can be asked in, by name.
+func (q *Queries) ListPromptScopes(ctx context.Context) ([]ListPromptScopesRow, error) {
+	rows, err := q.db.Query(ctx, listPromptScopes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPromptScopesRow{}
+	for rows.Next() {
+		var i ListPromptScopesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Language,
+			&i.Region,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptSetQuestions = `-- name: ListPromptSetQuestions :many
+SELECT q.version, q.prompt_id, q.family, q.intent, q.text, coalesce(q.english, '')::text AS english,
+    s.id AS scope_id, s.language, coalesce(s.region, '')::text AS region, s.name AS scope_name
+FROM prompt_set_questions q
+JOIN prompt_scopes s ON s.id = q.scope_id
+ORDER BY q.version DESC, q.position
+`
+
+type ListPromptSetQuestionsRow struct {
+	Version   int64
+	PromptID  string
+	Family    string
+	Intent    string
+	Text      string
+	English   string
+	ScopeID   string
+	Language  string
+	Region    string
+	ScopeName string
+}
+
+// Every question of every published set with its scope, the newest set first, each set in order.
+func (q *Queries) ListPromptSetQuestions(ctx context.Context) ([]ListPromptSetQuestionsRow, error) {
+	rows, err := q.db.Query(ctx, listPromptSetQuestions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPromptSetQuestionsRow{}
+	for rows.Next() {
+		var i ListPromptSetQuestionsRow
+		if err := rows.Scan(
+			&i.Version,
+			&i.PromptID,
+			&i.Family,
+			&i.Intent,
+			&i.Text,
+			&i.English,
+			&i.ScopeID,
+			&i.Language,
+			&i.Region,
+			&i.ScopeName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptSets = `-- name: ListPromptSets :many
+SELECT version, published_at, published_by, note
+FROM prompt_sets
+ORDER BY version DESC
+`
+
+// Every published Prompt set, newest first.
+func (q *Queries) ListPromptSets(ctx context.Context) ([]PromptSet, error) {
+	rows, err := q.db.Query(ctx, listPromptSets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptSet{}
+	for rows.Next() {
+		var i PromptSet
+		if err := rows.Scan(
+			&i.Version,
+			&i.PublishedAt,
+			&i.PublishedBy,
+			&i.Note,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockPromptSchedule = `-- name: LockPromptSchedule :many
 SELECT next_due
 FROM prompt_settings

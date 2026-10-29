@@ -255,3 +255,23 @@ ORDER BY a.answered_at DESC, c.answer_id, c.position;
 SELECT coalesce(sum(haiku_tokens), 0)::bigint AS tokens
 FROM prompt_extractions
 WHERE extracted_at >= @since;
+
+-- name: ListPromptSets :many
+-- Every published Prompt set, newest first.
+SELECT version, published_at, published_by, note
+FROM prompt_sets
+ORDER BY version DESC;
+
+-- name: ListPromptSetQuestions :many
+-- Every question of every published set with its scope, the newest set first, each set in order.
+SELECT q.version, q.prompt_id, q.family, q.intent, q.text, coalesce(q.english, '')::text AS english,
+    s.id AS scope_id, s.language, coalesce(s.region, '')::text AS region, s.name AS scope_name
+FROM prompt_set_questions q
+JOIN prompt_scopes s ON s.id = q.scope_id
+ORDER BY q.version DESC, q.position;
+
+-- name: ListPromptScopes :many
+-- Every scope a question can be asked in, by name.
+SELECT id, language, coalesce(region, '')::text AS region, name
+FROM prompt_scopes
+ORDER BY name;

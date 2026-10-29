@@ -69,12 +69,17 @@ type Directory interface {
 	ArchiveUnlessKept(ctx context.Context, user, id string) (bool, error)
 }
 
-// Repository stores the settings, the runs, their answers and the candidate decisions. The run
+// Repository stores the settings, the published Prompt sets, the runs, their answers and the candidate decisions. The run
 // methods are what keeps one run running at a time across app instances.
 type Repository interface {
 	// Settings returns the stored settings, or ok false when none are stored yet.
 	Settings(ctx context.Context) (s domain.Settings, ok bool, err error)
 	SaveSettings(ctx context.Context, s domain.Settings, by string, at time.Time) error
+
+	// PromptSets returns every published Prompt set with its questions in order, newest first.
+	PromptSets(ctx context.Context) ([]domain.PublishedSet, error)
+	// PromptScopes returns every scope a question can be asked in.
+	PromptScopes(ctx context.Context) ([]domain.ScopeInfo, error)
 
 	// CreateRun stores a running run held by owner, or returns domain.ErrRunActive when one is
 	// running already.

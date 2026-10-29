@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 // partialRun stores a finished run of 40 questions that got three responses, each read: the rest
@@ -18,7 +19,7 @@ func partialRun(r *repo) domain.Run {
 		Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}},
 	}
 	r.runs = append(r.runs, &storedRun{run: run, owner: "a"})
-	tasks := domain.Tasks(domain.CurrentPromptSet(), run.Models)
+	tasks := domain.Tasks(domaintest.Version2().PromptSet(), run.Models)
 	for i, t := range tasks[:10] {
 		a := domain.Answer{ID: uuid.New(), RunID: run.ID, Prompt: t.Prompt, PromptSetVersion: 1, Provider: t.Provider, Mode: t.Mode}
 		switch {
@@ -37,6 +38,7 @@ func partialRun(r *repo) domain.Run {
 func TestTheHistoryListsTheRunsWithResponsesReadOldestFirstWithWhyAPartialRunFailed(t *testing.T) {
 	e := newEnv(t, newRepo(), "a")
 	e.repo.settings.Providers = []string{"openai"}
+	e.repo.sets = append(e.repo.sets, domain.PublishedSet{Version: 1, Note: "The first.", Questions: []domain.Question{{ID: "q"}}})
 	partial := partialRun(e.repo)
 	// A run whose every question failed read nothing, so it is left out.
 	e.gw.askErr = errors.New("the provider is down")
@@ -53,7 +55,7 @@ func TestTheHistoryListsTheRunsWithResponsesReadOldestFirstWithWhyAPartialRunFai
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(h.Versions) != 2 || h.Versions[0].Number != 1 {
+	if len(h.Versions) != 2 || h.Versions[0] != (domain.Version{Number: 1, Questions: 1, Note: "The first."}) || h.Versions[1].Number != 2 || h.Versions[1].Questions != 20 {
 		t.Errorf("versions = %+v", h.Versions)
 	}
 	if len(h.Runs) != 2 || h.Runs[0].RunID != partial.ID || h.Runs[1].RunID != full.ID {
@@ -63,7 +65,7 @@ func TestTheHistoryListsTheRunsWithResponsesReadOldestFirstWithWhyAPartialRunFai
 	if !p.Partial || p.Version != 1 || p.Answered != 3 || p.Read != 3 || p.All == nil || *p.All != 1 {
 		t.Errorf("partial run = %+v", p)
 	}
-	if f.Partial || f.Version != domain.PromptSetVersion || f.Read != 40 || f.Citation == nil || *f.Citation != 1 {
+	if f.Partial || f.Version != 2 || f.Read != 40 || f.Citation == nil || *f.Citation != 1 {
 		t.Errorf("full run = %+v", f)
 	}
 	if len(h.FailureOf) != 1 || h.FailureOf[partial.ID] != "OpenRouter answered 401: User not found." {
@@ -71,9 +73,11 @@ func TestTheHistoryListsTheRunsWithResponsesReadOldestFirstWithWhyAPartialRunFai
 	}
 }
 
-func TestTheHistoryFailsWhenTheRunsCannotBeRead(t *testing.T) {
-	e := newEnv(t, newRepo("Runs"), "a")
-	if _, err := e.svc.History(t.Context()); !errors.Is(err, errBoom) {
-		t.Errorf("err = %v, want the repository's", err)
+func TestTheHistoryFailsWhenTheRunsOrThePromptSetsCannotBeRead(t *testing.T) {
+	for _, op := range []string{"Runs", "PromptSets"} {
+		e := newEnv(t, newRepo(op), "a")
+		if _, err := e.svc.History(t.Context()); !errors.Is(err, errBoom) {
+			t.Errorf("%s failing: err = %v, want the repository's", op, err)
+		}
 	}
 }

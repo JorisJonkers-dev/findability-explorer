@@ -40,6 +40,7 @@ const (
 	ListCompetitorsOperation            OperationName = "ListCompetitors"
 	ListLlmModelsOperation              OperationName = "ListLlmModels"
 	ListPromptAnswersOperation          OperationName = "ListPromptAnswers"
+	ListPromptSetsOperation             OperationName = "ListPromptSets"
 	ListTermCandidatesOperation         OperationName = "ListTermCandidates"
 	RejectTermCandidateOperation        OperationName = "RejectTermCandidate"
 	RemoveQueuedAnalysesOperation       OperationName = "RemoveQueuedAnalyses"

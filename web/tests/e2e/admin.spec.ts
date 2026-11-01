@@ -14,7 +14,8 @@ test('an administrator adds a company, sees it, and deletes it again', async ({ 
   await form.getByRole('button', { name: 'Add company' }).click()
   // The added company opens on its own page.
   await expect(page).toHaveURL(new RegExp(`/competitors/e2e-belts-${stamp}$`))
-  await expect(page.getByRole('heading', { level: 2, name: `${name} against Tribelt` })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Against Tribelt' })).toBeVisible()
   await expectAccessible(page)
 
   await page.getByRole('group', { name: 'Manage this company' }).getByRole('button', { name: 'Remove' }).click()
@@ -95,8 +96,8 @@ test('a company’s search terms, scan history and comparison render', async ({ 
   await page.getByRole('link', { name: 'See its scan history' }).click()
   await expect(page).toHaveURL('/competitors/twentebelt/history')
   await expect(page).toHaveTitle('Over time · Findability Explorer')
-  await expect(page.getByRole('heading', { level: 1, name: 'How Twentebelt changed, scan by scan.' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Back to the latest scan' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Twentebelt, scan history' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Back to Twentebelt' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Tri-Flex (2)' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('table', { name: 'English (1)' })).toContainText('spiral belts')
   await expect(page.getByRole('table', { name: 'Dutch (1)' })).toContainText('new in this scan')

@@ -63,8 +63,12 @@ func DefaultFactSheet() string {
 // Settings are what administrators decide about Prompt runs.
 type Settings struct {
 	// CredentialID is the stored OpenRouter key runs use; empty until one is chosen.
-	CredentialID  string
-	Providers     []string
+	CredentialID string
+	// Providers are whose cheapest model runs ask until an administrator saves a Model list.
+	Providers []string
+	// Models is the Model list: the OpenRouter models every run asks, each its own column; empty
+	// until an administrator saves one.
+	Models        []string
 	MonthlyBudget Micros
 	Cadence       Cadence
 	NextDue       time.Time

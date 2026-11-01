@@ -578,6 +578,33 @@ export const zTermCandidate = z.object({
 });
 
 /**
+ * A Claude step - matching (matching products in scans); the other steps join as they are built.
+ */
+export const zClaudeStepId = z.enum(['matching']);
+
+/**
+ * One saved version of a Claude step - the model it uses and its instructions.
+ */
+export const zClaudeStepVersion = z.object({
+    number: z.int().gte(1).lte(1000000),
+    model: z.string().max(100),
+    modelName: z.string().max(100),
+    instructions: z.string().max(20000),
+    note: z.string().max(300),
+    createdBy: z.string().max(200),
+    createdAt: z.iso.datetime({ offset: true }).max(40)
+});
+
+/**
+ * A new version of a Claude step.
+ */
+export const zClaudeStepChange = z.object({
+    model: z.string().min(1).max(100),
+    instructions: z.string().min(1).max(20000),
+    restoredFrom: z.int().gte(1).lte(1000000).optional()
+});
+
+/**
  * A kind of background work.
  */
 export const zWorkKind = z.enum([
@@ -1430,6 +1457,47 @@ export const zLlmSettings = z.object({
 });
 
 /**
+ * A Claude model a step may use, with what one job of the step costs with it.
+ */
+export const zClaudeStepModel = z.object({
+    id: z.string().max(100),
+    name: z.string().max(100),
+    jobCostUsd: zUsd
+});
+
+/**
+ * A Claude step as the overview lists it.
+ */
+export const zClaudeStepSummary = z.object({
+    id: zClaudeStepId,
+    title: z.string().max(100),
+    fixedInstructions: z.boolean(),
+    current: zClaudeStepVersion,
+    jobCostUsd: zUsd
+});
+
+/**
+ * Every Claude step.
+ */
+export const zClaudeStepList = z.object({
+    items: z.array(zClaudeStepSummary).max(20)
+});
+
+/**
+ * One Claude step: its versions, oldest first, the newest of which it uses; the instructions it came with; and the models it may use, cheapest first, with the cost of one job with each. A job's cost is the tool's estimate with Claude Haiku 5.5, scaled by each model's price for the step's typical mix of tokens read and written.
+ */
+export const zClaudeStep = z.object({
+    id: zClaudeStepId,
+    title: z.string().max(100),
+    fixedInstructions: z.boolean(),
+    original: z.string().max(20000),
+    current: zClaudeStepVersion,
+    versions: z.array(zClaudeStepVersion).max(10000),
+    models: z.array(zClaudeStepModel).max(50),
+    jobCostUsd: zUsd
+});
+
+/**
  * One piece of background work. Running while finishedAt is absent; otherwise ended as ending says. done of total is what it did - responses of a Prompt run, pages of a scan, scans of a re-scan, sites of a readiness check, search terms of the term review, companies of a candidate review or list check - and failed how many of those failed.
  */
 export const zWork = z.object({
@@ -2063,6 +2131,11 @@ export const zProblem = z.object({
 });
 
 /**
+ * The step.
+ */
+export const zClaudeStepId2 = zClaudeStepId;
+
+/**
  * The company's id.
  */
 export const zCompetitorIdPath = zCompetitorId;
@@ -2283,6 +2356,34 @@ export const zStopAnalysisPath = z.object({
  * Stopped.
  */
 export const zStopAnalysisResponse = z.void();
+
+/**
+ * The steps.
+ */
+export const zListClaudeStepsResponse = zClaudeStepList;
+
+export const zGetClaudeStepPath = z.object({
+    stepId: zClaudeStepId
+});
+
+/**
+ * The step.
+ */
+export const zGetClaudeStepResponse = zClaudeStep;
+
+/**
+ * The model and the instructions.
+ */
+export const zSaveClaudeStepVersionBody = zClaudeStepChange;
+
+export const zSaveClaudeStepVersionPath = z.object({
+    stepId: zClaudeStepId
+});
+
+/**
+ * The step with its new version.
+ */
+export const zSaveClaudeStepVersionResponse = zClaudeStep;
 
 /**
  * The work and this month's spending.

@@ -765,6 +765,94 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/claude-steps:
+    get:
+      operationId: listClaudeSteps
+      summary: List the Claude steps
+      description: >-
+        Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with
+        the model and the version of the instructions it uses now and what one job of it costs
+        with that model.
+      tags: [admin]
+      responses:
+        "200":
+          description: The steps.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaudeStepList"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/claude-steps/{stepId}:
+    get:
+      operationId: getClaudeStep
+      summary: Get one Claude step
+      description: >-
+        Administrators only. One step: the instructions the tool came with, every saved version
+        (model and instructions) oldest first, the newest of which the step uses, and the Claude
+        models it may use, cheapest first, each with what one job of the step costs with it. 404
+        for a step that does not exist.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/ClaudeStepId"
+      responses:
+        "200":
+          description: The step.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaudeStep"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/claude-steps/{stepId}/versions:
+    post:
+      operationId: saveClaudeStepVersion
+      summary: Save a new version of a Claude step
+      description: >-
+        Administrators only. Saves the model and the instructions as the step's next version, which
+        its next job uses; the versions before it stay, to restore. A step whose instructions are
+        set in the code takes only a new model: its instructions must be the ones it has. 422 for
+        a model that is no Claude model listed, empty or too long instructions, or a version the
+        same as the newest; 404 for a step that does not exist.
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/ClaudeStepId"
+      requestBody:
+        required: true
+        description: The model and the instructions.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaudeStepChange"
+      responses:
+        "201":
+          description: The step with its new version.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaudeStep"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/activity:
     get:
       operationId: getActivity
@@ -2075,6 +2163,13 @@ paths:
           $ref: "#/components/responses/Problem"
 components:
   parameters:
+    ClaudeStepId:
+      name: stepId
+      in: path
+      required: true
+      description: The step.
+      schema:
+        $ref: "#/components/schemas/ClaudeStepId"
     CompetitorIdPath:
       name: competitorId
       in: path
@@ -3793,6 +3888,154 @@ components:
           $ref: "#/components/schemas/BeltFamily"
         tier:
           $ref: "#/components/schemas/IntentTier"
+    ClaudeStepId:
+      description: A Claude step - matching (matching products in scans); the other steps join as they are built.
+      type: string
+      enum: [matching]
+    ClaudeStepVersion:
+      description: One saved version of a Claude step - the model it uses and its instructions.
+      type: object
+      additionalProperties: false
+      required: [number, model, modelName, instructions, note, createdBy, createdAt]
+      properties:
+        number:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000000
+          description: The version's number, from 1 for the instructions the tool came with.
+        model:
+          type: string
+          maxLength: 100
+          description: The Claude model's id on Anthropic's API.
+        modelName:
+          type: string
+          maxLength: 100
+          description: The model's name for people.
+        instructions:
+          type: string
+          maxLength: 20000
+          description: The system message the step sends; the data follows it in a separate message.
+        note:
+          type: string
+          maxLength: 300
+          description: Where the version came from, such as "Restored from version 2.", or empty.
+        createdBy:
+          type: string
+          maxLength: 200
+          description: Who saved it; "the tool" for version 1.
+        createdAt:
+          type: string
+          format: date-time
+          maxLength: 40
+          description: When it was saved.
+    ClaudeStepModel:
+      description: A Claude model a step may use, with what one job of the step costs with it.
+      type: object
+      additionalProperties: false
+      required: [id, name, jobCostUsd]
+      properties:
+        id:
+          type: string
+          maxLength: 100
+          description: The model's id on Anthropic's API.
+        name:
+          type: string
+          maxLength: 100
+          description: The model's name.
+        jobCostUsd:
+          $ref: "#/components/schemas/Usd"
+    ClaudeStepSummary:
+      description: A Claude step as the overview lists it.
+      type: object
+      additionalProperties: false
+      required: [id, title, fixedInstructions, current, jobCostUsd]
+      properties:
+        id:
+          $ref: "#/components/schemas/ClaudeStepId"
+        title:
+          type: string
+          maxLength: 100
+          description: The step's name.
+        fixedInstructions:
+          type: boolean
+          description: True when the instructions are set in the code and only the model can be chosen.
+        current:
+          $ref: "#/components/schemas/ClaudeStepVersion"
+        jobCostUsd:
+          $ref: "#/components/schemas/Usd"
+    ClaudeStepList:
+      description: Every Claude step.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ClaudeStepSummary"
+    ClaudeStep:
+      description: >-
+        One Claude step: its versions, oldest first, the newest of which it uses; the instructions
+        it came with; and the models it may use, cheapest first, with the cost of one job with each.
+        A job's cost is the tool's estimate with Claude Haiku 5.5, scaled by each model's price for
+        the step's typical mix of tokens read and written.
+      type: object
+      additionalProperties: false
+      required: [id, title, fixedInstructions, original, current, versions, models, jobCostUsd]
+      properties:
+        id:
+          $ref: "#/components/schemas/ClaudeStepId"
+        title:
+          type: string
+          maxLength: 100
+          description: The step's name.
+        fixedInstructions:
+          type: boolean
+          description: True when the instructions are set in the code and only the model can be chosen.
+        original:
+          type: string
+          maxLength: 20000
+          description: The instructions the tool came with.
+        current:
+          $ref: "#/components/schemas/ClaudeStepVersion"
+        versions:
+          type: array
+          maxItems: 10000
+          description: Every version, oldest first.
+          items:
+            $ref: "#/components/schemas/ClaudeStepVersion"
+        models:
+          type: array
+          maxItems: 50
+          description: The Claude models the step may use, cheapest first.
+          items:
+            $ref: "#/components/schemas/ClaudeStepModel"
+        jobCostUsd:
+          $ref: "#/components/schemas/Usd"
+    ClaudeStepChange:
+      description: A new version of a Claude step.
+      type: object
+      additionalProperties: false
+      required: [model, instructions]
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: The Claude model's id.
+        instructions:
+          type: string
+          minLength: 1
+          maxLength: 20000
+          description: The system message.
+        restoredFrom:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000000
+          description: The version this one restores, when it does; it is noted on the new version.
     Activity:
       description: The work running now, the last pieces ended, and this month's spending.
       type: object

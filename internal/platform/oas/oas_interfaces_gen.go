@@ -61,6 +61,10 @@ type GetAnalysisRes interface {
 	getAnalysisRes()
 }
 
+type GetClaudeStepRes interface {
+	getClaudeStepRes()
+}
+
 type GetCompetitorProfileRes interface {
 	getCompetitorProfileRes()
 }
@@ -125,6 +129,10 @@ type ListAnalysesRes interface {
 	listAnalysesRes()
 }
 
+type ListClaudeStepsRes interface {
+	listClaudeStepsRes()
+}
+
 type ListCompetitorCandidatesRes interface {
 	listCompetitorCandidatesRes()
 }
@@ -167,6 +175,10 @@ type RereadPromptRunRes interface {
 
 type RetryPromptRunRes interface {
 	retryPromptRunRes()
+}
+
+type SaveClaudeStepVersionRes interface {
+	saveClaudeStepVersionRes()
 }
 
 type SearchTermsRes interface {

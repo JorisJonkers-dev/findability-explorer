@@ -128,6 +128,15 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses/{analysisId}
 	GetAnalysis(ctx context.Context, params GetAnalysisParams) (GetAnalysisRes, error)
+	// GetClaudeStep implements getClaudeStep operation.
+	//
+	// Administrators only. One step: the instructions the tool came with, every saved version (model and
+	// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
+	// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
+	// exist.
+	//
+	// GET /api/v1/admin/claude-steps/{stepId}
+	GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (GetClaudeStepRes, error)
 	// GetCompetitor implements getCompetitor operation.
 	//
 	// Returns the company and its scans, newest first, each with its number.
@@ -261,6 +270,13 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
+	// ListClaudeSteps implements listClaudeSteps operation.
+	//
+	// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
+	// and the version of the instructions it uses now and what one job of it costs with that model.
+	//
+	// GET /api/v1/admin/claude-steps
+	ListClaudeSteps(ctx context.Context) (ListClaudeStepsRes, error)
 	// ListCompetitorCandidates implements listCompetitorCandidates operation.
 	//
 	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -354,6 +370,16 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/retry
 	RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error)
+	// SaveClaudeStepVersion implements saveClaudeStepVersion operation.
+	//
+	// Administrators only. Saves the model and the instructions as the step's next version, which its next
+	// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
+	// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
+	// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
+	// that does not exist.
+	//
+	// POST /api/v1/admin/claude-steps/{stepId}/versions
+	SaveClaudeStepVersion(ctx context.Context, req *ClaudeStepChange, params SaveClaudeStepVersionParams) (SaveClaudeStepVersionRes, error)
 	// SearchTerms implements searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of

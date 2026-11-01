@@ -136,11 +136,11 @@ func (q *Queries) AddPromptCandidateDecision(ctx context.Context, arg AddPromptC
 const addPromptExtraction = `-- name: AddPromptExtraction :execrows
 INSERT INTO prompt_extractions (
     answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, left_out, input_tokens,
-    output_tokens, cost_micros, haiku_tokens, extracted_at
+    output_tokens, cost_micros, haiku_tokens, extracted_at, model
 )
 VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9,
-    $10, $11, $12, $13
+    $10, $11, $12, $13, $14
 )
 ON CONFLICT (answer_id) DO UPDATE
 SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = excluded.names_tribelt,
@@ -148,7 +148,8 @@ SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = ex
     left_out = excluded.left_out, input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
     output_tokens = prompt_extractions.output_tokens + excluded.output_tokens,
     cost_micros = prompt_extractions.cost_micros + excluded.cost_micros,
-    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at
+    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at,
+    model = excluded.model
 WHERE prompt_extractions.failed
 `
 
@@ -166,6 +167,7 @@ type AddPromptExtractionParams struct {
 	CostMicros   int64
 	HaikuTokens  int64
 	ExtractedAt  time.Time
+	Model        string
 }
 
 // An extraction, or, for an answer whose reading failed, that reading replaced: what the failed
@@ -185,6 +187,7 @@ func (q *Queries) AddPromptExtraction(ctx context.Context, arg AddPromptExtracti
 		arg.CostMicros,
 		arg.HaikuTokens,
 		arg.ExtractedAt,
+		arg.Model,
 	)
 	if err != nil {
 		return 0, err
@@ -618,7 +621,8 @@ SELECT a.id, a.prompt_id, a.family, a.kind, a.scope, a.language, a.prompt_text, 
     coalesce(x.cites_tribelt, false)::boolean AS cites_tribelt, coalesce(x.correctness, '')::text AS correctness,
     coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.left_out, '{}')::text [] AS left_out,
     coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
-    coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros
+    coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros,
+    coalesce(x.model, '')::text AS reading_model
 FROM prompt_answers AS a
 LEFT JOIN prompt_extractions AS x ON x.answer_id = a.id
 WHERE a.run_id = $2
@@ -660,6 +664,7 @@ type ListPromptAnswersRow struct {
 	ExtractionInputTokens  int64
 	ExtractionOutputTokens int64
 	ExtractionCostMicros   int64
+	ReadingModel           string
 }
 
 // A run's answers with how they were read; the answer's text only when with_text is true.
@@ -702,6 +707,7 @@ func (q *Queries) ListPromptAnswers(ctx context.Context, arg ListPromptAnswersPa
 			&i.ExtractionInputTokens,
 			&i.ExtractionOutputTokens,
 			&i.ExtractionCostMicros,
+			&i.ReadingModel,
 		); err != nil {
 			return nil, err
 		}
@@ -1210,6 +1216,41 @@ func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) 
 	var i PromptReviewTokensSinceRow
 	err := row.Scan(&i.Input, &i.Output)
 	return i, err
+}
+
+const promptRunReadingModels = `-- name: PromptRunReadingModels :many
+SELECT DISTINCT ON (a.run_id) a.run_id, x.model
+FROM prompt_answers AS a
+JOIN prompt_extractions AS x ON x.answer_id = a.id
+WHERE x.model <> '' AND NOT x.failed
+GROUP BY a.run_id, x.model
+ORDER BY a.run_id, count(*) DESC, x.model
+`
+
+type PromptRunReadingModelsRow struct {
+	RunID uuid.UUID
+	Model string
+}
+
+// The model that read most of each run's responses, for the runs whose readings recorded one.
+func (q *Queries) PromptRunReadingModels(ctx context.Context) ([]PromptRunReadingModelsRow, error) {
+	rows, err := q.db.Query(ctx, promptRunReadingModels)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptRunReadingModelsRow{}
+	for rows.Next() {
+		var i PromptRunReadingModelsRow
+		if err := rows.Scan(&i.RunID, &i.Model); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const promptRunStopRequested = `-- name: PromptRunStopRequested :one

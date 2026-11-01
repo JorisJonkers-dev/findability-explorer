@@ -270,6 +270,20 @@ func (r *Repository) AddAnswer(ctx context.Context, a domain.Answer) error {
 	})
 }
 
+// ReadingModels returns, per run, the model that read most of its responses; a run whose readings
+// recorded no model is left out.
+func (r *Repository) ReadingModels(ctx context.Context) (map[uuid.UUID]string, error) {
+	rows, err := r.store.Queries().PromptRunReadingModels(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select reading models: %w", err)
+	}
+	out := make(map[uuid.UUID]string, len(rows))
+	for _, row := range rows {
+		out[row.RunID] = row.Model
+	}
+	return out, nil
+}
+
 // SetExtraction stores the extraction of an answer stored without one, or replaces a failed one,
 // adding to what it used; an answer read already is domain.ErrRead.
 func (r *Repository) SetExtraction(ctx context.Context, answerID uuid.UUID, x domain.Extraction, at time.Time) error {
@@ -282,7 +296,7 @@ func addExtraction(ctx context.Context, q *queries.Queries, id uuid.UUID, x doma
 		CitesTribelt: x.CitesTribelt, Correctness: string(x.Correctness), WrongClaims: clipAll(x.WrongClaims, 10),
 		LeftOut:     clipAll(x.LeftOut, 10),
 		InputTokens: x.InputTokens, OutputTokens: x.OutputTokens, CostMicros: max(int64(x.Cost), 0),
-		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at,
+		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at, Model: clip(x.Model, 200),
 	})
 	if err != nil {
 		return fmt.Errorf("insert prompt extraction: %w", err)
@@ -336,6 +350,7 @@ func (r *Repository) Answers(ctx context.Context, runID uuid.UUID, withText bool
 				CitesTribelt: row.CitesTribelt, Correctness: domain.Correctness(row.Correctness), WrongClaims: row.WrongClaims,
 				LeftOut:     row.LeftOut,
 				InputTokens: row.ExtractionInputTokens, OutputTokens: row.ExtractionOutputTokens, Cost: domain.Micros(row.ExtractionCostMicros),
+				Model: row.ReadingModel,
 			}
 		}
 		out = append(out, a)

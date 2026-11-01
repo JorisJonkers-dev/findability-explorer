@@ -77,6 +77,7 @@ func promptAnswers() []domain.Answer {
 				Addresses:    []string{"https://www.tribelt.nl/"},
 				NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."}, Cost: 500_000,
 				LeftOut: []string{"Tribelt makes eyelink belts to measure."}, InputTokens: 300, OutputTokens: 20,
+				Model: "anthropic: claude-sonnet-5-5",
 			},
 		},
 		{ID: uuid.New(), RunID: runID, Prompt: set.Prompts[1], PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeKnowledge, Failure: "Rate limited.", At: answered},
@@ -180,7 +181,7 @@ func (p *promptTests) History(context.Context) (app.HistoryView, error) {
 	return app.HistoryView{
 		Versions: domain.VersionsOf([]domain.PublishedSet{v2, {Version: 1, PublishedAt: v2.PublishedAt.Add(-time.Hour), Note: "The first.", Questions: make([]domain.Question, 90)}}),
 		Runs: []domain.RunFigures{
-			{RunID: partialID, StartedAt: answered.Add(-48 * time.Hour), Version: 1, Tasks: 1260, Answered: 62, Read: 47, Partial: true, All: share(0.4), Dutch: share(0.4)},
+			{RunID: partialID, StartedAt: answered.Add(-48 * time.Hour), Version: 1, Tasks: 1260, Answered: 62, Read: 47, Partial: true, All: share(0.4), Dutch: share(0.4), ReadingModel: "google/gemini-2.5-flash-lite"},
 			{
 				RunID: runID, StartedAt: answered, Version: 2, Tasks: 200, Answered: 196, Read: 194,
 				All: share(0.25), Dutch: share(0.3), German: share(0.2), English: share(0.1), Twente: share(0.5), Citation: share(0.35),
@@ -325,6 +326,10 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	}
 	if second := items[1].(map[string]any); second["failure"] != "Rate limited." || second["extraction"] != nil {
 		t.Errorf("failed answer = %v", second)
+	}
+	// One response says which model read it.
+	if x["readBy"] != "Claude Sonnet 5.5" {
+		t.Errorf("read by %v", x["readBy"])
 	}
 	// One response shows what it got wrong about Tribelt apart from what it left out.
 	if wrong, left := x["wrongClaims"].([]any), x["leftOut"].([]any); len(wrong) != 1 || wrong[0] != "Tribelt is in Hengelo." ||
@@ -672,6 +677,13 @@ func TestEverySignedInAccountReadsThePromptTestHistory(t *testing.T) {
 		partial["answered"].(float64) != 62 || partial["read"].(float64) != 47 || partial["failure"] != "OpenRouter answered 401: User not found." ||
 		partial["all"].(float64) != 0.4 || partial["dutch"].(float64) != 0.4 {
 		t.Errorf("partial run = %v", partial)
+	}
+	// Each run says which model read it, so a change of reader breaks the charts.
+	if partial["readingModel"] != "google/gemini-2.5-flash-lite" {
+		t.Errorf("read by %v", partial["readingModel"])
+	}
+	if _, ok := full["readingModel"]; ok {
+		t.Errorf("a run whose readings recorded no model names one: %v", full["readingModel"])
 	}
 	for _, k := range []string{"german", "english", "twente", "citation"} {
 		if _, ok := partial[k]; ok {

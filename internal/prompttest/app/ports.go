@@ -116,6 +116,8 @@ type Repository interface {
 	SetExtraction(ctx context.Context, answerID uuid.UUID, x domain.Extraction, at time.Time) error
 	// Answers returns a run's answers, with their text only when withText is true.
 	Answers(ctx context.Context, runID uuid.UUID, withText bool) ([]domain.Answer, error)
+	// ReadingModels returns, per run, the model that read most of its responses.
+	ReadingModels(ctx context.Context) (map[uuid.UUID]string, error)
 	// SpentSince sums what the OpenRouter key paid at or after since: every answer, and every reading
 	// OpenRouter did (not Claude Haiku's, which the Anthropic key paid).
 	SpentSince(ctx context.Context, since time.Time) (domain.Micros, error)

@@ -3045,6 +3045,10 @@ export type PromptSetVersionInfo = {
  */
 export type PromptRunFigures = {
     /**
+     * The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5"; absent when its readings recorded none. A change of it between runs breaks the charts, as the responses were read another way.
+     */
+    readingModel?: string;
+    /**
      * The run's id.
      */
     runId: string;
@@ -3129,6 +3133,10 @@ export type PromptNamedCompany = {
  * How the extractor read an answer; failed when it could not, after a retry.
  */
 export type PromptExtraction = {
+    /**
+     * The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a reading made before readings recorded it.
+     */
+    readBy?: string;
     /**
      * True when the extractor could not read it.
      */

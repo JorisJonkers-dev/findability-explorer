@@ -69,14 +69,26 @@ func TestCompaniesCheckedAgainstAnOlderDefinitionAreCounted(t *testing.T) {
 func TestCheckingAgainIsEstimatedFromWhatChecksUsedSoFar(t *testing.T) {
 	haiku := func(in, out int64) llm.Micros { return llm.ListPrice(llm.DefaultModel).Of(in, out) }
 	// 10 companies checked with 100,000 tokens in and 10,000 out: 10,000 and 1,000 each.
-	if got := domain.EstimateChecks(4, domain.ReviewUsage{InputTokens: 100_000, OutputTokens: 10_000}, 10); got != haiku(40_000, 4_000) {
+	if got := domain.EstimateChecks(4, domain.ReviewUsage{InputTokens: 100_000, OutputTokens: 10_000}, 10, llm.DefaultModel); got != haiku(40_000, 4_000) {
 		t.Errorf("from history = %s", got)
 	}
 	// Before any check, a typical check.
-	if got := domain.EstimateChecks(4, domain.ReviewUsage{}, 0); got != haiku(4*domain.TypicalCheckIn, 4*domain.TypicalCheckOut) || got == 0 {
+	if got := domain.EstimateChecks(4, domain.ReviewUsage{}, 0, "anthropic: claude-haiku-5-5"); got != haiku(4*domain.TypicalCheckIn, 4*domain.TypicalCheckOut) || got == 0 {
 		t.Errorf("before any = %s", got)
 	}
-	if got := domain.EstimateChecks(0, domain.ReviewUsage{InputTokens: 9}, 1); got != 0 {
+	if got := domain.EstimateChecks(0, domain.ReviewUsage{InputTokens: 9}, 1, llm.DefaultModel); got != 0 {
 		t.Errorf("nothing to check = %s", got)
+	}
+	// The estimate scales with the model the step checking companies uses.
+	sonnet := llm.ListPrice("claude-sonnet-5-5").Of(40_000, 4_000)
+	if got := domain.EstimateChecks(4, domain.ReviewUsage{InputTokens: 100_000, OutputTokens: 10_000}, 10, "anthropic: claude-sonnet-5-5"); got != sonnet {
+		t.Errorf("on Sonnet = %s, want %s", got, sonnet)
+	}
+}
+
+func TestAClaudeModelIsPricedAtItsListPriceHoweverItIsNamed(t *testing.T) {
+	if domain.ClaudePrice("anthropic: claude-sonnet-5-5") != domain.ClaudePrice("claude-sonnet-5-5") ||
+		domain.ClaudePrice("claude-sonnet-5-5").Of(1_000_000, 0) != 2_000_000 || domain.HaikuPrice().Of(1_000_000, 0) != 100_000 {
+		t.Error("prices")
 	}
 }

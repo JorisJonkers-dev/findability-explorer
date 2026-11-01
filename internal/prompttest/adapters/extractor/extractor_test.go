@@ -57,6 +57,10 @@ func TestAFailedReadingStillCountsWhatItUsed(t *testing.T) {
 	if _, usage, err := extractor.New(c, "claude-haiku-5-5").Extract(t.Context(), app.ExtractInput{}); err == nil || usage.InputTokens != 2000 || usage.Cost != 400 {
 		t.Errorf("a failed call = %v, usage %+v", err, usage)
 	}
+	// Read by Claude Sonnet 5.5, the reading is priced at its list price: $2 and $10 per million.
+	if _, usage, _ := extractor.New(c, "claude-sonnet-5-5").Extract(t.Context(), app.ExtractInput{}); usage.Cost != 8000 {
+		t.Errorf("on Sonnet, cost %d", usage.Cost)
+	}
 	c = &client{text: "not json"}
 	if _, usage, err := extractor.New(c, "claude-haiku-5-5").Extract(t.Context(), app.ExtractInput{}); err == nil || usage.OutputTokens != 400 {
 		t.Errorf("a broken format = %v, usage %+v", err, usage)

@@ -76,6 +76,10 @@ func TestHaikuReadsTheAnswersWhileAnAnthropicKeyWorks(t *testing.T) {
 		if a.Extraction == nil || a.Extraction.Failed {
 			t.Fatalf("answer not read: %+v", a)
 		}
+		// Each reading records the model that read it.
+		if a.Extraction.Model != "anthropic: claude-haiku-5-5" {
+			t.Fatalf("read by %q", a.Extraction.Model)
+		}
 		in, out, cost = in+a.Extraction.InputTokens, out+a.Extraction.OutputTokens, cost+a.Extraction.Cost
 	}
 	if in != 80*60+7 || out != 80*25+1 || cost != 80*3+1 {
@@ -99,6 +103,11 @@ func TestOpenRouterReadsTheAnswersWithoutAnAnthropicKey(t *testing.T) {
 	}
 	if got := e.run(t); got.Status != domain.RunDone || e.gw.extracted != 80 {
 		t.Fatalf("status %s, %d read by OpenRouter", got.Status, e.gw.extracted)
+	}
+	for _, a := range e.repo.answers {
+		if a.Extraction == nil || a.Extraction.Model != domain.ExtractorModel {
+			t.Fatalf("read by %+v", a.Extraction)
+		}
 	}
 	view, err := e.svc.Settings(t.Context())
 	if err != nil || view.ExtractorModel != domain.ExtractorModel {

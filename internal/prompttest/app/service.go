@@ -391,7 +391,7 @@ func (s *Service) tokensSpent(ctx context.Context) (bool, error) {
 // extractor at its price on the catalogue; nil when there is none to be had.
 func readerPrice(r reader, catalogue func() []domain.CatalogueModel) *domain.TokenPrice {
 	if r.haiku {
-		p := domain.HaikuPrice()
+		p := domain.ClaudePrice(r.model)
 		return &p
 	}
 	if p, ok := domain.CataloguePrice(catalogue(), domain.ExtractorModel); ok {

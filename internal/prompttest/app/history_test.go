@@ -24,7 +24,7 @@ func partialRun(r *repo) domain.Run {
 		a := domain.Answer{ID: uuid.New(), RunID: run.ID, Prompt: t.Prompt, PromptSetVersion: 1, Provider: t.Provider, Mode: t.Mode}
 		switch {
 		case i < 3:
-			a.Text, a.Extraction = "Tribelt.", &domain.Extraction{NamesTribelt: true}
+			a.Text, a.Extraction = "Tribelt.", &domain.Extraction{NamesTribelt: true, Model: "anthropic: claude-sonnet-5-5"}
 		case i < 8:
 			a.Failure = "OpenRouter answered 401: User not found."
 		default:
@@ -68,13 +68,17 @@ func TestTheHistoryListsTheRunsWithResponsesReadOldestFirstWithWhyAPartialRunFai
 	if f.Partial || f.Version != 2 || f.Read != 40 || f.Citation == nil || *f.Citation != 1 {
 		t.Errorf("full run = %+v", f)
 	}
+	// Each run says which model read its responses, so a change of reader can break the charts.
+	if p.ReadingModel != "anthropic: claude-sonnet-5-5" || f.ReadingModel != domain.ExtractorModel {
+		t.Errorf("read by %q, then %q", p.ReadingModel, f.ReadingModel)
+	}
 	if len(h.FailureOf) != 1 || h.FailureOf[partial.ID] != "OpenRouter answered 401: User not found." {
 		t.Errorf("failures = %v, want the commonest of the partial run only", h.FailureOf)
 	}
 }
 
 func TestTheHistoryFailsWhenTheRunsOrThePromptSetsCannotBeRead(t *testing.T) {
-	for _, op := range []string{"Runs", "PromptSets", "PromptScopes"} {
+	for _, op := range []string{"Runs", "PromptSets", "ReadingModels"} {
 		e := newEnv(t, newRepo(op), "a")
 		if _, err := e.svc.History(t.Context()); !errors.Is(err, errBoom) {
 			t.Errorf("%s failing: err = %v, want the repository's", op, err)

@@ -1,5 +1,5 @@
 import type { Product } from '../../../infrastructure/api/types.gen'
-import type { BarRow } from '../../../shared/ui/charts/BarList.vue'
+import type { Tone } from '../../../shared/ui/charts/tones'
 import { scopeName } from '../../prompt-test/domain/results'
 import { languageLabel } from '../../../shared/vocabulary'
 import { inWords } from '../../catching-up/domain/standings'
@@ -68,8 +68,11 @@ export function termLanguages(p: Pick<Product, 'terms'>): string {
   return codes.length === 0 ? '' : `Terms in ${listOf(codes.map(languageLabel))}.`
 }
 
+/** A bar of the AI responses about a family, as the bar list draws it. */
+export type ResponseBar = { label: string; value: number; display: string; tone: Tone; highlight: boolean }
+
 /** For each scope a Prompt run asked about a family, the share of its responses that name Tribelt, as bars. */
-export function responseBars(p: Pick<Product, 'byScope'>): BarRow[] {
+export function responseBars(p: Pick<Product, 'byScope'>): ResponseBar[] {
   return p.byScope
     .filter((s) => s.answers > 0)
     .map((s) => ({

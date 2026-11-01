@@ -10,6 +10,7 @@ import {
   relatedTerms,
   termId,
   termPath,
+  termRecommendations,
   termSentence,
   topMissing,
 } from './searchTerms'
@@ -102,5 +103,14 @@ describe('one search term', () => {
     ]
     expect(relatedTerms(terms, t).map((r) => r.term)).toEqual(['a', 'b'])
     expect(relatedTerms(terms, t, 1).map((r) => r.term)).toEqual(['a'])
+  })
+})
+
+describe('the recommendations for a term', () => {
+  it('are the open ones that raise the search terms tribelt.nl uses, the best value first', () => {
+    const imp = (id: string, measure: string, done: boolean, benefit: number, effort: number) => ({ id, measure, done, benefit, effort })
+    expect(
+      termRecommendations([imp('a', 'termsUsed', false, 2, 2), imp('b', 'termsUsed', true, 5, 1), imp('c', 'citationShare', false, 5, 1), imp('d', 'termsUsed', false, 4, 1)]).map((i) => i.id),
+    ).toEqual(['d', 'a'])
   })
 })

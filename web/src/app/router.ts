@@ -52,6 +52,13 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         meta: { title: 'Every term', view: 'results' },
       },
       {
+        path: '/terms/:id',
+        name: 'term',
+        component: () => import('../features/terminology/components/TermView.vue'),
+        props: (to) => ({ id: String(to.params.id) }),
+        meta: { title: 'Search term', view: 'results' },
+      },
+      {
         path: '/terms/families/:family',
         name: 'family',
         component: () => import('../features/products/components/FamilyView.vue'),

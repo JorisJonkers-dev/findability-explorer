@@ -757,8 +757,11 @@ type AnalysisSummary struct {
 	// True when the analysis failed because its site turned automated readers away (bot protection)
 	// although people can open it; only then is it present. The scan still records the site's AI
 	// readiness.
-	Blocked     OptBool             `json:"blocked"`
-	AiReadiness OptAiReadinessBrief `json:"aiReadiness"`
+	Blocked OptBool `json:"blocked"`
+	// True when an administrator stopped the scan, or took it off the queue; only then is it present. Its
+	// status is failed, and it keeps the pages it read.
+	StoppedByHand OptBool             `json:"stoppedByHand"`
+	AiReadiness   OptAiReadinessBrief `json:"aiReadiness"`
 	// The most pages the crawl fetches.
 	MaxPages int32 `json:"maxPages"`
 	// How many pages were fetched so far.
@@ -807,6 +810,11 @@ func (s *AnalysisSummary) GetFailure() OptString {
 // GetBlocked returns the value of Blocked.
 func (s *AnalysisSummary) GetBlocked() OptBool {
 	return s.Blocked
+}
+
+// GetStoppedByHand returns the value of StoppedByHand.
+func (s *AnalysisSummary) GetStoppedByHand() OptBool {
+	return s.StoppedByHand
 }
 
 // GetAiReadiness returns the value of AiReadiness.
@@ -872,6 +880,11 @@ func (s *AnalysisSummary) SetFailure(val OptString) {
 // SetBlocked sets the value of Blocked.
 func (s *AnalysisSummary) SetBlocked(val OptBool) {
 	s.Blocked = val
+}
+
+// SetStoppedByHand sets the value of StoppedByHand.
+func (s *AnalysisSummary) SetStoppedByHand(val OptBool) {
+	s.StoppedByHand = val
 }
 
 // SetAiReadiness sets the value of AiReadiness.
@@ -1459,7 +1472,8 @@ type CandidateReviewState struct {
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-	// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+	// language-model tokens are spent), failed (the model or its provider failed) or stopped (an
+	// administrator stopped it; what it decided is kept). Absent when it went well.
 	Problem OptCandidateReviewStateProblem `json:"problem"`
 }
 
@@ -1487,13 +1501,15 @@ func (*CandidateReviewState) startCandidateReviewRes() {}
 func (*CandidateReviewState) startCompetitorCheckRes() {}
 
 // Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+// language-model tokens are spent), failed (the model or its provider failed) or stopped (an
+// administrator stopped it; what it decided is kept). Absent when it went well.
 type CandidateReviewStateProblem string
 
 const (
-	CandidateReviewStateProblemNoKey  CandidateReviewStateProblem = "noKey"
-	CandidateReviewStateProblemBudget CandidateReviewStateProblem = "budget"
-	CandidateReviewStateProblemFailed CandidateReviewStateProblem = "failed"
+	CandidateReviewStateProblemNoKey   CandidateReviewStateProblem = "noKey"
+	CandidateReviewStateProblemBudget  CandidateReviewStateProblem = "budget"
+	CandidateReviewStateProblemFailed  CandidateReviewStateProblem = "failed"
+	CandidateReviewStateProblemStopped CandidateReviewStateProblem = "stopped"
 )
 
 // AllValues returns all CandidateReviewStateProblem values.
@@ -1502,6 +1518,7 @@ func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
 		CandidateReviewStateProblemNoKey,
 		CandidateReviewStateProblemBudget,
 		CandidateReviewStateProblemFailed,
+		CandidateReviewStateProblemStopped,
 	}
 }
 
@@ -1513,6 +1530,8 @@ func (s CandidateReviewStateProblem) MarshalText() ([]byte, error) {
 	case CandidateReviewStateProblemBudget:
 		return []byte(s), nil
 	case CandidateReviewStateProblemFailed:
+		return []byte(s), nil
+	case CandidateReviewStateProblemStopped:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1530,6 +1549,9 @@ func (s *CandidateReviewStateProblem) UnmarshalText(data []byte) error {
 		return nil
 	case CandidateReviewStateProblemFailed:
 		*s = CandidateReviewStateProblemFailed
+		return nil
+	case CandidateReviewStateProblemStopped:
+		*s = CandidateReviewStateProblemStopped
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3806,44 +3828,30 @@ type ListTermCandidatesUnauthorized ProblemStatusCode
 
 func (*ListTermCandidatesUnauthorized) listTermCandidatesRes() {}
 
-// What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the
-// scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt
-// answers - and what they spent, priced at the models' list prices from their stored token counts.
-// Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter
-// key's budget is the Prompt test's (PromptTestSettings).
+// What every job on the language model may spend in a month together - the scans' product matching,
+// the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when
+// the month's tokens are spent.
 // Ref: #/components/schemas/LlmBudget
 type LlmBudget struct {
-	MonthlyBudgetUsd  Usd `json:"monthlyBudgetUsd"`
-	SpentThisMonthUsd Usd `json:"spentThisMonthUsd"`
-	LeftUsd           Usd `json:"leftUsd"`
-	// The tokens, in and out, every job used this month so far.
-	TokensThisMonth int64 `json:"tokensThisMonth"`
+	// The tokens every job together may use in a calendar month (UTC).
+	MonthlyTokens int64 `json:"monthlyTokens"`
+	// The tokens every job used this month so far.
+	UsedThisMonth int64 `json:"usedThisMonth"`
 	// The tokens one scan's product matching used on average, over every scan the language model answered
 	// for; 0 before the first.
 	AverageTokensPerScan int64 `json:"averageTokensPerScan"`
-	AverageScanUsd       Usd   `json:"averageScanUsd"`
 	// How many scans the average is over.
 	ScansMatched int64 `json:"scansMatched"`
 }
 
-// GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
-func (s *LlmBudget) GetMonthlyBudgetUsd() Usd {
-	return s.MonthlyBudgetUsd
+// GetMonthlyTokens returns the value of MonthlyTokens.
+func (s *LlmBudget) GetMonthlyTokens() int64 {
+	return s.MonthlyTokens
 }
 
-// GetSpentThisMonthUsd returns the value of SpentThisMonthUsd.
-func (s *LlmBudget) GetSpentThisMonthUsd() Usd {
-	return s.SpentThisMonthUsd
-}
-
-// GetLeftUsd returns the value of LeftUsd.
-func (s *LlmBudget) GetLeftUsd() Usd {
-	return s.LeftUsd
-}
-
-// GetTokensThisMonth returns the value of TokensThisMonth.
-func (s *LlmBudget) GetTokensThisMonth() int64 {
-	return s.TokensThisMonth
+// GetUsedThisMonth returns the value of UsedThisMonth.
+func (s *LlmBudget) GetUsedThisMonth() int64 {
+	return s.UsedThisMonth
 }
 
 // GetAverageTokensPerScan returns the value of AverageTokensPerScan.
@@ -3851,34 +3859,19 @@ func (s *LlmBudget) GetAverageTokensPerScan() int64 {
 	return s.AverageTokensPerScan
 }
 
-// GetAverageScanUsd returns the value of AverageScanUsd.
-func (s *LlmBudget) GetAverageScanUsd() Usd {
-	return s.AverageScanUsd
-}
-
 // GetScansMatched returns the value of ScansMatched.
 func (s *LlmBudget) GetScansMatched() int64 {
 	return s.ScansMatched
 }
 
-// SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
-func (s *LlmBudget) SetMonthlyBudgetUsd(val Usd) {
-	s.MonthlyBudgetUsd = val
+// SetMonthlyTokens sets the value of MonthlyTokens.
+func (s *LlmBudget) SetMonthlyTokens(val int64) {
+	s.MonthlyTokens = val
 }
 
-// SetSpentThisMonthUsd sets the value of SpentThisMonthUsd.
-func (s *LlmBudget) SetSpentThisMonthUsd(val Usd) {
-	s.SpentThisMonthUsd = val
-}
-
-// SetLeftUsd sets the value of LeftUsd.
-func (s *LlmBudget) SetLeftUsd(val Usd) {
-	s.LeftUsd = val
-}
-
-// SetTokensThisMonth sets the value of TokensThisMonth.
-func (s *LlmBudget) SetTokensThisMonth(val int64) {
-	s.TokensThisMonth = val
+// SetUsedThisMonth sets the value of UsedThisMonth.
+func (s *LlmBudget) SetUsedThisMonth(val int64) {
+	s.UsedThisMonth = val
 }
 
 // SetAverageTokensPerScan sets the value of AverageTokensPerScan.
@@ -3886,31 +3879,9 @@ func (s *LlmBudget) SetAverageTokensPerScan(val int64) {
 	s.AverageTokensPerScan = val
 }
 
-// SetAverageScanUsd sets the value of AverageScanUsd.
-func (s *LlmBudget) SetAverageScanUsd(val Usd) {
-	s.AverageScanUsd = val
-}
-
 // SetScansMatched sets the value of ScansMatched.
 func (s *LlmBudget) SetScansMatched(val int64) {
 	s.ScansMatched = val
-}
-
-// The Anthropic key's new monthly budget.
-// Ref: #/components/schemas/LlmBudgetChange
-type LlmBudgetChange struct {
-	// The month's budget in dollars.
-	MonthlyBudgetUsd float64 `json:"monthlyBudgetUsd"`
-}
-
-// GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
-func (s *LlmBudgetChange) GetMonthlyBudgetUsd() float64 {
-	return s.MonthlyBudgetUsd
-}
-
-// SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
-func (s *LlmBudgetChange) SetMonthlyBudgetUsd(val float64) {
-	s.MonthlyBudgetUsd = val
 }
 
 // How the active model was decided - `default` (nobody chose; the Vault key with claude-haiku-5-5 when
@@ -4229,7 +4200,6 @@ const (
 	LlmEventActionCredentialTested  LlmEventAction = "credential_tested"
 	LlmEventActionActiveSet         LlmEventAction = "active_set"
 	LlmEventActionActiveCleared     LlmEventAction = "active_cleared"
-	LlmEventActionBudgetSet         LlmEventAction = "budget_set"
 )
 
 // AllValues returns all LlmEventAction values.
@@ -4240,7 +4210,6 @@ func (LlmEventAction) AllValues() []LlmEventAction {
 		LlmEventActionCredentialTested,
 		LlmEventActionActiveSet,
 		LlmEventActionActiveCleared,
-		LlmEventActionBudgetSet,
 	}
 }
 
@@ -4256,8 +4225,6 @@ func (s LlmEventAction) MarshalText() ([]byte, error) {
 	case LlmEventActionActiveSet:
 		return []byte(s), nil
 	case LlmEventActionActiveCleared:
-		return []byte(s), nil
-	case LlmEventActionBudgetSet:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -4281,9 +4248,6 @@ func (s *LlmEventAction) UnmarshalText(data []byte) error {
 		return nil
 	case LlmEventActionActiveCleared:
 		*s = LlmEventActionActiveCleared
-		return nil
-	case LlmEventActionBudgetSet:
-		*s = LlmEventActionBudgetSet
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4741,10 +4705,9 @@ func (s *LlmSettings) SetEvents(val []LlmEvent) {
 	s.Events = val
 }
 
-func (*LlmSettings) clearActiveLlmRes()  {}
-func (*LlmSettings) getLlmSettingsRes()  {}
-func (*LlmSettings) setActiveLlmRes()    {}
-func (*LlmSettings) updateLlmBudgetRes() {}
+func (*LlmSettings) clearActiveLlmRes() {}
+func (*LlmSettings) getLlmSettingsRes() {}
+func (*LlmSettings) setActiveLlmRes()   {}
 
 // The outcome of asking the provider whether it accepts a key.
 // Ref: #/components/schemas/LlmTest
@@ -11623,6 +11586,9 @@ type ReadinessCheckState struct {
 	Failed int32 `json:"failed"`
 	// How many sites it checks.
 	Total int32 `json:"total"`
+	// True when an administrator stopped the check; only then is it present. The sites it checked keep
+	// what it recorded, the others what their scan recorded.
+	Stopped OptBool `json:"stopped"`
 }
 
 // GetRunning returns the value of Running.
@@ -11645,6 +11611,11 @@ func (s *ReadinessCheckState) GetTotal() int32 {
 	return s.Total
 }
 
+// GetStopped returns the value of Stopped.
+func (s *ReadinessCheckState) GetStopped() OptBool {
+	return s.Stopped
+}
+
 // SetRunning sets the value of Running.
 func (s *ReadinessCheckState) SetRunning(val bool) {
 	s.Running = val
@@ -11663,6 +11634,11 @@ func (s *ReadinessCheckState) SetFailed(val int32) {
 // SetTotal sets the value of Total.
 func (s *ReadinessCheckState) SetTotal(val int32) {
 	s.Total = val
+}
+
+// SetStopped sets the value of Stopped.
+func (s *ReadinessCheckState) SetStopped(val OptBool) {
+	s.Stopped = val
 }
 
 func (*ReadinessCheckState) startReadinessCheckRes() {}
@@ -11868,6 +11844,23 @@ func (*RejectTermCandidateNotFound) rejectTermCandidateRes() {}
 type RejectTermCandidateUnauthorized ProblemStatusCode
 
 func (*RejectTermCandidateUnauthorized) rejectTermCandidateRes() {}
+
+type RemoveQueuedAnalysesForbidden ProblemStatusCode
+
+func (*RemoveQueuedAnalysesForbidden) removeQueuedAnalysesRes() {}
+
+// RemoveQueuedAnalysesNoContent is response for RemoveQueuedAnalyses operation.
+type RemoveQueuedAnalysesNoContent struct{}
+
+func (*RemoveQueuedAnalysesNoContent) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesNotFound ProblemStatusCode
+
+func (*RemoveQueuedAnalysesNotFound) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesUnauthorized ProblemStatusCode
+
+func (*RemoveQueuedAnalysesUnauthorized) removeQueuedAnalysesRes() {}
 
 type RereadPromptRunBadRequest ProblemStatusCode
 
@@ -12238,6 +12231,18 @@ func (*SetPlanTargetsUnauthorized) setPlanTargetsRes() {}
 type SetPlanTargetsUnprocessableEntity ProblemStatusCode
 
 func (*SetPlanTargetsUnprocessableEntity) setPlanTargetsRes() {}
+
+type SetTermReviewBadRequest ProblemStatusCode
+
+func (*SetTermReviewBadRequest) setTermReviewRes() {}
+
+type SetTermReviewForbidden ProblemStatusCode
+
+func (*SetTermReviewForbidden) setTermReviewRes() {}
+
+type SetTermReviewUnauthorized ProblemStatusCode
+
+func (*SetTermReviewUnauthorized) setTermReviewRes() {}
 
 // One Prompt run in the trend.
 // Ref: #/components/schemas/ShareTrendPoint
@@ -12760,6 +12765,61 @@ type StartTermReviewUnauthorized ProblemStatusCode
 
 func (*StartTermReviewUnauthorized) startTermReviewRes() {}
 
+type StopAnalysisBadRequest ProblemStatusCode
+
+func (*StopAnalysisBadRequest) stopAnalysisRes() {}
+
+type StopAnalysisForbidden ProblemStatusCode
+
+func (*StopAnalysisForbidden) stopAnalysisRes() {}
+
+// StopAnalysisNoContent is response for StopAnalysis operation.
+type StopAnalysisNoContent struct{}
+
+func (*StopAnalysisNoContent) stopAnalysisRes() {}
+
+type StopAnalysisNotFound ProblemStatusCode
+
+func (*StopAnalysisNotFound) stopAnalysisRes() {}
+
+type StopAnalysisUnauthorized ProblemStatusCode
+
+func (*StopAnalysisUnauthorized) stopAnalysisRes() {}
+
+type StopCandidateReviewForbidden ProblemStatusCode
+
+func (*StopCandidateReviewForbidden) stopCandidateReviewRes() {}
+
+// StopCandidateReviewNoContent is response for StopCandidateReview operation.
+type StopCandidateReviewNoContent struct{}
+
+func (*StopCandidateReviewNoContent) stopCandidateReviewRes() {}
+
+type StopCandidateReviewNotFound ProblemStatusCode
+
+func (*StopCandidateReviewNotFound) stopCandidateReviewRes() {}
+
+type StopCandidateReviewUnauthorized ProblemStatusCode
+
+func (*StopCandidateReviewUnauthorized) stopCandidateReviewRes() {}
+
+type StopCompetitorCheckForbidden ProblemStatusCode
+
+func (*StopCompetitorCheckForbidden) stopCompetitorCheckRes() {}
+
+// StopCompetitorCheckNoContent is response for StopCompetitorCheck operation.
+type StopCompetitorCheckNoContent struct{}
+
+func (*StopCompetitorCheckNoContent) stopCompetitorCheckRes() {}
+
+type StopCompetitorCheckNotFound ProblemStatusCode
+
+func (*StopCompetitorCheckNotFound) stopCompetitorCheckRes() {}
+
+type StopCompetitorCheckUnauthorized ProblemStatusCode
+
+func (*StopCompetitorCheckUnauthorized) stopCompetitorCheckRes() {}
+
 type StopPromptRunBadRequest ProblemStatusCode
 
 func (*StopPromptRunBadRequest) stopPromptRunRes() {}
@@ -12780,6 +12840,57 @@ func (*StopPromptRunNotFound) stopPromptRunRes() {}
 type StopPromptRunUnauthorized ProblemStatusCode
 
 func (*StopPromptRunUnauthorized) stopPromptRunRes() {}
+
+type StopReadinessCheckForbidden ProblemStatusCode
+
+func (*StopReadinessCheckForbidden) stopReadinessCheckRes() {}
+
+// StopReadinessCheckNoContent is response for StopReadinessCheck operation.
+type StopReadinessCheckNoContent struct{}
+
+func (*StopReadinessCheckNoContent) stopReadinessCheckRes() {}
+
+type StopReadinessCheckNotFound ProblemStatusCode
+
+func (*StopReadinessCheckNotFound) stopReadinessCheckRes() {}
+
+type StopReadinessCheckUnauthorized ProblemStatusCode
+
+func (*StopReadinessCheckUnauthorized) stopReadinessCheckRes() {}
+
+type StopRescanForbidden ProblemStatusCode
+
+func (*StopRescanForbidden) stopRescanRes() {}
+
+// StopRescanNoContent is response for StopRescan operation.
+type StopRescanNoContent struct{}
+
+func (*StopRescanNoContent) stopRescanRes() {}
+
+type StopRescanNotFound ProblemStatusCode
+
+func (*StopRescanNotFound) stopRescanRes() {}
+
+type StopRescanUnauthorized ProblemStatusCode
+
+func (*StopRescanUnauthorized) stopRescanRes() {}
+
+type StopTermReviewForbidden ProblemStatusCode
+
+func (*StopTermReviewForbidden) stopTermReviewRes() {}
+
+// StopTermReviewNoContent is response for StopTermReview operation.
+type StopTermReviewNoContent struct{}
+
+func (*StopTermReviewNoContent) stopTermReviewRes() {}
+
+type StopTermReviewNotFound ProblemStatusCode
+
+func (*StopTermReviewNotFound) stopTermReviewRes() {}
+
+type StopTermReviewUnauthorized ProblemStatusCode
+
+func (*StopTermReviewUnauthorized) stopTermReviewRes() {}
 
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term
@@ -13514,16 +13625,28 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
-// How far the language model is with the waiting candidates.
+// Whether the language model reviews the waiting candidates by itself, how far it is with them, and
+// what it used this month.
 // Ref: #/components/schemas/TermReviewState
 type TermReviewState struct {
+	// Whether it reviews by itself every ten minutes; off, only when asked.
+	On bool `json:"on"`
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// How many waiting candidates it has not reviewed yet.
 	Waiting int32 `json:"waiting"`
 	// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-	// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+	// language-model tokens are spent), failed (the model or its provider failed) or stopped (an
+	// administrator stopped it; what it decided is kept). Absent when it went well.
 	Problem OptTermReviewStateProblem `json:"problem"`
+	// The tokens it used this month, input and output together.
+	MonthTokens  int64 `json:"monthTokens"`
+	MonthCostUsd Usd   `json:"monthCostUsd"`
+}
+
+// GetOn returns the value of On.
+func (s *TermReviewState) GetOn() bool {
+	return s.On
 }
 
 // GetRunning returns the value of Running.
@@ -13541,6 +13664,21 @@ func (s *TermReviewState) GetProblem() OptTermReviewStateProblem {
 	return s.Problem
 }
 
+// GetMonthTokens returns the value of MonthTokens.
+func (s *TermReviewState) GetMonthTokens() int64 {
+	return s.MonthTokens
+}
+
+// GetMonthCostUsd returns the value of MonthCostUsd.
+func (s *TermReviewState) GetMonthCostUsd() Usd {
+	return s.MonthCostUsd
+}
+
+// SetOn sets the value of On.
+func (s *TermReviewState) SetOn(val bool) {
+	s.On = val
+}
+
 // SetRunning sets the value of Running.
 func (s *TermReviewState) SetRunning(val bool) {
 	s.Running = val
@@ -13556,16 +13694,29 @@ func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
 	s.Problem = val
 }
 
+// SetMonthTokens sets the value of MonthTokens.
+func (s *TermReviewState) SetMonthTokens(val int64) {
+	s.MonthTokens = val
+}
+
+// SetMonthCostUsd sets the value of MonthCostUsd.
+func (s *TermReviewState) SetMonthCostUsd(val Usd) {
+	s.MonthCostUsd = val
+}
+
+func (*TermReviewState) setTermReviewRes()   {}
 func (*TermReviewState) startTermReviewRes() {}
 
 // Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+// language-model tokens are spent), failed (the model or its provider failed) or stopped (an
+// administrator stopped it; what it decided is kept). Absent when it went well.
 type TermReviewStateProblem string
 
 const (
 	TermReviewStateProblemNoModel TermReviewStateProblem = "noModel"
 	TermReviewStateProblemBudget  TermReviewStateProblem = "budget"
 	TermReviewStateProblemFailed  TermReviewStateProblem = "failed"
+	TermReviewStateProblemStopped TermReviewStateProblem = "stopped"
 )
 
 // AllValues returns all TermReviewStateProblem values.
@@ -13574,6 +13725,7 @@ func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
 		TermReviewStateProblemNoModel,
 		TermReviewStateProblemBudget,
 		TermReviewStateProblemFailed,
+		TermReviewStateProblemStopped,
 	}
 }
 
@@ -13585,6 +13737,8 @@ func (s TermReviewStateProblem) MarshalText() ([]byte, error) {
 	case TermReviewStateProblemBudget:
 		return []byte(s), nil
 	case TermReviewStateProblemFailed:
+		return []byte(s), nil
+	case TermReviewStateProblemStopped:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -13603,9 +13757,29 @@ func (s *TermReviewStateProblem) UnmarshalText(data []byte) error {
 	case TermReviewStateProblemFailed:
 		*s = TermReviewStateProblemFailed
 		return nil
+	case TermReviewStateProblemStopped:
+		*s = TermReviewStateProblemStopped
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Whether the term review runs by itself.
+// Ref: #/components/schemas/TermReviewSwitch
+type TermReviewSwitch struct {
+	// On, it reviews every ten minutes; off, only when an administrator asks.
+	On bool `json:"on"`
+}
+
+// GetOn returns the value of On.
+func (s *TermReviewSwitch) GetOn() bool {
+	return s.On
+}
+
+// SetOn sets the value of On.
+func (s *TermReviewSwitch) SetOn(val bool) {
+	s.On = val
 }
 
 // A page of matching terms.
@@ -14003,22 +14177,6 @@ func (*UpdateCompetitorUnauthorized) updateCompetitorRes() {}
 type UpdateCompetitorUnprocessableEntity ProblemStatusCode
 
 func (*UpdateCompetitorUnprocessableEntity) updateCompetitorRes() {}
-
-type UpdateLlmBudgetBadRequest ProblemStatusCode
-
-func (*UpdateLlmBudgetBadRequest) updateLlmBudgetRes() {}
-
-type UpdateLlmBudgetForbidden ProblemStatusCode
-
-func (*UpdateLlmBudgetForbidden) updateLlmBudgetRes() {}
-
-type UpdateLlmBudgetUnauthorized ProblemStatusCode
-
-func (*UpdateLlmBudgetUnauthorized) updateLlmBudgetRes() {}
-
-type UpdateLlmBudgetUnprocessableEntity ProblemStatusCode
-
-func (*UpdateLlmBudgetUnprocessableEntity) updateLlmBudgetRes() {}
 
 type UpdatePromptTestSettingsBadRequest ProblemStatusCode
 

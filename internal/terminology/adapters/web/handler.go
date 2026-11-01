@@ -22,8 +22,10 @@ type UseCases interface {
 	Accept(ctx context.Context, user, id string, a domain.Acceptance) (domain.Candidate, error)
 	Reject(ctx context.Context, user, id string) (domain.Candidate, error)
 	Undo(ctx context.Context, id string) (domain.Candidate, error)
-	ReviewState(ctx context.Context, counts domain.Counts) app.ReviewState
+	ReviewState(ctx context.Context, counts domain.Counts) (app.ReviewState, error)
 	StartReview()
+	SwitchReview(ctx context.Context, user string, on bool) error
+	StopReview(ctx context.Context) error
 }
 
 // Handler implements the terminology operations. Business rules stay in the use cases.
@@ -50,12 +52,16 @@ func (h *Handler) ListTermCandidates(ctx context.Context, params oas.ListTermCan
 	if err != nil {
 		return nil, err
 	}
+	review, err := h.uc.ReviewState(ctx, counts)
+	if err != nil {
+		return nil, err
+	}
 	list = list[:min(len(list), maxCandidates)]
 	items := make([]oas.TermCandidate, 0, len(list))
 	for _, c := range list {
 		items = append(items, toCandidate(c))
 	}
-	return &oas.TermCandidateList{Items: items, Review: toReviewState(h.uc.ReviewState(ctx, counts)), Counts: oas.TermCandidateCounts{
+	return &oas.TermCandidateList{Items: items, Review: toReviewState(review), Counts: oas.TermCandidateCounts{
 		Pending: int32(counts.Pending), Accepted: int32(counts.Accepted), Rejected: int32(counts.Rejected), //nolint:gosec // small counts
 	}}, nil
 }
@@ -63,16 +69,57 @@ func (h *Handler) ListTermCandidates(ctx context.Context, params oas.ListTermCan
 // StartTermReview implements startTermReview.
 func (h *Handler) StartTermReview(ctx context.Context) (oas.StartTermReviewRes, error) {
 	h.uc.StartReview()
-	_, counts, err := h.uc.Candidates(ctx, domain.StatusPending)
+	out, err := h.reviewState(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := toReviewState(h.uc.ReviewState(ctx, counts))
 	return &out, nil
 }
 
+// SetTermReview implements setTermReview.
+func (h *Handler) SetTermReview(ctx context.Context, req *oas.TermReviewSwitch) (oas.SetTermReviewRes, error) {
+	if err := h.uc.SwitchReview(ctx, h.actor(ctx), req.On); err != nil {
+		return nil, err
+	}
+	out, err := h.reviewState(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// StopTermReview implements stopTermReview.
+func (h *Handler) StopTermReview(ctx context.Context) (oas.StopTermReviewRes, error) {
+	err := h.uc.StopReview(ctx)
+	switch {
+	case errors.Is(err, app.ErrNothingToStop):
+		return &oas.StopTermReviewNotFound{
+			StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No term review runs or is asked for."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.StopTermReviewNoContent{}, nil
+}
+
+// reviewState is the review's state, with the waiting candidates counted.
+func (h *Handler) reviewState(ctx context.Context) (oas.TermReviewState, error) {
+	_, counts, err := h.uc.Candidates(ctx, domain.StatusPending)
+	if err != nil {
+		return oas.TermReviewState{}, err
+	}
+	s, err := h.uc.ReviewState(ctx, counts)
+	if err != nil {
+		return oas.TermReviewState{}, err
+	}
+	return toReviewState(s), nil
+}
+
 func toReviewState(s app.ReviewState) oas.TermReviewState {
-	out := oas.TermReviewState{Running: s.Running, Waiting: int32(s.Waiting)} //nolint:gosec // a small count
+	out := oas.TermReviewState{
+		On: s.On, Running: s.Running, Waiting: int32(s.Waiting), //nolint:gosec // a small count
+		MonthTokens: s.Month.Tokens(), MonthCostUsd: oas.Usd(s.Month.CostUSD()),
+	}
 	if s.Problem != app.ProblemNone {
 		out.Problem = oas.NewOptTermReviewStateProblem(oas.TermReviewStateProblem(s.Problem))
 	}

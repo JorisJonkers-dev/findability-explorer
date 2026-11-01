@@ -784,6 +784,62 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/review/switch:
+    put:
+      operationId: setTermReview
+      summary: Switch the term review on or off
+      description: >-
+        Administrators only. On, the language model reviews the waiting candidates by itself every
+        ten minutes; off, it reviews only when an administrator asks (startTermReview). A review
+        that runs goes on until it ends or is stopped. The review is on until it is first switched
+        off. Records who switched it. Returns the review's state.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: Whether the review runs by itself.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermReviewSwitch"
+            example:
+              on: false
+      responses:
+        "200":
+          description: The review's state, switched.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermReviewState"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/review/stop:
+    post:
+      operationId: stopTermReview
+      summary: Stop the term review
+      description: >-
+        Administrators only. Stops the review of the waiting candidates that runs, after the batch
+        it asks about, which it keeps, as it keeps every decision made before; a review asked for
+        that has not started does not start. The review's state says it was stopped by hand
+        (problem stopped). Whether the review is on does not change. 404 when no review runs or is
+        asked for.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/term-candidates/{candidateId}/accept:
     post:
       operationId: acceptTermCandidate
@@ -1424,6 +1480,27 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates/review/stop:
+    post:
+      operationId: stopCandidateReview
+      summary: Stop Claude Haiku's review of the competitor candidates
+      description: >-
+        Administrators only. Stops the review of the competitor candidates that runs, after the
+        step it is on (the merge, or a batch of checks), which it keeps, as it keeps every decision
+        made before. The review's state says it was stopped by hand (problem stopped). 404 when no
+        review runs.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/competitor-checks:
     get:
       operationId: listCompetitorChecks
@@ -1469,6 +1546,26 @@ paths:
         "401":
           $ref: "#/components/responses/Problem"
         "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-checks/stop:
+    post:
+      operationId: stopCompetitorCheck
+      summary: Stop Claude Haiku's check of the competitor list
+      description: >-
+        Administrators only. Stops the check of the companies on the competitor list that runs,
+        after the batch it is on, which it keeps, as it keeps every company archived before. The
+        check's state says it was stopped by hand (problem stopped). 404 when no check runs.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -1649,8 +1746,7 @@ paths:
       summary: Get the language-model settings
       description: >-
         Returns every credential (never a secret), the model product matching uses now, the
-        Anthropic key's monthly budget in dollars with what was spent and is left of it, and the
-        latest 50 changes and tests, newest first.
+        token budget, and the latest 50 changes and tests, newest first.
       tags: [admin]
       responses:
         "200":
@@ -1820,41 +1916,6 @@ paths:
         "422":
           $ref: "#/components/responses/Problem"
         "502":
-          $ref: "#/components/responses/Problem"
-        default:
-          $ref: "#/components/responses/Problem"
-  /api/v1/admin/llm/budget:
-    patch:
-      operationId: updateLlmBudget
-      summary: Set the Anthropic key's monthly budget
-      description: >-
-        Administrators only. Sets what every job a Claude model does may spend in a month together,
-        in dollars, from one cent to $1,000, and records the change in the events. Work already
-        spent past a lower budget stops at its next step and keeps what it did.
-      tags: [admin]
-      requestBody:
-        required: true
-        description: The new budget.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LlmBudgetChange"
-            example:
-              monthlyBudgetUsd: 15
-      responses:
-        "200":
-          description: The settings after the change.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LlmSettings"
-        "400":
-          $ref: "#/components/responses/Problem"
-        "401":
-          $ref: "#/components/responses/Problem"
-        "403":
-          $ref: "#/components/responses/Problem"
-        "422":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -3026,7 +3087,7 @@ components:
     LlmEventAction:
       description: What an event records.
       type: string
-      enum: [credential_added, credential_deleted, credential_tested, active_set, active_cleared, budget_set]
+      enum: [credential_added, credential_deleted, credential_tested, active_set, active_cleared]
     LlmEvent:
       description: One change to or test of the language-model settings.
       type: object
@@ -3065,27 +3126,26 @@ components:
           example: Added openrouter key "Course budget key" (3a7bd3e2360a).
     LlmBudget:
       description: >-
-        What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does
-        - the scans' product matching, the term review, the competitor review and Claude Haiku's
-        reading of Prompt answers - and what they spent, priced at the models' list prices from
-        their stored token counts. Each job stops once the month's spend reaches the budget, and
-        keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
+        What every job on the language model may spend in a month together - the scans' product
+        matching, the term review, the competitor review and Claude Haiku's reading of Prompt
+        answers. Each stops when the month's tokens are spent.
       type: object
       additionalProperties: false
-      required: [monthlyBudgetUsd, spentThisMonthUsd, leftUsd, tokensThisMonth, averageTokensPerScan, averageScanUsd, scansMatched]
+      required: [monthlyTokens, usedThisMonth, averageTokensPerScan, scansMatched]
       properties:
-        monthlyBudgetUsd:
-          $ref: "#/components/schemas/Usd"
-        spentThisMonthUsd:
-          $ref: "#/components/schemas/Usd"
-        leftUsd:
-          $ref: "#/components/schemas/Usd"
-        tokensThisMonth:
+        monthlyTokens:
           type: integer
           format: int64
           minimum: 0
           maximum: 1000000000000
-          description: The tokens, in and out, every job used this month so far.
+          description: The tokens every job together may use in a calendar month (UTC).
+          example: 10000000
+        usedThisMonth:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: The tokens every job used this month so far.
           example: 48211
         averageTokensPerScan:
           type: integer
@@ -3096,8 +3156,6 @@ components:
             The tokens one scan's product matching used on average, over every scan the language
             model answered for; 0 before the first.
           example: 29137
-        averageScanUsd:
-          $ref: "#/components/schemas/Usd"
         scansMatched:
           type: integer
           format: int64
@@ -3105,19 +3163,6 @@ components:
           maximum: 1000000000000
           description: How many scans the average is over.
           example: 2
-    LlmBudgetChange:
-      description: The Anthropic key's new monthly budget.
-      type: object
-      additionalProperties: false
-      required: [monthlyBudgetUsd]
-      properties:
-        monthlyBudgetUsd:
-          type: number
-          format: double
-          minimum: 0.01
-          maximum: 1000
-          description: The month's budget in dollars.
-          example: 15
     LlmSettings:
       description: The language-model settings.
       type: object
@@ -3634,11 +3679,17 @@ components:
         tier:
           $ref: "#/components/schemas/IntentTier"
     TermReviewState:
-      description: How far the language model is with the waiting candidates.
+      description: >-
+        Whether the language model reviews the waiting candidates by itself, how far it is with
+        them, and what it used this month.
       type: object
       additionalProperties: false
-      required: [running, waiting]
+      required: [on, running, waiting, monthTokens, monthCostUsd]
       properties:
+        on:
+          type: boolean
+          description: Whether it reviews by itself every ten minutes; off, only when asked.
+          example: true
         running:
           type: boolean
           description: Whether it is reviewing now.
@@ -3653,10 +3704,30 @@ components:
         problem:
           description: >-
             Why its last review stopped short - noModel (no Anthropic key is set up), budget (the
-            month's Anthropic budget is spent) or failed (the model or its provider failed).
-            Absent when it went well.
+            month's language-model tokens are spent), failed (the model or its provider failed) or
+            stopped (an administrator stopped it; what it decided is kept). Absent when it went
+            well.
           type: string
-          enum: [noModel, budget, failed]
+          enum: [noModel, budget, failed, stopped]
+        monthTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: The tokens it used this month, input and output together.
+          example: 240000
+        monthCostUsd:
+          $ref: "#/components/schemas/Usd"
+    TermReviewSwitch:
+      description: Whether the term review runs by itself.
+      type: object
+      additionalProperties: false
+      required: [on]
+      properties:
+        on:
+          type: boolean
+          description: On, it reviews every ten minutes; off, only when an administrator asks.
+          example: false
     TermCandidateCounts:
       description: How many candidates have each status.
       type: object
@@ -6378,10 +6449,11 @@ components:
         problem:
           description: >-
             Why its last review stopped short - noKey (no Anthropic key is set up), budget (the
-            month's Anthropic budget is spent) or failed (the model or its provider failed).
-            Absent when it went well.
+            month's language-model tokens are spent), failed (the model or its provider failed) or
+            stopped (an administrator stopped it; what it decided is kept). Absent when it went
+            well.
           type: string
-          enum: [noKey, budget, failed]
+          enum: [noKey, budget, failed, stopped]
     CandidateDecisions:
       description: Add or dismiss several competitor candidates.
       type: object

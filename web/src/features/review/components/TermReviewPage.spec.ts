@@ -37,7 +37,7 @@ const accepted = candidate({
 
 type Sent = { method: string; path: string; body: unknown }
 
-function api(sent: Sent[], extra: Record<string, Handler> = {}, review: TermReviewState = { running: false, waiting: 0 }, pending = candidate()) {
+function api(sent: Sent[], extra: Record<string, Handler> = {}, review: TermReviewState = { on: true, running: false, waiting: 0, monthTokens: 0, monthCostUsd: 0 }, pending = candidate()) {
   const record = (answer: () => Response): Handler => async (request) => {
     const text = await request.text()
     sent.push({ method: request.method, path: new URL(request.url).pathname, body: text === '' ? null : JSON.parse(text) })
@@ -151,7 +151,7 @@ describe('the term review', () => {
 
   it('filters the candidates by language, kept in the address, and offers only their own language to accept in', async () => {
     const german = candidate({ id: 'aaaaaaaaaaaaaaaa', phrase: 'transportband', languages: ['de'] })
-    const list = (): Response => json({ items: [candidate(), german], counts, review: { running: false, waiting: 0 } } satisfies TermCandidateList)
+    const list = (): Response => json({ items: [candidate(), german], counts, review: { on: true, running: false, waiting: 0, monthTokens: 0, monthCostUsd: 0 } } satisfies TermCandidateList)
     const { wrapper, router } = await mountApp(api([], { 'GET /api/v1/admin/term-candidates': list }), '/manage/terms/waiting')
     const group = wrapper.get('[role="group"][aria-label="Language"]')
     expect(group.findAll('button').map((b) => b.text())).toEqual(['All languages', 'German', 'English', 'Portuguese'])
@@ -198,7 +198,7 @@ describe('the term review', () => {
 
   it('shows how far the language model is, and starts it on the waiting phrases', async () => {
     const sent: Sent[] = []
-    const { wrapper } = await mountApp(api(sent, {}, { running: false, waiting: 3 }), '/manage/terms/waiting')
+    const { wrapper } = await mountApp(api(sent, {}, { on: true, running: false, waiting: 3, monthTokens: 0, monthCostUsd: 0 }), '/manage/terms/waiting')
     const status = wrapper.get('section[aria-label="The language model\'s review"]')
     expect(status.text()).toContain('3 phrases wait for the language model.')
     await button(wrapper, 'Review them now').trigger('click')
@@ -206,7 +206,7 @@ describe('the term review', () => {
     expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual(['POST /api/v1/admin/term-candidates/review'])
     wrapper.unmount()
 
-    const none = await mountApp(api([], {}, { running: false, waiting: 3, problem: 'noModel' }), '/manage/terms/waiting')
+    const none = await mountApp(api([], {}, { on: true, running: false, waiting: 3, problem: 'noModel', monthTokens: 0, monthCostUsd: 0 }), '/manage/terms/waiting')
     const link = none.wrapper.get('section[aria-label="The language model\'s review"] a')
     expect(link.text()).toBe('Add one in Keys and spending')
     expect(link.attributes('href')).toBe('/manage/keys')
@@ -221,7 +221,7 @@ describe('the term review', () => {
         term: { term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'application' },
       },
     })
-    const { wrapper } = await mountApp(api(sent, {}, { running: false, waiting: 0 }, unsure), '/manage/terms/waiting')
+    const { wrapper } = await mountApp(api(sent, {}, { on: true, running: false, waiting: 0, monthTokens: 0, monthCostUsd: 0 }, unsure), '/manage/terms/waiting')
     const item = wrapper.get('ul[aria-label="Candidates"] li')
     expect(item.text()).toContain('The language model was unsure. Could go either way.')
     expect(item.text()).toContain('It suggests “spiral freezer belt”, English, Application,')

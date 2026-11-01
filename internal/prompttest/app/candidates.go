@@ -13,6 +13,8 @@ import (
 // not checked.
 type CandidateCounts struct {
 	Pending, Added, Dismissed, Unchecked int
+	// ByPerson is how many an administrator decided; the language model never changes those.
+	ByPerson int
 }
 
 // Candidates lists the competitor candidates with status, or all of them for "", with the counts.
@@ -37,7 +39,7 @@ func (s *Service) Candidates(ctx context.Context, status domain.CandidateStatus)
 			out = append(out, c)
 		}
 	}
-	counts.Unchecked = len(domain.Unchecked(all))
+	counts.Unchecked, counts.ByPerson = len(domain.Unchecked(all)), domain.DecidedByPerson(all)
 	return out, counts, nil
 }
 
@@ -287,7 +289,21 @@ func (s *Service) Split(ctx context.Context, actor, id string) error {
 	if i := slices.IndexFunc(c.Members, func(m domain.Member) bool { return m.ID == id }); c.Members[i].Joined != domain.JoinedByModel {
 		return ErrNotMerged
 	}
-	return s.repo.SaveMerges(ctx, []domain.Merge{{CandidateID: id, Separate: true, By: actor, At: s.now()}})
+	return s.repo.SaveMerges(ctx, []domain.Merge{{CandidateID: id, Separate: true, SplitFrom: c.ID, By: actor, At: s.now()}})
+}
+
+// UndoSplit merges a name a person split off back into the candidate it was split off;
+// domain.ErrNotFound for a name never split off.
+func (s *Service) UndoSplit(ctx context.Context, actor, id string) error {
+	merges, err := s.repo.Merges(ctx)
+	if err != nil {
+		return fmt.Errorf("candidate merges: %w", err)
+	}
+	i := slices.IndexFunc(merges, func(m domain.Merge) bool { return m.CandidateID == id && m.Separate && m.SplitFrom != "" })
+	if i < 0 {
+		return domain.ErrNotFound
+	}
+	return s.repo.SaveMerges(ctx, []domain.Merge{{CandidateID: id, IntoID: merges[i].SplitFrom, By: actor, At: s.now()}})
 }
 
 // matcher matches answers' names to the list as it is now; with the list.

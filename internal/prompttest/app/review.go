@@ -163,6 +163,18 @@ func (s *Service) StartReview(ctx context.Context) bool {
 	return s.startIn(ctx, work.KindCandidateReview, &s.review.candidates, s.Review)
 }
 
+// StartRecheck starts a review that also rechecks what the language model decided (Recheck), unless
+// a review or a check runs; it reports whether it started.
+func (s *Service) StartRecheck(ctx context.Context) bool {
+	return s.startIn(ctx, work.KindCandidateReview, &s.review.candidates, s.Recheck)
+}
+
+// StartCandidateCheck starts Check the candidates (Advise) in the background, unless a review or a
+// check runs; it reports whether it started.
+func (s *Service) StartCandidateCheck(ctx context.Context) bool {
+	return s.startIn(ctx, work.KindCandidateReview, &s.review.candidates, s.Advise)
+}
+
 // StopReview stops the review of the candidates that runs: it asks nothing after the step it is
 // on, which it finishes and keeps, as it keeps every decision made before. The review's state says
 // it was stopped by hand. ErrNothingToStop when no review runs.
@@ -215,15 +227,20 @@ func (s *Service) reportJournal(err error) {
 // the merge or a batch, and ErrStopped when an administrator stopped it, with what was checked
 // before kept either way.
 func (s *Service) Review(ctx context.Context) error {
-	r, model, err := s.reviewer(ctx)
+	return s.reviewWith(ctx, domain.Unchecked)
+}
+
+// Recheck is a Review that also asks again about every candidate the language model decided, and
+// changes what it dismissed when it now thinks otherwise (domain.CompanyVerdict.Redecides). What a
+// person decided is never asked about.
+func (s *Service) Recheck(ctx context.Context) error {
+	return s.reviewWith(ctx, domain.ToRecheck)
+}
+
+// reviewWith merges, then checks the candidates ask picks and records the decisions the verdicts make.
+func (s *Service) reviewWith(ctx context.Context, ask func([]domain.Candidate) []domain.Candidate) error {
+	r, model, def, err := s.ready(ctx)
 	if err != nil {
-		return err
-	}
-	def, err := s.definition(ctx)
-	if err != nil {
-		return err
-	}
-	if err := s.goOn(ctx, &s.review.candidates); err != nil {
 		return err
 	}
 	directory, err := s.directory.Companies(ctx)
@@ -237,15 +254,59 @@ func (s *Service) Review(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	unchecked := domain.Unchecked(all)
-	s.review.candidates.planned(len(unchecked))
-	for len(unchecked) > 0 {
+	return s.inBatches(ctx, ask(all), func(batch []domain.Candidate) error {
+		verdicts, err := s.ask(ctx, r, model, def, batch)
+		if err != nil {
+			return err
+		}
+		return s.decideByModel(ctx, batch, verdicts)
+	})
+}
+
+// Advise is Check the candidates: the model reads every waiting company and says whether it
+// competes, and only advises. Nothing is merged and nothing decided; its checks show beside each
+// company. The same errors as Review.
+func (s *Service) Advise(ctx context.Context) error {
+	r, model, def, err := s.ready(ctx)
+	if err != nil {
+		return err
+	}
+	all, err := s.candidates(ctx)
+	if err != nil {
+		return err
+	}
+	return s.inBatches(ctx, domain.Waiting(all), func(batch []domain.Candidate) error {
+		_, err := s.ask(ctx, r, model, def, batch)
+		return err
+	})
+}
+
+// ready is the language model, its name and the competitor definition for a review, once it may go on.
+func (s *Service) ready(ctx context.Context) (Reviewer, string, domain.Definition, error) {
+	r, model, err := s.reviewer(ctx)
+	if err != nil {
+		return nil, "", domain.Definition{}, err
+	}
+	def, err := s.definition(ctx)
+	if err != nil {
+		return nil, "", domain.Definition{}, err
+	}
+	if err := s.goOn(ctx, &s.review.candidates); err != nil {
+		return nil, "", domain.Definition{}, err
+	}
+	return r, model, def, nil
+}
+
+// inBatches runs do on the candidates CheckBatch at a time, as long as the review may go on.
+func (s *Service) inBatches(ctx context.Context, cs []domain.Candidate, do func([]domain.Candidate) error) error {
+	s.review.candidates.planned(len(cs))
+	for len(cs) > 0 {
 		if err := s.goOn(ctx, &s.review.candidates); err != nil {
 			return err
 		}
-		batch := unchecked[:min(CheckBatch, len(unchecked))]
-		unchecked = unchecked[len(batch):]
-		if err := s.check(ctx, r, model, def, batch); err != nil {
+		batch := cs[:min(CheckBatch, len(cs))]
+		cs = cs[len(batch):]
+		if err := do(batch); err != nil {
 			return err
 		}
 		s.review.candidates.did(len(batch))
@@ -289,27 +350,27 @@ func (s *Service) tokensLeft(ctx context.Context) error {
 	return nil
 }
 
-// check has the model check batch, stores its verdicts and what asking used, and records the
-// decisions its sure verdicts make.
-func (s *Service) check(ctx context.Context, r Reviewer, model string, def domain.Definition, batch []domain.Candidate) error {
+// ask has the model check batch, and stores its verdicts and what asking used.
+func (s *Service) ask(ctx context.Context, r Reviewer, model string, def domain.Definition, batch []domain.Candidate) ([]domain.CompanyVerdict, error) {
 	dossiers, err := s.dossiers(ctx, batch)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	answered, usage, err := r.Check(ctx, def.Text, dossiers)
 	s.review.candidates.used(usage)
 	if saveErr := s.saveUsage(ctx, usage); err != nil || saveErr != nil {
-		return errors.Join(wrap("check the candidates", err), saveErr)
+		return nil, errors.Join(wrap("check the candidates", err), saveErr)
 	}
 	verdicts := domain.CompleteVerdicts(batch, answered, model, def.Version, s.now())
 	if err := s.repo.SaveCompanyVerdicts(ctx, verdicts); err != nil {
-		return fmt.Errorf("store the checks: %w", err)
+		return nil, fmt.Errorf("store the checks: %w", err)
 	}
-	return s.decideByModel(ctx, batch, verdicts)
+	return verdicts, nil
 }
 
-// decideByModel records the decision each sure verdict makes on its candidate, by the language
-// model, unless a person decided the candidate meanwhile. A company the list refuses waits for a
+// decideByModel records the decision each verdict makes on its candidate, by the language model,
+// unless a person decided the candidate meanwhile (domain.CompanyVerdict.Redecides). A candidate it
+// dismissed and now thinks otherwise of is undone first. A company the list refuses waits for a
 // person, with the model's verdict as the suggestion.
 func (s *Service) decideByModel(ctx context.Context, batch []domain.Candidate, verdicts []domain.CompanyVerdict) error {
 	all, err := s.candidates(ctx)
@@ -321,13 +382,21 @@ func (s *Service) decideByModel(ctx context.Context, batch []domain.Candidate, v
 		if i < 0 {
 			continue // the model said nothing about it: it is asked about again
 		}
-		status, ok := verdicts[i].Decides(asked)
+		c, ok := find(all, asked.ID)
+		if !ok {
+			continue // gone
+		}
+		status, ok := verdicts[i].Redecides(c)
 		if !ok {
 			continue
 		}
-		c, err := pending(all, asked.ID)
-		if err != nil {
-			continue // decided meanwhile, or gone
+		if c.Decision != nil {
+			if err := s.UndoCandidate(ctx, domain.ModelDecider, c.ID); err != nil {
+				return err
+			}
+		}
+		if status == domain.CandidatePending {
+			continue
 		}
 		if err := s.decideOneByModel(ctx, c, status, asked.Website); err != nil {
 			return err

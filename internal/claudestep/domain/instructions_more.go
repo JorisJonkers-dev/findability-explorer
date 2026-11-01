@@ -4,7 +4,7 @@ package domain
 // step sends, such as the competitor definition for checking companies, goes in the user message.
 
 // ReadingInstructions are how a Prompt run's responses are read. They are set in the code, so every
-// run is read the same way (ADR-0004, ADR-0018): claims the fact sheet contradicts and facts the
+// run is read the same way (ADR-0004, ADR-0021): claims the fact sheet contradicts and facts the
 // response leaves out are two lists, so only the wrong claims become fact sheet corrections.
 const ReadingInstructions = `You read an AI assistant's response to a buyer's question about metal conveyor belts and report, in the JSON schema given, exactly what it says:
 - companies: every company the response names as a maker or supplier, in the order it first names them, with the web address it gives for that company ("" when none).

@@ -17,7 +17,7 @@ import (
 )
 
 // System tells the extractor how to read a response: the instructions of the Claude step reading
-// responses, set in the code so every run is read the same way (ADR-0004, ADR-0018).
+// responses, set in the code so every run is read the same way (ADR-0004, ADR-0021).
 const System = claudestep.ReadingInstructions
 
 // SchemaName names the strict format.

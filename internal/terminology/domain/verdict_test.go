@@ -147,3 +147,11 @@ func TestTheReviewsUsageIsPricedAtTheReviewModelsListPrice(t *testing.T) {
 		t.Error("nothing used costs something")
 	}
 }
+
+func TestReviewingCostsOneJobPerBatch(t *testing.T) {
+	for waiting, batches := range map[int]int64{0: 0, 1: 1, domain.ReviewBatch: 1, domain.ReviewBatch + 1: 2} {
+		if got := domain.ReviewEstimate(waiting, 5_000); got != llm.Micros(batches*5_000) {
+			t.Errorf("%d waiting = %d, want %d batches", waiting, got, batches)
+		}
+	}
+}

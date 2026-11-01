@@ -49,6 +49,7 @@ type UseCases interface {
 	SaveDefinition(ctx context.Context, user, text string) (app.DefinitionView, error)
 	RestoreDefinition(ctx context.Context, user string, version int) (app.DefinitionView, error)
 	ListCheckState() app.ReviewState
+	CheckEstimate(ctx context.Context, n int) (llm.Micros, error)
 }
 
 // Handler implements the prompt-test operations. Business rules stay in the use cases.
@@ -429,7 +430,11 @@ func (h *Handler) ListCompetitorCandidates(ctx context.Context, params oas.ListC
 	for _, c := range list[:min(len(list), maxCandidates)] {
 		items = append(items, toCandidate(c))
 	}
-	return &oas.CompetitorCandidateList{Items: items, Review: toReviewState(h.uc.ReviewState()), Counts: oas.CompetitorCandidateCounts{
+	review, err := h.withEstimate(ctx, toReviewState(h.uc.ReviewState()), counts.Unchecked)
+	if err != nil {
+		return nil, err
+	}
+	return &oas.CompetitorCandidateList{Items: items, Review: review, Counts: oas.CompetitorCandidateCounts{
 		Pending: int32(counts.Pending), Added: int32(counts.Added), Dismissed: int32(counts.Dismissed), Unchecked: int32(counts.Unchecked), //nolint:gosec // small counts
 	}}, nil
 }
@@ -454,9 +459,23 @@ func (h *Handler) ListCompetitorChecks(ctx context.Context) (oas.ListCompetitorC
 			Model: clip(c.Model, 200), At: c.At,
 		})
 	}
+	review, err := h.withEstimate(ctx, toReviewState(h.uc.ListCheckState()), unchecked)
+	if err != nil {
+		return nil, err
+	}
 	return &oas.CompetitorCheckList{
-		Items: items, Unchecked: int32(min(unchecked, 100000)), Review: toReviewState(h.uc.ListCheckState()), //nolint:gosec // at most 100,000
+		Items: items, Unchecked: int32(min(unchecked, 100000)), Review: review, //nolint:gosec // at most 100,000
 	}, nil
+}
+
+// withEstimate adds to a review's state what checking the n companies it would check should cost.
+func (h *Handler) withEstimate(ctx context.Context, state oas.CandidateReviewState, n int) (oas.CandidateReviewState, error) {
+	cost, err := h.uc.CheckEstimate(ctx, n)
+	if err != nil {
+		return oas.CandidateReviewState{}, err
+	}
+	state.EstimateUsd = oas.NewOptUsd(oas.Usd(cost.Dollars()))
+	return state, nil
 }
 
 // StartCompetitorCheck implements startCompetitorCheck.

@@ -128,6 +128,9 @@ func toReviewState(s app.ReviewState) oas.TermReviewState {
 	if s.Problem != app.ProblemNone {
 		out.Problem = oas.NewOptTermReviewStateProblem(oas.TermReviewStateProblem(s.Problem))
 	}
+	if s.Estimated {
+		out.EstimateUsd = oas.NewOptUsd(oas.Usd(s.Estimate.Dollars()))
+	}
 	return out
 }
 

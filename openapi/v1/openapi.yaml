@@ -4571,7 +4571,9 @@ components:
     TermReviewState:
       description: >-
         Whether the language model reviews the waiting candidates by itself, how far it is with
-        them, and what it used this month.
+        them, what it used this month, and what reviewing the waiting ones now should cost on the
+        Anthropic key (estimateUsd) - one job of the Claude step reviewing terms per batch, at the
+        model the step uses now; absent without an Anthropic key.
       type: object
       additionalProperties: false
       required: [on, running, waiting, monthTokens, monthCostUsd]
@@ -4607,6 +4609,8 @@ components:
           description: The tokens it used this month, input and output together.
           example: 240000
         monthCostUsd:
+          $ref: "#/components/schemas/Usd"
+        estimateUsd:
           $ref: "#/components/schemas/Usd"
     TermReviewSwitch:
       description: Whether the term review runs by itself.
@@ -7901,8 +7905,10 @@ components:
           example: A competitor makes metal conveyor belts for process uses and sells them to Tribelt's customers.
     CandidateReviewState:
       description: >-
-        Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why
-        its last run stopped short.
+        Whether a Claude model is reviewing the candidates or checking the competitor list, why its
+        last run stopped short, and what starting it now should cost on the Anthropic key
+        (estimateUsd) - checking each company it would check, from what the checks so far used, at
+        the model the Claude step checking companies uses now; absent where no estimate is given.
       type: object
       additionalProperties: false
       required: [running]
@@ -7919,6 +7925,8 @@ components:
             well.
           type: string
           enum: [noKey, budget, failed, stopped]
+        estimateUsd:
+          $ref: "#/components/schemas/Usd"
     CandidateDecisions:
       description: Add or dismiss several competitor candidates.
       type: object

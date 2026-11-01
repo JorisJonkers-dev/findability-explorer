@@ -19,6 +19,13 @@ const ModelReviewer = "language model"
 // ReviewBatch is how many candidates the model is asked about at a time.
 const ReviewBatch = 40
 
+// ReviewEstimate is what reviewing waiting candidates should cost: one job of the review per batch
+// it takes, at perBatch; nothing when none waits.
+func ReviewEstimate(waiting int, perBatch llm.Micros) llm.Micros {
+	batches := (waiting + ReviewBatch - 1) / ReviewBatch
+	return llm.Micros(batches) * perBatch
+}
+
 // Verdict is the language model's review of one candidate.
 type Verdict struct {
 	CandidateID string

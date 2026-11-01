@@ -3309,11 +3309,18 @@ func (s *CandidateReviewState) encodeFields(e *jx.Encoder) {
 			s.Problem.Encode(e)
 		}
 	}
+	{
+		if s.EstimateUsd.Set {
+			e.FieldStart("estimateUsd")
+			s.EstimateUsd.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCandidateReviewState = [2]string{
+var jsonFieldsNameOfCandidateReviewState = [3]string{
 	0: "running",
 	1: "problem",
+	2: "estimateUsd",
 }
 
 // Decode decodes CandidateReviewState from json.
@@ -3346,6 +3353,16 @@ func (s *CandidateReviewState) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"problem\"")
+			}
+		case "estimateUsd":
+			if err := func() error {
+				s.EstimateUsd.Reset()
+				if err := s.EstimateUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"estimateUsd\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -14341,6 +14358,39 @@ func (s OptURI) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptURI) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes Usd as json.
+func (o OptUsd) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes Usd from json.
+func (o *OptUsd) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptUsd to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptUsd) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptUsd) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -31038,15 +31088,22 @@ func (s *TermReviewState) encodeFields(e *jx.Encoder) {
 		e.FieldStart("monthCostUsd")
 		s.MonthCostUsd.Encode(e)
 	}
+	{
+		if s.EstimateUsd.Set {
+			e.FieldStart("estimateUsd")
+			s.EstimateUsd.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfTermReviewState = [6]string{
+var jsonFieldsNameOfTermReviewState = [7]string{
 	0: "on",
 	1: "running",
 	2: "waiting",
 	3: "problem",
 	4: "monthTokens",
 	5: "monthCostUsd",
+	6: "estimateUsd",
 }
 
 // Decode decodes TermReviewState from json.
@@ -31125,6 +31182,16 @@ func (s *TermReviewState) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"monthCostUsd\"")
+			}
+		case "estimateUsd":
+			if err := func() error {
+				s.EstimateUsd.Reset()
+				if err := s.EstimateUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"estimateUsd\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

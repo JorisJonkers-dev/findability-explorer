@@ -1527,8 +1527,10 @@ func (s *CandidateNameJoined) UnmarshalText(data []byte) error {
 	}
 }
 
-// Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last
-// run stopped short.
+// Whether a Claude model is reviewing the candidates or checking the competitor list, why its last run
+// stopped short, and what starting it now should cost on the Anthropic key (estimateUsd) - checking
+// each company it would check, from what the checks so far used, at the model the Claude step checking
+// companies uses now; absent where no estimate is given.
 // Ref: #/components/schemas/CandidateReviewState
 type CandidateReviewState struct {
 	// Whether it is reviewing now.
@@ -1536,7 +1538,8 @@ type CandidateReviewState struct {
 	// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
 	// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
 	// stopped it; what it decided is kept). Absent when it went well.
-	Problem OptCandidateReviewStateProblem `json:"problem"`
+	Problem     OptCandidateReviewStateProblem `json:"problem"`
+	EstimateUsd OptUsd                         `json:"estimateUsd"`
 }
 
 // GetRunning returns the value of Running.
@@ -1549,6 +1552,11 @@ func (s *CandidateReviewState) GetProblem() OptCandidateReviewStateProblem {
 	return s.Problem
 }
 
+// GetEstimateUsd returns the value of EstimateUsd.
+func (s *CandidateReviewState) GetEstimateUsd() OptUsd {
+	return s.EstimateUsd
+}
+
 // SetRunning sets the value of Running.
 func (s *CandidateReviewState) SetRunning(val bool) {
 	s.Running = val
@@ -1557,6 +1565,11 @@ func (s *CandidateReviewState) SetRunning(val bool) {
 // SetProblem sets the value of Problem.
 func (s *CandidateReviewState) SetProblem(val OptCandidateReviewStateProblem) {
 	s.Problem = val
+}
+
+// SetEstimateUsd sets the value of EstimateUsd.
+func (s *CandidateReviewState) SetEstimateUsd(val OptUsd) {
+	s.EstimateUsd = val
 }
 
 func (*CandidateReviewState) startCandidateReviewRes() {}
@@ -7996,6 +8009,52 @@ func (o OptUUID) Get() (v uuid.UUID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptUsd returns new OptUsd with value set to v.
+func NewOptUsd(v Usd) OptUsd {
+	return OptUsd{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUsd is optional Usd.
+type OptUsd struct {
+	Value Usd
+	Set   bool
+}
+
+// IsSet returns true if OptUsd was set.
+func (o OptUsd) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUsd) Reset() {
+	var v Usd
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUsd) SetTo(v Usd) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUsd) Get() (v Usd, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUsd) Or(d Usd) Usd {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -15995,8 +16054,10 @@ func (s *TermRef) SetLanguage(val Language) {
 	s.Language = val
 }
 
-// Whether the language model reviews the waiting candidates by itself, how far it is with them, and
-// what it used this month.
+// Whether the language model reviews the waiting candidates by itself, how far it is with them, what
+// it used this month, and what reviewing the waiting ones now should cost on the Anthropic key
+// (estimateUsd) - one job of the Claude step reviewing terms per batch, at the model the step uses
+// now; absent without an Anthropic key.
 // Ref: #/components/schemas/TermReviewState
 type TermReviewState struct {
 	// Whether it reviews by itself every ten minutes; off, only when asked.
@@ -16010,8 +16071,9 @@ type TermReviewState struct {
 	// stopped it; what it decided is kept). Absent when it went well.
 	Problem OptTermReviewStateProblem `json:"problem"`
 	// The tokens it used this month, input and output together.
-	MonthTokens  int64 `json:"monthTokens"`
-	MonthCostUsd Usd   `json:"monthCostUsd"`
+	MonthTokens  int64  `json:"monthTokens"`
+	MonthCostUsd Usd    `json:"monthCostUsd"`
+	EstimateUsd  OptUsd `json:"estimateUsd"`
 }
 
 // GetOn returns the value of On.
@@ -16044,6 +16106,11 @@ func (s *TermReviewState) GetMonthCostUsd() Usd {
 	return s.MonthCostUsd
 }
 
+// GetEstimateUsd returns the value of EstimateUsd.
+func (s *TermReviewState) GetEstimateUsd() OptUsd {
+	return s.EstimateUsd
+}
+
 // SetOn sets the value of On.
 func (s *TermReviewState) SetOn(val bool) {
 	s.On = val
@@ -16072,6 +16139,11 @@ func (s *TermReviewState) SetMonthTokens(val int64) {
 // SetMonthCostUsd sets the value of MonthCostUsd.
 func (s *TermReviewState) SetMonthCostUsd(val Usd) {
 	s.MonthCostUsd = val
+}
+
+// SetEstimateUsd sets the value of EstimateUsd.
+func (s *TermReviewState) SetEstimateUsd(val OptUsd) {
+	s.EstimateUsd = val
 }
 
 func (*TermReviewState) setTermReviewRes()   {}

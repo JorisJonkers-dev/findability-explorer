@@ -81,6 +81,8 @@ type Service struct {
 	report  func(error)
 	// budget stops the review once the month's Anthropic budget is spent; nil until WithBudget.
 	budget BudgetSpent
+	// reviewCost prices a batch of the review; nil gives no estimate.
+	reviewCost ReviewCost
 }
 
 // New returns a Service reading catalogue and, through reviews, the terms accepted from the

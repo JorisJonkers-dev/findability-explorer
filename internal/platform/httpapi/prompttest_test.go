@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
@@ -37,8 +38,10 @@ type promptTests struct {
 	stopErr    error
 	stopped    uuid.UUID
 	historyErr error
-	setsErr    error
-	catalogErr error
+	// estimateErr makes the estimate of a check fail.
+	estimateErr error
+	setsErr     error
+	catalogErr  error
 	// draft is the draft published; publishErr makes publishing fail.
 	draft      domain.Draft
 	publishErr error
@@ -301,6 +304,11 @@ func (p *promptTests) StartListCheck(context.Context) bool {
 	return true
 }
 
+// CheckEstimate prices a company's check at a cent; estimateErr makes it fail.
+func (p *promptTests) CheckEstimate(_ context.Context, n int) (llm.Micros, error) {
+	return llm.Micros(n) * 10_000, p.estimateErr
+}
+
 func (p *promptTests) ListCheckState() app.ReviewState {
 	if p.checking {
 		return app.ReviewState{Running: true}
@@ -466,6 +474,17 @@ func TestCompetitorCandidates(t *testing.T) {
 	if r.code != http.StatusOK || len(r.body["items"].([]any)) != 1 || r.body["counts"].(map[string]any)["dismissed"].(float64) != 4 {
 		t.Fatalf("candidates = %d %v", r.code, r.body)
 	}
+	unchecked := r.body["counts"].(map[string]any)["unchecked"].(float64)
+	if got := r.body["review"].(map[string]any)["estimateUsd"]; got != unchecked*0.01 {
+		t.Errorf("the review's estimate = %v for %v unchecked", got, unchecked)
+	}
+	a.prompts().estimateErr = errors.New("broken")
+	for _, path := range []string{base, "/api/v1/admin/competitor-checks"} {
+		if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusInternalServerError {
+			t.Errorf("%s with an estimate that fails = %d", path, r.code)
+		}
+	}
+	a.prompts().estimateErr = nil
 	id := "3a7bd3e2360a9f01"
 	r = callAs(t, srv, http.MethodPost, base+"/"+id+"/add", `{"name":"Ashworth","url":"https://www.ashworth.com"}`, "admin")
 	if r.code != http.StatusOK || r.body["status"] != "added" || r.body["decision"].(map[string]any)["competitorId"] != "ashworth" {
@@ -605,6 +624,10 @@ func TestHaikuChecksTheCompetitorList(t *testing.T) {
 	items, _ := r.body["items"].([]any)
 	if r.code != http.StatusOK || len(items) != 2 || r.body["unchecked"] != float64(3) || r.body["review"].(map[string]any)["problem"] != "failed" {
 		t.Fatalf("list = %d %v", r.code, r.body)
+	}
+	// Checking the three unchecked companies, at a cent each.
+	if r.body["review"].(map[string]any)["estimateUsd"] != 0.03 {
+		t.Errorf("the check's estimate = %v", r.body["review"])
 	}
 	first := items[0].(map[string]any)
 	if first["competitorId"] != "fenner-dunlop" || first["sure"] != true || first["competitor"] != false ||

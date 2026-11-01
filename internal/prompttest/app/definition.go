@@ -75,6 +75,16 @@ func (s *Service) CompetitorDefinition(ctx context.Context) (DefinitionView, err
 	}, nil
 }
 
+// CheckEstimate is what checking n companies should cost now on the Anthropic key: from what the
+// checks so far used per company, at the model the Claude step checking companies uses now.
+func (s *Service) CheckEstimate(ctx context.Context, n int) (llm.Micros, error) {
+	used, checked, err := s.repo.CheckUsage(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("what the checks used: %w", err)
+	}
+	return domain.EstimateChecks(n, used, checked, s.checkModel(ctx)), nil
+}
+
 // checkModel is the model the Claude step checking companies uses now, as the reviewer names it,
 // for an estimate; Claude Haiku 5.5 when there is no reviewer to ask.
 func (s *Service) checkModel(ctx context.Context) string {

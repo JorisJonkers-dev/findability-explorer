@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
@@ -78,7 +79,14 @@ type ReviewState struct {
 	Problem Problem
 	// Month is what the review used this month.
 	Month domain.Usage
+	// Estimate is what reviewing the waiting candidates now should cost; Estimated says whether
+	// there is one, which needs a model to ask and a price for a batch (WithReviewCost).
+	Estimate  llm.Micros
+	Estimated bool
 }
+
+// ReviewCost is what one batch of the review should cost with the model the review uses now.
+type ReviewCost func(ctx context.Context) (llm.Micros, error)
 
 // examplesPerTier is how many map terms of each tier the model gets as examples.
 const examplesPerTier = 8
@@ -132,6 +140,9 @@ func (s *Service) WithReviewer(verdicts Verdicts, judges Judges) {
 	s.review = &reviewer{verdicts: verdicts, judges: judges, kick: make(chan struct{}, 1)}
 	s.review.problem.Store(ProblemNone)
 }
+
+// WithReviewCost prices a batch of the review, so the review's state gives an estimate.
+func (s *Service) WithReviewCost(cost ReviewCost) { s.reviewCost = cost }
 
 // WithBudget stops the review once the month's Anthropic budget is spent; without it, the
 // review does not stop.
@@ -335,7 +346,14 @@ func (s *Service) ReviewState(ctx context.Context, counts domain.Counts) (Review
 		}
 	case ProblemNone, ProblemFailed, ProblemStopped:
 	}
-	return ReviewState{On: on, Running: s.review.isRunning(), Waiting: counts.Unreviewed, Problem: problem, Month: month}, nil
+	state := ReviewState{On: on, Running: s.review.isRunning(), Waiting: counts.Unreviewed, Problem: problem, Month: month}
+	// An estimate needs a model to ask; one that cannot be priced now is left out, not an error.
+	if s.reviewCost != nil && problem != ProblemNoModel {
+		if perBatch, err := s.reviewCost(ctx); err == nil {
+			state.Estimate, state.Estimated = domain.ReviewEstimate(counts.Unreviewed, perBatch), true
+		}
+	}
+	return state, nil
 }
 
 // SwitchReview turns the review that runs by itself on or off, recording user as who switched it.

@@ -1426,7 +1426,7 @@ export type SpendLine = {
 };
 
 /**
- * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
+ * Whether the language model reviews the waiting candidates by itself, how far it is with them, what it used this month, and what reviewing the waiting ones now should cost on the Anthropic key (estimateUsd) - one job of the Claude step reviewing terms per batch, at the model the step uses now; absent without an Anthropic key.
  */
 export type TermReviewState = {
     /**
@@ -1450,6 +1450,7 @@ export type TermReviewState = {
      */
     monthTokens: number;
     monthCostUsd: Usd;
+    estimateUsd?: Usd;
 };
 
 /**
@@ -3813,7 +3814,7 @@ export type CompetitorDefinitionText = {
 };
 
 /**
- * Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last run stopped short.
+ * Whether a Claude model is reviewing the candidates or checking the competitor list, why its last run stopped short, and what starting it now should cost on the Anthropic key (estimateUsd) - checking each company it would check, from what the checks so far used, at the model the Claude step checking companies uses now; absent where no estimate is given.
  */
 export type CandidateReviewState = {
     /**
@@ -3824,6 +3825,7 @@ export type CandidateReviewState = {
      * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
     problem?: 'noKey' | 'budget' | 'failed' | 'stopped';
+    estimateUsd?: Usd;
 };
 
 /**

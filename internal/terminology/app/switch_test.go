@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
@@ -168,4 +169,20 @@ func asks(j *judge) int {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	return len(j.asked)
+}
+
+func TestTheReviewStateEstimatesReviewingTheWaitingTermsAtTheStepsModel(t *testing.T) {
+	svc := reviewing(phrases("contact", "spiral freezer belts"), &reviews{}, &store{}, judges{judge: &judge{rule: accepting}})
+	if st := state(t, svc); st.Estimated {
+		t.Errorf("without a price for a batch = %+v", st)
+	}
+	svc.WithReviewCost(func(context.Context) (llm.Micros, error) { return 12_000, nil })
+	st := state(t, svc)
+	if !st.Estimated || st.Estimate != llm.Micros(12_000)*llm.Micros((st.Waiting+domain.ReviewBatch-1)/domain.ReviewBatch) || st.Waiting == 0 {
+		t.Errorf("estimate = %+v", st)
+	}
+	svc.WithReviewCost(func(context.Context) (llm.Micros, error) { return 0, errBoom })
+	if st := state(t, svc); st.Estimated {
+		t.Errorf("a price that cannot be read = %+v", st)
+	}
 }

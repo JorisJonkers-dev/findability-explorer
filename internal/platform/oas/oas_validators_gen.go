@@ -2247,6 +2247,24 @@ func (s *CandidateReviewState) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.EstimateUsd.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "estimateUsd",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -20470,6 +20488,24 @@ func (s *TermReviewState) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "monthCostUsd",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.EstimateUsd.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "estimateUsd",
 			Error: err,
 		})
 	}

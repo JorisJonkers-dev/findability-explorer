@@ -1625,7 +1625,7 @@ export const zActivity = z.object({
 });
 
 /**
- * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
+ * Whether the language model reviews the waiting candidates by itself, how far it is with them, what it used this month, and what reviewing the waiting ones now should cost on the Anthropic key (estimateUsd) - one job of the Claude step reviewing terms per batch, at the model the step uses now; absent without an Anthropic key.
  */
 export const zTermReviewState = z.object({
     on: z.boolean(),
@@ -1638,7 +1638,8 @@ export const zTermReviewState = z.object({
         'stopped'
     ]).optional(),
     monthTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    monthCostUsd: zUsd
+    monthCostUsd: zUsd,
+    estimateUsd: zUsd.optional()
 });
 
 /**
@@ -2234,7 +2235,7 @@ export const zCompetitorDefinitionText = z.object({
 });
 
 /**
- * Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last run stopped short.
+ * Whether a Claude model is reviewing the candidates or checking the competitor list, why its last run stopped short, and what starting it now should cost on the Anthropic key (estimateUsd) - checking each company it would check, from what the checks so far used, at the model the Claude step checking companies uses now; absent where no estimate is given.
  */
 export const zCandidateReviewState = z.object({
     running: z.boolean(),
@@ -2243,7 +2244,8 @@ export const zCandidateReviewState = z.object({
         'budget',
         'failed',
         'stopped'
-    ]).optional()
+    ]).optional(),
+    estimateUsd: zUsd.optional()
 });
 
 /**

@@ -143,3 +143,22 @@ func TestChecksAreMadeAgainstTheDefinitionInUseAndRecordItsVersion(t *testing.T)
 		}
 	}
 }
+
+func TestTheEstimateOfACheckPricesEachCompanyFromTheChecksSoFar(t *testing.T) {
+	r, _ := naming([2]string{"Kienzle GmbH", ""})
+	r.checks = []domain.ListCheck{{CompanyID: "twentebelt", Reason: "Makes belts.", Version: checkVersion}}
+	r.usage = []domain.ReviewUsage{{InputTokens: 10_000, OutputTokens: 1_000}}
+	svc := reviewing(r, &directory{}, models{m: &model{verdicts: competitors}}, nil)
+	got, err := svc.CheckEstimate(t.Context(), 3)
+	if want := (llm.TokenUse{Model: llm.DefaultModel, Input: 30_000, Output: 3_000}).Cost(); err != nil || got != want {
+		t.Errorf("three companies = %s, %v; want %s", got, err, want)
+	}
+	if got, err := svc.CheckEstimate(t.Context(), 0); err != nil || got != 0 {
+		t.Errorf("no company = %s, %v", got, err)
+	}
+	broken, _ := naming([2]string{"Kienzle GmbH", ""})
+	broken.failOn["CheckUsage"] = true
+	if _, err := reviewing(broken, &directory{}, models{m: &model{verdicts: competitors}}, nil).CheckEstimate(t.Context(), 1); !errors.Is(err, errBoom) {
+		t.Errorf("usage that cannot be read = %v", err)
+	}
+}

@@ -174,6 +174,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	// estimated from what it used on Claude Haiku 5.5.
 	claudeSteps := claudestepapp.New(claudesteppersistence.New(store), stepBase{llm: llm}.Of, now)
 	terminology.WithReviewer(terminologyRepo, judges{llm: llm, steps: claudeSteps})
+	terminology.WithReviewCost(stepCost{steps: claudeSteps, id: claudestepdomain.ReviewingTerms}.Of)
 	terminology.WithBudget(llm.BudgetSpent)
 	terminology.WithJournal(journal, reportJournal)
 	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
@@ -423,6 +424,21 @@ func (b stepBase) Of(ctx context.Context, step claudestepdomain.ID) (llmdomain.M
 		return 0, err
 	}
 	return s.Budget.AverageScanCost, nil
+}
+
+// stepCost prices one job of a Claude step with the model it uses now (claudestep's JobCost), for
+// the estimate of work another context starts.
+type stepCost struct {
+	steps *claudestepapp.Service
+	id    claudestepdomain.ID
+}
+
+func (c stepCost) Of(ctx context.Context) (llmdomain.Micros, error) {
+	step, err := c.steps.Step(ctx, c.id)
+	if err != nil {
+		return 0, err
+	}
+	return step.JobCost, nil
 }
 
 func monthStart(t time.Time) time.Time {

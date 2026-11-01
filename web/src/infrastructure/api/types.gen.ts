@@ -1205,9 +1205,9 @@ export type TermSuggestion = {
 };
 
 /**
- * A Claude step - matching (matching products in scans); the other steps join as they are built.
+ * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), or termReview (reviewing the search terms the scans found).
  */
-export type ClaudeStepId = 'matching';
+export type ClaudeStepId = 'reading' | 'matching' | 'candidateMerge' | 'candidateCheck' | 'termReview';
 
 /**
  * One saved version of a Claude step - the model it uses and its instructions.

@@ -2519,7 +2519,15 @@ func (s *ClaudeStepChange) Validate() error {
 
 func (s ClaudeStepId) Validate() error {
 	switch s {
+	case "reading":
+		return nil
 	case "matching":
+		return nil
+	case "candidateMerge":
+		return nil
+	case "candidateCheck":
+		return nil
+	case "termReview":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

@@ -35,7 +35,7 @@ const MARK = { yes: '✓', no: '✕', unknown: '?' } as const
       <div class="grid items-start gap-10 min-[1100px]:grid-cols-2">
         <GoalSection id="compare" title="Tribelt against the competitors" :intro="page.comparison">
           <div class="rounded-3xl bg-mist p-5 sm:p-6">
-            <BarList :rows="page.bars" :max="page.barsMax" :label="page.name" />
+            <BarList :rows="page.bars" :max="page.barsMax" :label="page.name" wide />
           </div>
         </GoalSection>
 

@@ -10,7 +10,7 @@ import { useLlmSettings } from '../../settings/composables/useLlmSettings'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
 import { useStopWork, useWorkScans } from '../composables/useManage'
 import { missingKeys, queuedScans, recentWork, runningWork, waitLine, whenLabel } from '../domain/activity'
-import { budgetFraction, leftUsd } from '../domain/estimate'
+import { budgetFraction, leftUsd, spendingByKind } from '../domain/estimate'
 import EndedPill from './widgets/EndedPill.vue'
 import ManageWidget from './widgets/ManageWidget.vue'
 import RunningWidget from './widgets/RunningWidget.vue'
@@ -55,15 +55,21 @@ const openRouter = computed(() => {
 const anthropic = computed(() => {
   const b = llm.settings.value?.budget
   if (!b) return null
-  const fraction = b.monthlyTokens > 0 ? Math.min(b.usedThisMonth / b.monthlyTokens, 1) : 0
+  const budget = { budgetUsd: b.monthlyBudgetUsd, spentUsd: b.spentThisMonthUsd }
+  const fraction = budgetFraction(budget)
   return {
-    spent: `${NUMBER.format(b.usedThisMonth)} of ${NUMBER.format(b.monthlyTokens)} tokens`,
+    spent: `${costLabel(b.spentThisMonthUsd)} of ${costLabel(b.monthlyBudgetUsd)}`,
     fraction,
-    left: NUMBER.format(Math.max(b.monthlyTokens - b.usedThisMonth, 0)),
+    left: costLabel(b.leftUsd),
     used: `${String(Math.round(fraction * 100))}%`,
-    usedTokens: NUMBER.format(b.usedThisMonth),
   }
 })
+const spending = computed(() =>
+  settings.value && llm.settings.value
+    ? spendingByKind(settings.value.spentThisMonthUsd, llm.settings.value.budget.spentThisMonthUsd, termReview.value?.monthCostUsd ?? 0)
+    : [],
+)
+const spentInAll = computed(() => costLabel(spending.value.reduce((sum, s) => sum + s.usd, 0)))
 
 const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:pb-0'
 </script>
@@ -93,9 +99,10 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
           <h3 class="m-0 text-base font-semibold">Term review</h3>
           <p class="m-0 text-ink-2" data-part="term-review">
             <template v-if="termReview?.running">The term review is reviewing the waiting search terms.</template>
-            <template v-else-if="termsWaiting > 0">{{ waitLine(termsWaiting, 'search term', 'search terms') }} for a decision.</template>
-            <template v-else>No search terms are waiting.</template>
-            {{ ' ' }}<RouterLink to="/manage/terms">Open Search term list</RouterLink>.
+            <template v-else-if="termReview?.on">On, so waiting search terms are reviewed automatically.</template>
+            <template v-else-if="termsWaiting > 0">Off, so {{ waitLine(termsWaiting, 'search term', 'search terms') }} for you.</template>
+            <template v-else>Off. No search terms are waiting.</template>
+            <RouterLink to="/manage/terms">Open Search term list</RouterLink>.
           </p>
         </div>
         <div :class="ROW">
@@ -156,10 +163,10 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
           <RouterLink to="/manage/keys" class="font-medium">Change<span class="sr-only"> the Anthropic budget</span></RouterLink>
         </template>
         <template v-if="anthropic">
-          <div class="flex flex-wrap items-baseline justify-between gap-2"><span>Anthropic used</span><strong>{{ anthropic.spent }}</strong></div>
-          <ProgressBar :fraction="anthropic.fraction" label="Anthropic used" :text="anthropic.spent" />
+          <div class="flex flex-wrap items-baseline justify-between gap-2"><span>Anthropic spent</span><strong>{{ anthropic.spent }}</strong></div>
+          <ProgressBar :fraction="anthropic.fraction" label="Anthropic spent" :text="anthropic.spent" />
           <p class="m-0 flex flex-wrap gap-x-5 text-ink-2" data-part="anthropic-left">
-            <span><strong class="text-black">{{ anthropic.left }}</strong> tokens left</span>
+            <span><strong class="text-black">{{ anthropic.left }}</strong> left</span>
             <span><strong class="text-black">{{ anthropic.used }}</strong> used</span>
           </p>
         </template>
@@ -177,20 +184,20 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
               </tr>
             </thead>
             <tbody>
-              <tr class="border-b border-grey">
-                <th scope="row" class="py-2 pr-3 font-medium">Prompt runs</th>
-                <td class="py-2 pr-3">OpenRouter</td>
-                <td class="py-2 text-right tabular-nums">{{ settings ? costLabel(settings.spentThisMonthUsd) : '' }}</td>
-              </tr>
-              <tr class="border-b border-grey">
-                <th scope="row" class="py-2 pr-3 font-medium">Scans, the term review, and candidate checks</th>
-                <td class="py-2 pr-3">Anthropic</td>
-                <td class="py-2 text-right tabular-nums">{{ anthropic ? `${anthropic.usedTokens} tokens` : '' }}</td>
+              <tr v-for="k in spending" :key="k.kind" class="border-b border-grey">
+                <th scope="row" class="py-2 pr-3 font-medium">{{ k.kind }}</th>
+                <td class="py-2 pr-3">{{ k.paidFrom }}</td>
+                <td class="py-2 text-right tabular-nums">{{ costLabel(k.usd) }}</td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr class="border-t-2 border-black">
+                <th scope="row" colspan="2" class="py-2 pr-3 font-semibold">All work</th>
+                <td class="py-2 text-right font-semibold tabular-nums">{{ spentInAll }}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-        <p class="m-0 text-sm text-ink-2">The work the Anthropic key pays for is counted in tokens for now.</p>
       </ManageWidget>
 
       <ManageWidget title="Recent work">

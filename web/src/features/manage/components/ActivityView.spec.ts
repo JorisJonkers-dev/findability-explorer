@@ -93,11 +93,17 @@ describe('Activity', () => {
     const coming = widget(wrapper, 'Coming up')
     expect(coming.get('[data-part="next-run"]').text()).toContain('1 December 2026, 06:00')
     expect(coming.get('[data-part="next-run"]').text()).toContain('About $0.25 a run, monthly')
-    expect(coming.get('[data-part="term-review"]').text()).toContain('3 search terms wait for a decision.')
+    expect(coming.get('[data-part="term-review"]').text()).toContain('On, so waiting search terms are reviewed automatically.')
     expect(coming.get('[data-part="scan-queue"]').text()).toContain('1 scan waits in the queue.')
     await coming.findAll('button').find((b) => b.text() === 'Remove the waiting scans')?.trigger('click')
     await settle()
     expect(sent).toEqual(['empty queue'])
+  })
+
+  it('says the term review is off, and how many search terms wait for an administrator', async () => {
+    const off = { items: [], counts: { pending: 3, accepted: 0, rejected: 0 }, review: { on: false, running: false, waiting: 3, monthTokens: 0, monthCostUsd: 0 } }
+    const { wrapper } = await mountApp(server({ 'GET /api/v1/admin/term-candidates': () => json(off) }).handle, '/manage')
+    expect(widget(wrapper, 'Coming up').get('[data-part="term-review"]').text()).toContain('Off, so 3 search terms wait for you.')
   })
 
   it('lists what waits for an administrator, and says so when nothing does', async () => {
@@ -122,9 +128,15 @@ describe('Activity', () => {
     const open = widget(wrapper, 'OpenRouter budget')
     expect(open.text()).toContain('$2.50 of $10.00')
     expect(open.get('[data-part="openrouter-left"]').text()).toBe('$7.50 left25% used')
-    expect(widget(wrapper, 'Anthropic budget').get('[data-part="anthropic-left"]').text()).toBe('9,951,789 tokens left0% used')
-    const rows = widget(wrapper, 'Spending by kind of work').findAll('tbody tr').map((r) => r.text())
-    expect(rows).toEqual(['Prompt runsOpenRouter$2.50', 'Scans, the term review, and candidate checksAnthropic48,211 tokens'])
+    expect(widget(wrapper, 'Anthropic budget').text()).toContain('$0.48 of $15.00')
+    expect(widget(wrapper, 'Anthropic budget').get('[data-part="anthropic-left"]').text()).toBe('$14.52 left3% used')
+    const spending = widget(wrapper, 'Spending by kind of work')
+    expect(spending.findAll('tbody tr').map((r) => r.text())).toEqual([
+      'Prompt runsOpenRouter$2.50',
+      'Term reviewAnthropic$0.00',
+      'Scans, candidate checks, and reading responsesAnthropic$0.48',
+    ])
+    expect(spending.get('tfoot').text()).toBe('All work$2.98')
   })
 
   it('lists the recent work, newest first, with how each ended', async () => {

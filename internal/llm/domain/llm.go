@@ -223,6 +223,8 @@ const (
 	ActionCredentialTested  Action = "credential_tested"
 	ActionActiveSet         Action = "active_set"
 	ActionActiveCleared     Action = "active_cleared"
+	// ActionBudgetSet records a change to the Anthropic key's monthly budget.
+	ActionBudgetSet Action = "budget_set"
 )
 
 // Event is one change to or test of the settings.

@@ -4,7 +4,17 @@ import { nextTick, ref } from 'vue'
 import { promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
 import { json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
-import { RUN_POLL_MS, useCandidateDecision, useCompetitorCandidates, usePromptAnswers, usePromptResults, usePromptSettings, useStartRun } from './usePromptTest'
+import {
+  RUN_POLL_MS,
+  useCandidateDecision,
+  useCompetitorCandidates,
+  usePromptAnswers,
+  usePromptResults,
+  usePromptSettings,
+  useRetryPlan,
+  useRetryRun,
+  useStartRun,
+} from './usePromptTest'
 
 describe('usePromptAnswers', () => {
   it('asks nothing without a run, then loads its answers', async () => {
@@ -190,5 +200,74 @@ describe('useStartRun', () => {
     await flushPromises()
     expect(state.error.value).toBe('A Prompt run is running already.')
     expect(state.notice.value).toBeNull()
+  })
+})
+
+describe('useRetryPlan', () => {
+  it('asks for the plan only when enabled and a run is named', async () => {
+    const enabled = ref(false)
+    const plan = { askTasks: 2, askCostUsd: 0.01, unknownTasks: 0, readTasks: 1, readCostUsd: 0.001, readingCostUsd: 0.0003, answerCosts: [] }
+    const { state, sent } = mountComposable(() => useRetryPlan(ref(RUN_ID), enabled), routes({ [`GET /api/v1/admin/prompt-runs/${RUN_ID}/retry-plan`]: () => json(plan) }))
+    await flushPromises()
+    expect(sent).toEqual([])
+    expect(state.plan.value).toBeUndefined()
+    enabled.value = true
+    await flushPromises()
+    expect(state.plan.value?.askTasks).toBe(2)
+  })
+
+  it('asks nothing without a run', async () => {
+    const { sent } = mountComposable(() => useRetryPlan(ref(undefined), ref(true)), routes({}))
+    await flushPromises()
+    expect(sent).toEqual([])
+  })
+})
+
+describe('useRetryRun', () => {
+  const accepted = (tasks: number) => () => json({ run: promptRun({ status: 'running' }), tasks, estimatedCostUsd: 0.42 }, 202)
+
+  it('asks a run again, or one of its responses, and says how many and for what', async () => {
+    const bodies: unknown[] = []
+    const { state } = mountComposable(
+      useRetryRun,
+      routes({
+        [`POST /api/v1/admin/prompt-runs/${RUN_ID}/retry`]: async (request) => {
+          bodies.push(await request.json())
+          return accepted(bodies.length === 1 ? 3 : 1)()
+        },
+      }),
+    )
+    state.retry(RUN_ID)
+    await flushPromises()
+    expect(state.notice.value).toBe('Asking 3 answers again, for about $0.42.')
+    state.retry(RUN_ID, { promptId: 'p', provider: 'openai', mode: 'web' })
+    await flushPromises()
+    expect(state.notice.value).toBe('Asking one answer again, for about $0.42.')
+    expect(bodies).toEqual([{}, { promptId: 'p', provider: 'openai', mode: 'web' }])
+    expect(state.isRetrying.value).toBe(false)
+    expect(state.error.value).toBeNull()
+  })
+
+  it('reads a run again, and reports a failure of either', async () => {
+    const { state } = mountComposable(
+      useRetryRun,
+      routes({
+        [`POST /api/v1/admin/prompt-runs/${RUN_ID}/reread`]: accepted(2),
+        [`POST /api/v1/admin/prompt-runs/${RUN_ID}/retry`]: () => problem(409, 'Conflict', 'A run is running.'),
+      }),
+    )
+    state.reread(RUN_ID)
+    await flushPromises()
+    expect(state.notice.value).toBe('Reading 2 answers again, for about $0.42.')
+    state.retry(RUN_ID)
+    await flushPromises()
+    expect(state.error.value).toContain('A run is running.')
+  })
+
+  it('reports a failed reading', async () => {
+    const { state } = mountComposable(useRetryRun, routes({ [`POST /api/v1/admin/prompt-runs/${RUN_ID}/reread`]: () => problem(409, 'Conflict', 'Busy.') }))
+    state.reread(RUN_ID, { promptId: 'p', provider: 'openai', mode: 'web' })
+    await flushPromises()
+    expect(state.error.value).toContain('Busy.')
   })
 })

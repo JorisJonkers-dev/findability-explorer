@@ -59,3 +59,19 @@ export function scheduleWarning(
     setMonthly: weekly,
   }
 }
+
+/** One kind of work, the key that paid, and what it spent this month. */
+export type Spending = { kind: string; paidFrom: 'OpenRouter' | 'Anthropic'; usd: number }
+
+/**
+ * What each kind of work spent this month, as far as the API tells them apart: the Prompt runs on
+ * the OpenRouter key, the term review on the Anthropic key, and the rest of the Anthropic key's work.
+ */
+export function spendingByKind(promptRunsUsd: number, anthropicUsd: number, termReviewUsd: number): Spending[] {
+  const review = Math.min(termReviewUsd, anthropicUsd)
+  return [
+    { kind: 'Prompt runs', paidFrom: 'OpenRouter', usd: promptRunsUsd },
+    { kind: 'Term review', paidFrom: 'Anthropic', usd: review },
+    { kind: 'Scans, candidate checks, and reading responses', paidFrom: 'Anthropic', usd: Math.max(0, Math.round((anthropicUsd - review) * 100) / 100) },
+  ]
+}

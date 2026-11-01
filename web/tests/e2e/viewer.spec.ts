@@ -47,3 +47,11 @@ test('the term review is closed to an account that is no administrator', async (
   // The page still asks for its list, and the browser logs the API's 403 itself; that refusal is expected.
   consoleErrors.splice(0, consoleErrors.length, ...consoleErrors.filter((e) => !e.includes('403')))
 })
+
+test('Help shows an account that is no administrator no links into Manage', async ({ page }) => {
+  await page.goto('/help/stop')
+  const topic = page.locator('#help-stop')
+  await expect(topic).toContainText('An administrator does this in Manage.')
+  await expect(topic.getByRole('link')).toHaveCount(0)
+  await expectAccessible(page)
+})

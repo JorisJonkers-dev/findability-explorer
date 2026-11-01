@@ -71,7 +71,7 @@ type Service struct {
 
 	// review is the language model's part of the queue; nil until WithReviewer.
 	review *reviewer
-	// budget stops the review once the month's language-model tokens are spent; nil until WithBudget.
+	// budget stops the review once the month's Anthropic budget is spent; nil until WithBudget.
 	budget BudgetSpent
 }
 

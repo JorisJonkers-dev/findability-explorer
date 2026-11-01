@@ -175,6 +175,28 @@ func (r *Repository) SaveSetting(ctx context.Context, s domain.Setting, actor st
 	return nil
 }
 
+// Budget returns the Anthropic key's monthly budget, 0 before an admin sets one.
+func (r *Repository) Budget(ctx context.Context) (domain.Micros, error) {
+	m, err := r.db.Queries().GetLlmBudget(ctx)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("select the monthly budget: %w", err)
+	}
+	return domain.Micros(m), nil
+}
+
+// SaveBudget stores the Anthropic key's monthly budget.
+func (r *Repository) SaveBudget(ctx context.Context, m domain.Micros, actor string, at time.Time) error {
+	if err := r.db.Queries().SetLlmBudget(ctx, queries.SetLlmBudgetParams{
+		MonthlyBudgetMicros: int64(m), UpdatedBy: actor, UpdatedAt: at,
+	}); err != nil {
+		return fmt.Errorf("upsert the monthly budget: %w", err)
+	}
+	return nil
+}
+
 // AddEvent appends an event.
 func (r *Repository) AddEvent(ctx context.Context, e domain.Event) error {
 	ok := pgtype.Bool{}

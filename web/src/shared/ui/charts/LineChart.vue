@@ -19,7 +19,7 @@ const sx = (x: number): number => {
 }
 const sy = (y: number): number => H - PAD.b - (y / top.value) * (H - PAD.t - PAD.b)
 const path = computed(() => props.points.map((p, i) => `${i === 0 ? 'M' : 'L'}${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`).join(' '))
-const aria = computed(() => `${props.label ?? 'Line chart'}. ${props.points.map((p) => `${String(p.x)}: ${fmt(p.y)}`).join('. ')}.${props.target === undefined ? '' : ` Target ${fmt(props.target)}.`}`)
+const aria = computed(() => `${props.label ?? 'Line chart'}. ${props.points.map((p) => `${String(p.x)}: ${fmt(p.y)}`).join('. ')}.${props.target === undefined ? '' : ` Goal ${fmt(props.target)}.`}`)
 </script>
 
 <template>

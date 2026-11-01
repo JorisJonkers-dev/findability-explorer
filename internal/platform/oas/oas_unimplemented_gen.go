@@ -196,8 +196,9 @@ func (UnimplementedHandler) GetLlmKeyUsage(ctx context.Context, params GetLlmKey
 
 // GetLlmSettings implements getLlmSettings operation.
 //
-// Returns every credential (never a secret), the model product matching uses now, the token budget,
-// and the latest 50 changes and tests, newest first.
+// Returns every credential (never a secret), the model product matching uses now, the Anthropic key's
+// monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and
+// tests, newest first.
 //
 // GET /api/v1/admin/llm
 func (UnimplementedHandler) GetLlmSettings(ctx context.Context) (r GetLlmSettingsRes, _ error) {
@@ -490,6 +491,18 @@ func (UnimplementedHandler) SetPlanTargets(ctx context.Context, req *PlanTargets
 	return r, ht.ErrNotImplemented
 }
 
+// SetTermReview implements setTermReview operation.
+//
+// Administrators only. On, the language model reviews the waiting candidates by itself every ten
+// minutes; off, it reviews only when an administrator asks (startTermReview). A review that runs goes
+// on until it ends or is stopped. The review is on until it is first switched off. Records who
+// switched it. Returns the review's state.
+//
+// PUT /api/v1/admin/term-candidates/review/switch
+func (UnimplementedHandler) SetTermReview(ctx context.Context, req *TermReviewSwitch) (r SetTermReviewRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SplitCompetitorCandidate implements splitCompetitorCandidate operation.
 //
 // Administrators only. Takes a name Claude Haiku or a person merged into a candidate out of it again;
@@ -602,6 +615,28 @@ func (UnimplementedHandler) StopAnalysis(ctx context.Context, params StopAnalysi
 	return r, ht.ErrNotImplemented
 }
 
+// StopCandidateReview implements stopCandidateReview operation.
+//
+// Administrators only. Stops the review of the competitor candidates that runs, after the step it is
+// on (the merge, or a batch of checks), which it keeps, as it keeps every decision made before. The
+// review's state says it was stopped by hand (problem stopped). 404 when no review runs.
+//
+// POST /api/v1/admin/competitor-candidates/review/stop
+func (UnimplementedHandler) StopCandidateReview(ctx context.Context) (r StopCandidateReviewRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopCompetitorCheck implements stopCompetitorCheck operation.
+//
+// Administrators only. Stops the check of the companies on the competitor list that runs, after the
+// batch it is on, which it keeps, as it keeps every company archived before. The check's state says it
+// was stopped by hand (problem stopped). 404 when no check runs.
+//
+// POST /api/v1/admin/competitor-checks/stop
+func (UnimplementedHandler) StopCompetitorCheck(ctx context.Context) (r StopCompetitorCheckRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StopPromptRun implements stopPromptRun operation.
 //
 // Administrators only. Asks a running run to stop. The request is stored, so the instance running the
@@ -634,6 +669,18 @@ func (UnimplementedHandler) StopReadinessCheck(ctx context.Context) (r StopReadi
 //
 // POST /api/v1/admin/rescans/stop
 func (UnimplementedHandler) StopRescan(ctx context.Context) (r StopRescanRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopTermReview implements stopTermReview operation.
+//
+// Administrators only. Stops the review of the waiting candidates that runs, after the batch it asks
+// about, which it keeps, as it keeps every decision made before; a review asked for that has not
+// started does not start. The review's state says it was stopped by hand (problem stopped). Whether
+// the review is on does not change. 404 when no review runs or is asked for.
+//
+// POST /api/v1/admin/term-candidates/review/stop
+func (UnimplementedHandler) StopTermReview(ctx context.Context) (r StopTermReviewRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -688,6 +735,17 @@ func (UnimplementedHandler) UndoTermDecision(ctx context.Context, params UndoTer
 //
 // PATCH /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (r UpdateCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateLlmBudget implements updateLlmBudget operation.
+//
+// Administrators only. Sets what every job a Claude model does may spend in a month together, in
+// dollars, from one cent to $1,000, and records the change in the events. Work already spent past a
+// lower budget stops at its next step and keeps what it did.
+//
+// PATCH /api/v1/admin/llm/budget
+func (UnimplementedHandler) UpdateLlmBudget(ctx context.Context, req *LlmBudgetChange) (r UpdateLlmBudgetRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

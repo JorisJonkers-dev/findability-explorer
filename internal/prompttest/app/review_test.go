@@ -207,6 +207,8 @@ type model struct {
 	merged   int
 	checked  [][]string
 	dossiers []domain.Dossier
+	// definitions are the competitor definitions it checked against, one per request.
+	definitions []string
 	// free uses no tokens, as a provider that reports none.
 	free bool
 }
@@ -227,9 +229,10 @@ func (m *model) Merge(_ context.Context, cs []domain.Candidate, _ []domain.Direc
 	return m.clusters, m.usage(), m.mergeErr
 }
 
-func (m *model) Check(_ context.Context, ds []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error) {
+func (m *model) Check(_ context.Context, definition string, ds []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	m.definitions = append(m.definitions, definition)
 	var ids []string
 	var cs []domain.Candidate
 	for _, d := range ds {

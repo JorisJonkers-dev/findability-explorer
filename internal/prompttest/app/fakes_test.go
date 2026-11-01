@@ -29,6 +29,8 @@ type repo struct {
 	verdicts  []domain.CompanyVerdict
 	checks    []domain.ListCheck
 	usage     []domain.ReviewUsage
+	// definitions are the competitor definition's versions, newest first; version 2 to begin with.
+	definitions []domain.Definition
 	// sets are the published Prompt sets, version 2 unless a test publishes others.
 	sets   []domain.PublishedSet
 	failOn map[string]bool
@@ -47,7 +49,10 @@ type storedRun struct {
 }
 
 func newRepo(failOn ...string) *repo {
-	r := &repo{failOn: map[string]bool{}, heartbeatsLeft: -1, sets: []domain.PublishedSet{domaintest.Version2()}}
+	r := &repo{
+		failOn: map[string]bool{}, heartbeatsLeft: -1, sets: []domain.PublishedSet{domaintest.Version2()},
+		definitions: []domain.Definition{domaintest.Definition()},
+	}
 	for _, f := range failOn {
 		r.failOn[f] = true
 	}
@@ -419,6 +424,34 @@ func (r *repo) AnswerTexts(_ context.Context, ids []uuid.UUID) (map[uuid.UUID]st
 		}
 	}
 	return out, r.err("AnswerTexts")
+}
+
+func (r *repo) Definitions(context.Context) ([]domain.Definition, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.definitions), r.err("Definitions")
+}
+
+func (r *repo) AddDefinition(_ context.Context, text, by string, restoredFrom int, at time.Time) (domain.Definition, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("AddDefinition"); err != nil {
+		return domain.Definition{}, err
+	}
+	d := domain.Definition{Version: r.definitions[0].Version + 1, Text: text, SavedBy: by, SavedAt: at, RestoredFrom: restoredFrom}
+	r.definitions = append([]domain.Definition{d}, r.definitions...)
+	return d, nil
+}
+
+func (r *repo) CheckUsage(context.Context) (domain.ReviewUsage, int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var sum domain.ReviewUsage
+	for _, u := range r.usage {
+		sum.InputTokens += u.InputTokens
+		sum.OutputTokens += u.OutputTokens
+	}
+	return sum, len(r.verdicts) + len(r.checks), r.err("CheckUsage")
 }
 
 func (r *repo) SaveReviewUsage(_ context.Context, usage []domain.ReviewUsage) error {

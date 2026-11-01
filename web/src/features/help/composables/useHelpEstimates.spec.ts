@@ -13,7 +13,7 @@ describe('useHelpEstimates', () => {
     const { state, sent } = mountComposable(() => useHelpEstimates(ref(true)), routes({ 'GET /api/v1/admin/prompt-test': () => json(settings) }))
     await flushPromises()
     expect(sent).toEqual(['GET /api/v1/admin/prompt-test'])
-    expect(state.estimates.value).toEqual({ runUsd: 1.25, monthUsd: 5.4, cadence: 'weekly' })
+    expect(state.estimates.value).toEqual({ runUsd: 1.25, cadence: 'weekly' })
   })
 
   it('asks nothing for a reader, and gives no estimates', async () => {

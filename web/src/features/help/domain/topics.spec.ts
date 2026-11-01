@@ -54,7 +54,7 @@ describe('the Help topics', () => {
   })
 
   it("says the tool's words, never the old ones, in what it shows", () => {
-    const shown = TOPICS.flatMap((t) => [t.title, ...topicBody(t, { runUsd: 1, monthUsd: 1, cadence: 'monthly' }), ...t.links.map((l) => l.label)])
+    const shown = TOPICS.flatMap((t) => [t.title, ...topicBody(t, { runUsd: 1, cadence: 'monthly' }), ...t.links.map((l) => l.label)])
     expect(shown.filter(usesOldWord)).toEqual([])
     expect(GROUPS.map((g) => g.label).filter(usesOldWord)).toEqual([])
   })
@@ -78,10 +78,10 @@ describe('the Help topics', () => {
 
 describe('the figures in a topic', () => {
   it('come from the live estimates, and are left out without them', () => {
-    const estimates = { runUsd: 1.125, monthUsd: 4.5, cadence: 'weekly' as const }
+    const estimates = { runUsd: 1.125, cadence: 'weekly' as const }
     expect(topicBody(topic('prompt-test'), estimates)).toContain('A run costs about $1.13 today. It runs by itself once a week.')
     expect(topicBody(topic('prompt-test'), { ...estimates, cadence: 'monthly' })).toContain('A run costs about $1.13 today. It runs by itself once a month.')
-    expect(topicBody(topic('schedule'), estimates)).toContain('On the current schedule the Prompt test costs about $54.00 a year.')
+    expect(topicBody(topic('schedule'), estimates)).toContain('On the current schedule the Prompt test costs about $58.50 a year.')
     expect(topicBody(topic('costs'), estimates)[0]).toBe('A Prompt run costs about $1.13.')
     for (const id of ['prompt-test', 'schedule', 'costs']) {
       const without = topicBody(topic(id), undefined)

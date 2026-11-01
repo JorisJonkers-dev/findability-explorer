@@ -11,7 +11,7 @@ export function useHelpEstimates(isAdmin: Ref<boolean>) {
   const query = useQuery(computed(() => ({ ...getPromptTestSettingsOptions(), enabled: isAdmin.value })))
   const estimates = computed<Estimates | undefined>(() => {
     const s = query.data.value
-    return s ? { runUsd: s.prices.runUsd, monthUsd: s.prices.monthUsd, cadence: s.cadence } : undefined
+    return s ? { runUsd: s.prices.runUsd, cadence: s.cadence } : undefined
   })
   return { estimates }
 }

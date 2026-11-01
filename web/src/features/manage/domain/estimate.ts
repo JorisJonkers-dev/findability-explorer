@@ -38,13 +38,18 @@ export function confirmLine(usd: number, left: number): string {
 
 const RUNS_PER_YEAR: Record<PromptCadence, number> = { monthly: 12, weekly: 52 }
 
+/** What a year of runs costs on a schedule: a run times the runs it starts in a year. */
+export function yearUsd(runUsd: number, cadence: PromptCadence): number {
+  return runUsd * RUNS_PER_YEAR[cadence]
+}
+
 /** What the schedule costs: a run, a month, and a year. */
 export function scheduleCosts(
   prices: Pick<PromptPrices, 'runUsd' | 'runsPerMonth' | 'monthUsd'>,
   cadence: PromptCadence,
 ): { run: string; month: string; year: string; runsPerYear: number } {
   const runsPerYear = RUNS_PER_YEAR[cadence]
-  return { run: costLabel(prices.runUsd), month: costLabel(prices.monthUsd), year: costLabel(prices.runUsd * runsPerYear), runsPerYear }
+  return { run: costLabel(prices.runUsd), month: costLabel(prices.monthUsd), year: costLabel(yearUsd(prices.runUsd, cadence)), runsPerYear }
 }
 
 /** The warning when a month of runs costs more than the budget, and whether Set to monthly would help. */

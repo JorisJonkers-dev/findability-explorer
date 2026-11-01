@@ -1,6 +1,7 @@
 import type { PromptCadence } from '../../../infrastructure/api/types.gen'
 import { BUYER_INTENT } from '../../../shared/tiers'
 import { TIERS } from '../../../shared/vocabulary'
+import { yearUsd } from '../../manage/domain/estimate'
 import { costLabel } from '../../prompt-test/domain/results'
 
 /** The nine groups of Help, in the spec's order. */
@@ -39,7 +40,7 @@ export type Topic = {
 }
 
 /** The live estimates the figures in topics come from: the Prompt test's prices, for administrators. */
-export type Estimates = { runUsd: number; monthUsd: number; cadence: PromptCadence }
+export type Estimates = { runUsd: number; cadence: PromptCadence }
 
 const topic = (id: string, group: GroupId, title: string, body: readonly Sentence[], links: readonly TopicLink[], keywords: string): Topic => ({
   id,
@@ -536,7 +537,7 @@ function estimateSentence(kind: EstimateKind, e: Estimates): string {
     case 'run':
       return `A run costs about ${costLabel(e.runUsd)} today. It runs by itself once a ${e.cadence === 'weekly' ? 'week' : 'month'}.`
     case 'year':
-      return `On the current schedule the Prompt test costs about ${costLabel(e.monthUsd * 12)} a year.`
+      return `On the current schedule the Prompt test costs about ${costLabel(yearUsd(e.runUsd, e.cadence))} a year.`
     case 'cost':
       return `A Prompt run costs about ${costLabel(e.runUsd)}.`
   }

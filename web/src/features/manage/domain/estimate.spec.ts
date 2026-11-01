@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { budgetFraction, confirmLine, estimateLine, leftUsd, overBudgetLine, scheduleCosts, scheduleWarning } from './estimate'
+import { budgetFraction, confirmLine, estimateLine, leftUsd, overBudgetLine, scheduleCosts, scheduleWarning, yearUsd } from './estimate'
 
 describe('leftUsd and budgetFraction', () => {
   it('is what is left of the budget, never below nothing', () => {
@@ -46,5 +46,12 @@ describe('the schedule', () => {
       text: 'At this schedule the runs cost about $12.00 a month, which is more than the $10.00 monthly budget. Runs will stop when the budget is spent. Raise the budget, or take a provider off the list.',
       setMonthly: false,
     })
+  })
+})
+
+describe('yearUsd', () => {
+  it('is a run times the runs the schedule starts in a year', () => {
+    expect(yearUsd(1.12, 'monthly')).toBeCloseTo(13.44)
+    expect(yearUsd(1, 'weekly')).toBe(52)
   })
 })

@@ -177,6 +177,8 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
     ],
     scrollBehavior: (to, from, saved) => {
       if (saved) return saved
+      // Help brings the topic at its address into view itself.
+      if (to.name === 'help-topic') return false
       // Filters, a picked company and polling change the query, not the view; only a new view starts at the top.
       return to.matched[0]?.components?.default === from.matched[0]?.components?.default ? false : { top: 0 }
     },

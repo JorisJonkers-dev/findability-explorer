@@ -53,7 +53,7 @@ function saveBudget(): void {
   <ManageLayout
     title="Schedule"
     purpose="Choose how often the Prompt test runs by itself."
-    :back="{ to: '/manage/prompt-test', label: 'Prompt test' }"
+    :back="{ to: '/manage/prompt-test', label: 'Back to Prompt test' }"
     :results="{ to: '/ai-responses', label: 'See the AI responses' }"
   >
     <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>

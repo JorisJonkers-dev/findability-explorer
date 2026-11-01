@@ -64,7 +64,7 @@ export function useTermDecision() {
     }),
     accept: (candidateId: string, body: TermAcceptance) => {
       begin('accept')
-      accept.mutate({ path: { candidateId }, body }, { onSuccess: () => { done(`Added “${body.term}” to the terminology map.`) } })
+      accept.mutate({ path: { candidateId }, body }, { onSuccess: () => { done(`Added “${body.term}” to the search term list.`) } })
     },
     reject: (candidateId: string, phrase: string) => {
       begin('reject')

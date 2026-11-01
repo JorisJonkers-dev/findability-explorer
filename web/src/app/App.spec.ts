@@ -97,11 +97,11 @@ describe('the top bar', () => {
 
   it('opens a page per belt family, with a link back to Search terms', async () => {
     const { wrapper, router } = await mountApp(api, '/terms/families/open-spiral')
-    expect(wrapper.get('h1').text()).toBe('Open spiral')
+    expect(wrapper.get('h1').text()).toBe('Open spiral belts')
     expect(wrapper.text()).toContain('Back to Search terms')
     await router.push('/terms/families/nothing')
     await settle()
-    expect(wrapper.get('h1').text()).toBe('No such belt family.')
+    expect(wrapper.get('h1').text()).toBe('Belt family')
   })
 })
 

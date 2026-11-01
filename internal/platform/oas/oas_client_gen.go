@@ -149,6 +149,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/analyses/{analysisId}
 	GetAnalysis(ctx context.Context, params GetAnalysisParams) (GetAnalysisRes, error)
+	// GetClaudeStep invokes getClaudeStep operation.
+	//
+	// Administrators only. One step: the instructions the tool came with, every saved version (model and
+	// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
+	// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
+	// exist.
+	//
+	// GET /api/v1/admin/claude-steps/{stepId}
+	GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (GetClaudeStepRes, error)
 	// GetCompetitor invokes getCompetitor operation.
 	//
 	// Returns the company and its scans, newest first, each with its number.
@@ -291,6 +300,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/analyses
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
+	// ListClaudeSteps invokes listClaudeSteps operation.
+	//
+	// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
+	// and the version of the instructions it uses now and what one job of it costs with that model.
+	//
+	// GET /api/v1/admin/claude-steps
+	ListClaudeSteps(ctx context.Context) (ListClaudeStepsRes, error)
 	// ListCompetitorCandidates invokes listCompetitorCandidates operation.
 	//
 	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -392,6 +408,16 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/retry
 	RetryPromptRun(ctx context.Context, request *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error)
+	// SaveClaudeStepVersion invokes saveClaudeStepVersion operation.
+	//
+	// Administrators only. Saves the model and the instructions as the step's next version, which its next
+	// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
+	// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
+	// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
+	// that does not exist.
+	//
+	// POST /api/v1/admin/claude-steps/{stepId}/versions
+	SaveClaudeStepVersion(ctx context.Context, request *ClaudeStepChange, params SaveClaudeStepVersionParams) (SaveClaudeStepVersionRes, error)
 	// SaveCompetitorDefinition invokes saveCompetitorDefinition operation.
 	//
 	// Administrators only. Stores the text as a new version, which every check from now on is made
@@ -2597,6 +2623,140 @@ func (c *Client) sendGetAnalysis(ctx context.Context, params GetAnalysisParams) 
 	return result, nil
 }
 
+// GetClaudeStep invokes getClaudeStep operation.
+//
+// Administrators only. One step: the instructions the tool came with, every saved version (model and
+// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
+// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
+// exist.
+//
+// GET /api/v1/admin/claude-steps/{stepId}
+func (c *Client) GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (GetClaudeStepRes, error) {
+	res, err := c.sendGetClaudeStep(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetClaudeStep(ctx context.Context, params GetClaudeStepParams) (res GetClaudeStepRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getClaudeStep"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/claude-steps/{stepId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetClaudeStepOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/admin/claude-steps/"
+	{
+		// Encode "stepId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "stepId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(string(params.StepId)))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetClaudeStepOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetClaudeStepResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetCompetitor invokes getCompetitor operation.
 //
 // Returns the company and its scans, newest first, each with its number.
@@ -4714,6 +4874,120 @@ func (c *Client) sendListAnalyses(ctx context.Context, params ListAnalysesParams
 	return result, nil
 }
 
+// ListClaudeSteps invokes listClaudeSteps operation.
+//
+// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
+// and the version of the instructions it uses now and what one job of it costs with that model.
+//
+// GET /api/v1/admin/claude-steps
+func (c *Client) ListClaudeSteps(ctx context.Context) (ListClaudeStepsRes, error) {
+	res, err := c.sendListClaudeSteps(ctx)
+	return res, err
+}
+
+func (c *Client) sendListClaudeSteps(ctx context.Context) (res ListClaudeStepsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listClaudeSteps"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/claude-steps"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListClaudeStepsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/claude-steps"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListClaudeStepsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListClaudeStepsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListCompetitorCandidates invokes listCompetitorCandidates operation.
 //
 // Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -6332,6 +6606,145 @@ func (c *Client) sendRetryPromptRun(ctx context.Context, request *PromptRetryReq
 
 	stage = "DecodeResponse"
 	result, err := decodeRetryPromptRunResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SaveClaudeStepVersion invokes saveClaudeStepVersion operation.
+//
+// Administrators only. Saves the model and the instructions as the step's next version, which its next
+// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
+// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
+// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
+// that does not exist.
+//
+// POST /api/v1/admin/claude-steps/{stepId}/versions
+func (c *Client) SaveClaudeStepVersion(ctx context.Context, request *ClaudeStepChange, params SaveClaudeStepVersionParams) (SaveClaudeStepVersionRes, error) {
+	res, err := c.sendSaveClaudeStepVersion(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSaveClaudeStepVersion(ctx context.Context, request *ClaudeStepChange, params SaveClaudeStepVersionParams) (res SaveClaudeStepVersionRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("saveClaudeStepVersion"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/claude-steps/{stepId}/versions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SaveClaudeStepVersionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/claude-steps/"
+	{
+		// Encode "stepId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "stepId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(string(params.StepId)))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/versions"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSaveClaudeStepVersionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, SaveClaudeStepVersionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSaveClaudeStepVersionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

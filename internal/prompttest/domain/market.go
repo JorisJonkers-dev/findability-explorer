@@ -12,27 +12,8 @@ import (
 // beyond the name, and decides what it is sure about (ADR-0009): a sure competitor with a website
 // joins the competitor list, a sure non-competitor is dismissed, and the rest wait for a person.
 
-// TargetMarket is who Tribelt sells to and who competes with it: the definition every check of a
-// company is made against. It was researched from tribelt.nl's sector and product pages and the
-// client interviews. Changing it changes what the check means, so raise CheckVersion with it.
-const TargetMarket = `Tribelt B.V. in Haaksbergen, the Netherlands, is part of the Lesjöfors Group, as is its sister company De Spiraal. It designs and makes metal conveyor belts and their drive elements in its own factory.
-
-Its belts are eyelink (wire mesh) belts, open spiral belts (also called balanced weave), closed spiral belts (also called compound balanced), Tri-Flex stainless steel curve-going belts for spiral freezer and cooler towers, and chain, ladder, plate link, honeycomb, interlaced wire and woven baking belts. Its drive elements are sprockets, tube drums and cage drums.
-
-The belts are for process conveying, where a product is treated while it moves. That is heat in ovens, dryers, furnaces, heat treatment, sintering and glass firing, up to about 1,150 °C. It is cold in spiral freezers and coolers and in cryogenic freezing. It is wet and hygienic steps such as washing, blanching, frying, pasteurising and sterilisation tunnels. And it is heavy, sharp or abrasive loads in recycling, waste and water filtration.
-
-Its customers are industrial food producers of bread and pastry, meat, fish and dairy, potatoes, fruit and vegetables, and meat substitutes. They are the builders of ovens, freezers and lines and the system integrators who build these belts into their machines. And they are industry, such as recycling, waste treatment, water filtration, automotive paint and washing lines, solar and electronics firing furnaces, and pharma and medical sterilisation. Its markets are in Europe, above all the Netherlands and Germany, and English-speaking buyers.
-
-A competitor makes metal conveyor belts (wire, wire mesh, stainless steel link, metal chain or plate belts) for those process uses and sells them to those customers, or has them made and sells them under its own name. A maker anywhere in the world that sells into Europe counts.
-
-These are not competitors. A maker of rubber, textile or steel-cord belting for mining, quarrying and bulk handling is not. A maker of lightweight fabric, PVC or polyurethane belts for packaging, logistics and light conveying is not. A maker of conveyor systems, ovens or freezers that buys its belts rather than making them is a customer or partner, not a competitor. A distributor or trader that does not make belts is not. A maker of wire mesh for fencing, screening, sieving or architecture rather than conveyor belts is not. A directory, marketplace or publisher is not.
-
-A maker of plastic modular belts used in the same food lines, such as in spiral freezers, makes a substitute, not the same product. It is not a competitor unless it also makes metal process belts, and the reason says it makes plastic modular belts.`
-
-// CheckVersion is the version of the check: of TargetMarket and of the evidence the model reads.
-// A waiting company whose check has an older version is checked again. Version 1 was the check of
-// ADR-0006, by name and website alone.
-const CheckVersion = 2
+// The definition every check is made against is the competitor definition, stored as versions
+// (Definition); a check records the version it was made against.
 
 // ModelDecider is who a decision by the language model names, as for its merges.
 const ModelDecider = ModelMerger

@@ -34,11 +34,11 @@ func ids(cs []domain.DirectoryCompany) []string {
 // Only the competitors on the list that nobody kept are checked, each once per check version.
 func TestToCheck(t *testing.T) {
 	checks := []domain.ListCheck{
-		{CompanyID: "wire-belt", Version: domain.CheckVersion},
-		{CompanyID: "old", Version: domain.CheckVersion - 1},
-		{CompanyID: "kept", Version: domain.CheckVersion - 1},
+		{CompanyID: "wire-belt", Version: checkVersion},
+		{CompanyID: "old", Version: checkVersion - 1},
+		{CompanyID: "kept", Version: checkVersion - 1},
 	}
-	if got := ids(domain.ToCheck(listed(), checks)); !slices.Equal(got, []string{"fenner", "old"}) {
+	if got := ids(domain.ToCheck(listed(), checks, checkVersion)); !slices.Equal(got, []string{"fenner", "old"}) {
 		t.Fatalf("ToCheck = %v", got)
 	}
 }
@@ -47,15 +47,15 @@ func TestToCheck(t *testing.T) {
 // checks again.
 func TestShownChecks(t *testing.T) {
 	checks := []domain.ListCheck{
-		{CompanyID: "tribelt", Version: domain.CheckVersion},
-		{CompanyID: "wire-belt", Version: domain.CheckVersion},
-		{CompanyID: "old", Version: domain.CheckVersion - 1},
-		{CompanyID: "gone", Version: domain.CheckVersion - 1, Sure: true},
-		{CompanyID: "kept", Version: domain.CheckVersion - 1},
-		{CompanyID: "unknown", Version: domain.CheckVersion},
+		{CompanyID: "tribelt", Version: checkVersion},
+		{CompanyID: "wire-belt", Version: checkVersion},
+		{CompanyID: "old", Version: checkVersion - 1},
+		{CompanyID: "gone", Version: checkVersion - 1, Sure: true},
+		{CompanyID: "kept", Version: checkVersion - 1},
+		{CompanyID: "unknown", Version: checkVersion},
 	}
 	var got []string
-	for _, c := range domain.ShownChecks(listed(), checks) {
+	for _, c := range domain.ShownChecks(listed(), checks, checkVersion) {
 		got = append(got, c.CompanyID)
 	}
 	if !slices.Equal(got, []string{"wire-belt", "gone", "kept"}) {
@@ -95,9 +95,9 @@ func TestAsCandidateAndBack(t *testing.T) {
 		t.Fatalf("AsCandidate = %+v", c)
 	}
 	at := time.Date(2026, 10, 27, 9, 0, 0, 0, time.UTC)
-	verdicts := domain.CompleteVerdicts([]domain.Candidate{c}, []domain.CompanyVerdict{{CandidateID: "wire-belt", Sure: true, Reason: "Makes wire belts."}}, "haiku", at)
+	verdicts := domain.CompleteVerdicts([]domain.Candidate{c}, []domain.CompanyVerdict{{CandidateID: "wire-belt", Sure: true, Reason: "Makes wire belts."}}, "haiku", checkVersion, at)
 	got := domain.ListChecksOf(verdicts)
-	want := domain.ListCheck{CompanyID: "wire-belt", Sure: true, Reason: "Makes wire belts.", Model: "haiku", Version: domain.CheckVersion, At: at}
+	want := domain.ListCheck{CompanyID: "wire-belt", Sure: true, Reason: "Makes wire belts.", Model: "haiku", Version: checkVersion, At: at}
 	if len(got) != 1 || got[0] != want {
 		t.Fatalf("ListChecksOf = %+v", got)
 	}

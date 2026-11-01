@@ -59,6 +59,7 @@ test('the other Manage pages open, each in its place in the menu', async ({ page
   for (const [path, title] of [
     ['/manage/competitors/candidates', 'Candidates'],
     ['/manage/competitors/check', 'Check the list'],
+    ['/manage/competitors/definition', 'Competitor definition'],
     ['/manage/terms', 'Search term list'],
     ['/manage/terms/review', 'Term review'],
     ['/manage/terms/edit', 'Add or remove terms'],
@@ -86,4 +87,26 @@ test('no Manage page scrolls sideways on a phone', async ({ page }) => {
     const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     expect(wide, path).toBeLessThanOrEqual(0)
   }
+})
+
+test('an administrator edits the competitor definition, which saving does not check against', async ({ page }) => {
+  // The version the code held is the first stored one. Saving is answered here, so this spec stores
+  // no version in the shared database and leaves the definition in use as it was.
+  let saved: unknown = null
+  await page.route('**/api/v1/admin/competitor-definition', async (route) => {
+    if (route.request().method() !== 'PUT') return route.fallback()
+    saved = route.request().postDataJSON()
+    const current = { version: 3, text: 'Makers of metal process belts compete.', savedAt: '2026-11-01T10:00:00Z', savedBy: 'e2e' }
+    return route.fulfill({ json: { current, versions: [current], outdatedCompetitors: 0, outdatedCandidates: 0, recheckCostUsd: 0 } })
+  })
+  await page.goto('/manage/competitors/definition')
+  await expect(page.getByRole('heading', { level: 1, name: 'Competitor definition' })).toBeVisible()
+  const box = page.getByLabel('Definition', { exact: true })
+  await expect(box).toHaveValue(/A competitor makes metal conveyor belts/)
+  await expect(page.getByRole('list', { name: 'Versions of the definition' })).toContainText('Version 2')
+  await expectAccessible(page)
+  await box.fill('Makers of metal process belts compete.')
+  await page.getByRole('button', { name: 'Save as a new version' }).click()
+  await expect(page.getByText('The definition is saved as version 3. Nothing was rechecked yet.')).toBeVisible()
+  expect(saved).toEqual({ text: 'Makers of metal process belts compete.' })
 })

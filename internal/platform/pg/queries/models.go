@@ -175,6 +175,14 @@ type CompanyOverride struct {
 	KeptAt     pgtype.Timestamptz
 }
 
+type CompetitorDefinition struct {
+	Version      int64
+	Text         string
+	SavedAt      time.Time
+	SavedBy      string
+	RestoredFrom pgtype.Int8
+}
+
 type HandTerm struct {
 	Term     string
 	Language string

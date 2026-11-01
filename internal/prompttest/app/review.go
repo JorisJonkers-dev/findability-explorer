@@ -17,7 +17,7 @@ import (
 // The language model's review of the competitor candidates (ADR-0006, ADR-0009): Claude Haiku, on
 // an Anthropic key, first finds which candidates are one company, or a company on the list, and
 // merges them; then it checks each waiting company it has not checked with the current
-// domain.CheckVersion, a batch at a time, against Tribelt's target market, from what the answers
+// competitor definition in use, a batch at a time, against that definition, from what the answers
 // say of it and its home page. A sure verdict decides the company; an unsure one leaves it to a
 // person.
 
@@ -219,6 +219,10 @@ func (s *Service) Review(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	def, err := s.definition(ctx)
+	if err != nil {
+		return err
+	}
 	if err := s.goOn(ctx, &s.review.candidates); err != nil {
 		return err
 	}
@@ -241,7 +245,7 @@ func (s *Service) Review(ctx context.Context) error {
 		}
 		batch := unchecked[:min(CheckBatch, len(unchecked))]
 		unchecked = unchecked[len(batch):]
-		if err := s.check(ctx, r, model, batch); err != nil {
+		if err := s.check(ctx, r, model, def, batch); err != nil {
 			return err
 		}
 		s.review.candidates.did(len(batch))
@@ -287,17 +291,17 @@ func (s *Service) tokensLeft(ctx context.Context) error {
 
 // check has the model check batch, stores its verdicts and what asking used, and records the
 // decisions its sure verdicts make.
-func (s *Service) check(ctx context.Context, r Reviewer, model string, batch []domain.Candidate) error {
+func (s *Service) check(ctx context.Context, r Reviewer, model string, def domain.Definition, batch []domain.Candidate) error {
 	dossiers, err := s.dossiers(ctx, batch)
 	if err != nil {
 		return err
 	}
-	answered, usage, err := r.Check(ctx, dossiers)
+	answered, usage, err := r.Check(ctx, def.Text, dossiers)
 	s.review.candidates.used(usage)
 	if saveErr := s.saveUsage(ctx, usage); err != nil || saveErr != nil {
 		return errors.Join(wrap("check the candidates", err), saveErr)
 	}
-	verdicts := domain.CompleteVerdicts(batch, answered, model, s.now())
+	verdicts := domain.CompleteVerdicts(batch, answered, model, def.Version, s.now())
 	if err := s.repo.SaveCompanyVerdicts(ctx, verdicts); err != nil {
 		return fmt.Errorf("store the checks: %w", err)
 	}

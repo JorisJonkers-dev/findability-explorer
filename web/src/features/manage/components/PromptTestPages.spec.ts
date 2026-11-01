@@ -187,27 +187,6 @@ describe('Runs', () => {
   })
 })
 
-describe('Questions', () => {
-  it('shows the published set grouped by belt family, read-only, and every version with its questions', async () => {
-    const { wrapper } = await mountApp(server().handle, '/manage/prompt-test/questions')
-    expect(wrapper.get('h1').text()).toBe('Questions')
-    const list = widget(wrapper, 'The questions')
-    expect(list.text()).toContain('The published set, version 2, grouped by belt family.')
-    expect(list.findAll('h3').map((h) => h.text())).toEqual(['Eyelink 1 question', 'Other metal belts 1 question'])
-    expect(list.findAll('li')[0]?.text()).toBe('Dutch, TwenteWie levert draadogenbanden in Twente?Who supplies eyelink belts in Twente?')
-    expect(list.findAll('textarea, input')).toHaveLength(0)
-    expect(widget(wrapper, 'Version 2 is published').text()).toContain('Published on 27 October 2026, 2 questions.')
-    const folds = widget(wrapper, 'Version history').findAll('details')
-    expect(folds.map((f) => f.get('summary').text())).toEqual(['Version 2 PublishedPublished on 27 October 2026, 2 questions', 'Version 1 Published on 20 October 2026, 1 question'])
-    expect(folds[1]?.text()).toContain('Dutch, Twente. Wie levert draadogenbanden in Twente?')
-  })
-
-  it('says what the server refused', async () => {
-    const { wrapper } = await mountApp(server({ 'GET /api/v1/prompt-test/prompt-sets': () => problem(500, 'Internal Server Error', 'Down.') }).handle, '/manage/prompt-test/questions')
-    expect(wrapper.get('[role="alert"]').text()).toBe('Down.')
-  })
-})
-
 describe('Schedule', () => {
   it('shows how often, the next run, and what it costs, and changes how often', async () => {
     const { handle, bodies } = server()

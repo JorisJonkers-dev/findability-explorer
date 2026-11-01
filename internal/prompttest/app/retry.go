@@ -20,9 +20,9 @@ type Retry struct {
 
 var (
 	// ErrNothingFailed is returned when the run, or the one question named, has no failed answer.
-	ErrNothingFailed = fmt.Errorf("%w: no answer to ask again", domain.ErrInvalid)
+	ErrNothingFailed = fmt.Errorf("%w: no response to ask again", domain.ErrInvalid)
 	// ErrNothingUnread is returned when the run, or the one answer named, has no failed reading.
-	ErrNothingUnread = fmt.Errorf("%w: no answer to read again", domain.ErrInvalid)
+	ErrNothingUnread = fmt.Errorf("%w: no response to read again", domain.ErrInvalid)
 )
 
 // Plan is what asking a run again would do: the failed and missing answers it would ask and what

@@ -59,7 +59,7 @@ func MaxOf(t Target) (float64, bool) {
 // ReadinessChecks in halves, or a count of terms.
 func CheckTarget(t Target, v float64) (float64, error) {
 	if !slices.Contains(Targets(), t) {
-		return 0, fmt.Errorf("%w: no target is called %q", ErrInvalid, t)
+		return 0, fmt.Errorf("%w: no goal is called %q", ErrInvalid, t)
 	}
 	ok := false
 	switch t {
@@ -71,7 +71,7 @@ func CheckTarget(t Target, v float64) (float64, error) {
 		ok = v > 0 && v <= maxCountTarget && v == float64(int(v))
 	}
 	if !ok {
-		return 0, fmt.Errorf("%w: %v is no target for %s", ErrInvalid, v, t)
+		return 0, fmt.Errorf("%w: %v is no goal for %s", ErrInvalid, v, t)
 	}
 	return v, nil
 }

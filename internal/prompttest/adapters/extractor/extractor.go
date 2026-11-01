@@ -80,7 +80,7 @@ func Parse(text string) (domain.Extracted, error) {
 		LeftOut []string `json:"leftOut"`
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), &raw); err != nil {
-		return domain.Extracted{}, fmt.Errorf("the extractor's answer is not the format asked: %w", err)
+		return domain.Extracted{}, fmt.Errorf("the extractor's response is not the format asked: %w", err)
 	}
 	x := domain.Extracted{NamesTribelt: raw.NamesTribelt, CitesTribelt: raw.CitesTribelt}
 	for _, co := range raw.Companies[:min(len(raw.Companies), maxCompanies)] {

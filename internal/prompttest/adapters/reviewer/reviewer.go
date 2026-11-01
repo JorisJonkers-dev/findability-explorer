@@ -136,12 +136,12 @@ func dossier(ref string, d domain.Dossier) string {
 		fmt.Fprintf(&b, "Website: %s\n", c.Website)
 	}
 	if c.Answers == 0 {
-		b.WriteString("Not named in the answers.\n") // a company on the list the research found
+		b.WriteString("Not named in the responses.\n") // a company on the list the research found
 	} else {
-		fmt.Fprintf(&b, "Named in %d answers.\n", c.Answers)
+		fmt.Fprintf(&b, "Named in %d responses.\n", c.Answers)
 	}
 	if len(d.Snippets) > 0 {
-		b.WriteString("What the answers say:\n")
+		b.WriteString("What the responses say:\n")
 		for _, s := range d.Snippets {
 			fmt.Fprintf(&b, "- %s\n", clip(s, maxSnippet))
 		}
@@ -184,7 +184,7 @@ func line(c domain.Candidate) string {
 	if len(c.Sites) > 0 {
 		fmt.Fprintf(&b, "; websites %s", strings.Join(c.Sites, ", "))
 	}
-	fmt.Fprintf(&b, "; named in %d answers\n", c.Answers)
+	fmt.Fprintf(&b, "; named in %d responses\n", c.Answers)
 	return b.String()
 }
 
@@ -198,7 +198,7 @@ func (r *Reviewer) ask(ctx context.Context, step Step, user, schemaName string, 
 		return usage, err
 	}
 	if err := json.Unmarshal([]byte(unfence(resp.Text)), out); err != nil {
-		return usage, fmt.Errorf("read the model's answer: %w", err)
+		return usage, fmt.Errorf("read the model's response: %w", err)
 	}
 	return usage, nil
 }

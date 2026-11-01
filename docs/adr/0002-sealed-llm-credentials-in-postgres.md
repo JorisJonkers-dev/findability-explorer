@@ -36,3 +36,8 @@ and records them (`matchingModel`), so a change applies from the next analysis o
   derives its own key with its own HKDF info string.
 - The monthly token budget (`LLM_MONTHLY_TOKENS`) counts every provider's tokens alike.
 - The process needs egress to `openrouter.ai` and `api.mistral.ai` besides `api.anthropic.com`.
+
+## Amendment, 1 November 2026: a budget in dollars
+
+`LLM_MONTHLY_TOKENS` is no longer read. The Anthropic key has a monthly budget in dollars, and the
+OpenRouter key's is the Prompt test's (ADR-0019).

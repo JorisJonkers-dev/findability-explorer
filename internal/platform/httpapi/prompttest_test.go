@@ -232,7 +232,7 @@ func (p *promptTests) DecideMany(_ context.Context, actor string, status domain.
 	p.actor, p.decided = actor, status
 	return []app.Decided{
 		{ID: ids[0], Name: "Ashworth", Outcome: app.OutcomeDone},
-		{ID: "3a7bd3e2360a9f02", Outcome: app.OutcomeSkipped, Reason: "the answers gave no website for it"},
+		{ID: "3a7bd3e2360a9f02", Outcome: app.OutcomeSkipped, Reason: "the responses gave no website for it"},
 	}, p.decideErr
 }
 
@@ -494,7 +494,7 @@ func TestCandidatesFoldReviewAndAreDecidedTogether(t *testing.T) {
 	r = callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"add","ids":["3a7bd3e2360a9f01","3a7bd3e2360a9f02"]}`, "admin")
 	items := r.body["items"].([]any)
 	if r.code != http.StatusOK || a.prompts().decided != domain.CandidateAdded || len(items) != 2 ||
-		items[0].(map[string]any)["outcome"] != "done" || items[1].(map[string]any)["reason"] != "The answers gave no website for it." {
+		items[0].(map[string]any)["outcome"] != "done" || items[1].(map[string]any)["reason"] != "The responses gave no website for it." {
 		t.Fatalf("decide = %d %v", r.code, r.body)
 	}
 	if r := callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"dismiss","ids":["3a7bd3e2360a9f01"]}`, "admin"); r.code != http.StatusOK || a.prompts().decided != domain.CandidateDismissed {

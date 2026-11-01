@@ -427,3 +427,43 @@ func (q *Queries) UntickPlanImprovement(ctx context.Context, improvementID strin
 	_, err := q.db.Exec(ctx, untickPlanImprovement, improvementID)
 	return err
 }
+
+const updateRecommendation = `-- name: UpdateRecommendation :execrows
+UPDATE recommendations
+SET title = $1, where_url = $2, where_note = $3, why = $4, steps = $5, done_when = $6,
+    benefit = $7, effort = $8, edited_at = $9
+WHERE id = $10
+`
+
+type UpdateRecommendationParams struct {
+	Title     string
+	WhereUrl  string
+	WhereNote string
+	Why       string
+	Steps     []string
+	DoneWhen  string
+	Benefit   int64
+	Effort    int64
+	EditedAt  pgtype.Timestamptz
+	ID        string
+}
+
+// An administrator's wording and scores of a recommendation a run wrote.
+func (q *Queries) UpdateRecommendation(ctx context.Context, arg UpdateRecommendationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateRecommendation,
+		arg.Title,
+		arg.WhereUrl,
+		arg.WhereNote,
+		arg.Why,
+		arg.Steps,
+		arg.DoneWhen,
+		arg.Benefit,
+		arg.Effort,
+		arg.EditedAt,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

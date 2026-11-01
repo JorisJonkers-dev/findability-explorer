@@ -49,6 +49,10 @@ type DismissCompetitorCandidateRes interface {
 	dismissCompetitorCandidateRes()
 }
 
+type EditRecommendationRes interface {
+	editRecommendationRes()
+}
+
 type GetActivityRes interface {
 	getActivityRes()
 }

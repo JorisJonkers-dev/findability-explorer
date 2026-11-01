@@ -102,6 +102,8 @@ type inputs struct {
 	scanAt time.Time
 	run    *domain.Run
 	terms  int
+	// done are the facts the rules that decide when a recommendation is done read.
+	done domain.DoneFacts
 }
 
 func (s *Service) gather(ctx context.Context) (inputs, error) {
@@ -118,7 +120,10 @@ func (s *Service) gather(ctx context.Context) (inputs, error) {
 		return inputs{}, fmt.Errorf("tribelt.nl's pages: %w", err)
 	}
 	gaps := domain.Gaps(domain.GapInputs{Companies: companies, Run: f.Run, Terms: terms, Tribelt: tribeltReadiness(f), Pages: pages})
-	return inputs{gaps: gaps, pages: pages, scanAt: scanAt, run: f.Run, terms: len(terms.Terms)}, nil
+	return inputs{
+		gaps: gaps, pages: pages, scanAt: scanAt, run: f.Run, terms: len(terms.Terms),
+		done: domain.DoneFacts{Pages: pages, Run: f.Run, Tribelt: tribeltReadiness(f)},
+	}, nil
 }
 
 // RecommendationRuns is what starting a run would do and cost, and the past runs.
@@ -140,7 +145,7 @@ func (s *Service) RecommendationRuns(ctx context.Context) (RecRuns, error) {
 		return RecRuns{}, fmt.Errorf("the language model: %w", err)
 	}
 	out := RecRuns{
-		Running: s.recRunning(), NoKey: writer == nil, Model: model, Replaces: domain.Replaces(existing), Stale: domain.Stale(in.scanAt, in.run),
+		Running: s.recRunning(), NoKey: writer == nil, Model: model, Replaces: domain.Replaces(domain.KeepDone(existing, in.done, s.now())), Stale: domain.Stale(in.scanAt, in.run),
 		ScanAt: in.scanAt, Terms: in.terms, Gaps: len(in.gaps), Estimate: domain.EstimateRun(in.gaps, in.pages, WriteBatch, model), Runs: runs,
 	}
 	if in.run != nil {
@@ -282,6 +287,7 @@ func (s *Service) write(ctx context.Context, writer Writer, run domain.RecRun) (
 	if err != nil {
 		return nil, used, done, len(in.gaps), fmt.Errorf("the written recommendations: %w", err)
 	}
-	r := domain.Replace(existing, domain.Place(in.gaps, written, in.pages, run.ID, s.now(), s.newID))
+	// What the rules find done is kept, as what an administrator ticked off or edited is.
+	r := domain.Replace(domain.KeepDone(existing, in.done, s.now()), domain.Place(in.gaps, written, in.pages, run.ID, s.now(), s.newID))
 	return &r, used, done, len(in.gaps), nil
 }

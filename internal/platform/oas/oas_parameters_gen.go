@@ -606,6 +606,92 @@ func decodeDismissCompetitorCandidateParams(args [1]string, argsEscaped bool, r 
 	return params, nil
 }
 
+// EditRecommendationParams is parameters of editRecommendation operation.
+type EditRecommendationParams struct {
+	// The recommendation's id.
+	RecommendationId string
+}
+
+func unpackEditRecommendationParams(packed middleware.Parameters) (params EditRecommendationParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "recommendationId",
+			In:   "path",
+		}
+		params.RecommendationId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeEditRecommendationParams(args [1]string, argsEscaped bool, r *http.Request) (params EditRecommendationParams, _ error) {
+	// Decode path: recommendationId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "recommendationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.RecommendationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     60,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^[a-z0-9]+(-[a-z0-9]+)*$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.RecommendationId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "recommendationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetAnalysisParams is parameters of getAnalysis operation.
 type GetAnalysisParams struct {
 	// The analysis's id.

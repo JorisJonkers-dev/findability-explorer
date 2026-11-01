@@ -217,11 +217,11 @@ func (c *insightCases) Plan(context.Context) (app.Plan, error) {
 	if c.written {
 		w := domain.Recommendation{
 			ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", RunID: "run", Gap: domain.Gap{Kind: domain.GapListing, Specifics: []string{"Cited twice."}},
-			Title: "Get listed", WhereNote: domain.ForTheAgency, Why: "Because.", Steps: []string{"Ask."}, DoneWhen: "Listed.", Benefit: 3, Effort: 3, ScoreReason: "Moved.",
+			Title: "Get listed", WhereNote: domain.ForTheAgency, EditedAt: time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC), Why: "Because.", Steps: []string{"Ask."}, DoneWhen: "Listed.", Benefit: 3, Effort: 3, ScoreReason: "Moved.",
 		}
 		placed := w
-		placed.Where, placed.WhereNote, placed.ScoreReason = "https://www.tribelt.nl/", "", ""
-		p.Items = append(p.Items, w.Item("run", nil), placed.Item("other", nil))
+		placed.Where, placed.WhereNote, placed.ScoreReason, placed.EditedAt = "https://www.tribelt.nl/", "", "", time.Time{}
+		p.Items = append(p.Items, w.Item("run", nil, domain.DoneFacts{}), placed.Item("other", nil, domain.DoneFacts{}))
 	}
 	return p, c.planErr
 }

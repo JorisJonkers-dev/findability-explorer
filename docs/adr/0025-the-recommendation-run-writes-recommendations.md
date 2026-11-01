@@ -36,5 +36,22 @@ Manage, Recommendations; nothing starts it on its own.
   tokens (`recommendation_runs`, migration 00044), and in the work journal for Activity. Its tokens
   count towards the Anthropic budget.
 - **The plan lists both**, best value first. Each recommendation says its kind and where it goes, and
-  one the newest run wrote is marked New. Until the rules that decide when a written recommendation
-  is done exist, an administrator ticks it off by hand.
+  one the newest run wrote is marked New.
+
+**Rules decide when a written recommendation is done, never a model** (`DoneByRule` in
+`internal/insight/domain`), from the newest scan of tribelt.nl and the newest Prompt run, each time
+the plan is read:
+
+- **A search term** is done when that scan finds it on the page the recommendation names, or on any
+  page when it names none (folded as every search compares text).
+- **A page** is done when tribelt.nl has a page about the belt family in the language.
+- **A listing** is done when a web response that cites the site names Tribelt or links to tribelt.nl.
+- **An AI readiness check** is done when it passes: every AI crawler let in, Organization markup,
+  pages in Dutch, German and English.
+- **A fact sheet correction** no scan can see, so it alone is ticked off by hand, with Undo; a tick
+  on one a rule decides is refused.
+
+A run keeps what the rules find done, as it keeps what was ticked off. **An administrator can edit a
+written recommendation's wording, page and scores** (`editRecommendation`); the edit records when it
+was made, and an edited one is kept when the next run replaces the others. A hand-written one stays
+in code and cannot be edited.

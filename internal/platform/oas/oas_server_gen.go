@@ -100,6 +100,15 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss
 	DismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (DismissCompetitorCandidateRes, error)
+	// EditRecommendation implements editRecommendation operation.
+	//
+	// Administrators only. Stores the wording and scores of a recommendation a Recommendation run wrote,
+	// and when it was edited; an edited one is kept when the next run replaces the others. A blank page
+	// leaves it for the web agency to place. 404 for an unknown recommendation; 422 for one written by
+	// hand, which stays in code, or for an edit out of bounds.
+	//
+	// PUT /api/v1/admin/recommendations/{recommendationId}
+	EditRecommendation(ctx context.Context, req *RecommendationEdit, params EditRecommendationParams) (EditRecommendationRes, error)
 	// GetActivity implements getActivity operation.
 	//
 	// Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness
@@ -664,7 +673,8 @@ type Handler interface {
 	// TickImprovement implements tickImprovement operation.
 	//
 	// Administrators only. Marks an improvement no scan can check as done, recording who and when, or as
-	// not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+	// not done again; a recommendation a run wrote too, when no rule decides it (a fact sheet correction).
+	// 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
 	//
 	// PUT /api/v1/admin/plan/improvements/{improvementId}
 	TickImprovement(ctx context.Context, req *ImprovementTick, params TickImprovementParams) (TickImprovementRes, error)

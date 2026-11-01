@@ -22,6 +22,7 @@ const { runs, isStarting, isStopping, notice, error, start, stop } = useRecommen
 const items = computed(() => plan.value?.improvements ?? [])
 const open = computed(() => items.value.filter((i) => !i.done).length)
 const waiting = computed(() => toTickOff(items.value).length)
+const generated = computed(() => items.value.filter((i) => i.generated).length)
 const past = computed(() => (runs.value?.runs ?? []).map((r) => ({ id: r.id, ...runRow(r) })))
 </script>
 
@@ -98,6 +99,14 @@ const past = computed(() => (runs.value?.runs ?? []).map((r) => ({ id: r.id, ...
         to="/manage/recommendations/tick-off"
         link="Tick them off"
         :figures="[{ value: String(waiting), label: 'waiting' }]"
+        :span="6"
+      />
+      <IndexCard
+        title="Edit a recommendation"
+        text="The generated ones, with their wording and scores. An edited one is kept when the next run replaces the others."
+        to="/manage/recommendations/edit"
+        link="Edit them"
+        :figures="[{ value: String(generated), label: 'generated' }]"
         :span="6"
       />
       <IndexCard title="Goals" text="The five goals Tribelt is measured against." to="/manage/recommendations/goals" link="Change the goals" :span="6" />

@@ -1,0 +1,159 @@
+import { describe, expect, it } from 'vitest'
+import { me, promptResults, promptRun, readinessTable, RUN_ID, summary } from '../../../testing/fixtures'
+import { manageCounts } from '../../../testing/manageFixtures'
+import { type Handler, json, mountApp, routes, settle } from '../../../testing/mountApp'
+import { llmSettings, storedCredential } from '../../settings/fixtures'
+import { promptSettings } from '../fixtures'
+
+const SCAN = '00000000-0000-4000-9000-000000000001'
+const QUEUED = '00000000-0000-4000-9000-000000000002'
+const DONE = '00000000-0000-4000-9000-000000000003'
+const STOPPED = '00000000-0000-4000-8000-000000000009'
+const HAND = 'Stopped by hand. The responses so far are kept, and a retry finishes the run.'
+
+function server(extra: Record<string, Handler> = {}) {
+  const sent: string[] = []
+  const handle = routes({
+    'GET /api/v1/me': () => json(me({ isAdmin: true })),
+    ...manageCounts({ terms: 3, candidates: 1 }),
+    'GET /api/v1/admin/prompt-test': () => json(promptSettings()),
+    'GET /api/v1/admin/llm': () => json(llmSettings()),
+    'GET /api/v1/ai-readiness': () => json(readinessTable([], { running: true, checked: 12, total: 48 })),
+    'GET /api/v1/prompt-test': () =>
+      json(
+        promptResults({
+          runs: [
+            promptRun({ status: 'running', answered: 90, failed: 10, tasks: 400, costUsd: 0.1, finishedAt: undefined, startedAt: '2026-11-01T08:29:00Z' }),
+            promptRun({ id: STOPPED, status: 'stopped', failure: HAND, answered: 40, tasks: 200, costUsd: 0.05, finishedAt: '2026-10-28T09:37:00Z' }),
+          ],
+        }),
+      ),
+    'GET /api/v1/analyses': () =>
+      json({
+        items: [
+          summary({ id: SCAN, url: 'https://www.twentebelt.com/', status: 'running', pagesCrawled: 15, maxPages: 60 }),
+          summary({ id: QUEUED, status: 'queued' }),
+          summary({ id: DONE, url: 'https://www.tribelt.nl/', status: 'done', pagesCrawled: 60, finishedAt: '2026-10-27T09:47:00Z' }),
+        ],
+      }),
+    [`POST /api/v1/admin/prompt-runs/${RUN_ID}/stop`]: () => (sent.push('stop run'), new Response(null, { status: 204 })),
+    'DELETE /api/v1/admin/analyses/queue': () => (sent.push('empty queue'), new Response(null, { status: 204 })),
+    ...extra,
+  })
+  return { handle, sent }
+}
+
+const widget = (wrapper: Awaited<ReturnType<typeof mountApp>>['wrapper'], title: string) => {
+  const heading = wrapper.findAll('section > div > h2').find((h) => h.text() === title)
+  if (!heading) throw new Error(`no widget ${title}`)
+  return wrapper.get(`section[aria-labelledby="${heading.attributes('id') ?? ''}"]`)
+}
+
+describe('Activity', () => {
+  it('opens Manage with its title, purpose, and the way to the Overview', async () => {
+    const { wrapper } = await mountApp(server().handle, '/manage')
+    expect(wrapper.get('h1').text()).toBe('Activity')
+    expect(wrapper.get('[data-part="purpose"]').text()).toBe('See what is running, what comes next, and what is waiting for you.')
+    expect(wrapper.get('header a[href="/"]').text()).toBe('See the Overview')
+    expect(wrapper.get('nav[aria-label="Manage"] a[aria-current="page"]').text()).toContain('Activity')
+  })
+
+  it('shows each piece of running work with its meter, cost, and Stop, which says what it keeps first', async () => {
+    const { handle, sent } = server()
+    const { wrapper } = await mountApp(handle, '/manage')
+    const run = widget(wrapper, 'Prompt run')
+    expect(run.text()).toContain('100 of 400 responses')
+    expect(run.text()).toContain('25%')
+    expect(run.text()).toContain('$0.10 so far')
+    expect(run.text()).toContain('$0.15 to go')
+    expect(widget(wrapper, 'Scan of twentebelt.com').text()).toContain('15 of 60 pages')
+    expect(widget(wrapper, 'AI readiness check').text()).toContain('12 of 48 sites')
+    await run.findAll('button').find((b) => b.text() === 'Stop the Prompt run')?.trigger('click')
+    expect(run.get('[data-part="confirm-stop"]').text()).toContain('Stopping keeps the responses so far. You can finish the run later with a retry.')
+    await run.get('[data-part="confirm-stop"]').findAll('button').find((b) => b.text() === 'Stop the Prompt run')?.trigger('click')
+    await settle()
+    expect(sent).toEqual(['stop run'])
+    expect(wrapper.text()).toContain('The Prompt run stops within a minute. Its responses so far are kept.')
+  })
+
+  it('keeps running when Keep running is chosen', async () => {
+    const { handle, sent } = server()
+    const { wrapper } = await mountApp(handle, '/manage')
+    const scan = widget(wrapper, 'Scan of twentebelt.com')
+    await scan.findAll('button').find((b) => b.text() === 'Stop the scan')?.trigger('click')
+    expect(scan.text()).toContain('Stopping keeps the pages read so far.')
+    await scan.findAll('button').find((b) => b.text() === 'Keep running')?.trigger('click')
+    expect(scan.find('[data-part="confirm-stop"]').exists()).toBe(false)
+    expect(sent).toEqual([])
+  })
+
+  it('says what comes next, and takes the waiting scans off the queue', async () => {
+    const { handle, sent } = server()
+    const { wrapper } = await mountApp(handle, '/manage')
+    const coming = widget(wrapper, 'Coming up')
+    expect(coming.get('[data-part="next-run"]').text()).toContain('1 December 2026, 06:00')
+    expect(coming.get('[data-part="next-run"]').text()).toContain('About $0.25 a run, monthly')
+    expect(coming.get('[data-part="term-review"]').text()).toContain('3 search terms wait for a decision.')
+    expect(coming.get('[data-part="scan-queue"]').text()).toContain('1 scan waits in the queue.')
+    await coming.findAll('button').find((b) => b.text() === 'Remove the waiting scans')?.trigger('click')
+    await settle()
+    expect(sent).toEqual(['empty queue'])
+  })
+
+  it('lists what waits for an administrator, and says so when nothing does', async () => {
+    const { wrapper } = await mountApp(server().handle, '/manage')
+    const waiting = widget(wrapper, 'Waiting for you')
+    expect(waiting.classes()).toContain('bg-orange-pale')
+    expect(waiting.findAll('a').map((a) => a.text())).toEqual(['3 search terms wait for the term review', '1 competitor candidate waits'])
+    wrapper.unmount()
+    const quiet = await mountApp(
+      server({ ...manageCounts(), 'GET /api/v1/admin/llm': () => json(llmSettings({ credentials: [storedCredential()] })) }).handle,
+      '/manage',
+    )
+    const none = widget(quiet.wrapper, 'Waiting for you')
+    expect(none.findAll('a').map((a) => a.text())).toEqual(['The Anthropic key is missing'])
+    quiet.wrapper.unmount()
+    const empty = await mountApp(server({ ...manageCounts() }).handle, '/manage')
+    expect(widget(empty.wrapper, 'Waiting for you').text()).toContain('Nothing is waiting for you.')
+  })
+
+  it('shows both budgets and the spending by kind of work', async () => {
+    const { wrapper } = await mountApp(server().handle, '/manage')
+    const open = widget(wrapper, 'OpenRouter budget')
+    expect(open.text()).toContain('$2.50 of $10.00')
+    expect(open.get('[data-part="openrouter-left"]').text()).toBe('$7.50 left25% used')
+    expect(widget(wrapper, 'Anthropic budget').get('[data-part="anthropic-left"]').text()).toBe('9,951,789 tokens left0% used')
+    const rows = widget(wrapper, 'Spending by kind of work').findAll('tbody tr').map((r) => r.text())
+    expect(rows).toEqual(['Prompt runsOpenRouter$2.50', 'Scans, the term review, and candidate checksAnthropic48,211 tokens'])
+  })
+
+  it('lists the recent work, newest first, with how each ended', async () => {
+    const { wrapper } = await mountApp(server().handle, '/manage')
+    const rows = widget(wrapper, 'Recent work').findAll('tbody tr')
+    expect(rows.map((r) => r.findAll('th, td').map((c) => c.text()))).toEqual([
+      ['28 October 2026, 09:37', 'Prompt run', 'Stopped by hand', '40 of 200 responses, Prompt set version 1', '$0.05', 'Open Prompt run, 28 October 2026, 09:37'],
+      ['27 October 2026, 09:47', 'Scan of tribelt.nl', 'Done', '60 pages read', '', 'Open Scan of tribelt.nl, 27 October 2026, 09:47'],
+    ])
+    expect(rows[1]?.get('a').attributes('href')).toBe(`/manage/scans/${DONE}`)
+  })
+
+  it('says when nothing runs and no work has ended', async () => {
+    const { wrapper } = await mountApp(
+      server({
+        'GET /api/v1/prompt-test': () => json(promptResults({ runs: [] })),
+        'GET /api/v1/analyses': () => json({ items: [] }),
+        'GET /api/v1/ai-readiness': () => json(readinessTable([])),
+      }).handle,
+      '/manage',
+    )
+    expect(widget(wrapper, 'Running now').text()).toContain('Nothing is running.')
+    expect(widget(wrapper, 'Recent work').text()).toContain('No work has ended yet.')
+    expect(widget(wrapper, 'Coming up').get('[data-part="scan-queue"]').text()).toContain('No scans are waiting.')
+  })
+
+  it('tells someone who is no administrator that Manage is for administrators, with the way to the Overview', async () => {
+    const { wrapper } = await mountApp(routes({}), '/manage')
+    expect(wrapper.text()).toContain('Only administrators can start, stop, and change the work behind the results.')
+    expect(wrapper.get('a[data-part="to-overview"]').attributes('href')).toBe('/')
+  })
+})

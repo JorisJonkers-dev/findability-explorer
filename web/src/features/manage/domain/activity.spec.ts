@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { promptRun, summary } from '../../../testing/fixtures'
-import { endedOf, endedTone, hostOf, recentWork, runningWork, scanEnded, whenLabel } from './activity'
+import { endedOf, endedTone, hostOf, missingKeys, queuedScans, recentWork, runningWork, scanEnded, waitLine, whenLabel } from './activity'
 
 const HAND = 'Stopped by hand. The responses so far are kept, and a retry finishes the run.'
 const BUDGET = "The month's budget for Prompt runs was reached; the answers so far are kept."
@@ -150,5 +150,22 @@ describe('runningWork', () => {
     const [run] = runningWork([promptRun({ status: 'running', costUsd: 0.9 })], [], undefined, 0.5)
     expect(run?.costToGoUsd).toBe(0)
     expect(runningWork([promptRun({ status: 'running' })], [], undefined)[0]?.costToGoUsd).toBeUndefined()
+  })
+})
+
+describe('what waits', () => {
+  it('counts the scans in the queue', () => {
+    expect(queuedScans([summary({ status: 'queued' }), summary({ status: 'running' }), summary({ status: 'queued' })])).toBe(2)
+  })
+
+  it('names the keys that are missing or cannot be read', () => {
+    expect(missingKeys([])).toEqual(['openrouter', 'anthropic'])
+    expect(missingKeys([{ provider: 'openrouter', readable: true }, { provider: 'anthropic', readable: false }])).toEqual(['anthropic'])
+    expect(missingKeys([{ provider: 'openrouter', readable: true }, { provider: 'anthropic', readable: true }])).toEqual([])
+  })
+
+  it('says how many wait', () => {
+    expect(waitLine(1, 'search term', 'search terms')).toBe('1 search term waits')
+    expect(waitLine(6072, 'search term', 'search terms')).toBe('6,072 search terms wait')
   })
 })

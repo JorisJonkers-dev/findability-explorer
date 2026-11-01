@@ -17,7 +17,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 
 type AddClaudeStepVersionParams struct {
 	Step         string
-	Number       int32
+	Number       int64
 	Model        string
 	Instructions string
 	Note         string

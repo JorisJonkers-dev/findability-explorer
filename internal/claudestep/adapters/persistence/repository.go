@@ -50,7 +50,7 @@ func (r *Repository) Save(ctx context.Context, v domain.Version, original *domai
 				continue
 			}
 			if err := q.AddClaudeStepVersion(ctx, queries.AddClaudeStepVersionParams{
-				Step: string(x.Step), Number: int32(min(x.Number, 1_000_000)), Model: x.Model, Instructions: x.Instructions, //nolint:gosec // at most a million
+				Step: string(x.Step), Number: int64(x.Number), Model: x.Model, Instructions: x.Instructions,
 				Note: x.Note, CreatedBy: x.By, CreatedAt: x.At,
 			}); err != nil {
 				return fmt.Errorf("insert version %d: %w", x.Number, err)

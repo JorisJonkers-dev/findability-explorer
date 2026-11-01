@@ -151,7 +151,7 @@ type AnalysisReadinessFile struct {
 
 type ClaudeStepVersion struct {
 	Step         string
-	Number       int32
+	Number       int64
 	Model        string
 	Instructions string
 	Note         string

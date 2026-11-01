@@ -112,6 +112,7 @@ describe('the ranked list', () => {
     expect(detailLine(imp('x', 1, 1))).toBe('Written by hand, and applies in general.')
     expect(detailLine(imp('x', 1, 1, { generated: true, new: true }))).toBe('Written by the newest Recommendation run.')
     expect(detailLine(imp('x', 1, 1, { generated: true }))).toBe('Written by a Recommendation run.')
+    expect(detailLine(imp('x', 1, 1, { generated: true, editedAt: '2026-11-01T09:00:00Z' }))).toBe('Written by a Recommendation run, and edited by hand.')
   })
 })
 

@@ -58,6 +58,7 @@ describe('Recommendations in Manage', () => {
     expect(widget(wrapper, 'Open recommendations').text()).toContain('21 done')
     expect(widget(wrapper, 'Tick off yourself').text()).toContain('1waiting')
     expect(widget(wrapper, 'Goals').get('a').attributes('href')).toBe('/manage/recommendations/goals')
+    expect(widget(wrapper, 'Edit a recommendation').get('a').attributes('href')).toBe('/manage/recommendations/edit')
   })
 
   it('offers a Recommendation run with what it reads, replaces, and costs, and lists the past runs', async () => {
@@ -182,3 +183,53 @@ describe('the goals', () => {
     expect(wrapper.text()).not.toContain('The goals are saved.')
   })
 })
+
+describe('edit a recommendation', () => {
+  const generated = (): PlanImprovement => ({
+    ...item('g1', 'Use spiraalband', false, false), generated: true, kind: 'term', auto: true, where: 'https://www.tribelt.nl/spiraalbanden',
+  })
+  function editServer(sent: unknown[]) {
+    return manageApi({
+      'GET /api/v1/plan': () => json(planOf([generated(), item('listings', 'Get listed', false, false)])),
+      'GET /api/v1/admin/recommendation-runs': () => json(recommendationRuns()),
+      'PUT /api/v1/admin/recommendations/g1': async (r) => {
+        sent.push(await r.json())
+        return json(planOf([{ ...generated(), title: 'Use spiraalband on the spiral page', editedAt: '2026-11-01T09:00:00Z' }]))
+      },
+    })
+  }
+
+  it('lists only the recommendations a run wrote, at full width', async () => {
+    const { wrapper } = await mountApp(editServer([]), '/manage/recommendations/edit')
+    expect(wrapper.get('h1').text()).toBe('Edit a recommendation')
+    const list = widget(wrapper, 'Written by a Recommendation run')
+    expect(list.attributes('data-span')).toBe('12')
+    expect(list.findAll('li a').map((a) => [a.text(), a.attributes('href')])).toEqual([['Use spiraalband', '/manage/recommendations/edit/g1']])
+  })
+
+  it('opens one with its wording and scores, and saves the edit', async () => {
+    const sent: unknown[] = []
+    const { wrapper } = await mountApp(editServer(sent), '/manage/recommendations/edit/g1')
+    expect(wrapper.get('h1').text()).toBe('Use spiraalband')
+    const form = widget(wrapper, 'Wording and scores')
+    expect(form.text()).toContain('Not edited yet. A new Recommendation run replaces it unless it is edited or done.')
+    await form.get('input[name="title"]').setValue('Use spiraalband on the spiral page')
+    await form.get('select[name="benefit"]').setValue('5')
+    await form.get('textarea[name="steps"]').setValue('Add it to the heading.\nAdd it to the text.')
+    await buttonNamed(wrapper, 'Save').trigger('click')
+    await settle()
+    expect(sent).toEqual([
+      {
+        title: 'Use spiraalband on the spiral page', where: 'https://www.tribelt.nl/spiraalbanden', why: 'It helps.', steps: ['Add it to the heading.', 'Add it to the text.'],
+        doneWhen: 'It is in place.', benefit: 5, effort: 2,
+      },
+    ])
+    expect(wrapper.text()).toContain('Saved. A new Recommendation run keeps this recommendation.')
+  })
+
+  it('says when there is no such recommendation to edit', async () => {
+    const { wrapper } = await mountApp(editServer([]), '/manage/recommendations/edit/listings')
+    expect(wrapper.text()).toContain('No recommendation a Recommendation run wrote has this address.')
+  })
+})
+

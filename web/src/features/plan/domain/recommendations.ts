@@ -62,8 +62,9 @@ export function dataLine(catalogueVersion: number, items: readonly Pick<PlanImpr
 }
 
 /** One recommendation's data line: who wrote it. */
-export function detailLine(it: Pick<PlanImprovement, 'generated' | 'new'>): string {
+export function detailLine(it: Pick<PlanImprovement, 'generated' | 'new' | 'editedAt'>): string {
   if (!it.generated) return 'Written by hand, and applies in general.'
+  if (it.editedAt) return 'Written by a Recommendation run, and edited by hand.'
   return it.new ? 'Written by the newest Recommendation run.' : 'Written by a Recommendation run.'
 }
 

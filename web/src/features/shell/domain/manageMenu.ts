@@ -83,6 +83,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     summary: 'Marking recommendations as done, and the goals.',
     children: [
       { label: 'Tick off yourself', to: '/manage/recommendations/tick-off' },
+      { label: 'Edit a recommendation', to: '/manage/recommendations/edit' },
       { label: 'Goals', to: '/manage/recommendations/goals' },
     ],
   },

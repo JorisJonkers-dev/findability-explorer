@@ -24,7 +24,7 @@ function plan(improvements: PlanImprovement[]): Plan {
 // a trails the best competitor, b is checked by a scan, c has no best competitor, l leads.
 const base = (): PlanImprovement[] => [
   imp('a', 4, 1),
-  imp('b', 3, 2, { auto: true, measure: 'readinessChecks', tribelt: 3, leader: { ...leader, value: 7 }, parts: [{ name: 'llms.txt', present: true }, { name: 'llms-full.txt', present: false }] }),
+  imp('b', 3, 2, { auto: true, kind: 'readiness', measure: 'readinessChecks', tribelt: 3, leader: { ...leader, value: 7 }, parts: [{ name: 'llms.txt', present: true }, { name: 'llms-full.txt', present: false }] }),
   imp('c', 4, 3, { leader: undefined, measure: 'sitemapCoverage', tribelt: 0.5 }),
   imp('l', 2, 2, { tribelt: 0.25, leader: { ...leader, value: 0.15 } }),
 ]
@@ -158,5 +158,27 @@ describe('a recommendation', () => {
   it('says when it cannot load', async () => {
     const { wrapper } = await mountApp(routes({ 'GET /api/v1/me': () => json(me()), 'GET /api/v1/plan': () => json({ title: 'Down', status: 500 }, 500) }), '/recommendations/a')
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+  })
+})
+
+describe('a recommendation a run wrote', () => {
+  it('says where it goes, what the rules found, and why the model moved a score', async () => {
+    const written = imp('g', 4, 2, {
+      generated: true, new: true, kind: 'term', where: 'https://www.tribelt.nl/spiraalbanden', facts: ['2 competitors use it.'], scoreReason: 'Few buyers search for it.',
+    })
+    const { wrapper } = await mountApp(api(false, plan([written])), '/recommendations/g')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('Written by the newest Recommendation run.')
+    expect(section(wrapper, 'where-title').text()).toContain('On https://www.tribelt.nl/spiraalbanden.')
+    expect(section(wrapper, 'where-title').text()).toContain('New')
+    const why = section(wrapper, 'why-title')
+    expect(why.get('ul[aria-label="What the rules found"]').text()).toBe('2 competitors use it.')
+    expect(why.text()).toContain('The model moved a score by one point: Few buyers search for it.')
+  })
+
+  it('leaves the page to the web agency when the model could not place it', async () => {
+    const unplaced = imp('u', 3, 3, { generated: true, kind: 'listing', whereNote: 'Where to put this is for the web agency to decide.' })
+    const { wrapper } = await mountApp(api(false, plan([unplaced])), '/recommendations/u')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('Written by a Recommendation run.')
+    expect(section(wrapper, 'where-title').text()).toContain('Where to put this is for the web agency to decide.')
   })
 })

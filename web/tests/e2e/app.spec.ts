@@ -2,8 +2,8 @@ import { expect, expectAccessible, test } from './fixtures'
 
 const SECTIONS = [
   { path: '/ai-responses', title: 'AI responses', heading: 'AI responses' },
-  { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors? sells? metal belts that Tribelt’s buyers could buy instead\.$/ },
-  { path: '/terms', title: 'Search terms', heading: /^Competitors list belts using \d+ terms/ },
+  { path: '/competitors', title: 'Competitors', heading: 'Competitors' },
+  { path: '/terms', title: 'Search terms', heading: 'Search terms' },
   { path: '/recommendations', title: 'Recommendations', heading: 'Start with the changes that help Tribelt most.' },
 ] as const
 
@@ -92,9 +92,9 @@ test('picking a competitor opens its page, which survives a reload', async ({ pa
   await page.getByRole('region', { name: 'The competitors' }).getByRole('link').first().click()
   await expect(page).toHaveURL(/\/competitors\/[^/]+$/)
   await expect(page.getByRole('link', { name: 'Back to Competitors' })).toBeVisible()
-  await expect(page.getByRole('heading', { level: 2, name: /against Tribelt$/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Against Tribelt' })).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('heading', { level: 2, name: /against Tribelt$/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Against Tribelt' })).toBeVisible()
 })
 
 test('the scan form refuses an address it cannot scan', async ({ page }) => {
@@ -107,17 +107,15 @@ test('the scan form refuses an address it cannot scan', async ({ page }) => {
   await expect(page).toHaveURL('/competitors')
 })
 
-test('Search terms shows the language split, the belt families and a way to every term', async ({ page }) => {
+test('Search terms counts by language and belt family, each opening its terms', async ({ page }) => {
   await page.goto('/terms')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Competitors list belts using \d+ terms/)
-  const german = page.getByRole('button', { name: /^German: \d+ terms/ })
-  await german.click()
-  await expect(german).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Search terms')
   await expectAccessible(page)
-  await page.getByRole('link', { name: 'its own page' }).click()
-  await expect(page).toHaveURL('/terms/all')
+  await page.getByRole('region', { name: 'By language' }).getByRole('link', { name: 'German' }).click()
+  await expect(page).toHaveURL('/terms/all?language=de')
+  await expect(page.getByRole('button', { name: /^German: \d+ terms/ })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('link', { name: 'Back to Search terms' }).click()
-  await page.getByRole('list', { name: 'Belt families' }).getByRole('link').first().click()
+  await page.getByRole('region', { name: 'By belt family' }).getByRole('link').first().click()
   await expect(page).toHaveURL(/\/terms\/families\//)
 })
 

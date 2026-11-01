@@ -873,9 +873,9 @@ export type LlmSettings = {
 };
 
 /**
- * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
+ * Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator accepted from the review queue, or a term an administrator added by hand.
  */
-export type TermOrigin = 'research' | 'review';
+export type TermOrigin = 'research' | 'review' | 'hand';
 
 /**
  * The fields of a company to change; at least one.
@@ -1490,6 +1490,53 @@ export type TermCandidateList = {
     items: Array<TermCandidate>;
     counts: TermCandidateCounts;
     review: TermReviewState;
+};
+
+/**
+ * A search term an administrator adds by hand.
+ */
+export type NewTerm = {
+    /**
+     * The term as the list shows it.
+     */
+    term: string;
+    language: Language;
+    family: BeltFamily;
+    tier: IntentTier;
+};
+
+/**
+ * A search term on the list, by its text and language.
+ */
+export type TermRef = {
+    /**
+     * The term's text; case and accents do not matter.
+     */
+    term: string;
+    language: Language;
+};
+
+/**
+ * A term added or removed by hand, with who did it and when.
+ */
+export type HandTerm = {
+    term: Term;
+    /**
+     * Who added or removed it.
+     */
+    by: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * The terms added by hand and the terms removed, oldest first.
+ */
+export type HandTermList = {
+    added: Array<HandTerm>;
+    removed: Array<HandTerm>;
 };
 
 /**
@@ -2517,9 +2564,9 @@ export type PromptFamily = 'eyelink' | 'open_spiral' | 'closed_spiral' | 'tri_fl
 export type PromptKind = 'supplier' | 'application' | 'problem';
 
 /**
- * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
+ * Where and in which language a prompt asks - a scope's id (PromptSetScope), such as twente, netherlands, germany, dutch, german, or english, or one a later Prompt set version added.
  */
-export type PromptScope = 'twente' | 'netherlands' | 'germany' | 'dutch' | 'german' | 'english';
+export type PromptScope = string;
 
 /**
  * What to ask again - every failed answer of the run when empty, or the one question of one provider and mode when all three are given.
@@ -2914,6 +2961,45 @@ export type PromptSetQuestion = {
     text: string;
     /**
      * Its English translation; absent when it is in English or none is known.
+     */
+    english?: string;
+};
+
+/**
+ * An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the version it was restored from, if any.
+ */
+export type PromptSetDraft = {
+    /**
+     * Its questions, in order.
+     */
+    questions: Array<PromptDraftQuestion>;
+    /**
+     * The new scopes its questions ask in, which no version asked in yet.
+     */
+    scopes?: Array<PromptSetScope>;
+    /**
+     * The version the draft was restored from, if it was.
+     */
+    restoredFrom?: number;
+};
+
+/**
+ * One question of a draft.
+ */
+export type PromptDraftQuestion = {
+    /**
+     * The id of the published question it keeps, changed or not; absent for a new question.
+     */
+    id?: string;
+    family: PromptFamily;
+    intent: IntentTier;
+    scope: PromptSetScopeId;
+    /**
+     * The question, as it is asked.
+     */
+    text: string;
+    /**
+     * Its English translation, when one is known.
      */
     english?: string;
 };
@@ -4858,6 +4944,181 @@ export type GetActivityResponses = {
 
 export type GetActivityResponse = GetActivityResponses[keyof GetActivityResponses];
 
+export type ListHandTermsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/hand';
+};
+
+export type ListHandTermsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListHandTermsError = ListHandTermsErrors[keyof ListHandTermsErrors];
+
+export type ListHandTermsResponses = {
+    /**
+     * The terms added and removed by hand.
+     */
+    200: HandTermList;
+};
+
+export type ListHandTermsResponse = ListHandTermsResponses[keyof ListHandTermsResponses];
+
+export type AddTermData = {
+    /**
+     * The term as it joins the list.
+     */
+    body: NewTerm;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/hand';
+};
+
+export type AddTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddTermError = AddTermErrors[keyof AddTermErrors];
+
+export type AddTermResponses = {
+    /**
+     * The term, added.
+     */
+    201: Term;
+};
+
+export type AddTermResponse = AddTermResponses[keyof AddTermResponses];
+
+export type PutBackTermData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The removed term, as the list wrote it.
+         */
+        term: string;
+        /**
+         * The removed term's language.
+         */
+        language: Language;
+    };
+    url: '/api/v1/admin/terms/removed';
+};
+
+export type PutBackTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type PutBackTermError = PutBackTermErrors[keyof PutBackTermErrors];
+
+export type PutBackTermResponses = {
+    /**
+     * Put back.
+     */
+    204: void;
+};
+
+export type PutBackTermResponse = PutBackTermResponses[keyof PutBackTermResponses];
+
+export type RemoveTermData = {
+    /**
+     * The term to remove.
+     */
+    body: TermRef;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/removed';
+};
+
+export type RemoveTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RemoveTermError = RemoveTermErrors[keyof RemoveTermErrors];
+
+export type RemoveTermResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type RemoveTermResponse = RemoveTermResponses[keyof RemoveTermResponses];
+
 export type ListTermCandidatesData = {
     body?: never;
     path?: never;
@@ -5419,6 +5680,51 @@ export type ListPromptSetsResponses = {
 };
 
 export type ListPromptSetsResponse = ListPromptSetsResponses[keyof ListPromptSetsResponses];
+
+export type PublishPromptSetData = {
+    body: PromptSetDraft;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-sets';
+};
+
+export type PublishPromptSetErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type PublishPromptSetError = PublishPromptSetErrors[keyof PublishPromptSetErrors];
+
+export type PublishPromptSetResponses = {
+    /**
+     * The published version.
+     */
+    201: PublishedPromptSet;
+};
+
+export type PublishPromptSetResponse = PublishPromptSetResponses[keyof PublishPromptSetResponses];
 
 export type ListPromptAnswersData = {
     body?: never;

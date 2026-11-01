@@ -62,7 +62,10 @@ export function promptSets(): PromptSets {
         questions: [{ id: 'eyelink-twente', family: 'eyelink', intent: 'product', scope: 'twente', scopeName: 'Dutch, Twente', language: 'nl', text: 'Wie levert draadogenbanden in Twente?' }],
       },
     ],
-    scopes: [],
+    scopes: [
+      { id: 'twente', name: 'Dutch, Twente', language: 'nl', region: 'Twente' },
+      { id: 'english', name: 'English', language: 'en' },
+    ],
   }
 }
 

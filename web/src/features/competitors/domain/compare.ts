@@ -63,7 +63,7 @@ export function measuresOf(input: Known & Coverage & Terms): Measure[] {
   return [
     {
       id: 'answers',
-      label: 'AI answers that name it',
+      label: 'AI responses that name it',
       them: input.share,
       us: input.tribeltShare,
       themText: pct(input.share),
@@ -71,10 +71,10 @@ export function measuresOf(input: Known & Coverage & Terms): Measure[] {
       scale: scaled(input.share, input.tribeltShare, 0.01),
       text:
         input.share === undefined || input.tribeltShare === undefined
-          ? `No Prompt run has counted the answers that name ${name} or Tribelt yet.`
-          : `${name} is named in ${shareText(input.share)} of the answers in the newest Prompt run, and Tribelt in ${shareText(input.tribeltShare)}.`,
+          ? `No Prompt run has counted the responses that name ${name} or Tribelt yet.`
+          : `${name} is named in ${shareText(input.share)} of the responses in the newest Prompt run, and Tribelt in ${shareText(input.tribeltShare)}.`,
       path: '/ai-responses/all',
-      pathLabel: 'Open every answer',
+      pathLabel: 'Open every response',
     },
     {
       id: 'ready',

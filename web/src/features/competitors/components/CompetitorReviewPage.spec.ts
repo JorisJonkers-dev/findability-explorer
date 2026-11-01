@@ -67,7 +67,7 @@ function api(sent: Sent[], review: CandidateReviewState = { running: false }, ex
     'POST /api/v1/admin/competitor-candidates/3a7bd3e2360a9f03/split': record(() => new Response(null, { status: 204 })),
     'POST /api/v1/admin/competitor-candidates/review': record(() => json({ running: true }, 202)),
     'POST /api/v1/admin/competitor-candidates/decisions': record(() =>
-      json({ items: [{ id: METIZ, name: 'Taiwan Metiz Alliance', outcome: 'done' }, { id: KIENZLE, name: 'Kienzle GmbH', outcome: 'skipped', reason: 'The answers gave no website for it.' }] }),
+      json({ items: [{ id: METIZ, name: 'Taiwan Metiz Alliance', outcome: 'done' }, { id: KIENZLE, name: 'Kienzle GmbH', outcome: 'skipped', reason: 'The responses gave no website for it.' }] }),
     ),
     ...extra,
   })
@@ -92,7 +92,7 @@ describe('the competitor review', () => {
     expect(wrapper.get('[data-part="review-line"]').text()).toContain('Haiku has not checked 3 companies yet.')
     const first = rows(wrapper)[0]
     expect(first?.get('h3').text()).toBe('Taiwan Metiz Alliance')
-    expect(first?.text()).toContain('Named in 8 answers by OpenAI and xAI.')
+    expect(first?.text()).toContain('Named in 8 responses by OpenAI and xAI.')
     expect(first?.text()).toContain('Also named')
     expect(first?.text()).toContain('Haiku says a competitor. Makes wire mesh belts.')
     expect(first?.get('a[target="_blank"]').attributes('href')).toBe('https://metiz.tw/')
@@ -159,7 +159,7 @@ describe('the competitor review', () => {
     await settle()
     expect(sent[0]).toEqual({ method: 'POST', path: '/api/v1/admin/competitor-candidates/decisions', body: { action: 'add', ids: [METIZ, KIENZLE] } })
     expect(wrapper.text()).toContain('Added 1 company. Skipped 1.')
-    expect(wrapper.get('ul[aria-label="Skipped"]').text()).toBe('Kienzle GmbH. The answers gave no website for it.')
+    expect(wrapper.get('ul[aria-label="Skipped"]').text()).toBe('Kienzle GmbH. The responses gave no website for it.')
     expect(wrapper.text()).not.toContain('selected')
   })
 

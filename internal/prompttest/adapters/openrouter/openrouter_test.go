@@ -141,7 +141,7 @@ func TestAskTellsARateLimitFromOtherFailures(t *testing.T) {
 		"an error in a body": {200, `{"error":{"code":502,"message":"bad gateway"}}`, false, "bad gateway"},
 		"no choice":          {200, `{"choices":[]}`, false, "without a choice"},
 		"a 500":              {500, `not json`, false, "answered 500: not json"},
-		"not json":           {200, `not json`, false, "read OpenRouter's answer"},
+		"not json":           {200, `not json`, false, "read OpenRouter's response"},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {

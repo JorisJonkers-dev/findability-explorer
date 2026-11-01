@@ -96,6 +96,12 @@ export function targetOfSlug(slug: string): PlanTarget | undefined {
   return GOAL_ORDER.find((t) => t === slug)
 }
 
+/** A goal page's name in the browser tab: "Goal, AI responses that name Tribelt", or "Goal" for an address no goal has. */
+export function goalTabTitle(slug: string): string {
+  const target = targetOfSlug(slug)
+  return target ? `Goal, ${DEFINITIONS[target].name}` : 'Goal'
+}
+
 /** The address of a goal's page. */
 export function pathOfTarget(target: PlanTarget): string {
   return `/goals/${target}`

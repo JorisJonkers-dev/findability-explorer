@@ -60,3 +60,9 @@ average. An answer with web search includes the search's fee: the model's own se
 on OpenRouter's list, else OpenRouter's search at five results for $4 per 1,000. An answer whose
 reading failed can be read again on its own, by the model that reads now, without asking the
 provider again.
+
+## Amendment, 1 November 2026: a budget in dollars
+
+The month's language-model tokens are replaced by a monthly budget in dollars on the Anthropic key,
+priced from the stored tokens at each model's list price (ADR-0019). Haiku stops at that budget as it
+did at the token limit.

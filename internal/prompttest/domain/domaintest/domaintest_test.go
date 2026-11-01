@@ -24,7 +24,7 @@ func TestVersionTwoAsksTwentyApplicationQuestionsInGeneralTerms(t *testing.T) {
 		}
 		ids[p.ID] = true
 		languages[p.Language]++
-		if p.Kind != domain.KindApplication || p.Language != domain.LanguageOf(p.Scope) || !slices.Contains(asked, p.Scope) {
+		if p.Kind != domain.KindApplication || p.Language != domain.LanguageOf(domaintest.Scopes(), p.Scope) || !slices.Contains(asked, p.Scope) {
 			t.Errorf("prompt %s = %+v", p.ID, p)
 		}
 		if lower := strings.ToLower(p.Text); strings.Contains(lower, "tribelt") || strings.Contains(lower, "tri-flex") || strings.Contains(lower, "(") {
@@ -69,7 +69,7 @@ func TestEveryImportedScopeIsALanguageWithAnOptionalRegion(t *testing.T) {
 		t.Fatalf("scopes = %+v", scopes)
 	}
 	for i, s := range scopes {
-		if s.ID != domain.Scopes()[i] || s.Language != domain.LanguageOf(s.ID) || s.Name == "" {
+		if s.ID != domain.Scopes()[i] || s.Language != domain.LanguageOf(domaintest.Scopes(), s.ID) || s.Name == "" {
 			t.Errorf("scope %d = %+v", i, s)
 		}
 	}

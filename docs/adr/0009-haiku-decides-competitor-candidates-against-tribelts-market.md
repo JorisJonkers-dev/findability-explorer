@@ -66,3 +66,8 @@ re-checks every waiting company, never a decided one.
   and filters on them, so they can be checked.
 - The companies already on the competitor list are not checked yet. Checking them the same way,
   and letting an administrator archive the ones Haiku says do not compete, is a follow-up.
+
+## Amendment, 1 November 2026: the definition is edited in the app
+
+The target market is stored as version 2 of the competitor definition, which an administrator edits
+in Manage; every check is made against the newest version and records which (ADR-0022).

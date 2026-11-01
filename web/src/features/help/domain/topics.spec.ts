@@ -168,3 +168,74 @@ describe('highlight', () => {
     expect(highlight('Help', 'zzz')).toEqual([{ text: 'Help', hit: false }])
   })
 })
+
+describe('the topics the pages link to', () => {
+  // Every page's "How this is measured, in Help" and every other link into Help, read from the source.
+  const sources = import.meta.glob(['../../../**/*.vue', '../../../**/*.ts', '!../../../**/*.spec.ts', '!../../help/**'], {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  })
+  const linked = new Set<string>()
+  for (const text of Object.values(sources)) {
+    for (const m of text.matchAll(/help-topic="([a-z0-9-]+)"|helpTopic: '([a-z0-9-]+)'|['"`]\/help\/([a-z0-9-]+)/g)) linked.add(m[1] ?? m[2] ?? m[3] ?? '')
+  }
+  // A goal page picks its topic by the goal's process.
+  for (const id of ['prompt-test', 'readiness', 'terms']) linked.add(id)
+
+  it('finds the links', () => {
+    expect([...linked]).toEqual(expect.arrayContaining(['goals', 'terms', 'competitors', 'recommendations', 'websites', 'prompt-test', 'rescan']))
+  })
+
+  it('opens a topic for each of them', () => {
+    for (const id of linked) expect(openAt(id).topic, id).toBeDefined()
+  })
+})
+
+describe('the topics of what Manage now does', () => {
+  const to = (id: string) => topic(id).links.map((l) => l.to)
+  const text = (id: string) => topicBody(topic(id), undefined).join(' ')
+
+  it('send each Manage link to its own subpage', () => {
+    expect(to('goals')).toContain('/manage/recommendations/goals')
+    expect(to('schedule')).toEqual(['/manage/prompt-test/schedule'])
+    expect(to('fact-sheet')).toEqual(['/manage/prompt-test/fact-sheet'])
+    expect(to('stop')).toEqual(['/manage', '/manage/prompt-test/runs'])
+    expect(to('rescan')).toEqual(['/manage/scans', '/manage/scans/queue'])
+    expect(to('term-review')).toEqual(['/manage/terms/review', '/manage/terms/waiting'])
+    expect(to('done')).toEqual(['/manage/recommendations/tick-off'])
+    expect(to('first-setup')).toEqual(['/manage/keys', '/manage/keys/budgets'])
+  })
+
+  it('explain the two dollar budgets, what happens when one runs out, and where the spending shows', () => {
+    expect(topic('budgets').title).toBe('Change the monthly budgets')
+    expect(text('budgets')).toContain('There are two budgets in dollars, one for each key')
+    expect(to('budgets')).toEqual(['/manage/prompt-test/schedule', '/manage/keys/budgets'])
+    expect(text('over-budget')).toContain('asks for a second click before it starts')
+    expect(text('costs')).toContain('Activity shows this month’s spending')
+    expect(to('costs')).toEqual(['/manage'])
+  })
+
+  it('explain the competitor definition and its versions', () => {
+    expect(text('definition')).toContain('Each save is a version that can be opened and restored.')
+    expect(to('definition')).toEqual(['/manage/competitors/definition'])
+    expect(to('competitors')).toContain('/manage/competitors/definition')
+  })
+
+  it('explain stopping work, the switch of the term review, and Stopped by hand', () => {
+    expect(text('stop')).toContain('Stopped by hand')
+    expect(topic('term-review').title).toBe('Review new terms, or switch the review off')
+    expect(text('term-review')).toContain('Switch it off')
+  })
+
+  it('explain the two checks of a response against the fact sheet', () => {
+    expect(text('read-response')).toContain('Wrong about Tribelt')
+    expect(text('read-response')).toContain('Left out')
+  })
+
+  it('explain what a scan keeps: the sitemap’s text and the pages per term', () => {
+    expect(topic('scan-keeps').group).toBe('websites')
+    expect(text('scan-keeps')).toContain('sitemap')
+    expect(text('scan-keeps')).toContain('the pages that use it')
+  })
+})

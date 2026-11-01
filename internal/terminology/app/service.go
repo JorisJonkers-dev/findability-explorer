@@ -69,6 +69,10 @@ type Service struct {
 
 	mu       sync.RWMutex
 	accepted []domain.Term
+	// added and removed are the terms added and removed by hand; none until WithHandTerms.
+	hand    HandTerms
+	added   []domain.HandTerm
+	removed []domain.Removal
 
 	// review is the language model's part of the queue; nil until WithReviewer.
 	review *reviewer
@@ -145,8 +149,12 @@ func (s *Service) Load(ctx context.Context) error {
 			accepted = append(accepted, *d.Term)
 		}
 	}
+	added, removed, err := s.loadHand(ctx)
+	if err != nil {
+		return err
+	}
 	s.mu.Lock()
-	s.accepted = accepted
+	s.accepted, s.added, s.removed = accepted, added, removed
 	s.mu.Unlock()
 	return nil
 }
@@ -167,13 +175,27 @@ func (s *Service) Companies() []domain.Company {
 	return domain.SortCompanies(s.catalogue.Companies())
 }
 
-// Terms returns the whole map: the research's terms, then the accepted ones, for search and for
-// other contexts that match text against it; only those in Dutch, German or English, the
-// languages Tribelt's buyers search in.
+// Terms returns the whole map: the research's terms, then the accepted ones, then those added by
+// hand, without the removed ones, for search and for other contexts that match text against it
+// (the scans look for these); only those in Dutch, German or English, the languages Tribelt's
+// buyers search in.
 func (s *Service) Terms() []domain.Term {
+	all := s.allTerms()
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return slices.DeleteFunc(slices.Concat(s.catalogue.Terms(), s.accepted), func(t domain.Term) bool {
+	return domain.WithoutRemoved(all, s.removed)
+}
+
+// allTerms is the map with the removed terms, so a removed term does not come back as a candidate
+// or get added again rather than put back.
+func (s *Service) allTerms() []domain.Term {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	hand := make([]domain.Term, 0, len(s.added))
+	for _, h := range s.added {
+		hand = append(hand, h.Term)
+	}
+	return slices.DeleteFunc(slices.Concat(s.catalogue.Terms(), s.accepted, hand), func(t domain.Term) bool {
 		return !lang.InFocus(string(t.Language))
 	})
 }
@@ -204,7 +226,7 @@ func (s *Service) candidates(ctx context.Context) ([]domain.Candidate, error) {
 	if err != nil {
 		return nil, err
 	}
-	terms := s.Terms()
+	terms := s.allTerms()
 	return domain.WithVerdicts(domain.Candidates(obs, decisions, terms), verdicts, terms), nil
 }
 
@@ -230,7 +252,7 @@ func (s *Service) Accept(ctx context.Context, user, id string, a domain.Acceptan
 	if c.Status != domain.StatusPending {
 		return domain.Candidate{}, domain.ErrDecided
 	}
-	term, err := c.NewTerm(a, s.Terms())
+	term, err := c.NewTerm(a, s.allTerms())
 	if err != nil {
 		return domain.Candidate{}, err
 	}

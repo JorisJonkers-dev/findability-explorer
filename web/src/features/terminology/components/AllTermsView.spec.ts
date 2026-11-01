@@ -73,6 +73,14 @@ describe('the page of every term', () => {
     expect(wrapper.get('ol[aria-label="Ranked terms"]').attributes('tabindex')).toBe('0')
   })
 
+  it('marks a term added by hand', async () => {
+    const hand = [...MAP, term({ term: 'oven conveyor belt', language: 'en', family: 'eyelink', tier: 'application', usedBy: [], origin: 'hand' })]
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/terms': () => json(termSearch(hand, { total: hand.length, tribeltFrom: 'scan' })) }), '/terms/all')
+    const rows = wrapper.findAll('ol[aria-label="Ranked terms"] li')
+    expect(rows.find((r) => r.text().includes('oven conveyor belt'))?.text()).toContain('Added by hand')
+    expect(rows.filter((r) => r.text().includes('Added by hand'))).toHaveLength(1)
+  })
+
   it('charts the languages and kinds, with what Tribelt uses', async () => {
     const { wrapper } = await mountApp(api, '/terms/all')
     const languages = wrapper.get('[role="group"][aria-label="By language"]').findAll('button')

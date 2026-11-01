@@ -178,6 +178,7 @@ const heatGrid =
                     </template>
                   </RouterLink>
                 </span>
+                <span v-if="row.hand" class="self-start rounded-full bg-orange-pale px-2 text-xs font-semibold text-orange-ink">Added by hand</span>
                 <span class="truncate text-xs text-muted">{{ row.meta }}</span>
               </span>
               <span class="col-start-2 row-start-2 inline-flex items-center gap-2 text-xs">

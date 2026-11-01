@@ -175,13 +175,13 @@ func (c *chat) do(ctx context.Context, method, path string, body, out any) error
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
-		return fmt.Errorf("read %s's answer: %w", c.name, err)
+		return fmt.Errorf("read %s's response: %w", c.name, err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return statusError(c.name, resp.StatusCode, errorMessage(raw))
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
-		return fmt.Errorf("read %s's answer: %w", c.name, err)
+		return fmt.Errorf("read %s's response: %w", c.name, err)
 	}
 	return nil
 }

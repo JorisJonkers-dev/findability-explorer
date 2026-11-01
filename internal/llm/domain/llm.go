@@ -69,7 +69,7 @@ var (
 	ErrProvider = errors.New("the provider failed")
 	// ErrNoAnswer is what a model's unusable answer is: it declined the request, or its answer was
 	// cut off. Asking again the same way gets the same.
-	ErrNoAnswer = errors.New("the model gave no usable answer")
+	ErrNoAnswer = errors.New("the model gave no usable response")
 )
 
 // ParseProvider returns the provider named s.

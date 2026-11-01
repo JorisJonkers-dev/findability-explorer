@@ -3,9 +3,9 @@
 # database. Shape follows estate-dashboard's project file and spec/v1/examples in
 # JorisJonkers-dev/deploy-kit.
 #
-# Deployable, not live: the estate composes a project only once it is listed in participants.yml
-# and in platform.intent.yml's handover. Until then a release publishes the image and this
-# fragment, and nothing runs.
+# Live: the estate composes this project with every release. Each release goes live when its
+# release PR is merged: release.yml publishes the image and this fragment, and the estate deploys
+# them.
 
 apiVersion: intent.jorisjonkers.dev/v1
 kind: Project

@@ -8,7 +8,7 @@ export function planFixture(): Plan {
   return {
     catalogueVersion: 1,
     improvements: [
-      { id: 'submit-search-engines', title: 'Submit tribelt.nl to Google and Bing', moves: 'Helps Tribelt appear in Gemini and Copilot answers.', measure: 'aiShareOfVoice', auto: false, done: false, ...details },
+      { id: 'submit-search-engines', title: 'Submit tribelt.nl to Google and Bing', moves: 'Helps Tribelt appear in Gemini and Copilot responses.', measure: 'aiShareOfVoice', auto: false, done: false, ...details },
       { id: 'llms-files', title: 'Add llms.txt and llms-full.txt', moves: 'Improves AI readiness.', measure: 'readinessChecks', auto: true, done: true, ...details },
       { id: 'cite-pages', title: 'Publish pages worth citing', moves: 'Gets more answers to cite tribelt.nl.', measure: 'citationShare', auto: false, done: false, ...details },
       { id: 'answer-questions', title: 'Answer buyers questions', moves: 'Helps Tribelt appear in more answers.', measure: 'aiShareOfVoice', auto: false, done: false, ...details },

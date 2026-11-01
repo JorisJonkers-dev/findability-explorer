@@ -179,6 +179,13 @@ type LlmActive struct {
 	UpdatedAt    time.Time
 }
 
+type LlmBudget struct {
+	Singleton           bool
+	MonthlyBudgetMicros int64
+	UpdatedBy           string
+	UpdatedAt           time.Time
+}
+
 type LlmCredential struct {
 	ID          uuid.UUID
 	Provider    string
@@ -391,6 +398,13 @@ type TermDecision struct {
 	Status      string
 	DecidedBy   string
 	DecidedAt   time.Time
+}
+
+type TermReviewSwitch struct {
+	Singleton bool
+	ReviewOn  bool
+	UpdatedBy string
+	UpdatedAt time.Time
 }
 
 type TermReviewUsage struct {

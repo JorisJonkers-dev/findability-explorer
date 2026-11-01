@@ -46,6 +46,7 @@ describe("Haiku's check of the list", () => {
   it('says how far Haiku is', () => {
     expect(listCheckLine({ running: true }, 3)).toBe('Haiku is checking the companies on the list.')
     expect(listCheckLine({ running: false, problem: 'noKey' }, 3)).toContain('No Anthropic key')
+    expect(listCheckLine({ running: false, problem: 'stopped' }, 3)).toBe('An administrator stopped the check. The companies already checked keep what Haiku said.')
     expect(listCheckLine({ running: false, problem: 'budget' }, 3)).toBe(
       "This month's language-model budget is used up, so Haiku checks the rest of the list next month.",
     )

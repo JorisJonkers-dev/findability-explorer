@@ -14,7 +14,6 @@
 //     the language-model API keys an admin adds (required unless DEV_USER is set)
 //   - ANTHROPIC_API_KEY: the Vault-delivered key, shown as the read-only credential
 //     vault-anthropic; until an admin chooses, product matching uses it with claude-haiku-5-5
-//   - LLM_MONTHLY_TOKENS: the language-model budget per calendar month (default 10000000)
 //   - CRAWLER_CONTACT: a contact address for the crawler's User-Agent
 //   - DEV_USER, and DEV_ROLES (comma-separated, such as ROLE_ADMIN): stand in for a signed-in
 //     account on a local run, without auth-api; never set in a deployment
@@ -32,7 +31,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -148,20 +146,16 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	terminology.WithCompetitors(func(ctx context.Context) ([]terminologydomain.Listed, error) {
 		return listedCompetitors(ctx, companies)
 	})
-	limits, err := limitsOf(getenv)
-	if err != nil {
-		return err
-	}
 	promptRepo := prompttestpersistence.New(store)
-	llm, err := newLLM(logger, getenv, store, spenders{analysisRepo, terminologyRepo, promptRepo}, secret, limits, now)
+	llm, err := newLLM(logger, getenv, store, spenders{analysisRepo, terminologyRepo, promptRepo}, secret, now)
 	if err != nil {
 		return err
 	}
-	// Haiku reviews the phrases scans find, on an Anthropic key, until the month's tokens are spent.
+	// Haiku reviews the phrases scans find, on an Anthropic key, until the month's Anthropic budget is spent.
 	terminology.WithReviewer(terminologyRepo, judges{llm: llm})
 	terminology.WithBudget(llm.BudgetSpent)
 	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
-	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, limits, now)
+	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, now)
 	if err != nil {
 		return err
 	}
@@ -178,7 +172,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 			func(err error) { logger.WarnContext(ctx, "candidate review", "error", err) }),
 		// Haiku on an Anthropic key reads the answers while one works (ADR-0007).
 		prompttestapp.WithExtractors(extractors{llm: llm}),
-		// Both stop using Haiku once the month's language-model tokens are spent.
+		// Both stop using Haiku once the month's Anthropic budget is spent.
 		prompttestapp.WithBudget(llm.BudgetSpent))
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
 	insight := newInsight(insightpersistence.New(store.Queries()), companies, promptTest, analysis, terminology, now)
@@ -305,21 +299,8 @@ func sessionKey(logger *slog.Logger, getenv func(string) string) (string, error)
 	}
 }
 
-// limits are what analyses may cost.
-type limits struct {
-	monthly int64
-}
-
-func limitsOf(getenv func(string) string) (limits, error) {
-	monthly, err := intEnv(getenv, "LLM_MONTHLY_TOKENS", 10_000_000)
-	if err != nil {
-		return limits{}, err
-	}
-	return limits{monthly: int64(monthly)}, nil
-}
-
-// spenders are what counts towards the month's tokens: the scans' product matching, the term
-// review, the review of the competitor candidates, and Haiku's reading of Prompt answers.
+// spenders are what counts towards the month's Anthropic budget: the scans' product matching, the
+// term review, the review of the competitor candidates, and Haiku's reading of Prompt answers.
 type spenders struct {
 	analyses   *persistence.Repository
 	terms      *terminologypersistence.Repository
@@ -327,7 +308,7 @@ type spenders struct {
 }
 
 // newLLM builds the language-model settings: the Vault key, the keys admins add, and the active model.
-func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp spenders, secret string, l limits,
+func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp spenders, secret string,
 	now func() time.Time,
 ) (*llmapp.Service, error) {
 	sealer, err := seal.NewSealer(secret, llmpersistence.HKDFInfo)
@@ -338,35 +319,35 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp
 	if vault == "" {
 		logger.Info("ANTHROPIC_API_KEY is not set: product matching is off until an admin adds an Anthropic key or chooses a model")
 	}
-	spent := func(ctx context.Context) (llmapp.Spending, error) {
-		since := monthStart(now())
-		month, err := sp.analyses.TokensSince(ctx, since)
-		if err != nil {
-			return llmapp.Spending{}, err
-		}
-		reviewed, err := sp.terms.TokensSince(ctx, since)
-		if err != nil {
-			return llmapp.Spending{}, err
-		}
-		checked, err := sp.candidates.ReviewTokensSince(ctx, since)
-		if err != nil {
-			return llmapp.Spending{}, err
-		}
-		read, err := sp.candidates.ReadingTokensSince(ctx, since)
-		if err != nil {
-			return llmapp.Spending{}, err
-		}
-		month += reviewed + checked + read
-		scans, average, err := sp.analyses.TokensPerScan(ctx)
-		if err != nil {
-			return llmapp.Spending{}, err
-		}
-		return llmapp.Spending{ThisMonth: month, AveragePerScan: average, ScansMatched: scans}, nil
-	}
+	spent := func(ctx context.Context) (llmapp.Spending, error) { return spending(ctx, sp, monthStart(now())) }
 	connector := providers.New()
 	return llmapp.New(llmpersistence.New(store, sealer), connector, connector, spent,
-		llmapp.Config{VaultKey: vault, MonthlyTokens: l.monthly},
+		llmapp.Config{VaultKey: vault},
 		now, uuid.NewString), nil
+}
+
+// spending is what every job on a Claude model used since since, per job, and what one scan's
+// matching used on average. Every one runs on Claude Haiku until the Claude steps choose models,
+// so each is priced as Haiku.
+func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spending, error) {
+	sources := []func(context.Context, time.Time) (int64, int64, error){
+		sp.analyses.TokensSince, sp.terms.TokensSince, sp.candidates.ReviewTokensSince, sp.candidates.ReadingTokensSince,
+	}
+	var s llmapp.Spending
+	for _, source := range sources {
+		in, out, err := source(ctx, since)
+		if err != nil {
+			return llmapp.Spending{}, err
+		}
+		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: llmdomain.DefaultModel, Input: in, Output: out})
+	}
+	scans, in, out, err := sp.analyses.TokensPerScan(ctx)
+	if err != nil {
+		return llmapp.Spending{}, err
+	}
+	s.AveragePerScan = llmdomain.TokenUse{Model: llmdomain.DefaultModel, Input: in, Output: out}
+	s.ScansMatched = scans
+	return s, nil
 }
 
 func monthStart(t time.Time) time.Time {
@@ -436,7 +417,7 @@ func (m matchers) Current(ctx context.Context) (analysisdomain.Matcher, string, 
 
 // newAnalysis builds the analysis use cases and queues every analysis a restart left waiting.
 func newAnalysis(ctx context.Context, getenv func(string) string, repo *persistence.Repository,
-	directory analysisdomain.Directory, terminology *terminologyapp.Service, llm *llmapp.Service, l limits,
+	directory analysisdomain.Directory, terminology *terminologyapp.Service, llm *llmapp.Service,
 	now func() time.Time,
 ) (*analysisapp.Service, error) {
 	svc := analysisapp.New(
@@ -454,8 +435,9 @@ func newAnalysis(ctx context.Context, getenv func(string) string, repo *persiste
 		},
 		now,
 		analysisapp.Limits{
-			MonthlyTokens: l.monthly, SiteTextChars: 60_000, Workers: scanWorkers,
-			// Matching stops at the month's tokens of every job together, as the settings show them.
+			SiteTextChars: 60_000, Workers: scanWorkers,
+			// Matching stops at the month's Anthropic budget, in dollars, of every job together, as
+			// the settings show it.
 			BudgetSpent: llm.BudgetSpent,
 		},
 	)
@@ -720,18 +702,6 @@ func glossary(terms []terminologydomain.Term, tribeltUses func(terminologydomain
 		})
 	}
 	return out
-}
-
-func intEnv(getenv func(string) string, key string, fallback int) (int, error) {
-	raw := getenv(key)
-	if raw == "" {
-		return fallback, nil
-	}
-	n, err := strconv.Atoi(raw)
-	if err != nil || n < 0 {
-		return 0, errors.New(key + " must be a whole number of at least 0")
-	}
-	return n, nil
 }
 
 // libpq is each libpq variable the platform hands a Process whose database login rotates, and the

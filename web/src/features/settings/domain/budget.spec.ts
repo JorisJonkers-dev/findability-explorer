@@ -1,34 +1,60 @@
 import { describe, expect, it } from 'vitest'
-import { budgetMeter } from './budget'
+import type { LlmBudget } from '../../../infrastructure/api/types.gen'
+import { budgetMeter, checkBudget } from './budget'
+
+function budget(b: Partial<LlmBudget>): LlmBudget {
+  return {
+    monthlyBudgetUsd: 15,
+    spentThisMonthUsd: 0,
+    leftUsd: 15,
+    tokensThisMonth: 0,
+    averageTokensPerScan: 0,
+    averageScanUsd: 0,
+    scansMatched: 0,
+    ...b,
+  }
+}
 
 describe('the budget meter', () => {
-  it('shows the tokens used against the month, and what one scan uses', () => {
-    expect(budgetMeter({ monthlyTokens: 10_000_000, usedThisMonth: 48_211, averageTokensPerScan: 29_137, scansMatched: 2 })).toEqual({
-      fraction: 48_211 / 10_000_000,
-      text: '48,211 of 10,000,000 tokens used this month (0%)',
-      perScan: 'A company scan uses 29,137 tokens on average, over 2 scans.',
-      left: 'What is left this month covers about 341 more scans.',
+  it('shows the dollars spent against the Anthropic budget, and what one scan costs', () => {
+    expect(
+      budgetMeter(
+        budget({ spentThisMonthUsd: 0.48, leftUsd: 14.52, tokensThisMonth: 48_211, averageTokensPerScan: 29_137, averageScanUsd: 0.0044, scansMatched: 2 }),
+      ),
+    ).toEqual({
+      fraction: 0.48 / 15,
+      text: '$0.48 of $15.00 spent this month (3%), $14.52 left',
+      perScan: 'A company scan costs $0.0044 on average (29,137 tokens), over 2 scans.',
+      left: 'What is left this month covers about 3,300 more scans.',
     })
   })
 
-  it('says what one scan uses, and how many more fit, once a scan has used the language model', () => {
-    const none = budgetMeter({ monthlyTokens: 10_000_000, usedThisMonth: 0, averageTokensPerScan: 0, scansMatched: 0 })
+  it('says what one scan costs, and how many more fit, once a scan has used the language model', () => {
+    const none = budgetMeter(budget({}))
     expect(none.perScan).toBe('No scan has used the language model yet, so there is no average.')
     expect(none.left).toBeNull()
-    const one = budgetMeter({ monthlyTokens: 30_000, usedThisMonth: 40_000, averageTokensPerScan: 25_000, scansMatched: 1 })
-    expect(one.perScan).toBe('A company scan uses 25,000 tokens on average, over 1 scan.')
-    expect(one.left).toBe('This month’s tokens are used up; scans run without product matching until next month.')
-    expect(budgetMeter({ monthlyTokens: 30_000, usedThisMonth: 10_000, averageTokensPerScan: 25_000, scansMatched: 1 }).left).toBe(
+    const one = budgetMeter(budget({ monthlyBudgetUsd: 1, spentThisMonthUsd: 1.2, leftUsd: 0, averageTokensPerScan: 25_000, averageScanUsd: 0.5, scansMatched: 1 }))
+    expect(one.perScan).toBe('A company scan costs $0.50 on average (25,000 tokens), over 1 scan.')
+    expect(one.left).toBe('This month’s Anthropic budget is spent; scans run without product matching until next month.')
+    expect(budgetMeter(budget({ leftUsd: 0.2, averageTokensPerScan: 25_000, averageScanUsd: 0.5, scansMatched: 1 })).left).toBe(
       'What is left this month covers less than one more scan.',
     )
-    expect(budgetMeter({ monthlyTokens: 30_000, usedThisMonth: 0, averageTokensPerScan: 25_000, scansMatched: 1 }).left).toBe(
+    expect(budgetMeter(budget({ leftUsd: 0.5, averageTokensPerScan: 25_000, averageScanUsd: 0.5, scansMatched: 1 })).left).toBe(
       'What is left this month covers about 1 more scan.',
     )
   })
 
   it('fills at most the whole bar, and copes with a budget of nothing', () => {
-    expect(budgetMeter({ monthlyTokens: 100, usedThisMonth: 250, averageTokensPerScan: 0, scansMatched: 0 }).fraction).toBe(1)
-    expect(budgetMeter({ monthlyTokens: 0, usedThisMonth: 5, averageTokensPerScan: 0, scansMatched: 0 }).fraction).toBe(1)
-    expect(budgetMeter({ monthlyTokens: 0, usedThisMonth: 0, averageTokensPerScan: 0, scansMatched: 0 }).fraction).toBe(0)
+    expect(budgetMeter(budget({ monthlyBudgetUsd: 1, spentThisMonthUsd: 2.5, leftUsd: 0 })).fraction).toBe(1)
+    expect(budgetMeter(budget({})).fraction).toBe(0)
+    expect(budgetMeter(budget({ monthlyBudgetUsd: 0, leftUsd: 0 })).fraction).toBe(0)
+  })
+})
+
+describe('a new budget', () => {
+  it('takes dollars from one cent to $1,000, rounded to the cent', () => {
+    expect(checkBudget('15')).toEqual({ kind: 'ok', usd: 15 })
+    expect(checkBudget(' $12,505 ')).toEqual({ kind: 'ok', usd: 12.51 })
+    for (const bad of ['', 'ten', '0', '1000.5']) expect(checkBudget(bad)).toEqual({ kind: 'invalid', message: 'Type a budget from $0.01 to $1,000.' })
   })
 })

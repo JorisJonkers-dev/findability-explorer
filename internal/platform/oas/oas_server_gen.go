@@ -140,8 +140,9 @@ type Handler interface {
 	GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (GetLlmKeyUsageRes, error)
 	// GetLlmSettings implements getLlmSettings operation.
 	//
-	// Returns every credential (never a secret), the model product matching uses now, the token budget,
-	// and the latest 50 changes and tests, newest first.
+	// Returns every credential (never a secret), the model product matching uses now, the Anthropic key's
+	// monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and
+	// tests, newest first.
 	//
 	// GET /api/v1/admin/llm
 	GetLlmSettings(ctx context.Context) (GetLlmSettingsRes, error)
@@ -356,6 +357,15 @@ type Handler interface {
 	//
 	// PUT /api/v1/admin/plan/targets
 	SetPlanTargets(ctx context.Context, req *PlanTargetsChange) (SetPlanTargetsRes, error)
+	// SetTermReview implements setTermReview operation.
+	//
+	// Administrators only. On, the language model reviews the waiting candidates by itself every ten
+	// minutes; off, it reviews only when an administrator asks (startTermReview). A review that runs goes
+	// on until it ends or is stopped. The review is on until it is first switched off. Records who
+	// switched it. Returns the review's state.
+	//
+	// PUT /api/v1/admin/term-candidates/review/switch
+	SetTermReview(ctx context.Context, req *TermReviewSwitch) (SetTermReviewRes, error)
 	// SplitCompetitorCandidate implements splitCompetitorCandidate operation.
 	//
 	// Administrators only. Takes a name Claude Haiku or a person merged into a candidate out of it again;
@@ -441,6 +451,22 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/analyses/{analysisId}/stop
 	StopAnalysis(ctx context.Context, params StopAnalysisParams) (StopAnalysisRes, error)
+	// StopCandidateReview implements stopCandidateReview operation.
+	//
+	// Administrators only. Stops the review of the competitor candidates that runs, after the step it is
+	// on (the merge, or a batch of checks), which it keeps, as it keeps every decision made before. The
+	// review's state says it was stopped by hand (problem stopped). 404 when no review runs.
+	//
+	// POST /api/v1/admin/competitor-candidates/review/stop
+	StopCandidateReview(ctx context.Context) (StopCandidateReviewRes, error)
+	// StopCompetitorCheck implements stopCompetitorCheck operation.
+	//
+	// Administrators only. Stops the check of the companies on the competitor list that runs, after the
+	// batch it is on, which it keeps, as it keeps every company archived before. The check's state says it
+	// was stopped by hand (problem stopped). 404 when no check runs.
+	//
+	// POST /api/v1/admin/competitor-checks/stop
+	StopCompetitorCheck(ctx context.Context) (StopCompetitorCheckRes, error)
 	// StopPromptRun implements stopPromptRun operation.
 	//
 	// Administrators only. Asks a running run to stop. The request is stored, so the instance running the
@@ -467,6 +493,15 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/rescans/stop
 	StopRescan(ctx context.Context) (StopRescanRes, error)
+	// StopTermReview implements stopTermReview operation.
+	//
+	// Administrators only. Stops the review of the waiting candidates that runs, after the batch it asks
+	// about, which it keeps, as it keeps every decision made before; a review asked for that has not
+	// started does not start. The review's state says it was stopped by hand (problem stopped). Whether
+	// the review is on does not change. 404 when no review runs or is asked for.
+	//
+	// POST /api/v1/admin/term-candidates/review/stop
+	StopTermReview(ctx context.Context) (StopTermReviewRes, error)
 	// TestLlmCredential implements testLlmCredential operation.
 	//
 	// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
@@ -506,6 +541,14 @@ type Handler interface {
 	//
 	// PATCH /api/v1/competitors/{competitorId}
 	UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (UpdateCompetitorRes, error)
+	// UpdateLlmBudget implements updateLlmBudget operation.
+	//
+	// Administrators only. Sets what every job a Claude model does may spend in a month together, in
+	// dollars, from one cent to $1,000, and records the change in the events. Work already spent past a
+	// lower budget stops at its next step and keeps what it did.
+	//
+	// PATCH /api/v1/admin/llm/budget
+	UpdateLlmBudget(ctx context.Context, req *LlmBudgetChange) (UpdateLlmBudgetRes, error)
 	// UpdatePromptTestSettings implements updatePromptTestSettings operation.
 	//
 	// Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact

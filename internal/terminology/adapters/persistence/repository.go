@@ -161,11 +161,37 @@ func insertUsage(ctx context.Context, q *queries.Queries, usage []domain.Usage) 
 	return nil
 }
 
-// TokensSince is how many tokens asking the language model for verdicts used since t.
-func (r *Repository) TokensSince(ctx context.Context, t time.Time) (int64, error) {
-	n, err := r.store.Queries().TermReviewTokensSince(ctx, t)
+// TokensSince is how many tokens in and out asking the language model for verdicts used since t.
+func (r *Repository) TokensSince(ctx context.Context, t time.Time) (input, output int64, err error) {
+	row, err := r.store.Queries().TermReviewTokensSince(ctx, t)
 	if err != nil {
-		return 0, fmt.Errorf("sum the review's tokens: %w", err)
+		return 0, 0, fmt.Errorf("sum the review's tokens: %w", err)
 	}
-	return n, nil
+	return row.Input, row.Output, nil
+}
+
+// UsageSince sums the tokens asking the language model for verdicts used since t.
+func (r *Repository) UsageSince(ctx context.Context, t time.Time) (domain.Usage, error) {
+	row, err := r.store.Queries().TermReviewUsageSince(ctx, t)
+	if err != nil {
+		return domain.Usage{}, fmt.Errorf("sum the review's usage: %w", err)
+	}
+	return domain.Usage{InputTokens: row.InputTokens, OutputTokens: row.OutputTokens}, nil
+}
+
+// ReviewOn reports whether the review runs by itself; it does until an administrator switches it off.
+func (r *Repository) ReviewOn(ctx context.Context) (bool, error) {
+	on, err := r.store.Queries().TermReviewOn(ctx)
+	if err != nil {
+		return false, fmt.Errorf("read the review's switch: %w", err)
+	}
+	return on, nil
+}
+
+// SwitchReview stores whether the review runs by itself, with who switched it, when.
+func (r *Repository) SwitchReview(ctx context.Context, on bool, by string, at time.Time) error {
+	if err := r.store.Queries().SwitchTermReview(ctx, queries.SwitchTermReviewParams{ReviewOn: on, UpdatedBy: by, UpdatedAt: at}); err != nil {
+		return fmt.Errorf("store the review's switch: %w", err)
+	}
+	return nil
 }

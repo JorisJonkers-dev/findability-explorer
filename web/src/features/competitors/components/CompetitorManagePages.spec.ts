@@ -191,3 +191,32 @@ describe('check the list', () => {
     expect(wrapper.get('a[href="/manage/keys/anthropic"]').text()).toBe('Add an Anthropic key')
   })
 })
+
+describe('stopping Claude Haiku', () => {
+  it('stops the check of the list while it runs', async () => {
+    const sent: Body[] = []
+    const { wrapper } = await mountApp(
+      api(sent, {
+        'GET /api/v1/admin/competitor-checks': () => json({ items: [], unchecked: 2, review: { running: true } }),
+        'POST /api/v1/admin/competitor-checks/stop': (r) => (sent.push({ method: 'POST', path: new URL(r.url).pathname, body: null }), noContent()),
+      }),
+      '/manage/competitors/check',
+    )
+    await buttonNamed(wrapper, 'Stop the check').trigger('click')
+    await settle()
+    expect(sent.map((s) => s.path)).toEqual(['/api/v1/admin/competitor-checks/stop'])
+  })
+
+  it('stops classifying the candidates while Haiku reviews them, and says why it could not', async () => {
+    const { wrapper } = await mountApp(
+      api([], {
+        'GET /api/v1/admin/competitor-candidates': () => json({ items: [], counts: { pending: 0, added: 0, dismissed: 0, unchecked: 0 }, review: { running: true } }),
+        'POST /api/v1/admin/competitor-candidates/review/stop': () => problem(404, 'Not Found', 'No review runs.'),
+      }),
+      '/manage/competitors/candidates',
+    )
+    await buttonNamed(wrapper, 'Stop classifying').trigger('click')
+    await settle()
+    expect(wrapper.get('[role="alert"]').text()).toBe('No review runs.')
+  })
+})

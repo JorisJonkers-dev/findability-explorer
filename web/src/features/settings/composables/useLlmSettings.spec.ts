@@ -7,6 +7,7 @@ import { mountComposable } from '../../../testing/mountComposable'
 import { json, llmSettings, models, OTHER_ID, problem, routes, STORED_ID, storedCredential, vaultCredential } from '../fixtures'
 import {
   useActiveModel,
+  useBudgetChange,
   useAddCredential,
   useCredentialTest,
   useLlmModels,
@@ -212,5 +213,29 @@ describe('useReplaceCredential', () => {
     stuck.state.replace(storedCredential(), 'New key', 'sk-or-new', () => undefined)
     await flushPromises()
     expect(stuck.state.error.value).toBe('That key no longer exists. Reload the page.')
+  })
+})
+
+describe('useBudgetChange', () => {
+  it('sets the budget and keeps the settings it answers with', async () => {
+    const bodies: unknown[] = []
+    const { state, queryClient } = mountComposable(
+      useBudgetChange,
+      routes({ 'PATCH /api/v1/admin/llm/budget': async (r) => (bodies.push(await r.json()), json(llmSettings())) }),
+    )
+    let saved = 0
+    state.save(20, () => saved++)
+    await flushPromises()
+    expect(bodies).toEqual([{ monthlyBudgetUsd: 20 }])
+    expect(saved).toBe(1)
+    expect(queryClient.getQueryData(getLlmSettingsQueryKey())).toBeDefined()
+    expect(state.error.value).toBeNull()
+  })
+
+  it('says why the budget was refused', async () => {
+    const { state } = mountComposable(useBudgetChange, routes({ 'PATCH /api/v1/admin/llm/budget': () => problem(422, 'Unprocessable', 'Too high.') }))
+    state.save(20, () => undefined)
+    await flushPromises()
+    expect(state.error.value).toBe('The budget was not saved. Too high.')
   })
 })

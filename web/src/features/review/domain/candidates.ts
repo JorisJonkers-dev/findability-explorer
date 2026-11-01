@@ -135,6 +135,7 @@ export function reviewLine(state: TermReviewState): string {
   if (state.problem === 'noModel') return 'No Anthropic key is set up, so every search term waits for you.'
   if (state.problem === 'budget') return "This month's language-model budget is used up, so the search terms wait for you or for next month."
   if (state.problem === 'failed') return 'Claude Haiku failed on its last try. It tries again within ten minutes.'
+  if (state.problem === 'stopped') return 'An administrator stopped the review. What Claude Haiku decided is kept.'
   if (state.waiting > 0) return `${terms(state.waiting)} ${state.waiting === 1 ? 'waits' : 'wait'} for Claude Haiku.`
   return 'Claude Haiku has reviewed every search term.'
 }

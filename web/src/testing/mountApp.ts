@@ -54,6 +54,8 @@ export async function mountApp(handle: Handler, path = '/') {
   })
   // jsdom has no scrolling; the router's scrollBehavior would log that on every page change.
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+  // Nor does it bring an element into view, as Help does with the topic at its address.
+  if (!Reflect.has(Element.prototype, 'scrollIntoView')) Reflect.set(Element.prototype, 'scrollIntoView', () => undefined)
   const router = createAppRouter(createMemoryHistory())
   // A 401 sends the browser to sign in; here the "browser" is a spy, given the app's own address.
   const assign = vi.fn<(url: string) => void>()

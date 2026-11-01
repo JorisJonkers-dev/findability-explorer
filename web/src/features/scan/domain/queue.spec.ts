@@ -75,16 +75,15 @@ describe('a scan in words', () => {
 })
 
 describe('what scans cost', () => {
-  const budget = { monthlyTokens: 10_000_000, usedThisMonth: 48_211, averageTokensPerScan: 29_137 }
+  const budget = { leftUsd: 14.52, averageScanUsd: 0.0044 }
 
-  it('estimates the tokens from the average scan, and says what is left', () => {
-    expect(scanEstimate(budget, 1)).toBe("About 29,137 tokens. 9,951,789 of this month's tokens are left.")
-    expect(scanEstimate(budget, 2)).toBe("About 58,274 tokens for 2 scans. 9,951,789 of this month's tokens are left.")
-    expect(scanEstimate({ ...budget, usedThisMonth: 20_000_000 }, 1)).toBe("About 29,137 tokens. 0 of this month's tokens are left.")
+  it('estimates the dollars from the average scan, and says what is left', () => {
+    expect(scanEstimate(budget, 1)).toBe("About $0.0044. $14.52 of this month's Anthropic budget is left.")
+    expect(scanEstimate(budget, 2)).toBe("About $0.0088 for 2 scans. $14.52 of this month's Anthropic budget is left.")
   })
 
   it('says so when no scan has matched products yet, and nothing before the budget is known', () => {
-    expect(scanEstimate({ ...budget, averageTokensPerScan: 0 }, 1)).toBe("No scan has matched products yet, so there is no estimate. 9,951,789 of this month's tokens are left.")
+    expect(scanEstimate({ ...budget, averageScanUsd: 0 }, 1)).toBe("No scan has matched products yet, so there is no estimate. $14.52 of this month's Anthropic budget is left.")
     expect(scanEstimate(undefined, 1)).toBe('')
   })
 })

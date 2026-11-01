@@ -49,7 +49,7 @@ describe('Website scans', () => {
     expect(wrapper.get('header a[href="/ai-readiness"]').text()).toBe('See AI readiness')
     expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual([
       'Last scan',
-      'Language model budget',
+      'Anthropic budget',
       'AI readiness check',
       'Scan tribelt.nl',
       'Scan one site',
@@ -61,9 +61,9 @@ describe('Website scans', () => {
       'Scan settings',
     ])
     expect(widget(wrapper, 'Last scan').text()).toContain('27 October 2099')
-    expect(widget(wrapper, 'Language model budget').text()).toContain('48,211 of 10,000,000 tokens used this month')
+    expect(widget(wrapper, 'Anthropic budget').text()).toContain('$0.48 of $15.00 spent this month (3%), $14.52 left')
     expect(widget(wrapper, 'AI readiness check').text()).toContain('Not checked again since the app last started.')
-    expect(widget(wrapper, 'Scan tribelt.nl').text()).toContain("About 29,137 tokens. 9,951,789 of this month's tokens are left.")
+    expect(widget(wrapper, 'Scan tribelt.nl').text()).toContain("About $0.0044. $14.52 of this month's Anthropic budget is left.")
     expect(widget(wrapper, 'Check AI readiness again').text()).toContain('Free. 1 sites.')
     expect(widget(wrapper, 'Running now').text()).toContain('No scan is running.')
     expect(widget(wrapper, 'Recent scans').get('a').attributes('href')).toBe('/manage/scans/recent')

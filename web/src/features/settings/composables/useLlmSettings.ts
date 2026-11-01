@@ -10,6 +10,7 @@ import {
   listLlmModelsOptions,
   setActiveLlmMutation,
   testLlmCredentialMutation,
+  updateLlmBudgetMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
 import type { ActiveLlm, LlmCredential, LlmKeyUsage, LlmModel, LlmSettings, NewLlmCredential } from '../../../infrastructure/api/types.gen'
 import { testOutcome } from '../domain/credentials'
@@ -203,6 +204,27 @@ export function useReplaceCredential() {
                 onSuccess: onReplaced,
               },
             )
+          },
+        },
+      )
+    },
+  }
+}
+
+/** Sets the Anthropic key's monthly budget in dollars; the answer is the settings, so they are kept. */
+export function useBudgetChange() {
+  const queryClient = useQueryClient()
+  const change = useMutation(updateLlmBudgetMutation())
+  return {
+    isSaving: change.isPending,
+    error: computed(() => (change.error.value ? settingsProblem(change.error.value, 'budget') : null)),
+    save: (monthlyBudgetUsd: number, onSaved: () => void) => {
+      change.mutate(
+        { body: { monthlyBudgetUsd } },
+        {
+          onSuccess: (settings) => {
+            queryClient.setQueryData(getLlmSettingsQueryKey(), settings)
+            onSaved()
           },
         },
       )

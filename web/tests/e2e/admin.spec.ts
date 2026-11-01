@@ -127,7 +127,7 @@ test('an administrator accepts a candidate into the search term list', async ({ 
   }
   let accepted: unknown = null
   await page.route('**/api/v1/admin/term-candidates?**', (route) =>
-    route.fulfill({ json: { items: accepted === null ? [candidate] : [], counts: { pending: accepted === null ? 1 : 0, accepted: accepted === null ? 0 : 1, rejected: 0 }, review: { running: false, waiting: 0 } } }),
+    route.fulfill({ json: { items: accepted === null ? [candidate] : [], counts: { pending: accepted === null ? 1 : 0, accepted: accepted === null ? 0 : 1, rejected: 0 }, review: { on: true, running: false, waiting: 0, monthTokens: 0, monthCostUsd: 0 } } }),
   )
   await page.route('**/api/v1/admin/term-candidates/3a7bd3e2360a9f01/accept', async (route) => {
     accepted = route.request().postDataJSON()

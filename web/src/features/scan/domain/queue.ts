@@ -1,3 +1,4 @@
+import { dollars } from '../../settings/domain/usage'
 import type { AnalysisSummary, Competitor, LlmBudget, RescanRequest } from '../../../infrastructure/api/types.gen'
 import { isInProgress } from './status'
 
@@ -72,16 +73,14 @@ export function stoppedLine(scan: Pick<AnalysisSummary, 'stoppedByHand' | 'pages
   return `Stopped by hand. It keeps the ${String(scan.pagesCrawled)} ${scan.pagesCrawled === 1 ? 'page' : 'pages'} it read.`
 }
 
-const NUMBER = new Intl.NumberFormat('en-GB')
-
 /**
- * What scans cost, from the average tokens one scan's product matching used: "About 58,274
- * tokens for 2 scans. 9,951,789 of this month's tokens are left." Reading pages costs nothing.
+ * What scans cost, from what one scan's product matching cost on average: "About $0.0088 for 2
+ * scans. $14.52 of this month's Anthropic budget is left." Reading pages costs nothing.
  */
-export function scanEstimate(budget: Pick<LlmBudget, 'averageTokensPerScan' | 'monthlyTokens' | 'usedThisMonth'> | undefined, scans: number): string {
+export function scanEstimate(budget: Pick<LlmBudget, 'averageScanUsd' | 'leftUsd'> | undefined, scans: number): string {
   if (budget === undefined) return ''
-  const left = `${NUMBER.format(Math.max(budget.monthlyTokens - budget.usedThisMonth, 0))} of this month's tokens are left.`
-  if (budget.averageTokensPerScan === 0) return `No scan has matched products yet, so there is no estimate. ${left}`
-  const what = scans === 1 ? '' : ` for ${NUMBER.format(scans)} scans`
-  return `About ${NUMBER.format(budget.averageTokensPerScan * scans)} tokens${what}. ${left}`
+  const left = `${dollars(budget.leftUsd)} of this month's Anthropic budget is left.`
+  if (budget.averageScanUsd === 0) return `No scan has matched products yet, so there is no estimate. ${left}`
+  const what = scans === 1 ? '' : ` for ${String(scans)} scans`
+  return `About ${dollars(budget.averageScanUsd * scans)}${what}. ${left}`
 }

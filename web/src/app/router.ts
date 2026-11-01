@@ -28,20 +28,43 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/ai-responses',
         name: 'ai-responses',
-        component: () => import('../features/ai-search/components/AiSearchView.vue'),
+        component: () => import('../features/ai-search/components/AiResponsesView.vue'),
         meta: { title: 'AI responses', view: 'results' },
       },
       {
         path: '/ai-responses/all',
         name: 'every-response',
-        component: () => import('../features/prompt-test/components/PromptTestView.vue'),
+        component: () => import('../features/prompt-test/components/EveryResponseView.vue'),
         meta: { title: 'Every response', view: 'results' },
+      },
+      {
+        path: '/ai-responses/:id',
+        name: 'response',
+        component: () => import('../features/prompt-test/components/ResponseView.vue'),
+        props: (to) => ({ id: String(to.params.id) }),
+        meta: { title: 'Response', view: 'results' },
       },
       {
         path: '/ai-readiness',
         name: 'ai-readiness',
         component: () => import('../features/readiness/components/ReadinessView.vue'),
         meta: { title: 'AI readiness', view: 'results' },
+        // 1.12.0 picked a site on this page with ?site=; it has a page of its own now.
+        beforeEnter: (to) => (typeof to.query.site === 'string' ? `/ai-readiness/${to.query.site}` : true),
+      },
+      {
+        path: '/ai-readiness/:id',
+        name: 'site',
+        component: () => import('../features/readiness/components/CompanyReadiness.vue'),
+        props: (to) => ({ companyId: String(to.params.id) }),
+        meta: { title: 'Site', view: 'results' },
+      },
+      {
+        path: '/ai-readiness/:id/files',
+        name: 'site-files',
+        component: () => import('../features/readiness/components/FilesView.vue'),
+        props: (to) => ({ companyId: String(to.params.id) }),
+        meta: { title: 'Files found', view: 'results' },
       },
       { path: '/terms', name: 'terms', component: () => import('../features/terminology/components/TermsView.vue'), meta: { title: 'Search terms', view: 'results' } },
       // Every term in the map, ranked, with its filters in the query: a page of its own, linked from Search terms.
@@ -221,6 +244,8 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
     ],
     scrollBehavior: (to, from, saved) => {
       if (saved) return saved
+      // Help brings the topic at its address into view itself.
+      if (to.name === 'help-topic') return false
       // Filters, a picked company and polling change the query, not the view; only a new view starts at the top.
       return to.matched[0]?.components?.default === from.matched[0]?.components?.default ? false : { top: 0 }
     },

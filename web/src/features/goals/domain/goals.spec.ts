@@ -2,21 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Overview, Plan, PlanTarget, PromptCell, ReadinessCheckSummary, Standings } from '../../../infrastructure/api/types.gen'
 import { promptRun } from '../../../testing/fixtures'
 import { overviewFixture, planFixture, standingsFixture } from '../../../testing/numbersFixtures'
-import {
-  GOAL_ORDER,
-  goalPage,
-  goalRows,
-  historyMeasure,
-  isPromptGoal,
-  overviewSummary,
-  pathOfTarget,
-  promptBreakdown,
-  promptDataLine,
-  readinessBreakdown,
-  targetOfSlug,
-  termsBreakdown,
-  valueText,
-} from './goals'
+import { GOAL_ORDER, goalPage, goalRows, goalTabTitle, historyMeasure, isPromptGoal, overviewSummary, pathOfTarget, promptBreakdown, promptDataLine, readinessBreakdown, targetOfSlug, termsBreakdown, valueText } from './goals'
 
 const facts = (change: (plan: Plan, standings: Standings) => void = () => undefined) => {
   const plan = planFixture()
@@ -269,5 +255,12 @@ describe('Broken down', () => {
       ['Dutch, of 58', '13'],
       ['German, of 221', '15'],
     ])
+  })
+})
+
+describe('a goal page in the browser tab', () => {
+  it('says Goal and the goal’s name, or Goal alone for an address no goal has', () => {
+    expect(goalTabTitle('citationShare')).toBe('Goal, Web responses that cite tribelt.nl')
+    expect(goalTabTitle('nothing')).toBe('Goal')
   })
 })

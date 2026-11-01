@@ -110,7 +110,8 @@ describe('the routes', () => {
     const { router } = await mountApp(routes({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/')
     expect(document.title).toBe('Overview · Findability Explorer')
     const titles: [string, string][] = [
-      ['/goals/aiShareOfVoice', 'Goal'],
+      ['/goals/aiShareOfVoice', 'Goal, AI responses that name Tribelt'],
+      ['/goals/nothing', 'Goal'],
       ['/ai-responses', 'AI responses'],
       ['/ai-responses/all', 'Every response'],
       ['/ai-readiness', 'AI readiness'],
@@ -141,7 +142,7 @@ describe('the routes', () => {
     const pages = router.getRoutes().filter((r) => r.components)
     expect(pages.length).toBeGreaterThan(20)
     for (const page of pages) {
-      expect(typeof page.meta.title, page.path).toBe('string')
+      expect(['string', 'function'], page.path).toContain(typeof page.meta.title)
       expect(page.meta.view, page.path).toBe(page.path.startsWith('/manage') ? 'manage' : 'results')
     }
   })

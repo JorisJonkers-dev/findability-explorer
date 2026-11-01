@@ -92,7 +92,7 @@ describe('the competitor review', () => {
     expect(wrapper.get('[data-part="review-line"]').text()).toContain('Haiku has not checked 3 companies yet.')
     const first = rows(wrapper)[0]
     expect(first?.get('h3').text()).toBe('Taiwan Metiz Alliance')
-    expect(first?.text()).toContain('Named in 8 answers by OpenAI and xAI.')
+    expect(first?.text()).toContain('Named in 8 responses by OpenAI and xAI.')
     expect(first?.text()).toContain('Also named')
     expect(first?.text()).toContain('Haiku says a competitor. Makes wire mesh belts.')
     expect(first?.get('a[target="_blank"]').attributes('href')).toBe('https://metiz.tw/')

@@ -39,7 +39,7 @@ describe('measuresOf', () => {
     const m = by(known)
     expect(Object.keys(m)).toEqual(['answers', 'ready', 'sitemap', 'terms'])
     expect(m.answers).toMatchObject({ themText: '40%', usText: '20%', scale: 0.4, path: '/ai-responses/all' })
-    expect(m.answers?.text).toBe('Twentebelt is named in 40% of the answers in the newest Prompt run, and Tribelt in 20%.')
+    expect(m.answers?.text).toBe('Twentebelt is named in 40% of the responses in the newest Prompt run, and Tribelt in 20%.')
     expect(m.ready).toMatchObject({ themText: '3½ of 5', usText: '5 of 5', scale: 5 })
     expect(m.ready?.text).toBe('Twentebelt’s site passes 3½ of 5 of the AI readiness checks, and tribelt.nl passes 5 of 5.')
     expect(m.sitemap).toMatchObject({ themText: '50%', usText: '85%', scale: 1 })
@@ -50,7 +50,7 @@ describe('measuresOf', () => {
 
   it('says what is not known', () => {
     const m = by({ ...known, share: undefined, tribeltShare: undefined, ready: undefined, tribeltReady: undefined, sitemap: undefined, tribeltSitemap: undefined, terms: undefined, tribeltTerms: undefined })
-    expect(m.answers).toMatchObject({ themText: 'Not known', scale: 0.01, text: 'No Prompt run has counted the answers that name Twentebelt or Tribelt yet.' })
+    expect(m.answers).toMatchObject({ themText: 'Not known', scale: 0.01, text: 'No Prompt run has counted the responses that name Twentebelt or Tribelt yet.' })
     expect(m.ready?.text).toBe('Twentebelt’s site has not been scanned yet, so its AI readiness is not known.')
     expect(m.sitemap?.text).toContain('is not known. Scan its site again')
     expect(m.terms).toMatchObject({ themText: 'Not known', scale: 1 })

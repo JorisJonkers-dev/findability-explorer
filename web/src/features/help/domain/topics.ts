@@ -111,10 +111,9 @@ const GOALS: readonly [string, string][] = [
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z]+/g, '-')
 
 /**
- * Every topic of Help, the reviewed prototype's copy. Topics about what this release does not have
- * yet (editing the questions, choosing models from the catalogue, the Claude steps, the
- * Recommendation run, terms added by hand, the competitor definition's versions, and a dollar
- * budget per key) join with their releases.
+ * Every topic of Help, the reviewed prototype's copy. Topics about what the tool does not have yet
+ * (editing the questions, choosing models from the catalogue, the Claude steps, the Recommendation
+ * run, and terms added by hand) join with their releases.
  */
 export const TOPICS: readonly Topic[] = [
   // Getting started
@@ -146,9 +145,9 @@ export const TOPICS: readonly Topic[] = [
     'Set the tool up for the first time',
     [
       'Add an OpenRouter key to pay for the Prompt test, and an Anthropic key to pay for reading responses, product matching, and the term review.',
-      'Work stops by itself when its budget is spent.',
+      'Then set a monthly budget for each key. Work stops by itself when its budget is spent.',
     ],
-    [manage('Keys and spending', '/manage/keys')],
+    [manage('Keys and spending', '/manage/keys'), manage('Budgets', '/manage/keys/budgets')],
     'key api openrouter anthropic install handover budget',
   ),
   topic(
@@ -168,7 +167,7 @@ export const TOPICS: readonly Topic[] = [
     'results',
     'The five goals',
     GOALS.map(([name, purpose]) => `${name}. ${purpose}`),
-    [{ label: 'See the goals', to: '/' }, manage('Set the goals', '/manage/recommendations')],
+    [{ label: 'See the goals', to: '/' }, manage('Set the goals', '/manage/recommendations/goals')],
     'goal target numbers to watch progress',
   ),
   topic(
@@ -212,10 +211,11 @@ export const TOPICS: readonly Topic[] = [
     'Read a response from an AI assistant',
     [
       'Every response opens on its own page, with the full text, the companies it named, the sources it cited, and how it compares with the fact sheet.',
+      'The comparison has two parts. Wrong about Tribelt lists the claims that contradict the fact sheet. Left out lists the facts about Tribelt the response could have said and did not.',
       'In Every response, filter by search mode, scope, belt family, or model, and pick a square.',
     ],
     [{ label: 'Every response', to: '/ai-responses/all' }],
-    'grid square response text csv download answer',
+    'grid square response text csv download answer wrong claims left out fact sheet',
   ),
 
   // The Prompt test
@@ -246,16 +246,17 @@ export const TOPICS: readonly Topic[] = [
     'Stop anything that is running',
     [
       'Activity lists everything that is running, each with its own Stop button. Stop first says what it keeps, for example the responses a Prompt run has so far. You can finish a stopped Prompt run later with a retry.',
+      'Work you stop is marked Stopped by hand. Work its budget stops is marked Stopped by the budget.',
     ],
-    [manage('Activity', '/manage'), manage('Prompt runs', '/manage/prompt-test')],
+    [manage('Activity', '/manage'), manage('Prompt runs', '/manage/prompt-test/runs')],
     'cancel halt abort stop',
   ),
   topic(
     'schedule',
     'prompt',
     'Change how often the test runs',
-    ['Choose monthly or weekly in Manage, Prompt test.', { estimate: 'year' }],
-    [manage('Schedule', '/manage/prompt-test')],
+    ['Choose monthly or weekly in Manage, Prompt test, Schedule.', { estimate: 'year' }],
+    [manage('Schedule', '/manage/prompt-test/schedule')],
     'schedule cadence monthly weekly automatic',
   ),
   topic(
@@ -265,7 +266,7 @@ export const TOPICS: readonly Topic[] = [
     [
       'The fact sheet says what is true about Tribelt. Every response about Tribelt is checked against it, and claims that contradict it are marked wrong. Each saved fact sheet is a version.',
     ],
-    [manage('Fact sheet', '/manage/prompt-test')],
+    [manage('Fact sheet', '/manage/prompt-test/fact-sheet')],
     'facts wrong claims check',
   ),
 
@@ -296,8 +297,23 @@ export const TOPICS: readonly Topic[] = [
       'Scan one site, or rescan every competitor, those not scanned in 30 days, or those never scanned. Each choice shows how many scans it starts, what they cost, and how long they take.',
       'Waiting scans can be removed from the queue, one at a time or all at once.',
     ],
-    [manage('Website scans', '/manage/scans')],
+    [manage('Website scans', '/manage/scans'), manage('Scan queue', '/manage/scans/queue')],
     'rescan queue remove competitor',
+  ),
+
+  topic(
+    'scan-keeps',
+    'websites',
+    'What a scan keeps',
+    [
+      'A scan keeps the text of the site’s sitemap and, for each search term on the list, the pages that use it.',
+      'A site’s files page shows the sitemap, and a search term’s page lists where each company uses it.',
+    ],
+    [
+      { label: 'See AI readiness', to: '/ai-readiness' },
+      { label: 'Every term', to: '/terms/all' },
+    ],
+    'sitemap pages per term files evidence where used',
   ),
 
   // Search terms
@@ -323,9 +339,11 @@ export const TOPICS: readonly Topic[] = [
   topic(
     'term-review',
     'terms',
-    'Review new terms',
-    ['The term review runs by itself after each scan and costs a little Anthropic budget. Start it by hand, or accept and reject terms yourself.'],
-    [manage('Waiting terms', '/manage/terms/waiting')],
+    'Review new terms, or switch the review off',
+    [
+      'The term review runs by itself after each scan and costs a little Anthropic budget. Switch it off, start it by hand, or accept and reject terms yourself.',
+    ],
+    [manage('Term review', '/manage/terms/review'), manage('Waiting terms', '/manage/terms/waiting')],
     'review terms keywords accept reject automatic',
   ),
 
@@ -338,7 +356,7 @@ export const TOPICS: readonly Topic[] = [
       "A competitor makes metal conveyor belts Tribelt's buyers could choose instead. Makers of plastic or fabric belts and Tribelt's group companies are not competitors.",
       'The rule is written down as the competitor definition, which Haiku checks companies against.',
     ],
-    [{ label: 'See the competitors', to: '/competitors' }],
+    [{ label: 'See the competitors', to: '/competitors' }, manage('Competitor definition', '/manage/competitors/definition')],
     'rival plastic fabric group',
   ),
   topic(
@@ -350,6 +368,17 @@ export const TOPICS: readonly Topic[] = [
     ],
     [manage('Candidates', '/manage/competitors/candidates')],
     'candidate competitor add remove dismiss review',
+  ),
+
+  topic(
+    'definition',
+    'competitors',
+    'Change the competitor definition',
+    [
+      'Edit it in Manage, Competitor list. Each save is a version that can be opened and restored. Saving does not recheck the companies; it offers a recheck with its cost.',
+    ],
+    [manage('Competitor definition', '/manage/competitors/definition')],
+    'definition rule version restore',
   ),
 
   // Recommendations
@@ -370,7 +399,7 @@ export const TOPICS: readonly Topic[] = [
     [
       'Rules decide, never a model: a term found on the page it names, a new page found in the right language, a listing that names Tribelt, or a readiness check that passes, all in the next scan. What no scan can see is ticked by hand.',
     ],
-    [manage('Recommendations to tick off yourself', '/manage/recommendations')],
+    [manage('Recommendations to tick off yourself', '/manage/recommendations/tick-off')],
     'done tick complete check',
   ),
 
@@ -379,15 +408,30 @@ export const TOPICS: readonly Topic[] = [
     'costs',
     'costs',
     'What things cost',
-    [{ estimate: 'cost' }, 'Readiness checks are free. Every Start button shows its own estimate first.'],
-    [manage('This month’s spending', '/manage/keys')],
+    [
+      { estimate: 'cost' },
+      'Readiness checks are free. Every Start button shows its own estimate first.',
+      'Activity shows this month’s spending by kind of work and by key.',
+    ],
+    [manage('This month’s spending', '/manage')],
     'price money dollars estimate',
+  ),
+  topic(
+    'budgets',
+    'costs',
+    'Change the monthly budgets',
+    [
+      'There are two budgets in dollars, one for each key: OpenRouter for the Prompt test, and Anthropic for everything Haiku or Sonnet does.',
+      'The Prompt test’s budget is set in Manage, Prompt test, Schedule, and the Anthropic budget in Keys and spending, Budgets.',
+    ],
+    [manage('Prompt test budget', '/manage/prompt-test/schedule'), manage('Budgets', '/manage/keys/budgets')],
+    'budget limit monthly dollars',
   ),
   topic(
     'over-budget',
     'costs',
     'What happens when a budget runs out',
-    ['Running work stops when its budget is spent, and keeps what it has done.'],
+    ['Work that would cost more than is left asks for a second click before it starts. Running work stops when its budget is spent, and keeps what it has done.'],
     [manage('Activity', '/manage')],
     'over budget limit stop',
   ),

@@ -44,7 +44,7 @@ export function matchingText(matching: MatchingStatus): string | null {
     case 'skipped':
       return "Skipped: this month's language-model budget is used up, or the pages had no text."
     case 'failed':
-      return 'The language model did not answer. The rest of the scan is complete.'
+      return 'The language model did not reply. The rest of the scan is complete.'
     case 'done':
       return null
   }

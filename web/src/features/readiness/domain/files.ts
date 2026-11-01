@@ -9,13 +9,16 @@ export type FileKey = (typeof FILE_KEYS)[number]
 const FILE_NAMES: Record<FileKey, string> = { robots: 'robots.txt', sitemap: 'sitemap.xml', llms: 'llms.txt', llmsFull: 'llms-full.txt' }
 
 /**
- * What the scan has of a file: its text, none found, robots.txt not reached, or the sitemap,
- * found but its text not kept by this release.
+ * What the scan has of a file: its text, none found, robots.txt not reached, or a sitemap found by
+ * a scan made before scans kept the sitemap's text.
  */
 export type FileState = 'found' | 'missing' | 'unreachable' | 'notKept'
 
-/** One tab of the files viewer. */
-export type FileTab = { key: FileKey; name: string; state: FileState; text: string; truncated: boolean }
+/**
+ * One tab of the files viewer: the file's name, what the scan has of it, its text, whether that
+ * was cut, the name it downloads under, and the address it came from (the sitemap's; empty else).
+ */
+export type FileTab = { key: FileKey; name: string; state: FileState; text: string; truncated: boolean; fileName: string; source: string }
 
 /** The tab an address names, robots.txt when it names none. */
 export function fileKeyOf(value: unknown): FileKey {
@@ -30,13 +33,21 @@ export function fileTabs(files: ReadinessFiles | undefined, r: AiReadiness | und
     truncated: Boolean(t) && truncated === true,
   })
   const robots = text(files?.robotsTxt, files?.robotsTruncated)
-  const byKey: Record<FileKey, Omit<FileTab, 'key' | 'name'>> = {
+  const sitemap = text(files?.sitemapTxt, files?.sitemapTruncated)
+  const found = r !== undefined && (r.sitemap.declared || r.sitemap.files > 0)
+  const byKey: Record<FileKey, Omit<FileTab, 'key' | 'name' | 'fileName' | 'source'>> = {
     robots: robots.state === 'missing' && r?.robots === 'unreachable' ? { ...robots, state: 'unreachable' } : robots,
-    sitemap: { state: r && (r.sitemap.declared || r.sitemap.files > 0) ? 'notKept' : 'missing', text: '', truncated: false },
+    sitemap: sitemap.state === 'missing' && found ? { ...sitemap, state: 'notKept' } : sitemap,
     llms: text(files?.llmsTxt, files?.llmsTruncated),
     llmsFull: text(files?.llmsFullTxt, files?.llmsFullTruncated),
   }
-  return FILE_KEYS.map((key) => ({ key, name: FILE_NAMES[key], ...byKey[key] }))
+  const source = (key: FileKey) => (key === 'sitemap' ? (files?.sitemapUrl ?? '') : '')
+  return FILE_KEYS.map((key) => ({ key, name: FILE_NAMES[key], ...byKey[key], fileName: fileNameOf(source(key)) || FILE_NAMES[key], source: source(key) }))
+}
+
+/** The last part of an address's path, such as "sitemap_index.xml"; empty for an address without one. */
+function fileNameOf(address: string): string {
+  return address.replace(/[?#].*$/, '').split('/').slice(3).filter(Boolean).at(-1) ?? ''
 }
 
 /** "Found: robots.txt and llms.txt. Not found: llms-full.txt." */
@@ -53,7 +64,7 @@ export function missingSentence(tab: Pick<FileTab, 'key' | 'name' | 'state'>, ho
     case 'found':
       return ''
     case 'notKept':
-      return "This release does not keep the sitemap's text yet."
+      return "This scan was made before scans kept the sitemap's text. Scan the site again to read it."
     case 'unreachable':
       return `The scan could not reach ${tab.name} on ${host}.`
     case 'missing':

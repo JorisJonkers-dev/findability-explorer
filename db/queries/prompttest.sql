@@ -261,6 +261,15 @@ SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_toke
 FROM prompt_extractions
 WHERE extracted_at >= @since AND haiku_tokens > 0;
 
+-- name: PromptReadingTokensSinceByModel :many
+-- The same per model that read, so each is priced at its own list price; a reading from before
+-- readings recorded their model has none.
+SELECT model, coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+FROM prompt_extractions
+WHERE extracted_at >= @since AND haiku_tokens > 0
+GROUP BY model
+ORDER BY model;
+
 -- name: ListPromptSets :many
 -- Every published Prompt set, newest first.
 SELECT version, published_at, published_by, note

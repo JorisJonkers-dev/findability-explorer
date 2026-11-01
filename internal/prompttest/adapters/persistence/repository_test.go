@@ -202,6 +202,10 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if in, out, err := repo.ReadingTokensSince(ctx, at); err != nil || in != 5 || out != 5 {
 		t.Errorf("reading tokens = %d in, %d out, %v", in, out, err)
 	}
+	if m, err := repo.ReadingTokensSinceByModel(ctx, at); err != nil || len(m) != 1 ||
+		m[0] != (persistence.ModelTokens{Model: "anthropic: claude-sonnet-5-5", Input: 5, Output: 5}) {
+		t.Errorf("reading tokens per model = %+v, %v", m, err)
+	}
 	if in, out, _ := repo.ReadingTokensSince(ctx, at.Add(time.Hour)); in != 0 || out != 0 {
 		t.Errorf("reading tokens later = %d in, %d out", in, out)
 	}

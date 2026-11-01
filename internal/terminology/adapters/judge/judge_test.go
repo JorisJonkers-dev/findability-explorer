@@ -43,7 +43,7 @@ func TestTheModelGivesAVerdictPerPhrase(t *testing.T) {
 		{"id":"00000000000000bb","accept":false,"sure":true,"reason":"` + strings.Repeat("x", 400) + `","term":"","language":"","family":"","tier":""}
 	]}` + "\n```"}
 	examples := []domain.Term{{Text: "spiral belt", Language: "en", Family: "tri_flex_turn_curve", Tier: "product"}}
-	got, usage, err := judge.New(c, "claude-haiku-5-5").Judge(t.Context(), candidates(), examples)
+	got, usage, err := judge.New(c, "claude-haiku-5-5", "Review the metal conveyor belts terms.").Judge(t.Context(), candidates(), examples)
 	if err != nil || len(got) != 2 {
 		t.Fatalf("Judge = %+v, %v", got, err)
 	}
@@ -59,7 +59,7 @@ func TestTheModelGivesAVerdictPerPhrase(t *testing.T) {
 		t.Errorf("the rejected one = %+v", b)
 	}
 	p := c.prompt
-	if p.Model != "claude-haiku-5-5" || p.SchemaName == "" || p.Schema == nil || !strings.Contains(p.System, "metal conveyor belts") {
+	if p.Model != "claude-haiku-5-5" || p.SchemaName == "" || p.Schema == nil || p.System != "Review the metal conveyor belts terms." {
 		t.Errorf("prompt = %+v", p)
 	}
 	for _, want := range []string{
@@ -76,23 +76,23 @@ func TestTheModelGivesAVerdictPerPhrase(t *testing.T) {
 
 func TestTheModelFailing(t *testing.T) {
 	down := &client{err: errors.New("provider down")}
-	if _, usage, err := judge.New(down, "m").Judge(t.Context(), candidates(), nil); err == nil || errors.Is(err, app.ErrBadAnswer) || usage.InputTokens != 1200 {
+	if _, usage, err := judge.New(down, "m", "Review.").Judge(t.Context(), candidates(), nil); err == nil || errors.Is(err, app.ErrBadAnswer) || usage.InputTokens != 1200 {
 		t.Errorf("a failing provider = %+v, %v", usage, err)
 	}
 	// An answer the model cut off, or one that cannot be read, is no usable answer.
 	cut := &client{err: fmt.Errorf("ask: %w", llm.ErrNoAnswer)}
-	if _, usage, err := judge.New(cut, "m").Judge(t.Context(), candidates(), nil); !errors.Is(err, app.ErrBadAnswer) || usage.OutputTokens != 300 {
+	if _, usage, err := judge.New(cut, "m", "Review.").Judge(t.Context(), candidates(), nil); !errors.Is(err, app.ErrBadAnswer) || usage.OutputTokens != 300 {
 		t.Errorf("a cut-off answer = %+v, %v", usage, err)
 	}
 	garbled := &client{text: "Sure! Here are my thoughts."}
-	if _, usage, err := judge.New(garbled, "m").Judge(t.Context(), candidates(), nil); !errors.Is(err, app.ErrBadAnswer) || usage.OutputTokens != 300 {
+	if _, usage, err := judge.New(garbled, "m", "Review.").Judge(t.Context(), candidates(), nil); !errors.Is(err, app.ErrBadAnswer) || usage.OutputTokens != 300 {
 		t.Errorf("an answer that is no JSON = %+v, %v", usage, err)
 	}
 }
 
 func TestAnAnswerIsClippedToWhatTheMapStores(t *testing.T) {
 	c := &client{text: `{"verdicts":[{"id":"00000000000000aa","accept":true,"sure":true,"reason":"r","term":"t","language":"English (United States)","family":"other","tier":"broad"}]}`}
-	got, _, err := judge.New(c, "m").Judge(t.Context(), candidates(), nil)
+	got, _, err := judge.New(c, "m", "Review.").Judge(t.Context(), candidates(), nil)
 	if err != nil || len(got) != 1 || len([]rune(got[0].Term.Language)) != 16 {
 		t.Errorf("Judge = %+v, %v", got, err)
 	}

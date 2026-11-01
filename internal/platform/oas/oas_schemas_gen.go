@@ -9791,6 +9791,9 @@ func (s *PromptCorrectness) UnmarshalText(data []byte) error {
 // How the extractor read an answer; failed when it could not, after a retry.
 // Ref: #/components/schemas/PromptExtraction
 type PromptExtraction struct {
+	// The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a
+	// reading made before readings recorded it.
+	ReadBy OptString `json:"readBy"`
 	// True when the extractor could not read it.
 	Failed bool `json:"failed"`
 	// The companies named, in order.
@@ -9809,6 +9812,11 @@ type PromptExtraction struct {
 	// name Tribelt, and for a response read before wrong claims and facts left out were told apart.
 	LeftOut []string `json:"leftOut"`
 	CostUsd Usd      `json:"costUsd"`
+}
+
+// GetReadBy returns the value of ReadBy.
+func (s *PromptExtraction) GetReadBy() OptString {
+	return s.ReadBy
 }
 
 // GetFailed returns the value of Failed.
@@ -9854,6 +9862,11 @@ func (s *PromptExtraction) GetLeftOut() []string {
 // GetCostUsd returns the value of CostUsd.
 func (s *PromptExtraction) GetCostUsd() Usd {
 	return s.CostUsd
+}
+
+// SetReadBy sets the value of ReadBy.
+func (s *PromptExtraction) SetReadBy(val OptString) {
+	s.ReadBy = val
 }
 
 // SetFailed sets the value of Failed.
@@ -11061,6 +11074,10 @@ func (*PromptRun) startPromptRunRes() {}
 // response to measure it on.
 // Ref: #/components/schemas/PromptRunFigures
 type PromptRunFigures struct {
+	// The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5";
+	// absent when its readings recorded none. A change of it between runs breaks the charts, as the
+	// responses were read another way.
+	ReadingModel OptString `json:"readingModel"`
 	// The run's id.
 	RunId uuid.UUID `json:"runId"`
 	// When it started.
@@ -11089,6 +11106,11 @@ type PromptRunFigures struct {
 	Twente OptFloat64 `json:"twente"`
 	// The share of the web responses read that cite tribelt.nl.
 	Citation OptFloat64 `json:"citation"`
+}
+
+// GetReadingModel returns the value of ReadingModel.
+func (s *PromptRunFigures) GetReadingModel() OptString {
+	return s.ReadingModel
 }
 
 // GetRunId returns the value of RunId.
@@ -11159,6 +11181,11 @@ func (s *PromptRunFigures) GetTwente() OptFloat64 {
 // GetCitation returns the value of Citation.
 func (s *PromptRunFigures) GetCitation() OptFloat64 {
 	return s.Citation
+}
+
+// SetReadingModel sets the value of ReadingModel.
+func (s *PromptRunFigures) SetReadingModel(val OptString) {
+	s.ReadingModel = val
 }
 
 // SetRunId sets the value of RunId.

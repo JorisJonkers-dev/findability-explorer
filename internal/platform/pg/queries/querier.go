@@ -160,6 +160,8 @@ type Querier interface {
 	// readings whose tokens count as Haiku's.
 	PromptReadingTokensSince(ctx context.Context, since time.Time) (PromptReadingTokensSinceRow, error)
 	PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error)
+	// The model that read most of each run's responses, for the runs whose readings recorded one.
+	PromptRunReadingModels(ctx context.Context) ([]PromptRunReadingModelsRow, error)
 	PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)

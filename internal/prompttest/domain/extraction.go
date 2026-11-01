@@ -74,6 +74,9 @@ type Extraction struct {
 	// HaikuTokens are the tokens Claude Haiku on an Anthropic key used reading the answer; they
 	// count towards the month's Anthropic budget. 0 when OpenRouter read it.
 	HaikuTokens int64
+	// Model is the model that read it, as the reader names it ("anthropic: claude-haiku-5-5", or
+	// OpenRouter's model id); empty for a reading made before readings recorded it.
+	Model string
 }
 
 // Role is what a company is to Tribelt.

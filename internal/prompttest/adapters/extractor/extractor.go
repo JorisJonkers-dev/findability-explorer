@@ -121,16 +121,16 @@ func New(client llm.Client, model string) *Extractor {
 	return &Extractor{client: client, model: model}
 }
 
-// Extract has Haiku read an answer in the strict format. What it used is priced at Haiku's list
-// price (domain.HaikuPrice), also when the reading failed; an answer to read is far shorter than
-// the 100,000 tokens that price holds for.
+// Extract has the reading model read an answer in the strict format. What it used is priced at the
+// model's list price (domain.ClaudePrice), also when the reading failed; an answer to read is far
+// shorter than the 100,000 tokens that price holds for.
 func (e *Extractor) Extract(ctx context.Context, in app.ExtractInput) (domain.Extracted, domain.Reply, error) {
 	resp, err := e.client.Complete(ctx, llm.Prompt{
 		Model: e.model, System: System, User: User(in), SchemaName: SchemaName, Schema: Schema(), MaxTokens: maxTokens,
 	})
 	usage := domain.Reply{
 		InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens,
-		Cost: domain.HaikuPrice().Of(resp.InputTokens, resp.OutputTokens),
+		Cost: domain.ClaudePrice(e.model).Of(resp.InputTokens, resp.OutputTokens),
 	}
 	if err != nil {
 		return domain.Extracted{}, usage, err

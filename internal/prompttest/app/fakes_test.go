@@ -280,6 +280,36 @@ func (r *repo) SetExtraction(_ context.Context, id uuid.UUID, x domain.Extractio
 	return nil
 }
 
+// ReadingModels returns, per run, the model that read most of its responses.
+func (r *repo) ReadingModels(context.Context) (map[uuid.UUID]string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("ReadingModels"); err != nil {
+		return nil, err
+	}
+	counts := map[uuid.UUID]map[string]int{}
+	for _, a := range r.answers {
+		if a.Extraction == nil || a.Extraction.Failed || a.Extraction.Model == "" {
+			continue
+		}
+		if counts[a.RunID] == nil {
+			counts[a.RunID] = map[string]int{}
+		}
+		counts[a.RunID][a.Extraction.Model]++
+	}
+	out := map[uuid.UUID]string{}
+	for id, byModel := range counts {
+		best := ""
+		for m, n := range byModel {
+			if best == "" || n > byModel[best] || (n == byModel[best] && m < best) {
+				best = m
+			}
+		}
+		out[id] = best
+	}
+	return out, nil
+}
+
 func (r *repo) Answers(_ context.Context, runID uuid.UUID, withText bool) ([]domain.Answer, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

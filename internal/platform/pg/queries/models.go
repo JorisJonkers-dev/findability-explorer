@@ -328,6 +328,7 @@ type PromptExtraction struct {
 	ExtractedAt  time.Time
 	HaikuTokens  int64
 	LeftOut      []string
+	Model        string
 }
 
 type PromptReviewUsage struct {

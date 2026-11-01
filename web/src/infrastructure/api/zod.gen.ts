@@ -1782,6 +1782,7 @@ export const zPromptSetVersionInfo = z.object({
  * One run's figures: the share of the responses read that name Tribelt, overall, per language, and for Twente, and the share of web responses that cite tribelt.nl. A share is absent when the run read no response to measure it on.
  */
 export const zPromptRunFigures = z.object({
+    readingModel: z.string().max(200).optional(),
     runId: z.uuid().max(36),
     startedAt: z.iso.datetime({ offset: true }).max(64),
     promptSetVersion: z.int().gte(1).lte(100000),
@@ -1820,6 +1821,7 @@ export const zPromptNamedCompany = z.object({
  * How the extractor read an answer; failed when it could not, after a retry.
  */
 export const zPromptExtraction = z.object({
+    readBy: z.string().max(200).optional(),
     failed: z.boolean(),
     companies: z.array(zPromptNamedCompany).max(30),
     addresses: z.array(z.string().max(500)).max(200),

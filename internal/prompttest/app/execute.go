@@ -267,11 +267,13 @@ func (e *execution) extract(ctx context.Context, a domain.Answer) domain.Extract
 			read := domain.Read(x, a.Citations, e.directory)
 			read.InputTokens, read.OutputTokens, read.Cost = used.InputTokens, used.OutputTokens, used.Cost
 			read.HaikuTokens = haikuTokens(r, used)
+			read.Model = r.model
 			return read
 		}
 	}
 	return domain.Extraction{
 		Failed: true, InputTokens: used.InputTokens, OutputTokens: used.OutputTokens, Cost: used.Cost, HaikuTokens: haikuTokens(r, used),
+		Model: r.model,
 	}
 }
 

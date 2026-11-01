@@ -34,6 +34,9 @@ type RunFigures struct {
 	// Read is how many responses were read and count in the shares.
 	Read    int
 	Partial bool
+	// ReadingModel is the model that read most of its responses, as the readings name it; empty
+	// when they recorded none. A change of it breaks the charts.
+	ReadingModel string
 
 	All, Dutch, German, English, Twente, Citation *float64
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
@@ -120,6 +121,9 @@ func (h *Handler) GetPromptTestHistory(ctx context.Context) (oas.GetPromptTestHi
 		}
 		if why := v.FailureOf[f.RunID]; why != "" {
 			r.Failure = oas.NewOptString(why)
+		}
+		if f.ReadingModel != "" {
+			r.ReadingModel = oas.NewOptString(readerName(f.ReadingModel))
 		}
 		out.Runs = append(out.Runs, r)
 	}
@@ -561,6 +565,15 @@ func toRun(r domain.Run, p domain.Progress, cells []domain.Cell) oas.PromptRun {
 	return out
 }
 
+// readerName is the model that read a response, for people: a Claude model on an Anthropic key by
+// its name ("Claude Haiku 5.5"), any other by its OpenRouter id.
+func readerName(model string) string {
+	if m, ok := strings.CutPrefix(model, string(llm.Anthropic)+": "); ok {
+		return llm.ClaudeName(m)
+	}
+	return model
+}
+
 func toAnswer(a domain.Answer) oas.PromptAnswer {
 	cost := a.Cost
 	out := oas.PromptAnswer{
@@ -580,6 +593,9 @@ func toAnswer(a domain.Answer) oas.PromptAnswer {
 			Failed: x.Failed, Companies: make([]oas.PromptNamedCompany, 0, len(x.Companies)), Addresses: orEmpty(x.Addresses),
 			NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, WrongClaims: orEmpty(x.WrongClaims), LeftOut: orEmpty(x.LeftOut),
 			CostUsd: oas.Usd(x.Cost.Dollars()),
+		}
+		if x.Model != "" {
+			e.ReadBy = oas.NewOptString(readerName(x.Model))
 		}
 		if x.Correctness != domain.CorrectnessNone {
 			e.Correctness = oas.NewOptPromptCorrectness(oas.PromptCorrectness(x.Correctness))

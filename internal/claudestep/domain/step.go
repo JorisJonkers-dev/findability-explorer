@@ -20,6 +20,10 @@ type ID string
 // Matching is matching the products on a scan's pages to Tribelt's belt families.
 const Matching ID = "matching"
 
+// Recommendations is writing recommendations: a Recommendation run's placing and wording of the
+// gaps its rules found.
+const Recommendations ID = "recommendations"
+
 // ByTheTool is who made version 1 of a step: the tool itself.
 const ByTheTool = "the tool"
 
@@ -55,6 +59,7 @@ type Definition struct {
 // their call sites read their versions.
 var definitions = []Definition{ //nolint:gochecknoglobals // a constant table
 	{ID: Matching, Title: "Matching products", Original: matchingInstructions, Typical: Tokens{Input: 15_000, Output: 1_500}},
+	{ID: Recommendations, Title: "Writing recommendations", Original: recommendationsInstructions, Typical: Tokens{Input: 60_000, Output: 12_000}},
 }
 
 // Definitions returns every step.

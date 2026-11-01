@@ -1,4 +1,4 @@
-import type { AnalysisSummary, PromptRun, ReadinessCheckState } from '../../../infrastructure/api/types.gen'
+import type { AnalysisSummary, LlmCredential, PromptRun, ReadinessCheckState } from '../../../infrastructure/api/types.gen'
 
 /** How a piece of work ended, in the words of the spec. */
 export type Ended = 'Done' | 'Done, with failed responses' | 'Stopped by hand' | 'Stopped by the budget' | 'Failed'
@@ -188,4 +188,20 @@ export function runningWork(
     })
   }
   return out
+}
+
+/** How many scans wait in the queue. */
+export function queuedScans(scans: readonly Pick<AnalysisSummary, 'status'>[]): number {
+  return scans.filter((s) => s.status === 'queued').length
+}
+
+/** The keys that are missing: no readable OpenRouter key stops Prompt runs, no Anthropic key the reviews. */
+export function missingKeys(credentials: readonly Pick<LlmCredential, 'provider' | 'readable'>[]): ('openrouter' | 'anthropic')[] {
+  const has = (provider: 'openrouter' | 'anthropic') => credentials.some((c) => c.provider === provider && c.readable)
+  return (['openrouter', 'anthropic'] as const).filter((p) => !has(p))
+}
+
+/** "1 search term waits" or "6,072 search terms wait". */
+export function waitLine(n: number, one: string, many: string): string {
+  return n === 1 ? `1 ${one} waits` : `${NUMBER.format(n)} ${many} wait`
 }

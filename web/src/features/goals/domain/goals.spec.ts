@@ -251,11 +251,11 @@ describe('Broken down', () => {
       { check: 'product', scored: false, passing: 3, tribelt: false },
     ]
     expect(readinessBreakdown(checks).map((c) => [c.label, c.passed])).toEqual([
-      ['Lets every AI crawler in, for search and for training', true],
-      ['Has llms.txt', false],
-      ['Has Markdown pages', null],
+      ['AI crawlers let in', true],
+      ['llms.txt', false],
+      ['Markdown pages', null],
     ])
-    expect(readinessBreakdown(checks)[1]?.what).toBe('llms.txt is a short map of the site in plain text, written for AI tools.')
+    expect(readinessBreakdown(checks)[1]?.what).toBe('llms.txt is a short guide to the site for language models, with links to the pages that matter. Having it helps.')
   })
 
   it('counts the search terms tribelt.nl uses per language', () => {

@@ -19,8 +19,7 @@ import { languageLabel } from '../../../shared/vocabulary'
 import { formatValue, inWords } from '../../catching-up/domain/standings'
 import type { Measure } from '../../prompt-test/domain/history'
 import { FAMILIES, providerName, SCOPES } from '../../prompt-test/domain/results'
-import { CHECK_WHAT } from '../../readiness/domain/checks'
-import { CHECK_LABELS } from '../../readiness/domain/overview'
+import { CHECK_NAMES, CHECK_WHY, SCORED_CHECKS } from '../../readiness/domain/checks'
 
 /** How a goal is measured: by the Prompt test, or by the scans of the sites. */
 type Process = 'prompt-test' | 'scans'
@@ -320,9 +319,12 @@ export function promptBreakdown(target: PlanTarget, cells: readonly PromptCell[]
   return groups
 }
 
-/** The readiness checks tribelt.nl is scored on, each passed, failed, or not known. */
+/** The readiness checks tribelt.nl is scored on, in the pages' order, each passed, failed, or not known. */
 export function readinessBreakdown(checks: readonly ReadinessCheckSummary[]): { label: string; what: string; passed: boolean | null }[] {
-  return checks.filter((c) => c.scored).map((c) => ({ label: CHECK_LABELS[c.check], what: CHECK_WHAT[c.check], passed: c.tribelt ?? null }))
+  return SCORED_CHECKS.flatMap((check) => {
+    const c = checks.find((x) => x.check === check && x.scored)
+    return c ? [{ label: CHECK_NAMES[check], what: CHECK_WHY[check], passed: c.tribelt ?? null }] : []
+  })
 }
 
 /** The search terms tribelt.nl uses, per language, with where the bars end. */

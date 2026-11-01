@@ -2,10 +2,10 @@
 import { toRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import BarList from '../../../shared/ui/charts/BarList.vue'
+import FrameSection from '../../../shared/ui/FrameSection.vue'
 import HistorySection from '../../prompt-test/components/HistorySection.vue'
 import PageFrame from '../../shell/components/PageFrame.vue'
 import { useGoalPage } from '../composables/useGoalPage'
-import GoalSection from './GoalSection.vue'
 
 const props = defineProps<{ measure: string }>()
 const goal = useGoalPage(toRef(props, 'measure'))
@@ -33,11 +33,11 @@ const MARK = { yes: '✓', no: '✕', unknown: '?' } as const
       </p>
 
       <div class="grid items-start gap-10 min-[1100px]:grid-cols-2">
-        <GoalSection id="compare" title="Tribelt against the competitors" :intro="page.comparison">
+        <FrameSection title="Tribelt against the competitors" :intro="page.comparison">
           <div class="rounded-3xl bg-mist p-5 sm:p-6">
             <BarList :rows="page.bars" :max="page.barsMax" :label="page.name" wide />
           </div>
-        </GoalSection>
+        </FrameSection>
 
         <HistorySection
           v-if="goal.history.value"
@@ -47,12 +47,12 @@ const MARK = { yes: '✓', no: '✕', unknown: '?' } as const
           :measures="[goal.history.value]"
           :goal="page.goal"
         />
-        <GoalSection v-else id="over-time" title="Over time">
+        <FrameSection v-else title="Over time">
           <p class="m-0 rounded-3xl bg-mist p-5 text-ink-2 sm:p-6">Only the newest scan of tribelt.nl is kept for this goal, so there is no line yet.</p>
-        </GoalSection>
+        </FrameSection>
       </div>
 
-      <GoalSection id="broken" title="Broken down">
+      <FrameSection title="Broken down">
         <p v-if="goal.breakdownError.value" role="alert" class="m-0 text-orange-ink">{{ goal.breakdownError.value }}</p>
         <p v-else-if="!goal.breakdown.value" class="m-0 text-muted">Loading…</p>
         <template v-else-if="goal.breakdown.value.kind === 'groups'">
@@ -76,9 +76,9 @@ const MARK = { yes: '✓', no: '✕', unknown: '?' } as const
         <div v-else class="rounded-3xl bg-mist p-5 sm:p-6">
           <BarList :rows="goal.breakdown.value.rows" :max="goal.breakdown.value.max" label="Search terms tribelt.nl uses, per language" />
         </div>
-      </GoalSection>
+      </FrameSection>
 
-      <GoalSection id="improves" title="What improves it">
+      <FrameSection title="What improves it">
         <ul v-if="page.improvements.length" class="m-0 flex list-none flex-col rounded-3xl bg-mist px-5 py-2 sm:px-6">
           <li v-for="i in page.improvements" :key="i.id" class="flex flex-col gap-1 border-b border-grey py-3 last:border-b-0">
             <RouterLink :to="`/recommendations/${i.id}`" class="font-semibold">{{ i.title }}</RouterLink>
@@ -86,7 +86,7 @@ const MARK = { yes: '✓', no: '✕', unknown: '?' } as const
           </li>
         </ul>
         <p v-else class="m-0 text-ink-2">No open recommendation aims at this goal.</p>
-      </GoalSection>
+      </FrameSection>
     </template>
   </PageFrame>
 </template>

@@ -194,6 +194,7 @@ describe('rankTerms', () => {
     expect(first).toEqual({
       rank: 1,
       term: 'Drahtösengliederband',
+      path: `/terms/${encodeURIComponent('de--drahtösengliederband')}`,
       meta: 'German · Eyelink · Märtens',
       tier: 'product',
       kind: 'Product',

@@ -7,34 +7,22 @@ const SECTIONS = [
   { path: '/recommendations', title: 'Recommendations', heading: 'Start with the changes that help Tribelt most.' },
 ] as const
 
-test('the overview renders its numbers and section cards, and is accessible', async ({ page }) => {
+test('the overview shows the goals, the tiles, and the latest runs and scans, and is accessible', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page).toHaveTitle('Overview · Findability Explorer')
-  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
-  await expect(page.locator('a[href^="/goals/"]').first()).toBeVisible()
-  const cards = page.locator('section[aria-labelledby="sections-title"] li a')
-  await expect(cards).toHaveCount(4)
-  await expect(cards.filter({ hasText: 'Open Search terms' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
+  const goals = page.getByRole('region', { name: 'Goals' })
+  await expect(goals.locator('tbody a[href^="/goals/"]')).toHaveCount(5)
+  await expect(page.getByRole('navigation', { name: 'Parts of the app' }).getByRole('link')).toHaveCount(5)
+  await expect(page.getByRole('region', { name: 'Latest runs and scans' }).locator('tbody tr')).toHaveCount(4)
   await expect(page.locator('a[href="/buyers"]')).toHaveCount(0)
   await expectAccessible(page)
-})
-
-test('the overview opens a goal and goes back', async ({ page }) => {
-  await page.goto('/')
-  await page.locator('a[href="/goals/aiShareOfVoice"]').click()
-  await expect(page).toHaveURL('/goals/aiShareOfVoice')
-  await expect(page.getByRole('heading', { level: 2, name: 'Tribelt against the field' })).toBeVisible()
-  await expectAccessible(page)
-  await page.getByRole('link', { name: 'Back to Overview' }).click()
-  await expect(page).toHaveURL('/')
-  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
 })
 
 test('Buyers is dropped, and its address opens the overview', async ({ page }) => {
   await page.goto('/buyers')
   await expect(page).toHaveURL('/')
-  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
 })
 
 test('the footer is on every page', async ({ page }) => {

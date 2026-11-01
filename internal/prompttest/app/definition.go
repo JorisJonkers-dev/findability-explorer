@@ -71,8 +71,17 @@ func (s *Service) CompetitorDefinition(ctx context.Context) (DefinitionView, err
 	competitors, candidates := domain.Outdated(directory, checks, all, verdicts, current.Version)
 	return DefinitionView{
 		Current: current, Versions: versions, OutdatedCompetitors: competitors, OutdatedCandidates: candidates,
-		RecheckCost: domain.EstimateChecks(competitors+candidates, used, checked),
+		RecheckCost: domain.EstimateChecks(competitors+candidates, used, checked, s.checkModel(ctx)),
 	}, nil
+}
+
+// checkModel is the model the Claude step checking companies uses now, as the reviewer names it,
+// for an estimate; Claude Haiku 5.5 when there is no reviewer to ask.
+func (s *Service) checkModel(ctx context.Context) string {
+	if _, model, err := s.reviewer(ctx); err == nil {
+		return model
+	}
+	return llm.DefaultModel
 }
 
 // SaveDefinition stores text as a new version of the competitor definition, saved by user, and

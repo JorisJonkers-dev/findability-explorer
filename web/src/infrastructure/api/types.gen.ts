@@ -1215,9 +1215,9 @@ export type TermSuggestion = {
 };
 
 /**
- * A Claude step - matching (matching products in scans); the other steps join as they are built.
+ * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), or termReview (reviewing the search terms the scans found).
  */
-export type ClaudeStepId = 'matching';
+export type ClaudeStepId = 'reading' | 'matching' | 'candidateMerge' | 'candidateCheck' | 'termReview';
 
 /**
  * One saved version of a Claude step - the model it uses and its instructions.
@@ -3055,6 +3055,10 @@ export type PromptSetVersionInfo = {
  */
 export type PromptRunFigures = {
     /**
+     * The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5"; absent when its readings recorded none. A change of it between runs breaks the charts, as the responses were read another way.
+     */
+    readingModel?: string;
+    /**
      * The run's id.
      */
     runId: string;
@@ -3139,6 +3143,10 @@ export type PromptNamedCompany = {
  * How the extractor read an answer; failed when it could not, after a retry.
  */
 export type PromptExtraction = {
+    /**
+     * The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a reading made before readings recorded it.
+     */
+    readBy?: string;
     /**
      * True when the extractor could not read it.
      */

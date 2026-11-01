@@ -36,6 +36,9 @@ type RunFigures struct {
 	Partial bool
 	// Models are the models the run asked, by OpenRouter id: the charts break where they changed.
 	Models []string
+	// ReadingModel is the model that read most of its responses, as the readings name it; empty
+	// when they recorded none. A change of it breaks the charts.
+	ReadingModel string
 
 	All, Dutch, German, English, Twente, Citation *float64
 }

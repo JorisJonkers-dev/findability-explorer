@@ -39,6 +39,8 @@ describe('the Manage layout', () => {
       ['Candidates', '/manage/competitors/candidates', 'page'],
       ['Check the list', '/manage/competitors/check', ''],
       ['Competitor definition', '/manage/competitors/definition', ''],
+      ['Tidying names', '/manage/claude-steps/candidateMerge', ''],
+      ['Checking companies', '/manage/claude-steps/candidateCheck', ''],
       ['Search term list', '/manage/terms', ''],
       ['Recommendations', '/manage/recommendations', ''],
       ['Keys and spending', '/manage/keys', ''],

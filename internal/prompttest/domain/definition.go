@@ -107,9 +107,10 @@ const (
 	TypicalCheckOut = 120
 )
 
-// EstimateChecks is what checking n companies should cost on the Anthropic key, from what the
-// checks so far used (used, over checked companies), or a typical check before any.
-func EstimateChecks(n int, used ReviewUsage, checked int) llm.Micros {
+// EstimateChecks is what checking n companies should cost on the Anthropic key with model (the
+// Claude step checking companies), from what the checks so far used (used, over checked
+// companies), or a typical check before any.
+func EstimateChecks(n int, used ReviewUsage, checked int, model string) llm.Micros {
 	if n <= 0 {
 		return 0
 	}
@@ -117,5 +118,5 @@ func EstimateChecks(n int, used ReviewUsage, checked int) llm.Micros {
 	if checked > 0 {
 		in, out = used.InputTokens/int64(checked), used.OutputTokens/int64(checked)
 	}
-	return llm.TokenUse{Model: llm.DefaultModel, Input: in * int64(n), Output: out * int64(n)}.Cost()
+	return llm.TokenUse{Model: strings.TrimPrefix(model, string(llm.Anthropic)+": "), Input: in * int64(n), Output: out * int64(n)}.Cost()
 }

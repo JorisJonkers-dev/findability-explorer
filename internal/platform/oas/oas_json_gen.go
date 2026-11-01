@@ -3822,8 +3822,16 @@ func (s *ClaudeStepId) Decode(d *jx.Decoder) error {
 	}
 	// Try to use constant string.
 	switch ClaudeStepId(v) {
+	case ClaudeStepIdReading:
+		*s = ClaudeStepIdReading
 	case ClaudeStepIdMatching:
 		*s = ClaudeStepIdMatching
+	case ClaudeStepIdCandidateMerge:
+		*s = ClaudeStepIdCandidateMerge
+	case ClaudeStepIdCandidateCheck:
+		*s = ClaudeStepIdCandidateCheck
+	case ClaudeStepIdTermReview:
+		*s = ClaudeStepIdTermReview
 	default:
 		*s = ClaudeStepId(v)
 	}
@@ -19436,6 +19444,12 @@ func (s *PromptExtraction) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PromptExtraction) encodeFields(e *jx.Encoder) {
 	{
+		if s.ReadBy.Set {
+			e.FieldStart("readBy")
+			s.ReadBy.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("failed")
 		e.Bool(s.Failed)
 	}
@@ -19491,16 +19505,17 @@ func (s *PromptExtraction) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPromptExtraction = [9]string{
-	0: "failed",
-	1: "companies",
-	2: "addresses",
-	3: "namesTribelt",
-	4: "citesTribelt",
-	5: "correctness",
-	6: "wrongClaims",
-	7: "leftOut",
-	8: "costUsd",
+var jsonFieldsNameOfPromptExtraction = [10]string{
+	0: "readBy",
+	1: "failed",
+	2: "companies",
+	3: "addresses",
+	4: "namesTribelt",
+	5: "citesTribelt",
+	6: "correctness",
+	7: "wrongClaims",
+	8: "leftOut",
+	9: "costUsd",
 }
 
 // Decode decodes PromptExtraction from json.
@@ -19512,8 +19527,18 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "readBy":
+			if err := func() error {
+				s.ReadBy.Reset()
+				if err := s.ReadBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"readBy\"")
+			}
 		case "failed":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Bool()
 				s.Failed = bool(v)
@@ -19525,7 +19550,7 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failed\"")
 			}
 		case "companies":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				s.Companies = make([]PromptNamedCompany, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -19543,7 +19568,7 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"companies\"")
 			}
 		case "addresses":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				s.Addresses = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -19563,7 +19588,7 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"addresses\"")
 			}
 		case "namesTribelt":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Bool()
 				s.NamesTribelt = bool(v)
@@ -19575,7 +19600,7 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"namesTribelt\"")
 			}
 		case "citesTribelt":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Bool()
 				s.CitesTribelt = bool(v)
@@ -19597,7 +19622,7 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"correctness\"")
 			}
 		case "wrongClaims":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				s.WrongClaims = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -19617,7 +19642,7 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"wrongClaims\"")
 			}
 		case "leftOut":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				s.LeftOut = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -19637,7 +19662,7 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"leftOut\"")
 			}
 		case "costUsd":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.CostUsd.Decode(d); err != nil {
 					return err
@@ -19656,8 +19681,8 @@ func (s *PromptExtraction) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b11011111,
-		0b00000001,
+		0b10111110,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -22233,6 +22258,12 @@ func (s *PromptRunFigures) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PromptRunFigures) encodeFields(e *jx.Encoder) {
 	{
+		if s.ReadingModel.Set {
+			e.FieldStart("readingModel")
+			s.ReadingModel.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("runId")
 		json.EncodeUUID(e, s.RunId)
 	}
@@ -22314,22 +22345,23 @@ func (s *PromptRunFigures) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPromptRunFigures = [15]string{
-	0:  "runId",
-	1:  "models",
-	2:  "startedAt",
-	3:  "promptSetVersion",
-	4:  "tasks",
-	5:  "answered",
-	6:  "read",
-	7:  "partial",
-	8:  "failure",
-	9:  "all",
-	10: "dutch",
-	11: "german",
-	12: "english",
-	13: "twente",
-	14: "citation",
+var jsonFieldsNameOfPromptRunFigures = [16]string{
+	0:  "readingModel",
+	1:  "runId",
+	2:  "models",
+	3:  "startedAt",
+	4:  "promptSetVersion",
+	5:  "tasks",
+	6:  "answered",
+	7:  "read",
+	8:  "partial",
+	9:  "failure",
+	10: "all",
+	11: "dutch",
+	12: "german",
+	13: "english",
+	14: "twente",
+	15: "citation",
 }
 
 // Decode decodes PromptRunFigures from json.
@@ -22341,8 +22373,18 @@ func (s *PromptRunFigures) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "readingModel":
+			if err := func() error {
+				s.ReadingModel.Reset()
+				if err := s.ReadingModel.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"readingModel\"")
+			}
 		case "runId":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.RunId = v
@@ -22373,7 +22415,7 @@ func (s *PromptRunFigures) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"models\"")
 			}
 		case "startedAt":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.StartedAt = v
@@ -22385,7 +22427,7 @@ func (s *PromptRunFigures) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"startedAt\"")
 			}
 		case "promptSetVersion":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int32()
 				s.PromptSetVersion = int32(v)
@@ -22397,7 +22439,7 @@ func (s *PromptRunFigures) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"promptSetVersion\"")
 			}
 		case "tasks":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int32()
 				s.Tasks = int32(v)
@@ -22409,7 +22451,7 @@ func (s *PromptRunFigures) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tasks\"")
 			}
 		case "answered":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Int32()
 				s.Answered = int32(v)
@@ -22421,7 +22463,7 @@ func (s *PromptRunFigures) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"answered\"")
 			}
 		case "read":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Int32()
 				s.Read = int32(v)
@@ -22433,7 +22475,7 @@ func (s *PromptRunFigures) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"read\"")
 			}
 		case "partial":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Bool()
 				s.Partial = bool(v)
@@ -22524,8 +22566,8 @@ func (s *PromptRunFigures) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b11111101,
-		0b00000000,
+		0b11111010,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

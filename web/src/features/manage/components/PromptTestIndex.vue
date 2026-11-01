@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StepCard from '../../claude-steps/components/StepCard.vue'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import ProgressBar from '../../../shared/ui/ProgressBar.vue'
@@ -140,6 +141,7 @@ const disabledNote = computed(() => {
         to="/manage/prompt-test/runs"
         label="See the runs"
       />
+      <StepCard step-id="reading" />
     </WidgetGrid>
   </ManageLayout>
 </template>

@@ -121,11 +121,11 @@ RETURNING id;
 -- reading used stays counted. An answer read already keeps its reading, and no row is touched.
 INSERT INTO prompt_extractions (
     answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, left_out, input_tokens,
-    output_tokens, cost_micros, haiku_tokens, extracted_at
+    output_tokens, cost_micros, haiku_tokens, extracted_at, model
 )
 VALUES (
     @answer_id, @failed, @addresses, @names_tribelt, @cites_tribelt, @correctness, @wrong_claims, @left_out, @input_tokens,
-    @output_tokens, @cost_micros, @haiku_tokens, @extracted_at
+    @output_tokens, @cost_micros, @haiku_tokens, @extracted_at, @model
 )
 ON CONFLICT (answer_id) DO UPDATE
 SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = excluded.names_tribelt,
@@ -133,7 +133,8 @@ SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = ex
     left_out = excluded.left_out, input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
     output_tokens = prompt_extractions.output_tokens + excluded.output_tokens,
     cost_micros = prompt_extractions.cost_micros + excluded.cost_micros,
-    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at
+    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at,
+    model = excluded.model
 WHERE prompt_extractions.failed;
 
 -- name: AddPromptAnswerCompany :exec
@@ -150,7 +151,8 @@ SELECT a.id, a.prompt_id, a.family, a.kind, a.scope, a.language, a.prompt_text, 
     coalesce(x.cites_tribelt, false)::boolean AS cites_tribelt, coalesce(x.correctness, '')::text AS correctness,
     coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.left_out, '{}')::text [] AS left_out,
     coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
-    coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros
+    coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros,
+    coalesce(x.model, '')::text AS reading_model
 FROM prompt_answers AS a
 LEFT JOIN prompt_extractions AS x ON x.answer_id = a.id
 WHERE a.run_id = @run_id
@@ -259,6 +261,15 @@ SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_toke
 FROM prompt_extractions
 WHERE extracted_at >= @since AND haiku_tokens > 0;
 
+-- name: PromptReadingTokensSinceByModel :many
+-- The same per model that read, so each is priced at its own list price; a reading from before
+-- readings recorded their model has none.
+SELECT model, coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+FROM prompt_extractions
+WHERE extracted_at >= @since AND haiku_tokens > 0
+GROUP BY model
+ORDER BY model;
+
 -- name: ListPromptSets :many
 -- Every published Prompt set, newest first.
 SELECT version, published_at, published_by, note
@@ -314,3 +325,12 @@ SELECT
     coalesce((SELECT sum(input_tokens) FROM prompt_review_usage), 0)::bigint AS input,
     coalesce((SELECT sum(output_tokens) FROM prompt_review_usage), 0)::bigint AS output,
     ((SELECT count(*) FROM prompt_candidate_checks) + (SELECT count(*) FROM prompt_company_checks))::bigint AS checked;
+
+-- name: PromptRunReadingModels :many
+-- The model that read most of each run's responses, for the runs whose readings recorded one.
+SELECT DISTINCT ON (a.run_id) a.run_id, x.model
+FROM prompt_answers AS a
+JOIN prompt_extractions AS x ON x.answer_id = a.id
+WHERE x.model <> '' AND NOT x.failed
+GROUP BY a.run_id, x.model
+ORDER BY a.run_id, count(*) DESC, x.model;

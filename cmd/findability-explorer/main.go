@@ -169,13 +169,15 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		return err
 	}
 	// Haiku reviews the phrases scans find, on an Anthropic key, until the month's Anthropic budget is spent.
-	terminology.WithReviewer(terminologyRepo, judges{llm: llm})
+	// The Claude steps keep their models and instructions as versions; the job of each is
+	// estimated from what it used on Claude Haiku 5.5.
+	claudeSteps := claudestepapp.New(claudesteppersistence.New(store), stepBase{llm: llm}.Of, now)
+	terminology.WithReviewer(terminologyRepo, judges{llm: llm, steps: claudeSteps})
 	terminology.WithBudget(llm.BudgetSpent)
 	terminology.WithJournal(journal, reportJournal)
 	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
 	// The Claude steps keep their models and instructions as versions; the job of each is
 	// estimated from what it used on Claude Haiku 5.5.
-	claudeSteps := claudestepapp.New(claudesteppersistence.New(store), stepBase{llm: llm}.Of, now)
 	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, claudeSteps, now)
 	if err != nil {
 		return err
@@ -190,10 +192,10 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 			logger.ErrorContext(ctx, "prompt run could not be recorded", "run", id, "error", err)
 		},
 		// Haiku on an Anthropic key reviews the competitor candidates, reading their home pages (ADR-0006, ADR-0009).
-		prompttestapp.WithReviewers(reviewers{llm: llm}, homepage.New(homepage.Options{Contact: getenv("CRAWLER_CONTACT")}),
+		prompttestapp.WithReviewers(reviewers{llm: llm, steps: claudeSteps}, homepage.New(homepage.Options{Contact: getenv("CRAWLER_CONTACT")}),
 			func(err error) { logger.WarnContext(ctx, "candidate review", "error", err) }),
 		// Haiku on an Anthropic key reads the answers while one works (ADR-0007).
-		prompttestapp.WithExtractors(extractors{llm: llm}),
+		prompttestapp.WithExtractors(extractors{llm: llm, steps: claudeSteps}),
 		// Both stop using Haiku once the month's Anthropic budget is spent.
 		prompttestapp.WithBudget(llm.BudgetSpent),
 		// Each review of the candidates and check of the list goes in the work journal.
@@ -352,12 +354,11 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp
 }
 
 // spending is what every job on a Claude model used since since, per job, and what one scan's
-// matching used on average. The scans' matching is priced at the model each scan used, as the
-// step matching products may name another; every other job runs on Claude Haiku until its step
-// chooses a model, so it is priced as Haiku.
+// matching used on average. The scans' matching and the readings of responses are priced at the
+// model each recorded; the reviews record no model, so they are priced as Claude Haiku 5.5.
 func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spending, error) {
 	sources := []func(context.Context, time.Time) (int64, int64, error){
-		sp.terms.TokensSince, sp.candidates.ReviewTokensSince, sp.candidates.ReadingTokensSince,
+		sp.terms.TokensSince, sp.candidates.ReviewTokensSince,
 	}
 	var s llmapp.Spending
 	scanUse, err := sp.analyses.TokensSinceByModel(ctx, since)
@@ -365,6 +366,13 @@ func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spendin
 		return llmapp.Spending{}, err
 	}
 	for _, u := range scanUse {
+		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: claudeModelOf(u.Model), Input: u.Input, Output: u.Output})
+	}
+	readUse, err := sp.candidates.ReadingTokensSinceByModel(ctx, since)
+	if err != nil {
+		return llmapp.Spending{}, err
+	}
+	for _, u := range readUse {
 		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: claudeModelOf(u.Model), Input: u.Input, Output: u.Output})
 	}
 	for _, source := range sources {
@@ -418,46 +426,68 @@ func monthStart(t time.Time) time.Time {
 // termReviewEvery is how often the language model looks for new phrases to review.
 const termReviewEvery = 10 * time.Minute
 
-// reviewers hands the prompt-test context its reviewer of competitor candidates: Haiku on an
-// Anthropic key, as for the term review, since it is cheap there.
+// reviewers hands the prompt-test context its reviewer of competitor candidates on an Anthropic
+// key: tidying the names and checking the companies, each with its Claude step's newest model and
+// instructions. The label names the model that checks, as the verdicts record it.
 type reviewers struct {
-	llm *llmapp.Service
+	llm   *llmapp.Service
+	steps *claudestepapp.Service
 }
 
 func (r reviewers) Current(ctx context.Context) (prompttestapp.Reviewer, string, error) {
-	client, model, err := r.llm.Haiku(ctx)
+	client, _, err := r.llm.Haiku(ctx)
 	if err != nil || client == nil {
 		return nil, "", err
 	}
-	return reviewer.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
+	merge, err := r.steps.Current(ctx, claudestepdomain.TidyingNames)
+	if err != nil {
+		return nil, "", err
+	}
+	check, err := r.steps.Current(ctx, claudestepdomain.CheckingCompanies)
+	if err != nil {
+		return nil, "", err
+	}
+	return reviewer.New(client, reviewer.Step{Model: merge.Model, Instructions: merge.Instructions}, reviewer.Step{Model: check.Model, Instructions: check.Instructions}),
+		llmdomain.Describe(llmdomain.Anthropic, check.Model), nil
 }
 
-// judges hands the terminology context its judge: Haiku on an Anthropic key, whatever model
-// product matching uses, since reviewing hundreds of phrases must stay cheap.
+// judges hands the terminology context its judge on an Anthropic key, with the newest model and
+// instructions of the Claude step reviewing search terms.
 type judges struct {
-	llm *llmapp.Service
+	llm   *llmapp.Service
+	steps *claudestepapp.Service
 }
 
 func (j judges) Current(ctx context.Context) (terminologyapp.Judge, string, error) {
-	client, model, err := j.llm.Haiku(ctx)
+	client, _, err := j.llm.Haiku(ctx)
 	if err != nil || client == nil {
 		return nil, "", err
 	}
-	return judge.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
+	step, err := j.steps.Current(ctx, claudestepdomain.ReviewingTerms)
+	if err != nil {
+		return nil, "", err
+	}
+	return judge.New(client, step.Model, step.Instructions), llmdomain.Describe(llmdomain.Anthropic, step.Model), nil
 }
 
-// extractors hands the prompt-test context its reader of the answers: Haiku on an Anthropic key,
-// whose usage is subsidised (ADR-0007). Without one, OpenRouter reads them as before.
+// extractors hands the prompt-test context its reader of the responses on an Anthropic key
+// (ADR-0007), with the model the Claude step reading responses names now; its instructions are set
+// in the code (ADR-0021). Without a key, OpenRouter reads them as before.
 type extractors struct {
-	llm *llmapp.Service
+	llm   *llmapp.Service
+	steps *claudestepapp.Service
 }
 
 func (x extractors) Current(ctx context.Context) (prompttestapp.Extractor, string, error) {
-	client, model, err := x.llm.Haiku(ctx)
+	client, _, err := x.llm.Haiku(ctx)
 	if err != nil || client == nil {
 		return nil, "", err
 	}
-	return extractor.New(client, model), llmdomain.Describe(llmdomain.Anthropic, model), nil
+	step, err := x.steps.Current(ctx, claudestepdomain.Reading)
+	if err != nil {
+		return nil, "", err
+	}
+	return extractor.New(client, step.Model), llmdomain.Describe(llmdomain.Anthropic, step.Model), nil
 }
 
 // matchers hands the analysis context its matcher: none when an administrator turned matching

@@ -187,7 +187,7 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 		t.Fatalf("a failed reading = %+v", answers[1].Extraction)
 	}
 	// A failed reading is replaced by the next, and what both used counts.
-	again := domain.Extraction{Companies: []domain.Company{{Name: "Twentebelt", CompetitorID: "twentebelt", Position: 1}}, InputTokens: 4, OutputTokens: 5, Cost: 3, HaikuTokens: 9}
+	again := domain.Extraction{Companies: []domain.Company{{Name: "Twentebelt", CompetitorID: "twentebelt", Position: 1}}, InputTokens: 4, OutputTokens: 5, Cost: 3, HaikuTokens: 9, Model: "anthropic: claude-sonnet-5-5"}
 	for range 12 {
 		again.LeftOut = append(again.LeftOut, "Tribelt makes eyelink belts to measure.")
 	}
@@ -204,12 +204,23 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if in, out, err := repo.ReadingTokensSince(ctx, at); err != nil || in != 5 || out != 5 {
 		t.Errorf("reading tokens = %d in, %d out, %v", in, out, err)
 	}
+	if m, err := repo.ReadingTokensSinceByModel(ctx, at); err != nil || len(m) != 1 ||
+		m[0] != (persistence.ModelTokens{Model: "anthropic: claude-sonnet-5-5", Input: 5, Output: 5}) {
+		t.Errorf("reading tokens per model = %+v, %v", m, err)
+	}
 	if in, out, _ := repo.ReadingTokensSince(ctx, at.Add(time.Hour)); in != 0 || out != 0 {
 		t.Errorf("reading tokens later = %d in, %d out", in, out)
 	}
 	answers, err := repo.Answers(ctx, r.ID, true)
 	if err != nil || len(answers) != 3 {
 		t.Fatalf("answers = %d, %v", len(answers), err)
+	}
+	// Each reading keeps the model that read it; the run is read by the model that read most.
+	if x := answers[1].Extraction; x == nil || x.Model != "anthropic: claude-sonnet-5-5" {
+		t.Errorf("the reading model = %+v", x)
+	}
+	if models, err := repo.ReadingModels(ctx); err != nil || models[r.ID] != "anthropic: claude-sonnet-5-5" {
+		t.Errorf("reading models = %v, %v", models, err)
 	}
 	got := answers[0]
 	if got.Text != "Twentebelt and Ashworth." || got.Prompt != prompt || got.Cost != 1500 || !slices.Equal(got.Citations, read.Citations) ||

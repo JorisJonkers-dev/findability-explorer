@@ -270,6 +270,20 @@ func (r *Repository) AddAnswer(ctx context.Context, a domain.Answer) error {
 	})
 }
 
+// ReadingModels returns, per run, the model that read most of its responses; a run whose readings
+// recorded no model is left out.
+func (r *Repository) ReadingModels(ctx context.Context) (map[uuid.UUID]string, error) {
+	rows, err := r.store.Queries().PromptRunReadingModels(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select reading models: %w", err)
+	}
+	out := make(map[uuid.UUID]string, len(rows))
+	for _, row := range rows {
+		out[row.RunID] = row.Model
+	}
+	return out, nil
+}
+
 // SetExtraction stores the extraction of an answer stored without one, or replaces a failed one,
 // adding to what it used; an answer read already is domain.ErrRead.
 func (r *Repository) SetExtraction(ctx context.Context, answerID uuid.UUID, x domain.Extraction, at time.Time) error {
@@ -282,7 +296,7 @@ func addExtraction(ctx context.Context, q *queries.Queries, id uuid.UUID, x doma
 		CitesTribelt: x.CitesTribelt, Correctness: string(x.Correctness), WrongClaims: clipAll(x.WrongClaims, 10),
 		LeftOut:     clipAll(x.LeftOut, 10),
 		InputTokens: x.InputTokens, OutputTokens: x.OutputTokens, CostMicros: max(int64(x.Cost), 0),
-		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at,
+		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at, Model: clip(x.Model, 200),
 	})
 	if err != nil {
 		return fmt.Errorf("insert prompt extraction: %w", err)
@@ -336,6 +350,7 @@ func (r *Repository) Answers(ctx context.Context, runID uuid.UUID, withText bool
 				CitesTribelt: row.CitesTribelt, Correctness: domain.Correctness(row.Correctness), WrongClaims: row.WrongClaims,
 				LeftOut:     row.LeftOut,
 				InputTokens: row.ExtractionInputTokens, OutputTokens: row.ExtractionOutputTokens, Cost: domain.Micros(row.ExtractionCostMicros),
+				Model: row.ReadingModel,
 			}
 		}
 		out = append(out, a)
@@ -557,6 +572,27 @@ func (r *Repository) ReadingTokensSince(ctx context.Context, t time.Time) (input
 		return 0, 0, fmt.Errorf("sum reading tokens: %w", err)
 	}
 	return row.Input, row.Output, nil
+}
+
+// ModelTokens is what one model used: its name as the readings record it, and its tokens.
+type ModelTokens struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// ReadingTokensSinceByModel is ReadingTokensSince per model that read, so each is priced at its own
+// list price; readings from before they recorded their model have an empty model.
+func (r *Repository) ReadingTokensSinceByModel(ctx context.Context, t time.Time) ([]ModelTokens, error) {
+	rows, err := r.store.Queries().PromptReadingTokensSinceByModel(ctx, t)
+	if err != nil {
+		return nil, fmt.Errorf("sum reading tokens per model: %w", err)
+	}
+	out := make([]ModelTokens, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, ModelTokens{Model: row.Model, Input: row.Input, Output: row.Output})
+	}
+	return out, nil
 }
 
 // optionalText is s, or NULL when s is empty.

@@ -4180,9 +4180,13 @@ components:
         tier:
           $ref: "#/components/schemas/IntentTier"
     ClaudeStepId:
-      description: A Claude step - matching (matching products in scans); the other steps join as they are built.
+      description: >-
+        A Claude step - reading (reading a Prompt run's responses, its instructions set in the
+        code), matching (matching products in scans), candidateMerge (tidying the names of the
+        competitor candidates), candidateCheck (checking companies against the competitor
+        definition), or termReview (reviewing the search terms the scans found).
       type: string
-      enum: [matching]
+      enum: [reading, matching, candidateMerge, candidateCheck, termReview]
     ClaudeStepVersion:
       description: One saved version of a Claude step - the model it uses and its instructions.
       type: object
@@ -6723,6 +6727,13 @@ components:
       additionalProperties: false
       required: [runId, startedAt, promptSetVersion, tasks, answered, read, partial]
       properties:
+        readingModel:
+          type: string
+          maxLength: 200
+          description: >-
+            The model that read most of the run's responses, by its name for people, such as
+            "Claude Haiku 5.5"; absent when its readings recorded none. A change of it between runs
+            breaks the charts, as the responses were read another way.
         runId:
           type: string
           format: uuid
@@ -6853,6 +6864,12 @@ components:
       additionalProperties: false
       required: [failed, companies, addresses, namesTribelt, citesTribelt, wrongClaims, leftOut, costUsd]
       properties:
+        readBy:
+          type: string
+          maxLength: 200
+          description: >-
+            The model that read the response, by its name for people, such as "Claude Haiku 5.5";
+            absent for a reading made before readings recorded it.
         failed:
           type: boolean
           description: True when the extractor could not read it.

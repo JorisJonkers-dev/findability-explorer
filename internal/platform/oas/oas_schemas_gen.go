@@ -1765,25 +1765,44 @@ func (s *ClaudeStepChange) SetRestoredFrom(val OptInt32) {
 	s.RestoredFrom = val
 }
 
-// A Claude step - matching (matching products in scans); the other steps join as they are built.
+// A Claude step - reading (reading a Prompt run's responses, its instructions set in the code),
+// matching (matching products in scans), candidateMerge (tidying the names of the competitor
+// candidates), candidateCheck (checking companies against the competitor definition), or termReview
+// (reviewing the search terms the scans found).
 // Ref: #/components/schemas/ClaudeStepId
 type ClaudeStepId string
 
 const (
-	ClaudeStepIdMatching ClaudeStepId = "matching"
+	ClaudeStepIdReading        ClaudeStepId = "reading"
+	ClaudeStepIdMatching       ClaudeStepId = "matching"
+	ClaudeStepIdCandidateMerge ClaudeStepId = "candidateMerge"
+	ClaudeStepIdCandidateCheck ClaudeStepId = "candidateCheck"
+	ClaudeStepIdTermReview     ClaudeStepId = "termReview"
 )
 
 // AllValues returns all ClaudeStepId values.
 func (ClaudeStepId) AllValues() []ClaudeStepId {
 	return []ClaudeStepId{
+		ClaudeStepIdReading,
 		ClaudeStepIdMatching,
+		ClaudeStepIdCandidateMerge,
+		ClaudeStepIdCandidateCheck,
+		ClaudeStepIdTermReview,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s ClaudeStepId) MarshalText() ([]byte, error) {
 	switch s {
+	case ClaudeStepIdReading:
+		return []byte(s), nil
 	case ClaudeStepIdMatching:
+		return []byte(s), nil
+	case ClaudeStepIdCandidateMerge:
+		return []byte(s), nil
+	case ClaudeStepIdCandidateCheck:
+		return []byte(s), nil
+	case ClaudeStepIdTermReview:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1793,8 +1812,20 @@ func (s ClaudeStepId) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *ClaudeStepId) UnmarshalText(data []byte) error {
 	switch ClaudeStepId(data) {
+	case ClaudeStepIdReading:
+		*s = ClaudeStepIdReading
+		return nil
 	case ClaudeStepIdMatching:
 		*s = ClaudeStepIdMatching
+		return nil
+	case ClaudeStepIdCandidateMerge:
+		*s = ClaudeStepIdCandidateMerge
+		return nil
+	case ClaudeStepIdCandidateCheck:
+		*s = ClaudeStepIdCandidateCheck
+		return nil
+	case ClaudeStepIdTermReview:
+		*s = ClaudeStepIdTermReview
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -10103,6 +10134,9 @@ func (s *PromptDraftQuestion) SetEnglish(val OptString) {
 // How the extractor read an answer; failed when it could not, after a retry.
 // Ref: #/components/schemas/PromptExtraction
 type PromptExtraction struct {
+	// The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a
+	// reading made before readings recorded it.
+	ReadBy OptString `json:"readBy"`
 	// True when the extractor could not read it.
 	Failed bool `json:"failed"`
 	// The companies named, in order.
@@ -10121,6 +10155,11 @@ type PromptExtraction struct {
 	// name Tribelt, and for a response read before wrong claims and facts left out were told apart.
 	LeftOut []string `json:"leftOut"`
 	CostUsd Usd      `json:"costUsd"`
+}
+
+// GetReadBy returns the value of ReadBy.
+func (s *PromptExtraction) GetReadBy() OptString {
+	return s.ReadBy
 }
 
 // GetFailed returns the value of Failed.
@@ -10166,6 +10205,11 @@ func (s *PromptExtraction) GetLeftOut() []string {
 // GetCostUsd returns the value of CostUsd.
 func (s *PromptExtraction) GetCostUsd() Usd {
 	return s.CostUsd
+}
+
+// SetReadBy sets the value of ReadBy.
+func (s *PromptExtraction) SetReadBy(val OptString) {
+	s.ReadBy = val
 }
 
 // SetFailed sets the value of Failed.
@@ -11416,6 +11460,10 @@ func (*PromptRun) startPromptRunRes() {}
 // response to measure it on.
 // Ref: #/components/schemas/PromptRunFigures
 type PromptRunFigures struct {
+	// The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5";
+	// absent when its readings recorded none. A change of it between runs breaks the charts, as the
+	// responses were read another way.
+	ReadingModel OptString `json:"readingModel"`
 	// The run's id.
 	RunId uuid.UUID `json:"runId"`
 	// The models the run asked, by OpenRouter id; the charts break where they changed.
@@ -11446,6 +11494,11 @@ type PromptRunFigures struct {
 	Twente OptFloat64 `json:"twente"`
 	// The share of the web responses read that cite tribelt.nl.
 	Citation OptFloat64 `json:"citation"`
+}
+
+// GetReadingModel returns the value of ReadingModel.
+func (s *PromptRunFigures) GetReadingModel() OptString {
+	return s.ReadingModel
 }
 
 // GetRunId returns the value of RunId.
@@ -11521,6 +11574,11 @@ func (s *PromptRunFigures) GetTwente() OptFloat64 {
 // GetCitation returns the value of Citation.
 func (s *PromptRunFigures) GetCitation() OptFloat64 {
 	return s.Citation
+}
+
+// SetReadingModel sets the value of ReadingModel.
+func (s *PromptRunFigures) SetReadingModel(val OptString) {
+	s.ReadingModel = val
 }
 
 // SetRunId sets the value of RunId.

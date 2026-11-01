@@ -582,9 +582,15 @@ export const zTermCandidate = z.object({
 });
 
 /**
- * A Claude step - matching (matching products in scans); the other steps join as they are built.
+ * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), or termReview (reviewing the search terms the scans found).
  */
-export const zClaudeStepId = z.enum(['matching']);
+export const zClaudeStepId = z.enum([
+    'reading',
+    'matching',
+    'candidateMerge',
+    'candidateCheck',
+    'termReview'
+]);
 
 /**
  * One saved version of a Claude step - the model it uses and its instructions.
@@ -1829,6 +1835,7 @@ export const zPromptSetVersionInfo = z.object({
  * One run's figures: the share of the responses read that name Tribelt, overall, per language, and for Twente, and the share of web responses that cite tribelt.nl. A share is absent when the run read no response to measure it on.
  */
 export const zPromptRunFigures = z.object({
+    readingModel: z.string().max(200).optional(),
     runId: z.uuid().max(36),
     models: z.array(z.string().max(200)).max(20).optional(),
     startedAt: z.iso.datetime({ offset: true }).max(64),
@@ -1868,6 +1875,7 @@ export const zPromptNamedCompany = z.object({
  * How the extractor read an answer; failed when it could not, after a retry.
  */
 export const zPromptExtraction = z.object({
+    readBy: z.string().max(200).optional(),
     failed: z.boolean(),
     companies: z.array(zPromptNamedCompany).max(30),
     addresses: z.array(z.string().max(500)).max(200),

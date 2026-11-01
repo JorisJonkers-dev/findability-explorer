@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PromptRunFigures, PromptSetVersionInfo } from '../../../infrastructure/api/types.gen'
-import { breaksOf, chartNotes, chartSeries, forVersion, LANGUAGE_MEASURES, parseVersion, partialNote, seriesOf, tableRows, versionNote, versionOptions } from './history'
+import { allBreaks, breaksOf, chartNotes, readerBreaksOf, chartSeries, forVersion, LANGUAGE_MEASURES, parseVersion, partialNote, seriesOf, tableRows, versionNote, versionOptions } from './history'
 
 const versions = [
   { version: 1, publishedAt: '2026-10-26T15:04:51Z', questions: 90, note: 'A supplier, an application, and a problem question for each belt family, in six scopes.' },
@@ -132,5 +132,37 @@ describe('the lines a chart draws', () => {
       { label: 'All', tone: 'orange', strong: true, points: [{ x: '2026-10-27T06:03:12Z', y: 0.4, partial: true }, { x: '2026-10-27T08:36:32Z', y: 0.25, partial: false }] },
       { label: 'Dutch', tone: 'blue', points: [{ x: '2026-10-27T06:03:12Z', y: 0.48, partial: true }, { x: '2026-10-27T08:36:32Z', y: 0.41, partial: false }] },
     ])
+  })
+})
+
+describe('a change of the model that reads the responses', () => {
+  const read = (id: string, startedAt: string, readingModel?: string): PromptRunFigures => ({
+    runId: id, startedAt, promptSetVersion: 2, tasks: 200, answered: 200, read: 180, partial: false, all: 0.3, ...(readingModel ? { readingModel } : {}),
+  })
+
+  it('breaks the line where the reader changes from one run to the next', () => {
+    const runs = [
+      read('a', '2026-10-27T08:00:00Z'),
+      read('b', '2026-10-28T08:00:00Z', 'Claude Haiku 5.5'),
+      read('c', '2026-10-29T08:00:00Z', 'Claude Haiku 5.5'),
+      read('d', '2026-10-30T08:00:00Z', 'Claude Sonnet 5.5'),
+    ]
+    expect(readerBreaksOf(runs)).toEqual([
+      {
+        x: '2026-10-30T08:00:00Z',
+        label: 'Read by Claude Sonnet 5.5',
+        note: 'Claude Sonnet 5.5 reads the responses from here, instead of Claude Haiku 5.5, so the figures before and after are not read the same way.',
+      },
+    ])
+    expect(readerBreaksOf(runs.slice(0, 3))).toEqual([])
+  })
+
+  it('shows every break in time order, the Prompt set’s and the reader’s', () => {
+    const runs = [read('a', '2026-10-26T08:00:00Z', 'Claude Haiku 5.5'), read('b', '2026-10-28T08:00:00Z', 'Claude Sonnet 5.5')]
+    const versions = [
+      { version: 1, publishedAt: '2026-10-20T08:00:00Z', questions: 90, note: '' },
+      { version: 2, publishedAt: '2026-10-27T08:00:00Z', questions: 20, note: '' },
+    ]
+    expect(allBreaks(versions, runs).map((b) => b.label)).toEqual(['Prompt set version 2', 'Read by Claude Sonnet 5.5'])
   })
 })

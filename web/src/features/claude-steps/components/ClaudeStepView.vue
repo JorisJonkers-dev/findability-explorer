@@ -84,7 +84,7 @@ function submit(): void {
           These instructions are part of the tool’s code, so every job follows them in the same way, and jobs can be compared. They change
           only with a new release of the tool. The model that follows them is chosen on the right.
         </p>
-        <pre class="m-0 max-h-[32rem] overflow-auto rounded-2xl bg-white p-4 text-sm whitespace-pre-wrap">{{ step.current.instructions }}</pre>
+        <pre tabindex="0" aria-label="The instructions" class="m-0 max-h-[32rem] overflow-auto rounded-2xl bg-white p-4 text-sm whitespace-pre-wrap">{{ step.current.instructions }}</pre>
       </ManageWidget>
       <ManageWidget v-else title="Instructions" :span="8" :accent="dirty">
         <p class="m-0 text-ink-2">
@@ -158,7 +158,7 @@ function submit(): void {
             </div>
             <details v-if="!step.fixedInstructions">
               <summary class="min-h-11 cursor-pointer content-center font-medium text-orange-ink">Show the instructions</summary>
-              <pre class="m-0 mt-2 max-h-96 overflow-auto rounded-xl bg-mist p-3 text-sm whitespace-pre-wrap">{{ v.instructions }}</pre>
+              <pre tabindex="0" :aria-label="`The instructions of version ${String(v.number)}`" class="m-0 mt-2 max-h-96 overflow-auto rounded-xl bg-mist p-3 text-sm whitespace-pre-wrap">{{ v.instructions }}</pre>
             </details>
           </li>
         </ul>

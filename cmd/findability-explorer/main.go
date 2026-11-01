@@ -472,7 +472,7 @@ func (j judges) Current(ctx context.Context) (terminologyapp.Judge, string, erro
 
 // extractors hands the prompt-test context its reader of the responses on an Anthropic key
 // (ADR-0007), with the model the Claude step reading responses names now; its instructions are set
-// in the code (ADR-0018). Without a key, OpenRouter reads them as before.
+// in the code (ADR-0021). Without a key, OpenRouter reads them as before.
 type extractors struct {
 	llm   *llmapp.Service
 	steps *claudestepapp.Service

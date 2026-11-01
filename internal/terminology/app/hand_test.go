@@ -35,7 +35,9 @@ func (h *hand) Add(_ context.Context, t domain.HandTerm) error {
 	return nil
 }
 
-func (h *hand) Removed(context.Context) ([]domain.Removal, error) { return h.removed, h.fail("Removed") }
+func (h *hand) Removed(context.Context) ([]domain.Removal, error) {
+	return h.removed, h.fail("Removed")
+}
 
 func (h *hand) Remove(_ context.Context, r domain.Removal) error {
 	if err := h.fail("Remove"); err != nil {

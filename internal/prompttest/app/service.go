@@ -196,12 +196,8 @@ func (s *Service) price(ctx context.Context, v *View, r reader) error {
 		}
 		return s.catalogue(ctx, v.Settings.CredentialID)
 	})
-	listed := len(v.Settings.Models) > 0
 	v.Prices = domain.NoPrices(cadence, budget)
-	missing := v.Settings.Providers
-	if listed {
-		missing = v.Settings.Models
-	}
+	missing := wanted(v.Settings)
 	if len(runs) > 0 {
 		v.Models = runs[0].Models
 		answers, err := s.repo.Answers(ctx, runs[0].ID, false)
@@ -210,28 +206,49 @@ func (s *Service) price(ctx context.Context, v *View, r reader) error {
 		}
 		if len(answers) > 0 {
 			var kept []domain.ModelChoice
-			if listed {
-				kept, missing = domain.AskedModels(runs[0].Models, v.Settings.Models)
-			} else {
-				kept, missing = domain.Asked(runs[0].Models, v.Settings.Providers)
-			}
+			kept, missing = split(runs[0].Models, v.Settings)
 			v.Prices = domain.PricesFromRun(answers, kept, questions, cadence, budget, readerPrice(r, catalogue))
 		}
 	}
 	if len(missing) == 0 || catalogue() == nil {
 		return nil
 	}
-	choices := domain.ChooseModels(catalogue(), missing)
-	if listed {
-		choices = domain.OfModels(domain.ChooseListed(catalogue(), v.Settings.Models), missing)
-	}
-	estimate := domain.PricesFromCatalogue(catalogue(), choices, questions, cadence, budget, readerPrice(r, catalogue))
+	estimate := domain.PricesFromCatalogue(catalogue(), domain.OfModels(choices(catalogue(), v.Settings), missingModels(catalogue(), v.Settings, missing)), questions, cadence, budget, readerPrice(r, catalogue))
 	if v.Prices.Basis == domain.BasisRun {
 		v.Prices = v.Prices.With(estimate.Providers, questions, cadence)
 		return nil
 	}
 	v.Prices = estimate
 	return nil
+}
+
+// wanted are what the settings ask: the Model list, or before one is saved the providers.
+func wanted(s domain.Settings) []string {
+	if len(s.Models) > 0 {
+		return s.Models
+	}
+	return s.Providers
+}
+
+// split are a run's models still wanted, and the wanted ones it did not ask.
+func split(models []domain.ModelChoice, s domain.Settings) ([]domain.ModelChoice, []string) {
+	if len(s.Models) > 0 {
+		return domain.AskedModels(models, s.Models)
+	}
+	return domain.Asked(models, s.Providers)
+}
+
+// missingModels are the model ids of the wanted entries missing names: the listed models
+// themselves, or the cheapest model of each missing provider.
+func missingModels(catalogue []domain.CatalogueModel, s domain.Settings, missing []string) []string {
+	if len(s.Models) > 0 {
+		return missing
+	}
+	var ids []string
+	for _, c := range domain.ChooseModels(catalogue, missing) {
+		ids = append(ids, c.Model)
+	}
+	return ids
 }
 
 // choices are the models a run asks with the settings: the Model list, or before one is saved

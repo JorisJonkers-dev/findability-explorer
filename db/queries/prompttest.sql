@@ -294,3 +294,23 @@ ON CONFLICT (version) DO NOTHING;
 -- A question of a newly published version, at its position.
 INSERT INTO prompt_set_questions (version, position, prompt_id, family, intent, scope_id, text, english)
 VALUES (@version, @position, @prompt_id, @family, @intent, @scope_id, @text, nullif(@english::text, ''));
+
+-- name: ListCompetitorDefinitions :many
+-- Every version of the competitor definition, the newest first.
+SELECT version, text, saved_at, saved_by, coalesce(restored_from, 0)::bigint AS restored_from
+FROM competitor_definitions
+ORDER BY version DESC;
+
+-- name: AddCompetitorDefinition :one
+-- The next version of the competitor definition.
+INSERT INTO competitor_definitions (version, text, saved_at, saved_by, restored_from)
+SELECT coalesce(max(version), 0) + 1, @text, @saved_at, @saved_by, sqlc.narg(restored_from)
+FROM competitor_definitions
+RETURNING version;
+
+-- name: PromptCheckUsage :one
+-- What every request of the reviews and checks used, and how many companies they checked.
+SELECT
+    coalesce((SELECT sum(input_tokens) FROM prompt_review_usage), 0)::bigint AS input,
+    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage), 0)::bigint AS output,
+    ((SELECT count(*) FROM prompt_candidate_checks) + (SELECT count(*) FROM prompt_company_checks))::bigint AS checked;

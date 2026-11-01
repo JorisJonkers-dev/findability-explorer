@@ -38,6 +38,7 @@ describe('the Manage layout', () => {
       ['Companies', '/manage/competitors/companies', ''],
       ['Candidates', '/manage/competitors/candidates', 'page'],
       ['Check the list', '/manage/competitors/check', ''],
+      ['Competitor definition', '/manage/competitors/definition', ''],
       ['Search term list', '/manage/terms', ''],
       ['Recommendations', '/manage/recommendations', ''],
       ['Keys and spending', '/manage/keys', ''],

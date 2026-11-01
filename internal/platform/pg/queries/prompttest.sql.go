@@ -13,6 +13,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addCompetitorDefinition = `-- name: AddCompetitorDefinition :one
+INSERT INTO competitor_definitions (version, text, saved_at, saved_by, restored_from)
+SELECT coalesce(max(version), 0) + 1, $1, $2, $3, $4
+FROM competitor_definitions
+RETURNING version
+`
+
+type AddCompetitorDefinitionParams struct {
+	Text         string
+	SavedAt      time.Time
+	SavedBy      string
+	RestoredFrom pgtype.Int8
+}
+
+// The next version of the competitor definition.
+func (q *Queries) AddCompetitorDefinition(ctx context.Context, arg AddCompetitorDefinitionParams) (int64, error) {
+	row := q.db.QueryRow(ctx, addCompetitorDefinition,
+		arg.Text,
+		arg.SavedAt,
+		arg.SavedBy,
+		arg.RestoredFrom,
+	)
+	var version int64
+	err := row.Scan(&version)
+	return version, err
+}
+
 const addPromptAnswer = `-- name: AddPromptAnswer :one
 INSERT INTO prompt_answers (
     id, run_id, prompt_id, family, kind, scope, language, prompt_text, prompt_set_version, provider, model, mode, answer,
@@ -533,6 +560,47 @@ func (q *Queries) InsertPromptSetQuestion(ctx context.Context, arg InsertPromptS
 		arg.English,
 	)
 	return err
+}
+
+const listCompetitorDefinitions = `-- name: ListCompetitorDefinitions :many
+SELECT version, text, saved_at, saved_by, coalesce(restored_from, 0)::bigint AS restored_from
+FROM competitor_definitions
+ORDER BY version DESC
+`
+
+type ListCompetitorDefinitionsRow struct {
+	Version      int64
+	Text         string
+	SavedAt      time.Time
+	SavedBy      string
+	RestoredFrom int64
+}
+
+// Every version of the competitor definition, the newest first.
+func (q *Queries) ListCompetitorDefinitions(ctx context.Context) ([]ListCompetitorDefinitionsRow, error) {
+	rows, err := q.db.Query(ctx, listCompetitorDefinitions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCompetitorDefinitionsRow{}
+	for rows.Next() {
+		var i ListCompetitorDefinitionsRow
+		if err := rows.Scan(
+			&i.Version,
+			&i.Text,
+			&i.SavedAt,
+			&i.SavedBy,
+			&i.RestoredFrom,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPromptAnswerCompanies = `-- name: ListPromptAnswerCompanies :many
@@ -1131,6 +1199,27 @@ WHERE singleton
 func (q *Queries) MovePromptSchedule(ctx context.Context, nextDue time.Time) error {
 	_, err := q.db.Exec(ctx, movePromptSchedule, nextDue)
 	return err
+}
+
+const promptCheckUsage = `-- name: PromptCheckUsage :one
+SELECT
+    coalesce((SELECT sum(input_tokens) FROM prompt_review_usage), 0)::bigint AS input,
+    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage), 0)::bigint AS output,
+    ((SELECT count(*) FROM prompt_candidate_checks) + (SELECT count(*) FROM prompt_company_checks))::bigint AS checked
+`
+
+type PromptCheckUsageRow struct {
+	Input   int64
+	Output  int64
+	Checked int64
+}
+
+// What every request of the reviews and checks used, and how many companies they checked.
+func (q *Queries) PromptCheckUsage(ctx context.Context) (PromptCheckUsageRow, error) {
+	row := q.db.QueryRow(ctx, promptCheckUsage)
+	var i PromptCheckUsageRow
+	err := row.Scan(&i.Input, &i.Output, &i.Checked)
+	return i, err
 }
 
 const promptNamings = `-- name: PromptNamings :many

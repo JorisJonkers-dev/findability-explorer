@@ -83,3 +83,9 @@ func TestEveryImportedScopeIsALanguageWithAnOptionalRegion(t *testing.T) {
 	}()
 	domaintest.Scope("french")
 }
+
+func TestTheFirstStoredDefinitionIsVersionTwo(t *testing.T) {
+	if d := domaintest.Definition(); d.Version != 2 || d.Text == "" || d.SavedBy != "import" {
+		t.Errorf("definition = %+v", d)
+	}
+}

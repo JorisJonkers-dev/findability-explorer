@@ -67,7 +67,11 @@ func (s *Service) candidatesOn(ctx context.Context, directory []domain.Directory
 	if err != nil {
 		return nil, fmt.Errorf("candidate verdicts: %w", err)
 	}
-	return domain.WithVerdicts(domain.Candidates(sightings, decisions, directory, merges), verdicts), nil
+	def, err := s.definition(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return domain.WithVerdicts(domain.Candidates(sightings, decisions, directory, merges), verdicts, def.Version), nil
 }
 
 // find is the candidate one of whose names has id.

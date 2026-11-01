@@ -2655,6 +2655,155 @@ func (s *CompetitorCheckList) SetReview(val CandidateReviewState) {
 
 func (*CompetitorCheckList) listCompetitorChecksRes() {}
 
+// The competitor definition in use, its versions, and what checking again against it would take.
+// Ref: #/components/schemas/CompetitorDefinition
+type CompetitorDefinition struct {
+	Current CompetitorDefinitionVersion `json:"current"`
+	// Every version, the newest first.
+	Versions []CompetitorDefinitionVersion `json:"versions"`
+	// Competitors on the list the model checks whose check was made against an older version.
+	OutdatedCompetitors int32 `json:"outdatedCompetitors"`
+	// Waiting candidates whose check was made against an older version.
+	OutdatedCandidates int32 `json:"outdatedCandidates"`
+	RecheckCostUsd     Usd   `json:"recheckCostUsd"`
+}
+
+// GetCurrent returns the value of Current.
+func (s *CompetitorDefinition) GetCurrent() CompetitorDefinitionVersion {
+	return s.Current
+}
+
+// GetVersions returns the value of Versions.
+func (s *CompetitorDefinition) GetVersions() []CompetitorDefinitionVersion {
+	return s.Versions
+}
+
+// GetOutdatedCompetitors returns the value of OutdatedCompetitors.
+func (s *CompetitorDefinition) GetOutdatedCompetitors() int32 {
+	return s.OutdatedCompetitors
+}
+
+// GetOutdatedCandidates returns the value of OutdatedCandidates.
+func (s *CompetitorDefinition) GetOutdatedCandidates() int32 {
+	return s.OutdatedCandidates
+}
+
+// GetRecheckCostUsd returns the value of RecheckCostUsd.
+func (s *CompetitorDefinition) GetRecheckCostUsd() Usd {
+	return s.RecheckCostUsd
+}
+
+// SetCurrent sets the value of Current.
+func (s *CompetitorDefinition) SetCurrent(val CompetitorDefinitionVersion) {
+	s.Current = val
+}
+
+// SetVersions sets the value of Versions.
+func (s *CompetitorDefinition) SetVersions(val []CompetitorDefinitionVersion) {
+	s.Versions = val
+}
+
+// SetOutdatedCompetitors sets the value of OutdatedCompetitors.
+func (s *CompetitorDefinition) SetOutdatedCompetitors(val int32) {
+	s.OutdatedCompetitors = val
+}
+
+// SetOutdatedCandidates sets the value of OutdatedCandidates.
+func (s *CompetitorDefinition) SetOutdatedCandidates(val int32) {
+	s.OutdatedCandidates = val
+}
+
+// SetRecheckCostUsd sets the value of RecheckCostUsd.
+func (s *CompetitorDefinition) SetRecheckCostUsd(val Usd) {
+	s.RecheckCostUsd = val
+}
+
+func (*CompetitorDefinition) getCompetitorDefinitionRes()     {}
+func (*CompetitorDefinition) restoreCompetitorDefinitionRes() {}
+func (*CompetitorDefinition) saveCompetitorDefinitionRes()    {}
+
+// A new text for the competitor definition.
+// Ref: #/components/schemas/CompetitorDefinitionText
+type CompetitorDefinitionText struct {
+	// Who competes with Tribelt, and who does not.
+	Text string `json:"text"`
+}
+
+// GetText returns the value of Text.
+func (s *CompetitorDefinitionText) GetText() string {
+	return s.Text
+}
+
+// SetText sets the value of Text.
+func (s *CompetitorDefinitionText) SetText(val string) {
+	s.Text = val
+}
+
+// One version of the competitor definition.
+// Ref: #/components/schemas/CompetitorDefinitionVersion
+type CompetitorDefinitionVersion struct {
+	// The version's number; checks record it.
+	Version int32 `json:"version"`
+	// Who competes with Tribelt, and who does not.
+	Text string `json:"text"`
+	// When it was saved.
+	SavedAt time.Time `json:"savedAt"`
+	// Who saved it; import for the version the code held.
+	SavedBy string `json:"savedBy"`
+	// The version whose text it restored; absent for a new text.
+	RestoredFrom OptInt32 `json:"restoredFrom"`
+}
+
+// GetVersion returns the value of Version.
+func (s *CompetitorDefinitionVersion) GetVersion() int32 {
+	return s.Version
+}
+
+// GetText returns the value of Text.
+func (s *CompetitorDefinitionVersion) GetText() string {
+	return s.Text
+}
+
+// GetSavedAt returns the value of SavedAt.
+func (s *CompetitorDefinitionVersion) GetSavedAt() time.Time {
+	return s.SavedAt
+}
+
+// GetSavedBy returns the value of SavedBy.
+func (s *CompetitorDefinitionVersion) GetSavedBy() string {
+	return s.SavedBy
+}
+
+// GetRestoredFrom returns the value of RestoredFrom.
+func (s *CompetitorDefinitionVersion) GetRestoredFrom() OptInt32 {
+	return s.RestoredFrom
+}
+
+// SetVersion sets the value of Version.
+func (s *CompetitorDefinitionVersion) SetVersion(val int32) {
+	s.Version = val
+}
+
+// SetText sets the value of Text.
+func (s *CompetitorDefinitionVersion) SetText(val string) {
+	s.Text = val
+}
+
+// SetSavedAt sets the value of SavedAt.
+func (s *CompetitorDefinitionVersion) SetSavedAt(val time.Time) {
+	s.SavedAt = val
+}
+
+// SetSavedBy sets the value of SavedBy.
+func (s *CompetitorDefinitionVersion) SetSavedBy(val string) {
+	s.SavedBy = val
+}
+
+// SetRestoredFrom sets the value of RestoredFrom.
+func (s *CompetitorDefinitionVersion) SetRestoredFrom(val OptInt32) {
+	s.RestoredFrom = val
+}
+
 // A company with its most recent scans.
 // Ref: #/components/schemas/CompetitorDetail
 type CompetitorDetail struct {
@@ -3379,6 +3528,14 @@ func (*GetAnalysisNotFound) getAnalysisRes() {}
 type GetCompetitorBadRequest ProblemStatusCode
 
 func (*GetCompetitorBadRequest) getCompetitorRes() {}
+
+type GetCompetitorDefinitionForbidden ProblemStatusCode
+
+func (*GetCompetitorDefinitionForbidden) getCompetitorDefinitionRes() {}
+
+type GetCompetitorDefinitionUnauthorized ProblemStatusCode
+
+func (*GetCompetitorDefinitionUnauthorized) getCompetitorDefinitionRes() {}
 
 type GetCompetitorNotFound ProblemStatusCode
 
@@ -12331,6 +12488,26 @@ func (s *RescanSkip) SetReason(val string) {
 	s.Reason = val
 }
 
+type RestoreCompetitorDefinitionBadRequest ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionBadRequest) restoreCompetitorDefinitionRes() {}
+
+type RestoreCompetitorDefinitionConflict ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionConflict) restoreCompetitorDefinitionRes() {}
+
+type RestoreCompetitorDefinitionForbidden ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionForbidden) restoreCompetitorDefinitionRes() {}
+
+type RestoreCompetitorDefinitionNotFound ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionNotFound) restoreCompetitorDefinitionRes() {}
+
+type RestoreCompetitorDefinitionUnauthorized ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionUnauthorized) restoreCompetitorDefinitionRes() {}
+
 type RetryPromptRunBadRequest ProblemStatusCode
 
 func (*RetryPromptRunBadRequest) retryPromptRunRes() {}
@@ -12405,6 +12582,26 @@ func (s *RobotsStatus) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+type SaveCompetitorDefinitionBadRequest ProblemStatusCode
+
+func (*SaveCompetitorDefinitionBadRequest) saveCompetitorDefinitionRes() {}
+
+type SaveCompetitorDefinitionConflict ProblemStatusCode
+
+func (*SaveCompetitorDefinitionConflict) saveCompetitorDefinitionRes() {}
+
+type SaveCompetitorDefinitionForbidden ProblemStatusCode
+
+func (*SaveCompetitorDefinitionForbidden) saveCompetitorDefinitionRes() {}
+
+type SaveCompetitorDefinitionUnauthorized ProblemStatusCode
+
+func (*SaveCompetitorDefinitionUnauthorized) saveCompetitorDefinitionRes() {}
+
+type SaveCompetitorDefinitionUnprocessableEntity ProblemStatusCode
+
+func (*SaveCompetitorDefinitionUnprocessableEntity) saveCompetitorDefinitionRes() {}
 
 // Two finished scans of a company compared, per group. A term moved when its score changed by at least
 // a quarter and 5 points, or its page count by at least 2.

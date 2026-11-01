@@ -19,11 +19,11 @@ type stopping struct {
 	stop func()
 }
 
-func (s stopping) Check(ctx context.Context, ds []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error) {
+func (s stopping) Check(ctx context.Context, definition string, ds []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error) {
 	if s.stop != nil && len(s.checked) == 0 {
 		s.stop()
 	}
-	return s.model.Check(ctx, ds)
+	return s.model.Check(ctx, definition, ds)
 }
 
 func (s stopping) Merge(ctx context.Context, cs []domain.Candidate, d []domain.DirectoryCompany) ([]domain.Cluster, domain.ReviewUsage, error) {

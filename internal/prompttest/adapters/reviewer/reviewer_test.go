@@ -70,16 +70,19 @@ func dossiers() []domain.Dossier {
 	}
 }
 
+// definition is the competitor definition the checks are made against.
+const definition = "A competitor makes metal conveyor belts for process uses."
+
 func TestTheModelChecksEachCompany(t *testing.T) {
 	// Companies go by their number: one the model does not name, or names wrongly, gets no verdict.
 	c := &client{text: `{"verdicts":[{"id":" 1","competitor":true,"sure":true,"reason":"  Makes wire mesh belts. "},{"id":"2","competitor":false,"sure":false,"reason":"` + strings.Repeat("x", 400) + `"},{"id":"9","sure":true,"reason":"Out of range."},{"id":"00000000000000cc","sure":true,"reason":"Not a number."}]}`}
-	got, used, err := reviewer.New(c, "m").Check(t.Context(), dossiers())
+	got, used, err := reviewer.New(c, "m").Check(t.Context(), definition, dossiers())
 	if err != nil || len(got) != 2 || got[0].CandidateID != "00000000000000aa" || got[1].CandidateID != "00000000000000bb" || !got[0].Competitor || !got[0].Sure ||
 		got[0].Reason != "Makes wire mesh belts." || len([]rune(got[1].Reason)) != 300 || used.InputTokens != 120 {
 		t.Fatalf("Check = %+v, %+v, %v", got, used, err)
 	}
 	if c.prompt.SchemaName != "candidate_checks" || !strings.Contains(c.prompt.User, "Give one verdict for every company, by its number") ||
-		!strings.Contains(c.prompt.System, domain.TargetMarket) {
+		!strings.Contains(c.prompt.System, "<competitor_definition>\n"+definition+"\n</competitor_definition>") {
 		t.Errorf("prompt = %+v", c.prompt)
 	}
 	for _, want := range []string{
@@ -100,7 +103,7 @@ func TestTheModelFailing(t *testing.T) {
 		if _, used, err := reviewer.New(c, "m").Merge(t.Context(), candidates(), nil); err == nil || used.InputTokens != 120 {
 			t.Errorf("Merge with %+v = %+v, %v", c, used, err)
 		}
-		if _, used, err := reviewer.New(c, "m").Check(t.Context(), dossiers()); err == nil || used.InputTokens != 120 {
+		if _, used, err := reviewer.New(c, "m").Check(t.Context(), definition, dossiers()); err == nil || used.InputTokens != 120 {
 			t.Errorf("Check with %+v = %+v, %v", c, used, err)
 		}
 	}

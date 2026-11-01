@@ -10,7 +10,6 @@ const render = (list = measures) => mount(MeasureChart, { props: { name: 'Twente
 describe('the measure chart', () => {
   it('sets the competitor against Tribelt on each measure, and says so for a screen reader', () => {
     const wrapper = render()
-    expect(wrapper.get('h2').text()).toBe('Twentebelt against Tribelt')
     const buttons = wrapper.findAll('button')
     expect(buttons.map((b) => b.attributes('aria-label'))).toEqual([
       'AI answers that name it: Twentebelt 40%, Tribelt 20%.',

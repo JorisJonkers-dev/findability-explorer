@@ -8,13 +8,13 @@ import (
 )
 
 // Claude Haiku checks the companies on the competitor list as it checks the candidates (ADR-0010):
-// against TargetMarket, from the names, the website, the home page and what the answers say of
+// against the competitor definition, from the names, the website, the home page and what the answers say of
 // each company. A sure "not a competitor" archives the company, by ModelDecider; an unsure verdict
 // leaves it on the list for a person, flagged; a sure competitor stays. A company a person
 // restored or kept is never archived by the model, and is not checked again.
 
 // ListCheck is the language model's check of a company on the competitor list: whether it is a
-// competitor of Tribelt, whether it is sure, why, and the CheckVersion that made it.
+// competitor of Tribelt, whether it is sure, why, and the definition version it was checked against.
 type ListCheck struct {
 	CompanyID  string
 	Competitor bool
@@ -35,15 +35,15 @@ func (c DirectoryCompany) Checkable() bool {
 }
 
 // ToCheck are the companies of directory the model checks next, in order: each checkable one
-// without a check of the current CheckVersion. Raising CheckVersion checks them all again.
-func ToCheck(directory []DirectoryCompany, checks []ListCheck) []DirectoryCompany {
-	version := map[string]int{}
+// without a check against version, the definition in use. A new version checks them all again.
+func ToCheck(directory []DirectoryCompany, checks []ListCheck, version int) []DirectoryCompany {
+	checked := map[string]int{}
 	for _, c := range checks {
-		version[c.CompanyID] = c.Version
+		checked[c.CompanyID] = c.Version
 	}
 	var out []DirectoryCompany
 	for _, c := range directory {
-		if v, ok := version[c.ID]; c.Checkable() && (!ok || v < CheckVersion) {
+		if v, ok := checked[c.ID]; c.Checkable() && (!ok || v < version) {
 			out = append(out, c)
 		}
 	}
@@ -51,9 +51,9 @@ func ToCheck(directory []DirectoryCompany, checks []ListCheck) []DirectoryCompan
 }
 
 // ShownChecks are the checks of the competitors in directory, in its order, to show a person. A
-// check of an older CheckVersion is left out for a company the model checks again; on an archived
-// or kept company it stays, as what the model said then.
-func ShownChecks(directory []DirectoryCompany, checks []ListCheck) []ListCheck {
+// check against a definition older than version is left out for a company the model checks again;
+// on an archived or kept company it stays, as what the model said then.
+func ShownChecks(directory []DirectoryCompany, checks []ListCheck, version int) []ListCheck {
 	byID := map[string]ListCheck{}
 	for _, c := range checks {
 		byID[c.CompanyID] = c
@@ -61,7 +61,7 @@ func ShownChecks(directory []DirectoryCompany, checks []ListCheck) []ListCheck {
 	var out []ListCheck
 	for _, c := range directory {
 		check, ok := byID[c.ID]
-		if !ok || c.Role != RoleCompetitor || (c.Checkable() && check.Version < CheckVersion) {
+		if !ok || c.Role != RoleCompetitor || (c.Checkable() && check.Version < version) {
 			continue
 		}
 		out = append(out, check)

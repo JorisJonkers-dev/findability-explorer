@@ -144,14 +144,22 @@ type Repository interface {
 	AnswerTexts(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error)
 	// SaveReviewUsage stores what requests to the language model for the review consumed.
 	SaveReviewUsage(ctx context.Context, usage []domain.ReviewUsage) error
+	// CheckUsage sums what every request of the reviews and checks used, and counts the companies
+	// they checked: the candidates and the companies on the list.
+	CheckUsage(ctx context.Context) (domain.ReviewUsage, int, error)
+	// Definitions returns every version of the competitor definition, the newest first.
+	Definitions(ctx context.Context) ([]domain.Definition, error)
+	// AddDefinition stores text as the next version of the competitor definition, saved by whom and
+	// when, restored from a version or 0, and returns it.
+	AddDefinition(ctx context.Context, text, by string, restoredFrom int, at time.Time) (domain.Definition, error)
 }
 
 // Reviewer is a language model that reviews the candidates: which are one company, or a company
-// on the list, and which are competitors of Tribelt by domain.TargetMarket, judged from each
-// company's dossier. On an error the usage still counts what was consumed.
+// on the list, and which are competitors of Tribelt by the competitor definition given, judged
+// from each company's dossier. On an error the usage still counts what was consumed.
 type Reviewer interface {
 	Merge(ctx context.Context, candidates []domain.Candidate, directory []domain.DirectoryCompany) ([]domain.Cluster, domain.ReviewUsage, error)
-	Check(ctx context.Context, dossiers []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error)
+	Check(ctx context.Context, definition string, dossiers []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error)
 }
 
 // HomePages fetches a company's home page, politely and once: what it says of the company, or,

@@ -2015,6 +2015,90 @@ func decodeRereadPromptRunParams(args [1]string, argsEscaped bool, r *http.Reque
 	return params, nil
 }
 
+// RestoreCompetitorDefinitionParams is parameters of restoreCompetitorDefinition operation.
+type RestoreCompetitorDefinitionParams struct {
+	// The version to restore.
+	Version int32
+}
+
+func unpackRestoreCompetitorDefinitionParams(packed middleware.Parameters) (params RestoreCompetitorDefinitionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "version",
+			In:   "path",
+		}
+		params.Version = packed[key].(int32)
+	}
+	return params
+}
+
+func decodeRestoreCompetitorDefinitionParams(args [1]string, argsEscaped bool, r *http.Request) (params RestoreCompetitorDefinitionParams, _ error) {
+	// Decode path: version.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "version",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt32(val)
+				if err != nil {
+					return err
+				}
+
+				params.Version = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.Int{
+					MinSet:        true,
+					Min:           1,
+					MaxSet:        true,
+					Max:           100000,
+					MinExclusive:  false,
+					MaxExclusive:  false,
+					MultipleOfSet: false,
+					MultipleOf:    0,
+					Pattern:       nil,
+				}).Validate(int64(params.Version)); err != nil {
+					return errors.Wrap(err, "int")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "version",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RetryPromptRunParams is parameters of retryPromptRun operation.
 type RetryPromptRunParams struct {
 	// The Prompt run's id.

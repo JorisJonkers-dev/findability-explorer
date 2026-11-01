@@ -9,13 +9,6 @@ import { checkScanUrl, describeScanUrlCheck } from "../../scan/domain/newScan";
 
 export const MAX_NAME_LENGTH = 200;
 
-/** What archiving a company does, in the words its confirm button uses. */
-export const ARCHIVE_ACTION = {
-  button: "Archive",
-  question:
-    "Archive this company? It will be removed from the list and from re-scans. Its scans are kept, and it can be restored.",
-} as const;
-
 /** Whether a company can also be deleted for good: only an added one; the research's record stays. */
 export function canRemove(company: Pick<Competitor, "source">): boolean {
   return company.source === "added";
@@ -81,62 +74,6 @@ export function rescanSummary(batch: RescanBatch): string {
     .map((s) => `${s.name} (${s.reason.replace(/\.$/, "").toLowerCase()})`)
     .join(", ");
   return `${queued} Skipped ${String(batch.skipped.length)}: ${skipped}.`;
-}
-
-/** Archived companies apart from the rest, so only administrators see them. */
-export function splitArchived<T extends Pick<Competitor, "archived">>(
-  companies: readonly T[],
-): { active: T[]; archived: T[] } {
-  return {
-    active: companies.filter((c) => !c.archived),
-    archived: companies.filter((c) => c.archived),
-  };
-}
-
-/**
- * The companies a re-scan of all takes, as the server picks them: not archived, with a website,
- * and with data, because the desk research studied them or a scan ran before; not one whose site
- * turned its last scan away.
- */
-export function rescanCandidates<
-  T extends Pick<Competitor, "source" | "scans" | "websiteUrl" | "archived"> & {
-    lastScan?: Pick<AnalysisSummary, "blocked">;
-  },
->(companies: readonly T[]): T[] {
-  return companies.filter(
-    (c) =>
-      !c.archived &&
-      c.websiteUrl !== undefined &&
-      (c.source === "research" || c.scans > 0) &&
-      c.lastScan?.blocked !== true,
-  );
-}
-
-/** The companies scanning the unscanned takes, as the server picks them: not archived, with a website no scan reached yet. */
-export function unscannedCandidates<
-  T extends Pick<Competitor, "scans" | "websiteUrl" | "archived">,
->(companies: readonly T[]): T[] {
-  return companies.filter(
-    (c) => !c.archived && c.websiteUrl !== undefined && c.scans === 0,
-  );
-}
-
-/** Which companies the sweeps leave out and why, in one line, or null when none is. */
-export function leftOut(
-  companies: readonly (Pick<Competitor, "websiteUrl" | "archived"> & {
-    lastScan?: Pick<AnalysisSummary, "blocked">;
-  })[],
-): string | null {
-  const active = companies.filter((c) => !c.archived);
-  const noSite = active.filter((c) => c.websiteUrl === undefined).length;
-  const blocked = active.filter((c) => c.lastScan?.blocked === true).length;
-  const parts = [
-    noSite > 0
-      ? `${String(noSite)} ${noSite === 1 ? "company" : "companies"} without a website`
-      : "",
-    blocked > 0 ? `${String(blocked)} whose site blocks the crawler` : "",
-  ].filter((p) => p !== "");
-  return parts.length === 0 ? null : `Left out of both: ${parts.join(", ")}.`;
 }
 
 /** Where a re-scan's scans are. */

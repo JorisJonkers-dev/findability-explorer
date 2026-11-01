@@ -75,6 +75,13 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         meta: { title: 'Every term', view: 'results' },
       },
       {
+        path: '/terms/:id',
+        name: 'term',
+        component: () => import('../features/terminology/components/TermView.vue'),
+        props: (to) => ({ id: String(to.params.id) }),
+        meta: { title: 'Search term', view: 'results' },
+      },
+      {
         path: '/terms/families/:family',
         name: 'family',
         component: () => import('../features/products/components/FamilyView.vue'),
@@ -209,6 +216,12 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         name: 'check-the-list',
         component: () => import('../features/competitors/components/CheckListPage.vue'),
         meta: { title: 'Check the list', view: 'manage' },
+      },
+      {
+        path: '/manage/competitors/definition',
+        name: 'competitor-definition',
+        component: () => import('../features/competitors/components/DefinitionPage.vue'),
+        meta: { title: 'Competitor definition', view: 'manage' },
       },
       // Search term list.
       { path: '/manage/terms', name: 'term-list', component: () => import('../features/manage/components/TermListIndex.vue'), meta: { title: 'Search term list', view: 'manage' } },

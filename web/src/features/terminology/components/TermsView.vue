@@ -1,131 +1,163 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { TONE_VAR } from '../../../shared/ui/charts/tones'
+import FrameSection from '../../../shared/ui/FrameSection.vue'
+import { languageLabel, tierLabel } from '../../../shared/vocabulary'
 import { useOverview } from '../../home/composables/useOverview'
 import { usePlan } from '../../plan/composables/usePlan'
 import { useProducts } from '../../products/composables/useProducts'
-import { familyTitle, tribeltCalls } from '../../products/domain/products'
-import PageView from '../../shell/components/PageView.vue'
+import PageFrame from '../../shell/components/PageFrame.vue'
 import { familyPath } from '../../shell/domain/sections'
 import { useTermMap } from '../composables/useTermSearch'
-import { americanEnglishCount, DONUT_RADIUS, donutArcs, languageSlices, pickedLanguage, termsFigures, termsHeadline } from '../domain/overview'
+import { termsFigures } from '../domain/overview'
+import { BUYER_INTENT_LIST, familyName, familyTable, languageTable, termPath, topMissing } from '../domain/searchTerms'
+import { TABLE } from '../../../shared/ui/table'
 
+/** Search terms: the list, what tribelt.nl uses of it by language and belt family, and the terms it lacks. */
 const { overview } = useOverview()
 const { plan } = usePlan()
-const { terms } = useTermMap()
-const { products, error } = useProducts()
+const { terms, total, error: termsError } = useTermMap()
+const { products, error: productsError } = useProducts()
 
 const goal = computed(() => plan.value?.watched.find((w) => w.target === 'termsUsed')?.goal)
-const title = computed(() => termsHeadline(overview.value?.terms))
 const figures = computed(() => termsFigures(overview.value?.terms, goal.value))
-const slices = computed(() => languageSlices(overview.value?.terms))
-
-// The language the donut stresses; the one with the most terms until another is picked.
-const chosen = ref<string | null>(null)
-const pickedSlice = computed(() => slices.value.find((s) => s.value === chosen.value) ?? slices.value[0])
-const arcs = computed(() => donutArcs(slices.value, pickedSlice.value?.value ?? null))
-const picked = computed(() => pickedLanguage(pickedSlice.value, americanEnglishCount(terms.value)))
-const donutLabel = computed(
-  () => `The ${String(overview.value?.terms.total ?? 0)} terms by language: ${slices.value.map((s) => `${s.label} ${String(s.count)}`).join(', ')}.`,
-)
-const sliceColour = (value: string, tone: string): string => (value === pickedSlice.value?.value ? 'var(--color-orange)' : TONE_VAR[tone as keyof typeof TONE_VAR])
+const byLanguage = computed(() => languageTable(terms.value))
+const byFamily = computed(() => familyTable(terms.value, products.value))
+const missing = computed(() => topMissing(terms.value))
+const dataLine = computed(() => `From the search term list (${String(total.value)} terms) and each site's newest scan.`)
+const error = computed(() => termsError.value ?? productsError.value)
 </script>
 
 <template>
-  <PageView section="terms" :title="title" :source="['Search term list, our research of 22 October 2026', 'Competitors: also found by live scans']">
-    <template #lede>
-      <p class="m-0 max-w-[64ch] text-base text-ink-2">
-        The list of search terms buyers use for metal conveyor belts also holds the words competitors use. When tribelt.nl doesn't use a term, Tribelt doesn't turn up for
-        that search.
-      </p>
-    </template>
-    <div class="flex flex-col gap-10">
-      <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5">{{ error }}</p>
+  <PageFrame
+    section="terms"
+    title="Search terms"
+    purpose="The words buyers use to look for metal conveyor belts, and how many of them tribelt.nl uses. Pages with these words are easier to find."
+    :data-line="dataLine"
+    :manage="{ to: '/manage/terms', label: 'Manage the search term list' }"
+    help-topic="terms"
+  >
+    <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5">{{ error }}</p>
 
-      <section aria-label="Key figures" class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div v-for="f in figures" :key="f.text" class="flex flex-col gap-2 rounded-3xl bg-mist px-6 py-5">
-          <span class="font-display text-5xl leading-none font-extrabold tracking-[-0.02em]">{{ f.big }}</span>
-          <span class="text-base font-semibold">{{ f.text }}</span>
-          <span v-if="f.note" class="text-sm text-muted">{{ f.note }}</span>
-        </div>
-      </section>
-
-      <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
-        <section aria-labelledby="lang-title" class="flex flex-col gap-5 rounded-[28px] border-2 border-mist p-6">
-          <h2 id="lang-title" class="m-0 font-display text-2xl font-extrabold">The terms by language</h2>
-          <div class="flex flex-wrap items-center gap-x-6 gap-y-4">
-            <svg role="img" :aria-label="donutLabel" viewBox="0 0 200 200" class="size-[200px] flex-none">
-              <circle
-                v-for="(a, i) in arcs"
-                :key="a.value"
-                cx="100"
-                cy="100"
-                :r="DONUT_RADIUS"
-                fill="none"
-                transform="rotate(-90 100 100)"
-                :stroke="sliceColour(a.value, slices[i]?.tone ?? 'silver')"
-                :stroke-width="a.width"
-                :stroke-dasharray="a.dash"
-                :stroke-dashoffset="a.offset"
-              />
-              <text x="100" y="98" text-anchor="middle" font-size="38" font-weight="800" fill="currentColor">{{ overview?.terms.total ?? 0 }}</text>
-              <text x="100" y="122" text-anchor="middle" font-size="14" fill="var(--color-ink-2)">terms</text>
-            </svg>
-            <div role="group" aria-label="Pick a language" class="flex min-w-[12rem] flex-1 flex-col gap-1.5">
-              <button
-                v-for="s in slices"
-                :key="s.value"
-                type="button"
-                :aria-pressed="s.value === pickedSlice?.value"
-                :aria-label="`${s.label}: ${String(s.count)} terms`"
-                class="flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-xl border-2 bg-transparent px-3.5 text-black hover:bg-mist"
-                :class="s.value === pickedSlice?.value ? 'border-black bg-white' : 'border-transparent'"
-                @click="chosen = s.value"
-              >
-                <span aria-hidden="true" class="size-3.5 flex-none rounded-[4px]" :style="{ background: sliceColour(s.value, s.tone) }"></span>
-                <span class="flex-1 text-left text-base font-semibold">{{ s.label }}</span>
-                <span class="text-base font-extrabold">{{ s.count }}</span>
-              </button>
-            </div>
-          </div>
-          <div v-if="picked" class="flex flex-col gap-1.5 rounded-[18px] bg-orange-pale px-5 py-4">
-            <span class="text-base font-bold">{{ picked.title }}</span>
-            <span class="text-sm text-ink-2">{{ picked.text }}</span>
-          </div>
-        </section>
-
-        <section aria-labelledby="families-title" class="flex flex-col gap-4">
-          <div class="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 id="families-title" class="m-0 font-display text-2xl font-extrabold">The belt families</h2>
-            <span class="text-sm text-muted">Open a family to see its terms, who sells it, and the AI answers about it.</span>
-          </div>
-          <ul aria-label="Belt families" class="m-0 list-none border-t-2 border-black p-0">
-            <li v-for="p in products" :key="p.family" class="border-b border-grey">
-              <RouterLink
-                :to="familyPath(p.family)"
-                class="grid min-h-[72px] grid-cols-[minmax(0,1fr)_auto_1.5rem] items-center gap-4 rounded-xl px-2 py-3 text-black no-underline hover:bg-mist hover:text-black"
-              >
-                <span class="flex min-w-0 flex-col gap-1">
-                  <span class="text-lg font-bold">{{ familyTitle(p.family) }}</span>
-                  <span class="text-sm text-muted">{{ tribeltCalls(p) }}</span>
-                </span>
-                <span class="flex flex-col items-end gap-0.5">
-                  <span class="text-sm font-bold text-ink-2">{{ p.termsUsed }} of {{ p.terms.length }}</span>
-                  <span class="text-xs text-muted">terms tribelt.nl uses</span>
-                </span>
-                <svg aria-hidden="true" viewBox="0 0 24 24" class="size-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 5l7 7-7 7" />
-                </svg>
-              </RouterLink>
-            </li>
-          </ul>
-          <p class="m-0 text-sm text-muted">
-            Every term in the search term list, ranked by how many competitors use it, is on
-            <RouterLink to="/terms/all" class="font-bold">its own page</RouterLink>.
-          </p>
-        </section>
+    <div aria-label="Key figures" role="group" class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div v-for="(f, i) in figures" :key="f.text" class="flex flex-col gap-1.5 rounded-3xl bg-mist px-6 py-5">
+        <span class="font-display text-5xl leading-none font-semibold tracking-[-0.02em]" :class="i === 0 ? 'text-orange-ink' : ''">{{ f.big }}</span>
+        <span class="text-base">{{ f.text }}</span>
+        <span v-if="f.note" class="text-sm text-muted">{{ f.note }}</span>
       </div>
     </div>
-  </PageView>
+
+    <FrameSection
+      id="adoption"
+      title="Search term adoption over time"
+      intro="The share of the search term list that tribelt.nl uses, at each scan, for all terms and for each language."
+    >
+      <p class="m-0 rounded-3xl bg-mist p-6 text-ink-2">
+        The share over time follows once the app keeps which terms each scan of tribelt.nl found. Today it knows the newest scan only.
+      </p>
+    </FrameSection>
+
+    <div class="grid grid-cols-1 items-start gap-10 min-[1100px]:grid-cols-2">
+      <FrameSection id="by-language" title="By language">
+        <div :class="TABLE.box">
+          <table :class="TABLE.table">
+            <thead>
+              <tr>
+                <th scope="col" :class="TABLE.head">Language</th>
+                <th scope="col" :class="[TABLE.head, 'text-right']">In the list</th>
+                <th scope="col" :class="[TABLE.head, 'text-right']">Used by tribelt.nl</th>
+                <th scope="col" :class="[TABLE.head, 'text-right']">Used only by competitors</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in byLanguage.rows" :key="r.language">
+                <th scope="row" :class="[TABLE.cell, 'font-normal']">
+                  <RouterLink :to="{ path: '/terms/all', query: { language: r.language } }">{{ r.label }}</RouterLink>
+                </th>
+                <td :class="[TABLE.cell, 'text-right']">{{ r.total }}</td>
+                <td :class="[TABLE.cell, 'text-right']">{{ r.used }}</td>
+                <td :class="[TABLE.cell, 'text-right']">{{ r.only }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row" :class="TABLE.foot">All three languages</th>
+                <td :class="[TABLE.foot, 'text-right']">{{ byLanguage.all.total }}</td>
+                <td :class="[TABLE.foot, 'text-right']">{{ byLanguage.all.used }}</td>
+                <td :class="[TABLE.foot, 'text-right']">{{ byLanguage.all.only }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </FrameSection>
+
+      <FrameSection id="by-family" title="By belt family">
+        <div :class="TABLE.box">
+          <table :class="TABLE.table">
+            <thead>
+              <tr>
+                <th scope="col" :class="TABLE.head">Belt family</th>
+                <th scope="col" :class="TABLE.head">Tribelt's own names</th>
+                <th scope="col" :class="[TABLE.head, 'text-right']">Terms</th>
+                <th scope="col" :class="[TABLE.head, 'text-right']">Used by tribelt.nl</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in byFamily.rows" :key="r.family">
+                <th scope="row" :class="[TABLE.cell, 'font-normal']">
+                  <RouterLink :to="familyPath(r.family)">{{ r.label }}</RouterLink>
+                </th>
+                <td :class="TABLE.cell">{{ r.names }}</td>
+                <td :class="[TABLE.cell, 'text-right']">{{ r.total }}</td>
+                <td :class="[TABLE.cell, 'text-right']">{{ r.used }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row" :class="TABLE.foot">All belt families</th>
+                <td :class="[TABLE.foot, 'font-normal text-muted']">{{ byFamily.shared }}</td>
+                <td :class="[TABLE.foot, 'text-right']">{{ byFamily.all.total }}</td>
+                <td :class="[TABLE.foot, 'text-right']">{{ byFamily.all.used }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </FrameSection>
+    </div>
+
+    <details class="rounded-3xl bg-mist px-6 py-4">
+      <summary class="cursor-pointer font-semibold text-orange-ink">What buyer intent means</summary>
+      <p class="mt-3 mb-2 text-ink-2">Buyer intent is how far along a buyer is when they search. Every search term falls into one of five kinds.</p>
+      <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
+        <li v-for="k in BUYER_INTENT_LIST" :key="k.tier"><strong class="font-semibold">{{ k.label }}.</strong> {{ k.help }}</li>
+      </ul>
+    </details>
+
+    <FrameSection id="missing" title="Terms competitors use and tribelt.nl does not" intro="The 15 terms that the most competitors use.">
+      <template #aside><RouterLink to="/terms/all" class="font-medium">See every term</RouterLink></template>
+      <p v-if="missing.length === 0" class="m-0 rounded-3xl bg-mist p-6 text-ink-2">tribelt.nl uses every term a competitor uses.</p>
+      <div v-else :class="TABLE.box">
+        <table :class="TABLE.table">
+          <thead>
+            <tr>
+              <th scope="col" :class="TABLE.head">Term</th>
+              <th scope="col" :class="TABLE.head">Language</th>
+              <th scope="col" :class="TABLE.head">Belt family</th>
+              <th scope="col" :class="TABLE.head">Buyer intent</th>
+              <th scope="col" :class="[TABLE.head, 'text-right']">Competitors that use it</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="t in missing" :key="termPath(t)">
+              <th scope="row" :class="[TABLE.cell, 'font-normal']"><RouterLink :to="termPath(t)">{{ t.term }}</RouterLink></th>
+              <td :class="TABLE.cell">{{ languageLabel(t.language) }}</td>
+              <td :class="TABLE.cell">{{ familyName(t.family) }}</td>
+              <td :class="TABLE.cell">{{ tierLabel(t.tier) }}</td>
+              <td :class="[TABLE.cell, 'text-right']">{{ t.usedBy.length }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </FrameSection>
+  </PageFrame>
 </template>

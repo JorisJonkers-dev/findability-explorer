@@ -74,7 +74,13 @@ describe('a company’s search terms and history', () => {
   it('shows the latest scan’s terms by family and language, the scans, and the latest two compared', async () => {
     const { wrapper, requests } = await mountApp(api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/competitors/twentebelt/history')
     expect(document.title).toBe('Over time · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('How Twentebelt changed, scan by scan.')
+    expect(wrapper.get('h1').text()).toBe('Twentebelt, scan history')
+    expect(wrapper.get('[data-part="purpose"]').text()).toBe('Each scan of twentebelt.com, with the pages read and the AI readiness score. Pick two scans to see what changed.')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('The newest scan is from 23 October 2026.')
+    expect(wrapper.findAll('a[href="/competitors/twentebelt"]').map((a) => a.text())).toContain('Back to Twentebelt')
+    const order = ['timeline-title', 'compare-title', 'profile-title', 'files-title'].map((id) => wrapper.html().indexOf(`aria-labelledby="${id}"`))
+    expect(order.every((at) => at >= 0)).toBe(true)
+    expect([...order].sort((a, b) => a - b)).toEqual(order)
     expect(wrapper.text()).toContain('From Scan 3 of 23 Oct 2026, the latest of 2 finished scans.')
     expect(group(wrapper, 'Eyelink (3)').attributes('aria-pressed')).toBe('true')
     const tables = wrapper.findAll('section[aria-labelledby="profile-title"] table')
@@ -156,7 +162,7 @@ describe('a company’s search terms and history', () => {
   it('says when the company does not exist or cannot be loaded', async () => {
     const missing = await mountApp(api({ 'GET /api/v1/competitors/twentebelt': () => problem(404, 'Not Found') }), '/competitors/twentebelt/history')
     expect(missing.wrapper.get('[role="alert"]').text()).toBe('No company has this id.')
-    expect(missing.wrapper.get('h1').text()).toBe('Search terms, scan by scan.')
+    expect(missing.wrapper.get('h1').text()).toBe('Scan history')
     missing.wrapper.unmount()
     const failing = await mountApp(api({ 'GET /api/v1/competitors/twentebelt': () => problem(500, 'Internal Server Error') }), '/competitors/twentebelt/history')
     expect(failing.wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')

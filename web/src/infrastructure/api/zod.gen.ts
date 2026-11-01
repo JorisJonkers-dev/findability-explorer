@@ -1989,6 +1989,35 @@ export const zCompetitorCandidate = z.object({
 });
 
 /**
+ * One version of the competitor definition.
+ */
+export const zCompetitorDefinitionVersion = z.object({
+    version: z.int().gte(1).lte(100000),
+    text: z.string().max(8000),
+    savedAt: z.iso.datetime({ offset: true }).max(64),
+    savedBy: z.string().max(200),
+    restoredFrom: z.int().gte(1).lte(100000).optional()
+});
+
+/**
+ * The competitor definition in use, its versions, and what checking again against it would take.
+ */
+export const zCompetitorDefinition = z.object({
+    current: zCompetitorDefinitionVersion,
+    versions: z.array(zCompetitorDefinitionVersion).max(100000),
+    outdatedCompetitors: z.int().gte(0).lte(100000),
+    outdatedCandidates: z.int().gte(0).lte(100000),
+    recheckCostUsd: zUsd
+});
+
+/**
+ * A new text for the competitor definition.
+ */
+export const zCompetitorDefinitionText = z.object({
+    text: z.string().min(1).max(8000)
+});
+
+/**
  * Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last run stopped short.
  */
 export const zCandidateReviewState = z.object({
@@ -2523,6 +2552,30 @@ export const zStartCandidateReviewResponse = zCandidateReviewState;
  * Stopped.
  */
 export const zStopCandidateReviewResponse = z.void();
+
+/**
+ * The definition and its versions.
+ */
+export const zGetCompetitorDefinitionResponse = zCompetitorDefinition;
+
+/**
+ * The definition's new text.
+ */
+export const zSaveCompetitorDefinitionBody = zCompetitorDefinitionText;
+
+/**
+ * The definition, saved.
+ */
+export const zSaveCompetitorDefinitionResponse = zCompetitorDefinition;
+
+export const zRestoreCompetitorDefinitionPath = z.object({
+    version: z.int().gte(1).lte(100000)
+});
+
+/**
+ * The definition, restored.
+ */
+export const zRestoreCompetitorDefinitionResponse = zCompetitorDefinition;
 
 /**
  * The checks.

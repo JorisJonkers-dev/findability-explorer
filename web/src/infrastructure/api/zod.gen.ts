@@ -578,16 +578,10 @@ export const zTermCandidate = z.object({
 });
 
 /**
- * How far the language model is with the waiting candidates.
+ * Whether the term review runs by itself.
  */
-export const zTermReviewState = z.object({
-    running: z.boolean(),
-    waiting: z.int().gte(0).lte(1000000),
-    problem: z.enum([
-        'noModel',
-        'budget',
-        'failed'
-    ]).optional()
+export const zTermReviewSwitch = z.object({
+    on: z.boolean()
 });
 
 /**
@@ -597,15 +591,6 @@ export const zTermCandidateCounts = z.object({
     pending: z.int().gte(0).lte(1000000),
     accepted: z.int().gte(0).lte(1000000),
     rejected: z.int().gte(0).lte(1000000)
-});
-
-/**
- * The candidates with one status, and how far the language model is with them.
- */
-export const zTermCandidateList = z.object({
-    items: z.array(zTermCandidate).max(10000),
-    counts: zTermCandidateCounts,
-    review: zTermReviewState
 });
 
 /**
@@ -1403,6 +1388,32 @@ export const zLlmSettings = z.object({
 });
 
 /**
+ * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
+ */
+export const zTermReviewState = z.object({
+    on: z.boolean(),
+    running: z.boolean(),
+    waiting: z.int().gte(0).lte(1000000),
+    problem: z.enum([
+        'noModel',
+        'budget',
+        'failed',
+        'stopped'
+    ]).optional(),
+    monthTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    monthCostUsd: zUsd
+});
+
+/**
+ * The candidates with one status, and how far the language model is with them.
+ */
+export const zTermCandidateList = z.object({
+    items: z.array(zTermCandidate).max(10000),
+    counts: zTermCandidateCounts,
+    review: zTermReviewState
+});
+
+/**
  * What asking one provider's answer again in one mode should cost, reading included.
  */
 export const zPromptAnswerCost = z.object({
@@ -1874,7 +1885,8 @@ export const zCandidateReviewState = z.object({
     problem: z.enum([
         'noKey',
         'budget',
-        'failed'
+        'failed',
+        'stopped'
     ]).optional()
 });
 
@@ -2180,6 +2192,21 @@ export const zListTermCandidatesResponse = zTermCandidateList;
 export const zStartTermReviewResponse = zTermReviewState;
 
 /**
+ * Whether the review runs by itself.
+ */
+export const zSetTermReviewBody = zTermReviewSwitch;
+
+/**
+ * The review's state, switched.
+ */
+export const zSetTermReviewResponse = zTermReviewState;
+
+/**
+ * Stopped.
+ */
+export const zStopTermReviewResponse = z.void();
+
+/**
  * The term as it joins the map.
  */
 export const zAcceptTermCandidateBody = zTermAcceptance;
@@ -2360,6 +2387,11 @@ export const zListCompetitorCandidatesResponse = zCompetitorCandidateList;
 export const zStartCandidateReviewResponse = zCandidateReviewState;
 
 /**
+ * Stopped.
+ */
+export const zStopCandidateReviewResponse = z.void();
+
+/**
  * The checks.
  */
 export const zListCompetitorChecksResponse = zCompetitorCheckList;
@@ -2368,6 +2400,11 @@ export const zListCompetitorChecksResponse = zCompetitorCheckList;
  * The check is under way.
  */
 export const zStartCompetitorCheckResponse = zCandidateReviewState;
+
+/**
+ * Stopped.
+ */
+export const zStopCompetitorCheckResponse = z.void();
 
 /**
  * What to do, and to which candidates.

@@ -1472,7 +1472,8 @@ type CandidateReviewState struct {
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-	// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+	// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+	// stopped it; what it decided is kept). Absent when it went well.
 	Problem OptCandidateReviewStateProblem `json:"problem"`
 }
 
@@ -1500,13 +1501,15 @@ func (*CandidateReviewState) startCandidateReviewRes() {}
 func (*CandidateReviewState) startCompetitorCheckRes() {}
 
 // Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+// stopped it; what it decided is kept). Absent when it went well.
 type CandidateReviewStateProblem string
 
 const (
-	CandidateReviewStateProblemNoKey  CandidateReviewStateProblem = "noKey"
-	CandidateReviewStateProblemBudget CandidateReviewStateProblem = "budget"
-	CandidateReviewStateProblemFailed CandidateReviewStateProblem = "failed"
+	CandidateReviewStateProblemNoKey   CandidateReviewStateProblem = "noKey"
+	CandidateReviewStateProblemBudget  CandidateReviewStateProblem = "budget"
+	CandidateReviewStateProblemFailed  CandidateReviewStateProblem = "failed"
+	CandidateReviewStateProblemStopped CandidateReviewStateProblem = "stopped"
 )
 
 // AllValues returns all CandidateReviewStateProblem values.
@@ -1515,6 +1518,7 @@ func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
 		CandidateReviewStateProblemNoKey,
 		CandidateReviewStateProblemBudget,
 		CandidateReviewStateProblemFailed,
+		CandidateReviewStateProblemStopped,
 	}
 }
 
@@ -1526,6 +1530,8 @@ func (s CandidateReviewStateProblem) MarshalText() ([]byte, error) {
 	case CandidateReviewStateProblemBudget:
 		return []byte(s), nil
 	case CandidateReviewStateProblemFailed:
+		return []byte(s), nil
+	case CandidateReviewStateProblemStopped:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1543,6 +1549,9 @@ func (s *CandidateReviewStateProblem) UnmarshalText(data []byte) error {
 		return nil
 	case CandidateReviewStateProblemFailed:
 		*s = CandidateReviewStateProblemFailed
+		return nil
+	case CandidateReviewStateProblemStopped:
+		*s = CandidateReviewStateProblemStopped
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -12282,6 +12291,18 @@ type SetPlanTargetsUnprocessableEntity ProblemStatusCode
 
 func (*SetPlanTargetsUnprocessableEntity) setPlanTargetsRes() {}
 
+type SetTermReviewBadRequest ProblemStatusCode
+
+func (*SetTermReviewBadRequest) setTermReviewRes() {}
+
+type SetTermReviewForbidden ProblemStatusCode
+
+func (*SetTermReviewForbidden) setTermReviewRes() {}
+
+type SetTermReviewUnauthorized ProblemStatusCode
+
+func (*SetTermReviewUnauthorized) setTermReviewRes() {}
+
 // One Prompt run in the trend.
 // Ref: #/components/schemas/ShareTrendPoint
 type ShareTrendPoint struct {
@@ -12824,6 +12845,40 @@ type StopAnalysisUnauthorized ProblemStatusCode
 
 func (*StopAnalysisUnauthorized) stopAnalysisRes() {}
 
+type StopCandidateReviewForbidden ProblemStatusCode
+
+func (*StopCandidateReviewForbidden) stopCandidateReviewRes() {}
+
+// StopCandidateReviewNoContent is response for StopCandidateReview operation.
+type StopCandidateReviewNoContent struct{}
+
+func (*StopCandidateReviewNoContent) stopCandidateReviewRes() {}
+
+type StopCandidateReviewNotFound ProblemStatusCode
+
+func (*StopCandidateReviewNotFound) stopCandidateReviewRes() {}
+
+type StopCandidateReviewUnauthorized ProblemStatusCode
+
+func (*StopCandidateReviewUnauthorized) stopCandidateReviewRes() {}
+
+type StopCompetitorCheckForbidden ProblemStatusCode
+
+func (*StopCompetitorCheckForbidden) stopCompetitorCheckRes() {}
+
+// StopCompetitorCheckNoContent is response for StopCompetitorCheck operation.
+type StopCompetitorCheckNoContent struct{}
+
+func (*StopCompetitorCheckNoContent) stopCompetitorCheckRes() {}
+
+type StopCompetitorCheckNotFound ProblemStatusCode
+
+func (*StopCompetitorCheckNotFound) stopCompetitorCheckRes() {}
+
+type StopCompetitorCheckUnauthorized ProblemStatusCode
+
+func (*StopCompetitorCheckUnauthorized) stopCompetitorCheckRes() {}
+
 type StopPromptRunBadRequest ProblemStatusCode
 
 func (*StopPromptRunBadRequest) stopPromptRunRes() {}
@@ -12878,6 +12933,23 @@ func (*StopRescanNotFound) stopRescanRes() {}
 type StopRescanUnauthorized ProblemStatusCode
 
 func (*StopRescanUnauthorized) stopRescanRes() {}
+
+type StopTermReviewForbidden ProblemStatusCode
+
+func (*StopTermReviewForbidden) stopTermReviewRes() {}
+
+// StopTermReviewNoContent is response for StopTermReview operation.
+type StopTermReviewNoContent struct{}
+
+func (*StopTermReviewNoContent) stopTermReviewRes() {}
+
+type StopTermReviewNotFound ProblemStatusCode
+
+func (*StopTermReviewNotFound) stopTermReviewRes() {}
+
+type StopTermReviewUnauthorized ProblemStatusCode
+
+func (*StopTermReviewUnauthorized) stopTermReviewRes() {}
 
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term
@@ -13612,16 +13684,28 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
-// How far the language model is with the waiting candidates.
+// Whether the language model reviews the waiting candidates by itself, how far it is with them, and
+// what it used this month.
 // Ref: #/components/schemas/TermReviewState
 type TermReviewState struct {
+	// Whether it reviews by itself every ten minutes; off, only when asked.
+	On bool `json:"on"`
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// How many waiting candidates it has not reviewed yet.
 	Waiting int32 `json:"waiting"`
 	// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-	// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+	// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+	// stopped it; what it decided is kept). Absent when it went well.
 	Problem OptTermReviewStateProblem `json:"problem"`
+	// The tokens it used this month, input and output together.
+	MonthTokens  int64 `json:"monthTokens"`
+	MonthCostUsd Usd   `json:"monthCostUsd"`
+}
+
+// GetOn returns the value of On.
+func (s *TermReviewState) GetOn() bool {
+	return s.On
 }
 
 // GetRunning returns the value of Running.
@@ -13639,6 +13723,21 @@ func (s *TermReviewState) GetProblem() OptTermReviewStateProblem {
 	return s.Problem
 }
 
+// GetMonthTokens returns the value of MonthTokens.
+func (s *TermReviewState) GetMonthTokens() int64 {
+	return s.MonthTokens
+}
+
+// GetMonthCostUsd returns the value of MonthCostUsd.
+func (s *TermReviewState) GetMonthCostUsd() Usd {
+	return s.MonthCostUsd
+}
+
+// SetOn sets the value of On.
+func (s *TermReviewState) SetOn(val bool) {
+	s.On = val
+}
+
 // SetRunning sets the value of Running.
 func (s *TermReviewState) SetRunning(val bool) {
 	s.Running = val
@@ -13654,16 +13753,29 @@ func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
 	s.Problem = val
 }
 
+// SetMonthTokens sets the value of MonthTokens.
+func (s *TermReviewState) SetMonthTokens(val int64) {
+	s.MonthTokens = val
+}
+
+// SetMonthCostUsd sets the value of MonthCostUsd.
+func (s *TermReviewState) SetMonthCostUsd(val Usd) {
+	s.MonthCostUsd = val
+}
+
+func (*TermReviewState) setTermReviewRes()   {}
 func (*TermReviewState) startTermReviewRes() {}
 
 // Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+// stopped it; what it decided is kept). Absent when it went well.
 type TermReviewStateProblem string
 
 const (
 	TermReviewStateProblemNoModel TermReviewStateProblem = "noModel"
 	TermReviewStateProblemBudget  TermReviewStateProblem = "budget"
 	TermReviewStateProblemFailed  TermReviewStateProblem = "failed"
+	TermReviewStateProblemStopped TermReviewStateProblem = "stopped"
 )
 
 // AllValues returns all TermReviewStateProblem values.
@@ -13672,6 +13784,7 @@ func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
 		TermReviewStateProblemNoModel,
 		TermReviewStateProblemBudget,
 		TermReviewStateProblemFailed,
+		TermReviewStateProblemStopped,
 	}
 }
 
@@ -13683,6 +13796,8 @@ func (s TermReviewStateProblem) MarshalText() ([]byte, error) {
 	case TermReviewStateProblemBudget:
 		return []byte(s), nil
 	case TermReviewStateProblemFailed:
+		return []byte(s), nil
+	case TermReviewStateProblemStopped:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -13701,9 +13816,29 @@ func (s *TermReviewStateProblem) UnmarshalText(data []byte) error {
 	case TermReviewStateProblemFailed:
 		*s = TermReviewStateProblemFailed
 		return nil
+	case TermReviewStateProblemStopped:
+		*s = TermReviewStateProblemStopped
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Whether the term review runs by itself.
+// Ref: #/components/schemas/TermReviewSwitch
+type TermReviewSwitch struct {
+	// On, it reviews every ten minutes; off, only when an administrator asks.
+	On bool `json:"on"`
+}
+
+// GetOn returns the value of On.
+func (s *TermReviewSwitch) GetOn() bool {
+	return s.On
+}
+
+// SetOn sets the value of On.
+func (s *TermReviewSwitch) SetOn(val bool) {
+	s.On = val
 }
 
 // A page of matching terms.

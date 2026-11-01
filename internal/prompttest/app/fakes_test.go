@@ -299,7 +299,7 @@ func (r *repo) SpentSince(context.Context, time.Time) (domain.Micros, error) {
 	var total domain.Micros
 	for _, a := range r.answers {
 		total += a.Cost
-		if a.Extraction != nil {
+		if a.Extraction != nil && a.Extraction.HaikuTokens == 0 {
 			total += a.Extraction.Cost
 		}
 	}

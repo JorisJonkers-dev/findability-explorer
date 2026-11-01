@@ -427,3 +427,17 @@ type TermVerdict struct {
 	Model       string
 	ReviewedAt  time.Time
 }
+
+type WorkRun struct {
+	ID           uuid.UUID
+	Kind         string
+	StartedBy    string
+	StartedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	Ending       pgtype.Text
+	Done         int64
+	Total        int64
+	Failed       int64
+	InputTokens  int64
+	OutputTokens int64
+}

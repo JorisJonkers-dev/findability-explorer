@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 // checkTimeout bounds one check of every company's AI readiness.
@@ -58,12 +59,35 @@ func (s *Service) StartReadinessCheck(ctx context.Context) (ReadinessCheck, erro
 	s.check.cancel = cancel
 	go func() {
 		defer cancel()
+		entry := work.Start(bg, s.journal, work.KindReadinessCheck, checkBy, s.now(), s.report)
 		s.CheckReadiness(bg, scans)
 		s.check.mu.Lock()
+		defer s.check.mu.Unlock()
+		entry.Finish(context.WithoutCancel(bg), checkOutcome(s.check.state), s.now(), s.report)
 		s.check.state.Running = false
-		s.check.mu.Unlock()
 	}()
 	return s.check.state, nil
+}
+
+// checkBy is who the work journal names as having started a readiness check.
+const checkBy = "administrator"
+
+// checkOutcome is how a check ended, for the work journal.
+func checkOutcome(c ReadinessCheck) work.Outcome {
+	o := work.Outcome{Ending: work.EndingDone, Counts: work.Counts{Done: c.Checked, Total: c.Total, Failed: c.Failed}}
+	switch {
+	case c.Stopped:
+		o.Ending = work.EndingStoppedByHand
+	case c.Failed > 0:
+		o.Ending = work.EndingDoneWithFailures
+	}
+	return o
+}
+
+// WithJournal records each readiness check in j, as Activity lists it; report hears that j
+// failed, which leaves the check alone.
+func (s *Service) WithJournal(j work.Journal, report func(error)) {
+	s.journal, s.report = j, report
 }
 
 // StopReadinessCheck stops the check that runs: it reads no further site, and the site it reads

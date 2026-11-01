@@ -164,10 +164,11 @@ WHERE a.run_id = @run_id
 ORDER BY c.answer_id, c.position;
 
 -- name: PromptSpentSince :one
--- What answers and extractions cost since a moment, in millionths of a dollar.
+-- What the OpenRouter key paid since a moment, in millionths of a dollar: the answers, and the
+-- readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 SELECT (
     coalesce((SELECT sum(cost_micros) FROM prompt_answers WHERE answered_at >= @since), 0)
-    + coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= @since), 0)
+    + coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= @since AND haiku_tokens = 0), 0)
 )::bigint AS spent;
 
 -- name: PromptSightings :many

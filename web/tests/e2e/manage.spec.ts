@@ -57,6 +57,7 @@ test('the other Manage pages open, each in its place in the menu', async ({ page
     ['/manage/terms/edit', 'Add or remove terms'],
     ['/manage/recommendations', 'Recommendations'],
     ['/manage/recommendations/tick-off', 'Tick off yourself'],
+    ['/manage/recommendations/edit', 'Edit a recommendation'],
     ['/manage/recommendations/goals', 'Goals'],
     ['/manage/keys', 'Keys and spending'],
     ['/manage/keys/openrouter', 'OpenRouter key'],

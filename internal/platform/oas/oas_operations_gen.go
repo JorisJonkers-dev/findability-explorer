@@ -44,6 +44,7 @@ const (
 	ListPromptAnswersOperation          OperationName = "ListPromptAnswers"
 	ListPromptSetsOperation             OperationName = "ListPromptSets"
 	ListTermCandidatesOperation         OperationName = "ListTermCandidates"
+	PublishPromptSetOperation           OperationName = "PublishPromptSet"
 	RejectTermCandidateOperation        OperationName = "RejectTermCandidate"
 	RemoveQueuedAnalysesOperation       OperationName = "RemoveQueuedAnalyses"
 	RereadPromptRunOperation            OperationName = "RereadPromptRun"

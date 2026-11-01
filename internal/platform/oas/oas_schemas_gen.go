@@ -9600,6 +9600,80 @@ func (s *PromptCorrectness) UnmarshalText(data []byte) error {
 	}
 }
 
+// One question of a draft.
+// Ref: #/components/schemas/PromptDraftQuestion
+type PromptDraftQuestion struct {
+	// The id of the published question it keeps, changed or not; absent for a new question.
+	ID     OptString        `json:"id"`
+	Family PromptFamily     `json:"family"`
+	Intent IntentTier       `json:"intent"`
+	Scope  PromptSetScopeId `json:"scope"`
+	// The question, as it is asked.
+	Text string `json:"text"`
+	// Its English translation, when one is known.
+	English OptString `json:"english"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptDraftQuestion) GetID() OptString {
+	return s.ID
+}
+
+// GetFamily returns the value of Family.
+func (s *PromptDraftQuestion) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetIntent returns the value of Intent.
+func (s *PromptDraftQuestion) GetIntent() IntentTier {
+	return s.Intent
+}
+
+// GetScope returns the value of Scope.
+func (s *PromptDraftQuestion) GetScope() PromptSetScopeId {
+	return s.Scope
+}
+
+// GetText returns the value of Text.
+func (s *PromptDraftQuestion) GetText() string {
+	return s.Text
+}
+
+// GetEnglish returns the value of English.
+func (s *PromptDraftQuestion) GetEnglish() OptString {
+	return s.English
+}
+
+// SetID sets the value of ID.
+func (s *PromptDraftQuestion) SetID(val OptString) {
+	s.ID = val
+}
+
+// SetFamily sets the value of Family.
+func (s *PromptDraftQuestion) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetIntent sets the value of Intent.
+func (s *PromptDraftQuestion) SetIntent(val IntentTier) {
+	s.Intent = val
+}
+
+// SetScope sets the value of Scope.
+func (s *PromptDraftQuestion) SetScope(val PromptSetScopeId) {
+	s.Scope = val
+}
+
+// SetText sets the value of Text.
+func (s *PromptDraftQuestion) SetText(val string) {
+	s.Text = val
+}
+
+// SetEnglish sets the value of English.
+func (s *PromptDraftQuestion) SetEnglish(val OptString) {
+	s.English = val
+}
+
 // How the extractor read an answer; failed when it could not, after a retry.
 // Ref: #/components/schemas/PromptExtraction
 type PromptExtraction struct {
@@ -11101,77 +11175,7 @@ func (s *PromptRunStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's
-// language, or Dutch, German or English with no region.
-// Ref: #/components/schemas/PromptScope
 type PromptScope string
-
-const (
-	PromptScopeTwente      PromptScope = "twente"
-	PromptScopeNetherlands PromptScope = "netherlands"
-	PromptScopeGermany     PromptScope = "germany"
-	PromptScopeDutch       PromptScope = "dutch"
-	PromptScopeGerman      PromptScope = "german"
-	PromptScopeEnglish     PromptScope = "english"
-)
-
-// AllValues returns all PromptScope values.
-func (PromptScope) AllValues() []PromptScope {
-	return []PromptScope{
-		PromptScopeTwente,
-		PromptScopeNetherlands,
-		PromptScopeGermany,
-		PromptScopeDutch,
-		PromptScopeGerman,
-		PromptScopeEnglish,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PromptScope) MarshalText() ([]byte, error) {
-	switch s {
-	case PromptScopeTwente:
-		return []byte(s), nil
-	case PromptScopeNetherlands:
-		return []byte(s), nil
-	case PromptScopeGermany:
-		return []byte(s), nil
-	case PromptScopeDutch:
-		return []byte(s), nil
-	case PromptScopeGerman:
-		return []byte(s), nil
-	case PromptScopeEnglish:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PromptScope) UnmarshalText(data []byte) error {
-	switch PromptScope(data) {
-	case PromptScopeTwente:
-		*s = PromptScopeTwente
-		return nil
-	case PromptScopeNetherlands:
-		*s = PromptScopeNetherlands
-		return nil
-	case PromptScopeGermany:
-		*s = PromptScopeGermany
-		return nil
-	case PromptScopeDutch:
-		*s = PromptScopeDutch
-		return nil
-	case PromptScopeGerman:
-		*s = PromptScopeGerman
-		return nil
-	case PromptScopeEnglish:
-		*s = PromptScopeEnglish
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // The fixed, versioned prompt set runs ask.
 // Ref: #/components/schemas/PromptSet
@@ -11200,6 +11204,48 @@ func (s *PromptSet) SetVersion(val int32) {
 // SetPrompts sets the value of Prompts.
 func (s *PromptSet) SetPrompts(val []PromptQuestion) {
 	s.Prompts = val
+}
+
+// An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the
+// version it was restored from, if any.
+// Ref: #/components/schemas/PromptSetDraft
+type PromptSetDraft struct {
+	// Its questions, in order.
+	Questions []PromptDraftQuestion `json:"questions"`
+	// The new scopes its questions ask in, which no version asked in yet.
+	Scopes []PromptSetScope `json:"scopes"`
+	// The version the draft was restored from, if it was.
+	RestoredFrom OptInt32 `json:"restoredFrom"`
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PromptSetDraft) GetQuestions() []PromptDraftQuestion {
+	return s.Questions
+}
+
+// GetScopes returns the value of Scopes.
+func (s *PromptSetDraft) GetScopes() []PromptSetScope {
+	return s.Scopes
+}
+
+// GetRestoredFrom returns the value of RestoredFrom.
+func (s *PromptSetDraft) GetRestoredFrom() OptInt32 {
+	return s.RestoredFrom
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PromptSetDraft) SetQuestions(val []PromptDraftQuestion) {
+	s.Questions = val
+}
+
+// SetScopes sets the value of Scopes.
+func (s *PromptSetDraft) SetScopes(val []PromptSetScope) {
+	s.Scopes = val
+}
+
+// SetRestoredFrom sets the value of RestoredFrom.
+func (s *PromptSetDraft) SetRestoredFrom(val OptInt32) {
+	s.RestoredFrom = val
 }
 
 // One question of a published Prompt set.
@@ -11899,6 +11945,26 @@ func (s *PromptWrongClaim) SetClaim(val string) {
 	s.Claim = val
 }
 
+type PublishPromptSetBadRequest ProblemStatusCode
+
+func (*PublishPromptSetBadRequest) publishPromptSetRes() {}
+
+type PublishPromptSetConflict ProblemStatusCode
+
+func (*PublishPromptSetConflict) publishPromptSetRes() {}
+
+type PublishPromptSetForbidden ProblemStatusCode
+
+func (*PublishPromptSetForbidden) publishPromptSetRes() {}
+
+type PublishPromptSetUnauthorized ProblemStatusCode
+
+func (*PublishPromptSetUnauthorized) publishPromptSetRes() {}
+
+type PublishPromptSetUnprocessableEntity ProblemStatusCode
+
+func (*PublishPromptSetUnprocessableEntity) publishPromptSetRes() {}
+
 // One published version of the Prompt set, with its questions.
 // Ref: #/components/schemas/PublishedPromptSet
 type PublishedPromptSet struct {
@@ -11951,6 +12017,8 @@ func (s *PublishedPromptSet) SetNote(val string) {
 func (s *PublishedPromptSet) SetQuestions(val []PromptSetQuestion) {
 	s.Questions = val
 }
+
+func (*PublishedPromptSet) publishPromptSetRes() {}
 
 // Whether a site follows one recommendation.
 // Ref: #/components/schemas/ReadinessAdvice

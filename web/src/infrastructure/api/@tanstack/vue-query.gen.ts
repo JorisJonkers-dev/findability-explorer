@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen';
-import { acceptTermCandidate, addCompetitor, addCompetitorCandidate, addCompetitors, addLlmCredential, clearActiveLlm, compareScans, decideCompetitorCandidates, deleteCompetitor, deleteLlmCredential, dismissCompetitorCandidate, getActivity, getAiReadiness, getAiSearchSummary, getAnalysis, getClaudeStep, getCompetitor, getCompetitorProfile, getLlmKeyUsage, getLlmSettings, getMe, getOverview, getPlan, getProducts, getPromptRetryPlan, getPromptTestHistory, getPromptTestResults, getPromptTestSettings, getReadinessFiles, getStandings, getTermPages, listAnalyses, listClaudeSteps, listCompetitorCandidates, listCompetitorChecks, listCompetitors, listLlmModels, listPromptAnswers, listPromptSets, listTermCandidates, type Options, rejectTermCandidate, removeQueuedAnalyses, rereadPromptRun, retryPromptRun, saveClaudeStepVersion, searchTerms, setActiveLlm, setPlanTargets, setTermReview, splitCompetitorCandidate, startAnalysis, startCandidateReview, startCompetitorCheck, startPromptRun, startReadinessCheck, startRescans, startTermReview, stopAnalysis, stopCandidateReview, stopCompetitorCheck, stopPromptRun, stopReadinessCheck, stopRescan, stopTermReview, testLlmCredential, tickImprovement, undoCompetitorCandidate, undoTermDecision, updateCompetitor, updateLlmBudget, updatePromptTestSettings } from '../sdk.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorCandidateData, AddCompetitorCandidateError, AddCompetitorCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddCompetitorsData, AddCompetitorsError, AddCompetitorsResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DecideCompetitorCandidatesData, DecideCompetitorCandidatesError, DecideCompetitorCandidatesResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, DismissCompetitorCandidateData, DismissCompetitorCandidateError, DismissCompetitorCandidateResponse, GetActivityData, GetActivityError, GetActivityResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAiSearchSummaryData, GetAiSearchSummaryError, GetAiSearchSummaryResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetClaudeStepData, GetClaudeStepError, GetClaudeStepResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmKeyUsageData, GetLlmKeyUsageError, GetLlmKeyUsageResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetOverviewData, GetOverviewError, GetOverviewResponse, GetPlanData, GetPlanError, GetPlanResponse, GetProductsData, GetProductsError, GetProductsResponse, GetPromptRetryPlanData, GetPromptRetryPlanError, GetPromptRetryPlanResponse, GetPromptTestHistoryData, GetPromptTestHistoryError, GetPromptTestHistoryResponse, GetPromptTestResultsData, GetPromptTestResultsError, GetPromptTestResultsResponse, GetPromptTestSettingsData, GetPromptTestSettingsError, GetPromptTestSettingsResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, GetStandingsData, GetStandingsError, GetStandingsResponse, GetTermPagesData, GetTermPagesError, GetTermPagesResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListClaudeStepsData, ListClaudeStepsError, ListClaudeStepsResponse, ListCompetitorCandidatesData, ListCompetitorCandidatesError, ListCompetitorCandidatesResponse, ListCompetitorChecksData, ListCompetitorChecksError, ListCompetitorChecksResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListPromptAnswersData, ListPromptAnswersError, ListPromptAnswersResponse, ListPromptSetsData, ListPromptSetsError, ListPromptSetsResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, RemoveQueuedAnalysesData, RemoveQueuedAnalysesError, RemoveQueuedAnalysesResponse, RereadPromptRunData, RereadPromptRunError, RereadPromptRunResponse, RetryPromptRunData, RetryPromptRunError, RetryPromptRunResponse, SaveClaudeStepVersionData, SaveClaudeStepVersionError, SaveClaudeStepVersionResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, SetPlanTargetsData, SetPlanTargetsError, SetPlanTargetsResponse, SetTermReviewData, SetTermReviewError, SetTermReviewResponse, SplitCompetitorCandidateData, SplitCompetitorCandidateError, SplitCompetitorCandidateResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartCandidateReviewData, StartCandidateReviewError, StartCandidateReviewResponse, StartCompetitorCheckData, StartCompetitorCheckError, StartCompetitorCheckResponse, StartPromptRunData, StartPromptRunError, StartPromptRunResponse, StartReadinessCheckData, StartReadinessCheckError, StartReadinessCheckResponse, StartRescansData, StartRescansError, StartRescansResponse, StartTermReviewData, StartTermReviewError, StartTermReviewResponse, StopAnalysisData, StopAnalysisError, StopAnalysisResponse, StopCandidateReviewData, StopCandidateReviewError, StopCandidateReviewResponse, StopCompetitorCheckData, StopCompetitorCheckError, StopCompetitorCheckResponse, StopPromptRunData, StopPromptRunError, StopPromptRunResponse, StopReadinessCheckData, StopReadinessCheckError, StopReadinessCheckResponse, StopRescanData, StopRescanError, StopRescanResponse, StopTermReviewData, StopTermReviewError, StopTermReviewResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, TickImprovementData, TickImprovementError, TickImprovementResponse, UndoCompetitorCandidateData, UndoCompetitorCandidateError, UndoCompetitorCandidateResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse, UpdateLlmBudgetData, UpdateLlmBudgetError, UpdateLlmBudgetResponse, UpdatePromptTestSettingsData, UpdatePromptTestSettingsError, UpdatePromptTestSettingsResponse } from '../types.gen';
+import { acceptTermCandidate, addCompetitor, addCompetitorCandidate, addCompetitors, addLlmCredential, clearActiveLlm, compareScans, decideCompetitorCandidates, deleteCompetitor, deleteLlmCredential, dismissCompetitorCandidate, getActivity, getAiReadiness, getAiSearchSummary, getAnalysis, getCompetitor, getCompetitorProfile, getLlmKeyUsage, getLlmSettings, getMe, getOverview, getPlan, getProducts, getPromptRetryPlan, getPromptTestHistory, getPromptTestResults, getPromptTestSettings, getReadinessFiles, getStandings, getTermPages, listAnalyses, listCompetitorCandidates, listCompetitorChecks, listCompetitors, listLlmModels, listPromptAnswers, listPromptSets, listTermCandidates, type Options, publishPromptSet, rejectTermCandidate, removeQueuedAnalyses, rereadPromptRun, retryPromptRun, searchTerms, setActiveLlm, setPlanTargets, setTermReview, splitCompetitorCandidate, startAnalysis, startCandidateReview, startCompetitorCheck, startPromptRun, startReadinessCheck, startRescans, startTermReview, stopAnalysis, stopCandidateReview, stopCompetitorCheck, stopPromptRun, stopReadinessCheck, stopRescan, stopTermReview, testLlmCredential, tickImprovement, undoCompetitorCandidate, undoTermDecision, updateCompetitor, updateLlmBudget, updatePromptTestSettings } from '../sdk.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorCandidateData, AddCompetitorCandidateError, AddCompetitorCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddCompetitorsData, AddCompetitorsError, AddCompetitorsResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DecideCompetitorCandidatesData, DecideCompetitorCandidatesError, DecideCompetitorCandidatesResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, DismissCompetitorCandidateData, DismissCompetitorCandidateError, DismissCompetitorCandidateResponse, GetActivityData, GetActivityError, GetActivityResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAiSearchSummaryData, GetAiSearchSummaryError, GetAiSearchSummaryResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmKeyUsageData, GetLlmKeyUsageError, GetLlmKeyUsageResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetOverviewData, GetOverviewError, GetOverviewResponse, GetPlanData, GetPlanError, GetPlanResponse, GetProductsData, GetProductsError, GetProductsResponse, GetPromptRetryPlanData, GetPromptRetryPlanError, GetPromptRetryPlanResponse, GetPromptTestHistoryData, GetPromptTestHistoryError, GetPromptTestHistoryResponse, GetPromptTestResultsData, GetPromptTestResultsError, GetPromptTestResultsResponse, GetPromptTestSettingsData, GetPromptTestSettingsError, GetPromptTestSettingsResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, GetStandingsData, GetStandingsError, GetStandingsResponse, GetTermPagesData, GetTermPagesError, GetTermPagesResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorCandidatesData, ListCompetitorCandidatesError, ListCompetitorCandidatesResponse, ListCompetitorChecksData, ListCompetitorChecksError, ListCompetitorChecksResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListPromptAnswersData, ListPromptAnswersError, ListPromptAnswersResponse, ListPromptSetsData, ListPromptSetsError, ListPromptSetsResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, PublishPromptSetData, PublishPromptSetError, PublishPromptSetResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, RemoveQueuedAnalysesData, RemoveQueuedAnalysesError, RemoveQueuedAnalysesResponse, RereadPromptRunData, RereadPromptRunError, RereadPromptRunResponse, RetryPromptRunData, RetryPromptRunError, RetryPromptRunResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, SetPlanTargetsData, SetPlanTargetsError, SetPlanTargetsResponse, SetTermReviewData, SetTermReviewError, SetTermReviewResponse, SplitCompetitorCandidateData, SplitCompetitorCandidateError, SplitCompetitorCandidateResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartCandidateReviewData, StartCandidateReviewError, StartCandidateReviewResponse, StartCompetitorCheckData, StartCompetitorCheckError, StartCompetitorCheckResponse, StartPromptRunData, StartPromptRunError, StartPromptRunResponse, StartReadinessCheckData, StartReadinessCheckError, StartReadinessCheckResponse, StartRescansData, StartRescansError, StartRescansResponse, StartTermReviewData, StartTermReviewError, StartTermReviewResponse, StopAnalysisData, StopAnalysisError, StopAnalysisResponse, StopCandidateReviewData, StopCandidateReviewError, StopCandidateReviewResponse, StopCompetitorCheckData, StopCompetitorCheckError, StopCompetitorCheckResponse, StopPromptRunData, StopPromptRunError, StopPromptRunResponse, StopReadinessCheckData, StopReadinessCheckError, StopReadinessCheckResponse, StopRescanData, StopRescanError, StopRescanResponse, StopTermReviewData, StopTermReviewError, StopTermReviewResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, TickImprovementData, TickImprovementError, TickImprovementResponse, UndoCompetitorCandidateData, UndoCompetitorCandidateError, UndoCompetitorCandidateResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse, UpdateLlmBudgetData, UpdateLlmBudgetError, UpdateLlmBudgetResponse, UpdatePromptTestSettingsData, UpdatePromptTestSettingsError, UpdatePromptTestSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -507,65 +507,6 @@ export const stopAnalysisMutation = (options?: Partial<Options<StopAnalysisData>
     return mutationOptions;
 };
 
-export const listClaudeStepsQueryKey = (options?: Options<ListClaudeStepsData>) => createQueryKey('listClaudeSteps', options);
-
-/**
- * List the Claude steps
- *
- * Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model and the version of the instructions it uses now and what one job of it costs with that model.
- */
-export const listClaudeStepsOptions = (options?: Options<ListClaudeStepsData>) => queryOptions<ListClaudeStepsResponse, ListClaudeStepsError, ListClaudeStepsResponse, ReturnType<typeof listClaudeStepsQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await listClaudeSteps({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: listClaudeStepsQueryKey(options)
-});
-
-export const getClaudeStepQueryKey = (options: Options<GetClaudeStepData>) => createQueryKey('getClaudeStep', options);
-
-/**
- * Get one Claude step
- *
- * Administrators only. One step: the instructions the tool came with, every saved version (model and instructions) oldest first, the newest of which the step uses, and the Claude models it may use, cheapest first, each with what one job of the step costs with it. 404 for a step that does not exist.
- */
-export const getClaudeStepOptions = (options: Options<GetClaudeStepData>) => queryOptions<GetClaudeStepResponse, GetClaudeStepError, GetClaudeStepResponse, ReturnType<typeof getClaudeStepQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await getClaudeStep({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: getClaudeStepQueryKey(options)
-});
-
-/**
- * Save a new version of a Claude step
- *
- * Administrators only. Saves the model and the instructions as the step's next version, which its next job uses; the versions before it stay, to restore. A step whose instructions are set in the code takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude model listed, empty or too long instructions, or a version the same as the newest; 404 for a step that does not exist.
- */
-export const saveClaudeStepVersionMutation = (options?: Partial<Options<SaveClaudeStepVersionData>>): UseMutationOptions<SaveClaudeStepVersionResponse, SaveClaudeStepVersionError, Options<SaveClaudeStepVersionData>> => {
-    const mutationOptions: UseMutationOptions<SaveClaudeStepVersionResponse, SaveClaudeStepVersionError, Options<SaveClaudeStepVersionData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await saveClaudeStepVersion({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
 export const getActivityQueryKey = (options?: Options<GetActivityData>) => createQueryKey('getActivity', options);
 
 /**
@@ -858,6 +799,25 @@ export const listPromptSetsOptions = (options?: Options<ListPromptSetsData>) => 
     },
     queryKey: listPromptSetsQueryKey(options)
 });
+
+/**
+ * Publish a draft as the next version of the Prompt set
+ *
+ * Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions in order, each keeping the id of the published question it keeps or getting a new one no version has used, and the new scopes it asks in (a language with or without a region). The note says what changed against the newest version, and from which version the draft was restored. The next Prompt run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or another publication took the number first; 422 when a question or scope cannot be asked.
+ */
+export const publishPromptSetMutation = (options?: Partial<Options<PublishPromptSetData>>): UseMutationOptions<PublishPromptSetResponse, PublishPromptSetError, Options<PublishPromptSetData>> => {
+    const mutationOptions: UseMutationOptions<PublishPromptSetResponse, PublishPromptSetError, Options<PublishPromptSetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await publishPromptSet({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const listPromptAnswersQueryKey = (options: Options<ListPromptAnswersData>) => createQueryKey('listPromptAnswers', options);
 

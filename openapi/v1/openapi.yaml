@@ -1290,6 +1290,44 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-sets:
+    post:
+      operationId: publishPromptSet
+      summary: Publish a draft as the next version of the Prompt set
+      description: >-
+        Administrators only. Publishes an edited draft of the Prompt set as the next version: its
+        questions in order, each keeping the id of the published question it keeps or getting a new
+        one no version has used, and the new scopes it asks in (a language with or without a
+        region). The note says what changed against the newest version, and from which version the
+        draft was restored. The next Prompt run asks it, and the charts mark the date. 409 when
+        the draft asks what the newest version asks, or another publication took the number first;
+        422 when a question or scope cannot be asked.
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptSetDraft"
+      responses:
+        "201":
+          description: The published version.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishedPromptSet"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/prompt-runs/{runId}/answers:
     get:
       operationId: listPromptAnswers
@@ -5744,10 +5782,12 @@ components:
       enum: [supplier, application, problem]
     PromptScope:
       description: >-
-        Where and in which language a prompt asks - Twente, the Netherlands or Germany in that
-        region's language, or Dutch, German or English with no region.
+        Where and in which language a prompt asks - a scope's id (PromptSetScope), such as twente,
+        netherlands, germany, dutch, german, or english, or one a later Prompt set version added.
       type: string
-      enum: [twente, netherlands, germany, dutch, german, english]
+      maxLength: 40
+      pattern: "^[a-z][a-z0-9_-]*$"
+      example: twente
     PromptRetryRequest:
       description: >-
         What to ask again - every failed answer of the run when empty, or the one question of one
@@ -6313,6 +6353,62 @@ components:
           example: >-
             We are building a tunnel oven for an industrial bakery. What kind of conveyor belt
             should we use, and which manufacturers in the Twente region can supply it?
+    PromptSetDraft:
+      description: >-
+        An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the
+        version it was restored from, if any.
+      type: object
+      additionalProperties: false
+      required: [questions]
+      properties:
+        questions:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          description: Its questions, in order.
+          items:
+            $ref: "#/components/schemas/PromptDraftQuestion"
+        scopes:
+          type: array
+          maxItems: 50
+          description: The new scopes its questions ask in, which no version asked in yet.
+          items:
+            $ref: "#/components/schemas/PromptSetScope"
+        restoredFrom:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version the draft was restored from, if it was.
+          example: 1
+    PromptDraftQuestion:
+      description: One question of a draft.
+      type: object
+      additionalProperties: false
+      required: [family, intent, scope, text]
+      properties:
+        id:
+          type: string
+          maxLength: 80
+          pattern: "^[a-z0-9][a-z0-9_-]*$"
+          description: The id of the published question it keeps, changed or not; absent for a new question.
+          example: eyelink-application-twente
+        family:
+          $ref: "#/components/schemas/PromptFamily"
+        intent:
+          $ref: "#/components/schemas/IntentTier"
+        scope:
+          $ref: "#/components/schemas/PromptSetScopeId"
+        text:
+          type: string
+          maxLength: 1000
+          description: The question, as it is asked.
+          example: Quels fabricants proposent des bandes à œillets pour une usine alimentaire ?
+        english:
+          type: string
+          maxLength: 1000
+          description: Its English translation, when one is known.
+          example: Which manufacturers offer eyelink belts for a food factory?
     PromptSetScopeId:
       description: >-
         A scope's id, which the responses to its questions record as their scope.

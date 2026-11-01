@@ -1352,16 +1352,9 @@ export const zPromptKind = z.enum([
 ]);
 
 /**
- * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
+ * Where and in which language a prompt asks - a scope's id (PromptSetScope), such as twente, netherlands, germany, dutch, german, or english, or one a later Prompt set version added.
  */
-export const zPromptScope = z.enum([
-    'twente',
-    'netherlands',
-    'germany',
-    'dutch',
-    'german',
-    'english'
-]);
+export const zPromptScope = z.string().max(40).regex(/^[a-z][a-z0-9_-]*$/);
 
 /**
  * How many of a family's answers in one scope name Tribelt.
@@ -1745,6 +1738,18 @@ export const zPublishedPromptSet = z.object({
 });
 
 /**
+ * One question of a draft.
+ */
+export const zPromptDraftQuestion = z.object({
+    id: z.string().max(80).regex(/^[a-z0-9][a-z0-9_-]*$/).optional(),
+    family: zPromptFamily,
+    intent: zIntentTier,
+    scope: zPromptSetScopeId,
+    text: z.string().max(1000),
+    english: z.string().max(1000).optional()
+});
+
+/**
  * A scope - a language a question is asked in, with or without a region.
  */
 export const zPromptSetScope = z.object({
@@ -1760,6 +1765,15 @@ export const zPromptSetScope = z.object({
 export const zPromptSets = z.object({
     versions: z.array(zPublishedPromptSet).max(1000),
     scopes: z.array(zPromptSetScope).max(200)
+});
+
+/**
+ * An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the version it was restored from, if any.
+ */
+export const zPromptSetDraft = z.object({
+    questions: z.array(zPromptDraftQuestion).min(1).max(1000),
+    scopes: z.array(zPromptSetScope).max(50).optional(),
+    restoredFrom: z.int().gte(1).lte(100000).optional()
 });
 
 /**
@@ -2558,6 +2572,13 @@ export const zGetPromptTestHistoryResponse = zPromptTestHistory;
  * The published Prompt sets and the scopes.
  */
 export const zListPromptSetsResponse = zPromptSets;
+
+export const zPublishPromptSetBody = zPromptSetDraft;
+
+/**
+ * The published version.
+ */
+export const zPublishPromptSetResponse = zPublishedPromptSet;
 
 export const zListPromptAnswersPath = z.object({
     runId: z.uuid().max(36)

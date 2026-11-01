@@ -458,6 +458,20 @@ func (UnimplementedHandler) ListTermCandidates(ctx context.Context, params ListT
 	return r, ht.ErrNotImplemented
 }
 
+// PublishPromptSet implements publishPromptSet operation.
+//
+// Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions
+// in order, each keeping the id of the published question it keeps or getting a new one no version has
+// used, and the new scopes it asks in (a language with or without a region). The note says what
+// changed against the newest version, and from which version the draft was restored. The next Prompt
+// run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or
+// another publication took the number first; 422 when a question or scope cannot be asked.
+//
+// POST /api/v1/admin/prompt-sets
+func (UnimplementedHandler) PublishPromptSet(ctx context.Context, req *PromptSetDraft) (r PublishPromptSetRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RejectTermCandidate implements rejectTermCandidate operation.
 //
 // Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone.

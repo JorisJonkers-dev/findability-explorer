@@ -11,9 +11,6 @@ import (
 )
 
 var (
-	rn74AllowedHeaders = map[string]string{
-		"POST": "Content-Type",
-	}
 	rn18AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
@@ -26,37 +23,40 @@ var (
 	rn14AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn105AllowedHeaders = map[string]string{
+	rn101AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn101AllowedHeaders = map[string]string{
+	rn97AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn78AllowedHeaders = map[string]string{
+	rn74AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn72AllowedHeaders = map[string]string{
+	rn69AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn73AllowedHeaders = map[string]string{
+	rn70AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn49AllowedHeaders = map[string]string{
+	rn63AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
+	}
+	rn46AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
-	rn85AllowedHeaders = map[string]string{
+	rn81AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn79AllowedHeaders = map[string]string{
+	rn75AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn53AllowedHeaders = map[string]string{
+	rn50AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn5AllowedHeaders = map[string]string{
@@ -262,9 +262,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						}
 
-					case 'c': // Prefix: "c"
+					case 'c': // Prefix: "competitor"
 
-						if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
+						if l := len("competitor"); len(elem) >= l && elem[0:l] == "competitor" {
 							elem = elem[l:]
 						} else {
 							break
@@ -274,53 +274,30 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						switch elem[0] {
-						case 'l': // Prefix: "laude-steps"
+						case '-': // Prefix: "-c"
 
-							if l := len("laude-steps"); len(elem) >= l && elem[0:l] == "laude-steps" {
+							if l := len("-c"); len(elem) >= l && elem[0:l] == "-c" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								switch r.Method {
-								case "GET":
-									s.handleListClaudeStepsRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: nil,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
+								break
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case 'a': // Prefix: "andidates"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("andidates"); len(elem) >= l && elem[0:l] == "andidates" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
-								// Param: "stepId"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
-								}
-								args[0] = elem[:idx]
-								elem = elem[idx:]
-
 								if len(elem) == 0 {
 									switch r.Method {
 									case "GET":
-										s.handleGetClaudeStepRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
+										s.handleListCompetitorCandidatesRequest([0]string{}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
@@ -333,83 +310,108 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									return
 								}
 								switch elem[0] {
-								case '/': // Prefix: "/versions"
+								case '/': // Prefix: "/"
 
-									if l := len("/versions"); len(elem) >= l && elem[0:l] == "/versions" {
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
-										// Leaf node.
-										switch r.Method {
-										case "POST":
-											s.handleSaveClaudeStepVersionRequest([1]string{
-												args[0],
-											}, elemIsEscaped, w, r)
-										default:
-											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "POST",
-												allowedHeaders: rn74AllowedHeaders,
-												acceptPost:     "application/json",
-												acceptPatch:    "",
-											})
-										}
-
-										return
-									}
-
-								}
-
-							}
-
-						case 'o': // Prefix: "ompetitor"
-
-							if l := len("ompetitor"); len(elem) >= l && elem[0:l] == "ompetitor" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case '-': // Prefix: "-c"
-
-								if l := len("-c"); len(elem) >= l && elem[0:l] == "-c" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									break
-								}
-								switch elem[0] {
-								case 'a': // Prefix: "andidates"
-
-									if l := len("andidates"); len(elem) >= l && elem[0:l] == "andidates" {
-										elem = elem[l:]
-									} else {
 										break
 									}
-
-									if len(elem) == 0 {
-										switch r.Method {
-										case "GET":
-											s.handleListCompetitorCandidatesRequest([0]string{}, elemIsEscaped, w, r)
-										default:
-											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "GET",
-												allowedHeaders: nil,
-												acceptPost:     "",
-												acceptPatch:    "",
-											})
+									switch elem[0] {
+									case 'd': // Prefix: "decisions"
+										origElem := elem
+										if l := len("decisions"); len(elem) >= l && elem[0:l] == "decisions" {
+											elem = elem[l:]
+										} else {
+											break
 										}
 
-										return
+										if len(elem) == 0 {
+											// Leaf node.
+											switch r.Method {
+											case "POST":
+												s.handleDecideCompetitorCandidatesRequest([0]string{}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "POST",
+													allowedHeaders: rn18AllowedHeaders,
+													acceptPost:     "application/json",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+										elem = origElem
+									case 'r': // Prefix: "review"
+										origElem := elem
+										if l := len("review"); len(elem) >= l && elem[0:l] == "review" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											switch r.Method {
+											case "POST":
+												s.handleStartCandidateReviewRequest([0]string{}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "POST",
+													allowedHeaders: nil,
+													acceptPost:     "",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+										switch elem[0] {
+										case '/': // Prefix: "/stop"
+
+											if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												// Leaf node.
+												switch r.Method {
+												case "POST":
+													s.handleStopCandidateReviewRequest([0]string{}, elemIsEscaped, w, r)
+												default:
+													s.notAllowed(w, r, notAllowedParams{
+														allowedMethods: "POST",
+														allowedHeaders: nil,
+														acceptPost:     "",
+														acceptPatch:    "",
+													})
+												}
+
+												return
+											}
+
+										}
+
+										elem = origElem
+									}
+									// Param: "competitorCandidateId"
+									// Match until "/"
+									idx := strings.IndexByte(elem, '/')
+									if idx < 0 {
+										idx = len(elem)
+									}
+									args[0] = elem[:idx]
+									elem = elem[idx:]
+
+									if len(elem) == 0 {
+										break
 									}
 									switch elem[0] {
 									case '/': // Prefix: "/"
@@ -424,9 +426,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											break
 										}
 										switch elem[0] {
-										case 'd': // Prefix: "decisions"
-											origElem := elem
-											if l := len("decisions"); len(elem) >= l && elem[0:l] == "decisions" {
+										case 'a': // Prefix: "add"
+
+											if l := len("add"); len(elem) >= l && elem[0:l] == "add" {
 												elem = elem[l:]
 											} else {
 												break
@@ -436,11 +438,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												// Leaf node.
 												switch r.Method {
 												case "POST":
-													s.handleDecideCompetitorCandidatesRequest([0]string{}, elemIsEscaped, w, r)
+													s.handleAddCompetitorCandidateRequest([1]string{
+														args[0],
+													}, elemIsEscaped, w, r)
 												default:
 													s.notAllowed(w, r, notAllowedParams{
 														allowedMethods: "POST",
-														allowedHeaders: rn18AllowedHeaders,
+														allowedHeaders: rn9AllowedHeaders,
 														acceptPost:     "application/json",
 														acceptPatch:    "",
 													})
@@ -449,19 +453,89 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												return
 											}
 
-											elem = origElem
-										case 'r': // Prefix: "review"
-											origElem := elem
-											if l := len("review"); len(elem) >= l && elem[0:l] == "review" {
+										case 'd': // Prefix: "d"
+
+											if l := len("d"); len(elem) >= l && elem[0:l] == "d" {
 												elem = elem[l:]
 											} else {
 												break
 											}
 
 											if len(elem) == 0 {
+												break
+											}
+											switch elem[0] {
+											case 'e': // Prefix: "ecision"
+
+												if l := len("ecision"); len(elem) >= l && elem[0:l] == "ecision" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch r.Method {
+													case "DELETE":
+														s.handleUndoCompetitorCandidateRequest([1]string{
+															args[0],
+														}, elemIsEscaped, w, r)
+													default:
+														s.notAllowed(w, r, notAllowedParams{
+															allowedMethods: "DELETE",
+															allowedHeaders: nil,
+															acceptPost:     "",
+															acceptPatch:    "",
+														})
+													}
+
+													return
+												}
+
+											case 'i': // Prefix: "ismiss"
+
+												if l := len("ismiss"); len(elem) >= l && elem[0:l] == "ismiss" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch r.Method {
+													case "POST":
+														s.handleDismissCompetitorCandidateRequest([1]string{
+															args[0],
+														}, elemIsEscaped, w, r)
+													default:
+														s.notAllowed(w, r, notAllowedParams{
+															allowedMethods: "POST",
+															allowedHeaders: nil,
+															acceptPost:     "",
+															acceptPatch:    "",
+														})
+													}
+
+													return
+												}
+
+											}
+
+										case 's': // Prefix: "split"
+
+											if l := len("split"); len(elem) >= l && elem[0:l] == "split" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												// Leaf node.
 												switch r.Method {
 												case "POST":
-													s.handleStartCandidateReviewRequest([0]string{}, elemIsEscaped, w, r)
+													s.handleSplitCompetitorCandidateRequest([1]string{
+														args[0],
+													}, elemIsEscaped, w, r)
 												default:
 													s.notAllowed(w, r, notAllowedParams{
 														allowedMethods: "POST",
@@ -473,206 +547,55 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 												return
 											}
-											switch elem[0] {
-											case '/': // Prefix: "/stop"
-
-												if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													// Leaf node.
-													switch r.Method {
-													case "POST":
-														s.handleStopCandidateReviewRequest([0]string{}, elemIsEscaped, w, r)
-													default:
-														s.notAllowed(w, r, notAllowedParams{
-															allowedMethods: "POST",
-															allowedHeaders: nil,
-															acceptPost:     "",
-															acceptPatch:    "",
-														})
-													}
-
-													return
-												}
-
-											}
-
-											elem = origElem
-										}
-										// Param: "competitorCandidateId"
-										// Match until "/"
-										idx := strings.IndexByte(elem, '/')
-										if idx < 0 {
-											idx = len(elem)
-										}
-										args[0] = elem[:idx]
-										elem = elem[idx:]
-
-										if len(elem) == 0 {
-											break
-										}
-										switch elem[0] {
-										case '/': // Prefix: "/"
-
-											if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-												elem = elem[l:]
-											} else {
-												break
-											}
-
-											if len(elem) == 0 {
-												break
-											}
-											switch elem[0] {
-											case 'a': // Prefix: "add"
-
-												if l := len("add"); len(elem) >= l && elem[0:l] == "add" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													// Leaf node.
-													switch r.Method {
-													case "POST":
-														s.handleAddCompetitorCandidateRequest([1]string{
-															args[0],
-														}, elemIsEscaped, w, r)
-													default:
-														s.notAllowed(w, r, notAllowedParams{
-															allowedMethods: "POST",
-															allowedHeaders: rn9AllowedHeaders,
-															acceptPost:     "application/json",
-															acceptPatch:    "",
-														})
-													}
-
-													return
-												}
-
-											case 'd': // Prefix: "d"
-
-												if l := len("d"); len(elem) >= l && elem[0:l] == "d" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													break
-												}
-												switch elem[0] {
-												case 'e': // Prefix: "ecision"
-
-													if l := len("ecision"); len(elem) >= l && elem[0:l] == "ecision" {
-														elem = elem[l:]
-													} else {
-														break
-													}
-
-													if len(elem) == 0 {
-														// Leaf node.
-														switch r.Method {
-														case "DELETE":
-															s.handleUndoCompetitorCandidateRequest([1]string{
-																args[0],
-															}, elemIsEscaped, w, r)
-														default:
-															s.notAllowed(w, r, notAllowedParams{
-																allowedMethods: "DELETE",
-																allowedHeaders: nil,
-																acceptPost:     "",
-																acceptPatch:    "",
-															})
-														}
-
-														return
-													}
-
-												case 'i': // Prefix: "ismiss"
-
-													if l := len("ismiss"); len(elem) >= l && elem[0:l] == "ismiss" {
-														elem = elem[l:]
-													} else {
-														break
-													}
-
-													if len(elem) == 0 {
-														// Leaf node.
-														switch r.Method {
-														case "POST":
-															s.handleDismissCompetitorCandidateRequest([1]string{
-																args[0],
-															}, elemIsEscaped, w, r)
-														default:
-															s.notAllowed(w, r, notAllowedParams{
-																allowedMethods: "POST",
-																allowedHeaders: nil,
-																acceptPost:     "",
-																acceptPatch:    "",
-															})
-														}
-
-														return
-													}
-
-												}
-
-											case 's': // Prefix: "split"
-
-												if l := len("split"); len(elem) >= l && elem[0:l] == "split" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													// Leaf node.
-													switch r.Method {
-													case "POST":
-														s.handleSplitCompetitorCandidateRequest([1]string{
-															args[0],
-														}, elemIsEscaped, w, r)
-													default:
-														s.notAllowed(w, r, notAllowedParams{
-															allowedMethods: "POST",
-															allowedHeaders: nil,
-															acceptPost:     "",
-															acceptPatch:    "",
-														})
-													}
-
-													return
-												}
-
-											}
 
 										}
 
 									}
 
-								case 'h': // Prefix: "hecks"
+								}
 
-									if l := len("hecks"); len(elem) >= l && elem[0:l] == "hecks" {
+							case 'h': // Prefix: "hecks"
+
+								if l := len("hecks"); len(elem) >= l && elem[0:l] == "hecks" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "GET":
+										s.handleListCompetitorChecksRequest([0]string{}, elemIsEscaped, w, r)
+									case "POST":
+										s.handleStartCompetitorCheckRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET,POST",
+											allowedHeaders: nil,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/stop"
+
+									if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
+										// Leaf node.
 										switch r.Method {
-										case "GET":
-											s.handleListCompetitorChecksRequest([0]string{}, elemIsEscaped, w, r)
 										case "POST":
-											s.handleStartCompetitorCheckRequest([0]string{}, elemIsEscaped, w, r)
+											s.handleStopCompetitorCheckRequest([0]string{}, elemIsEscaped, w, r)
 										default:
 											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "GET,POST",
+												allowedMethods: "POST",
 												allowedHeaders: nil,
 												acceptPost:     "",
 												acceptPatch:    "",
@@ -681,61 +604,34 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 										return
 									}
-									switch elem[0] {
-									case '/': // Prefix: "/stop"
-
-										if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch r.Method {
-											case "POST":
-												s.handleStopCompetitorCheckRequest([0]string{}, elemIsEscaped, w, r)
-											default:
-												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "POST",
-													allowedHeaders: nil,
-													acceptPost:     "",
-													acceptPatch:    "",
-												})
-											}
-
-											return
-										}
-
-									}
 
 								}
 
-							case 's': // Prefix: "s/batch"
+							}
 
-								if l := len("s/batch"); len(elem) >= l && elem[0:l] == "s/batch" {
-									elem = elem[l:]
-								} else {
-									break
+						case 's': // Prefix: "s/batch"
+
+							if l := len("s/batch"); len(elem) >= l && elem[0:l] == "s/batch" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleAddCompetitorsRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn11AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
 								}
 
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "POST":
-										s.handleAddCompetitorsRequest([0]string{}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
-											allowedHeaders: rn11AllowedHeaders,
-											acceptPost:     "application/json",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
+								return
 							}
 
 						}
@@ -819,7 +715,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PATCH",
-											allowedHeaders: rn105AllowedHeaders,
+											allowedHeaders: rn101AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "application/json",
 										})
@@ -1041,7 +937,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn101AllowedHeaders,
+											allowedHeaders: rn97AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -1066,7 +962,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn78AllowedHeaders,
+											allowedHeaders: rn74AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -1176,7 +1072,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													default:
 														s.notAllowed(w, r, notAllowedParams{
 															allowedMethods: "POST",
-															allowedHeaders: rn72AllowedHeaders,
+															allowedHeaders: rn69AllowedHeaders,
 															acceptPost:     "application/json",
 															acceptPatch:    "",
 														})
@@ -1202,7 +1098,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													default:
 														s.notAllowed(w, r, notAllowedParams{
 															allowedMethods: "POST",
-															allowedHeaders: rn73AllowedHeaders,
+															allowedHeaders: rn70AllowedHeaders,
 															acceptPost:     "application/json",
 															acceptPatch:    "",
 														})
@@ -1275,6 +1171,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 								}
 
+							case 's': // Prefix: "sets"
+
+								if l := len("sets"); len(elem) >= l && elem[0:l] == "sets" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handlePublishPromptSetRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn63AllowedHeaders,
+											acceptPost:     "application/json",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
 							case 't': // Prefix: "test"
 
 								if l := len("test"); len(elem) >= l && elem[0:l] == "test" {
@@ -1293,7 +1214,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET,PATCH",
-											allowedHeaders: rn49AllowedHeaders,
+											allowedHeaders: rn46AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "application/json",
 										})
@@ -1384,7 +1305,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn85AllowedHeaders,
+										allowedHeaders: rn81AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -1535,7 +1456,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "PUT",
-													allowedHeaders: rn79AllowedHeaders,
+													allowedHeaders: rn75AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -1745,7 +1666,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn53AllowedHeaders,
+								allowedHeaders: rn50AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -2576,9 +2497,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 						}
 
-					case 'c': // Prefix: "c"
+					case 'c': // Prefix: "competitor"
 
-						if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
+						if l := len("competitor"); len(elem) >= l && elem[0:l] == "competitor" {
 							elem = elem[l:]
 						} else {
 							break
@@ -2588,138 +2509,144 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 						switch elem[0] {
-						case 'l': // Prefix: "laude-steps"
+						case '-': // Prefix: "-c"
 
-							if l := len("laude-steps"); len(elem) >= l && elem[0:l] == "laude-steps" {
+							if l := len("-c"); len(elem) >= l && elem[0:l] == "-c" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								switch method {
-								case "GET":
-									r.name = ListClaudeStepsOperation
-									r.summary = "List the Claude steps"
-									r.operationID = "listClaudeSteps"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/admin/claude-steps"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
+								break
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case 'a': // Prefix: "andidates"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("andidates"); len(elem) >= l && elem[0:l] == "andidates" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
-								// Param: "stepId"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
-								}
-								args[0] = elem[:idx]
-								elem = elem[idx:]
-
 								if len(elem) == 0 {
 									switch method {
 									case "GET":
-										r.name = GetClaudeStepOperation
-										r.summary = "Get one Claude step"
-										r.operationID = "getClaudeStep"
+										r.name = ListCompetitorCandidatesOperation
+										r.summary = "List the competitor candidates"
+										r.operationID = "listCompetitorCandidates"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/admin/claude-steps/{stepId}"
+										r.pathPattern = "/api/v1/admin/competitor-candidates"
 										r.args = args
-										r.count = 1
+										r.count = 0
 										return r, true
 									default:
 										return
 									}
 								}
 								switch elem[0] {
-								case '/': // Prefix: "/versions"
+								case '/': // Prefix: "/"
 
-									if l := len("/versions"); len(elem) >= l && elem[0:l] == "/versions" {
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
-										// Leaf node.
-										switch method {
-										case "POST":
-											r.name = SaveClaudeStepVersionOperation
-											r.summary = "Save a new version of a Claude step"
-											r.operationID = "saveClaudeStepVersion"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/admin/claude-steps/{stepId}/versions"
-											r.args = args
-											r.count = 1
-											return r, true
-										default:
-											return
-										}
-									}
-
-								}
-
-							}
-
-						case 'o': // Prefix: "ompetitor"
-
-							if l := len("ompetitor"); len(elem) >= l && elem[0:l] == "ompetitor" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case '-': // Prefix: "-c"
-
-								if l := len("-c"); len(elem) >= l && elem[0:l] == "-c" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									break
-								}
-								switch elem[0] {
-								case 'a': // Prefix: "andidates"
-
-									if l := len("andidates"); len(elem) >= l && elem[0:l] == "andidates" {
-										elem = elem[l:]
-									} else {
 										break
 									}
+									switch elem[0] {
+									case 'd': // Prefix: "decisions"
+										origElem := elem
+										if l := len("decisions"); len(elem) >= l && elem[0:l] == "decisions" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "POST":
+												r.name = DecideCompetitorCandidatesOperation
+												r.summary = "Add or dismiss several competitor candidates at once"
+												r.operationID = "decideCompetitorCandidates"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/admin/competitor-candidates/decisions"
+												r.args = args
+												r.count = 0
+												return r, true
+											default:
+												return
+											}
+										}
+
+										elem = origElem
+									case 'r': // Prefix: "review"
+										origElem := elem
+										if l := len("review"); len(elem) >= l && elem[0:l] == "review" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											switch method {
+											case "POST":
+												r.name = StartCandidateReviewOperation
+												r.summary = "Let Claude Haiku review the competitor candidates"
+												r.operationID = "startCandidateReview"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/admin/competitor-candidates/review"
+												r.args = args
+												r.count = 0
+												return r, true
+											default:
+												return
+											}
+										}
+										switch elem[0] {
+										case '/': // Prefix: "/stop"
+
+											if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												// Leaf node.
+												switch method {
+												case "POST":
+													r.name = StopCandidateReviewOperation
+													r.summary = "Stop Claude Haiku's review of the competitor candidates"
+													r.operationID = "stopCandidateReview"
+													r.operationGroup = ""
+													r.pathPattern = "/api/v1/admin/competitor-candidates/review/stop"
+													r.args = args
+													r.count = 0
+													return r, true
+												default:
+													return
+												}
+											}
+
+										}
+
+										elem = origElem
+									}
+									// Param: "competitorCandidateId"
+									// Match until "/"
+									idx := strings.IndexByte(elem, '/')
+									if idx < 0 {
+										idx = len(elem)
+									}
+									args[0] = elem[:idx]
+									elem = elem[idx:]
 
 									if len(elem) == 0 {
-										switch method {
-										case "GET":
-											r.name = ListCompetitorCandidatesOperation
-											r.summary = "List the competitor candidates"
-											r.operationID = "listCompetitorCandidates"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/admin/competitor-candidates"
-											r.args = args
-											r.count = 0
-											return r, true
-										default:
-											return
-										}
+										break
 									}
 									switch elem[0] {
 									case '/': // Prefix: "/"
@@ -2734,9 +2661,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											break
 										}
 										switch elem[0] {
-										case 'd': // Prefix: "decisions"
-											origElem := elem
-											if l := len("decisions"); len(elem) >= l && elem[0:l] == "decisions" {
+										case 'a': // Prefix: "add"
+
+											if l := len("add"); len(elem) >= l && elem[0:l] == "add" {
 												elem = elem[l:]
 											} else {
 												break
@@ -2746,297 +2673,139 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												// Leaf node.
 												switch method {
 												case "POST":
-													r.name = DecideCompetitorCandidatesOperation
-													r.summary = "Add or dismiss several competitor candidates at once"
-													r.operationID = "decideCompetitorCandidates"
+													r.name = AddCompetitorCandidateOperation
+													r.summary = "Add a candidate to the competitor list"
+													r.operationID = "addCompetitorCandidate"
 													r.operationGroup = ""
-													r.pathPattern = "/api/v1/admin/competitor-candidates/decisions"
+													r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/add"
 													r.args = args
-													r.count = 0
+													r.count = 1
 													return r, true
 												default:
 													return
 												}
 											}
 
-											elem = origElem
-										case 'r': // Prefix: "review"
-											origElem := elem
-											if l := len("review"); len(elem) >= l && elem[0:l] == "review" {
+										case 'd': // Prefix: "d"
+
+											if l := len("d"); len(elem) >= l && elem[0:l] == "d" {
 												elem = elem[l:]
 											} else {
 												break
 											}
 
 											if len(elem) == 0 {
+												break
+											}
+											switch elem[0] {
+											case 'e': // Prefix: "ecision"
+
+												if l := len("ecision"); len(elem) >= l && elem[0:l] == "ecision" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch method {
+													case "DELETE":
+														r.name = UndoCompetitorCandidateOperation
+														r.summary = "Undo the decision on a candidate"
+														r.operationID = "undoCompetitorCandidate"
+														r.operationGroup = ""
+														r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/decision"
+														r.args = args
+														r.count = 1
+														return r, true
+													default:
+														return
+													}
+												}
+
+											case 'i': // Prefix: "ismiss"
+
+												if l := len("ismiss"); len(elem) >= l && elem[0:l] == "ismiss" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch method {
+													case "POST":
+														r.name = DismissCompetitorCandidateOperation
+														r.summary = "Dismiss a candidate"
+														r.operationID = "dismissCompetitorCandidate"
+														r.operationGroup = ""
+														r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss"
+														r.args = args
+														r.count = 1
+														return r, true
+													default:
+														return
+													}
+												}
+
+											}
+
+										case 's': // Prefix: "split"
+
+											if l := len("split"); len(elem) >= l && elem[0:l] == "split" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												// Leaf node.
 												switch method {
 												case "POST":
-													r.name = StartCandidateReviewOperation
-													r.summary = "Let Claude Haiku review the competitor candidates"
-													r.operationID = "startCandidateReview"
+													r.name = SplitCompetitorCandidateOperation
+													r.summary = "Split a merged name off its company"
+													r.operationID = "splitCompetitorCandidate"
 													r.operationGroup = ""
-													r.pathPattern = "/api/v1/admin/competitor-candidates/review"
+													r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/split"
 													r.args = args
-													r.count = 0
+													r.count = 1
 													return r, true
 												default:
 													return
 												}
 											}
-											switch elem[0] {
-											case '/': // Prefix: "/stop"
 
-												if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													// Leaf node.
-													switch method {
-													case "POST":
-														r.name = StopCandidateReviewOperation
-														r.summary = "Stop Claude Haiku's review of the competitor candidates"
-														r.operationID = "stopCandidateReview"
-														r.operationGroup = ""
-														r.pathPattern = "/api/v1/admin/competitor-candidates/review/stop"
-														r.args = args
-														r.count = 0
-														return r, true
-													default:
-														return
-													}
-												}
-
-											}
-
-											elem = origElem
-										}
-										// Param: "competitorCandidateId"
-										// Match until "/"
-										idx := strings.IndexByte(elem, '/')
-										if idx < 0 {
-											idx = len(elem)
-										}
-										args[0] = elem[:idx]
-										elem = elem[idx:]
-
-										if len(elem) == 0 {
-											break
-										}
-										switch elem[0] {
-										case '/': // Prefix: "/"
-
-											if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-												elem = elem[l:]
-											} else {
-												break
-											}
-
-											if len(elem) == 0 {
-												break
-											}
-											switch elem[0] {
-											case 'a': // Prefix: "add"
-
-												if l := len("add"); len(elem) >= l && elem[0:l] == "add" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													// Leaf node.
-													switch method {
-													case "POST":
-														r.name = AddCompetitorCandidateOperation
-														r.summary = "Add a candidate to the competitor list"
-														r.operationID = "addCompetitorCandidate"
-														r.operationGroup = ""
-														r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/add"
-														r.args = args
-														r.count = 1
-														return r, true
-													default:
-														return
-													}
-												}
-
-											case 'd': // Prefix: "d"
-
-												if l := len("d"); len(elem) >= l && elem[0:l] == "d" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													break
-												}
-												switch elem[0] {
-												case 'e': // Prefix: "ecision"
-
-													if l := len("ecision"); len(elem) >= l && elem[0:l] == "ecision" {
-														elem = elem[l:]
-													} else {
-														break
-													}
-
-													if len(elem) == 0 {
-														// Leaf node.
-														switch method {
-														case "DELETE":
-															r.name = UndoCompetitorCandidateOperation
-															r.summary = "Undo the decision on a candidate"
-															r.operationID = "undoCompetitorCandidate"
-															r.operationGroup = ""
-															r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/decision"
-															r.args = args
-															r.count = 1
-															return r, true
-														default:
-															return
-														}
-													}
-
-												case 'i': // Prefix: "ismiss"
-
-													if l := len("ismiss"); len(elem) >= l && elem[0:l] == "ismiss" {
-														elem = elem[l:]
-													} else {
-														break
-													}
-
-													if len(elem) == 0 {
-														// Leaf node.
-														switch method {
-														case "POST":
-															r.name = DismissCompetitorCandidateOperation
-															r.summary = "Dismiss a candidate"
-															r.operationID = "dismissCompetitorCandidate"
-															r.operationGroup = ""
-															r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss"
-															r.args = args
-															r.count = 1
-															return r, true
-														default:
-															return
-														}
-													}
-
-												}
-
-											case 's': // Prefix: "split"
-
-												if l := len("split"); len(elem) >= l && elem[0:l] == "split" {
-													elem = elem[l:]
-												} else {
-													break
-												}
-
-												if len(elem) == 0 {
-													// Leaf node.
-													switch method {
-													case "POST":
-														r.name = SplitCompetitorCandidateOperation
-														r.summary = "Split a merged name off its company"
-														r.operationID = "splitCompetitorCandidate"
-														r.operationGroup = ""
-														r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/split"
-														r.args = args
-														r.count = 1
-														return r, true
-													default:
-														return
-													}
-												}
-
-											}
-
-										}
-
-									}
-
-								case 'h': // Prefix: "hecks"
-
-									if l := len("hecks"); len(elem) >= l && elem[0:l] == "hecks" {
-										elem = elem[l:]
-									} else {
-										break
-									}
-
-									if len(elem) == 0 {
-										switch method {
-										case "GET":
-											r.name = ListCompetitorChecksOperation
-											r.summary = "List Claude Haiku's checks of the companies on the competitor list"
-											r.operationID = "listCompetitorChecks"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/admin/competitor-checks"
-											r.args = args
-											r.count = 0
-											return r, true
-										case "POST":
-											r.name = StartCompetitorCheckOperation
-											r.summary = "Let Claude Haiku check the companies on the competitor list"
-											r.operationID = "startCompetitorCheck"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/admin/competitor-checks"
-											r.args = args
-											r.count = 0
-											return r, true
-										default:
-											return
-										}
-									}
-									switch elem[0] {
-									case '/': // Prefix: "/stop"
-
-										if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "POST":
-												r.name = StopCompetitorCheckOperation
-												r.summary = "Stop Claude Haiku's check of the competitor list"
-												r.operationID = "stopCompetitorCheck"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/admin/competitor-checks/stop"
-												r.args = args
-												r.count = 0
-												return r, true
-											default:
-												return
-											}
 										}
 
 									}
 
 								}
 
-							case 's': // Prefix: "s/batch"
+							case 'h': // Prefix: "hecks"
 
-								if l := len("s/batch"); len(elem) >= l && elem[0:l] == "s/batch" {
+								if l := len("hecks"); len(elem) >= l && elem[0:l] == "hecks" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
-									// Leaf node.
 									switch method {
-									case "POST":
-										r.name = AddCompetitorsOperation
-										r.summary = "Add several competitors at once"
-										r.operationID = "addCompetitors"
+									case "GET":
+										r.name = ListCompetitorChecksOperation
+										r.summary = "List Claude Haiku's checks of the companies on the competitor list"
+										r.operationID = "listCompetitorChecks"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/admin/competitors/batch"
+										r.pathPattern = "/api/v1/admin/competitor-checks"
+										r.args = args
+										r.count = 0
+										return r, true
+									case "POST":
+										r.name = StartCompetitorCheckOperation
+										r.summary = "Let Claude Haiku check the companies on the competitor list"
+										r.operationID = "startCompetitorCheck"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/admin/competitor-checks"
 										r.args = args
 										r.count = 0
 										return r, true
@@ -3044,7 +2813,59 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										return
 									}
 								}
+								switch elem[0] {
+								case '/': // Prefix: "/stop"
 
+									if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "POST":
+											r.name = StopCompetitorCheckOperation
+											r.summary = "Stop Claude Haiku's check of the competitor list"
+											r.operationID = "stopCompetitorCheck"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/admin/competitor-checks/stop"
+											r.args = args
+											r.count = 0
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							}
+
+						case 's': // Prefix: "s/batch"
+
+							if l := len("s/batch"); len(elem) >= l && elem[0:l] == "s/batch" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = AddCompetitorsOperation
+									r.summary = "Add several competitors at once"
+									r.operationID = "addCompetitors"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/admin/competitors/batch"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
 							}
 
 						}
@@ -3571,6 +3392,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 									}
 
+								}
+
+							case 's': // Prefix: "sets"
+
+								if l := len("sets"); len(elem) >= l && elem[0:l] == "sets" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = PublishPromptSetOperation
+										r.summary = "Publish a draft as the next version of the Prompt set"
+										r.operationID = "publishPromptSet"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/admin/prompt-sets"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
 								}
 
 							case 't': // Prefix: "test"

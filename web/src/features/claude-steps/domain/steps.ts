@@ -37,6 +37,27 @@ export const STEP_INFO: Record<ClaudeStepId, StepInfo> = {
     change:
       'Scans from now on match the new way. Earlier scans keep their matches, so a scan before and after the change may differ for that reason alone.',
   },
+  recommendations: {
+    does: 'Reads the gaps the rules found and the tribelt.nl pages, then says where each change belongs and words it.',
+    section: { label: 'Recommendations', to: '/manage/recommendations' },
+    results: { label: 'See the recommendations', to: '/recommendations' },
+    jobLabel: 'a Recommendation run',
+    gets: [
+      {
+        name: 'The gaps',
+        what: 'Each place where tribelt.nl falls behind its competitors: its kind, the facts the rules found, and the benefit and effort scores they gave it.',
+        from: 'The newest Prompt run, the newest scan of each site, and the search term list',
+      },
+      { name: 'The tribelt.nl pages', what: 'The address, title, and text of every page.', from: 'The newest scan of tribelt.nl' },
+    ],
+    replies: [
+      { field: 'title, where, why', what: 'What to change, on which page or none, and why.' },
+      { field: 'steps', what: 'Two to four steps someone at Tribelt can follow.' },
+      { field: 'doneWhen', what: 'What the next scan of tribelt.nl will find when it is done.' },
+      { field: 'benefit, effort, scoreReason', what: 'The scores, each moved at most one point from the rules’ score, with a reason when moved.' },
+    ],
+    change: 'The next Recommendation run uses it. Recommendations already written stay until a run replaces them.',
+  },
 }
 
 /** A step's words. */

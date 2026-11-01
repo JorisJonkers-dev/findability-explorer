@@ -150,3 +150,70 @@ test('an administrator accepts a candidate into the terminology map', async ({ p
   expect(accepted).toEqual({ term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'product', usedBy: ['Twentebelt'] })
   await expect(page.getByRole('button', { name: 'Accepted (1)' })).toBeVisible()
 })
+
+test('an administrator follows a Prompt run from Activity, stops it, and sees it stopped by hand', async ({ page }) => {
+  const RUN = '9d8e7f6a-5b4c-4d3e-8f2a-1b0c9d8e7f6b'
+  // The e2e server has no OpenRouter key, so no run can start; a running run is answered by the browser.
+  const run = {
+    id: RUN,
+    promptSetVersion: 2,
+    factSheetVersion: 1,
+    trigger: 'manual',
+    startedBy: 'e2e',
+    startedAt: '2026-11-01T08:29:00Z',
+    status: 'running',
+    models: [{ provider: 'openai', model: 'openai/gpt-oss-20b', free: false }],
+    tasks: 400,
+    answered: 90,
+    failed: 10,
+    inputTokens: 0,
+    outputTokens: 0,
+    costUsd: 0.1,
+    byProvider: [],
+    cells: [],
+  }
+  let stopped = false
+  await page.route('**/api/v1/prompt-test', (route) =>
+    route.fulfill({
+      json: {
+        promptSetVersion: 2,
+        runs: [stopped ? { ...run, status: 'stopped', finishedAt: '2026-11-01T08:40:00Z', failure: 'Stopped by hand. The responses so far are kept, and a retry finishes the run.' } : run],
+        mentions: [],
+        wrongClaims: [],
+      },
+    }),
+  )
+  await page.route(`**/api/v1/admin/prompt-runs/${RUN}/stop`, async (route) => {
+    stopped = true
+    await route.fulfill({ status: 204 })
+  })
+  await page.route(`**/api/v1/admin/prompt-runs/${RUN}/retry-plan`, (route) =>
+    route.fulfill({ json: { askTasks: 300, askCostUsd: 0.3, unknownTasks: 0, readTasks: 0, readCostUsd: 0, readingCostUsd: 0, answerCosts: [] } }),
+  )
+
+  await page.goto('/manage')
+  await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible()
+  const running = page.getByRole('region', { name: 'Prompt run' })
+  await expect(running).toContainText('100 of 400 responses')
+  await expect(page.getByRole('region', { name: 'Recent work' })).toBeVisible()
+  await expectAccessible(page)
+
+  await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: /^Prompt test/ }).click()
+  await expect(page).toHaveURL('/manage/prompt-test')
+  await expect(page.getByRole('region', { name: 'Start a Prompt run' })).toContainText('A Prompt run is already running. Stop it or wait for it to finish.')
+  await expectAccessible(page)
+
+  await page.getByRole('link', { name: 'See the runs' }).click()
+  await expect(page).toHaveURL('/manage/prompt-test/runs')
+  const widget = page.getByRole('region', { name: 'Prompt run' })
+  await widget.getByRole('button', { name: 'Stop the Prompt run' }).click()
+  await expect(widget).toContainText('Stopping keeps the responses so far. You can finish the run later with a retry.')
+  await expectAccessible(page)
+  await widget.getByRole('button', { name: 'Stop the Prompt run' }).click()
+  await expect(page.getByText('The Prompt run stops within a minute. Its responses so far are kept.')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'All runs' }).getByRole('row').nth(1)).toContainText('Stopped by hand')
+  await expect(page.getByRole('region', { name: 'Run of 1 November 2026' }).getByRole('button', { name: 'Retry the 300 failed responses' })).toBeVisible()
+
+  await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: 'Activity' }).click()
+  await expect(page.getByRole('region', { name: 'Recent work' }).getByRole('row', { name: /Prompt run/ })).toContainText('Stopped by hand')
+})

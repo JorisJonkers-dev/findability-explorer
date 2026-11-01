@@ -129,6 +129,10 @@ type GetReadinessFilesRes interface {
 	getReadinessFilesRes()
 }
 
+type GetRecommendationRunsRes interface {
+	getRecommendationRunsRes()
+}
+
 type GetStandingsRes interface {
 	getStandingsRes()
 }
@@ -257,6 +261,10 @@ type StartReadinessCheckRes interface {
 	startReadinessCheckRes()
 }
 
+type StartRecommendationRunRes interface {
+	startRecommendationRunRes()
+}
+
 type StartRescansRes interface {
 	startRescansRes()
 }
@@ -283,6 +291,10 @@ type StopPromptRunRes interface {
 
 type StopReadinessCheckRes interface {
 	stopReadinessCheckRes()
+}
+
+type StopRecommendationRunRes interface {
+	stopRecommendationRunRes()
 }
 
 type StopRescanRes interface {

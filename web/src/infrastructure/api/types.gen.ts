@@ -1215,9 +1215,9 @@ export type TermSuggestion = {
 };
 
 /**
- * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), or termReview (reviewing the search terms the scans found).
+ * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), termReview (reviewing the search terms the scans found), or recommendations (writing recommendations).
  */
-export type ClaudeStepId = 'reading' | 'matching' | 'candidateMerge' | 'candidateCheck' | 'termReview';
+export type ClaudeStepId = 'reading' | 'matching' | 'candidateMerge' | 'candidateCheck' | 'termReview' | 'recommendations';
 
 /**
  * One saved version of a Claude step - the model it uses and its instructions.
@@ -1886,6 +1886,31 @@ export type ReadinessCheckSummary = {
  * One improvement of the plan.
  */
 export type PlanImprovement = {
+    kind: RecommendationKind;
+    /**
+     * True for one a Recommendation run wrote, false for one written by hand.
+     */
+    generated: boolean;
+    /**
+     * True for an open one the newest Recommendation run wrote.
+     */
+    new: boolean;
+    /**
+     * The tribelt.nl page it belongs on; absent when it applies to the whole site or the model could not place it.
+     */
+    where?: string;
+    /**
+     * Present instead of where when the model could not place it.
+     */
+    whereNote?: string;
+    /**
+     * Why the model moved a score from the rules' by a point; absent when it did not.
+     */
+    scoreReason?: string;
+    /**
+     * The facts behind a generated one, as the rules found them.
+     */
+    facts?: Array<string>;
     /**
      * Its id.
      */
@@ -1944,6 +1969,105 @@ export type PlanImprovement = {
      */
     tribelt?: number;
     leader?: MeasureLeader;
+};
+
+/**
+ * What kind of change a recommendation asks for - term (a search term to add), page (a page to add), listing (a site to get listed on), fact (a fact sheet correction), readiness (AI readiness), or general (written by hand for the whole site).
+ */
+export type RecommendationKind = 'term' | 'page' | 'listing' | 'fact' | 'readiness' | 'general';
+
+/**
+ * The Recommendation run, what starting one would do, and the past runs.
+ */
+export type RecommendationRuns = {
+    /**
+     * Whether a run runs now.
+     */
+    running: boolean;
+    /**
+     * True when no Anthropic key is set up, so no run can start.
+     */
+    noKey: boolean;
+    /**
+     * The model the step writing recommendations uses now; absent without a key.
+     */
+    model?: string;
+    /**
+     * How many open recommendations an earlier run wrote that a new run replaces.
+     */
+    replaces: number;
+    /**
+     * True when tribelt.nl was last scanned before the newest Prompt run started.
+     */
+    stale: boolean;
+    /**
+     * When the newest Prompt run started; absent before any.
+     */
+    promptRunAt?: string;
+    /**
+     * When the newest scan of tribelt.nl finished; absent before any.
+     */
+    scanAt?: string;
+    /**
+     * How many terms the search term list holds.
+     */
+    terms: number;
+    /**
+     * How many gaps the rules find now, at most 40.
+     */
+    gaps: number;
+    estimatedCostUsd: Usd;
+    /**
+     * The last runs, the newest first.
+     */
+    runs: Array<RecommendationRun>;
+};
+
+/**
+ * One Recommendation run.
+ */
+export type RecommendationRun = {
+    /**
+     * The run's id.
+     */
+    id: string;
+    /**
+     * When it started.
+     */
+    startedAt: string;
+    /**
+     * When it ended; absent while it runs.
+     */
+    finishedAt?: string;
+    /**
+     * How it ended; absent while it runs.
+     */
+    ending?: 'done' | 'doneWithFailures' | 'stoppedByHand' | 'stoppedByBudget' | 'failed';
+    /**
+     * Who started it.
+     */
+    startedBy: string;
+    /**
+     * The model that wrote.
+     */
+    model: string;
+    /**
+     * How many gaps it wrote recommendations for.
+     */
+    gaps: number;
+    /**
+     * How many recommendations it added.
+     */
+    added: number;
+    /**
+     * How many open recommendations it replaced.
+     */
+    replaced: number;
+    /**
+     * How many done or edited recommendations it kept.
+     */
+    kept: number;
+    costUsd: Usd;
 };
 
 /**
@@ -3945,6 +4069,113 @@ export type TickImprovementResponses = {
 };
 
 export type TickImprovementResponse = TickImprovementResponses[keyof TickImprovementResponses];
+
+export type GetRecommendationRunsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs';
+};
+
+export type GetRecommendationRunsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetRecommendationRunsError = GetRecommendationRunsErrors[keyof GetRecommendationRunsErrors];
+
+export type GetRecommendationRunsResponses = {
+    /**
+     * The Recommendation runs.
+     */
+    200: RecommendationRuns;
+};
+
+export type GetRecommendationRunsResponse = GetRecommendationRunsResponses[keyof GetRecommendationRunsResponses];
+
+export type StartRecommendationRunData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs';
+};
+
+export type StartRecommendationRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartRecommendationRunError = StartRecommendationRunErrors[keyof StartRecommendationRunErrors];
+
+export type StartRecommendationRunResponses = {
+    /**
+     * The run is under way.
+     */
+    202: RecommendationRuns;
+};
+
+export type StartRecommendationRunResponse = StartRecommendationRunResponses[keyof StartRecommendationRunResponses];
+
+export type StopRecommendationRunData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs/stop';
+};
+
+export type StopRecommendationRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopRecommendationRunError = StopRecommendationRunErrors[keyof StopRecommendationRunErrors];
+
+export type StopRecommendationRunResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopRecommendationRunResponse = StopRecommendationRunResponses[keyof StopRecommendationRunResponses];
 
 export type SetPlanTargetsData = {
     /**

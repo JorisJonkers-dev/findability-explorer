@@ -262,7 +262,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         meta: { title: 'Claude models and instructions', view: 'manage' },
       },
       {
-        path: '/manage/claude-steps/:step(reading|matching|candidateMerge|candidateCheck|termReview)',
+        path: '/manage/claude-steps/:step(reading|matching|candidateMerge|candidateCheck|termReview|recommendations)',
         name: 'claude-step',
         component: () => import('../features/claude-steps/components/ClaudeStepView.vue'),
         props: (to) => ({ stepId: String(to.params.step) }),

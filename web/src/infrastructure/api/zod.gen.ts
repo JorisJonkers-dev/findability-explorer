@@ -582,14 +582,15 @@ export const zTermCandidate = z.object({
 });
 
 /**
- * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), or termReview (reviewing the search terms the scans found).
+ * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), termReview (reviewing the search terms the scans found), or recommendations (writing recommendations).
  */
 export const zClaudeStepId = z.enum([
     'reading',
     'matching',
     'candidateMerge',
     'candidateCheck',
-    'termReview'
+    'termReview',
+    'recommendations'
 ]);
 
 /**
@@ -896,6 +897,18 @@ export const zAiSearchSummary = z.object({
 });
 
 /**
+ * What kind of change a recommendation asks for - term (a search term to add), page (a page to add), listing (a site to get listed on), fact (a fact sheet correction), readiness (AI readiness), or general (written by hand for the whole site).
+ */
+export const zRecommendationKind = z.enum([
+    'term',
+    'page',
+    'listing',
+    'fact',
+    'readiness',
+    'general'
+]);
+
+/**
  * One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
  */
 export const zPlanPart = z.object({
@@ -1020,6 +1033,13 @@ export const zMeasureLeader = z.object({
  * One improvement of the plan.
  */
 export const zPlanImprovement = z.object({
+    kind: zRecommendationKind,
+    generated: z.boolean(),
+    new: z.boolean(),
+    where: z.string().max(500).optional(),
+    whereNote: z.string().max(200).optional(),
+    scoreReason: z.string().max(300).optional(),
+    facts: z.array(z.string().max(600)).max(10).optional(),
     id: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
     title: z.string().max(200),
     moves: z.string().max(200),
@@ -1614,6 +1634,46 @@ export const zTermCandidateList = z.object({
     items: z.array(zTermCandidate).max(10000),
     counts: zTermCandidateCounts,
     review: zTermReviewState
+});
+
+/**
+ * One Recommendation run.
+ */
+export const zRecommendationRun = z.object({
+    id: z.uuid().max(36),
+    startedAt: z.iso.datetime({ offset: true }).max(64),
+    finishedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    ending: z.enum([
+        'done',
+        'doneWithFailures',
+        'stoppedByHand',
+        'stoppedByBudget',
+        'failed'
+    ]).optional(),
+    startedBy: z.string().max(200),
+    model: z.string().max(200),
+    gaps: z.int().gte(0).lte(1000),
+    added: z.int().gte(0).lte(100000),
+    replaced: z.int().gte(0).lte(100000),
+    kept: z.int().gte(0).lte(100000),
+    costUsd: zUsd
+});
+
+/**
+ * The Recommendation run, what starting one would do, and the past runs.
+ */
+export const zRecommendationRuns = z.object({
+    running: z.boolean(),
+    noKey: z.boolean(),
+    model: z.string().max(200).optional(),
+    replaces: z.int().gte(0).lte(100000),
+    stale: z.boolean(),
+    promptRunAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    scanAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    terms: z.int().gte(0).lte(100000),
+    gaps: z.int().gte(0).lte(1000),
+    estimatedCostUsd: zUsd,
+    runs: z.array(zRecommendationRun).max(20)
 });
 
 /**
@@ -2300,6 +2360,21 @@ export const zTickImprovementPath = z.object({
  * The plan, with the tick.
  */
 export const zTickImprovementResponse = zPlan;
+
+/**
+ * The Recommendation runs.
+ */
+export const zGetRecommendationRunsResponse = zRecommendationRuns;
+
+/**
+ * The run is under way.
+ */
+export const zStartRecommendationRunResponse = zRecommendationRuns;
+
+/**
+ * Stopped.
+ */
+export const zStopRecommendationRunResponse = z.void();
 
 /**
  * The targets to set.

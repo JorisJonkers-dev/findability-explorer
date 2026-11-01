@@ -33,20 +33,39 @@ func (s *Service) Plan(ctx context.Context) (Plan, error) {
 		return Plan{}, err
 	}
 	st := domain.Standings(companies, f)
+	items, err := s.items(ctx, ticks, f, st)
+	if err != nil {
+		return Plan{}, err
+	}
 	return Plan{
-		Items:     domain.PlanItems(ticks, tribeltReadiness(f), st),
+		Items:     items,
 		Watched:   domain.Watch(targets, f),
 		EyeOn:     domain.KeepAnEyeOn(companies, f, st),
 		TermsFrom: f.TermsFrom,
 	}, nil
 }
 
+// items are the plan's items: the written-by-hand improvements, and the recommendations the runs
+// wrote, best value first.
+func (s *Service) items(ctx context.Context, ticks []domain.Tick, f domain.Facts, st []domain.Standing) ([]domain.PlanItem, error) {
+	recs, err := s.ports.Store.Recommendations(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("the written recommendations: %w", err)
+	}
+	runs, err := s.ports.Store.RecRuns(ctx, RecentRuns)
+	if err != nil {
+		return nil, fmt.Errorf("the past runs: %w", err)
+	}
+	return domain.WithWritten(domain.PlanItems(ticks, tribeltReadiness(f), st), recs, domain.NewestDone(runs), st), nil
+}
+
 // Tick marks an improvement only an administrator can check as done, or, with done false, as not
-// done again. An improvement a scan checks is domain.ErrCheckedByScan.
+// done again; a recommendation a run wrote is ticked off by hand too. An improvement a scan checks
+// is domain.ErrCheckedByScan.
 func (s *Service) Tick(ctx context.Context, actor, id string, done bool) error {
 	imp, ok := domain.ImprovementByID(id)
 	if !ok {
-		return domain.ErrUnknownImprovement
+		return s.tickWritten(ctx, actor, id, done)
 	}
 	if !imp.Manual() {
 		return domain.ErrCheckedByScan
@@ -85,4 +104,20 @@ func (s *Service) SetTargets(ctx context.Context, actor string, targets map[doma
 // IsInputError reports whether err is the caller's to fix (422) rather than the service's.
 func IsInputError(err error) bool {
 	return errors.Is(err, domain.ErrInvalid)
+}
+
+// tickWritten ticks a recommendation a run wrote off, or undoes the tick.
+func (s *Service) tickWritten(ctx context.Context, actor, id string, done bool) error {
+	by := ""
+	if done {
+		by = actor
+	}
+	found, err := s.ports.Store.SetRecDone(ctx, id, by, s.now())
+	if err != nil {
+		return fmt.Errorf("record the tick: %w", err)
+	}
+	if !found {
+		return domain.ErrUnknownImprovement
+	}
+	return nil
 }

@@ -44,6 +44,7 @@ describe('the Manage menu', () => {
       ['Search term list', 'Reviewing terms', '/manage/claude-steps/termReview'],
       ['Recommendations', 'Tick off yourself', '/manage/recommendations/tick-off'],
       ['Recommendations', 'Goals', '/manage/recommendations/goals'],
+      ['Recommendations', 'Writing recommendations', '/manage/claude-steps/recommendations'],
       ['Keys and spending', 'OpenRouter key', '/manage/keys/openrouter'],
       ['Keys and spending', 'Anthropic key', '/manage/keys/anthropic'],
       ['Keys and spending', 'Budgets', '/manage/keys/budgets'],

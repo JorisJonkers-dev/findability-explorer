@@ -25,7 +25,7 @@ function plan(improvements: PlanImprovement[]): Plan {
 // Best value first, as the server sends them: a (4, 1), b (3, 1) scanned, c (4, 3), e (4, 1), and d done.
 const four = (): PlanImprovement[] => [
   imp('a', 4, 1),
-  imp('b', 3, 1, { auto: true, measure: 'readinessChecks', tribelt: 3 }),
+  imp('b', 3, 1, { auto: true, kind: 'readiness', measure: 'readinessChecks', tribelt: 3 }),
   imp('c', 4, 3, { measure: 'termsUsed', tribelt: 20 }),
   imp('e', 4, 1),
   imp('d', 5, 5, { done: true, tickedBy: 'joris', tickedAt: '2026-11-02T09:00:00Z' }),
@@ -156,5 +156,24 @@ describe('the recommendations', () => {
   it('says when it cannot load', async () => {
     const failed = await mountApp(routes({ 'GET /api/v1/me': () => json(me()), 'GET /api/v1/plan': () => json({ title: 'Down', status: 500 }, 500) }), '/recommendations')
     expect(failed.wrapper.find('[role="alert"]').exists()).toBe(true)
+  })
+})
+
+describe('the recommendations a run wrote', () => {
+  it('marks the new ones, says where each goes, and counts them in the data line', async () => {
+    const written = [
+      imp('g1', 5, 1, { generated: true, new: true, kind: 'term', where: 'https://www.tribelt.nl/spiraalbanden' }),
+      imp('g2', 3, 1, { generated: true, kind: 'listing', whereNote: 'Where to put this is for the web agency to decide.' }),
+      imp('a', 2, 2),
+    ]
+    const { wrapper } = await mountApp(api(false, plan(written)), '/recommendations')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('Written by hand, version 2 of the catalogue, and by Recommendation runs: 2 of them.')
+    const [first, second, third] = rows(wrapper).map((r) => r.text())
+    expect(first).toContain('Search term')
+    expect(first).toContain('New')
+    expect(first).toContain('www.tribelt.nl/spiraalbanden')
+    expect(second).toContain('From a Recommendation run')
+    expect(second).toContain('For the web agency to place')
+    expect(third).toContain('The whole site')
   })
 })

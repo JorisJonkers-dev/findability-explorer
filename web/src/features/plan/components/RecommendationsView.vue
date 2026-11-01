@@ -72,7 +72,7 @@ const off = 'border-silver bg-white text-black hover:border-black'
     section="recommendations"
     title="Recommendations"
     :purpose="PURPOSE"
-    :data-line="plan ? dataLine(plan.catalogueVersion) : undefined"
+    :data-line="plan ? dataLine(plan.catalogueVersion, plan.improvements) : undefined"
     :manage="{ to: '/manage/recommendations', label: 'Manage the recommendations' }"
     help-topic="recommendations"
   >
@@ -123,7 +123,9 @@ const off = 'border-silver bg-white text-black hover:border-black'
                 <RouterLink :to="`/recommendations/${r.id}`" class="text-lg font-semibold">{{ i + 1 }}. {{ r.title }}</RouterLink>
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[15px] text-ink-2">
                   <span class="rounded-md bg-grey px-2 py-0.5 text-sm font-medium text-black">{{ KIND_LABEL[kindOf(r)] }}</span>
-                  <span>{{ whereText() }}</span>
+                  <span v-if="r.new" class="rounded-md bg-orange px-2 py-0.5 text-sm font-semibold text-black">New</span>
+                  <span v-else-if="r.generated" class="rounded-md bg-white px-2 py-0.5 text-sm font-medium text-black">From a Recommendation run</span>
+                  <span class="[overflow-wrap:anywhere]">{{ whereText(r) }}</span>
                   <span>{{ scoreLine(r) }}</span>
                   <span>Improves {{ lcFirst(measureName(r.measure)) }}</span>
                 </div>

@@ -8,7 +8,134 @@ package queries
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const addRecommendation = `-- name: AddRecommendation :exec
+INSERT INTO recommendations (
+    id, run_id, gap_key, kind, language, family, specifics, rule_benefit, rule_effort, title, where_url, where_note, why, steps,
+    done_when, benefit, effort, score_reason, created_at
+)
+VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+    $14, $15, $16, $17, $18, $19
+)
+`
+
+type AddRecommendationParams struct {
+	ID          string
+	RunID       uuid.UUID
+	GapKey      string
+	Kind        string
+	Language    string
+	Family      string
+	Specifics   []string
+	RuleBenefit int64
+	RuleEffort  int64
+	Title       string
+	WhereUrl    string
+	WhereNote   string
+	Why         string
+	Steps       []string
+	DoneWhen    string
+	Benefit     int64
+	Effort      int64
+	ScoreReason string
+	CreatedAt   time.Time
+}
+
+func (q *Queries) AddRecommendation(ctx context.Context, arg AddRecommendationParams) error {
+	_, err := q.db.Exec(ctx, addRecommendation,
+		arg.ID,
+		arg.RunID,
+		arg.GapKey,
+		arg.Kind,
+		arg.Language,
+		arg.Family,
+		arg.Specifics,
+		arg.RuleBenefit,
+		arg.RuleEffort,
+		arg.Title,
+		arg.WhereUrl,
+		arg.WhereNote,
+		arg.Why,
+		arg.Steps,
+		arg.DoneWhen,
+		arg.Benefit,
+		arg.Effort,
+		arg.ScoreReason,
+		arg.CreatedAt,
+	)
+	return err
+}
+
+const beginRecommendationRun = `-- name: BeginRecommendationRun :exec
+INSERT INTO recommendation_runs (id, started_at, started_by, model)
+VALUES ($1, $2, $3, $4)
+`
+
+type BeginRecommendationRunParams struct {
+	ID        uuid.UUID
+	StartedAt time.Time
+	StartedBy string
+	Model     string
+}
+
+func (q *Queries) BeginRecommendationRun(ctx context.Context, arg BeginRecommendationRunParams) error {
+	_, err := q.db.Exec(ctx, beginRecommendationRun,
+		arg.ID,
+		arg.StartedAt,
+		arg.StartedBy,
+		arg.Model,
+	)
+	return err
+}
+
+const deleteRecommendation = `-- name: DeleteRecommendation :exec
+DELETE FROM recommendations
+WHERE id = $1
+`
+
+func (q *Queries) DeleteRecommendation(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteRecommendation, id)
+	return err
+}
+
+const finishRecommendationRun = `-- name: FinishRecommendationRun :exec
+UPDATE recommendation_runs
+SET finished_at = $1, ending = $2, gaps = $3, added = $4, replaced = $5, kept = $6,
+    input_tokens = $7, output_tokens = $8
+WHERE id = $9
+`
+
+type FinishRecommendationRunParams struct {
+	FinishedAt   pgtype.Timestamptz
+	Ending       pgtype.Text
+	Gaps         int64
+	Added        int64
+	Replaced     int64
+	Kept         int64
+	InputTokens  int64
+	OutputTokens int64
+	ID           uuid.UUID
+}
+
+func (q *Queries) FinishRecommendationRun(ctx context.Context, arg FinishRecommendationRunParams) error {
+	_, err := q.db.Exec(ctx, finishRecommendationRun,
+		arg.FinishedAt,
+		arg.Ending,
+		arg.Gaps,
+		arg.Added,
+		arg.Replaced,
+		arg.Kept,
+		arg.InputTokens,
+		arg.OutputTokens,
+		arg.ID,
+	)
+	return err
+}
 
 const listPlanTargets = `-- name: ListPlanTargets :many
 SELECT target, value, set_by, set_at
@@ -72,6 +199,158 @@ func (q *Queries) ListPlanTicks(ctx context.Context) ([]PlanTick, error) {
 	return items, nil
 }
 
+const listRecommendationRuns = `-- name: ListRecommendationRuns :many
+SELECT id, started_at, finished_at, coalesce(ending, '')::text AS ending, started_by, model, gaps, added, replaced, kept,
+    input_tokens, output_tokens
+FROM recommendation_runs
+ORDER BY started_at DESC, id
+LIMIT $1
+`
+
+type ListRecommendationRunsRow struct {
+	ID           uuid.UUID
+	StartedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	Ending       string
+	StartedBy    string
+	Model        string
+	Gaps         int64
+	Added        int64
+	Replaced     int64
+	Kept         int64
+	InputTokens  int64
+	OutputTokens int64
+}
+
+// The newest lim Recommendation runs, the newest first.
+func (q *Queries) ListRecommendationRuns(ctx context.Context, lim int32) ([]ListRecommendationRunsRow, error) {
+	rows, err := q.db.Query(ctx, listRecommendationRuns, lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRecommendationRunsRow{}
+	for rows.Next() {
+		var i ListRecommendationRunsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.Ending,
+			&i.StartedBy,
+			&i.Model,
+			&i.Gaps,
+			&i.Added,
+			&i.Replaced,
+			&i.Kept,
+			&i.InputTokens,
+			&i.OutputTokens,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecommendations = `-- name: ListRecommendations :many
+SELECT id, run_id, gap_key, kind, language, family, specifics, rule_benefit, rule_effort, title, where_url, where_note, why, steps,
+    done_when, benefit, effort, score_reason, created_at, coalesce(done_by, '')::text AS done_by, done_at, edited_at
+FROM recommendations
+ORDER BY created_at, id
+`
+
+type ListRecommendationsRow struct {
+	ID          string
+	RunID       uuid.UUID
+	GapKey      string
+	Kind        string
+	Language    string
+	Family      string
+	Specifics   []string
+	RuleBenefit int64
+	RuleEffort  int64
+	Title       string
+	WhereUrl    string
+	WhereNote   string
+	Why         string
+	Steps       []string
+	DoneWhen    string
+	Benefit     int64
+	Effort      int64
+	ScoreReason string
+	CreatedAt   time.Time
+	DoneBy      string
+	DoneAt      pgtype.Timestamptz
+	EditedAt    pgtype.Timestamptz
+}
+
+// Every recommendation the runs wrote that is kept, the oldest first.
+func (q *Queries) ListRecommendations(ctx context.Context) ([]ListRecommendationsRow, error) {
+	rows, err := q.db.Query(ctx, listRecommendations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRecommendationsRow{}
+	for rows.Next() {
+		var i ListRecommendationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RunID,
+			&i.GapKey,
+			&i.Kind,
+			&i.Language,
+			&i.Family,
+			&i.Specifics,
+			&i.RuleBenefit,
+			&i.RuleEffort,
+			&i.Title,
+			&i.WhereUrl,
+			&i.WhereNote,
+			&i.Why,
+			&i.Steps,
+			&i.DoneWhen,
+			&i.Benefit,
+			&i.Effort,
+			&i.ScoreReason,
+			&i.CreatedAt,
+			&i.DoneBy,
+			&i.DoneAt,
+			&i.EditedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recommendationTokensSince = `-- name: RecommendationTokensSince :one
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+FROM recommendation_runs
+WHERE started_at >= $1
+`
+
+type RecommendationTokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+// The tokens in and out the Recommendation runs used since a moment.
+func (q *Queries) RecommendationTokensSince(ctx context.Context, since time.Time) (RecommendationTokensSinceRow, error) {
+	row := q.db.QueryRow(ctx, recommendationTokensSince, since)
+	var i RecommendationTokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
+}
+
 const setPlanTarget = `-- name: SetPlanTarget :exec
 INSERT INTO plan_targets (target, value, set_by, set_at)
 VALUES ($1, $2, $3, $4)
@@ -94,6 +373,26 @@ func (q *Queries) SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) er
 		arg.SetAt,
 	)
 	return err
+}
+
+const setRecommendationDone = `-- name: SetRecommendationDone :execrows
+UPDATE recommendations
+SET done_by = $1, done_at = $2
+WHERE id = $3
+`
+
+type SetRecommendationDoneParams struct {
+	DoneBy pgtype.Text
+	DoneAt pgtype.Timestamptz
+	ID     string
+}
+
+func (q *Queries) SetRecommendationDone(ctx context.Context, arg SetRecommendationDoneParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setRecommendationDone, arg.DoneBy, arg.DoneAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const tickPlanImprovement = `-- name: TickPlanImprovement :exec

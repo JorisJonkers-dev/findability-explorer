@@ -414,6 +414,46 @@ type PromptSetting struct {
 	Models              []string
 }
 
+type Recommendation struct {
+	ID          string
+	RunID       uuid.UUID
+	GapKey      string
+	Kind        string
+	Language    string
+	Family      string
+	Specifics   []string
+	RuleBenefit int64
+	RuleEffort  int64
+	Title       string
+	WhereUrl    string
+	WhereNote   string
+	Why         string
+	Steps       []string
+	DoneWhen    string
+	Benefit     int64
+	Effort      int64
+	ScoreReason string
+	CreatedAt   time.Time
+	DoneBy      pgtype.Text
+	DoneAt      pgtype.Timestamptz
+	EditedAt    pgtype.Timestamptz
+}
+
+type RecommendationRun struct {
+	ID           uuid.UUID
+	StartedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	Ending       pgtype.Text
+	StartedBy    string
+	Model        string
+	Gaps         int64
+	Added        int64
+	Replaced     int64
+	Kept         int64
+	InputTokens  int64
+	OutputTokens int64
+}
+
 type RemovedTerm struct {
 	Term      string
 	Language  string

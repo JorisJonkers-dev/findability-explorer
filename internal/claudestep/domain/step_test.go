@@ -30,7 +30,11 @@ func TestMatchingProductsIsAStepWithTheInstructionsTheToolCameWith(t *testing.T)
 	for _, d := range domain.Definitions() {
 		ids = append(ids, d.ID)
 	}
-	if strings.Join([]string{string(ids[0]), string(ids[1]), string(ids[2]), string(ids[3]), string(ids[4])}, ",") != "reading,matching,candidateMerge,candidateCheck,termReview" || len(ids) != 5 {
+	names := make([]string, 0, len(ids))
+	for _, id := range ids {
+		names = append(names, string(id))
+	}
+	if strings.Join(names, ",") != "reading,matching,candidateMerge,candidateCheck,termReview,recommendations" {
 		t.Errorf("the steps = %v", ids)
 	}
 	if _, ok := domain.Lookup("nothing"); ok {

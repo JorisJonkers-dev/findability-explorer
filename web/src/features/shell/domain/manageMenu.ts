@@ -85,6 +85,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     children: [
       { label: 'Tick off yourself', to: '/manage/recommendations/tick-off' },
       { label: 'Goals', to: '/manage/recommendations/goals' },
+      { label: 'Writing recommendations', to: '/manage/claude-steps/recommendations' },
     ],
   },
   {

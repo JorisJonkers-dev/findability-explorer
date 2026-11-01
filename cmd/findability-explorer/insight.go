@@ -5,11 +5,18 @@ import (
 	"slices"
 	"time"
 
+	"github.com/google/uuid"
+
+	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/persistence"
 	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
+	claudestepapp "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/app"
+	claudestepdomain "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/domain"
 	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/writer"
 	insightapp "github.com/JorisJonkers-dev/findability-explorer/internal/insight/app"
 	insightdomain "github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
+	llmapp "github.com/JorisJonkers-dev/findability-explorer/internal/llm/app"
 	prompttestapp "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	prompttestdomain "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 	terminologyapp "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/app"
@@ -26,7 +33,62 @@ func newInsight(store insightapp.Store, companies *companiesapp.Service, prompts
 		Readiness:  readiness{analysis: analysis},
 		Terms:      termsUsed{terminology: terminology, analysis: analysis},
 		Store:      store,
-	}, now)
+	}, now, uuid.NewString)
+}
+
+// writers hands the insight context the Claude step writing recommendations: its model and
+// instructions, on an Anthropic key; none without one.
+type writers struct {
+	llm   *llmapp.Service
+	steps *claudestepapp.Service
+}
+
+func (w writers) Current(ctx context.Context) (insightapp.Writer, string, error) {
+	client, _, err := w.llm.Haiku(ctx)
+	if err != nil || client == nil {
+		return nil, "", err
+	}
+	step, err := w.steps.Current(ctx, claudestepdomain.Recommendations)
+	if err != nil {
+		return nil, "", err
+	}
+	return writer.New(client, step.Model, step.Instructions), step.Model, nil
+}
+
+// tribeltPages hands the insight context the pages the newest finished scan of tribelt.nl read,
+// with the text it kept of each.
+type tribeltPages struct {
+	repo *persistence.Repository
+}
+
+func (t tribeltPages) Pages(ctx context.Context) ([]insightdomain.Page, time.Time, error) {
+	scans, err := t.repo.ListByCompetitor(ctx, insightdomain.TribeltID, analysisapp.MaxHistory)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	for _, s := range scans {
+		if s.Status != analysisdomain.StatusDone {
+			continue
+		}
+		full, err := t.repo.Get(ctx, s.ID)
+		if err != nil {
+			return nil, time.Time{}, err
+		}
+		texts, err := t.repo.PageTexts(ctx, s.ID)
+		if err != nil {
+			return nil, time.Time{}, err
+		}
+		text := map[string]string{}
+		for _, p := range texts {
+			text[p.URL] = p.Text
+		}
+		out := make([]insightdomain.Page, 0, len(full.Pages))
+		for _, p := range full.Pages {
+			out = append(out, insightdomain.Page{URL: p.URL, Title: p.Title, Language: p.Language, Family: p.Family, Text: text[p.URL]})
+		}
+		return out, s.FinishedAt, nil
+	}
+	return nil, time.Time{}, nil
 }
 
 // insightDirectory hands the insight context the companies that are not archived.

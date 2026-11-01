@@ -33,6 +33,64 @@ type world struct {
 	readyErr     error
 	termsErr     error
 	asked        int
+	// recs and recRuns are what the Recommendation runs wrote; recErr fails each of their methods,
+	// finishErr only FinishRecRun.
+	recs      []domain.Recommendation
+	recRuns   []domain.RecRun
+	recErr    error
+	finishErr error
+	// runsErr2 fails RecRuns alone.
+	runsErr2 error
+}
+
+func (w *world) Recommendations(context.Context) ([]domain.Recommendation, error) {
+	return slices.Clone(w.recs), w.recErr
+}
+
+func (w *world) RecRuns(_ context.Context, limit int) ([]domain.RecRun, error) {
+	if w.runsErr2 != nil {
+		return nil, w.runsErr2
+	}
+	return w.recRuns[:min(limit, len(w.recRuns))], w.recErr
+}
+
+func (w *world) BeginRecRun(_ context.Context, run domain.RecRun) error {
+	if w.recErr != nil {
+		return w.recErr
+	}
+	w.recRuns = append([]domain.RecRun{run}, w.recRuns...)
+	return nil
+}
+
+func (w *world) FinishRecRun(_ context.Context, run domain.RecRun, r *domain.Replacement) error {
+	if w.finishErr != nil {
+		return w.finishErr
+	}
+	for i := range w.recRuns {
+		if w.recRuns[i].ID == run.ID {
+			w.recRuns[i] = run
+		}
+	}
+	if r != nil {
+		w.recs = append(slices.Clone(r.Kept), r.Added...)
+	}
+	return nil
+}
+
+func (w *world) SetRecDone(_ context.Context, id, by string, at time.Time) (bool, error) {
+	if w.recErr != nil {
+		return false, w.recErr
+	}
+	for i := range w.recs {
+		if w.recs[i].ID == id {
+			w.recs[i].DoneBy, w.recs[i].DoneAt = by, at
+			if by == "" {
+				w.recs[i].DoneAt = time.Time{}
+			}
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (w *world) Companies(context.Context) ([]domain.Company, error) {
@@ -118,7 +176,7 @@ func newWorld() *world {
 }
 
 func service(w *world) *app.Service {
-	return app.New(app.Ports{Directory: w, PromptRuns: w, Readiness: w, Terms: w, Store: w}, func() time.Time { return today })
+	return app.New(app.Ports{Directory: w, PromptRuns: w, Readiness: w, Terms: w, Store: w}, func() time.Time { return today }, counter())
 }
 
 func TestStandingsComeFromTheNewestRunAndScans(t *testing.T) {
@@ -181,4 +239,10 @@ func TestStandingsSayWhichSourceFailed(t *testing.T) {
 			}
 		})
 	}
+}
+
+// counter names things "id1", "id2", and on.
+func counter() func() string {
+	n := 0
+	return func() string { n++; return fmt.Sprintf("id%d", n) }
 }

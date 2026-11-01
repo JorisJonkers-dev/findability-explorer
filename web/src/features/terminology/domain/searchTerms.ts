@@ -121,3 +121,8 @@ export function termSentence(t: TermFacts, competitors: number): string {
 
 /** Every kind of buyer intent with what it means, for "What buyer intent means". */
 export const BUYER_INTENT_LIST: readonly { tier: IntentTier; label: string; help: string }[] = TIERS.map((tier) => ({ tier, ...BUYER_INTENT[tier] }))
+
+/** The open recommendations that raise the number of search terms tribelt.nl uses, the best value first. */
+export function termRecommendations<T extends { measure: string; done: boolean; benefit: number; effort: number }>(improvements: readonly T[]): T[] {
+  return improvements.filter((i) => i.measure === 'termsUsed' && !i.done).sort((a, b) => b.benefit / b.effort - a.benefit / a.effort)
+}

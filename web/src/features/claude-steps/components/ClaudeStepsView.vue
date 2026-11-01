@@ -24,6 +24,7 @@ const COLUMNS: readonly Column<ClaudeStepSummary>[] = [
 <template>
   <ManageLayout
     title="Claude models and instructions"
+    help-topic="claude-steps"
     purpose="Every step that asks a Claude model: which model it uses, its instructions, and what it costs."
     data-line="The Anthropic key pays for all of them."
     :back="{ to: '/manage/keys', label: 'Back to Keys and spending' }"

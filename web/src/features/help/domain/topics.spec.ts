@@ -184,7 +184,9 @@ describe('the topics the pages link to', () => {
   for (const id of ['prompt-test', 'readiness', 'terms']) linked.add(id)
 
   it('finds the links', () => {
-    expect([...linked]).toEqual(expect.arrayContaining(['goals', 'terms', 'competitors', 'recommendations', 'websites', 'prompt-test', 'rescan']))
+    expect([...linked]).toEqual(
+      expect.arrayContaining(['goals', 'terms', 'competitors', 'recommendations', 'websites', 'prompt-test', 'rescan', 'questions', 'models', 'claude-steps', 'add-term', 'rec-run', 'edit-recommendation', 'done']),
+    )
   })
 
   it('opens a topic for each of them', () => {
@@ -237,5 +239,83 @@ describe('the topics of what Manage now does', () => {
     expect(topic('scan-keeps').group).toBe('websites')
     expect(text('scan-keeps')).toContain('sitemap')
     expect(text('scan-keeps')).toContain('the pages that use it')
+  })
+})
+
+describe('the topics of the questions, the models, the Claude steps, and terms added by hand', () => {
+  const to = (id: string) => topic(id).links.map((l) => l.to)
+  const text = (id: string) => topicBody(topic(id), undefined).join(' ')
+
+  it('explain editing and publishing the questions, a new scope, and the versions', () => {
+    expect(topic('questions').title).toBe('Change the questions')
+    expect(text('questions')).toContain('Nothing changes until you publish.')
+    expect(text('questions')).toContain('Add a question')
+    expect(text('questions')).toContain('restored')
+    expect(topic('language').title).toBe('Ask in another language, such as French or Polish')
+    expect(text('language')).toContain('A new scope')
+    expect(to('questions')).toEqual(['/manage/prompt-test/questions'])
+    expect(to('language')).toEqual(['/manage/prompt-test/questions'])
+  })
+
+  it('explain the model list: the catalogue, the recommended five, the cost of a run, and the break in the charts', () => {
+    expect(topic('models').title).toBe('Choose which models are asked')
+    expect(text('models')).toContain('OpenRouter’s catalogue')
+    expect(text('models')).toContain('the five providers')
+    expect(text('models')).toContain('The new cost of a run shows before you save.')
+    expect(text('models')).toContain('trend charts')
+    expect(text('breaks')).toContain('the model that reads the responses')
+    expect(to('models')).toEqual(['/manage/prompt-test/models'])
+  })
+
+  it('explain the Claude steps: model, instructions, versions, and the reading step set in the code', () => {
+    expect(topic('claude-steps').title).toBe('Change a Claude model or its instructions')
+    expect(text('claude-steps')).toContain('every version can be restored')
+    expect(text('claude-steps')).toContain('writing recommendations')
+    expect(text('claude-steps')).toContain('For that step, only the model is chosen.')
+    expect(text('claude-steps')).toContain('the AI responses charts mark the date')
+    expect(to('claude-steps')).toEqual(['/manage/claude-steps'])
+  })
+
+  it('explain adding and removing a search term by hand', () => {
+    expect(topic('add-term').title).toBe('Add or remove a search term by hand')
+    expect(text('add-term')).toContain('marked as such')
+    expect(to('add-term')).toEqual(['/manage/terms/edit'])
+  })
+
+  it('name the new words in the glossary', () => {
+    const words = TOPICS.filter((t) => t.group === 'words').map((t) => t.title)
+    expect(words).toEqual(expect.arrayContaining(['Claude step', 'Model list', 'Recommendation run', 'Prompt set version']))
+    expect(text('word-model-list')).toBe('The models a Prompt run asks, chosen from OpenRouter’s catalogue.')
+  })
+})
+
+describe('the topics of the Recommendation run and its recommendations', () => {
+  const to = (id: string) => topic(id).links.map((l) => l.to)
+  const text = (id: string) => topicBody(topic(id), undefined).join(' ')
+
+  it('explain what a run reads, starting it, what it replaces and keeps, and the warning about old page text', () => {
+    expect(topic('rec-run').title).toBe('Write new recommendations')
+    expect(text('rec-run')).toContain('uses the newest Prompt run, scans, and search term list')
+    expect(text('rec-run')).toContain('Start one in Manage, Recommendations.')
+    expect(text('rec-run')).toContain('keeps the ones marked done or edited')
+    expect(text('rec-run')).toContain('the page text is older than the responses')
+    expect(to('rec-run')).toEqual(['/manage/recommendations', '/manage/claude-steps/recommendations'])
+  })
+
+  it('explain how a rule ticks off each kind, and which ones you tick off yourself', () => {
+    const done = text('done')
+    for (const kind of ['A search term', 'A new page', 'A listing', 'An AI readiness check', 'A fact sheet correction']) expect(done).toContain(kind)
+    expect(done).toContain('Rules decide, never a model')
+    expect(to('done')).toEqual(['/manage/recommendations/tick-off'])
+  })
+
+  it('explain editing a recommendation a run wrote', () => {
+    expect(topic('edit-recommendation').title).toBe('Edit a recommendation a run wrote')
+    expect(text('edit-recommendation')).toContain('kept when the next run replaces the others')
+    expect(to('edit-recommendation')).toEqual(['/manage/recommendations/edit'])
+  })
+
+  it('say the ranked list holds the run’s recommendations too', () => {
+    expect(text('recommendations')).toContain('The rest come from a Recommendation run')
   })
 })

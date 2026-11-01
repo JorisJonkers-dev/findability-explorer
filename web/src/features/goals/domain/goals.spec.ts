@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import type { Plan, PlanTarget, Standings } from '../../../infrastructure/api/types.gen'
-import { planFixture, standingsFixture } from '../../../testing/numbersFixtures'
-import { improvementRanks, numberDetail, numberRows, oxford, pathOfTarget, targetOfSlug, valueText } from './goals'
+import type { Overview, Plan, PlanTarget, PromptCell, ReadinessCheckSummary, Standings } from '../../../infrastructure/api/types.gen'
+import { promptRun } from '../../../testing/fixtures'
+import { overviewFixture, planFixture, standingsFixture } from '../../../testing/numbersFixtures'
+import {
+  GOAL_ORDER,
+  goalPage,
+  goalRows,
+  historyMeasure,
+  isPromptGoal,
+  overviewSummary,
+  pathOfTarget,
+  promptBreakdown,
+  promptDataLine,
+  readinessBreakdown,
+  targetOfSlug,
+  termsBreakdown,
+  valueText,
+} from './goals'
 
 const facts = (change: (plan: Plan, standings: Standings) => void = () => undefined) => {
   const plan = planFixture()
@@ -10,27 +25,17 @@ const facts = (change: (plan: Plan, standings: Standings) => void = () => undefi
   return { plan, standings }
 }
 
-const TARGETS: PlanTarget[] = ['aiShareOfVoice', 'twenteShareOfVoice', 'citationShare', 'readinessChecks', 'termsUsed']
-
-describe('oxford', () => {
-  it('writes a list as a sentence does', () => {
-    expect(oxford([])).toBe('')
-    expect(oxford(['1'])).toBe('1')
-    expect(oxford(['1', '5'])).toBe('1 and 5')
-    expect(oxford(['1', '2', '5'])).toBe('1, 2, and 5')
-  })
-})
-
 describe('addresses', () => {
-  it('maps every number to an address and back', () => {
-    for (const t of TARGETS) expect(targetOfSlug(pathOfTarget(t).replace('/goals/', ''))).toBe(t)
+  it('maps every goal to an address and back, in the order of the spec', () => {
+    expect(GOAL_ORDER).toEqual(['aiShareOfVoice', 'twenteShareOfVoice', 'citationShare', 'readinessChecks', 'termsUsed'])
+    for (const t of GOAL_ORDER) expect(targetOfSlug(pathOfTarget(t).replace('/goals/', ''))).toBe(t)
     expect(pathOfTarget('aiShareOfVoice')).toBe('/goals/aiShareOfVoice')
     expect(targetOfSlug('nothing')).toBeUndefined()
   })
 })
 
 describe('valueText', () => {
-  it('writes shares, counts and readiness checks', () => {
+  it('writes shares, counts, and readiness checks', () => {
     expect(valueText('aiShareOfVoice', 0.24, 5)).toBe('24%')
     expect(valueText('citationShare', 0.36, 8)).toBe('36%')
     expect(valueText('readinessChecks', 3, 8)).toBe('3 of 8')
@@ -38,141 +43,229 @@ describe('valueText', () => {
   })
 })
 
-describe('improvementRanks', () => {
-  it('lists the places in the plan of the improvements for a number', () => {
-    const { plan } = facts()
-    expect(improvementRanks(plan, 'aiShareOfVoice')).toEqual([1, 4])
-    expect(improvementRanks(plan, 'twenteShareOfVoice')).toEqual([1, 4])
-    expect(improvementRanks(plan, 'readinessChecks')).toEqual([2])
-    expect(improvementRanks(plan, 'citationShare')).toEqual([3])
-    expect(improvementRanks(plan, 'termsUsed')).toEqual([])
-  })
-})
-
-describe('numberRows', () => {
-  it('draws every number in the server order, with its bar, target and leader', () => {
-    const rows = numberRows(facts())
-    expect(rows.map((r) => r.target)).toEqual(TARGETS)
-    const ai = rows[0]
-    expect(ai).toMatchObject({ path: '/goals/aiShareOfVoice', now: '24%', goal: '40%', measured: true, improvedBy: 'Improved by recommendations 1 and 4' })
-    expect(ai?.progress).toBe('60% of the way to the target. Ashworth is at 57%.')
-    expect(ai?.fill).toBeCloseTo((0.24 / (0.57 * 1.08)) * 100)
-    expect(ai?.leaderAt).toBeCloseTo(100 / 1.08)
-    expect(ai?.aria).toBe('AI answers that name Tribelt: 24%, target 40%. 60% of the way to the target. Ashworth is at 57%. Open its page.')
+describe('the Goals table', () => {
+  it('has a row per goal, named as in the spec, with Tribelt, the goal, and the best competitor', () => {
+    const rows = goalRows(facts())
+    expect(rows.map((r) => [r.name, r.now, r.goal, r.best, r.path])).toEqual([
+      ['AI responses that name Tribelt', '24%', '40%', 'Ashworth, 57%', '/goals/aiShareOfVoice'],
+      ['AI responses about the Twente region name Tribelt', '20%', '50%', 'Twentebelt, 60%', '/goals/twenteShareOfVoice'],
+      ['Web responses that cite tribelt.nl', '10%', '50%', 'Märtens, 30%', '/goals/citationShare'],
+      ['AI readiness checks passed', '3 of 8', '8 of 8', 'Märtens, 8 of 8', '/goals/readinessChecks'],
+      ['Search terms tribelt.nl uses', '45', '35', 'Ashworth, 40', '/goals/termsUsed'],
+    ])
   })
 
-  it('looks at the competitor the plan names for Twente', () => {
-    const twente = numberRows(facts())[1]
-    expect(twente?.progress).toBe('40% of the way to the target. Twentebelt is at 60%.')
-    expect(twente?.leaderAt).toBeDefined()
+  it('places Tribelt, the best competitor, and the goal on a bar, shares out of 100%, checks out of all of them', () => {
+    const [ai, , , checks, terms] = goalRows(facts())
+    expect(ai?.bar).toEqual({ now: 24, best: 57, goal: 40 })
+    expect(checks?.bar).toEqual({ now: 37.5, best: 100, goal: 100 })
+    // A count runs to the largest of a fifth past the goal, Tribelt, and the best competitor.
+    expect(terms?.bar.goal).toBeCloseTo((35 / 45) * 100)
+    expect(terms?.bar.now).toBeCloseTo(100)
+    expect(ai?.aria).toBe('AI responses that name Tribelt: Tribelt 24%, the goal 40%, the best competitor Ashworth with 57%. Open its page.')
   })
 
-  it('sets the citation share against the leader, like the other shares', () => {
-    const citations = numberRows(facts())[2]
-    expect(citations).toMatchObject({ now: '10%', goal: '50%', improvedBy: 'Improved by recommendation 3', progress: '20% of the way to the target. Märtens is at 30%.' })
-    expect(citations?.leaderAt).toBeDefined()
-  })
-
-  it('writes the readiness checks out of the total', () => {
-    expect(numberRows(facts())[3]).toMatchObject({ now: '3 of 8', goal: '8 of 8' })
-  })
-
-  it('says that a target is met, and that Tribelt leads', () => {
-    const terms = numberRows(facts())[4]
-    expect(terms?.progress).toBe('The target is met. Tribelt leads the field.')
-    expect(terms?.improvedBy).toBe('')
-  })
-
-  it('says when a number is not measured, and when there is no leader', () => {
-    const rows = numberRows(
+  it('says when a goal is not measured, and when no competitor has a value', () => {
+    const rows = goalRows(
       facts((plan, standings) => {
-        plan.watched = [{ target: 'aiShareOfVoice', goal: 0.4 }, { target: 'termsUsed', now: 5, goal: 10 }]
-        standings.measures = standings.measures.filter((m) => m.measure !== 'termsUsed')
+        plan.watched = [{ target: 'termsUsed', goal: 10 }]
+        standings.measures = []
       }),
     )
-    expect(rows[0]).toMatchObject({ now: 'Not measured', measured: false, fill: 0, progress: 'Not measured yet.' })
-    expect(rows[1]).toMatchObject({ leaderAt: undefined, progress: '50% of the way to the target.' })
-  })
-
-  it('treats a target of zero as reached', () => {
-    const rows = numberRows(facts((plan) => (plan.watched = [{ target: 'citationShare', now: 0, goal: 0 }])))
-    expect(rows[0]?.progress).toBe('100% of the way to the target. Märtens is at 30%.')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ now: 'Not measured', measured: false, best: 'None yet', bar: { now: 0, goal: 83.33, best: undefined } })
+    expect(rows[0]?.aria).toBe('Search terms tribelt.nl uses: Tribelt not measured, the goal 10, no best competitor yet. Open its page.')
   })
 })
 
-describe('numberDetail', () => {
-  it('compares Tribelt, the typical competitor, the leader and the target on a share', () => {
-    const d = numberDetail(facts(), 'aiShareOfVoice')
-    expect(d?.headline).toBe("Ashworth is ahead with 57%, against Tribelt's 24%.")
-    expect(d?.counts).toBe("This number is the share of the newest Prompt run's answers that name Tribelt at least once.")
-    expect(d?.bars.map((b) => [b.label, b.display, b.tone])).toEqual([
-      ['Tribelt', '24%', 'orange'],
-      ['Typical competitor', '10%', 'blue-grey'],
-      ['Ashworth', '57%', 'ink'],
-      ['Target', '40%', 'silver'],
+describe('the Overview summary', () => {
+  const overview = (change: (o: Overview) => void = () => undefined): Overview => {
+    const o = overviewFixture()
+    change(o)
+    return o
+  }
+  it('says how many competitors AI responses name more often, the readiness checks, and the search terms', () => {
+    const o = overview((x) => {
+      x.aiSearch.companies.push({ competitorId: 'ashworth', name: 'Ashworth', role: 'competitor', answers: 20, share: 0.4 })
+    })
+    expect(overviewSummary(facts(), o)).toBe(
+      'AI responses name one competitor more often than Tribelt, tribelt.nl passes 3 of the 8 AI readiness checks, and tribelt.nl uses 30 of the 387 search terms buyers use.',
+    )
+    o.aiSearch.companies.push(
+      { competitorId: 'martens', name: 'Märtens', role: 'competitor', answers: 20, share: 0.3 },
+      { competitorId: 'lesjofors', name: 'Lesjöfors', role: 'group', answers: 30, share: 0.6 },
+      { competitorId: 'quiet', name: 'Quiet', role: 'competitor', answers: 0 },
+    )
+    expect(overviewSummary(facts(), o)).toContain('AI responses name 2 competitors more often than Tribelt,')
+  })
+  it('says when Tribelt is named most, or not yet asked about, and when tribelt.nl is not checked', () => {
+    expect(overviewSummary(facts(), overview())).toMatch(/^AI responses name Tribelt more often than any competitor,/)
+    const none = overview((x) => (x.aiSearch.companies = []))
+    const unchecked = facts((plan) => (plan.watched = plan.watched.filter((w) => w.target !== 'readinessChecks')))
+    expect(overviewSummary(unchecked, none)).toBe(
+      'No Prompt run has finished yet, tribelt.nl has not been checked for AI readiness yet, and tribelt.nl uses 30 of the 387 search terms buyers use.',
+    )
+  })
+})
+
+describe('a goal page', () => {
+  it('names the goal, says what it measures, and who is ahead', () => {
+    const page = goalPage(facts(), 'aiShareOfVoice')
+    expect(page).toMatchObject({ name: 'AI responses that name Tribelt', purpose: "The share of a Prompt run's responses that name Tribelt." })
+    expect(page?.summary).toBe('Ashworth is ahead of Tribelt, with 57% against 24%. The goal is 40%.')
+    expect(page?.bars.map((b) => [b.label, b.display, b.tone, b.highlight ?? false])).toEqual([
+      ['Tribelt', '24%', 'orange', true],
+      ['The typical competitor', '10%', 'blue-grey', false],
+      ['Ashworth, the best competitor', '57%', 'ink', false],
+      ['The goal', '40%', 'silver', false],
     ])
-    expect(d?.barsMax).toBeCloseTo(0.57 * 1.08)
-    expect(d?.figures.map((f) => f.big)).toEqual(['24%', '57%', '40%'])
-    expect(d?.figures[0]?.note).toBe('Tribelt is 60% of the way there.')
-    expect(d?.figures[1]).toMatchObject({ title: 'Ashworth, the leader', note: 'The competitor with the best value now.' })
-    expect(d?.figures[2]?.note).toBe('The goal for this number by the end of the year.')
-    expect(d?.comparison).toBe('The typical competitor is the middle value over the four competitors with data.')
-    expect(d?.improvements.map((i) => i.rank)).toEqual([1, 4])
+    expect(page?.barsMax).toBe(1)
+    expect(page?.comparison).toBe('The typical competitor is the middle figure across all competitors on the list.')
+    expect(page?.improvements.map((i) => i.id)).toEqual(['submit-search-engines', 'answer-questions'])
+    expect(page?.leader?.name).toBe('Ashworth')
   })
 
-  it('takes the competitor for Twente from the plan', () => {
-    const d = numberDetail(facts(), 'twenteShareOfVoice')
-    expect(d?.bars.map((b) => b.label)).toEqual(['Tribelt', 'Twentebelt', 'Target'])
-    expect(d?.comparison).toBe('Twentebelt is named most when buyers ask for Twente. The other competitors are not compared on this number.')
-    const none = numberDetail(facts((plan) => (plan.eyeOn = [])), 'twenteShareOfVoice')
+  it('says so when Tribelt leads, and when no competitor has a value', () => {
+    expect(goalPage(facts(), 'termsUsed')?.summary).toBe("Tribelt leads every competitor, with 45 against Ashworth's 40. The goal is 35.")
+    const alone = goalPage(
+      facts((_, standings) => (standings.measures = [])),
+      'termsUsed',
+    )
+    expect(alone?.summary).toBe('Tribelt leads every competitor, with 45. The goal is 35.')
+    expect(alone?.bars.map((b) => [b.label, b.display])).toEqual([
+      ['Tribelt', '45'],
+      ['The typical competitor', 'No data yet'],
+      ['The best competitor', 'None yet'],
+      ['The goal', '35'],
+    ])
+    expect(alone?.barsMax).toBeCloseTo(45 * 1.1)
+    expect(alone?.comparison).toBe('No competitor has data on this goal yet.')
+  })
+
+  it('compares the Twente goal with the competitor named most for Twente only', () => {
+    const page = goalPage(facts(), 'twenteShareOfVoice')
+    expect(page?.purpose).toBe("The share of a Prompt run's responses about the Twente region that name Tribelt.")
+    expect(page?.bars.map((b) => b.label)).toEqual(['Tribelt', 'Twentebelt, the best competitor', 'The goal'])
+    expect(page?.comparison).toBe('Twentebelt is named most when buyers ask about Twente. The other competitors are not compared on this goal.')
+    const none = goalPage(
+      facts((plan) => (plan.eyeOn = [])),
+      'twenteShareOfVoice',
+    )
     expect(none?.comparison).toBe('No competitor is named for Twente yet.')
-    expect(none?.figures[1]).toMatchObject({ big: 'None', title: 'No leader yet' })
-    expect(none?.headline).toBe('Tribelt is at 20%, against a target of 50%.')
+    expect(none?.bars.map((b) => b.label)).toEqual(['Tribelt', 'The best competitor', 'The goal'])
   })
 
-  it('sets the citation share against the leader', () => {
-    const d = numberDetail(facts(), 'citationShare')
-    expect(d?.headline).toBe("Märtens is ahead with 30%, against Tribelt's 10%.")
-    expect(d?.bars.map((b) => [b.label, b.display])).toEqual([
-      ['Tribelt', '10%'],
-      ['Typical competitor', '5%'],
-      ['Märtens', '30%'],
-      ['Target', '50%'],
-    ])
-    expect(d?.figures[1]).toMatchObject({ big: '30%', title: 'Märtens, the leader' })
+  it('counts the readiness checks out of all of them', () => {
+    const page = goalPage(facts(), 'readinessChecks')
+    expect(page?.purpose).toBe('How many of the eight AI readiness checks tribelt.nl passes.')
+    expect(page?.summary).toBe('Märtens is ahead of Tribelt, with 8 of 8 against 3 of 8. The goal is 8 of 8.')
+    expect(page?.barsMax).toBe(8)
+    expect(page?.improvements).toEqual([])
   })
 
-  it('writes the readiness checks as "3 of 8"', () => {
-    const d = numberDetail(facts(), 'readinessChecks')
-    expect(d?.figures[0]?.big).toBe('3 of 8')
-    expect(d?.bars.find((b) => b.label === 'Typical competitor')?.display).toBe('2 of 8')
-  })
-
-  it('says that a target is met and that Tribelt leads', () => {
-    const d = numberDetail(facts(), 'termsUsed')
-    expect(d?.headline).toBe('Tribelt leads on this number, with 45.')
-    expect(d?.figures[0]?.note).toBe('Tribelt has met the target.')
-    expect(d?.figures[2]?.note).toBe('The target is met.')
-    expect(d?.improvements).toEqual([])
-  })
-
-  it('says what is missing when nothing has been measured', () => {
-    const d = numberDetail(
-      facts((plan, standings) => {
-        plan.watched = [{ target: 'aiShareOfVoice', goal: 0.4 }]
-        standings.measures = [{ measure: 'aiShareOfVoice', competitors: 0, trails: false, leads: false }]
-      }),
-      'aiShareOfVoice',
+  it('says when Tribelt is not measured yet, and has nothing for a goal the plan does not hold', () => {
+    const page = goalPage(
+      facts((plan) => (plan.watched = [{ target: 'citationShare', goal: 0.5 }])),
+      'citationShare',
     )
-    expect(d?.headline).toBe('AI answers that name Tribelt is not measured yet.')
-    expect(d?.figures[0]).toMatchObject({ big: 'No data', note: 'The first scan or Prompt run fills this in.' })
-    expect(d?.figures[1]).toMatchObject({ big: 'None', title: 'No leader yet' })
-    expect(d?.bars[1]).toMatchObject({ label: 'Typical competitor', value: 0, display: 'No data yet' })
-    expect(d?.comparison).toBe('No competitor has data on this number yet.')
-    expect(d?.leader).toBeUndefined()
+    expect(page?.summary).toBe('Tribelt is not measured on this goal yet. The goal is 50%.')
+    expect(page?.bars[0]).toMatchObject({ value: 0, display: 'Not measured' })
+    expect(
+      goalPage(
+        facts((plan) => (plan.watched = [])),
+        'citationShare',
+      ),
+    ).toBeUndefined()
   })
 
-  it('has nothing for a number the plan does not watch', () => {
-    expect(numberDetail(facts((plan) => (plan.watched = [])), 'citationShare')).toBeUndefined()
+  it('knows which goals the Prompt test measures, and their line over time', () => {
+    expect(GOAL_ORDER.filter(isPromptGoal)).toEqual(['aiShareOfVoice', 'twenteShareOfVoice', 'citationShare'])
+    const run = { runId: 'r', startedAt: '2026-10-27T08:36:32Z', promptSetVersion: 2, tasks: 1, answered: 1, read: 1, partial: false, all: 0.25, twente: 0.4, citation: 0.1 }
+    const picks = (['aiShareOfVoice', 'twenteShareOfVoice', 'citationShare'] as PlanTarget[]).map((t) => historyMeasure(t)?.pick(run))
+    expect(picks).toEqual([0.25, 0.4, 0.1])
+    expect(historyMeasure('aiShareOfVoice')).toMatchObject({ label: 'Tribelt', tone: 'orange', strong: true })
+    expect(historyMeasure('termsUsed')).toBeUndefined()
+  })
+})
+
+describe('the data line of a Prompt test goal', () => {
+  it('says which run, how many questions, models, and responses, and the Prompt set version', () => {
+    expect(promptDataLine(promptRun({ promptSetVersion: 2, tasks: 80, answered: 78 }))).toBe(
+      'From the Prompt run of 1 November 2026: 20 questions to 2 models, each from the model’s own knowledge and with web search, 78 responses in all. Prompt set version 2.',
+    )
+    expect(promptDataLine(promptRun({ models: [], answered: 1 }))).toBe('From the Prompt run of 1 November 2026: 1 response in all. Prompt set version 1.')
+    expect(promptDataLine(undefined)).toBe('No Prompt run has finished yet.')
+  })
+})
+
+describe('Broken down', () => {
+  const cells: PromptCell[] = [
+    { provider: 'openai', scope: 'twente', family: 'eyelink', mode: 'knowledge', answers: 4, named: 1, cited: 0 },
+    { provider: 'openai', scope: 'twente', family: 'eyelink', mode: 'web', answers: 4, named: 3, cited: 2 },
+    { provider: 'google', scope: 'english', family: 'open_spiral', mode: 'web', answers: 4, named: 0, cited: 1 },
+  ]
+
+  it('breaks the share down by model, scope, and belt family, each with its total', () => {
+    const groups = promptBreakdown('aiShareOfVoice', cells)
+    expect(groups.map((g) => g.title)).toEqual(['By model', 'By scope', 'By belt family'])
+    expect(groups[0]?.rows.map((r) => [r.label, r.display, r.highlight ?? false])).toEqual([
+      ['OpenAI', '50%', false],
+      ['Google', '0%', false],
+      ['All models', '33%', true],
+    ])
+    expect(groups[1]?.rows.map((r) => [r.label, r.display])).toEqual([
+      ['Twente (Dutch)', '50%'],
+      ['English, no region', '0%'],
+      ['All scopes', '33%'],
+    ])
+    expect(groups[2]?.rows.map((r) => r.label)).toEqual(['Eyelink', 'Open spiral', 'All belt families'])
+  })
+
+  it('counts only the Twente responses for the Twente goal, without a scope list', () => {
+    const groups = promptBreakdown('twenteShareOfVoice', cells)
+    expect(groups.map((g) => g.title)).toEqual(['By model', 'By belt family'])
+    expect(groups[0]?.rows.map((r) => [r.label, r.display])).toEqual([
+      ['OpenAI', '50%'],
+      ['All models', '50%'],
+    ])
+  })
+
+  it('counts the citations of web responses for the citation goal', () => {
+    const groups = promptBreakdown('citationShare', cells)
+    expect(groups[0]?.rows.map((r) => [r.label, r.display])).toEqual([
+      ['OpenAI', '50%'],
+      ['Google', '25%'],
+      ['All models', '38%'],
+    ])
+    expect(promptBreakdown('citationShare', [])).toEqual([])
+    expect(promptBreakdown('termsUsed', cells)).toEqual([])
+  })
+
+  it('lists each scored readiness check, passed or not', () => {
+    const checks: ReadinessCheckSummary[] = [
+      { check: 'crawlers', scored: true, passing: 30, tribelt: true },
+      { check: 'llmsTxt', scored: true, passing: 12, tribelt: false },
+      { check: 'markdown', scored: true, passing: 2 },
+      { check: 'product', scored: false, passing: 3, tribelt: false },
+    ]
+    expect(readinessBreakdown(checks).map((c) => [c.label, c.passed])).toEqual([
+      ['Lets every AI crawler in, for search and for training', true],
+      ['Has llms.txt', false],
+      ['Has Markdown pages', null],
+    ])
+    expect(readinessBreakdown(checks)[1]?.what).toBe('llms.txt is a short map of the site in plain text, written for AI tools.')
+  })
+
+  it('counts the search terms tribelt.nl uses per language', () => {
+    const { rows, max } = termsBreakdown([
+      { language: 'nl', terms: 58, tribelt: 13 },
+      { language: 'de', terms: 221, tribelt: 15 },
+    ])
+    expect(max).toBeCloseTo(15 * 1.1)
+    expect(termsBreakdown([]).max).toBe(1)
+    expect(rows.map((r) => [r.label, r.display])).toEqual([
+      ['Dutch, of 58', '13'],
+      ['German, of 221', '15'],
+    ])
   })
 })

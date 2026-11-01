@@ -17,3 +17,10 @@ export function dayMonth(iso: string): string {
 export function clock(iso: string): string {
   return CLOCK.format(new Date(iso))
 }
+
+const LOCAL_DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Amsterdam' })
+
+/** "1 November 2026", the day it was in the Netherlands, for the pages that say when something ran. */
+export function localDate(iso: string): string {
+  return LOCAL_DAY.format(new Date(iso))
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -17,6 +18,12 @@ type Verdicts interface {
 	// SaveReview stores a batch's verdicts, the decisions its sure ones make, and what asking used,
 	// in one transaction; a decision on a candidate decided meanwhile is left out.
 	SaveReview(ctx context.Context, verdicts []domain.Verdict, decisions []domain.Decision, usage []domain.Usage) error
+	// UsageSince sums what asking used since t.
+	UsageSince(ctx context.Context, t time.Time) (domain.Usage, error)
+	// ReviewOn reports whether the review runs by itself; it does until an administrator switches it off.
+	ReviewOn(ctx context.Context) (bool, error)
+	// SwitchReview stores whether the review runs by itself, with the administrator who switched it, when.
+	SwitchReview(ctx context.Context, on bool, by string, at time.Time) error
 }
 
 // Judge is a language model that reviews candidates, given terms the map holds as examples. On an
@@ -36,6 +43,10 @@ var (
 	ErrNoModel = errors.New("no Anthropic key is set up")
 	// ErrBudgetSpent is returned by Review when the month's language-model tokens are spent.
 	ErrBudgetSpent = errors.New("this month's language-model budget is spent")
+	// ErrStopped is returned by Review when an administrator stopped it.
+	ErrStopped = errors.New("stopped by hand")
+	// ErrNothingToStop is returned by StopReview when no review runs or is asked for.
+	ErrNothingToStop = errors.New("no term review runs")
 	// ErrBadAnswer is what a Judge returns when the model answered but not usably: it declined, its
 	// answer was cut off, or it could not be read. Asking again the same way gets the same.
 	ErrBadAnswer = errors.New("the language model gave no usable answer")
@@ -49,6 +60,8 @@ const (
 	ProblemNoModel Problem = "noModel"
 	ProblemBudget  Problem = "budget"
 	ProblemFailed  Problem = "failed"
+	// ProblemStopped is a review an administrator stopped; what it decided before is kept.
+	ProblemStopped Problem = "stopped"
 )
 
 // BudgetSpent reports whether the month's language-model tokens, of every job together, are spent.
@@ -56,10 +69,14 @@ type BudgetSpent func(ctx context.Context) (bool, error)
 
 // ReviewState is how far the language model is with the waiting candidates.
 type ReviewState struct {
+	// On is whether the review runs by itself, every interval.
+	On      bool
 	Running bool
 	// Waiting is how many waiting candidates the model has not reviewed yet.
 	Waiting int
 	Problem Problem
+	// Month is what the review used this month.
+	Month domain.Usage
 }
 
 // examplesPerTier is how many map terms of each tier the model gets as examples.
@@ -70,8 +87,42 @@ type reviewer struct {
 	verdicts Verdicts
 	judges   Judges
 	kick     chan struct{}
-	running  atomic.Bool
 	problem  atomic.Value // Problem
+
+	mu sync.Mutex
+	// running is true while a review runs, stopping once an administrator asked it to stop.
+	running, stopping bool
+}
+
+// begin marks a review started.
+func (r *reviewer) begin() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.running, r.stopping = true, false
+}
+
+// end marks the review ended.
+func (r *reviewer) end() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.running, r.stopping = false, false
+}
+
+// goOn is ErrStopped once an administrator asked the review to stop.
+func (r *reviewer) goOn() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.stopping {
+		return ErrStopped
+	}
+	return nil
+}
+
+// isRunning reports whether a review runs, or is asked for.
+func (r *reviewer) isRunning() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.running || len(r.kick) > 0
 }
 
 // WithReviewer lets a language model review the waiting candidates: verdicts stores what it
@@ -114,7 +165,8 @@ func (s *Service) verdicts(ctx context.Context) ([]domain.Verdict, error) {
 
 // Review asks the language model about every waiting candidate it has not reviewed, a batch at a
 // time, and records its sure verdicts as its decisions. It returns how many it reviewed;
-// ErrNoModel when no model is set up, ErrBudgetSpent when the month's tokens are spent before a batch.
+// ErrNoModel when no model is set up, ErrBudgetSpent when the month's tokens are spent before a
+// batch, ErrStopped when an administrator stopped it, keeping what it decided before.
 func (s *Service) Review(ctx context.Context) (int, error) {
 	n, err := s.reviewAll(ctx)
 	if n > 0 { // the accepted terms join the map
@@ -144,6 +196,9 @@ func (s *Service) reviewAll(ctx context.Context) (int, error) {
 	terms := s.Terms()
 	reviewed := 0
 	for len(waiting) > 0 {
+		if err := s.review.goOn(); err != nil {
+			return reviewed, err
+		}
 		if err := s.affordable(ctx); err != nil {
 			return reviewed, err
 		}
@@ -207,12 +262,22 @@ func (s *Service) ask(ctx context.Context, judge Judge, model string, batch []do
 	return append(first, second...), nil
 }
 
-// ReviewState says whether the model is reviewing, how many candidates wait for it (from counts),
-// and why its last review stopped short. That no model was set up, or the budget was spent, is
-// checked again, so a key added since, or a new month, shows at once.
-func (s *Service) ReviewState(ctx context.Context, counts domain.Counts) ReviewState {
+// ReviewState says whether the review runs by itself and whether it is reviewing now, how many
+// candidates wait for it (from counts), why its last review stopped short, and what it used this
+// month. That no model was set up, or the budget was spent, is checked again, so a key added
+// since, or a new month, shows at once.
+func (s *Service) ReviewState(ctx context.Context, counts domain.Counts) (ReviewState, error) {
 	if s.review == nil {
-		return ReviewState{Waiting: counts.Unreviewed, Problem: ProblemNoModel}
+		return ReviewState{Waiting: counts.Unreviewed, Problem: ProblemNoModel}, nil
+	}
+	on, err := s.review.verdicts.ReviewOn(ctx)
+	if err != nil {
+		return ReviewState{}, fmt.Errorf("whether the term review is on: %w", err)
+	}
+	now := s.now().UTC()
+	month, err := s.review.verdicts.UsageSince(ctx, time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		return ReviewState{}, fmt.Errorf("what the term review used this month: %w", err)
 	}
 	problem, _ := s.review.problem.Load().(Problem)
 	switch problem {
@@ -224,9 +289,49 @@ func (s *Service) ReviewState(ctx context.Context, counts domain.Counts) ReviewS
 		if s.affordable(ctx) == nil {
 			problem = ProblemNone
 		}
-	case ProblemNone, ProblemFailed:
+	case ProblemNone, ProblemFailed, ProblemStopped:
 	}
-	return ReviewState{Running: s.review.running.Load() || len(s.review.kick) > 0, Waiting: counts.Unreviewed, Problem: problem}
+	return ReviewState{On: on, Running: s.review.isRunning(), Waiting: counts.Unreviewed, Problem: problem, Month: month}, nil
+}
+
+// SwitchReview turns the review that runs by itself on or off, recording user as who switched it.
+// Off, nothing is reviewed until an administrator asks (StartReview); a review that runs goes on
+// until it ends or is stopped. ErrNoModel without a reviewer.
+func (s *Service) SwitchReview(ctx context.Context, user string, on bool) error {
+	if s.review == nil {
+		return ErrNoModel
+	}
+	if err := s.review.verdicts.SwitchReview(ctx, on, user, s.now()); err != nil {
+		return fmt.Errorf("switch the term review: %w", err)
+	}
+	return nil
+}
+
+// StopReview stops the review that runs after the batch it asks about, which it keeps, as it keeps
+// every decision made before; a review asked for that has not started does not start. The review's
+// state says it was stopped by hand. ErrNothingToStop when no review runs or is asked for.
+func (s *Service) StopReview(context.Context) error {
+	if s.review == nil {
+		return ErrNothingToStop
+	}
+	r := s.review
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	asked := false
+	select {
+	case <-r.kick:
+		asked = true
+	default:
+	}
+	switch {
+	case r.running:
+		r.stopping = true
+	case asked:
+		r.problem.Store(ProblemStopped)
+	default:
+		return ErrNothingToStop
+	}
+	return nil
 }
 
 // StartReview asks the review loop to review the waiting candidates now.
@@ -240,33 +345,53 @@ func (s *Service) StartReview() {
 	}
 }
 
-// ReviewLoop reviews the waiting candidates now, every interval, and whenever StartReview asks,
-// until ctx ends. onError hears why a review stopped short, except that no model is set up or the
-// month's budget is spent.
+// ReviewLoop reviews the waiting candidates now and every interval while the review is on, and
+// whenever StartReview asks, on or off, until ctx ends. onError hears why a review stopped short,
+// except that no model is set up, the month's budget is spent, or an administrator stopped it; and
+// that whether the review is on could not be read, which counts as off.
 func (s *Service) ReviewLoop(ctx context.Context, every time.Duration, onError func(error)) {
 	if s.review == nil {
 		return
 	}
 	tick := time.NewTicker(every)
 	defer tick.Stop()
+	asked := false
 	for {
-		s.reviewOnce(ctx, onError)
+		if asked || s.reviewOn(ctx, onError) {
+			s.reviewOnce(ctx, onError)
+		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-tick.C:
+			asked = false
 		case <-s.review.kick:
+			asked = true
 		}
 	}
 }
 
+// reviewOn reports whether the review runs by itself; not when that cannot be read, which onError hears.
+func (s *Service) reviewOn(ctx context.Context, onError func(error)) bool {
+	on, err := s.review.verdicts.ReviewOn(ctx)
+	if err != nil {
+		if ctx.Err() == nil {
+			onError(fmt.Errorf("whether the term review is on: %w", err))
+		}
+		return false
+	}
+	return on
+}
+
 func (s *Service) reviewOnce(ctx context.Context, onError func(error)) {
-	s.review.running.Store(true)
-	defer s.review.running.Store(false)
+	s.review.begin()
+	defer s.review.end()
 	_, err := s.Review(ctx)
 	switch {
 	case err == nil:
 		s.review.problem.Store(ProblemNone)
+	case errors.Is(err, ErrStopped):
+		s.review.problem.Store(ProblemStopped)
 	case errors.Is(err, ErrNoModel):
 		s.review.problem.Store(ProblemNoModel)
 	case errors.Is(err, ErrBudgetSpent):

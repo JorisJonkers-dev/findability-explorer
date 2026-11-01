@@ -222,7 +222,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
-		return fmt.Errorf("read OpenRouter's answer: %w", err)
+		return fmt.Errorf("read OpenRouter's response: %w", err)
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return fmt.Errorf("%w: %s", domain.ErrRateLimited, errorText(raw))
@@ -231,7 +231,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		return fmt.Errorf("OpenRouter answered %d: %s", resp.StatusCode, errorText(raw))
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
-		return fmt.Errorf("read OpenRouter's answer: %w", err)
+		return fmt.Errorf("read OpenRouter's response: %w", err)
 	}
 	return nil
 }

@@ -186,13 +186,13 @@ func (a *admin) get(ctx context.Context, path string, out any) error {
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
-		return fmt.Errorf("read Anthropic's answer: %w", err)
+		return fmt.Errorf("read Anthropic's response: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return statusError("Anthropic", resp.StatusCode, errorMessage(raw))
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
-		return fmt.Errorf("read Anthropic's answer: %w", err)
+		return fmt.Errorf("read Anthropic's response: %w", err)
 	}
 	return nil
 }

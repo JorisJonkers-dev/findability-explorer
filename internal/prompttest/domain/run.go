@@ -66,7 +66,7 @@ type RunStatus string
 const (
 	RunRunning RunStatus = "running"
 	RunDone    RunStatus = "done"
-	// RunStopped means the month's budget was reached; the answers so far are kept.
+	// RunStopped means the month's budget was reached; the responses so far are kept.
 	RunStopped RunStatus = "stopped"
 	RunFailed  RunStatus = "failed"
 )
@@ -157,7 +157,7 @@ func (a Answer) Key() TaskKey {
 // How a stopped run says why it stopped: the month's budget was reached, or an administrator
 // stopped it. Either way its responses are kept, and a retry finishes it.
 const (
-	StoppedByBudget = "The month's budget for Prompt runs was reached; the answers so far are kept."
+	StoppedByBudget = "The month's budget for Prompt runs was reached; the responses so far are kept."
 	StoppedByHand   = "Stopped by hand. The responses so far are kept, and a retry finishes the run."
 )
 
@@ -179,7 +179,7 @@ var (
 	// ErrAnswered is returned when storing an answer to a task the run answered already.
 	ErrAnswered = errors.New("the run answered this question already")
 	// ErrRead is returned when storing the reading of an answer read already.
-	ErrRead = errors.New("the answer was read already")
+	ErrRead = errors.New("the response was read already")
 	// ErrBudgetReached is returned when asking again while the month's budget is spent.
 	ErrBudgetReached = errors.New("the month's budget for Prompt runs is reached")
 	// ErrCompanyKnown is returned when a candidate is added with a website another company has.

@@ -50,7 +50,7 @@ var (
 	ErrNothingToStop = errors.New("no term review runs")
 	// ErrBadAnswer is what a Judge returns when the model answered but not usably: it declined, its
 	// answer was cut off, or it could not be read. Asking again the same way gets the same.
-	ErrBadAnswer = errors.New("the language model gave no usable answer")
+	ErrBadAnswer = errors.New("the language model gave no usable response")
 )
 
 // Problem is why the last review stopped short.

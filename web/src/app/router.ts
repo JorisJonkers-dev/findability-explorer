@@ -157,6 +157,12 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         component: () => import('../features/competitors/components/CheckListPage.vue'),
         meta: { title: 'Check the list', view: 'manage' },
       },
+      {
+        path: '/manage/competitors/definition',
+        name: 'competitor-definition',
+        component: () => import('../features/competitors/components/DefinitionPage.vue'),
+        meta: { title: 'Competitor definition', view: 'manage' },
+      },
       // Search term list.
       { path: '/manage/terms', name: 'term-list', component: () => import('../features/manage/components/TermListIndex.vue'), meta: { title: 'Search term list', view: 'manage' } },
       { path: '/manage/terms/review', name: 'term-review', component: () => import('../features/review/components/TermReviewRunPage.vue'), meta: { title: 'Term review', view: 'manage' } },

@@ -1,4 +1,4 @@
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { PromptTestSettings } from '../../../infrastructure/api/types.gen'
 import { me, promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
@@ -38,13 +38,15 @@ function server(extra: Record<string, Handler> = {}) {
   return { handle, bodies, sent }
 }
 
-function widget(wrapper: VueWrapper, title: string): DOMWrapper<Element> {
+type Found = ReturnType<VueWrapper['get']>
+
+function widget(wrapper: VueWrapper, title: string): Found {
   const heading = wrapper.findAll('section > div > h2').find((h) => h.text() === title)
   if (!heading) throw new Error(`no widget ${title}`)
   return wrapper.get(`section[aria-labelledby="${heading.attributes('id') ?? ''}"]`)
 }
 
-const button = (w: DOMWrapper<Element> | VueWrapper, text: string) => {
+const button = (w: Found | VueWrapper, text: string) => {
   const b = w.findAll('button').find((x) => x.text() === text)
   if (!b) throw new Error(`no button ${text}`)
   return b

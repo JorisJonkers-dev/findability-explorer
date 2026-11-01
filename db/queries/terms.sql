@@ -33,18 +33,18 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (candidate_id) DO NOTHING;
 
 -- name: InsertTermReviewUsage :exec
-INSERT INTO term_review_usage (input_tokens, output_tokens, used_at)
-VALUES ($1, $2, $3);
+INSERT INTO term_review_usage (input_tokens, output_tokens, used_at, model)
+VALUES (@input_tokens, @output_tokens, @used_at, nullif(@model::text, ''));
 
--- name: TermReviewTokensSince :one
-SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+-- name: TermReviewUsageSince :many
+-- What the term review used since a moment, per model that answered; "" for rows from before
+-- requests recorded their model.
+SELECT coalesce(model, '')::text AS model, coalesce(sum(input_tokens), 0)::bigint AS input_tokens,
+    coalesce(sum(output_tokens), 0)::bigint AS output_tokens
 FROM term_review_usage
-WHERE used_at >= $1;
-
--- name: TermReviewUsageSince :one
-SELECT coalesce(sum(input_tokens), 0)::bigint AS input_tokens, coalesce(sum(output_tokens), 0)::bigint AS output_tokens
-FROM term_review_usage
-WHERE used_at >= $1;
+WHERE used_at >= $1
+GROUP BY 1
+ORDER BY 1;
 
 -- name: TermReviewOn :one
 SELECT coalesce((SELECT review_on FROM term_review_switch WHERE singleton), true)::boolean AS review_on;

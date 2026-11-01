@@ -469,8 +469,8 @@ func (*verdictStore) SaveReview(context.Context, []terminologydomain.Verdict, []
 	return nil
 }
 
-func (*verdictStore) UsageSince(context.Context, time.Time) (terminologydomain.Usage, error) {
-	return terminologydomain.Usage{InputTokens: 1_000_000, OutputTokens: 200_000}, nil
+func (*verdictStore) UsageSince(context.Context, time.Time) (terminologydomain.Spend, error) {
+	return terminologydomain.Spend{{InputTokens: 1_000_000, OutputTokens: 200_000}}, nil
 }
 
 func (v *verdictStore) ReviewOn(context.Context) (bool, error) {

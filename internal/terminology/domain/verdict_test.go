@@ -146,4 +146,13 @@ func TestTheReviewsUsageIsPricedAtTheReviewModelsListPrice(t *testing.T) {
 	if (domain.Usage{}).Cost() != 0 {
 		t.Error("nothing used costs something")
 	}
+	// A request Claude Sonnet answered is priced at Sonnet's list price.
+	sonnet := domain.Usage{InputTokens: 1_000_000, Model: "claude-sonnet-5-5"}
+	if sonnet.Cost() != 2_000_000 {
+		t.Errorf("Sonnet = %s", sonnet.Cost())
+	}
+	month := domain.Spend{u, sonnet}
+	if month.Tokens() != 3_400_000 || month.Cost() != u.Cost()+sonnet.Cost() || (domain.Spend{}).Cost() != 0 {
+		t.Errorf("month = %d tokens, %s", month.Tokens(), month.Cost())
+	}
 }

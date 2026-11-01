@@ -193,7 +193,7 @@ func (r *Reviewer) ask(ctx context.Context, step Step, user, schemaName string, 
 	resp, err := r.client.Complete(ctx, llm.Prompt{
 		Model: step.Model, System: step.Instructions, User: user, SchemaName: schemaName, Schema: schema, MaxTokens: maxTokens,
 	})
-	usage := domain.ReviewUsage{InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens}
+	usage := domain.ReviewUsage{InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens, Model: step.Model}
 	if err != nil {
 		return usage, err
 	}

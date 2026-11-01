@@ -54,8 +54,8 @@ func TestACandidateReviewIsRecordedWithWhatItCheckedAndUsed(t *testing.T) {
 	j := &journal{}
 	svc := journalled(r, &directory{}, models{m: &model{verdicts: competitors}}, j, func(err error) { t.Errorf("reported %v", err) })
 	svc.StartReview(t.Context())
-	// One merge and two batches of checks, each 90 tokens in and 10 out.
-	want := work.Outcome{Ending: work.EndingDone, Counts: work.Counts{Done: app.CheckBatch + 3, Total: app.CheckBatch + 3}, InputTokens: 270, OutputTokens: 30}
+	// One merge and two batches of checks, each 90 tokens in and 10 out, on the model that answered.
+	want := work.Outcome{Ending: work.EndingDone, Counts: work.Counts{Done: app.CheckBatch + 3, Total: app.CheckBatch + 3}, InputTokens: 270, OutputTokens: 30, Model: "claude-sonnet-5-5"}
 	if len(j.begun) != 1 || j.begun[0] != work.KindCandidateReview || len(j.ended) != 1 || j.ended[0] != want {
 		t.Fatalf("begun %v, ended %+v", j.begun, j.ended)
 	}
@@ -79,7 +79,7 @@ func TestACompetitorCheckIsRecordedAsItEnded(t *testing.T) {
 	j := &journal{}
 	svc := journalled(r, onTheList(), models{m: &model{verdicts: rubber}}, j, func(err error) { t.Errorf("reported %v", err) })
 	svc.StartListCheck(t.Context())
-	want := work.Outcome{Ending: work.EndingDone, Counts: work.Counts{Done: 4, Total: 4}, InputTokens: 90, OutputTokens: 10}
+	want := work.Outcome{Ending: work.EndingDone, Counts: work.Counts{Done: 4, Total: 4}, InputTokens: 90, OutputTokens: 10, Model: "claude-sonnet-5-5"}
 	if len(j.begun) != 1 || j.begun[0] != work.KindCompetitorCheck || j.ended[0] != want {
 		t.Fatalf("begun %v, ended %+v", j.begun, j.ended)
 	}

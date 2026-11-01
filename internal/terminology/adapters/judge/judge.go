@@ -70,7 +70,7 @@ func (j *Judge) Judge(ctx context.Context, candidates []domain.Candidate, exampl
 		Model: j.model, System: j.instructions, User: prompt(candidates, examples),
 		SchemaName: schemaName, Schema: schema(), MaxTokens: maxTokens,
 	})
-	usage := domain.Usage{InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens}
+	usage := domain.Usage{InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens, Model: j.model}
 	if errors.Is(err, llm.ErrNoAnswer) {
 		return nil, usage, fmt.Errorf("%w: %w", app.ErrBadAnswer, err)
 	}

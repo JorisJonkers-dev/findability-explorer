@@ -13,6 +13,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/queries"
 )
 
@@ -188,13 +189,17 @@ func (r *Repository) SetRecDone(ctx context.Context, id, by string, at time.Time
 	return n > 0, nil
 }
 
-// RecommendationTokensSince is how many tokens the Recommendation runs used since t, in and out.
-func (r *Repository) RecommendationTokensSince(ctx context.Context, t time.Time) (int64, int64, error) {
-	row, err := r.q.RecommendationTokensSince(ctx, t)
+// RecommendationTokensSince is what the Recommendation runs used since t, per model that wrote.
+func (r *Repository) RecommendationTokensSince(ctx context.Context, t time.Time) ([]llm.TokenUse, error) {
+	rows, err := r.q.RecommendationTokensSince(ctx, t)
 	if err != nil {
-		return 0, 0, fmt.Errorf("sum the recommendation runs' tokens: %w", err)
+		return nil, fmt.Errorf("sum the recommendation runs' tokens: %w", err)
 	}
-	return row.Input, row.Output, nil
+	out := make([]llm.TokenUse, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, llm.TokenUse{Model: row.Model, Input: row.Input, Output: row.Output})
+	}
+	return out, nil
 }
 
 func nonNil(s []string) []string {

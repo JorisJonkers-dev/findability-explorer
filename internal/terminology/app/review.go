@@ -19,8 +19,8 @@ type Verdicts interface {
 	// SaveReview stores a batch's verdicts, the decisions its sure ones make, and what asking used,
 	// in one transaction; a decision on a candidate decided meanwhile is left out.
 	SaveReview(ctx context.Context, verdicts []domain.Verdict, decisions []domain.Decision, usage []domain.Usage) error
-	// UsageSince sums what asking used since t.
-	UsageSince(ctx context.Context, t time.Time) (domain.Usage, error)
+	// UsageSince sums what asking used since t, per model that answered.
+	UsageSince(ctx context.Context, t time.Time) (domain.Spend, error)
 	// ReviewOn reports whether the review runs by itself; it does until an administrator switches it off.
 	ReviewOn(ctx context.Context) (bool, error)
 	// SwitchReview stores whether the review runs by itself, with the administrator who switched it, when.
@@ -77,7 +77,7 @@ type ReviewState struct {
 	Waiting int
 	Problem Problem
 	// Month is what the review used this month.
-	Month domain.Usage
+	Month domain.Spend
 }
 
 // examplesPerTier is how many map terms of each tier the model gets as examples.
@@ -206,7 +206,7 @@ func (s *Service) reviewAll(ctx context.Context) (int, error) {
 	reviewed, err := s.reviewBatches(ctx, judge, model, waiting, &used)
 	entry.Finish(context.WithoutCancel(ctx), work.Outcome{
 		Ending: ending(err), Counts: work.Counts{Done: reviewed, Total: len(waiting)},
-		InputTokens: used.InputTokens, OutputTokens: used.OutputTokens,
+		InputTokens: used.InputTokens, OutputTokens: used.OutputTokens, Model: used.Model,
 	}, s.now(), s.report)
 	return reviewed, err
 }
@@ -229,6 +229,7 @@ func (s *Service) reviewBatches(ctx context.Context, judge Judge, model string, 
 		for _, u := range usage {
 			used.InputTokens += u.InputTokens
 			used.OutputTokens += u.OutputTokens
+			used.Model = u.Model
 		}
 		if err != nil {
 			// What the failed requests consumed still counts.

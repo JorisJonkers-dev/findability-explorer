@@ -403,14 +403,16 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 	}
 
 	// What the review used counts towards the month.
-	if err := r.SaveReviewUsage(ctx, []domain.ReviewUsage{{InputTokens: 900, OutputTokens: 100, At: at}, {InputTokens: 5, OutputTokens: 5, At: at.Add(time.Hour)}}); err != nil {
+	// Each request keeps the model that answered; one from before requests recorded it has none.
+	if err := r.SaveReviewUsage(ctx, []domain.ReviewUsage{{InputTokens: 900, OutputTokens: 100, At: at}, {InputTokens: 5, OutputTokens: 5, At: at.Add(time.Hour), Model: "claude-sonnet-5-5"}}); err != nil {
 		t.Fatal(err)
 	}
-	if in, out, err := r.ReviewTokensSince(ctx, at); err != nil || in != 905 || out != 105 {
-		t.Errorf("tokens = %d in, %d out, %v", in, out, err)
+	if got, err := r.ReviewTokensSince(ctx, at); err != nil || len(got) != 2 ||
+		got[0] != (persistence.ModelTokens{Input: 900, Output: 100}) || got[1] != (persistence.ModelTokens{Model: "claude-sonnet-5-5", Input: 5, Output: 5}) {
+		t.Errorf("tokens = %+v, %v", got, err)
 	}
-	if in, out, _ := r.ReviewTokensSince(ctx, at.Add(time.Minute)); in != 5 || out != 5 {
-		t.Errorf("tokens later = %d in, %d out", in, out)
+	if got, _ := r.ReviewTokensSince(ctx, at.Add(time.Minute)); len(got) != 1 || got[0].Input != 5 {
+		t.Errorf("tokens later = %+v", got)
 	}
 }
 

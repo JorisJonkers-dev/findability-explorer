@@ -345,6 +345,7 @@ type PromptReviewUsage struct {
 	InputTokens  int64
 	OutputTokens int64
 	UsedAt       time.Time
+	Model        pgtype.Text
 }
 
 type PromptRun struct {
@@ -493,6 +494,7 @@ type TermReviewUsage struct {
 	InputTokens  int64
 	OutputTokens int64
 	UsedAt       time.Time
+	Model        pgtype.Text
 }
 
 type TermVerdict struct {
@@ -521,4 +523,5 @@ type WorkRun struct {
 	Failed       int64
 	InputTokens  int64
 	OutputTokens int64
+	Model        pgtype.Text
 }

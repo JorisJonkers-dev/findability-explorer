@@ -59,10 +59,10 @@ func Arrange(all []Work) Activity {
 	return a
 }
 
-// anthropic is what tokens cost on the Anthropic key: every Claude step runs on Claude Haiku until
-// the steps choose models.
-func anthropic(in, out int64) llm.Micros {
-	return llm.TokenUse{Model: llm.DefaultModel, Input: in, Output: out}.Cost()
+// anthropic is what tokens cost on the Anthropic key at the list price of the model that used them;
+// tokens recorded with no model are priced as Claude Haiku 5.5, which every job asked then.
+func anthropic(model string, in, out int64) llm.Micros {
+	return llm.TokenUse{Model: model, Input: in, Output: out}.Cost()
 }
 
 // PromptRunRow is a Prompt run as its tables record it: its status, whether an administrator
@@ -78,6 +78,8 @@ type PromptRunRow struct {
 	AnswerCost              llm.Micros
 	OpenRouterReadingCost   llm.Micros
 	HaikuInput, HaikuOutput int64
+	// ReadingModel is the model that read most of the responses on the Anthropic key.
+	ReadingModel string
 }
 
 // Work is the run as a piece of work.
@@ -85,7 +87,7 @@ func (r PromptRunRow) Work() Work {
 	w := Work{
 		ID: r.ID.String(), Kind: work.KindPromptRun, StartedAt: r.StartedAt, FinishedAt: r.FinishedAt,
 		Counts:     work.Counts{Done: r.Answered, Total: r.Tasks, Failed: r.Failed},
-		OpenRouter: r.AnswerCost + r.OpenRouterReadingCost, Anthropic: anthropic(r.HaikuInput, r.HaikuOutput),
+		OpenRouter: r.AnswerCost + r.OpenRouterReadingCost, Anthropic: anthropic(r.ReadingModel, r.HaikuInput, r.HaikuOutput),
 	}
 	switch {
 	case r.Status == "running":
@@ -115,6 +117,8 @@ type ScanRow struct {
 	StopRequested             bool
 	Pages, MaxPages           int
 	InputTokens, OutputTokens int64
+	// Model is the model that matched its products, as the scan records it.
+	Model string
 }
 
 // rescanGap is the most time between two scans one re-scan queues: it queues them one after the
@@ -154,7 +158,7 @@ func ScanWork(rows []ScanRow) []Work {
 func scanWork(r ScanRow) Work {
 	w := Work{
 		ID: r.ID.String(), Kind: work.KindScan, StartedAt: r.CreatedAt, FinishedAt: r.FinishedAt,
-		Counts: work.Counts{Done: r.Pages, Total: r.MaxPages}, Anthropic: anthropic(r.InputTokens, r.OutputTokens),
+		Counts: work.Counts{Done: r.Pages, Total: r.MaxPages}, Anthropic: anthropic(r.Model, r.InputTokens, r.OutputTokens),
 	}
 	switch {
 	case r.Status == "done":
@@ -175,9 +179,9 @@ func scanWork(r ScanRow) Work {
 func rescanWork(batch []ScanRow) Work {
 	w := Work{ID: batch[0].ID.String(), Kind: work.KindRescan, StartedAt: batch[0].CreatedAt, Counts: work.Counts{Total: len(batch)}}
 	running, hand := false, false
-	var in, out int64
 	for _, r := range batch {
-		in, out = in+r.InputTokens, out+r.OutputTokens
+		// Each scan at the model that matched it.
+		w.Anthropic += anthropic(r.Model, r.InputTokens, r.OutputTokens)
 		switch {
 		case r.Status == "done":
 			w.Counts.Done++
@@ -195,7 +199,6 @@ func rescanWork(batch []ScanRow) Work {
 			w.FinishedAt = r.FinishedAt
 		}
 	}
-	w.Anthropic = anthropic(in, out)
 	switch {
 	case running:
 		w.FinishedAt = time.Time{}
@@ -223,7 +226,7 @@ type Recorded struct {
 func (r Recorded) Work() Work {
 	return Work{
 		ID: r.ID.String(), Kind: r.Kind, StartedAt: r.StartedAt, FinishedAt: r.FinishedAt, Ending: r.Outcome.Ending,
-		Counts: r.Outcome.Counts, Anthropic: anthropic(r.Outcome.InputTokens, r.Outcome.OutputTokens),
+		Counts: r.Outcome.Counts, Anthropic: anthropic(r.Outcome.Model, r.Outcome.InputTokens, r.Outcome.OutputTokens),
 	}
 }
 
@@ -255,22 +258,29 @@ type SpendLine struct {
 }
 
 // MonthUsage is what each kind of work used this month: the Prompt runs' answers and the readings
-// OpenRouter did in dollars, the rest in Claude tokens. The review of the competitor candidates and
-// the check of the list share CandidateChecks.
+// OpenRouter did in dollars, the rest in Claude tokens, one use per model that did the work. The
+// review of the competitor candidates and the check of the list share CandidateChecks.
 type MonthUsage struct {
 	PromptAnswers      llm.Micros
 	OpenRouterReadings llm.Micros
-	HaikuReadings      llm.TokenUse
-	Scans              llm.TokenUse
-	TermReview         llm.TokenUse
-	CandidateChecks    llm.TokenUse
-	RecommendationRuns llm.TokenUse
+	HaikuReadings      []llm.TokenUse
+	Scans              []llm.TokenUse
+	TermReview         []llm.TokenUse
+	CandidateChecks    []llm.TokenUse
+	RecommendationRuns []llm.TokenUse
 }
 
 // SpendingOf is this month's spending by kind of work, each with the key that paid: reading
 // responses is on both keys, as OpenRouter reads them when no Anthropic key is set up.
 func SpendingOf(u MonthUsage) []SpendLine {
-	priced := func(t llm.TokenUse) llm.Micros { return anthropic(t.Input, t.Output) }
+	// Each model's tokens at its own list price; a use with no model recorded is priced as Haiku.
+	priced := func(uses []llm.TokenUse) llm.Micros {
+		var c llm.Micros
+		for _, t := range uses {
+			c += t.Cost()
+		}
+		return c
+	}
 	return []SpendLine{
 		{Kind: SpendPromptRuns, Key: KeyOpenRouter, Cost: u.PromptAnswers},
 		{Kind: SpendScans, Key: KeyAnthropic, Cost: priced(u.Scans)},

@@ -156,7 +156,7 @@ func insertVerdicts(ctx context.Context, q *queries.Queries, verdicts []domain.V
 func insertUsage(ctx context.Context, q *queries.Queries, usage []domain.Usage) error {
 	for _, u := range usage {
 		if err := q.InsertTermReviewUsage(ctx, queries.InsertTermReviewUsageParams{
-			InputTokens: u.InputTokens, OutputTokens: u.OutputTokens, UsedAt: u.At,
+			InputTokens: u.InputTokens, OutputTokens: u.OutputTokens, UsedAt: u.At, Model: firstRunes(u.Model, 200),
 		}); err != nil {
 			return fmt.Errorf("insert usage: %w", err)
 		}
@@ -164,22 +164,18 @@ func insertUsage(ctx context.Context, q *queries.Queries, usage []domain.Usage) 
 	return nil
 }
 
-// TokensSince is how many tokens in and out asking the language model for verdicts used since t.
-func (r *Repository) TokensSince(ctx context.Context, t time.Time) (input, output int64, err error) {
-	row, err := r.store.Queries().TermReviewTokensSince(ctx, t)
+// UsageSince sums the tokens asking the language model for verdicts used since t, per model that
+// answered; requests from before they recorded their model have none.
+func (r *Repository) UsageSince(ctx context.Context, t time.Time) (domain.Spend, error) {
+	rows, err := r.store.Queries().TermReviewUsageSince(ctx, t)
 	if err != nil {
-		return 0, 0, fmt.Errorf("sum the review's tokens: %w", err)
+		return nil, fmt.Errorf("sum the review's usage: %w", err)
 	}
-	return row.Input, row.Output, nil
-}
-
-// UsageSince sums the tokens asking the language model for verdicts used since t.
-func (r *Repository) UsageSince(ctx context.Context, t time.Time) (domain.Usage, error) {
-	row, err := r.store.Queries().TermReviewUsageSince(ctx, t)
-	if err != nil {
-		return domain.Usage{}, fmt.Errorf("sum the review's usage: %w", err)
+	out := make(domain.Spend, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Usage{InputTokens: row.InputTokens, OutputTokens: row.OutputTokens, Model: row.Model})
 	}
-	return domain.Usage{InputTokens: row.InputTokens, OutputTokens: row.OutputTokens}, nil
+	return out, nil
 }
 
 // ReviewOn reports whether the review runs by itself; it does until an administrator switches it off.
@@ -263,4 +259,12 @@ func (r *Repository) PutBack(ctx context.Context, key domain.TermKey) (bool, err
 		return false, fmt.Errorf("delete removed term: %w", err)
 	}
 	return n > 0, nil
+}
+
+// firstRunes is s cut to at most n characters.
+func firstRunes(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n])
+	}
+	return s
 }

@@ -181,20 +181,23 @@ func TestActivityShowsWhatRunsAndTheLastTwentyEnded(t *testing.T) {
 }
 
 func TestThisMonthsSpendingByKindOfWorkWithTheKeyThatPaid(t *testing.T) {
+	// Each kind's tokens are priced at the model that used them; one with no model recorded, as Haiku.
+	sonnet := llm.TokenUse{Model: "anthropic: claude-sonnet-5-5", Input: 100_000}
 	u := domain.MonthUsage{
 		PromptAnswers: 3_000_000, OpenRouterReadings: 50_000,
-		HaikuReadings: llm.TokenUse{Input: 1_000_000, Output: 100_000}, Scans: llm.TokenUse{Input: 2_000_000},
-		TermReview: llm.TokenUse{Output: 1_000_000}, CandidateChecks: llm.TokenUse{Input: 500_000},
+		HaikuReadings: []llm.TokenUse{{Input: 1_000_000, Output: 100_000}}, Scans: []llm.TokenUse{{Input: 2_000_000}, sonnet},
+		TermReview: []llm.TokenUse{{Output: 1_000_000}}, CandidateChecks: []llm.TokenUse{{Model: "claude-sonnet-5-5", Input: 500_000}},
+		RecommendationRuns: []llm.TokenUse{{Model: "claude-opus-5-5", Output: 1_000}},
 	}
 	got := domain.SpendingOf(u)
 	want := []domain.SpendLine{
 		{Kind: domain.SpendPromptRuns, Key: domain.KeyOpenRouter, Cost: 3_000_000},
-		{Kind: domain.SpendScans, Key: domain.KeyAnthropic, Cost: haiku(2_000_000, 0)},
+		{Kind: domain.SpendScans, Key: domain.KeyAnthropic, Cost: haiku(2_000_000, 0) + sonnet.Cost()},
 		{Kind: domain.SpendReadingResponses, Key: domain.KeyOpenRouter, Cost: 50_000},
 		{Kind: domain.SpendReadingResponses, Key: domain.KeyAnthropic, Cost: haiku(1_000_000, 100_000)},
 		{Kind: domain.SpendTermReview, Key: domain.KeyAnthropic, Cost: haiku(0, 1_000_000)},
-		{Kind: domain.SpendCandidateChecks, Key: domain.KeyAnthropic, Cost: haiku(500_000, 0)},
-		{Kind: domain.SpendRecommendationRuns, Key: domain.KeyAnthropic, Cost: 0},
+		{Kind: domain.SpendCandidateChecks, Key: domain.KeyAnthropic, Cost: llm.ListPrice("claude-sonnet-5-5").Of(500_000, 0)},
+		{Kind: domain.SpendRecommendationRuns, Key: domain.KeyAnthropic, Cost: llm.ListPrice("claude-opus-5-5").Of(0, 1_000)},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("spending = %+v", got)
@@ -203,5 +206,37 @@ func TestThisMonthsSpendingByKindOfWorkWithTheKeyThatPaid(t *testing.T) {
 		if got[i] != want[i] {
 			t.Errorf("line %d = %+v, want %+v", i, got[i], want[i])
 		}
+	}
+}
+
+func TestEachPieceOfWorkIsPricedAtTheModelThatDidIt(t *testing.T) {
+	const fable = "claude-fable-5-1"
+	fablePrice := func(in, out int64) llm.Micros { return llm.ListPrice(fable).Of(in, out) }
+	run := domain.PromptRunRow{ID: uuid.New(), StartedAt: at, Status: "running", HaikuInput: 1_000, HaikuOutput: 100, ReadingModel: "anthropic: " + fable}
+	if got := run.Work().Anthropic; got != fablePrice(1_000, 100) {
+		t.Errorf("a Prompt run read by Fable = %s", got)
+	}
+	scan := domain.ScanRow{ID: uuid.New(), CreatedAt: at, Status: "done", InputTokens: 2_000, OutputTokens: 200, Model: "anthropic: " + fable}
+	older := domain.ScanRow{ID: uuid.New(), CreatedAt: at, Status: "done", InputTokens: 2_000, OutputTokens: 200}
+	if works := domain.ScanWork([]domain.ScanRow{scan}); len(works) != 1 || works[0].Anthropic != fablePrice(2_000, 200) {
+		t.Errorf("a scan matched by Fable = %+v", works)
+	}
+	// A re-scan adds each scan at its own model: one by Fable, one recorded before scans named theirs.
+	rescan := []domain.ScanRow{
+		{ID: uuid.New(), Rescan: true, CreatedBy: "joris", CreatedAt: at, FinishedAt: at, Status: "done", InputTokens: 2_000, OutputTokens: 200, Model: fable},
+		{ID: uuid.New(), Rescan: true, CreatedBy: "joris", CreatedAt: at, FinishedAt: at, Status: "done", InputTokens: older.InputTokens, OutputTokens: older.OutputTokens},
+	}
+	if w := domain.ScanWork(rescan); len(w) != 1 || w[0].Anthropic != fablePrice(2_000, 200)+haiku(2_000, 200) {
+		t.Errorf("a re-scan = %+v", w)
+	}
+	review := domain.Recorded{
+		ID: uuid.New(), Kind: work.KindTermReview, StartedAt: at, FinishedAt: at,
+		Outcome: work.Outcome{Ending: work.EndingDone, InputTokens: 3_000, OutputTokens: 300, Model: fable},
+	}
+	if got := review.Work().Anthropic; got != fablePrice(3_000, 300) {
+		t.Errorf("a term review on Fable = %s", got)
+	}
+	if got := (domain.Recorded{ID: uuid.New(), Kind: work.KindTermReview, Outcome: work.Outcome{InputTokens: 3_000}}).Work().Anthropic; got != haiku(3_000, 0) {
+		t.Errorf("a review that recorded no model = %s, want Haiku's price", got)
 	}
 }

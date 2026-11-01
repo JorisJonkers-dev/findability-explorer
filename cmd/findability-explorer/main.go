@@ -359,35 +359,48 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp
 		now, uuid.NewString), nil
 }
 
-// spending is what every job on a Claude model used since since, per job, and what one scan's
-// matching used on average. The scans' matching and the readings of responses are priced at the
-// model each recorded; the reviews record no model, so they are priced as Claude Haiku 5.5.
+// spending is what every job on a Claude model used since since, per job and model, and what one
+// scan's matching used on average. Each use is priced at the model that did the work; one recorded
+// before jobs recorded their model is priced as Claude Haiku 5.5, which every job asked then.
 func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spending, error) {
-	sources := []func(context.Context, time.Time) (int64, int64, error){
-		sp.terms.TokensSince, sp.candidates.ReviewTokensSince,
-		sp.insight.RecommendationTokensSince,
-	}
 	var s llmapp.Spending
+	add := func(model string, in, out int64) {
+		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: model, Input: in, Output: out})
+	}
 	scanUse, err := sp.analyses.TokensSinceByModel(ctx, since)
 	if err != nil {
 		return llmapp.Spending{}, err
 	}
 	for _, u := range scanUse {
-		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: claudeModelOf(u.Model), Input: u.Input, Output: u.Output})
+		add(u.Model, u.Input, u.Output)
 	}
 	readUse, err := sp.candidates.ReadingTokensSinceByModel(ctx, since)
 	if err != nil {
 		return llmapp.Spending{}, err
 	}
 	for _, u := range readUse {
-		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: claudeModelOf(u.Model), Input: u.Input, Output: u.Output})
+		add(u.Model, u.Input, u.Output)
 	}
-	for _, source := range sources {
-		in, out, err := source(ctx, since)
-		if err != nil {
-			return llmapp.Spending{}, err
-		}
-		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: llmdomain.DefaultModel, Input: in, Output: out})
+	reviewUse, err := sp.candidates.ReviewTokensSince(ctx, since)
+	if err != nil {
+		return llmapp.Spending{}, err
+	}
+	for _, u := range reviewUse {
+		add(u.Model, u.Input, u.Output)
+	}
+	termUse, err := sp.terms.UsageSince(ctx, since)
+	if err != nil {
+		return llmapp.Spending{}, err
+	}
+	for _, u := range termUse {
+		add(u.Model, u.InputTokens, u.OutputTokens)
+	}
+	recUse, err := sp.insight.RecommendationTokensSince(ctx, since)
+	if err != nil {
+		return llmapp.Spending{}, err
+	}
+	for _, u := range recUse {
+		add(u.Model, u.Input, u.Output)
 	}
 	scans, in, out, err := sp.analyses.TokensPerScan(ctx)
 	if err != nil {
@@ -396,15 +409,6 @@ func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spendin
 	s.AveragePerScan = llmdomain.TokenUse{Model: llmdomain.DefaultModel, Input: in, Output: out}
 	s.ScansMatched = scans
 	return s, nil
-}
-
-// claudeModelOf is the Claude model a scan records ("anthropic: claude-sonnet-5-5"), or Claude Haiku
-// 5.5 for a scan matched on another provider, which the Anthropic key did not pay.
-func claudeModelOf(described string) string {
-	if m, ok := strings.CutPrefix(described, string(llmdomain.Anthropic)+": "); ok {
-		return m
-	}
-	return llmdomain.DefaultModel
 }
 
 // stepBase estimates one job of a Claude step on Claude Haiku 5.5 from what it used: a scan's

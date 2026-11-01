@@ -5,7 +5,7 @@ VALUES (@id, @kind, @started_by, @started_at);
 -- name: EndWork :execrows
 UPDATE work_runs
 SET finished_at = @finished_at, ending = @ending, done = @done, total = @total, failed = @failed,
-    input_tokens = @input_tokens, output_tokens = @output_tokens
+    input_tokens = @input_tokens, output_tokens = @output_tokens, model = nullif(@model::text, '')
 WHERE id = @id AND finished_at IS NULL;
 
 -- name: EndAbandonedWork :execrows
@@ -16,10 +16,12 @@ WHERE finished_at IS NULL;
 
 -- name: ListWork :many
 -- The running work and the newest lim ended pieces.
-(SELECT id, kind, started_at, finished_at, ending, done, total, failed, input_tokens, output_tokens
+(SELECT id, kind, started_at, finished_at, ending, done, total, failed, input_tokens, output_tokens,
+    coalesce(model, '')::text AS model
  FROM work_runs WHERE finished_at IS NULL)
 UNION ALL
-(SELECT id, kind, started_at, finished_at, ending, done, total, failed, input_tokens, output_tokens
+(SELECT id, kind, started_at, finished_at, ending, done, total, failed, input_tokens, output_tokens,
+    coalesce(model, '')::text AS model
  FROM work_runs WHERE finished_at IS NOT NULL ORDER BY finished_at DESC, id LIMIT @lim);
 
 -- name: ActivityPromptRuns :many
@@ -31,7 +33,8 @@ SELECT r.id, r.started_at, r.finished_at, r.status, (r.stop_requested_at IS NOT 
     coalesce(sum(a.cost_micros), 0)::bigint AS answer_cost,
     coalesce(sum(x.cost_micros) FILTER (WHERE x.haiku_tokens = 0), 0)::bigint AS openrouter_reading_cost,
     coalesce(sum(x.input_tokens) FILTER (WHERE x.haiku_tokens > 0), 0)::bigint AS haiku_input,
-    coalesce(sum(x.output_tokens) FILTER (WHERE x.haiku_tokens > 0), 0)::bigint AS haiku_output
+    coalesce(sum(x.output_tokens) FILTER (WHERE x.haiku_tokens > 0), 0)::bigint AS haiku_output,
+    coalesce(mode() WITHIN GROUP (ORDER BY x.model) FILTER (WHERE x.haiku_tokens > 0), '')::text AS reading_model
 FROM prompt_runs AS r
 LEFT JOIN prompt_answers AS a ON a.run_id = r.id
 LEFT JOIN prompt_extractions AS x ON x.answer_id = a.id
@@ -45,7 +48,7 @@ GROUP BY r.id;
 -- name: ActivityScans :many
 -- The waiting and running scans and the newest lim others.
 SELECT id, rescan, created_by, created_at, finished_at, status, (stop_requested_at IS NOT NULL)::boolean AS stop_requested,
-    pages_crawled, max_pages, llm_input_tokens, llm_output_tokens
+    pages_crawled, max_pages, llm_input_tokens, llm_output_tokens, coalesce(matching_model, '')::text AS matching_model
 FROM analyses
 WHERE id IN (
     (SELECT id FROM analyses WHERE status IN ('queued', 'running'))
@@ -54,17 +57,27 @@ WHERE id IN (
 );
 
 -- name: ActivityMonthUsage :one
--- What each kind of work used since a moment.
+-- What the Prompt runs' answers and OpenRouter's readings cost since a moment, in micro-dollars.
 SELECT
     coalesce((SELECT sum(cost_micros) FROM prompt_answers WHERE answered_at >= @since), 0)::bigint AS prompt_answers,
-    coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= @since AND haiku_tokens = 0), 0)::bigint AS openrouter_readings,
-    coalesce((SELECT sum(input_tokens) FROM prompt_extractions WHERE extracted_at >= @since AND haiku_tokens > 0), 0)::bigint AS haiku_reading_input,
-    coalesce((SELECT sum(output_tokens) FROM prompt_extractions WHERE extracted_at >= @since AND haiku_tokens > 0), 0)::bigint AS haiku_reading_output,
-    coalesce((SELECT sum(llm_input_tokens) FROM analyses WHERE created_at >= @since), 0)::bigint AS scan_input,
-    coalesce((SELECT sum(llm_output_tokens) FROM analyses WHERE created_at >= @since), 0)::bigint AS scan_output,
-    coalesce((SELECT sum(input_tokens) FROM term_review_usage WHERE used_at >= @since), 0)::bigint AS term_review_input,
-    coalesce((SELECT sum(output_tokens) FROM term_review_usage WHERE used_at >= @since), 0)::bigint AS term_review_output,
-    coalesce((SELECT sum(input_tokens) FROM prompt_review_usage WHERE used_at >= @since), 0)::bigint AS candidate_check_input,
-    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage WHERE used_at >= @since), 0)::bigint AS candidate_check_output,
-    coalesce((SELECT sum(input_tokens) FROM recommendation_runs WHERE started_at >= @since), 0)::bigint AS recommendation_input,
-    coalesce((SELECT sum(output_tokens) FROM recommendation_runs WHERE started_at >= @since), 0)::bigint AS recommendation_output;
+    coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= @since AND haiku_tokens = 0), 0)::bigint AS openrouter_readings;
+
+-- name: ActivityMonthTokens :many
+-- The Claude tokens each kind of work used since a moment, per model as it recorded it; "" for
+-- rows from before they recorded one.
+SELECT kind::text AS kind, model::text AS model, sum(input)::bigint AS input, sum(output)::bigint AS output
+FROM (
+    SELECT 'readingResponses' AS kind, model, input_tokens AS input, output_tokens AS output
+    FROM prompt_extractions WHERE extracted_at >= @since AND haiku_tokens > 0
+    UNION ALL
+    SELECT 'scans', coalesce(matching_model, ''), llm_input_tokens, llm_output_tokens
+    FROM analyses WHERE created_at >= @since AND llm_input_tokens + llm_output_tokens > 0
+    UNION ALL
+    SELECT 'termReview', coalesce(model, ''), input_tokens, output_tokens FROM term_review_usage WHERE used_at >= @since
+    UNION ALL
+    SELECT 'candidateChecks', coalesce(model, ''), input_tokens, output_tokens FROM prompt_review_usage WHERE used_at >= @since
+    UNION ALL
+    SELECT 'recommendationRuns', model, input_tokens, output_tokens FROM recommendation_runs WHERE started_at >= @since
+) AS used
+GROUP BY kind, model
+ORDER BY kind, model;

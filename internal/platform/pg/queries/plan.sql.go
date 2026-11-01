@@ -332,23 +332,39 @@ func (q *Queries) ListRecommendations(ctx context.Context) ([]ListRecommendation
 	return items, nil
 }
 
-const recommendationTokensSince = `-- name: RecommendationTokensSince :one
-SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+const recommendationTokensSince = `-- name: RecommendationTokensSince :many
+SELECT model, coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM recommendation_runs
 WHERE started_at >= $1
+GROUP BY model
+ORDER BY model
 `
 
 type RecommendationTokensSinceRow struct {
+	Model  string
 	Input  int64
 	Output int64
 }
 
-// The tokens in and out the Recommendation runs used since a moment.
-func (q *Queries) RecommendationTokensSince(ctx context.Context, since time.Time) (RecommendationTokensSinceRow, error) {
-	row := q.db.QueryRow(ctx, recommendationTokensSince, since)
-	var i RecommendationTokensSinceRow
-	err := row.Scan(&i.Input, &i.Output)
-	return i, err
+// The tokens in and out the Recommendation runs used since a moment, per model that wrote.
+func (q *Queries) RecommendationTokensSince(ctx context.Context, since time.Time) ([]RecommendationTokensSinceRow, error) {
+	rows, err := q.db.Query(ctx, recommendationTokensSince, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RecommendationTokensSinceRow{}
+	for rows.Next() {
+		var i RecommendationTokensSinceRow
+		if err := rows.Scan(&i.Model, &i.Input, &i.Output); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const setPlanTarget = `-- name: SetPlanTarget :exec

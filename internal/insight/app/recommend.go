@@ -243,6 +243,7 @@ func (s *Service) recommend(ctx context.Context, writer Writer, model, user stri
 	}
 	entry.Finish(ctx, work.Outcome{
 		Ending: recEnding(err), Counts: work.Counts{Done: done, Total: total}, InputTokens: used.InputTokens, OutputTokens: used.OutputTokens,
+		Model: run.Model,
 	}, run.FinishedAt, s.writing.report)
 }
 

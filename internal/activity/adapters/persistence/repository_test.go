@@ -12,6 +12,7 @@ import (
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
 	insightpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/persistence"
 	insightdomain "github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 	promptpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
@@ -46,7 +47,7 @@ func TestTheJournalRecordsWorkAsItBeginsAndEnds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	o := work.Outcome{Ending: work.EndingStoppedByHand, Counts: work.Counts{Done: 40, Total: 85, Failed: 1}, InputTokens: 2000, OutputTokens: 200}
+	o := work.Outcome{Ending: work.EndingStoppedByHand, Counts: work.Counts{Done: 40, Total: 85, Failed: 1}, InputTokens: 2000, OutputTokens: 200, Model: "claude-fable-5-1"}
 	if err := repo.End(ctx, review, o, at.Add(2*time.Minute)); err != nil {
 		t.Fatal(err)
 	}
@@ -200,9 +201,15 @@ func TestPromptRunsScansAndThisMonthsUsageAreReadWithTheirCost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if u.PromptAnswers != 3000 || u.OpenRouterReadings != 50 || u.HaikuReadings.Input != 1_000_000 || u.HaikuReadings.Output != 100_000 ||
-		u.TermReview.Input != 300 || u.TermReview.Output != 30 || u.CandidateChecks.Input != 400 || u.CandidateChecks.Output != 40 ||
-		u.Scans.Input != 0 || u.RecommendationRuns.Input != 5000 || u.RecommendationRuns.Output != 500 {
+	one := func(uses []llm.TokenUse) llm.TokenUse {
+		if len(uses) != 1 {
+			t.Fatalf("uses = %+v, want one model", uses)
+		}
+		return uses[0]
+	}
+	if u.PromptAnswers != 3000 || u.OpenRouterReadings != 50 || one(u.HaikuReadings).Input != 1_000_000 || one(u.HaikuReadings).Output != 100_000 ||
+		one(u.TermReview).Input != 300 || one(u.TermReview).Output != 30 || one(u.CandidateChecks).Input != 400 || one(u.CandidateChecks).Output != 40 ||
+		len(u.Scans) != 0 || one(u.RecommendationRuns).Input != 5000 || one(u.RecommendationRuns).Output != 500 {
 		t.Errorf("this month = %+v", u)
 	}
 }

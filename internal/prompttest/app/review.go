@@ -76,9 +76,11 @@ type runState struct {
 	running  bool
 	stopping bool
 	problem  ReviewProblem
-	// counts and in, out are what the run did and used, for the work journal.
+	// counts and in, out are what the run did and used, for the work journal, and model the Claude
+	// model that answered its last request.
 	counts  work.Counts
 	in, out int64
+	model   string
 }
 
 // planned sets how many companies the run checks.
@@ -100,13 +102,16 @@ func (r *runState) used(u domain.ReviewUsage) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.in, r.out = r.in+u.InputTokens, r.out+u.OutputTokens
+	if u.Model != "" {
+		r.model = u.Model
+	}
 }
 
 // outcome is the run's outcome, ended as ending.
 func (r *runState) outcome(ending work.Ending) work.Outcome {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return work.Outcome{Ending: ending, Counts: r.counts, InputTokens: r.in, OutputTokens: r.out}
+	return work.Outcome{Ending: ending, Counts: r.counts, InputTokens: r.in, OutputTokens: r.out, Model: r.model}
 }
 
 func (r *runState) state() ReviewState {

@@ -1,6 +1,9 @@
 package domain
 
-import "slices"
+import (
+	"slices"
+	"strings"
+)
 
 // ClaudeInfo is one Claude model a Claude step may use: its id on Anthropic's API, its name, and
 // its list price.
@@ -42,4 +45,12 @@ func ClaudeName(id string) string {
 		return m.Name
 	}
 	return id
+}
+
+// ClaudeIDOf is a Claude model's id however a job recorded it: bare ("claude-sonnet-5-5"), or as
+// Describe labels a model on the Anthropic key ("anthropic: claude-sonnet-5-5"), as scans and
+// readings record it. Anything else is returned as it is, and ListPrice prices it, like an empty
+// model, as Claude Haiku 5.5.
+func ClaudeIDOf(model string) string {
+	return strings.TrimPrefix(model, string(Anthropic)+": ")
 }

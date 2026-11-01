@@ -220,7 +220,7 @@ func (m *model) usage() domain.ReviewUsage {
 	return used
 }
 
-var used = domain.ReviewUsage{InputTokens: 90, OutputTokens: 10}
+var used = domain.ReviewUsage{InputTokens: 90, OutputTokens: 10, Model: "claude-sonnet-5-5"}
 
 func (m *model) Merge(_ context.Context, cs []domain.Candidate, _ []domain.DirectoryCompany) ([]domain.Cluster, domain.ReviewUsage, error) {
 	m.mu.Lock()

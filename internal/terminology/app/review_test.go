@@ -46,18 +46,24 @@ func (s *store) SwitchReview(_ context.Context, on bool, by string, at time.Time
 	return nil
 }
 
-func (s *store) UsageSince(_ context.Context, t time.Time) (domain.Usage, error) {
+func (s *store) UsageSince(_ context.Context, t time.Time) (domain.Spend, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.usedSince = t
-	var sum domain.Usage
+	byModel := map[string]*domain.Usage{}
+	var out domain.Spend
 	for _, u := range s.usage {
-		if !u.At.Before(t) {
-			sum.InputTokens += u.InputTokens
-			sum.OutputTokens += u.OutputTokens
+		if u.At.Before(t) {
+			continue
 		}
+		if byModel[u.Model] == nil {
+			out = append(out, domain.Usage{Model: u.Model})
+			byModel[u.Model] = &out[len(out)-1]
+		}
+		byModel[u.Model].InputTokens += u.InputTokens
+		byModel[u.Model].OutputTokens += u.OutputTokens
 	}
-	return sum, s.usageErr
+	return out, s.usageErr
 }
 
 func (s *store) reads() int {

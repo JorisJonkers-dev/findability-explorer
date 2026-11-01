@@ -8,6 +8,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 )
@@ -100,8 +101,10 @@ func TestARunReplacesTheOpenRecommendationsInOneGo(t *testing.T) {
 		runs[2].InputTokens != 900 || runs[2].By != "joris" || !runs[2].FinishedAt.Equal(at.Add(time.Minute)) {
 		t.Errorf("runs = %+v, %v", runs, err)
 	}
-	if in, out, err := repo.RecommendationTokensSince(ctx, at); in != 900 || out != 90 || err != nil {
-		t.Errorf("tokens = %d, %d, %v", in, out, err)
+	// Per model that wrote: the run still running has used nothing yet.
+	if uses, err := repo.RecommendationTokensSince(ctx, at); err != nil || len(uses) != 2 ||
+		uses[0] != (llm.TokenUse{Model: "claude-haiku-5-5", Input: 900, Output: 90}) || uses[1].Tokens() != 0 {
+		t.Errorf("tokens = %+v, %v", uses, err)
 	}
 	// A bad recommendation rolls the whole run back.
 	fourth := domain.RecRun{ID: uuid.NewString(), StartedAt: at.Add(6 * time.Hour), By: "ada", Model: "m"}

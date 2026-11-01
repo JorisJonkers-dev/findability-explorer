@@ -546,7 +546,7 @@ func (r *Repository) SaveReviewUsage(ctx context.Context, usage []domain.ReviewU
 	return r.store.InTx(ctx, func(q *queries.Queries) error {
 		for _, u := range usage {
 			if err := q.InsertPromptReviewUsage(ctx, queries.InsertPromptReviewUsageParams{
-				InputTokens: max(u.InputTokens, 0), OutputTokens: max(u.OutputTokens, 0), UsedAt: u.At,
+				InputTokens: max(u.InputTokens, 0), OutputTokens: max(u.OutputTokens, 0), UsedAt: u.At, Model: clip(u.Model, 200),
 			}); err != nil {
 				return fmt.Errorf("store review usage: %w", err)
 			}
@@ -555,13 +555,18 @@ func (r *Repository) SaveReviewUsage(ctx context.Context, usage []domain.ReviewU
 	})
 }
 
-// ReviewTokensSince is how many tokens in and out the review of the candidates used since t.
-func (r *Repository) ReviewTokensSince(ctx context.Context, t time.Time) (input, output int64, err error) {
-	row, err := r.store.Queries().PromptReviewTokensSince(ctx, t)
+// ReviewTokensSince is what merging and checking the candidates used since t, per model that
+// answered; requests from before they recorded their model have none.
+func (r *Repository) ReviewTokensSince(ctx context.Context, t time.Time) ([]ModelTokens, error) {
+	rows, err := r.store.Queries().PromptReviewTokensSince(ctx, t)
 	if err != nil {
-		return 0, 0, fmt.Errorf("sum review tokens: %w", err)
+		return nil, fmt.Errorf("sum review tokens: %w", err)
 	}
-	return row.Input, row.Output, nil
+	out := make([]ModelTokens, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, ModelTokens{Model: row.Model, Input: row.Input, Output: row.Output})
+	}
+	return out, nil
 }
 
 // ReadingTokensSince is how many tokens in and out Claude Haiku on an Anthropic key used reading

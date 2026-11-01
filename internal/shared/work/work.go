@@ -58,11 +58,12 @@ type Counts struct {
 }
 
 // Outcome is how a piece of work ended, what it did, and the language-model tokens it used on the
-// Anthropic key.
+// Anthropic key, with the Claude model that used them; empty when it used none, or recorded none.
 type Outcome struct {
 	Ending                    Ending
 	Counts                    Counts
 	InputTokens, OutputTokens int64
+	Model                     string
 }
 
 // Journal records a piece of work: begun, and later how it ended.

@@ -471,18 +471,24 @@ func (q *Queries) HeartbeatPromptRun(ctx context.Context, arg HeartbeatPromptRun
 }
 
 const insertPromptReviewUsage = `-- name: InsertPromptReviewUsage :exec
-INSERT INTO prompt_review_usage (input_tokens, output_tokens, used_at)
-VALUES ($1, $2, $3)
+INSERT INTO prompt_review_usage (input_tokens, output_tokens, used_at, model)
+VALUES ($1, $2, $3, nullif($4::text, ''))
 `
 
 type InsertPromptReviewUsageParams struct {
 	InputTokens  int64
 	OutputTokens int64
 	UsedAt       time.Time
+	Model        string
 }
 
 func (q *Queries) InsertPromptReviewUsage(ctx context.Context, arg InsertPromptReviewUsageParams) error {
-	_, err := q.db.Exec(ctx, insertPromptReviewUsage, arg.InputTokens, arg.OutputTokens, arg.UsedAt)
+	_, err := q.db.Exec(ctx, insertPromptReviewUsage,
+		arg.InputTokens,
+		arg.OutputTokens,
+		arg.UsedAt,
+		arg.Model,
+	)
 	return err
 }
 
@@ -1327,22 +1333,41 @@ func (q *Queries) PromptReadingTokensSinceByModel(ctx context.Context, since tim
 	return items, nil
 }
 
-const promptReviewTokensSince = `-- name: PromptReviewTokensSince :one
-SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+const promptReviewTokensSince = `-- name: PromptReviewTokensSince :many
+SELECT coalesce(model, '')::text AS model, coalesce(sum(input_tokens), 0)::bigint AS input,
+    coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_review_usage
 WHERE used_at >= $1
+GROUP BY 1
+ORDER BY 1
 `
 
 type PromptReviewTokensSinceRow struct {
+	Model  string
 	Input  int64
 	Output int64
 }
 
-func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error) {
-	row := q.db.QueryRow(ctx, promptReviewTokensSince, since)
-	var i PromptReviewTokensSinceRow
-	err := row.Scan(&i.Input, &i.Output)
-	return i, err
+// What reviewing the candidates and checking the list used since a moment, per model that
+// answered; "" for rows from before requests recorded their model.
+func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) ([]PromptReviewTokensSinceRow, error) {
+	rows, err := q.db.Query(ctx, promptReviewTokensSince, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptReviewTokensSinceRow{}
+	for rows.Next() {
+		var i PromptReviewTokensSinceRow
+		if err := rows.Scan(&i.Model, &i.Input, &i.Output); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const promptRunReadingModels = `-- name: PromptRunReadingModels :many

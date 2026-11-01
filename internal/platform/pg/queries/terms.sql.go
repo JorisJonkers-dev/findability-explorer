@@ -151,18 +151,24 @@ func (q *Queries) InsertTermDecision(ctx context.Context, arg InsertTermDecision
 }
 
 const insertTermReviewUsage = `-- name: InsertTermReviewUsage :exec
-INSERT INTO term_review_usage (input_tokens, output_tokens, used_at)
-VALUES ($1, $2, $3)
+INSERT INTO term_review_usage (input_tokens, output_tokens, used_at, model)
+VALUES ($1, $2, $3, nullif($4::text, ''))
 `
 
 type InsertTermReviewUsageParams struct {
 	InputTokens  int64
 	OutputTokens int64
 	UsedAt       time.Time
+	Model        string
 }
 
 func (q *Queries) InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error {
-	_, err := q.db.Exec(ctx, insertTermReviewUsage, arg.InputTokens, arg.OutputTokens, arg.UsedAt)
+	_, err := q.db.Exec(ctx, insertTermReviewUsage,
+		arg.InputTokens,
+		arg.OutputTokens,
+		arg.UsedAt,
+		arg.Model,
+	)
 	return err
 }
 
@@ -401,38 +407,39 @@ func (q *Queries) TermReviewOn(ctx context.Context) (bool, error) {
 	return review_on, err
 }
 
-const termReviewTokensSince = `-- name: TermReviewTokensSince :one
-SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+const termReviewUsageSince = `-- name: TermReviewUsageSince :many
+SELECT coalesce(model, '')::text AS model, coalesce(sum(input_tokens), 0)::bigint AS input_tokens,
+    coalesce(sum(output_tokens), 0)::bigint AS output_tokens
 FROM term_review_usage
 WHERE used_at >= $1
-`
-
-type TermReviewTokensSinceRow struct {
-	Input  int64
-	Output int64
-}
-
-func (q *Queries) TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error) {
-	row := q.db.QueryRow(ctx, termReviewTokensSince, usedAt)
-	var i TermReviewTokensSinceRow
-	err := row.Scan(&i.Input, &i.Output)
-	return i, err
-}
-
-const termReviewUsageSince = `-- name: TermReviewUsageSince :one
-SELECT coalesce(sum(input_tokens), 0)::bigint AS input_tokens, coalesce(sum(output_tokens), 0)::bigint AS output_tokens
-FROM term_review_usage
-WHERE used_at >= $1
+GROUP BY 1
+ORDER BY 1
 `
 
 type TermReviewUsageSinceRow struct {
+	Model        string
 	InputTokens  int64
 	OutputTokens int64
 }
 
-func (q *Queries) TermReviewUsageSince(ctx context.Context, usedAt time.Time) (TermReviewUsageSinceRow, error) {
-	row := q.db.QueryRow(ctx, termReviewUsageSince, usedAt)
-	var i TermReviewUsageSinceRow
-	err := row.Scan(&i.InputTokens, &i.OutputTokens)
-	return i, err
+// What the term review used since a moment, per model that answered; "" for rows from before
+// requests recorded their model.
+func (q *Queries) TermReviewUsageSince(ctx context.Context, usedAt time.Time) ([]TermReviewUsageSinceRow, error) {
+	rows, err := q.db.Query(ctx, termReviewUsageSince, usedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TermReviewUsageSinceRow{}
+	for rows.Next() {
+		var i TermReviewUsageSinceRow
+		if err := rows.Scan(&i.Model, &i.InputTokens, &i.OutputTokens); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

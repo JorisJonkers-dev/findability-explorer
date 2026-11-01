@@ -58,6 +58,8 @@ type ReviewUsage struct {
 	InputTokens  int64
 	OutputTokens int64
 	At           time.Time
+	// Model is the Claude model that answered; empty for a request from before requests recorded it.
+	Model string
 }
 
 const (

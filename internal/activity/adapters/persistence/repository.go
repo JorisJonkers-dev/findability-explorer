@@ -53,7 +53,7 @@ func (r *Repository) End(ctx context.Context, id uuid.UUID, o work.Outcome, at t
 	n, err := r.store.Queries().EndWork(ctx, queries.EndWorkParams{
 		ID: id, FinishedAt: pgtype.Timestamptz{Time: at, Valid: true}, Ending: pgtype.Text{String: string(o.Ending), Valid: true},
 		Done: int64(o.Counts.Done), Total: int64(o.Counts.Total), Failed: int64(o.Counts.Failed),
-		InputTokens: o.InputTokens, OutputTokens: o.OutputTokens,
+		InputTokens: o.InputTokens, OutputTokens: o.OutputTokens, Model: firstRunes(o.Model, 200),
 	})
 	if err != nil {
 		return fmt.Errorf("end work: %w", err)
@@ -85,7 +85,7 @@ func (r *Repository) Recorded(ctx context.Context, limit int) ([]domain.Recorded
 			ID: row.ID, Kind: work.Kind(row.Kind), StartedAt: row.StartedAt.UTC(), FinishedAt: timeOf(row.FinishedAt),
 			Outcome: work.Outcome{
 				Ending: work.Ending(row.Ending.String), Counts: work.Counts{Done: int(row.Done), Total: int(row.Total), Failed: int(row.Failed)},
-				InputTokens: row.InputTokens, OutputTokens: row.OutputTokens,
+				InputTokens: row.InputTokens, OutputTokens: row.OutputTokens, Model: row.Model,
 			},
 		})
 	}
@@ -104,7 +104,7 @@ func (r *Repository) PromptRuns(ctx context.Context, limit int) ([]domain.Prompt
 			ID: row.ID, StartedAt: row.StartedAt.UTC(), FinishedAt: timeOf(row.FinishedAt), Status: row.Status, StoppedByHand: row.StoppedByHand,
 			Tasks: int(row.Tasks), Answered: int(row.Answered), Failed: int(row.Failed),
 			AnswerCost: llm.Micros(row.AnswerCost), OpenRouterReadingCost: llm.Micros(row.OpenrouterReadingCost),
-			HaikuInput: row.HaikuInput, HaikuOutput: row.HaikuOutput,
+			HaikuInput: row.HaikuInput, HaikuOutput: row.HaikuOutput, ReadingModel: row.ReadingModel,
 		})
 	}
 	return out, nil
@@ -121,26 +121,35 @@ func (r *Repository) Scans(ctx context.Context, limit int) ([]domain.ScanRow, er
 		out = append(out, domain.ScanRow{
 			ID: row.ID, Rescan: row.Rescan, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC(), FinishedAt: timeOf(row.FinishedAt),
 			Status: row.Status, StopRequested: row.StopRequested, Pages: int(row.PagesCrawled), MaxPages: int(row.MaxPages),
-			InputTokens: row.LlmInputTokens, OutputTokens: row.LlmOutputTokens,
+			InputTokens: row.LlmInputTokens, OutputTokens: row.LlmOutputTokens, Model: row.MatchingModel,
 		})
 	}
 	return out, nil
 }
 
-// MonthUsage is what each kind of work used since since.
+// MonthUsage is what each kind of work used since since, its Claude tokens per model.
 func (r *Repository) MonthUsage(ctx context.Context, since time.Time) (domain.MonthUsage, error) {
-	u, err := r.store.Queries().ActivityMonthUsage(ctx, since)
+	q := r.store.Queries()
+	u, err := q.ActivityMonthUsage(ctx, since)
 	if err != nil {
 		return domain.MonthUsage{}, fmt.Errorf("sum this month's usage: %w", err)
 	}
-	return domain.MonthUsage{
-		PromptAnswers: llm.Micros(u.PromptAnswers), OpenRouterReadings: llm.Micros(u.OpenrouterReadings),
-		HaikuReadings:      llm.TokenUse{Model: llm.DefaultModel, Input: u.HaikuReadingInput, Output: u.HaikuReadingOutput},
-		Scans:              llm.TokenUse{Model: llm.DefaultModel, Input: u.ScanInput, Output: u.ScanOutput},
-		TermReview:         llm.TokenUse{Model: llm.DefaultModel, Input: u.TermReviewInput, Output: u.TermReviewOutput},
-		CandidateChecks:    llm.TokenUse{Model: llm.DefaultModel, Input: u.CandidateCheckInput, Output: u.CandidateCheckOutput},
-		RecommendationRuns: llm.TokenUse{Model: llm.DefaultModel, Input: u.RecommendationInput, Output: u.RecommendationOutput},
-	}, nil
+	rows, err := q.ActivityMonthTokens(ctx, since)
+	if err != nil {
+		return domain.MonthUsage{}, fmt.Errorf("sum this month's tokens: %w", err)
+	}
+	out := domain.MonthUsage{PromptAnswers: llm.Micros(u.PromptAnswers), OpenRouterReadings: llm.Micros(u.OpenrouterReadings)}
+	kinds := map[string]*[]llm.TokenUse{
+		string(domain.SpendReadingResponses): &out.HaikuReadings, string(domain.SpendScans): &out.Scans,
+		string(domain.SpendTermReview): &out.TermReview, string(domain.SpendCandidateChecks): &out.CandidateChecks,
+		string(domain.SpendRecommendationRuns): &out.RecommendationRuns,
+	}
+	for _, row := range rows {
+		if uses, ok := kinds[row.Kind]; ok {
+			*uses = append(*uses, llm.TokenUse{Model: row.Model, Input: row.Input, Output: row.Output})
+		}
+	}
+	return out, nil
 }
 
 // timeOf is t in UTC, or zero when it is null.
@@ -149,4 +158,12 @@ func timeOf(t pgtype.Timestamptz) time.Time {
 		return time.Time{}
 	}
 	return t.Time.UTC()
+}
+
+// firstRunes is s cut to at most n characters.
+func firstRunes(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n])
+	}
+	return s
 }

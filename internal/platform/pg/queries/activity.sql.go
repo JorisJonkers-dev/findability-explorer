@@ -13,55 +13,75 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const activityMonthTokens = `-- name: ActivityMonthTokens :many
+SELECT kind::text AS kind, model::text AS model, sum(input)::bigint AS input, sum(output)::bigint AS output
+FROM (
+    SELECT 'readingResponses' AS kind, model, input_tokens AS input, output_tokens AS output
+    FROM prompt_extractions WHERE extracted_at >= $1 AND haiku_tokens > 0
+    UNION ALL
+    SELECT 'scans', coalesce(matching_model, ''), llm_input_tokens, llm_output_tokens
+    FROM analyses WHERE created_at >= $1 AND llm_input_tokens + llm_output_tokens > 0
+    UNION ALL
+    SELECT 'termReview', coalesce(model, ''), input_tokens, output_tokens FROM term_review_usage WHERE used_at >= $1
+    UNION ALL
+    SELECT 'candidateChecks', coalesce(model, ''), input_tokens, output_tokens FROM prompt_review_usage WHERE used_at >= $1
+    UNION ALL
+    SELECT 'recommendationRuns', model, input_tokens, output_tokens FROM recommendation_runs WHERE started_at >= $1
+) AS used
+GROUP BY kind, model
+ORDER BY kind, model
+`
+
+type ActivityMonthTokensRow struct {
+	Kind   string
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// The Claude tokens each kind of work used since a moment, per model as it recorded it; "" for
+// rows from before they recorded one.
+func (q *Queries) ActivityMonthTokens(ctx context.Context, since time.Time) ([]ActivityMonthTokensRow, error) {
+	rows, err := q.db.Query(ctx, activityMonthTokens, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ActivityMonthTokensRow{}
+	for rows.Next() {
+		var i ActivityMonthTokensRow
+		if err := rows.Scan(
+			&i.Kind,
+			&i.Model,
+			&i.Input,
+			&i.Output,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const activityMonthUsage = `-- name: ActivityMonthUsage :one
 SELECT
     coalesce((SELECT sum(cost_micros) FROM prompt_answers WHERE answered_at >= $1), 0)::bigint AS prompt_answers,
-    coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= $1 AND haiku_tokens = 0), 0)::bigint AS openrouter_readings,
-    coalesce((SELECT sum(input_tokens) FROM prompt_extractions WHERE extracted_at >= $1 AND haiku_tokens > 0), 0)::bigint AS haiku_reading_input,
-    coalesce((SELECT sum(output_tokens) FROM prompt_extractions WHERE extracted_at >= $1 AND haiku_tokens > 0), 0)::bigint AS haiku_reading_output,
-    coalesce((SELECT sum(llm_input_tokens) FROM analyses WHERE created_at >= $1), 0)::bigint AS scan_input,
-    coalesce((SELECT sum(llm_output_tokens) FROM analyses WHERE created_at >= $1), 0)::bigint AS scan_output,
-    coalesce((SELECT sum(input_tokens) FROM term_review_usage WHERE used_at >= $1), 0)::bigint AS term_review_input,
-    coalesce((SELECT sum(output_tokens) FROM term_review_usage WHERE used_at >= $1), 0)::bigint AS term_review_output,
-    coalesce((SELECT sum(input_tokens) FROM prompt_review_usage WHERE used_at >= $1), 0)::bigint AS candidate_check_input,
-    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage WHERE used_at >= $1), 0)::bigint AS candidate_check_output,
-    coalesce((SELECT sum(input_tokens) FROM recommendation_runs WHERE started_at >= $1), 0)::bigint AS recommendation_input,
-    coalesce((SELECT sum(output_tokens) FROM recommendation_runs WHERE started_at >= $1), 0)::bigint AS recommendation_output
+    coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= $1 AND haiku_tokens = 0), 0)::bigint AS openrouter_readings
 `
 
 type ActivityMonthUsageRow struct {
-	PromptAnswers        int64
-	OpenrouterReadings   int64
-	HaikuReadingInput    int64
-	HaikuReadingOutput   int64
-	ScanInput            int64
-	ScanOutput           int64
-	TermReviewInput      int64
-	TermReviewOutput     int64
-	CandidateCheckInput  int64
-	CandidateCheckOutput int64
-	RecommendationInput  int64
-	RecommendationOutput int64
+	PromptAnswers      int64
+	OpenrouterReadings int64
 }
 
-// What each kind of work used since a moment.
+// What the Prompt runs' answers and OpenRouter's readings cost since a moment, in micro-dollars.
 func (q *Queries) ActivityMonthUsage(ctx context.Context, since time.Time) (ActivityMonthUsageRow, error) {
 	row := q.db.QueryRow(ctx, activityMonthUsage, since)
 	var i ActivityMonthUsageRow
-	err := row.Scan(
-		&i.PromptAnswers,
-		&i.OpenrouterReadings,
-		&i.HaikuReadingInput,
-		&i.HaikuReadingOutput,
-		&i.ScanInput,
-		&i.ScanOutput,
-		&i.TermReviewInput,
-		&i.TermReviewOutput,
-		&i.CandidateCheckInput,
-		&i.CandidateCheckOutput,
-		&i.RecommendationInput,
-		&i.RecommendationOutput,
-	)
+	err := row.Scan(&i.PromptAnswers, &i.OpenrouterReadings)
 	return i, err
 }
 
@@ -72,7 +92,8 @@ SELECT r.id, r.started_at, r.finished_at, r.status, (r.stop_requested_at IS NOT 
     coalesce(sum(a.cost_micros), 0)::bigint AS answer_cost,
     coalesce(sum(x.cost_micros) FILTER (WHERE x.haiku_tokens = 0), 0)::bigint AS openrouter_reading_cost,
     coalesce(sum(x.input_tokens) FILTER (WHERE x.haiku_tokens > 0), 0)::bigint AS haiku_input,
-    coalesce(sum(x.output_tokens) FILTER (WHERE x.haiku_tokens > 0), 0)::bigint AS haiku_output
+    coalesce(sum(x.output_tokens) FILTER (WHERE x.haiku_tokens > 0), 0)::bigint AS haiku_output,
+    coalesce(mode() WITHIN GROUP (ORDER BY x.model) FILTER (WHERE x.haiku_tokens > 0), '')::text AS reading_model
 FROM prompt_runs AS r
 LEFT JOIN prompt_answers AS a ON a.run_id = r.id
 LEFT JOIN prompt_extractions AS x ON x.answer_id = a.id
@@ -97,6 +118,7 @@ type ActivityPromptRunsRow struct {
 	OpenrouterReadingCost int64
 	HaikuInput            int64
 	HaikuOutput           int64
+	ReadingModel          string
 }
 
 // The running Prompt run and the newest lim others, with how many responses each got and failed,
@@ -123,6 +145,7 @@ func (q *Queries) ActivityPromptRuns(ctx context.Context, lim int32) ([]Activity
 			&i.OpenrouterReadingCost,
 			&i.HaikuInput,
 			&i.HaikuOutput,
+			&i.ReadingModel,
 		); err != nil {
 			return nil, err
 		}
@@ -136,7 +159,7 @@ func (q *Queries) ActivityPromptRuns(ctx context.Context, lim int32) ([]Activity
 
 const activityScans = `-- name: ActivityScans :many
 SELECT id, rescan, created_by, created_at, finished_at, status, (stop_requested_at IS NOT NULL)::boolean AS stop_requested,
-    pages_crawled, max_pages, llm_input_tokens, llm_output_tokens
+    pages_crawled, max_pages, llm_input_tokens, llm_output_tokens, coalesce(matching_model, '')::text AS matching_model
 FROM analyses
 WHERE id IN (
     (SELECT id FROM analyses WHERE status IN ('queued', 'running'))
@@ -157,6 +180,7 @@ type ActivityScansRow struct {
 	MaxPages        int64
 	LlmInputTokens  int64
 	LlmOutputTokens int64
+	MatchingModel   string
 }
 
 // The waiting and running scans and the newest lim others.
@@ -181,6 +205,7 @@ func (q *Queries) ActivityScans(ctx context.Context, lim int32) ([]ActivityScans
 			&i.MaxPages,
 			&i.LlmInputTokens,
 			&i.LlmOutputTokens,
+			&i.MatchingModel,
 		); err != nil {
 			return nil, err
 		}
@@ -232,8 +257,8 @@ func (q *Queries) EndAbandonedWork(ctx context.Context, finishedAt pgtype.Timest
 const endWork = `-- name: EndWork :execrows
 UPDATE work_runs
 SET finished_at = $1, ending = $2, done = $3, total = $4, failed = $5,
-    input_tokens = $6, output_tokens = $7
-WHERE id = $8 AND finished_at IS NULL
+    input_tokens = $6, output_tokens = $7, model = nullif($8::text, '')
+WHERE id = $9 AND finished_at IS NULL
 `
 
 type EndWorkParams struct {
@@ -244,6 +269,7 @@ type EndWorkParams struct {
 	Failed       int64
 	InputTokens  int64
 	OutputTokens int64
+	Model        string
 	ID           uuid.UUID
 }
 
@@ -256,6 +282,7 @@ func (q *Queries) EndWork(ctx context.Context, arg EndWorkParams) (int64, error)
 		arg.Failed,
 		arg.InputTokens,
 		arg.OutputTokens,
+		arg.Model,
 		arg.ID,
 	)
 	if err != nil {
@@ -265,10 +292,12 @@ func (q *Queries) EndWork(ctx context.Context, arg EndWorkParams) (int64, error)
 }
 
 const listWork = `-- name: ListWork :many
-(SELECT id, kind, started_at, finished_at, ending, done, total, failed, input_tokens, output_tokens
+(SELECT id, kind, started_at, finished_at, ending, done, total, failed, input_tokens, output_tokens,
+    coalesce(model, '')::text AS model
  FROM work_runs WHERE finished_at IS NULL)
 UNION ALL
-(SELECT id, kind, started_at, finished_at, ending, done, total, failed, input_tokens, output_tokens
+(SELECT id, kind, started_at, finished_at, ending, done, total, failed, input_tokens, output_tokens,
+    coalesce(model, '')::text AS model
  FROM work_runs WHERE finished_at IS NOT NULL ORDER BY finished_at DESC, id LIMIT $1)
 `
 
@@ -283,6 +312,7 @@ type ListWorkRow struct {
 	Failed       int64
 	InputTokens  int64
 	OutputTokens int64
+	Model        string
 }
 
 // The running work and the newest lim ended pieces.
@@ -306,6 +336,7 @@ func (q *Queries) ListWork(ctx context.Context, lim int32) ([]ListWorkRow, error
 			&i.Failed,
 			&i.InputTokens,
 			&i.OutputTokens,
+			&i.Model,
 		); err != nil {
 			return nil, err
 		}

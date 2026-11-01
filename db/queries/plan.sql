@@ -67,11 +67,13 @@ UPDATE recommendations
 SET done_by = sqlc.narg(done_by), done_at = sqlc.narg(done_at)
 WHERE id = @id;
 
--- name: RecommendationTokensSince :one
--- The tokens in and out the Recommendation runs used since a moment.
-SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+-- name: RecommendationTokensSince :many
+-- The tokens in and out the Recommendation runs used since a moment, per model that wrote.
+SELECT model, coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM recommendation_runs
-WHERE started_at >= @since;
+WHERE started_at >= @since
+GROUP BY model
+ORDER BY model;
 
 -- name: UpdateRecommendation :execrows
 -- An administrator's wording and scores of a recommendation a run wrote.

@@ -37,3 +37,22 @@ func TestAClaudeModelIsFoundByItsID(t *testing.T) {
 		t.Error("names")
 	}
 }
+
+func TestAModelIsFoundHoweverAJobRecordsIt(t *testing.T) {
+	cases := map[string]string{
+		"anthropic: claude-sonnet-5-5": "claude-sonnet-5-5",
+		"claude-sonnet-5-5":            "claude-sonnet-5-5",
+		"":                             "",
+		"openrouter: mistral/small":    "openrouter: mistral/small",
+	}
+	for in, want := range cases {
+		if got := domain.ClaudeIDOf(in); got != want {
+			t.Errorf("ClaudeIDOf(%q) = %q, want %q", in, got, want)
+		}
+	}
+	// A job that recorded no model, or one on another provider, is priced as Claude Haiku 5.5.
+	if (domain.TokenUse{Model: "anthropic: claude-sonnet-5-5", Input: 1_000_000}).Cost() != 2_000_000 ||
+		(domain.TokenUse{Input: 1_000_000}).Cost() != 100_000 {
+		t.Error("a use is not priced at its model")
+	}
+}

@@ -33,19 +33,43 @@ type Verdict struct {
 	At    time.Time
 }
 
-// Usage is what one request to the model consumed, and when.
+// Usage is what one request to the model consumed, and when, and the model that answered; empty
+// for a request recorded before requests recorded their model.
 type Usage struct {
 	InputTokens  int64
 	OutputTokens int64
 	At           time.Time
+	Model        string
 }
 
 // Tokens is how many tokens u counts, input and output together.
 func (u Usage) Tokens() int64 { return u.InputTokens + u.OutputTokens }
 
-// Cost is what u cost at the list price of the model the review asks, Claude Haiku.
+// Cost is what u cost at the list price of the model that answered; one with no model recorded is
+// priced as Claude Haiku 5.5, which every review asked before the step chose a model.
 func (u Usage) Cost() llm.Micros {
-	return llm.TokenUse{Model: llm.DefaultModel, Input: u.InputTokens, Output: u.OutputTokens}.Cost()
+	return llm.TokenUse{Model: u.Model, Input: u.InputTokens, Output: u.OutputTokens}.Cost()
+}
+
+// Spend is what the review used over a while, one Usage per model.
+type Spend []Usage
+
+// Tokens is how many tokens s counts, every model's together.
+func (s Spend) Tokens() int64 {
+	var n int64
+	for _, u := range s {
+		n += u.Tokens()
+	}
+	return n
+}
+
+// Cost is what s cost, each model at its own list price.
+func (s Spend) Cost() llm.Micros {
+	var c llm.Micros
+	for _, u := range s {
+		c += u.Cost()
+	}
+	return c
 }
 
 // Unreviewed are the waiting candidates without the model's verdict, in their order.

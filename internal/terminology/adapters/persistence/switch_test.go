@@ -49,7 +49,7 @@ func TestTheReviewIsOnUntilSwitchedOffAndCountsItsUsage(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if u, err := repo.UsageSince(ctx, at); u.InputTokens != 700 || u.OutputTokens != 70 || err != nil {
+	if u, err := repo.UsageSince(ctx, at); len(u) != 1 || u[0].InputTokens != 700 || u[0].OutputTokens != 70 || err != nil {
 		t.Errorf("UsageSince = %+v, %v", u, err)
 	}
 }

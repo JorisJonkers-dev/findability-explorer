@@ -13,7 +13,10 @@ import (
 )
 
 type Querier interface {
-	// What each kind of work used since a moment.
+	// The Claude tokens each kind of work used since a moment, per model as it recorded it; "" for
+	// rows from before they recorded one.
+	ActivityMonthTokens(ctx context.Context, since time.Time) ([]ActivityMonthTokensRow, error)
+	// What the Prompt runs' answers and OpenRouter's readings cost since a moment, in micro-dollars.
 	ActivityMonthUsage(ctx context.Context, since time.Time) (ActivityMonthUsageRow, error)
 	// The running Prompt run and the newest lim others, with how many responses each got and failed,
 	// and what they cost: answers and OpenRouter's readings in micros, Claude Haiku's readings in tokens.
@@ -181,7 +184,9 @@ type Querier interface {
 	// The same per model that read, so each is priced at its own list price; a reading from before
 	// readings recorded their model has none.
 	PromptReadingTokensSinceByModel(ctx context.Context, since time.Time) ([]PromptReadingTokensSinceByModelRow, error)
-	PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error)
+	// What reviewing the candidates and checking the list used since a moment, per model that
+	// answered; "" for rows from before requests recorded their model.
+	PromptReviewTokensSince(ctx context.Context, since time.Time) ([]PromptReviewTokensSinceRow, error)
 	// The model that read most of each run's responses, for the runs whose readings recorded one.
 	PromptRunReadingModels(ctx context.Context) ([]PromptRunReadingModelsRow, error)
 	PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
@@ -191,8 +196,8 @@ type Querier interface {
 	// readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 	PromptSpentSince(ctx context.Context, since time.Time) (int64, error)
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
-	// The tokens in and out the Recommendation runs used since a moment.
-	RecommendationTokensSince(ctx context.Context, since time.Time) (RecommendationTokensSinceRow, error)
+	// The tokens in and out the Recommendation runs used since a moment, per model that wrote.
+	RecommendationTokensSince(ctx context.Context, since time.Time) ([]RecommendationTokensSinceRow, error)
 	// Runs a finished run again, held by owner, unless any run is running: the run lock.
 	ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error)
 	// Asks the running scans a stop picks to stop, as StopQueuedAnalyses picks them; the first request
@@ -222,8 +227,9 @@ type Querier interface {
 	// with page_position -1.
 	TermPages(ctx context.Context, arg TermPagesParams) ([]TermPagesRow, error)
 	TermReviewOn(ctx context.Context) (bool, error)
-	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error)
-	TermReviewUsageSince(ctx context.Context, usedAt time.Time) (TermReviewUsageSinceRow, error)
+	// What the term review used since a moment, per model that answered; "" for rows from before
+	// requests recorded their model.
+	TermReviewUsageSince(ctx context.Context, usedAt time.Time) ([]TermReviewUsageSinceRow, error)
 	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
 	// How many scans the language model answered for, and the tokens in and out one of them used on average.
 	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)

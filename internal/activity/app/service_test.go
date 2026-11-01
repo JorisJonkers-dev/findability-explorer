@@ -92,7 +92,7 @@ func TestActivityGathersEveryKindOfWork(t *testing.T) {
 }
 
 func TestSpendingIsThisMonths(t *testing.T) {
-	src := &source{usage: domain.MonthUsage{PromptAnswers: 2_000_000, TermReview: llm.TokenUse{Input: 1_000_000}}}
+	src := &source{usage: domain.MonthUsage{PromptAnswers: 2_000_000, TermReview: []llm.TokenUse{{Input: 1_000_000}}}}
 	svc := app.New(src, func() time.Time { return now })
 	lines, since, err := svc.Spending(t.Context())
 	if err != nil || len(lines) != 7 || lines[0].Cost != 2_000_000 || !since.Equal(time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)) ||

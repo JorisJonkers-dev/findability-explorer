@@ -54,8 +54,8 @@ type TokenUse struct {
 // Tokens is the use's tokens in and out together.
 func (u TokenUse) Tokens() int64 { return u.Input + u.Output }
 
-// Cost is what the use cost at its model's list price.
-func (u TokenUse) Cost() Micros { return ListPrice(u.Model).Of(u.Input, u.Output) }
+// Cost is what the use cost at its model's list price, the model named either way ClaudeIDOf reads.
+func (u TokenUse) Cost() Micros { return ListPrice(ClaudeIDOf(u.Model)).Of(u.Input, u.Output) }
 
 // Limits of the Anthropic key's monthly budget.
 const (

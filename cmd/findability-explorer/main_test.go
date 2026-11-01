@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
+	activitypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/activity/adapters/persistence"
+	activitydomain "github.com/JorisJonkers-dev/findability-explorer/internal/activity/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/persistence"
 	claudestepapp "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/app"
 	claudestepdomain "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/domain"
@@ -21,7 +23,9 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 	prompttestpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
+	prompttestdomain "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 	terminologypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/persistence"
+	terminologydomain "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
 var sessionKeyValue = strings.Repeat("k", 32)
@@ -162,23 +166,57 @@ func (s *settings) SaveBudget(context.Context, llmdomain.Micros, string, time.Ti
 	return nil
 }
 
-func TestTheMonthsSpendingPricesEachScanAtItsModelAndTheOtherJobsAsHaiku(t *testing.T) {
+func TestTheMonthsSpendingPricesEveryJobAtTheModelThatDidIt(t *testing.T) {
 	store, err := pg.Open(t.Context(), pgtest.URL(t))
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx := t.Context()
+	since := monthStart(time.Now())
 	sp := spenders{persistence.New(store), terminologypersistence.New(store), prompttestpersistence.New(store), insightpersistence.New(store)}
-	s, err := spending(t.Context(), sp, monthStart(time.Now()))
-	if err != nil || len(s.ThisMonth) != 3 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
+	s, err := spending(ctx, sp, since)
+	if err != nil || len(s.ThisMonth) != 0 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
 		t.Fatalf("spending of an empty month = %+v, %v", s, err)
 	}
+	// The term review and the candidate review on Claude Fable 5.1, and one review from before
+	// reviews recorded their model, which counts as Claude Haiku 5.5.
+	const fable = "claude-fable-5-1"
+	at := time.Now().UTC()
+	if err := sp.terms.SaveReview(ctx, nil, nil, []terminologydomain.Usage{{InputTokens: 100_000, OutputTokens: 10_000, At: at, Model: fable}, {InputTokens: 50_000, At: at}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := sp.candidates.SaveReviewUsage(ctx, []prompttestdomain.ReviewUsage{{InputTokens: 200_000, OutputTokens: 20_000, At: at, Model: fable}}); err != nil {
+		t.Fatal(err)
+	}
+	fablePrice := func(in, out int64) llmdomain.Micros { return llmdomain.ListPrice(fable).Of(in, out) }
+	want := fablePrice(100_000, 10_000) + fablePrice(200_000, 20_000) + llmdomain.ListPrice(llmdomain.DefaultModel).Of(50_000, 0)
+	s, err = spending(ctx, sp, since)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cost llmdomain.Micros
 	for _, u := range s.ThisMonth {
-		if u.Model != llmdomain.DefaultModel || u.Tokens() != 0 {
-			t.Fatalf("use = %+v", u)
+		cost += u.Cost()
+	}
+	if cost != want {
+		t.Errorf("the budget's spending = %s, want %s at Fable's price", cost, want)
+	}
+	// Activity prices the same work at the same models.
+	usage, err := activitypersistence.New(store).MonthUsage(ctx, since)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var activity llmdomain.Micros
+	for _, l := range activitydomain.SpendingOf(usage) {
+		if l.Key == activitydomain.KeyAnthropic {
+			activity += l.Cost
 		}
 	}
+	if activity != want {
+		t.Errorf("Activity's spending = %s, want %s", activity, want)
+	}
 	store.Close()
-	if _, err := spending(t.Context(), sp, monthStart(time.Now())); err == nil {
+	if _, err := spending(ctx, sp, since); err == nil {
 		t.Fatal("spending without a database did not fail")
 	}
 }
@@ -199,12 +237,6 @@ func (s *stepVersions) Save(_ context.Context, v claudestepdomain.Version, origi
 	}
 	s.saved = append(s.saved, v)
 	return nil
-}
-
-func TestScansArePricedAtTheClaudeModelTheyRecord(t *testing.T) {
-	if claudeModelOf("anthropic: claude-sonnet-5-5") != "claude-sonnet-5-5" || claudeModelOf("openrouter: mistral/small") != llmdomain.DefaultModel {
-		t.Error("claudeModelOf")
-	}
 }
 
 func TestMatchersPreferHaikuUnlessMatchingIsOff(t *testing.T) {

@@ -226,13 +226,18 @@ FROM prompt_answers
 WHERE id = ANY(sqlc.arg(ids)::uuid []);
 
 -- name: InsertPromptReviewUsage :exec
-INSERT INTO prompt_review_usage (input_tokens, output_tokens, used_at)
-VALUES (@input_tokens, @output_tokens, @used_at);
+INSERT INTO prompt_review_usage (input_tokens, output_tokens, used_at, model)
+VALUES (@input_tokens, @output_tokens, @used_at, nullif(@model::text, ''));
 
--- name: PromptReviewTokensSince :one
-SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+-- name: PromptReviewTokensSince :many
+-- What reviewing the candidates and checking the list used since a moment, per model that
+-- answered; "" for rows from before requests recorded their model.
+SELECT coalesce(model, '')::text AS model, coalesce(sum(input_tokens), 0)::bigint AS input,
+    coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_review_usage
-WHERE used_at >= @since;
+WHERE used_at >= @since
+GROUP BY 1
+ORDER BY 1;
 
 -- name: ListPromptCompanyChecks :many
 SELECT company_id, competitor, sure, reason, model, check_version, checked_at

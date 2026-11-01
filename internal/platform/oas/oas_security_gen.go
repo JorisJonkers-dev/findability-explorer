@@ -49,6 +49,7 @@ var operationRolesSessionCookie = map[string][]string{
 	DeleteCompetitorOperation:           []string{},
 	DeleteLlmCredentialOperation:        []string{},
 	DismissCompetitorCandidateOperation: []string{},
+	GetActivityOperation:                []string{},
 	GetAiReadinessOperation:             []string{},
 	GetAiSearchSummaryOperation:         []string{},
 	GetAnalysisOperation:                []string{},

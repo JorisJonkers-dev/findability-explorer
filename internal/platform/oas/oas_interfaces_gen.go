@@ -45,6 +45,10 @@ type DismissCompetitorCandidateRes interface {
 	dismissCompetitorCandidateRes()
 }
 
+type GetActivityRes interface {
+	getActivityRes()
+}
+
 type GetAiReadinessRes interface {
 	getAiReadinessRes()
 }

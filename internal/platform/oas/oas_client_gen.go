@@ -113,6 +113,19 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss
 	DismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (DismissCompetitorCandidateRes, error)
+	// GetActivity invokes getActivity operation.
+	//
+	// Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness
+	// checks, the term review, reviews of the competitor candidates, checks of the competitor list, and
+	// Recommendation runs - running now, newest first, and the last 20 ended, the last ended first, each
+	// with how it ended, what it did, and what it cost on each key. A running piece is stopped by its own
+	// operation - stopPromptRun and stopAnalysis take its id, stopRescan, stopReadinessCheck,
+	// stopTermReview, stopCandidateReview and stopCompetitorCheck none. With this month's spending by kind
+	// of work and the key that paid; the Anthropic key's is priced at the model's list price from the
+	// stored tokens.
+	//
+	// GET /api/v1/admin/activity
+	GetActivity(ctx context.Context) (GetActivityRes, error)
 	// GetAiReadiness invokes getAiReadiness operation.
 	//
 	// Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt
@@ -2052,6 +2065,126 @@ func (c *Client) sendDismissCompetitorCandidate(ctx context.Context, params Dism
 
 	stage = "DecodeResponse"
 	result, err := decodeDismissCompetitorCandidateResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetActivity invokes getActivity operation.
+//
+// Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness
+// checks, the term review, reviews of the competitor candidates, checks of the competitor list, and
+// Recommendation runs - running now, newest first, and the last 20 ended, the last ended first, each
+// with how it ended, what it did, and what it cost on each key. A running piece is stopped by its own
+// operation - stopPromptRun and stopAnalysis take its id, stopRescan, stopReadinessCheck,
+// stopTermReview, stopCandidateReview and stopCompetitorCheck none. With this month's spending by kind
+// of work and the key that paid; the Anthropic key's is priced at the model's list price from the
+// stored tokens.
+//
+// GET /api/v1/admin/activity
+func (c *Client) GetActivity(ctx context.Context) (GetActivityRes, error) {
+	res, err := c.sendGetActivity(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetActivity(ctx context.Context) (res GetActivityRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getActivity"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/activity"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetActivityOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/activity"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetActivityOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetActivityResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

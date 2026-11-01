@@ -47,3 +47,15 @@ SELECT DISTINCT ON (credential_id) credential_id::text AS credential_id, at, ok:
 FROM llm_events
 WHERE action IN ('credential_added', 'credential_tested') AND credential_id IS NOT NULL AND ok IS NOT NULL
 ORDER BY credential_id, id DESC;
+
+-- name: GetLlmBudget :one
+SELECT monthly_budget_micros
+FROM llm_budget
+WHERE singleton;
+
+-- name: SetLlmBudget :exec
+INSERT INTO llm_budget (singleton, monthly_budget_micros, updated_by, updated_at)
+VALUES (true, @monthly_budget_micros, @updated_by, @updated_at)
+ON CONFLICT (singleton) DO UPDATE
+SET monthly_budget_micros = excluded.monthly_budget_micros, updated_by = excluded.updated_by,
+    updated_at = excluded.updated_at;

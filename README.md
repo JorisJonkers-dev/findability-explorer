@@ -17,7 +17,7 @@ administrators start the scans and change the data.
 | **Company history** (`/competitors/:id/history`) | A company's terms from its latest scan, its numbered scans, and what changed between any two of them |
 | **AI readiness** (`/ai-search/readiness`) | What each site tells search engines and AI assistants: `robots.txt` rules per AI crawler, sitemaps, `llms.txt`, structured data, language versions and tech stack, each held against the report's advice |
 | **Prompt test** (`/ai-search/prompt-test`) | A fixed set of buyer questions asked of the cheapest model of each large provider through OpenRouter, with and without web search. It shows how often each company is named (AI share of voice), how often its site is cited, and what the answers get wrong about Tribelt |
-| **Settings** (`/settings/…`, administrators) | Language-model keys and their spend, the token and dollar budgets, the Prompt test's schedule and fact sheet, the review of new terms and of companies the answers name |
+| **Settings** (`/settings/…`, administrators) | Language-model keys and their spend, the monthly dollar budgets per key (Anthropic and OpenRouter), the Prompt test's schedule and fact sheet, the review of new terms and of companies the answers name |
 
 The crawler identifies itself (`FindabilityExplorer/1.0`, with a contact address), respects
 `robots.txt`, waits 500 ms between requests and only reads public addresses. A site that turns it
@@ -154,7 +154,6 @@ turns the commits into the changelog and the next version. Don't edit `CHANGELOG
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URL` | The OpenID Connect client the app signs people in with (required unless `DEV_USER` is set) |
 | `SESSION_KEY` | 32 characters or more; seals the session cookie, refresh tokens and stored API keys (required unless `DEV_USER` is set) |
 | `ANTHROPIC_API_KEY` | Optional. Shown as a read-only key in Settings. While an Anthropic key works, product matching and the reading of Prompt test answers use it with `claude-haiku-5-5` (ADR-0007) |
-| `LLM_MONTHLY_TOKENS` | Product matching's token budget per calendar month, all providers together (default 10,000,000) |
 | `CRAWLER_CONTACT` | The contact address in the crawler's User-Agent |
 
 Signing in is written for [auth-api](https://github.com/JorisJonkers-dev/auth-api), the estate's

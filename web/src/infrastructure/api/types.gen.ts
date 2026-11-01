@@ -784,7 +784,7 @@ export type LlmChoice = 'default' | 'chosen' | 'off';
 /**
  * What an event records.
  */
-export type LlmEventAction = 'credential_added' | 'credential_deleted' | 'credential_tested' | 'active_set' | 'active_cleared';
+export type LlmEventAction = 'credential_added' | 'credential_deleted' | 'credential_tested' | 'active_set' | 'active_cleared' | 'budget_set';
 
 /**
  * One change to or test of the language-model settings.
@@ -816,25 +816,35 @@ export type LlmEvent = {
 };
 
 /**
- * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
+ * What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers - and what they spent, priced at the models' list prices from their stored token counts. Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
  */
 export type LlmBudget = {
+    monthlyBudgetUsd: Usd;
+    spentThisMonthUsd: Usd;
+    leftUsd: Usd;
     /**
-     * The tokens every job together may use in a calendar month (UTC).
+     * The tokens, in and out, every job used this month so far.
      */
-    monthlyTokens: number;
-    /**
-     * The tokens every job used this month so far.
-     */
-    usedThisMonth: number;
+    tokensThisMonth: number;
     /**
      * The tokens one scan's product matching used on average, over every scan the language model answered for; 0 before the first.
      */
     averageTokensPerScan: number;
+    averageScanUsd: Usd;
     /**
      * How many scans the average is over.
      */
     scansMatched: number;
+};
+
+/**
+ * The Anthropic key's new monthly budget.
+ */
+export type LlmBudgetChange = {
+    /**
+     * The month's budget in dollars.
+     */
+    monthlyBudgetUsd: number;
 };
 
 /**
@@ -1221,7 +1231,7 @@ export type TermReviewState = {
      */
     waiting: number;
     /**
-     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's language-model tokens are spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
+     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
     problem?: 'noModel' | 'budget' | 'failed' | 'stopped';
     /**
@@ -3179,7 +3189,7 @@ export type CandidateReviewState = {
      */
     running: boolean;
     /**
-     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's language-model tokens are spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
+     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
     problem?: 'noKey' | 'budget' | 'failed' | 'stopped';
 };
@@ -5984,6 +5994,50 @@ export type GetLlmKeyUsageResponses = {
 };
 
 export type GetLlmKeyUsageResponse = GetLlmKeyUsageResponses[keyof GetLlmKeyUsageResponses];
+
+export type UpdateLlmBudgetData = {
+    /**
+     * The new budget.
+     */
+    body: LlmBudgetChange;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/llm/budget';
+};
+
+export type UpdateLlmBudgetErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type UpdateLlmBudgetError = UpdateLlmBudgetErrors[keyof UpdateLlmBudgetErrors];
+
+export type UpdateLlmBudgetResponses = {
+    /**
+     * The settings after the change.
+     */
+    200: LlmSettings;
+};
+
+export type UpdateLlmBudgetResponse = UpdateLlmBudgetResponses[keyof UpdateLlmBudgetResponses];
 
 export type ClearActiveLlmData = {
     body?: never;

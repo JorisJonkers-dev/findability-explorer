@@ -5420,23 +5420,35 @@ func (s *LlmBudget) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           0,
-			MaxSet:        true,
-			Max:           1000000000000,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-			Pattern:       nil,
-		}).Validate(int64(s.MonthlyTokens)); err != nil {
-			return errors.Wrap(err, "int")
+		if err := s.MonthlyBudgetUsd.Validate(); err != nil {
+			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "monthlyTokens",
+			Name:  "monthlyBudgetUsd",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.SpentThisMonthUsd.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "spentThisMonthUsd",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.LeftUsd.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "leftUsd",
 			Error: err,
 		})
 	}
@@ -5451,13 +5463,13 @@ func (s *LlmBudget) Validate() error {
 			MultipleOfSet: false,
 			MultipleOf:    0,
 			Pattern:       nil,
-		}).Validate(int64(s.UsedThisMonth)); err != nil {
+		}).Validate(int64(s.TokensThisMonth)); err != nil {
 			return errors.Wrap(err, "int")
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "usedThisMonth",
+			Name:  "tokensThisMonth",
 			Error: err,
 		})
 	}
@@ -5483,6 +5495,17 @@ func (s *LlmBudget) Validate() error {
 		})
 	}
 	if err := func() error {
+		if err := s.AverageScanUsd.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "averageScanUsd",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := (validate.Int{
 			MinSet:        true,
 			Min:           0,
@@ -5500,6 +5523,39 @@ func (s *LlmBudget) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "scansMatched",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *LlmBudgetChange) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := (validate.Float{
+			MinSet:        true,
+			Min:           0.01,
+			MaxSet:        true,
+			Max:           1000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    nil,
+			Pattern:       nil,
+		}).Validate(float64(s.MonthlyBudgetUsd)); err != nil {
+			return errors.Wrap(err, "float")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "monthlyBudgetUsd",
 			Error: err,
 		})
 	}
@@ -5838,6 +5894,8 @@ func (s LlmEventAction) Validate() error {
 	case "active_set":
 		return nil
 	case "active_cleared":
+		return nil
+	case "budget_set":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -17603,6 +17661,38 @@ func (s *UpdateCompetitorUnauthorized) Validate() error {
 }
 
 func (s *UpdateCompetitorUnprocessableEntity) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UpdateLlmBudgetBadRequest) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UpdateLlmBudgetForbidden) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UpdateLlmBudgetUnauthorized) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UpdateLlmBudgetUnprocessableEntity) Validate() error {
 	alias := (*ProblemStatusCode)(s)
 	if err := alias.Validate(); err != nil {
 		return err

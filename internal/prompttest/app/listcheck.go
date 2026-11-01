@@ -45,8 +45,8 @@ func (s *Service) ListChecks(ctx context.Context) ([]domain.ListCheck, int, erro
 
 // CheckList has the model check each competitor on the list it has not checked with the current
 // domain.CheckVersion, a batch at a time, and archives each it is sure does not compete.
-// ErrNoReviewer when no Anthropic key is set up; ErrBudgetSpent when the month's language-model
-// tokens are spent before a batch, and ErrStopped when an administrator stopped it, with what was
+// ErrNoReviewer when no Anthropic key is set up; ErrBudgetSpent when the month's Anthropic
+// budget is spent before a batch, and ErrStopped when an administrator stopped it, with what was
 // checked before kept either way.
 func (s *Service) CheckList(ctx context.Context) error {
 	r, model, err := s.reviewer(ctx)

@@ -367,7 +367,8 @@ export const zLlmEventAction = z.enum([
     'credential_deleted',
     'credential_tested',
     'active_set',
-    'active_cleared'
+    'active_cleared',
+    'budget_set'
 ]);
 
 /**
@@ -385,26 +386,10 @@ export const zLlmEvent = z.object({
 });
 
 /**
- * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
+ * The Anthropic key's new monthly budget.
  */
-export const zLlmBudget = z.object({
-    monthlyTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    usedThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    averageTokensPerScan: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    scansMatched: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
-});
-
-/**
- * The language-model settings.
- */
-export const zLlmSettings = z.object({
-    credentials: z.array(zLlmCredential).max(100),
-    choice: zLlmChoice,
-    active: zActiveLlm.optional(),
-    haiku: zActiveLlm.optional(),
-    matchingEnabled: z.boolean(),
-    budget: zLlmBudget,
-    events: z.array(zLlmEvent).max(50)
+export const zLlmBudgetChange = z.object({
+    monthlyBudgetUsd: z.number().gte(0.01).lte(1000)
 });
 
 /**
@@ -1375,6 +1360,32 @@ export const zPromptTrigger = z.enum(['manual', 'schedule']);
  * An amount in US dollars.
  */
 export const zUsd = z.number().gte(0).lte(1000000);
+
+/**
+ * What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers - and what they spent, priced at the models' list prices from their stored token counts. Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
+ */
+export const zLlmBudget = z.object({
+    monthlyBudgetUsd: zUsd,
+    spentThisMonthUsd: zUsd,
+    leftUsd: zUsd,
+    tokensThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    averageTokensPerScan: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    averageScanUsd: zUsd,
+    scansMatched: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
+});
+
+/**
+ * The language-model settings.
+ */
+export const zLlmSettings = z.object({
+    credentials: z.array(zLlmCredential).max(100),
+    choice: zLlmChoice,
+    active: zActiveLlm.optional(),
+    haiku: zActiveLlm.optional(),
+    matchingEnabled: z.boolean(),
+    budget: zLlmBudget,
+    events: z.array(zLlmEvent).max(50)
+});
 
 /**
  * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
@@ -2501,6 +2512,16 @@ export const zGetLlmKeyUsagePath = z.object({
  * The usage.
  */
 export const zGetLlmKeyUsageResponse = zLlmKeyUsage;
+
+/**
+ * The new budget.
+ */
+export const zUpdateLlmBudgetBody = zLlmBudgetChange;
+
+/**
+ * The settings after the change.
+ */
+export const zUpdateLlmBudgetResponse = zLlmSettings;
 
 /**
  * The settings after the change.

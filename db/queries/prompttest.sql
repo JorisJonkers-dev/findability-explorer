@@ -227,7 +227,7 @@ INSERT INTO prompt_review_usage (input_tokens, output_tokens, used_at)
 VALUES (@input_tokens, @output_tokens, @used_at);
 
 -- name: PromptReviewTokensSince :one
-SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_review_usage
 WHERE used_at >= @since;
 
@@ -252,10 +252,11 @@ JOIN prompt_answers AS a ON a.id = c.answer_id
 ORDER BY a.answered_at DESC, c.answer_id, c.position;
 
 -- name: PromptReadingTokensSince :one
--- The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
-SELECT coalesce(sum(haiku_tokens), 0)::bigint AS tokens
+-- The tokens in and out Claude Haiku on an Anthropic key used reading answers since a moment: the
+-- readings whose tokens count as Haiku's.
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_extractions
-WHERE extracted_at >= @since;
+WHERE extracted_at >= @since AND haiku_tokens > 0;
 
 -- name: ListPromptSets :many
 -- Every published Prompt set, newest first.

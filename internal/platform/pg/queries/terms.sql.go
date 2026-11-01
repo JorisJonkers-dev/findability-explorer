@@ -267,16 +267,21 @@ func (q *Queries) TermReviewOn(ctx context.Context) (bool, error) {
 }
 
 const termReviewTokensSince = `-- name: TermReviewTokensSince :one
-SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM term_review_usage
 WHERE used_at >= $1
 `
 
-func (q *Queries) TermReviewTokensSince(ctx context.Context, usedAt time.Time) (int64, error) {
+type TermReviewTokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+func (q *Queries) TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, termReviewTokensSince, usedAt)
-	var tokens int64
-	err := row.Scan(&tokens)
-	return tokens, err
+	var i TermReviewTokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
 }
 
 const termReviewUsageSince = `-- name: TermReviewUsageSince :one

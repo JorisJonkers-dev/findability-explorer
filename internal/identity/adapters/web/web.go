@@ -128,6 +128,7 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.TestLlmCredentialOperation:   domain.NeedAdminChange,
 	oas.SetActiveLlmOperation:        domain.NeedAdminChange,
 	oas.ClearActiveLlmOperation:      domain.NeedAdminChange,
+	oas.UpdateLlmBudgetOperation:     domain.NeedAdminChange,
 	// Scans and companies: everyone signed in reads them, only administrators change them.
 	oas.StartAnalysisOperation:        domain.NeedAdminChange,
 	oas.StartRescansOperation:         domain.NeedAdminChange,

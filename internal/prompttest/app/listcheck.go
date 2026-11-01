@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 // The language model's check of the companies on the competitor list (ADR-0010): Claude Haiku
@@ -21,7 +22,7 @@ func (s *Service) ListCheckState() ReviewState { return s.review.list.state() }
 // StartListCheck starts a check of the list in the background, unless one is running; it reports
 // whether it started.
 func (s *Service) StartListCheck(ctx context.Context) bool {
-	return s.startIn(ctx, &s.review.list, s.CheckList)
+	return s.startIn(ctx, work.KindCompetitorCheck, &s.review.list, s.CheckList)
 }
 
 // StopListCheck stops the check of the list that runs: it asks nothing after the batch it is on,
@@ -69,6 +70,7 @@ func (s *Service) CheckList(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	s.review.list.planned(len(todo))
 	for len(todo) > 0 {
 		if err := s.goOn(ctx, &s.review.list); err != nil {
 			return err
@@ -78,6 +80,7 @@ func (s *Service) CheckList(ctx context.Context) error {
 		if err := s.checkListBatch(ctx, r, model, batch, quotes); err != nil {
 			return err
 		}
+		s.review.list.did(len(batch))
 	}
 	return nil
 }
@@ -111,6 +114,7 @@ func (s *Service) checkListBatch(ctx context.Context, r Reviewer, model string, 
 		return err
 	}
 	answered, usage, err := r.Check(ctx, dossiers)
+	s.review.list.used(usage)
 	if saveErr := s.saveUsage(ctx, usage); err != nil || saveErr != nil {
 		return errors.Join(wrap("check the companies on the list", err), saveErr)
 	}

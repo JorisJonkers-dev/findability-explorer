@@ -276,7 +276,26 @@ func (c *Crawler) sitemap(ctx context.Context, u *url.URL) (domain.Sitemap, erro
 		defer func() { _ = zr.Close() }()
 		body = io.LimitReader(zr, maxSitemapBody)
 	}
-	return domain.ParseSitemap(body)
+	// The start of the text is kept as read, one byte past what a scan stores, so it shows cut.
+	text := &prefix{room: domain.MaxRawFile + 1}
+	sm, err := domain.ParseSitemap(io.TeeReader(body, text))
+	if err != nil {
+		return domain.Sitemap{}, err
+	}
+	sm.URL, sm.Text = u.String(), text.String()
+	return sm, nil
+}
+
+// prefix keeps the first room bytes written to it and takes the rest without keeping it.
+type prefix struct {
+	strings.Builder
+	room int
+}
+
+func (p *prefix) Write(b []byte) (int, error) {
+	keep := b[:min(len(b), max(p.room-p.Len(), 0))]
+	_, _ = p.Builder.Write(keep)
+	return len(b), nil
 }
 
 func (c *Crawler) robots(ctx context.Context, start *url.URL) domain.Robots {

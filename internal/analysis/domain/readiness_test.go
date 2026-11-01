@@ -204,6 +204,25 @@ func TestRawFilesAreCapped(t *testing.T) {
 	}
 }
 
+// The first sitemap read, the one robots.txt lists or /sitemap.xml, is kept as served, capped as
+// the other files are, with its address.
+func TestRawFilesKeepTheFirstSitemap(t *testing.T) {
+	raw := domain.RawFilesOf(domain.ReadinessFiles{Sitemaps: []domain.Sitemap{
+		{URL: "https://belts.test/sitemap_index.xml", Text: "<sitemapindex>\x00</sitemapindex>"},
+		{URL: "https://belts.test/pages.xml", Text: "<urlset/>"},
+	}})
+	if raw.Sitemap != "<sitemapindex></sitemapindex>" || raw.SitemapURL != "https://belts.test/sitemap_index.xml" || raw.SitemapTruncated {
+		t.Errorf("sitemap = %q from %q, truncated %v", raw.Sitemap, raw.SitemapURL, raw.SitemapTruncated)
+	}
+	big := domain.RawFilesOf(domain.ReadinessFiles{Sitemaps: []domain.Sitemap{{URL: "https://belts.test/sitemap.xml", Text: strings.Repeat("x", domain.MaxRawFile+1)}}})
+	if len(big.Sitemap) != domain.MaxRawFile || !big.SitemapTruncated {
+		t.Errorf("a long sitemap keeps %d bytes, truncated %v", len(big.Sitemap), big.SitemapTruncated)
+	}
+	if none := domain.RawFilesOf(domain.ReadinessFiles{}); none.Sitemap != "" || none.SitemapURL != "" {
+		t.Errorf("no sitemap read keeps none: %+v", none)
+	}
+}
+
 func TestCompareReadiness(t *testing.T) {
 	before := domain.AssessReadiness(fullSite())
 	site := fullSite()

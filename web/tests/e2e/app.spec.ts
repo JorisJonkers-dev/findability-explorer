@@ -4,7 +4,7 @@ const SECTIONS = [
   { path: '/ai-responses', title: 'AI responses', heading: 'AI responses' },
   { path: '/competitors', title: 'Competitors', heading: 'Competitors' },
   { path: '/terms', title: 'Search terms', heading: 'Search terms' },
-  { path: '/recommendations', title: 'Recommendations', heading: 'Start with the changes that help Tribelt most.' },
+  { path: '/recommendations', title: 'Recommendations', heading: 'Recommendations' },
 ] as const
 
 test('the overview renders its numbers and section cards, and is accessible', async ({ page }) => {
@@ -58,7 +58,7 @@ test('a section opens from the top bar, and Overview links back', async ({ page 
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Recommendations', exact: true }).click()
   await expect(page).toHaveURL('/recommendations')
-  await expect(page.getByRole('heading', { level: 1, name: 'Start with the changes that help Tribelt most.' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Recommendations' })).toBeVisible()
 
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Overview', exact: true }).click()
   await expect(page).toHaveURL('/')

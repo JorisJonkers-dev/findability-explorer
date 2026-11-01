@@ -98,6 +98,7 @@ type AnalysisKnownTerm struct {
 	Tier          string
 	Occurrences   int64
 	UsedByTribelt bool
+	Pages         []int64
 }
 
 type AnalysisPage struct {
@@ -109,6 +110,7 @@ type AnalysisPage struct {
 	Language    string
 	WordCount   int64
 	Family      pgtype.Text
+	Body        string
 }
 
 type AnalysisReadiness struct {
@@ -142,6 +144,9 @@ type AnalysisReadinessFile struct {
 	LlmsTruncated     bool
 	LlmsFullTxt       string
 	LlmsFullTruncated bool
+	SitemapUrl        string
+	SitemapTxt        string
+	SitemapTruncated  bool
 }
 
 type Company struct {
@@ -426,4 +431,18 @@ type TermVerdict struct {
 	Tier        string
 	Model       string
 	ReviewedAt  time.Time
+}
+
+type WorkRun struct {
+	ID           uuid.UUID
+	Kind         string
+	StartedBy    string
+	StartedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	Ending       pgtype.Text
+	Done         int64
+	Total        int64
+	Failed       int64
+	InputTokens  int64
+	OutputTokens int64
 }

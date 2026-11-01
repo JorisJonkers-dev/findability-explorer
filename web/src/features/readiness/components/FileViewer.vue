@@ -26,7 +26,7 @@ async function copy(): Promise<void> {
 }
 
 function download(): void {
-  saveText(props.tab.name, props.tab.text, 'text/plain')
+  saveText(props.tab.fileName, props.tab.text, props.tab.key === 'sitemap' ? 'application/xml' : 'text/plain')
 }
 
 const BUTTON = 'inline-flex min-h-11 cursor-pointer items-center rounded-full border-2 px-4 font-medium'
@@ -38,6 +38,7 @@ const BUTTON = 'inline-flex min-h-11 cursor-pointer items-center rounded-full bo
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div class="flex flex-col gap-1">
         <h3 class="m-0 font-mono text-lg font-semibold">{{ tab.name }}</h3>
+        <p v-if="tab.source" class="m-0 text-sm break-all text-muted">From {{ tab.source }}</p>
         <p class="m-0 flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-2">
           <span><strong>{{ int(size.lines) }}</strong> {{ size.lines === 1 ? 'line' : 'lines' }}</span>
           <span><strong>{{ int(size.bytes) }}</strong> bytes</span>

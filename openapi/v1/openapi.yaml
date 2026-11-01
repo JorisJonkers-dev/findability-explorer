@@ -298,6 +298,42 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/term-pages:
+    get:
+      operationId: getTermPages
+      summary: Get the pages that use a search term
+      description: >-
+        Returns, for each company whose newest finished scan found the term, the pages of that
+        scan that use it, at most ten each. The term matches without regard to case.
+      tags: [terminology]
+      parameters:
+        - name: term
+          in: query
+          required: true
+          description: The term, as the terminology map writes it.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - name: language
+          in: query
+          required: true
+          description: The term's language.
+          schema:
+            $ref: "#/components/schemas/Language"
+      responses:
+        "200":
+          description: Each company's pages that use the term.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermPages"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/competitors:
     get:
       operationId: listCompetitors
@@ -726,6 +762,33 @@ paths:
         "403":
           $ref: "#/components/responses/Problem"
         "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/activity:
+    get:
+      operationId: getActivity
+      summary: What runs, what ended, and this month's spending
+      description: >-
+        Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI
+        readiness checks, the term review, reviews of the competitor candidates, checks of the
+        competitor list, and Recommendation runs - running now, newest first, and the last 20
+        ended, the last ended first, each with how it ended, what it did, and what it cost on each
+        key. A running piece is stopped by its own operation - stopPromptRun and stopAnalysis take
+        its id, stopRescan, stopReadinessCheck, stopTermReview, stopCandidateReview and
+        stopCompetitorCheck none. With this month's spending by kind of work and the key that
+        paid; the Anthropic key's is priced at the model's list price from the stored tokens.
+      tags: [admin]
+      responses:
+        "200":
+          description: The work and this month's spending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -3730,6 +3793,127 @@ components:
           $ref: "#/components/schemas/BeltFamily"
         tier:
           $ref: "#/components/schemas/IntentTier"
+    Activity:
+      description: The work running now, the last pieces ended, and this month's spending.
+      type: object
+      additionalProperties: false
+      required: [running, recent, spending]
+      properties:
+        running:
+          type: array
+          maxItems: 1000
+          description: The work running now, or waiting to, newest first.
+          items:
+            $ref: "#/components/schemas/Work"
+        recent:
+          type: array
+          maxItems: 20
+          description: The last 20 pieces of work ended, the last ended first.
+          items:
+            $ref: "#/components/schemas/Work"
+        spending:
+          $ref: "#/components/schemas/Spending"
+    WorkKind:
+      description: A kind of background work.
+      type: string
+      enum: [promptRun, scan, rescan, readinessCheck, termReview, candidateReview, competitorCheck, recommendationRun]
+    Work:
+      description: >-
+        One piece of background work. Running while finishedAt is absent; otherwise ended as
+        ending says. done of total is what it did - responses of a Prompt run, pages of a scan,
+        scans of a re-scan, sites of a readiness check, search terms of the term review, companies
+        of a candidate review or list check - and failed how many of those failed.
+      type: object
+      additionalProperties: false
+      required: [id, kind, startedAt, done, total, failed, openRouterCostUsd, anthropicCostUsd]
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          description: >-
+            The work's id: a Prompt run's or a scan's, which their stops take; a re-scan's first
+            scan's; or the work journal's.
+          example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
+        kind:
+          $ref: "#/components/schemas/WorkKind"
+        startedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it began, or was queued.
+        finishedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it ended; absent while it runs.
+        ending:
+          description: >-
+            How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand,
+            stoppedByBudget, or failed. Absent while it runs.
+          type: string
+          enum: [done, doneWithFailures, stoppedByHand, stoppedByBudget, failed]
+        done:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many of its parts it did.
+          example: 360
+        total:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many parts it has; 0 when that is not known yet.
+          example: 360
+        failed:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: How many of the parts it did failed.
+          example: 7
+        openRouterCostUsd:
+          $ref: "#/components/schemas/Usd"
+        anthropicCostUsd:
+          $ref: "#/components/schemas/Usd"
+    Spending:
+      description: This month's spending by kind of work, with the key that paid.
+      type: object
+      additionalProperties: false
+      required: [since, lines]
+      properties:
+        since:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the month began (UTC).
+        lines:
+          type: array
+          maxItems: 20
+          description: >-
+            One line per kind of work and key - Prompt runs on OpenRouter; scans, the term review,
+            candidate checks (reviews of the candidates and checks of the list) and Recommendation
+            runs on Anthropic; reading responses on both, as OpenRouter reads them when no
+            Anthropic key is set up.
+          items:
+            $ref: "#/components/schemas/SpendLine"
+    SpendLine:
+      description: What one kind of work cost on one key this month.
+      type: object
+      additionalProperties: false
+      required: [kind, key, costUsd]
+      properties:
+        kind:
+          type: string
+          enum: [promptRuns, scans, readingResponses, termReview, candidateChecks, recommendationRuns]
+          description: The kind of work.
+        key:
+          type: string
+          enum: [openRouter, anthropic]
+          description: The key that paid.
+        costUsd:
+          $ref: "#/components/schemas/Usd"
     TermReviewState:
       description: >-
         Whether the language model reviews the waiting candidates by itself, how far it is with
@@ -5139,7 +5323,7 @@ components:
       description: The raw files a scan read its AI readiness from; empty when the site served none.
       type: object
       additionalProperties: false
-      required: [robotsTxt, robotsTruncated, llmsTxt, llmsTruncated, llmsFullTxt, llmsFullTruncated]
+      required: [robotsTxt, robotsTruncated, llmsTxt, llmsTruncated, llmsFullTxt, llmsFullTruncated, sitemapUrl, sitemapTxt, sitemapTruncated]
       properties:
         robotsTxt:
           type: string
@@ -5165,6 +5349,72 @@ components:
         llmsFullTruncated:
           type: boolean
           description: True when llms-full.txt was cut at 100 KB.
+        sitemapUrl:
+          type: string
+          maxLength: 2000
+          description: >-
+            The address of the first sitemap the scan read (the one robots.txt lists, or
+            /sitemap.xml); empty when it read none, or was made before scans kept the sitemap.
+          example: https://www.tribelt.nl/sitemap.xml
+        sitemapTxt:
+          type: string
+          maxLength: 100000
+          description: That sitemap's text, as served.
+          example: "<urlset><url><loc>https://www.tribelt.nl/</loc></url></urlset>"
+        sitemapTruncated:
+          type: boolean
+          description: True when the sitemap was cut at 100 KB.
+    TermPages:
+      description: >-
+        The pages that use one search term on each company's newest finished scan that found it,
+        Tribelt first, then the competitors and the group by name.
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/CompanyTermPages"
+    CompanyTermPages:
+      description: >-
+        One company's pages that use the term. A scan made before scans recorded the pages of a
+        term has none; the company uses the term all the same.
+      type: object
+      additionalProperties: false
+      required: [competitorId, name, role, pages]
+      properties:
+        competitorId:
+          $ref: "#/components/schemas/CompetitorId"
+        name:
+          type: string
+          maxLength: 200
+          description: The company's name.
+          example: Twentebelt
+        role:
+          $ref: "#/components/schemas/CompanyRole"
+        pages:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/TermPage"
+    TermPage:
+      description: A page that uses the term.
+      type: object
+      additionalProperties: false
+      required: [url, title]
+      properties:
+        url:
+          type: string
+          maxLength: 2000
+          description: The page's address.
+          example: https://www.twentebelt.com/conveyor-belts/
+        title:
+          type: string
+          maxLength: 500
+          description: The page's title; empty when it has none.
+          example: Conveyor belts
     PromptFamily:
       description: One of Tribelt's five belt families a prompt asks about.
       type: string

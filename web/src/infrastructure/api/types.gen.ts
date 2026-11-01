@@ -1215,6 +1215,92 @@ export type TermSuggestion = {
 };
 
 /**
+ * The work running now, the last pieces ended, and this month's spending.
+ */
+export type Activity = {
+    /**
+     * The work running now, or waiting to, newest first.
+     */
+    running: Array<Work>;
+    /**
+     * The last 20 pieces of work ended, the last ended first.
+     */
+    recent: Array<Work>;
+    spending: Spending;
+};
+
+/**
+ * A kind of background work.
+ */
+export type WorkKind = 'promptRun' | 'scan' | 'rescan' | 'readinessCheck' | 'termReview' | 'candidateReview' | 'competitorCheck' | 'recommendationRun';
+
+/**
+ * One piece of background work. Running while finishedAt is absent; otherwise ended as ending says. done of total is what it did - responses of a Prompt run, pages of a scan, scans of a re-scan, sites of a readiness check, search terms of the term review, companies of a candidate review or list check - and failed how many of those failed.
+ */
+export type Work = {
+    /**
+     * The work's id: a Prompt run's or a scan's, which their stops take; a re-scan's first scan's; or the work journal's.
+     */
+    id: string;
+    kind: WorkKind;
+    /**
+     * When it began, or was queued.
+     */
+    startedAt: string;
+    /**
+     * When it ended; absent while it runs.
+     */
+    finishedAt?: string;
+    /**
+     * How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand, stoppedByBudget, or failed. Absent while it runs.
+     */
+    ending?: 'done' | 'doneWithFailures' | 'stoppedByHand' | 'stoppedByBudget' | 'failed';
+    /**
+     * How many of its parts it did.
+     */
+    done: number;
+    /**
+     * How many parts it has; 0 when that is not known yet.
+     */
+    total: number;
+    /**
+     * How many of the parts it did failed.
+     */
+    failed: number;
+    openRouterCostUsd: Usd;
+    anthropicCostUsd: Usd;
+};
+
+/**
+ * This month's spending by kind of work, with the key that paid.
+ */
+export type Spending = {
+    /**
+     * When the month began (UTC).
+     */
+    since: string;
+    /**
+     * One line per kind of work and key - Prompt runs on OpenRouter; scans, the term review, candidate checks (reviews of the candidates and checks of the list) and Recommendation runs on Anthropic; reading responses on both, as OpenRouter reads them when no Anthropic key is set up.
+     */
+    lines: Array<SpendLine>;
+};
+
+/**
+ * What one kind of work cost on one key this month.
+ */
+export type SpendLine = {
+    /**
+     * The kind of work.
+     */
+    kind: 'promptRuns' | 'scans' | 'readingResponses' | 'termReview' | 'candidateChecks' | 'recommendationRuns';
+    /**
+     * The key that paid.
+     */
+    key: 'openRouter' | 'anthropic';
+    costUsd: Usd;
+};
+
+/**
  * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
  */
 export type TermReviewState = {
@@ -2247,6 +2333,52 @@ export type ReadinessFiles = {
      * True when llms-full.txt was cut at 100 KB.
      */
     llmsFullTruncated: boolean;
+    /**
+     * The address of the first sitemap the scan read (the one robots.txt lists, or /sitemap.xml); empty when it read none, or was made before scans kept the sitemap.
+     */
+    sitemapUrl: string;
+    /**
+     * That sitemap's text, as served.
+     */
+    sitemapTxt: string;
+    /**
+     * True when the sitemap was cut at 100 KB.
+     */
+    sitemapTruncated: boolean;
+};
+
+/**
+ * The pages that use one search term on each company's newest finished scan that found it, Tribelt first, then the competitors and the group by name.
+ */
+export type TermPages = {
+    items: Array<CompanyTermPages>;
+};
+
+/**
+ * One company's pages that use the term. A scan made before scans recorded the pages of a term has none; the company uses the term all the same.
+ */
+export type CompanyTermPages = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    pages: Array<TermPage>;
+};
+
+/**
+ * A page that uses the term.
+ */
+export type TermPage = {
+    /**
+     * The page's address.
+     */
+    url: string;
+    /**
+     * The page's title; empty when it has none.
+     */
+    title: string;
 };
 
 /**
@@ -3656,6 +3788,48 @@ export type SearchTermsResponses = {
 
 export type SearchTermsResponse = SearchTermsResponses[keyof SearchTermsResponses];
 
+export type GetTermPagesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The term, as the terminology map writes it.
+         */
+        term: string;
+        /**
+         * The term's language.
+         */
+        language: Language;
+    };
+    url: '/api/v1/term-pages';
+};
+
+export type GetTermPagesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetTermPagesError = GetTermPagesErrors[keyof GetTermPagesErrors];
+
+export type GetTermPagesResponses = {
+    /**
+     * Each company's pages that use the term.
+     */
+    200: TermPages;
+};
+
+export type GetTermPagesResponse = GetTermPagesResponses[keyof GetTermPagesResponses];
+
 export type ListCompetitorsData = {
     body?: never;
     path?: never;
@@ -4273,6 +4447,39 @@ export type StopAnalysisResponses = {
 };
 
 export type StopAnalysisResponse = StopAnalysisResponses[keyof StopAnalysisResponses];
+
+export type GetActivityData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/activity';
+};
+
+export type GetActivityErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetActivityError = GetActivityErrors[keyof GetActivityErrors];
+
+export type GetActivityResponses = {
+    /**
+     * The work and this month's spending.
+     */
+    200: Activity;
+};
+
+export type GetActivityResponse = GetActivityResponses[keyof GetActivityResponses];
 
 export type ListTermCandidatesData = {
     body?: never;

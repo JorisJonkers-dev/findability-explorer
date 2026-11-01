@@ -45,6 +45,10 @@ type DismissCompetitorCandidateRes interface {
 	dismissCompetitorCandidateRes()
 }
 
+type GetActivityRes interface {
+	getActivityRes()
+}
+
 type GetAiReadinessRes interface {
 	getAiReadinessRes()
 }
@@ -111,6 +115,10 @@ type GetReadinessFilesRes interface {
 
 type GetStandingsRes interface {
 	getStandingsRes()
+}
+
+type GetTermPagesRes interface {
+	getTermPagesRes()
 }
 
 type ListAnalysesRes interface {

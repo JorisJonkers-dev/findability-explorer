@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 // Config tunes a Service; the zero value of each field picks the production default.
@@ -66,6 +67,8 @@ type Service struct {
 	cfg    Config
 	// review is the language model's review of the candidates; its reviewers are nil until WithReviewers.
 	review review
+	// journal records the reviews and checks for Activity; nil until WithJournal.
+	journal work.Journal
 	// extractors read the answers instead of OpenRouter when they hand one out; nil until WithExtractors.
 	extractors Extractors
 	// budget stops Claude Haiku once the month's Anthropic budget is spent; nil until WithBudget.
@@ -91,6 +94,10 @@ func WithReviewers(r Reviewers, pages HomePages, onError func(error)) Option {
 func WithExtractors(e Extractors) Option {
 	return func(s *Service) { s.extractors = e }
 }
+
+// WithJournal records each review of the candidates and check of the list in j, as Activity lists
+// them; a journal that fails is reported to the reviewers' onError and leaves the work alone.
+func WithJournal(j work.Journal) Option { return func(s *Service) { s.journal = j } }
 
 // WithBudget stops Claude Haiku once the month's Anthropic budget is spent: the review of the
 // candidates stops, and OpenRouter reads the answers instead. Without it, Haiku does not stop.

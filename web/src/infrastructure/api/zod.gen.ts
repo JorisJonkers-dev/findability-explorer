@@ -578,6 +578,20 @@ export const zTermCandidate = z.object({
 });
 
 /**
+ * A kind of background work.
+ */
+export const zWorkKind = z.enum([
+    'promptRun',
+    'scan',
+    'rescan',
+    'readinessCheck',
+    'termReview',
+    'candidateReview',
+    'competitorCheck',
+    'recommendationRun'
+]);
+
+/**
  * Whether the term review runs by itself.
  */
 export const zTermReviewSwitch = z.object({
@@ -1226,7 +1240,35 @@ export const zReadinessFiles = z.object({
     llmsTxt: z.string().max(100000),
     llmsTruncated: z.boolean(),
     llmsFullTxt: z.string().max(100000),
-    llmsFullTruncated: z.boolean()
+    llmsFullTruncated: z.boolean(),
+    sitemapUrl: z.string().max(2000),
+    sitemapTxt: z.string().max(100000),
+    sitemapTruncated: z.boolean()
+});
+
+/**
+ * A page that uses the term.
+ */
+export const zTermPage = z.object({
+    url: z.string().max(2000),
+    title: z.string().max(500)
+});
+
+/**
+ * One company's pages that use the term. A scan made before scans recorded the pages of a term has none; the company uses the term all the same.
+ */
+export const zCompanyTermPages = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    pages: z.array(zTermPage).max(10)
+});
+
+/**
+ * The pages that use one search term on each company's newest finished scan that found it, Tribelt first, then the competitors and the group by name.
+ */
+export const zTermPages = z.object({
+    items: z.array(zCompanyTermPages).max(1000)
 });
 
 /**
@@ -1385,6 +1427,61 @@ export const zLlmSettings = z.object({
     matchingEnabled: z.boolean(),
     budget: zLlmBudget,
     events: z.array(zLlmEvent).max(50)
+});
+
+/**
+ * One piece of background work. Running while finishedAt is absent; otherwise ended as ending says. done of total is what it did - responses of a Prompt run, pages of a scan, scans of a re-scan, sites of a readiness check, search terms of the term review, companies of a candidate review or list check - and failed how many of those failed.
+ */
+export const zWork = z.object({
+    id: z.string().max(64),
+    kind: zWorkKind,
+    startedAt: z.iso.datetime({ offset: true }).max(64),
+    finishedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    ending: z.enum([
+        'done',
+        'doneWithFailures',
+        'stoppedByHand',
+        'stoppedByBudget',
+        'failed'
+    ]).optional(),
+    done: z.int().gte(0).lte(1000000),
+    total: z.int().gte(0).lte(1000000),
+    failed: z.int().gte(0).lte(1000000),
+    openRouterCostUsd: zUsd,
+    anthropicCostUsd: zUsd
+});
+
+/**
+ * What one kind of work cost on one key this month.
+ */
+export const zSpendLine = z.object({
+    kind: z.enum([
+        'promptRuns',
+        'scans',
+        'readingResponses',
+        'termReview',
+        'candidateChecks',
+        'recommendationRuns'
+    ]),
+    key: z.enum(['openRouter', 'anthropic']),
+    costUsd: zUsd
+});
+
+/**
+ * This month's spending by kind of work, with the key that paid.
+ */
+export const zSpending = z.object({
+    since: z.iso.datetime({ offset: true }).max(64),
+    lines: z.array(zSpendLine).max(20)
+});
+
+/**
+ * The work running now, the last pieces ended, and this month's spending.
+ */
+export const zActivity = z.object({
+    running: z.array(zWork).max(1000),
+    recent: z.array(zWork).max(20),
+    spending: zSpending
 });
 
 /**
@@ -2053,6 +2150,16 @@ export const zSearchTermsQuery = z.object({
  */
 export const zSearchTermsResponse = zTermSearch;
 
+export const zGetTermPagesQuery = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage
+});
+
+/**
+ * Each company's pages that use the term.
+ */
+export const zGetTermPagesResponse = zTermPages;
+
 /**
  * The companies: researched competitors by name, then added ones by name, then Tribelt's own group.
  */
@@ -2176,6 +2283,11 @@ export const zStopAnalysisPath = z.object({
  * Stopped.
  */
 export const zStopAnalysisResponse = z.void();
+
+/**
+ * The work and this month's spending.
+ */
+export const zGetActivityResponse = zActivity;
 
 export const zListTermCandidatesQuery = z.object({
     status: zTermCandidateStatus.optional()

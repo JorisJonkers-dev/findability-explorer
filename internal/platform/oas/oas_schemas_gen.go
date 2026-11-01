@@ -67,6 +67,48 @@ func (s *ActiveLlm) SetModel(val string) {
 	s.Model = val
 }
 
+// The work running now, the last pieces ended, and this month's spending.
+// Ref: #/components/schemas/Activity
+type Activity struct {
+	// The work running now, or waiting to, newest first.
+	Running []Work `json:"running"`
+	// The last 20 pieces of work ended, the last ended first.
+	Recent   []Work   `json:"recent"`
+	Spending Spending `json:"spending"`
+}
+
+// GetRunning returns the value of Running.
+func (s *Activity) GetRunning() []Work {
+	return s.Running
+}
+
+// GetRecent returns the value of Recent.
+func (s *Activity) GetRecent() []Work {
+	return s.Recent
+}
+
+// GetSpending returns the value of Spending.
+func (s *Activity) GetSpending() Spending {
+	return s.Spending
+}
+
+// SetRunning sets the value of Running.
+func (s *Activity) SetRunning(val []Work) {
+	s.Running = val
+}
+
+// SetRecent sets the value of Recent.
+func (s *Activity) SetRecent(val []Work) {
+	s.Recent = val
+}
+
+// SetSpending sets the value of Spending.
+func (s *Activity) SetSpending(val Spending) {
+	s.Spending = val
+}
+
+func (*Activity) getActivityRes() {}
+
 type AddCompetitorBadRequest ProblemStatusCode
 
 func (*AddCompetitorBadRequest) addCompetitorRes() {}
@@ -1623,6 +1665,57 @@ func (s *CompanyRole) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// One company's pages that use the term. A scan made before scans recorded the pages of a term has
+// none; the company uses the term all the same.
+// Ref: #/components/schemas/CompanyTermPages
+type CompanyTermPages struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name  string      `json:"name"`
+	Role  CompanyRole `json:"role"`
+	Pages []TermPage  `json:"pages"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CompanyTermPages) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *CompanyTermPages) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *CompanyTermPages) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetPages returns the value of Pages.
+func (s *CompanyTermPages) GetPages() []TermPage {
+	return s.Pages
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CompanyTermPages) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *CompanyTermPages) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *CompanyTermPages) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetPages sets the value of Pages.
+func (s *CompanyTermPages) SetPages(val []TermPage) {
+	s.Pages = val
 }
 
 type CompareScansBadRequest ProblemStatusCode
@@ -3267,6 +3360,14 @@ func (s *FollowedCompany) SetRole(val CompanyRole) {
 	s.Role = val
 }
 
+type GetActivityForbidden ProblemStatusCode
+
+func (*GetActivityForbidden) getActivityRes() {}
+
+type GetActivityUnauthorized ProblemStatusCode
+
+func (*GetActivityUnauthorized) getActivityRes() {}
+
 type GetAnalysisBadRequest ProblemStatusCode
 
 func (*GetAnalysisBadRequest) getAnalysisRes() {}
@@ -3362,6 +3463,14 @@ func (*GetReadinessFilesNotFound) getReadinessFilesRes() {}
 type GetReadinessFilesUnauthorized ProblemStatusCode
 
 func (*GetReadinessFilesUnauthorized) getReadinessFilesRes() {}
+
+type GetTermPagesBadRequest ProblemStatusCode
+
+func (*GetTermPagesBadRequest) getTermPagesRes() {}
+
+type GetTermPagesUnauthorized ProblemStatusCode
+
+func (*GetTermPagesUnauthorized) getTermPagesRes() {}
 
 // Whether an improvement is done.
 // Ref: #/components/schemas/ImprovementTick
@@ -7049,6 +7158,52 @@ func (o OptUUID) Get() (v uuid.UUID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptWorkEnding returns new OptWorkEnding with value set to v.
+func NewOptWorkEnding(v WorkEnding) OptWorkEnding {
+	return OptWorkEnding{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptWorkEnding is optional WorkEnding.
+type OptWorkEnding struct {
+	Value WorkEnding
+	Set   bool
+}
+
+// IsSet returns true if OptWorkEnding was set.
+func (o OptWorkEnding) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptWorkEnding) Reset() {
+	var v WorkEnding
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptWorkEnding) SetTo(v WorkEnding) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptWorkEnding) Get() (v WorkEnding, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptWorkEnding) Or(d WorkEnding) WorkEnding {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -11769,6 +11924,13 @@ type ReadinessFiles struct {
 	LlmsFullTxt string `json:"llmsFullTxt"`
 	// True when llms-full.txt was cut at 100 KB.
 	LlmsFullTruncated bool `json:"llmsFullTruncated"`
+	// The address of the first sitemap the scan read (the one robots.txt lists, or /sitemap.xml); empty
+	// when it read none, or was made before scans kept the sitemap.
+	SitemapUrl string `json:"sitemapUrl"`
+	// That sitemap's text, as served.
+	SitemapTxt string `json:"sitemapTxt"`
+	// True when the sitemap was cut at 100 KB.
+	SitemapTruncated bool `json:"sitemapTruncated"`
 }
 
 // GetRobotsTxt returns the value of RobotsTxt.
@@ -11801,6 +11963,21 @@ func (s *ReadinessFiles) GetLlmsFullTruncated() bool {
 	return s.LlmsFullTruncated
 }
 
+// GetSitemapUrl returns the value of SitemapUrl.
+func (s *ReadinessFiles) GetSitemapUrl() string {
+	return s.SitemapUrl
+}
+
+// GetSitemapTxt returns the value of SitemapTxt.
+func (s *ReadinessFiles) GetSitemapTxt() string {
+	return s.SitemapTxt
+}
+
+// GetSitemapTruncated returns the value of SitemapTruncated.
+func (s *ReadinessFiles) GetSitemapTruncated() bool {
+	return s.SitemapTruncated
+}
+
 // SetRobotsTxt sets the value of RobotsTxt.
 func (s *ReadinessFiles) SetRobotsTxt(val string) {
 	s.RobotsTxt = val
@@ -11829,6 +12006,21 @@ func (s *ReadinessFiles) SetLlmsFullTxt(val string) {
 // SetLlmsFullTruncated sets the value of LlmsFullTruncated.
 func (s *ReadinessFiles) SetLlmsFullTruncated(val bool) {
 	s.LlmsFullTruncated = val
+}
+
+// SetSitemapUrl sets the value of SitemapUrl.
+func (s *ReadinessFiles) SetSitemapUrl(val string) {
+	s.SitemapUrl = val
+}
+
+// SetSitemapTxt sets the value of SitemapTxt.
+func (s *ReadinessFiles) SetSitemapTxt(val string) {
+	s.SitemapTxt = val
+}
+
+// SetSitemapTruncated sets the value of SitemapTruncated.
+func (s *ReadinessFiles) SetSitemapTruncated(val bool) {
+	s.SitemapTruncated = val
 }
 
 func (*ReadinessFiles) getReadinessFilesRes() {}
@@ -12480,6 +12672,189 @@ func (s *SitemapSummary) SetLanguages(val []string) {
 // SetCoverage sets the value of Coverage.
 func (s *SitemapSummary) SetCoverage(val OptSitemapCoverage) {
 	s.Coverage = val
+}
+
+// What one kind of work cost on one key this month.
+// Ref: #/components/schemas/SpendLine
+type SpendLine struct {
+	// The kind of work.
+	Kind SpendLineKind `json:"kind"`
+	// The key that paid.
+	Key     SpendLineKey `json:"key"`
+	CostUsd Usd          `json:"costUsd"`
+}
+
+// GetKind returns the value of Kind.
+func (s *SpendLine) GetKind() SpendLineKind {
+	return s.Kind
+}
+
+// GetKey returns the value of Key.
+func (s *SpendLine) GetKey() SpendLineKey {
+	return s.Key
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *SpendLine) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// SetKind sets the value of Kind.
+func (s *SpendLine) SetKind(val SpendLineKind) {
+	s.Kind = val
+}
+
+// SetKey sets the value of Key.
+func (s *SpendLine) SetKey(val SpendLineKey) {
+	s.Key = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *SpendLine) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// The key that paid.
+type SpendLineKey string
+
+const (
+	SpendLineKeyOpenRouter SpendLineKey = "openRouter"
+	SpendLineKeyAnthropic  SpendLineKey = "anthropic"
+)
+
+// AllValues returns all SpendLineKey values.
+func (SpendLineKey) AllValues() []SpendLineKey {
+	return []SpendLineKey{
+		SpendLineKeyOpenRouter,
+		SpendLineKeyAnthropic,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SpendLineKey) MarshalText() ([]byte, error) {
+	switch s {
+	case SpendLineKeyOpenRouter:
+		return []byte(s), nil
+	case SpendLineKeyAnthropic:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SpendLineKey) UnmarshalText(data []byte) error {
+	switch SpendLineKey(data) {
+	case SpendLineKeyOpenRouter:
+		*s = SpendLineKeyOpenRouter
+		return nil
+	case SpendLineKeyAnthropic:
+		*s = SpendLineKeyAnthropic
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The kind of work.
+type SpendLineKind string
+
+const (
+	SpendLineKindPromptRuns         SpendLineKind = "promptRuns"
+	SpendLineKindScans              SpendLineKind = "scans"
+	SpendLineKindReadingResponses   SpendLineKind = "readingResponses"
+	SpendLineKindTermReview         SpendLineKind = "termReview"
+	SpendLineKindCandidateChecks    SpendLineKind = "candidateChecks"
+	SpendLineKindRecommendationRuns SpendLineKind = "recommendationRuns"
+)
+
+// AllValues returns all SpendLineKind values.
+func (SpendLineKind) AllValues() []SpendLineKind {
+	return []SpendLineKind{
+		SpendLineKindPromptRuns,
+		SpendLineKindScans,
+		SpendLineKindReadingResponses,
+		SpendLineKindTermReview,
+		SpendLineKindCandidateChecks,
+		SpendLineKindRecommendationRuns,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SpendLineKind) MarshalText() ([]byte, error) {
+	switch s {
+	case SpendLineKindPromptRuns:
+		return []byte(s), nil
+	case SpendLineKindScans:
+		return []byte(s), nil
+	case SpendLineKindReadingResponses:
+		return []byte(s), nil
+	case SpendLineKindTermReview:
+		return []byte(s), nil
+	case SpendLineKindCandidateChecks:
+		return []byte(s), nil
+	case SpendLineKindRecommendationRuns:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SpendLineKind) UnmarshalText(data []byte) error {
+	switch SpendLineKind(data) {
+	case SpendLineKindPromptRuns:
+		*s = SpendLineKindPromptRuns
+		return nil
+	case SpendLineKindScans:
+		*s = SpendLineKindScans
+		return nil
+	case SpendLineKindReadingResponses:
+		*s = SpendLineKindReadingResponses
+		return nil
+	case SpendLineKindTermReview:
+		*s = SpendLineKindTermReview
+		return nil
+	case SpendLineKindCandidateChecks:
+		*s = SpendLineKindCandidateChecks
+		return nil
+	case SpendLineKindRecommendationRuns:
+		*s = SpendLineKindRecommendationRuns
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// This month's spending by kind of work, with the key that paid.
+// Ref: #/components/schemas/Spending
+type Spending struct {
+	// When the month began (UTC).
+	Since time.Time `json:"since"`
+	// One line per kind of work and key - Prompt runs on OpenRouter; scans, the term review, candidate
+	// checks (reviews of the candidates and checks of the list) and Recommendation runs on Anthropic;
+	// reading responses on both, as OpenRouter reads them when no Anthropic key is set up.
+	Lines []SpendLine `json:"lines"`
+}
+
+// GetSince returns the value of Since.
+func (s *Spending) GetSince() time.Time {
+	return s.Since
+}
+
+// GetLines returns the value of Lines.
+func (s *Spending) GetLines() []SpendLine {
+	return s.Lines
+}
+
+// SetSince sets the value of Since.
+func (s *Spending) SetSince(val time.Time) {
+	s.Since = val
+}
+
+// SetLines sets the value of Lines.
+func (s *Spending) SetLines(val []SpendLine) {
+	s.Lines = val
 }
 
 type SplitCompetitorCandidateBadRequest ProblemStatusCode
@@ -13684,6 +14059,54 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
+// A page that uses the term.
+// Ref: #/components/schemas/TermPage
+type TermPage struct {
+	// The page's address.
+	URL string `json:"url"`
+	// The page's title; empty when it has none.
+	Title string `json:"title"`
+}
+
+// GetURL returns the value of URL.
+func (s *TermPage) GetURL() string {
+	return s.URL
+}
+
+// GetTitle returns the value of Title.
+func (s *TermPage) GetTitle() string {
+	return s.Title
+}
+
+// SetURL sets the value of URL.
+func (s *TermPage) SetURL(val string) {
+	s.URL = val
+}
+
+// SetTitle sets the value of Title.
+func (s *TermPage) SetTitle(val string) {
+	s.Title = val
+}
+
+// The pages that use one search term on each company's newest finished scan that found it, Tribelt
+// first, then the competitors and the group by name.
+// Ref: #/components/schemas/TermPages
+type TermPages struct {
+	Items []CompanyTermPages `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TermPages) GetItems() []CompanyTermPages {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TermPages) SetItems(val []CompanyTermPages) {
+	s.Items = val
+}
+
+func (*TermPages) getTermPagesRes() {}
+
 // Whether the language model reviews the waiting candidates by itself, how far it is with them, and
 // what it used this month.
 // Ref: #/components/schemas/TermReviewState
@@ -14335,4 +14758,280 @@ func (s *WatchedNumber) SetMax(val OptFloat64) {
 // SetMet sets the value of Met.
 func (s *WatchedNumber) SetMet(val OptBool) {
 	s.Met = val
+}
+
+// One piece of background work. Running while finishedAt is absent; otherwise ended as ending says.
+// done of total is what it did - responses of a Prompt run, pages of a scan, scans of a re-scan, sites
+// of a readiness check, search terms of the term review, companies of a candidate review or list check
+// - and failed how many of those failed.
+// Ref: #/components/schemas/Work
+type Work struct {
+	// The work's id: a Prompt run's or a scan's, which their stops take; a re-scan's first scan's; or the
+	// work journal's.
+	ID   string   `json:"id"`
+	Kind WorkKind `json:"kind"`
+	// When it began, or was queued.
+	StartedAt time.Time `json:"startedAt"`
+	// When it ended; absent while it runs.
+	FinishedAt OptDateTime `json:"finishedAt"`
+	// How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand, stoppedByBudget, or
+	// failed. Absent while it runs.
+	Ending OptWorkEnding `json:"ending"`
+	// How many of its parts it did.
+	Done int32 `json:"done"`
+	// How many parts it has; 0 when that is not known yet.
+	Total int32 `json:"total"`
+	// How many of the parts it did failed.
+	Failed            int32 `json:"failed"`
+	OpenRouterCostUsd Usd   `json:"openRouterCostUsd"`
+	AnthropicCostUsd  Usd   `json:"anthropicCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *Work) GetID() string {
+	return s.ID
+}
+
+// GetKind returns the value of Kind.
+func (s *Work) GetKind() WorkKind {
+	return s.Kind
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *Work) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetFinishedAt returns the value of FinishedAt.
+func (s *Work) GetFinishedAt() OptDateTime {
+	return s.FinishedAt
+}
+
+// GetEnding returns the value of Ending.
+func (s *Work) GetEnding() OptWorkEnding {
+	return s.Ending
+}
+
+// GetDone returns the value of Done.
+func (s *Work) GetDone() int32 {
+	return s.Done
+}
+
+// GetTotal returns the value of Total.
+func (s *Work) GetTotal() int32 {
+	return s.Total
+}
+
+// GetFailed returns the value of Failed.
+func (s *Work) GetFailed() int32 {
+	return s.Failed
+}
+
+// GetOpenRouterCostUsd returns the value of OpenRouterCostUsd.
+func (s *Work) GetOpenRouterCostUsd() Usd {
+	return s.OpenRouterCostUsd
+}
+
+// GetAnthropicCostUsd returns the value of AnthropicCostUsd.
+func (s *Work) GetAnthropicCostUsd() Usd {
+	return s.AnthropicCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *Work) SetID(val string) {
+	s.ID = val
+}
+
+// SetKind sets the value of Kind.
+func (s *Work) SetKind(val WorkKind) {
+	s.Kind = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *Work) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetFinishedAt sets the value of FinishedAt.
+func (s *Work) SetFinishedAt(val OptDateTime) {
+	s.FinishedAt = val
+}
+
+// SetEnding sets the value of Ending.
+func (s *Work) SetEnding(val OptWorkEnding) {
+	s.Ending = val
+}
+
+// SetDone sets the value of Done.
+func (s *Work) SetDone(val int32) {
+	s.Done = val
+}
+
+// SetTotal sets the value of Total.
+func (s *Work) SetTotal(val int32) {
+	s.Total = val
+}
+
+// SetFailed sets the value of Failed.
+func (s *Work) SetFailed(val int32) {
+	s.Failed = val
+}
+
+// SetOpenRouterCostUsd sets the value of OpenRouterCostUsd.
+func (s *Work) SetOpenRouterCostUsd(val Usd) {
+	s.OpenRouterCostUsd = val
+}
+
+// SetAnthropicCostUsd sets the value of AnthropicCostUsd.
+func (s *Work) SetAnthropicCostUsd(val Usd) {
+	s.AnthropicCostUsd = val
+}
+
+// How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand, stoppedByBudget, or
+// failed. Absent while it runs.
+type WorkEnding string
+
+const (
+	WorkEndingDone             WorkEnding = "done"
+	WorkEndingDoneWithFailures WorkEnding = "doneWithFailures"
+	WorkEndingStoppedByHand    WorkEnding = "stoppedByHand"
+	WorkEndingStoppedByBudget  WorkEnding = "stoppedByBudget"
+	WorkEndingFailed           WorkEnding = "failed"
+)
+
+// AllValues returns all WorkEnding values.
+func (WorkEnding) AllValues() []WorkEnding {
+	return []WorkEnding{
+		WorkEndingDone,
+		WorkEndingDoneWithFailures,
+		WorkEndingStoppedByHand,
+		WorkEndingStoppedByBudget,
+		WorkEndingFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkEnding) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkEndingDone:
+		return []byte(s), nil
+	case WorkEndingDoneWithFailures:
+		return []byte(s), nil
+	case WorkEndingStoppedByHand:
+		return []byte(s), nil
+	case WorkEndingStoppedByBudget:
+		return []byte(s), nil
+	case WorkEndingFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkEnding) UnmarshalText(data []byte) error {
+	switch WorkEnding(data) {
+	case WorkEndingDone:
+		*s = WorkEndingDone
+		return nil
+	case WorkEndingDoneWithFailures:
+		*s = WorkEndingDoneWithFailures
+		return nil
+	case WorkEndingStoppedByHand:
+		*s = WorkEndingStoppedByHand
+		return nil
+	case WorkEndingStoppedByBudget:
+		*s = WorkEndingStoppedByBudget
+		return nil
+	case WorkEndingFailed:
+		*s = WorkEndingFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A kind of background work.
+// Ref: #/components/schemas/WorkKind
+type WorkKind string
+
+const (
+	WorkKindPromptRun         WorkKind = "promptRun"
+	WorkKindScan              WorkKind = "scan"
+	WorkKindRescan            WorkKind = "rescan"
+	WorkKindReadinessCheck    WorkKind = "readinessCheck"
+	WorkKindTermReview        WorkKind = "termReview"
+	WorkKindCandidateReview   WorkKind = "candidateReview"
+	WorkKindCompetitorCheck   WorkKind = "competitorCheck"
+	WorkKindRecommendationRun WorkKind = "recommendationRun"
+)
+
+// AllValues returns all WorkKind values.
+func (WorkKind) AllValues() []WorkKind {
+	return []WorkKind{
+		WorkKindPromptRun,
+		WorkKindScan,
+		WorkKindRescan,
+		WorkKindReadinessCheck,
+		WorkKindTermReview,
+		WorkKindCandidateReview,
+		WorkKindCompetitorCheck,
+		WorkKindRecommendationRun,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkKind) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkKindPromptRun:
+		return []byte(s), nil
+	case WorkKindScan:
+		return []byte(s), nil
+	case WorkKindRescan:
+		return []byte(s), nil
+	case WorkKindReadinessCheck:
+		return []byte(s), nil
+	case WorkKindTermReview:
+		return []byte(s), nil
+	case WorkKindCandidateReview:
+		return []byte(s), nil
+	case WorkKindCompetitorCheck:
+		return []byte(s), nil
+	case WorkKindRecommendationRun:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkKind) UnmarshalText(data []byte) error {
+	switch WorkKind(data) {
+	case WorkKindPromptRun:
+		*s = WorkKindPromptRun
+		return nil
+	case WorkKindScan:
+		*s = WorkKindScan
+		return nil
+	case WorkKindRescan:
+		*s = WorkKindRescan
+		return nil
+	case WorkKindReadinessCheck:
+		*s = WorkKindReadinessCheck
+		return nil
+	case WorkKindTermReview:
+		*s = WorkKindTermReview
+		return nil
+	case WorkKindCandidateReview:
+		*s = WorkKindCandidateReview
+		return nil
+	case WorkKindCompetitorCheck:
+		*s = WorkKindCompetitorCheck
+		return nil
+	case WorkKindRecommendationRun:
+		*s = WorkKindRecommendationRun
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }

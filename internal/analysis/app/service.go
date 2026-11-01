@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 const (
@@ -65,6 +66,10 @@ type Service struct {
 	queue     *queue
 	check     readinessCheck
 	runs      runs
+	// journal records each readiness check for Activity, report hears that it failed; nil until
+	// WithJournal.
+	journal work.Journal
+	report  func(error)
 }
 
 // New returns a Service. matchers names the matcher each analysis uses when it runs.
@@ -300,6 +305,20 @@ func (s *Service) ReadinessTable(ctx context.Context) ([]domain.ReadinessRow, er
 	return domain.ReadinessTable(companies, latest), nil
 }
 
+// TermPages returns, for each company whose newest finished scan found the term in language, the
+// pages of that scan that use it (domain.TermPagesOf).
+func (s *Service) TermPages(ctx context.Context, term, language string) ([]domain.CompanyTermPages, error) {
+	companies, err := s.directory.Companies(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list companies: %w", err)
+	}
+	rows, err := s.repo.TermPages(ctx, term, language)
+	if err != nil {
+		return nil, fmt.Errorf("term pages: %w", err)
+	}
+	return domain.TermPagesOf(rows, companies), nil
+}
+
 // ReadinessFiles returns the raw robots.txt, llms.txt and llms-full.txt a scan read, or
 // domain.ErrNoReadiness.
 func (s *Service) ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.RawFiles, error) {
@@ -410,13 +429,13 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return s.fail(ctx, id, err.Error())
 	}
-	return s.scan(ctx, run, id, target, a.MaxPages)
+	return s.scan(ctx, run, id, target, a.MaxPages, a.CompetitorID == domain.TribeltID)
 }
 
 // scan reads the site's readiness and pages under run and records what it finds under ctx. A
 // stop is looked for after each step and between pages; the scan then ends, keeping what it
-// recorded.
-func (s *Service) scan(ctx, run context.Context, id uuid.UUID, target domain.Target, maxPages int) error {
+// recorded. A scan of tribelt.nl keeps its pages' text too (keepText), for the Recommendation run.
+func (s *Service) scan(ctx, run context.Context, id uuid.UUID, target domain.Target, maxPages int, keepText bool) error {
 	// The readiness files come first, so a site that turns the page crawl away still shows its
 	// crawler policy. When ctx ends while they are read, the crawl below ends too.
 	files, readErr := s.crawler.Readiness(run, target)
@@ -430,7 +449,7 @@ func (s *Service) scan(ctx, run context.Context, id uuid.UUID, target domain.Tar
 	}
 	glossary := s.glossary(ctx)
 	lexicon := domain.NewLexicon(glossary)
-	pages, crawlErr, recordErr := s.crawl(ctx, run, id, target, maxPages, lexicon)
+	pages, crawlErr, recordErr := s.crawl(ctx, run, id, target, maxPages, lexicon, keepText)
 	if recordErr != nil {
 		return s.abort(ctx, id, recordErr)
 	}
@@ -463,9 +482,13 @@ func (s *Service) scan(ctx, run context.Context, id uuid.UUID, target domain.Tar
 
 // crawl reads the site's pages under run and records each under ctx, until a stop is seen. It
 // returns the pages read, why the crawl ended early, and why a page could not be recorded.
-func (s *Service) crawl(ctx, run context.Context, id uuid.UUID, target domain.Target, maxPages int, lexicon domain.Lexicon) (pages []domain.Page, crawlErr, recordErr error) {
+func (s *Service) crawl(ctx, run context.Context, id uuid.UUID, target domain.Target, maxPages int, lexicon domain.Lexicon, keepText bool) (pages []domain.Page, crawlErr, recordErr error) {
 	crawlErr = s.crawler.Crawl(run, target, maxPages, domain.NewLinkScorer(lexicon), func(p domain.Page) error {
-		if err := s.repo.AddPage(ctx, id, domain.Summarise(p, lexicon)); err != nil {
+		summary := domain.Summarise(p, lexicon)
+		if keepText {
+			summary.Text = domain.KeptPageText(p)
+		}
+		if err := s.repo.AddPage(ctx, id, summary); err != nil {
 			recordErr = fmt.Errorf("add page: %w", err)
 			return recordErr
 		}

@@ -69,7 +69,7 @@ function download(): void {
     <p v-else-if="!page.run.value" class="m-0 text-ink-2">
       No Prompt run has finished yet. The first one starts on the schedule.
       <template v-if="isAdmin">
-        An administrator can start one in <RouterLink to="/manage/prompt-test">the Prompt test</RouterLink>.
+        An administrator can start one in <RouterLink to="/manage/prompt-test" class="underline underline-offset-4">the Prompt test</RouterLink>.
       </template>
     </p>
     <template v-else>

@@ -67,7 +67,7 @@ describe('useLlmModels', () => {
   it('says when the provider did not answer', async () => {
     const { state } = mountComposable(() => useLlmModels(ref(STORED_ID)), routes({ [MODELS]: () => problem(502, 'Bad Gateway') }))
     await flushPromises()
-    expect(state.error.value).toBe('The provider did not answer. Try again in a minute.')
+    expect(state.error.value).toBe('The provider did not reply. Try again in a minute.')
   })
 })
 

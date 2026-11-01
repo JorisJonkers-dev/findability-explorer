@@ -72,7 +72,7 @@ describe('a draft', () => {
     expect(checkDraft({ ...draft, term: 'x'.repeat(201) })).toEqual({ kind: 'invalid', message: 'A term has at most 200 characters.' })
     const many = Array.from({ length: 21 }, (_, i) => `C${String(i)}`).join(',')
     expect(checkDraft({ ...draft, usedBy: many })).toEqual({ kind: 'invalid', message: 'Name at most 20 companies.' })
-    expect(checkDraft({ ...draft, language: '' })).toEqual({ kind: 'invalid', message: 'Choose the language the phrase is in.' })
+    expect(checkDraft({ ...draft, language: '' })).toEqual({ kind: 'invalid', message: 'Choose the language the term is in.' })
     expect(checkDraft({ ...draft, usedBy: ' A, ,B,A ' })).toEqual({
       kind: 'ok',
       body: { term: 'spiral freezer belt', language: 'de', family: 'other', tier: 'broad', usedBy: ['A', 'B'] },

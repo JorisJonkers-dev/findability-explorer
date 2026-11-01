@@ -49,12 +49,12 @@ describe('the suggestions', () => {
     expect(got.map((s) => [s.kind, s.name, s.detail])).toEqual([
       ['known', 'Wire Belt Company Ltd', 'Already a competitor'],
       ['known', 'No Site', 'Already a competitor'],
-      ['candidate', 'Intralox', 'Named in 23 AI answers'],
-      ['candidate', 'Habasit', 'Named in 14 AI answers'],
+      ['candidate', 'Intralox', 'Named in 23 AI responses'],
+      ['candidate', 'Habasit', 'Named in 14 AI responses'],
       ['new', 'Add “i” as a new company', 'Add its website before adding it'],
     ])
     expect(got[2]?.item).toEqual({ name: 'Intralox', website: 'https://intralox.com/', candidateId: candidates[1]?.id })
-    expect(traySuggestions('regal', [], candidates)[0]?.detail).toBe('Named in 1 AI answer')
+    expect(traySuggestions('regal', [], candidates)[0]?.detail).toBe('Named in 1 AI response')
   })
 
   it('offer a website as a new company named after it, and find a known one by it', () => {

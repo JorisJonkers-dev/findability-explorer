@@ -5,10 +5,10 @@ import { providerName } from '../../prompt-test/domain/results'
 import { candidateWebsite } from '../../prompt-test/domain/settings'
 import { atLabel } from '../../settings/domain/time'
 
-/** How often and by which providers' models a company was named: "Named in 37 answers by OpenAI and xAI, last on …". */
+/** How often and by which providers' models a company was named: "Named in 37 responses by OpenAI and xAI, last on …". */
 export function candidateEvidence(c: CompetitorCandidate): string {
-  const answers = c.answers === 1 ? '1 answer' : `${String(c.answers)} answers`
-  return `Named in ${answers} by ${joinWords(c.providers.map(providerName))}, last on ${atLabel(c.lastSeenAt)}`
+  const responses = c.answers === 1 ? '1 response' : `${String(c.answers)} responses`
+  return `Named in ${responses} by ${joinWords(c.providers.map(providerName))}, last on ${atLabel(c.lastSeenAt)}`
 }
 
 const DECIDED = { added: 'Added', dismissed: 'Dismissed' } as const
@@ -97,7 +97,7 @@ export function keptBy(c: CompetitorCandidate, filter: CheckFilter): boolean {
 export function checkLine(c: CompetitorCandidate): string | null {
   const v = c.check
   if (!v || decidedByHaiku(c)) return null
-  if (v.reason === '') return 'Haiku gave no answer for it.'
+  if (v.reason === '') return 'Haiku gave no reason for it.'
   if (!v.sure) return `Haiku is unsure. ${v.reason}`
   return `Haiku says ${v.competitor ? 'a competitor' : 'not a competitor'}. ${v.reason}`
 }

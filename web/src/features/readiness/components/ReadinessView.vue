@@ -8,8 +8,7 @@ import SortButton from '../../../shared/ui/SortButton.vue'
 import { formatValue } from '../../catching-up/domain/standings'
 import { usePlan } from '../../plan/composables/usePlan'
 import PageFrame from '../../shell/components/PageFrame.vue'
-import { useMe } from '../../shell/composables/useMe'
-import { useReadinessCheck, useReadinessTable } from '../composables/useReadiness'
+import { useReadinessTable } from '../composables/useReadiness'
 import {
   CHECK_NAMES,
   CHECK_WHY,
@@ -27,17 +26,13 @@ import {
   siteScore,
   STATE_WORDS,
 } from '../domain/checks'
-import { readinessCheckLine } from '../domain/overview'
 import CheckMark from './CheckMark.vue'
 import ReadinessSection from './ReadinessSection.vue'
 
-/** AI readiness: Tribelt's eight checks, tribelt.nl against the competitors check by check, and every site. */
+/** AI readiness: Tribelt's eight checks, tribelt.nl against the competitors check by check, and every site. Checking again is in Manage. */
 const router = useRouter()
-const { rows, check, isLoading, error } = useReadinessTable()
-const { isAdmin } = useMe()
-const { isStarting, error: checkError, start: startCheck } = useReadinessCheck()
+const { rows, isLoading, error } = useReadinessTable()
 const { plan } = usePlan()
-const checkLine = computed(() => readinessCheckLine(check.value))
 
 const tribelt = computed(() => rows.value.find((r) => r.role === 'tribelt'))
 const tribeltStates = computed(() => (tribelt.value?.readiness ? checkStates(tribelt.value.readiness) : undefined))
@@ -88,19 +83,6 @@ const CHECK_COLUMN = 'hidden lg:table-cell'
     :manage="{ to: '/manage/scans', label: 'Manage the scans' }"
     help-topic="websites"
   >
-    <template v-if="isAdmin" #aside>
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center rounded-full border-2 border-black bg-white px-4 font-medium hover:bg-black hover:text-white disabled:opacity-60 disabled:hover:bg-white disabled:hover:text-black"
-        :disabled="isStarting || check?.running"
-        @click="startCheck"
-      >
-        Check AI readiness again
-      </button>
-      <p v-if="checkLine" class="m-0 w-full text-sm font-medium md:text-right" aria-live="polite">{{ checkLine }}</p>
-      <p v-if="checkError" role="alert" class="m-0 w-full text-sm font-medium text-orange-ink md:text-right">{{ checkError }}</p>
-    </template>
-
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-muted">Loading the AI readiness…</p>
     <template v-else>

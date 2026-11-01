@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -36,6 +37,9 @@ type promptTests struct {
 	stopped    uuid.UUID
 	historyErr error
 	setsErr    error
+	// draft is the draft published; publishErr makes publishing fail.
+	draft      domain.Draft
+	publishErr error
 	// workStops are the reviews and checks stopped; workStopErr makes their stops fail.
 	workStops   []string
 	workStopErr error
@@ -158,6 +162,19 @@ func (p *promptTests) PromptSets(context.Context) (app.PromptSets, error) {
 		}},
 	}
 	return app.PromptSets{Sets: []domain.PublishedSet{domaintest.Version2(), v1}, Scopes: domaintest.Scopes()}, p.setsErr
+}
+
+func (p *promptTests) Publish(_ context.Context, actor string, d domain.Draft) (domain.PublishedSet, error) {
+	p.actor, p.draft = actor, d
+	if p.publishErr != nil {
+		return domain.PublishedSet{}, p.publishErr
+	}
+	set := domain.PublishedSet{Version: 3, PublishedAt: answered, PublishedBy: actor, Note: "Adds 1 question, changes none, and removes none."}
+	for _, q := range d.Questions {
+		scope := domain.ScopeInfo{ID: q.Scope, Language: "fr", Region: "Lyon", Name: "French, Lyon"}
+		set.Questions = append(set.Questions, domain.Question{ID: "eyelink-application-fr-lyon", Family: q.Family, Intent: q.Intent, Scope: scope, Text: q.Text})
+	}
+	return set, nil
 }
 
 func (p *promptTests) History(context.Context) (app.HistoryView, error) {
@@ -732,5 +749,47 @@ func TestEverySignedInAccountReadsThePublishedPromptSets(t *testing.T) {
 	a.prompts().setsErr = errors.New("broken")
 	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/prompt-sets", "", true); r.code != http.StatusInternalServerError {
 		t.Errorf("failing prompt sets = %d", r.code)
+	}
+}
+
+func TestPublishingAPromptSetIsForAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	body := `{"questions":[{"family":"eyelink","intent":"application","scope":"fr-lyon","text":"Quelle bande ?"}],` +
+		`"scopes":[{"id":"fr-lyon","language":"fr","region":"Lyon","name":"French, Lyon"}],"restoredFrom":1}`
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-sets", body, "tester"); r.code != http.StatusForbidden {
+		t.Fatalf("a non-administrator = %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-sets", body, "admin")
+	questions, _ := r.body["questions"].([]any)
+	if r.code != http.StatusCreated || r.body["version"].(float64) != 3 || len(questions) != 1 {
+		t.Fatalf("publish = %d %v", r.code, r.body)
+	}
+	q := questions[0].(map[string]any)
+	if q["scope"] != "fr-lyon" || q["language"] != "fr" || q["region"] != "Lyon" || q["scopeName"] != "French, Lyon" {
+		t.Errorf("the new question = %v", q)
+	}
+	d := a.prompts().draft
+	want := domain.Draft{
+		Questions:    []domain.DraftQuestion{{Family: domain.FamilyEyelink, Intent: domain.IntentApplication, Scope: "fr-lyon", Text: "Quelle bande ?"}},
+		Scopes:       []domain.ScopeInfo{{ID: "fr-lyon", Language: "fr", Region: "Lyon", Name: "French, Lyon"}},
+		RestoredFrom: 1,
+	}
+	if !reflect.DeepEqual(d, want) || a.prompts().actor == "" {
+		t.Errorf("draft = %+v by %q", d, a.prompts().actor)
+	}
+	for err, code := range map[error]int{
+		domain.DraftError{Reason: "A question has 1 to 1,000 characters."}: http.StatusUnprocessableEntity,
+		domain.ErrNothingChanged: http.StatusConflict,
+		domain.ErrVersionTaken:   http.StatusConflict,
+		errors.New("broken"):     http.StatusInternalServerError,
+	} {
+		a.prompts().publishErr = err
+		if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-sets", body, "admin"); r.code != code {
+			t.Errorf("%v = %d, want %d", err, r.code, code)
+		}
+	}
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-sets", `{"questions":[]}`, "admin"); r.code != http.StatusBadRequest {
+		t.Errorf("no questions = %d", r.code)
 	}
 }

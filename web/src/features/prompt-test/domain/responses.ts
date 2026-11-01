@@ -38,7 +38,12 @@ const SCOPES: Record<PromptScope, { short: string; long: string }> = {
   german: { short: 'German', long: 'German, no region' },
   english: { short: 'English', long: 'English, no region' },
 }
-const SCOPE_ORDER = Object.keys(SCOPES) as PromptScope[]
+const SCOPE_ORDER: PromptScope[] = Object.keys(SCOPES)
+
+/** A scope's names; a scope a later Prompt set version added goes by its id until it has words here. */
+function scopeText(scope: PromptScope): { short: string; long: string } {
+  return SCOPES[scope] ?? { short: scope, long: scope }
+}
 
 /** Each kind of question as the buyer intent it stands for: a supplier question names the type of belt. */
 const INTENTS: Record<PromptKind, IntentTier> = { supplier: 'product', application: 'application', problem: 'problem' }
@@ -161,7 +166,7 @@ export function runDataLine(run: Pick<PromptRun, 'startedAt' | 'promptSetVersion
 /** What Every response shows, as its address keeps it. */
 export type Filters = {
   mode: PromptMode | 'all'
-  scope: PromptScope | 'all'
+  scope: PromptScope
   family: PromptFamily | 'all'
   model: string
   names: 'all' | 'yes' | 'no'
@@ -197,9 +202,9 @@ export function shown(answers: readonly PromptAnswer[], f: Filters): PromptAnswe
 }
 
 /** The scopes a run asked, for the scope filter. */
-export function scopeOptions(answers: readonly PromptAnswer[]): { value: PromptScope | 'all'; label: string }[] {
+export function scopeOptions(answers: readonly PromptAnswer[]): { value: PromptScope; label: string }[] {
   const asked = new Set(answers.map((a) => a.scope))
-  return [{ value: 'all' as const, label: 'All scopes' }, ...SCOPE_ORDER.filter((s) => asked.has(s)).map((s) => ({ value: s, label: SCOPES[s].long }))]
+  return [{ value: 'all' as const, label: 'All scopes' }, ...[...SCOPE_ORDER.filter((s) => asked.has(s)), ...[...asked].filter((s) => !SCOPE_ORDER.includes(s)).sort()].map((s) => ({ value: s, label: scopeText(s).long }))]
 }
 
 /** Every belt family, for the family filter. */
@@ -249,7 +254,7 @@ export function gridOf(run: Pick<PromptRun, 'models'>, list: readonly PromptAnsw
       question: q.prompt,
       family: q.family,
       scope: q.scope,
-      place: `${FAMILIES[q.family].short}, ${SCOPES[q.scope].short}`,
+      place: `${FAMILIES[q.family].short}, ${scopeText(q.scope).short}`,
       intent: intentOf(q.kind),
       cells: columns.map((c) => found.get(keyOf({ promptId: q.promptId, ...c }))),
     }))
@@ -305,7 +310,7 @@ export function questionsOf(set: readonly PromptSetQuestion[] | undefined, answe
   } else {
     for (const a of answers) {
       if (!seen.has(a.promptId)) {
-        seen.set(a.promptId, { family: a.family, question: { id: a.promptId, text: a.prompt, language: a.language, where: SCOPES[a.scope].long, english: undefined } })
+        seen.set(a.promptId, { family: a.family, question: { id: a.promptId, text: a.prompt, language: a.language, where: scopeText(a.scope).long, english: undefined } })
       }
     }
   }
@@ -344,7 +349,7 @@ export function responsesCsv(answers: readonly PromptAnswer[]): string {
   const rows = answers.map((a) => [
     a.promptId,
     FAMILIES[a.family].long,
-    SCOPES[a.scope].long,
+    scopeText(a.scope).long,
     intentOf(a.kind).name,
     a.language,
     a.prompt,

@@ -193,6 +193,15 @@ type CompetitorDefinition struct {
 	RestoredFrom pgtype.Int8
 }
 
+type HandTerm struct {
+	Term     string
+	Language string
+	Family   string
+	Tier     string
+	AddedBy  string
+	AddedAt  time.Time
+}
+
 type LlmActive struct {
 	Singleton    bool
 	Mode         string
@@ -402,6 +411,13 @@ type PromptSetting struct {
 	FactSheetUpdatedAt  pgtype.Timestamptz
 	UpdatedBy           string
 	UpdatedAt           time.Time
+}
+
+type RemovedTerm struct {
+	Term      string
+	Language  string
+	RemovedBy string
+	RemovedAt time.Time
 }
 
 type Session struct {

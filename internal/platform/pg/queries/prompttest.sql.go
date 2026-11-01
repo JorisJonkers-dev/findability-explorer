@@ -484,6 +484,87 @@ func (q *Queries) InsertPromptReviewUsage(ctx context.Context, arg InsertPromptR
 	return err
 }
 
+const insertPromptScope = `-- name: InsertPromptScope :exec
+INSERT INTO prompt_scopes (id, language, region, name)
+VALUES ($1, $2, nullif($3::text, ''), $4)
+`
+
+type InsertPromptScopeParams struct {
+	ID       string
+	Language string
+	Region   string
+	Name     string
+}
+
+// A scope a newly published version asks in.
+func (q *Queries) InsertPromptScope(ctx context.Context, arg InsertPromptScopeParams) error {
+	_, err := q.db.Exec(ctx, insertPromptScope,
+		arg.ID,
+		arg.Language,
+		arg.Region,
+		arg.Name,
+	)
+	return err
+}
+
+const insertPromptSet = `-- name: InsertPromptSet :execrows
+INSERT INTO prompt_sets (version, published_at, published_by, note)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (version) DO NOTHING
+`
+
+type InsertPromptSetParams struct {
+	Version     int64
+	PublishedAt time.Time
+	PublishedBy string
+	Note        string
+}
+
+// A newly published version; no row when another publication took the number first.
+func (q *Queries) InsertPromptSet(ctx context.Context, arg InsertPromptSetParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertPromptSet,
+		arg.Version,
+		arg.PublishedAt,
+		arg.PublishedBy,
+		arg.Note,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const insertPromptSetQuestion = `-- name: InsertPromptSetQuestion :exec
+INSERT INTO prompt_set_questions (version, position, prompt_id, family, intent, scope_id, text, english)
+VALUES ($1, $2, $3, $4, $5, $6, $7, nullif($8::text, ''))
+`
+
+type InsertPromptSetQuestionParams struct {
+	Version  int64
+	Position int64
+	PromptID string
+	Family   string
+	Intent   string
+	ScopeID  string
+	Text     string
+	English  string
+}
+
+// A question of a newly published version, at its position.
+func (q *Queries) InsertPromptSetQuestion(ctx context.Context, arg InsertPromptSetQuestionParams) error {
+	_, err := q.db.Exec(ctx, insertPromptSetQuestion,
+		arg.Version,
+		arg.Position,
+		arg.PromptID,
+		arg.Family,
+		arg.Intent,
+		arg.ScopeID,
+		arg.Text,
+		arg.English,
+	)
+	return err
+}
+
 const listCompetitorDefinitions = `-- name: ListCompetitorDefinitions :many
 SELECT version, text, saved_at, saved_by, coalesce(restored_from, 0)::bigint AS restored_from
 FROM competitor_definitions

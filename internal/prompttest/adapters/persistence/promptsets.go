@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/queries"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
 
@@ -47,4 +48,34 @@ func (r *Repository) PromptScopes(ctx context.Context) ([]domain.ScopeInfo, erro
 		out = append(out, domain.ScopeInfo{ID: domain.Scope(row.ID), Language: row.Language, Region: row.Region, Name: row.Name})
 	}
 	return out, nil
+}
+
+// PublishPromptSet stores a new version with its questions and the new scopes it asks in, in one
+// transaction, or returns domain.ErrVersionTaken when another publication took its number first.
+func (r *Repository) PublishPromptSet(ctx context.Context, set domain.PublishedSet, scopes []domain.ScopeInfo) error {
+	return r.store.InTx(ctx, func(q *queries.Queries) error {
+		for _, s := range scopes {
+			if err := q.InsertPromptScope(ctx, queries.InsertPromptScopeParams{ID: string(s.ID), Language: s.Language, Region: s.Region, Name: s.Name}); err != nil {
+				return fmt.Errorf("insert scope %s: %w", s.ID, err)
+			}
+		}
+		n, err := q.InsertPromptSet(ctx, queries.InsertPromptSetParams{
+			Version: int64(set.Version), PublishedAt: set.PublishedAt, PublishedBy: set.PublishedBy, Note: set.Note,
+		})
+		if err != nil {
+			return fmt.Errorf("insert prompt set %d: %w", set.Version, err)
+		}
+		if n == 0 {
+			return domain.ErrVersionTaken
+		}
+		for i, question := range set.Questions {
+			if err := q.InsertPromptSetQuestion(ctx, queries.InsertPromptSetQuestionParams{
+				Version: int64(set.Version), Position: int64(i + 1), PromptID: question.ID, Family: string(question.Family),
+				Intent: string(question.Intent), ScopeID: string(question.Scope.ID), Text: question.Text, English: question.English,
+			}); err != nil {
+				return fmt.Errorf("insert question %s: %w", question.ID, err)
+			}
+		}
+		return nil
+	})
 }

@@ -47,3 +47,25 @@ func (s *Service) newestSet(ctx context.Context) (domain.PromptSet, error) {
 	}
 	return set, nil
 }
+
+// Publish makes the next version of the Prompt set from an administrator's draft and stores it with
+// the new scopes it asks in. A draft it cannot ask is a domain.DraftError; a draft that asks what the
+// newest version asks is domain.ErrNothingChanged.
+func (s *Service) Publish(ctx context.Context, actor string, d domain.Draft) (domain.PublishedSet, error) {
+	sets, err := s.promptSets(ctx)
+	if err != nil {
+		return domain.PublishedSet{}, err
+	}
+	scopes, err := s.repo.PromptScopes(ctx)
+	if err != nil {
+		return domain.PublishedSet{}, fmt.Errorf("the scopes: %w", err)
+	}
+	set, added, err := domain.Publish(sets, scopes, d, actor, s.now())
+	if err != nil {
+		return domain.PublishedSet{}, err
+	}
+	if err := s.repo.PublishPromptSet(ctx, set, added); err != nil {
+		return domain.PublishedSet{}, fmt.Errorf("store Prompt set version %d: %w", set.Version, err)
+	}
+	return set, nil
+}

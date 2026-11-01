@@ -233,7 +233,7 @@ describe('the term review', () => {
       '/manage/terms',
     )
     expect(wrapper.get('h1').text()).toBe('Search term list')
-    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(['On the list', 'Waiting terms', 'Term review', 'Term review', 'Waiting terms', 'Reviewing search terms'])
+    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(['On the list', 'Waiting terms', 'Term review', 'Term review', 'Waiting terms', 'Add or remove terms', 'Reviewing search terms'])
     expect(wrapper.text()).toContain('663search terms')
     expect(wrapper.text()).toContain('Claude Haiku has reviewed every search term.')
   })

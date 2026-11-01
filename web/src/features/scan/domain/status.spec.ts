@@ -37,7 +37,7 @@ describe('matchingText', () => {
     expect(matchingText('pending')).toBe('Matching starts when the pages are read.')
     expect(matchingText('disabled')).toBe('Product matching is off: an administrator turned it off, or no language model is set up.')
     expect(matchingText('skipped')).toBe("Skipped: this month's language-model budget is used up, or the pages had no text.")
-    expect(matchingText('failed')).toBe('The language model did not answer. The rest of the scan is complete.')
+    expect(matchingText('failed')).toBe('The language model did not reply. The rest of the scan is complete.')
     expect(matchingText('done')).toBeNull()
   })
 })

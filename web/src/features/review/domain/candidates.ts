@@ -80,7 +80,7 @@ export function checkDraft(draft: AcceptDraft): { kind: 'ok'; body: TermAcceptan
   const term = draft.term.trim()
   if (term === '') return { kind: 'invalid', message: 'Enter the term as the map should show it.' }
   if (term.length > MAX_TERM_LENGTH) return { kind: 'invalid', message: `A term has at most ${String(MAX_TERM_LENGTH)} characters.` }
-  if (draft.language === '') return { kind: 'invalid', message: 'Choose the language the phrase is in.' }
+  if (draft.language === '') return { kind: 'invalid', message: 'Choose the language the term is in.' }
   const usedBy = [...new Set(draft.usedBy.split(',').map((u) => u.trim()).filter((u) => u !== ''))]
   if (usedBy.length > MAX_USED_BY) return { kind: 'invalid', message: `Name at most ${String(MAX_USED_BY)} companies.` }
   return { kind: 'ok', body: { term, language: draft.language, family: draft.family, tier: draft.tier, usedBy } }

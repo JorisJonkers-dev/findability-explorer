@@ -43,7 +43,7 @@ export function settingsProblem(error: unknown, action: SettingsAction): string 
     case 422:
       return detail ? `${UNPROCESSABLE[action]} ${detail}` : UNPROCESSABLE[action]
     case 502:
-      return `The provider did not answer${detail ? `: ${detail}` : '.'} Try again in a minute.`
+      return `The provider did not reply${detail ? `: ${detail}` : '.'} Try again in a minute.`
     default:
       return describeError(error)
   }

@@ -40,6 +40,7 @@ describe('the Manage menu', () => {
       ['Competitor list', 'Checking companies', '/manage/claude-steps/candidateCheck'],
       ['Search term list', 'Term review', '/manage/terms/review'],
       ['Search term list', 'Waiting terms', '/manage/terms/waiting'],
+      ['Search term list', 'Add or remove terms', '/manage/terms/edit'],
       ['Search term list', 'Reviewing terms', '/manage/claude-steps/termReview'],
       ['Recommendations', 'Tick off yourself', '/manage/recommendations/tick-off'],
       ['Recommendations', 'Goals', '/manage/recommendations/goals'],

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 import type { LlmProvider } from '../../../infrastructure/api/types.gen'
 import { useAddCredential } from '../composables/useLlmSettings'
 import { checkNewKey, MAX_KEY_LENGTH, MAX_LABEL_LENGTH, type NewKeyCheck } from '../domain/credentials'
 import { PROVIDER_OPTIONS } from '../domain/providers'
 
-const provider = ref<LlmProvider>('openrouter')
+const props = withDefaults(defineProps<{ fixed?: LlmProvider; title?: string }>(), { fixed: undefined, title: 'Add a key' })
+const provider = ref<LlmProvider>(props.fixed ?? 'openrouter')
+const uid = useId()
 const label = ref('')
 const apiKey = ref('')
 const check = ref<NewKeyCheck>(null)
@@ -30,17 +32,17 @@ function submit(): void {
     // The key is never kept once it is stored.
     apiKey.value = ''
     label.value = ''
-    added.value = `Added "${name}". Choose a model for it above.`
+    added.value = props.fixed ? `Added "${name}".` : `Added "${name}". Choose a model for it above.`
   })
 }
 </script>
 
 <template>
-  <section aria-labelledby="add-title" class="flex flex-col gap-5">
-    <h2 id="add-title" class="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">Add a key</h2>
-    <form novalidate aria-labelledby="add-title" class="flex flex-col gap-4 rounded-2xl border-2 border-grey p-5 sm:p-6" @submit.prevent="submit">
-      <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <label class="flex flex-col gap-2 font-medium">
+  <section :aria-labelledby="`${uid}-title`" class="flex flex-col gap-5">
+    <h3 :id="`${uid}-title`" class="m-0 font-display text-lg font-semibold">{{ title }}</h3>
+    <form novalidate :aria-labelledby="`${uid}-title`" class="flex flex-col gap-4 rounded-2xl bg-white p-5 sm:p-6" @submit.prevent="submit">
+      <div class="grid gap-4" :class="fixed ? '' : 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]'">
+        <label v-if="!fixed" class="flex flex-col gap-2 font-medium">
           Provider
           <select v-model="provider" class="h-12 rounded-xl border-2 border-grey bg-white px-3 text-base">
             <option v-for="option in PROVIDER_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -56,13 +58,13 @@ function submit(): void {
             autocomplete="off"
             placeholder="Course budget key"
             :aria-invalid="labelError !== null"
-            :aria-describedby="labelError !== null ? 'add-label-error' : undefined"
+            :aria-describedby="labelError !== null ? `${uid}-label-error` : undefined"
             class="h-12 rounded-xl border-2 bg-white px-3 text-base"
             :class="labelError !== null ? 'border-orange-ink' : 'border-grey'"
           />
         </label>
       </div>
-      <p v-if="labelError !== null" id="add-label-error" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ labelError }}</p>
+      <p v-if="labelError !== null" :id="`${uid}-label-error`" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ labelError }}</p>
       <label class="flex flex-col gap-2 font-medium">
         API key
         <input
@@ -73,14 +75,14 @@ function submit(): void {
           spellcheck="false"
           :maxlength="MAX_KEY_LENGTH"
           :aria-invalid="keyError !== null"
-          :aria-describedby="keyError !== null ? 'add-key-error' : 'add-key-hint'"
+          :aria-describedby="keyError !== null ? `${uid}-key-error` : `${uid}-key-hint`"
           class="h-12 rounded-xl border-2 bg-white px-3 font-mono text-base"
           :class="keyError !== null ? 'border-orange-ink' : 'border-grey'"
         />
       </label>
-      <p v-if="keyError !== null" id="add-key-error" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ keyError }}</p>
-      <p v-else id="add-key-hint" class="m-0 text-sm text-muted">The provider checks the key before it is stored.</p>
-      <div class="flex flex-wrap items-center gap-4">
+      <p v-if="keyError !== null" :id="`${uid}-key-error`" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ keyError }}</p>
+      <p v-else :id="`${uid}-key-hint`" class="m-0 text-sm text-muted">The provider checks the key before it is stored.</p>
+      <div class="mt-2 flex flex-wrap items-center gap-4">
         <button
           type="submit"
           :disabled="isAdding"

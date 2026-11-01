@@ -6,8 +6,9 @@ import { computed, useId } from 'vue'
  * body, and a footer for its buttons. span is its width in twelfths on a wide screen; a widget alone
  * on its row stretches to fill it, and on a narrow screen every widget takes the whole width.
  */
-const props = withDefaults(defineProps<{ title: string; span?: 3 | 4 | 6 | 8 | 12; accent?: boolean }>(), { span: 6, accent: false })
-const id = useId()
+const props = withDefaults(defineProps<{ title: string; span?: 3 | 4 | 6 | 8 | 12; accent?: boolean; headingId?: string }>(), { span: 6, accent: false, headingId: undefined })
+const generated = useId()
+const id = computed(() => props.headingId ?? generated)
 
 // Literal classes, so Tailwind finds them: the basis leaves room for the gaps, and growing fills the row.
 const BASIS: Record<3 | 4 | 6 | 8 | 12, string> = {
@@ -28,7 +29,7 @@ const width = computed(() => BASIS[props.span])
     :class="[width, accent ? 'bg-orange-pale' : 'bg-mist']"
   >
     <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-      <h2 :id="id" class="m-0 font-display text-xl leading-tight font-semibold">{{ title }}</h2>
+      <h2 :id="id" tabindex="-1" class="m-0 font-display text-xl leading-tight font-semibold focus:outline-none">{{ title }}</h2>
       <slot name="action" />
     </div>
     <div class="flex min-w-0 flex-col gap-3">

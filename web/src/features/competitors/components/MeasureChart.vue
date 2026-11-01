@@ -13,14 +13,11 @@ const style = (value: number | undefined, scale: number) => ({ width: `${String(
 </script>
 
 <template>
-  <section aria-labelledby="compare-title" class="flex flex-col gap-4 rounded-3xl bg-mist p-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h2 id="compare-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em]">{{ name }} against Tribelt</h2>
-      <p aria-hidden="true" class="m-0 flex gap-4 text-sm font-medium">
-        <span class="inline-flex items-center gap-2"><span class="size-3 rounded-sm bg-blue-grey"></span>{{ name }}</span>
-        <span class="inline-flex items-center gap-2"><span class="size-3 rounded-sm bg-orange"></span>Tribelt</span>
-      </p>
-    </div>
+  <div class="flex flex-col gap-4 rounded-3xl bg-mist p-6">
+    <p aria-hidden="true" class="m-0 flex flex-wrap gap-4 text-sm font-medium">
+      <span class="inline-flex items-center gap-2"><span class="size-3 rounded-sm bg-blue-grey"></span>{{ name }}</span>
+      <span class="inline-flex items-center gap-2"><span class="size-3 rounded-sm bg-orange"></span>Tribelt</span>
+    </p>
     <p class="m-0 text-ink-2">Pick a measure to read what it means.</p>
     <div class="flex flex-col gap-1">
       <button
@@ -49,5 +46,5 @@ const style = (value: number | undefined, scale: number) => ({ width: `${String(
       <p class="m-0">{{ picked.text }}</p>
       <RouterLink :to="picked.path" class="font-medium">{{ picked.pathLabel }}</RouterLink>
     </div>
-  </section>
+  </div>
 </template>

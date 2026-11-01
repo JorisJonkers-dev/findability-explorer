@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 const (
@@ -65,6 +66,10 @@ type Service struct {
 	queue     *queue
 	check     readinessCheck
 	runs      runs
+	// journal records each readiness check for Activity, report hears that it failed; nil until
+	// WithJournal.
+	journal work.Journal
+	report  func(error)
 }
 
 // New returns a Service. matchers names the matcher each analysis uses when it runs.

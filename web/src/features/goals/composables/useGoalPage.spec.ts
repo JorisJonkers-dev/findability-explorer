@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { overviewRoutes } from '../../../testing/homeFixtures'
-import { problem, routes, settle } from '../../../testing/mountApp'
+import { promptResults } from '../../../testing/fixtures'
+import { json, problem, routes, settle } from '../../../testing/mountApp'
 import { mountAt } from '../../../testing/mountAt'
 import { useGoalPage } from './useGoalPage'
 
@@ -66,6 +67,12 @@ describe('useGoalPage', () => {
     const overview = await mountGoal('termsUsed', { 'GET /api/v1/overview': () => problem(500, 'Internal Server Error', 'Overview down.') })
     expect(overview.state.breakdownError.value).toContain('Overview down.')
     expect(overview.state.breakdown.value).toBeUndefined()
+  })
+
+  it('has no breakdown to show before the first Prompt run', async () => {
+    const { state } = await mountGoal('aiShareOfVoice', { 'GET /api/v1/prompt-test': () => json(promptResults({ runs: [] })) })
+    expect(state.breakdown.value).toEqual({ kind: 'groups', groups: [] })
+    expect(state.dataLine.value).toBe('No Prompt run has finished yet.')
   })
 
   it('follows the address to another goal', async () => {

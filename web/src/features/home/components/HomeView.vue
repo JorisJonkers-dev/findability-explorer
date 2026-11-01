@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import GoalSection from '../../goals/components/GoalSection.vue'
+import FrameSection from '../../../shared/ui/FrameSection.vue'
 import PageFrame from '../../shell/components/PageFrame.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { useHome } from '../composables/useHome'
@@ -25,7 +25,7 @@ const { isAdmin } = useMe()
         {{ home.summary.value }}
       </p>
 
-      <GoalSection id="goals" title="Goals" intro="Click a goal to see who is ahead and what would improve it.">
+      <FrameSection title="Goals" intro="Click a goal to see who is ahead and what would improve it.">
         <div class="relative overflow-x-auto rounded-3xl bg-mist p-4 sm:p-5">
           <table class="w-full min-w-[640px] border-collapse text-left">
             <thead>
@@ -67,7 +67,7 @@ const { isAdmin } = useMe()
           <li class="inline-flex items-center gap-2"><span class="size-2.5 rounded-full bg-blue-grey"></span>The best competitor</li>
           <li class="inline-flex items-center gap-2"><span class="h-[18px] w-[3px] bg-black"></span>The goal</li>
         </ul>
-      </GoalSection>
+      </FrameSection>
 
       <nav aria-label="Parts of the app">
         <ul class="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -81,7 +81,7 @@ const { isAdmin } = useMe()
         </ul>
       </nav>
 
-      <GoalSection id="latest" title="Latest runs and scans" intro="When each process last ran, and what comes next.">
+      <FrameSection title="Latest runs and scans" intro="When each process last ran, and what comes next.">
         <div class="relative overflow-x-auto rounded-3xl bg-mist p-4 sm:p-5">
           <table class="w-full min-w-[560px] border-collapse text-left">
             <thead>
@@ -102,7 +102,7 @@ const { isAdmin } = useMe()
             </tbody>
           </table>
         </div>
-      </GoalSection>
+      </FrameSection>
     </template>
   </PageFrame>
 </template>

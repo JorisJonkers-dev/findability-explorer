@@ -1,6 +1,14 @@
+import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { overviewRoutes } from '../../../testing/homeFixtures'
 import { mountApp, problem, routes, settle } from '../../../testing/mountApp'
+
+/** The section under the heading title. */
+function region(w: VueWrapper, title: string) {
+  const found = w.findAll('section').find((s) => s.find('h2').exists() && s.get('h2').text() === title)
+  if (!found) throw new Error(`no section ${title}`)
+  return found
+}
 
 describe('the Overview', () => {
   it('says what it measures, where its figures come from, and sums them up in a sentence', async () => {
@@ -16,7 +24,7 @@ describe('the Overview', () => {
 
   it('lists the five goals with Tribelt, the goal, the best competitor, and a progress bar, each opening its page', async () => {
     const { wrapper, router } = await mountApp(routes(overviewRoutes()), '/')
-    const goals = wrapper.get('section[aria-labelledby="goals-title"]')
+    const goals = region(wrapper, 'Goals')
     expect(goals.get('h2').text()).toBe('Goals')
     expect(goals.text()).toContain('Click a goal to see who is ahead and what would improve it.')
     expect(goals.findAll('th[scope="col"]').map((t) => t.text())).toEqual(['Goal', 'Tribelt', 'The goal', 'The best competitor', 'Progress'])
@@ -58,14 +66,14 @@ describe('the Overview', () => {
 
   it('says when each process last ran and what comes next, with Manage for administrators', async () => {
     const reader = await mountApp(routes(overviewRoutes()), '/')
-    const latest = reader.wrapper.get('section[aria-labelledby="latest-title"]')
+    const latest = region(reader.wrapper, 'Latest runs and scans')
     expect(latest.get('h2').text()).toBe('Latest runs and scans')
     expect(latest.findAll('tbody tr').map((r) => r.find('th').text())).toEqual(['Prompt test', 'Website scans', 'Search term list', 'Recommendations'])
     expect(latest.text()).toContain('tribelt.nl scanned on 26 October 2026')
     expect(latest.findAll('a').map((a) => a.text())).not.toContain('Manage')
     reader.wrapper.unmount()
     const admin = await mountApp(routes(overviewRoutes({}, true)), '/')
-    const forAdmin = admin.wrapper.get('section[aria-labelledby="latest-title"]')
+    const forAdmin = region(admin.wrapper, 'Latest runs and scans')
     expect(forAdmin.findAll('a').filter((a) => a.text() === 'Manage').map((a) => a.attributes('href'))).toEqual(['/manage/prompt-test', '/manage/scans', '/manage/terms', '/manage/recommendations'])
     expect(forAdmin.text()).toContain('The next run is scheduled for 8 November 2026.')
   })

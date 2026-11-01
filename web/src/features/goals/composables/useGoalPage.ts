@@ -1,6 +1,5 @@
 import { computed, type Ref } from 'vue'
 import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
-import { newestCells } from '../../ai-search/domain/voice'
 import { useOverview } from '../../home/composables/useOverview'
 import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
 import { latestRun } from '../../prompt-test/domain/results'
@@ -44,7 +43,7 @@ export function useGoalPage(measure: Ref<string>) {
     breakdown: computed<Breakdown | undefined>(() => {
       const t = target.value
       if (!t) return undefined
-      if (isPromptGoal(t)) return results.results.value ? { kind: 'groups', groups: promptBreakdown(t, newestCells(results.results.value)) } : undefined
+      if (isPromptGoal(t)) return results.results.value ? { kind: 'groups', groups: promptBreakdown(t, latestRun(results.results.value)?.cells ?? []) } : undefined
       if (t === 'readinessChecks') return summary.summary.value ? { kind: 'checks', checks: readinessBreakdown(summary.summary.value.checks) } : undefined
       return figures.overview.value ? { kind: 'terms', ...termsBreakdown(figures.overview.value.terms.languages) } : undefined
     }),

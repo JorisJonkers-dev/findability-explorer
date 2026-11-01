@@ -52,7 +52,7 @@ const COLUMNS: readonly { key: CompetitorColumn; label: string; first: SortDirec
   { key: 'terms', label: 'Search terms used', first: 'desc', end: true },
   { key: 'scan', label: 'Last scanned', first: 'desc' },
 ]
-const plural = (n: number) => (n === 1 ? 'archived company' : 'archived companies')
+const archivedLabel = computed(() => `${archived.value ? 'Hide' : 'Show'} ${String(archivedCount.value)} ${archivedCount.value === 1 ? 'archived company' : 'archived companies'}`)
 
 /** A started scan opens on its own page. */
 function started(id: string): void {
@@ -126,14 +126,10 @@ function started(id: string): void {
         <p v-if="rows.length === 1" class="m-0 text-ink-2">No competitor matches these filters.</p>
         <p class="m-0 text-sm text-muted">
           <template v-if="archivedCount > 0">
-            <button
-              type="button"
-              :aria-pressed="archived"
-              class="cursor-pointer border-0 bg-transparent p-0 font-medium text-orange-ink underline"
-              @click="archived = !archived"
-            >
-              {{ archived ? 'Hide' : 'Show' }} {{ archivedCount }} {{ plural(archivedCount) }}</button
-            >. Archived companies are left out of every figure in the tool.
+            <button type="button" :aria-pressed="archived" class="cursor-pointer border-0 bg-transparent p-0 font-medium text-orange-ink underline" @click="archived = !archived">
+              {{ archivedLabel }}
+            </button>
+            <span>Archived companies are left out of every figure in the tool.</span>
           </template>
           <template v-else>No company is archived.</template>
           <template v-if="groupNames.length > 0">

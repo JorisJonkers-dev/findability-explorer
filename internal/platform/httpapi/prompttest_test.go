@@ -332,7 +332,7 @@ func TestPromptTestResultsAreForEveryoneSignedIn(t *testing.T) {
 		t.Fatalf("results = %d %v", r.code, r.body)
 	}
 	run := runs[0].(map[string]any)
-	if run["status"] != "stopped" || run["costUsd"].(float64) != 2 || run["answered"].(float64) != 1 || run["failed"].(float64) != 1 ||
+	if run["status"] != "stopped" || run["complete"] != false || run["costUsd"].(float64) != 2 || run["answered"].(float64) != 1 || run["failed"].(float64) != 1 ||
 		len(run["cells"].([]any)) != 1 || run["models"].([]any)[0].(map[string]any)["fallback"] != "google/gemini" || run["finishedAt"] == nil {
 		t.Errorf("run = %v", run)
 	}
@@ -397,7 +397,7 @@ func TestStartingAPromptRunIsForAdministrators(t *testing.T) {
 		t.Errorf("a viewer started a run: %d", r.code)
 	}
 	r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-runs", "", "admin")
-	if r.code != http.StatusAccepted || r.body["status"] != "running" || r.body["finishedAt"] != nil || a.prompts().actor != "Admin" {
+	if r.code != http.StatusAccepted || r.body["status"] != "running" || r.body["complete"] != false || r.body["finishedAt"] != nil || a.prompts().actor != "Admin" {
 		t.Fatalf("start = %d %v", r.code, r.body)
 	}
 	for err, want := range map[error]int{

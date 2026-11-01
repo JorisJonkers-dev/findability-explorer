@@ -531,3 +531,11 @@ func TestAReadingKeepsClaimsWrongAboutTribeltApartFromFactsLeftOut(t *testing.T)
 		t.Errorf("a fact left out became a wrong claim: %+v", claims)
 	}
 }
+
+func TestARunIsCompleteOnceItIsDoneEvenWithFailedResponses(t *testing.T) {
+	for status, want := range map[domain.RunStatus]bool{domain.RunDone: true, domain.RunRunning: false, domain.RunStopped: false, domain.RunFailed: false} {
+		if got := (domain.Run{Status: status}).Complete(); got != want {
+			t.Errorf("%s: %v", status, got)
+		}
+	}
+}

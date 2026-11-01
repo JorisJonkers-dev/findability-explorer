@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"math"
 	"slices"
 
 	"github.com/google/uuid"
@@ -10,8 +11,9 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
 
-// MaxRuns is how many runs the results go back.
-const MaxRuns = 24
+// allRuns asks the store for every run: the history lists every run with a response read, and the
+// results pick the newest complete one, however far back.
+const allRuns = math.MaxInt32
 
 // MaxWrongClaims is how many wrong claims the results list.
 const MaxWrongClaims = 1000
@@ -25,9 +27,9 @@ type RunResult struct {
 	CommonFailure string
 }
 
-// Results are the Prompt test's results: the latest runs, newest first, each with its measures
-// (the trends); how often the answers of the newest run with any name each company; and the
-// claims about Tribelt the answers got wrong, newest first.
+// Results are the Prompt test's results: every run, newest first, each with its measures (the
+// trends) and whether it is complete; how often the answers of the newest complete run name each
+// company; and the claims about Tribelt the answers got wrong, newest first.
 type Results struct {
 	// PromptSetVersion is the newest published Prompt set's version, the one a new run asks.
 	PromptSetVersion int
@@ -69,7 +71,7 @@ func named(mentions []domain.Mention, answers []domain.Answer, companies []domai
 
 // Results reads the latest runs and their answers, each named company matched to the list as it is now.
 func (s *Service) Results(ctx context.Context) (Results, error) {
-	runs, err := s.repo.Runs(ctx, MaxRuns)
+	runs, err := s.repo.Runs(ctx, allRuns)
 	if err != nil {
 		return Results{}, fmt.Errorf("list the runs: %w", err)
 	}
@@ -91,7 +93,7 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 		answers = rematched(answers, m)
 		cells := domain.Cells(answers)
 		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells, CommonFailure: domain.CommonestFailure(answers)})
-		if !mentioned && len(cells) > 0 {
+		if !mentioned && r.Complete() && len(cells) > 0 {
 			out.Mentions, mentioned = named(domain.WithTribelt(domain.Mentions(answers), answers, companies), answers, companies), true
 		}
 		out.WrongClaims = append(out.WrongClaims, domain.WrongClaims(answers)...)
@@ -146,10 +148,10 @@ type RunAnswers struct {
 	Answers []domain.Answer
 }
 
-// Counted returns at most limit of the newest runs that have answers that count, newest first,
-// each with only those answers: what other contexts compare companies on.
+// Counted returns at most limit of the newest complete runs that have answers that count, newest
+// first, each with only those answers: what other contexts compare companies on.
 func (s *Service) Counted(ctx context.Context, limit int) ([]RunAnswers, error) {
-	runs, err := s.repo.Runs(ctx, MaxRuns)
+	runs, err := s.repo.Runs(ctx, allRuns)
 	if err != nil {
 		return nil, fmt.Errorf("list the runs: %w", err)
 	}
@@ -161,6 +163,9 @@ func (s *Service) Counted(ctx context.Context, limit int) ([]RunAnswers, error) 
 	for _, r := range runs {
 		if len(out) == limit {
 			break
+		}
+		if !r.Complete() {
+			continue
 		}
 		answers, err := s.repo.Answers(ctx, r.ID, false)
 		if err != nil {

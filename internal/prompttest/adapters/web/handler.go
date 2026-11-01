@@ -595,7 +595,7 @@ func (h *Handler) UndoCompetitorCandidate(ctx context.Context, params oas.UndoCo
 func toRun(r domain.Run, p domain.Progress, cells []domain.Cell) oas.PromptRun {
 	out := oas.PromptRun{
 		ID: r.ID, PromptSetVersion: int32(r.PromptSetVersion), FactSheetVersion: int32(max(r.FactSheetVersion, 1)), //nolint:gosec // small versions
-		Trigger: oas.PromptTrigger(r.Trigger), StartedBy: r.StartedBy, StartedAt: r.StartedAt, Status: oas.PromptRunStatus(r.Status),
+		Trigger: oas.PromptTrigger(r.Trigger), StartedBy: r.StartedBy, StartedAt: r.StartedAt, Status: oas.PromptRunStatus(r.Status), Complete: r.Complete(),
 		Tasks:    int32(r.Tasks),                                                                                       //nolint:gosec // at most a few thousand
 		Answered: int32(p.Answered), Failed: int32(p.Failed), InputTokens: p.InputTokens, OutputTokens: p.OutputTokens, //nolint:gosec // at most a few thousand
 		CostUsd: oas.Usd(p.Cost.Dollars()), ByProvider: make([]oas.PromptProviderProgress, 0, len(p.ByProvider)),

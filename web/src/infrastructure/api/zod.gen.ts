@@ -1750,6 +1750,7 @@ export const zPromptCell = z.object({
  * One Prompt run, with how far it got and what it cost.
  */
 export const zPromptRun = z.object({
+    complete: z.boolean(),
     id: z.uuid().max(36),
     promptSetVersion: z.int().gte(1).lte(100000),
     factSheetVersion: z.int().gte(1).lte(100000),

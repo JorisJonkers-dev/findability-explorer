@@ -98,6 +98,11 @@ type Run struct {
 	Tasks int
 }
 
+// Complete reports whether the run is complete: done, even with failed responses. Results always
+// show the newest complete run (the spec's decision 8); a run still running, stopped or failed is
+// kept and listed in Manage, where a retry finishes it.
+func (r Run) Complete() bool { return r.Status == RunDone }
+
 // Reopened is the run running again, as asking its failed answers again makes it.
 func (r Run) Reopened() Run {
 	r.Status, r.FinishedAt, r.Failure = RunRunning, time.Time{}, ""

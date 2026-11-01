@@ -11416,6 +11416,9 @@ func (s *PromptRetryRequest) SetMode(val OptPromptMode) {
 // One Prompt run, with how far it got and what it cost.
 // Ref: #/components/schemas/PromptRun
 type PromptRun struct {
+	// Whether the run is complete - done, even with failed responses. The Results pages show the newest
+	// complete run; one still running, stopped or failed is listed in Manage.
+	Complete bool `json:"complete"`
 	// The run's id.
 	ID uuid.UUID `json:"id"`
 	// The version of the prompt set it asked.
@@ -11449,6 +11452,11 @@ type PromptRun struct {
 	ByProvider []PromptProviderProgress `json:"byProvider"`
 	// Its answers counted per provider, scope, belt family and mode.
 	Cells []PromptCell `json:"cells"`
+}
+
+// GetComplete returns the value of Complete.
+func (s *PromptRun) GetComplete() bool {
+	return s.Complete
 }
 
 // GetID returns the value of ID.
@@ -11539,6 +11547,11 @@ func (s *PromptRun) GetByProvider() []PromptProviderProgress {
 // GetCells returns the value of Cells.
 func (s *PromptRun) GetCells() []PromptCell {
 	return s.Cells
+}
+
+// SetComplete sets the value of Complete.
+func (s *PromptRun) SetComplete(val bool) {
+	s.Complete = val
 }
 
 // SetID sets the value of ID.

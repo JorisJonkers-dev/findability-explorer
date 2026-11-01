@@ -6573,8 +6573,13 @@ components:
       description: One Prompt run, with how far it got and what it cost.
       type: object
       additionalProperties: false
-      required: [id, promptSetVersion, factSheetVersion, trigger, startedBy, startedAt, status, models, tasks, answered, failed, inputTokens, outputTokens, costUsd, byProvider, cells]
+      required: [id, promptSetVersion, factSheetVersion, trigger, startedBy, startedAt, status, complete, models, tasks, answered, failed, inputTokens, outputTokens, costUsd, byProvider, cells]
       properties:
+        complete:
+          type: boolean
+          description: >-
+            Whether the run is complete - done, even with failed responses. The Results pages show
+            the newest complete run; one still running, stopped or failed is listed in Manage.
         id:
           type: string
           format: uuid

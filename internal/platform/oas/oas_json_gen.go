@@ -22030,6 +22030,10 @@ func (s *PromptRun) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PromptRun) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("complete")
+		e.Bool(s.Complete)
+	}
+	{
 		e.FieldStart("id")
 		json.EncodeUUID(e, s.ID)
 	}
@@ -22119,25 +22123,26 @@ func (s *PromptRun) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPromptRun = [18]string{
-	0:  "id",
-	1:  "promptSetVersion",
-	2:  "factSheetVersion",
-	3:  "trigger",
-	4:  "startedBy",
-	5:  "startedAt",
-	6:  "finishedAt",
-	7:  "status",
-	8:  "failure",
-	9:  "models",
-	10: "tasks",
-	11: "answered",
-	12: "failed",
-	13: "inputTokens",
-	14: "outputTokens",
-	15: "costUsd",
-	16: "byProvider",
-	17: "cells",
+var jsonFieldsNameOfPromptRun = [19]string{
+	0:  "complete",
+	1:  "id",
+	2:  "promptSetVersion",
+	3:  "factSheetVersion",
+	4:  "trigger",
+	5:  "startedBy",
+	6:  "startedAt",
+	7:  "finishedAt",
+	8:  "status",
+	9:  "failure",
+	10: "models",
+	11: "tasks",
+	12: "answered",
+	13: "failed",
+	14: "inputTokens",
+	15: "outputTokens",
+	16: "costUsd",
+	17: "byProvider",
+	18: "cells",
 }
 
 // Decode decodes PromptRun from json.
@@ -22149,8 +22154,20 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "id":
+		case "complete":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.Complete = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"complete\"")
+			}
+		case "id":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -22162,7 +22179,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "promptSetVersion":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int32()
 				s.PromptSetVersion = int32(v)
@@ -22174,7 +22191,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"promptSetVersion\"")
 			}
 		case "factSheetVersion":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int32()
 				s.FactSheetVersion = int32(v)
@@ -22186,7 +22203,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"factSheetVersion\"")
 			}
 		case "trigger":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.Trigger.Decode(d); err != nil {
 					return err
@@ -22196,7 +22213,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"trigger\"")
 			}
 		case "startedBy":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Str()
 				s.StartedBy = string(v)
@@ -22208,7 +22225,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"startedBy\"")
 			}
 		case "startedAt":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.StartedAt = v
@@ -22230,7 +22247,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"finishedAt\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -22250,7 +22267,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failure\"")
 			}
 		case "models":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				s.Models = make([]PromptModelChoice, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -22268,7 +22285,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"models\"")
 			}
 		case "tasks":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int32()
 				s.Tasks = int32(v)
@@ -22280,7 +22297,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tasks\"")
 			}
 		case "answered":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int32()
 				s.Answered = int32(v)
@@ -22292,7 +22309,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"answered\"")
 			}
 		case "failed":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int32()
 				s.Failed = int32(v)
@@ -22304,7 +22321,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failed\"")
 			}
 		case "inputTokens":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := d.Int64()
 				s.InputTokens = int64(v)
@@ -22316,7 +22333,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"inputTokens\"")
 			}
 		case "outputTokens":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := d.Int64()
 				s.OutputTokens = int64(v)
@@ -22328,7 +22345,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"outputTokens\"")
 			}
 		case "costUsd":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.CostUsd.Decode(d); err != nil {
 					return err
@@ -22338,7 +22355,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"costUsd\"")
 			}
 		case "byProvider":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				s.ByProvider = make([]PromptProviderProgress, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -22356,7 +22373,7 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"byProvider\"")
 			}
 		case "cells":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				s.Cells = make([]PromptCell, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -22383,9 +22400,9 @@ func (s *PromptRun) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
-		0b10111111,
-		0b11111110,
-		0b00000011,
+		0b01111111,
+		0b11111101,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

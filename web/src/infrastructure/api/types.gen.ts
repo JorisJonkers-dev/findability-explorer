@@ -2889,6 +2889,10 @@ export type PromptCell = {
  */
 export type PromptRun = {
     /**
+     * Whether the run is complete - done, even with failed responses. The Results pages show the newest complete run; one still running, stopped or failed is listed in Manage.
+     */
+    complete: boolean;
+    /**
      * The run's id.
      */
     id: string;

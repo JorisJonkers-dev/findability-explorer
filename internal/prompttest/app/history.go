@@ -36,8 +36,12 @@ func (s *Service) History(ctx context.Context) (HistoryView, error) {
 	}
 	in := make([]domain.RunFigureInput, 0, len(res.Runs))
 	failure := map[uuid.UUID]string{}
-	// Results are newest first; the charts read left to right.
+	// Results are newest first; the charts read left to right. A run still running is no point on
+	// them yet: it would show as partial for want of the responses it has still to ask.
 	for _, r := range slices.Backward(res.Runs) {
+		if r.Run.Status == domain.RunRunning {
+			continue
+		}
 		in = append(in, domain.RunFigureInput{Run: r.Run, Progress: r.Progress, Cells: r.Cells})
 		failure[r.Run.ID] = r.CommonFailure
 	}

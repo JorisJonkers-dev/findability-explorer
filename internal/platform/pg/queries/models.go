@@ -149,16 +149,6 @@ type AnalysisReadinessFile struct {
 	SitemapTruncated  bool
 }
 
-type ClaudeStepVersion struct {
-	Step         string
-	Number       int64
-	Model        string
-	Instructions string
-	Note         string
-	CreatedBy    string
-	CreatedAt    time.Time
-}
-
 type Company struct {
 	ID         string
 	Name       string
@@ -185,12 +175,13 @@ type CompanyOverride struct {
 	KeptAt     pgtype.Timestamptz
 }
 
-type CompetitorDefinition struct {
-	Version      int64
-	Text         string
-	SavedAt      time.Time
-	SavedBy      string
-	RestoredFrom pgtype.Int8
+type HandTerm struct {
+	Term     string
+	Language string
+	Family   string
+	Tier     string
+	AddedBy  string
+	AddedAt  time.Time
 }
 
 type LlmActive struct {
@@ -401,7 +392,13 @@ type PromptSetting struct {
 	FactSheetUpdatedAt  pgtype.Timestamptz
 	UpdatedBy           string
 	UpdatedAt           time.Time
-	Models              []string
+}
+
+type RemovedTerm struct {
+	Term      string
+	Language  string
+	RemovedBy string
+	RemovedAt time.Time
 }
 
 type Session struct {

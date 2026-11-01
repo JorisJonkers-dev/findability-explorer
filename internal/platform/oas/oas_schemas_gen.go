@@ -185,6 +185,26 @@ type AddLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*AddLlmCredentialUnprocessableEntity) addLlmCredentialRes() {}
 
+type AddTermBadRequest ProblemStatusCode
+
+func (*AddTermBadRequest) addTermRes() {}
+
+type AddTermConflict ProblemStatusCode
+
+func (*AddTermConflict) addTermRes() {}
+
+type AddTermForbidden ProblemStatusCode
+
+func (*AddTermForbidden) addTermRes() {}
+
+type AddTermUnauthorized ProblemStatusCode
+
+func (*AddTermUnauthorized) addTermRes() {}
+
+type AddTermUnprocessableEntity ProblemStatusCode
+
+func (*AddTermUnprocessableEntity) addTermRes() {}
+
 // What a site tells search engines and AI assistants about itself, read by a scan before its page
 // crawl, held against the report's recommendations.
 // Ref: #/components/schemas/AiReadiness
@@ -1598,396 +1618,6 @@ func (s *CandidateReviewStateProblem) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
-}
-
-// One Claude step: its versions, oldest first, the newest of which it uses; the instructions it came
-// with; and the models it may use, cheapest first, with the cost of one job with each. A job's cost is
-// the tool's estimate with Claude Haiku 5.5, scaled by each model's price for the step's typical mix
-// of tokens read and written.
-// Ref: #/components/schemas/ClaudeStep
-type ClaudeStep struct {
-	ID ClaudeStepId `json:"id"`
-	// The step's name.
-	Title string `json:"title"`
-	// True when the instructions are set in the code and only the model can be chosen.
-	FixedInstructions bool `json:"fixedInstructions"`
-	// The instructions the tool came with.
-	Original string            `json:"original"`
-	Current  ClaudeStepVersion `json:"current"`
-	// Every version, oldest first.
-	Versions []ClaudeStepVersion `json:"versions"`
-	// The Claude models the step may use, cheapest first.
-	Models     []ClaudeStepModel `json:"models"`
-	JobCostUsd Usd               `json:"jobCostUsd"`
-}
-
-// GetID returns the value of ID.
-func (s *ClaudeStep) GetID() ClaudeStepId {
-	return s.ID
-}
-
-// GetTitle returns the value of Title.
-func (s *ClaudeStep) GetTitle() string {
-	return s.Title
-}
-
-// GetFixedInstructions returns the value of FixedInstructions.
-func (s *ClaudeStep) GetFixedInstructions() bool {
-	return s.FixedInstructions
-}
-
-// GetOriginal returns the value of Original.
-func (s *ClaudeStep) GetOriginal() string {
-	return s.Original
-}
-
-// GetCurrent returns the value of Current.
-func (s *ClaudeStep) GetCurrent() ClaudeStepVersion {
-	return s.Current
-}
-
-// GetVersions returns the value of Versions.
-func (s *ClaudeStep) GetVersions() []ClaudeStepVersion {
-	return s.Versions
-}
-
-// GetModels returns the value of Models.
-func (s *ClaudeStep) GetModels() []ClaudeStepModel {
-	return s.Models
-}
-
-// GetJobCostUsd returns the value of JobCostUsd.
-func (s *ClaudeStep) GetJobCostUsd() Usd {
-	return s.JobCostUsd
-}
-
-// SetID sets the value of ID.
-func (s *ClaudeStep) SetID(val ClaudeStepId) {
-	s.ID = val
-}
-
-// SetTitle sets the value of Title.
-func (s *ClaudeStep) SetTitle(val string) {
-	s.Title = val
-}
-
-// SetFixedInstructions sets the value of FixedInstructions.
-func (s *ClaudeStep) SetFixedInstructions(val bool) {
-	s.FixedInstructions = val
-}
-
-// SetOriginal sets the value of Original.
-func (s *ClaudeStep) SetOriginal(val string) {
-	s.Original = val
-}
-
-// SetCurrent sets the value of Current.
-func (s *ClaudeStep) SetCurrent(val ClaudeStepVersion) {
-	s.Current = val
-}
-
-// SetVersions sets the value of Versions.
-func (s *ClaudeStep) SetVersions(val []ClaudeStepVersion) {
-	s.Versions = val
-}
-
-// SetModels sets the value of Models.
-func (s *ClaudeStep) SetModels(val []ClaudeStepModel) {
-	s.Models = val
-}
-
-// SetJobCostUsd sets the value of JobCostUsd.
-func (s *ClaudeStep) SetJobCostUsd(val Usd) {
-	s.JobCostUsd = val
-}
-
-func (*ClaudeStep) getClaudeStepRes()         {}
-func (*ClaudeStep) saveClaudeStepVersionRes() {}
-
-// A new version of a Claude step.
-// Ref: #/components/schemas/ClaudeStepChange
-type ClaudeStepChange struct {
-	// The Claude model's id.
-	Model string `json:"model"`
-	// The system message.
-	Instructions string `json:"instructions"`
-	// The version this one restores, when it does; it is noted on the new version.
-	RestoredFrom OptInt32 `json:"restoredFrom"`
-}
-
-// GetModel returns the value of Model.
-func (s *ClaudeStepChange) GetModel() string {
-	return s.Model
-}
-
-// GetInstructions returns the value of Instructions.
-func (s *ClaudeStepChange) GetInstructions() string {
-	return s.Instructions
-}
-
-// GetRestoredFrom returns the value of RestoredFrom.
-func (s *ClaudeStepChange) GetRestoredFrom() OptInt32 {
-	return s.RestoredFrom
-}
-
-// SetModel sets the value of Model.
-func (s *ClaudeStepChange) SetModel(val string) {
-	s.Model = val
-}
-
-// SetInstructions sets the value of Instructions.
-func (s *ClaudeStepChange) SetInstructions(val string) {
-	s.Instructions = val
-}
-
-// SetRestoredFrom sets the value of RestoredFrom.
-func (s *ClaudeStepChange) SetRestoredFrom(val OptInt32) {
-	s.RestoredFrom = val
-}
-
-// A Claude step - matching (matching products in scans); the other steps join as they are built.
-// Ref: #/components/schemas/ClaudeStepId
-type ClaudeStepId string
-
-const (
-	ClaudeStepIdMatching ClaudeStepId = "matching"
-)
-
-// AllValues returns all ClaudeStepId values.
-func (ClaudeStepId) AllValues() []ClaudeStepId {
-	return []ClaudeStepId{
-		ClaudeStepIdMatching,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ClaudeStepId) MarshalText() ([]byte, error) {
-	switch s {
-	case ClaudeStepIdMatching:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ClaudeStepId) UnmarshalText(data []byte) error {
-	switch ClaudeStepId(data) {
-	case ClaudeStepIdMatching:
-		*s = ClaudeStepIdMatching
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Every Claude step.
-// Ref: #/components/schemas/ClaudeStepList
-type ClaudeStepList struct {
-	Items []ClaudeStepSummary `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *ClaudeStepList) GetItems() []ClaudeStepSummary {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *ClaudeStepList) SetItems(val []ClaudeStepSummary) {
-	s.Items = val
-}
-
-func (*ClaudeStepList) listClaudeStepsRes() {}
-
-// A Claude model a step may use, with what one job of the step costs with it.
-// Ref: #/components/schemas/ClaudeStepModel
-type ClaudeStepModel struct {
-	// The model's id on Anthropic's API.
-	ID string `json:"id"`
-	// The model's name.
-	Name       string `json:"name"`
-	JobCostUsd Usd    `json:"jobCostUsd"`
-}
-
-// GetID returns the value of ID.
-func (s *ClaudeStepModel) GetID() string {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *ClaudeStepModel) GetName() string {
-	return s.Name
-}
-
-// GetJobCostUsd returns the value of JobCostUsd.
-func (s *ClaudeStepModel) GetJobCostUsd() Usd {
-	return s.JobCostUsd
-}
-
-// SetID sets the value of ID.
-func (s *ClaudeStepModel) SetID(val string) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *ClaudeStepModel) SetName(val string) {
-	s.Name = val
-}
-
-// SetJobCostUsd sets the value of JobCostUsd.
-func (s *ClaudeStepModel) SetJobCostUsd(val Usd) {
-	s.JobCostUsd = val
-}
-
-// A Claude step as the overview lists it.
-// Ref: #/components/schemas/ClaudeStepSummary
-type ClaudeStepSummary struct {
-	ID ClaudeStepId `json:"id"`
-	// The step's name.
-	Title string `json:"title"`
-	// True when the instructions are set in the code and only the model can be chosen.
-	FixedInstructions bool              `json:"fixedInstructions"`
-	Current           ClaudeStepVersion `json:"current"`
-	JobCostUsd        Usd               `json:"jobCostUsd"`
-}
-
-// GetID returns the value of ID.
-func (s *ClaudeStepSummary) GetID() ClaudeStepId {
-	return s.ID
-}
-
-// GetTitle returns the value of Title.
-func (s *ClaudeStepSummary) GetTitle() string {
-	return s.Title
-}
-
-// GetFixedInstructions returns the value of FixedInstructions.
-func (s *ClaudeStepSummary) GetFixedInstructions() bool {
-	return s.FixedInstructions
-}
-
-// GetCurrent returns the value of Current.
-func (s *ClaudeStepSummary) GetCurrent() ClaudeStepVersion {
-	return s.Current
-}
-
-// GetJobCostUsd returns the value of JobCostUsd.
-func (s *ClaudeStepSummary) GetJobCostUsd() Usd {
-	return s.JobCostUsd
-}
-
-// SetID sets the value of ID.
-func (s *ClaudeStepSummary) SetID(val ClaudeStepId) {
-	s.ID = val
-}
-
-// SetTitle sets the value of Title.
-func (s *ClaudeStepSummary) SetTitle(val string) {
-	s.Title = val
-}
-
-// SetFixedInstructions sets the value of FixedInstructions.
-func (s *ClaudeStepSummary) SetFixedInstructions(val bool) {
-	s.FixedInstructions = val
-}
-
-// SetCurrent sets the value of Current.
-func (s *ClaudeStepSummary) SetCurrent(val ClaudeStepVersion) {
-	s.Current = val
-}
-
-// SetJobCostUsd sets the value of JobCostUsd.
-func (s *ClaudeStepSummary) SetJobCostUsd(val Usd) {
-	s.JobCostUsd = val
-}
-
-// One saved version of a Claude step - the model it uses and its instructions.
-// Ref: #/components/schemas/ClaudeStepVersion
-type ClaudeStepVersion struct {
-	// The version's number, from 1 for the instructions the tool came with.
-	Number int32 `json:"number"`
-	// The Claude model's id on Anthropic's API.
-	Model string `json:"model"`
-	// The model's name for people.
-	ModelName string `json:"modelName"`
-	// The system message the step sends; the data follows it in a separate message.
-	Instructions string `json:"instructions"`
-	// Where the version came from, such as "Restored from version 2.", or empty.
-	Note string `json:"note"`
-	// Who saved it; "the tool" for version 1.
-	CreatedBy string `json:"createdBy"`
-	// When it was saved.
-	CreatedAt time.Time `json:"createdAt"`
-}
-
-// GetNumber returns the value of Number.
-func (s *ClaudeStepVersion) GetNumber() int32 {
-	return s.Number
-}
-
-// GetModel returns the value of Model.
-func (s *ClaudeStepVersion) GetModel() string {
-	return s.Model
-}
-
-// GetModelName returns the value of ModelName.
-func (s *ClaudeStepVersion) GetModelName() string {
-	return s.ModelName
-}
-
-// GetInstructions returns the value of Instructions.
-func (s *ClaudeStepVersion) GetInstructions() string {
-	return s.Instructions
-}
-
-// GetNote returns the value of Note.
-func (s *ClaudeStepVersion) GetNote() string {
-	return s.Note
-}
-
-// GetCreatedBy returns the value of CreatedBy.
-func (s *ClaudeStepVersion) GetCreatedBy() string {
-	return s.CreatedBy
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *ClaudeStepVersion) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// SetNumber sets the value of Number.
-func (s *ClaudeStepVersion) SetNumber(val int32) {
-	s.Number = val
-}
-
-// SetModel sets the value of Model.
-func (s *ClaudeStepVersion) SetModel(val string) {
-	s.Model = val
-}
-
-// SetModelName sets the value of ModelName.
-func (s *ClaudeStepVersion) SetModelName(val string) {
-	s.ModelName = val
-}
-
-// SetInstructions sets the value of Instructions.
-func (s *ClaudeStepVersion) SetInstructions(val string) {
-	s.Instructions = val
-}
-
-// SetNote sets the value of Note.
-func (s *ClaudeStepVersion) SetNote(val string) {
-	s.Note = val
-}
-
-// SetCreatedBy sets the value of CreatedBy.
-func (s *ClaudeStepVersion) SetCreatedBy(val string) {
-	s.CreatedBy = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *ClaudeStepVersion) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
 }
 
 type ClearActiveLlmForbidden ProblemStatusCode
@@ -3766,18 +3396,6 @@ type GetAnalysisNotFound ProblemStatusCode
 
 func (*GetAnalysisNotFound) getAnalysisRes() {}
 
-type GetClaudeStepForbidden ProblemStatusCode
-
-func (*GetClaudeStepForbidden) getClaudeStepRes() {}
-
-type GetClaudeStepNotFound ProblemStatusCode
-
-func (*GetClaudeStepNotFound) getClaudeStepRes() {}
-
-type GetClaudeStepUnauthorized ProblemStatusCode
-
-func (*GetClaudeStepUnauthorized) getClaudeStepRes() {}
-
 type GetCompetitorBadRequest ProblemStatusCode
 
 func (*GetCompetitorBadRequest) getCompetitorRes() {}
@@ -3873,6 +3491,75 @@ func (*GetTermPagesBadRequest) getTermPagesRes() {}
 type GetTermPagesUnauthorized ProblemStatusCode
 
 func (*GetTermPagesUnauthorized) getTermPagesRes() {}
+
+// A term added or removed by hand, with who did it and when.
+// Ref: #/components/schemas/HandTerm
+type HandTerm struct {
+	Term Term `json:"term"`
+	// Who added or removed it.
+	By string `json:"by"`
+	// When.
+	At time.Time `json:"at"`
+}
+
+// GetTerm returns the value of Term.
+func (s *HandTerm) GetTerm() Term {
+	return s.Term
+}
+
+// GetBy returns the value of By.
+func (s *HandTerm) GetBy() string {
+	return s.By
+}
+
+// GetAt returns the value of At.
+func (s *HandTerm) GetAt() time.Time {
+	return s.At
+}
+
+// SetTerm sets the value of Term.
+func (s *HandTerm) SetTerm(val Term) {
+	s.Term = val
+}
+
+// SetBy sets the value of By.
+func (s *HandTerm) SetBy(val string) {
+	s.By = val
+}
+
+// SetAt sets the value of At.
+func (s *HandTerm) SetAt(val time.Time) {
+	s.At = val
+}
+
+// The terms added by hand and the terms removed, oldest first.
+// Ref: #/components/schemas/HandTermList
+type HandTermList struct {
+	Added   []HandTerm `json:"added"`
+	Removed []HandTerm `json:"removed"`
+}
+
+// GetAdded returns the value of Added.
+func (s *HandTermList) GetAdded() []HandTerm {
+	return s.Added
+}
+
+// GetRemoved returns the value of Removed.
+func (s *HandTermList) GetRemoved() []HandTerm {
+	return s.Removed
+}
+
+// SetAdded sets the value of Added.
+func (s *HandTermList) SetAdded(val []HandTerm) {
+	s.Added = val
+}
+
+// SetRemoved sets the value of Removed.
+func (s *HandTermList) SetRemoved(val []HandTerm) {
+	s.Removed = val
+}
+
+func (*HandTermList) listHandTermsRes() {}
 
 // Whether an improvement is done.
 // Ref: #/components/schemas/ImprovementTick
@@ -4271,14 +3958,6 @@ func (s *Language) UnmarshalText(data []byte) error {
 	}
 }
 
-type ListClaudeStepsForbidden ProblemStatusCode
-
-func (*ListClaudeStepsForbidden) listClaudeStepsRes() {}
-
-type ListClaudeStepsUnauthorized ProblemStatusCode
-
-func (*ListClaudeStepsUnauthorized) listClaudeStepsRes() {}
-
 type ListCompetitorCandidatesBadRequest ProblemStatusCode
 
 func (*ListCompetitorCandidatesBadRequest) listCompetitorCandidatesRes() {}
@@ -4298,6 +3977,14 @@ func (*ListCompetitorChecksForbidden) listCompetitorChecksRes() {}
 type ListCompetitorChecksUnauthorized ProblemStatusCode
 
 func (*ListCompetitorChecksUnauthorized) listCompetitorChecksRes() {}
+
+type ListHandTermsForbidden ProblemStatusCode
+
+func (*ListHandTermsForbidden) listHandTermsRes() {}
+
+type ListHandTermsUnauthorized ProblemStatusCode
+
+func (*ListHandTermsUnauthorized) listHandTermsRes() {}
 
 type ListLlmModelsBadGateway ProblemStatusCode
 
@@ -5732,6 +5419,56 @@ func (s *NewLlmCredential) SetLabel(val string) {
 // SetApiKey sets the value of ApiKey.
 func (s *NewLlmCredential) SetApiKey(val string) {
 	s.ApiKey = val
+}
+
+// A search term an administrator adds by hand.
+// Ref: #/components/schemas/NewTerm
+type NewTerm struct {
+	// The term as the list shows it.
+	Term     string     `json:"term"`
+	Language Language   `json:"language"`
+	Family   BeltFamily `json:"family"`
+	Tier     IntentTier `json:"tier"`
+}
+
+// GetTerm returns the value of Term.
+func (s *NewTerm) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *NewTerm) GetLanguage() Language {
+	return s.Language
+}
+
+// GetFamily returns the value of Family.
+func (s *NewTerm) GetFamily() BeltFamily {
+	return s.Family
+}
+
+// GetTier returns the value of Tier.
+func (s *NewTerm) GetTier() IntentTier {
+	return s.Tier
+}
+
+// SetTerm sets the value of Term.
+func (s *NewTerm) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *NewTerm) SetLanguage(val Language) {
+	s.Language = val
+}
+
+// SetFamily sets the value of Family.
+func (s *NewTerm) SetFamily(val BeltFamily) {
+	s.Family = val
+}
+
+// SetTier sets the value of Tier.
+func (s *NewTerm) SetTier(val IntentTier) {
+	s.Tier = val
 }
 
 // NewOptActiveLlm returns new OptActiveLlm with value set to v.
@@ -9600,80 +9337,6 @@ func (s *PromptCorrectness) UnmarshalText(data []byte) error {
 	}
 }
 
-// One question of a draft.
-// Ref: #/components/schemas/PromptDraftQuestion
-type PromptDraftQuestion struct {
-	// The id of the published question it keeps, changed or not; absent for a new question.
-	ID     OptString        `json:"id"`
-	Family PromptFamily     `json:"family"`
-	Intent IntentTier       `json:"intent"`
-	Scope  PromptSetScopeId `json:"scope"`
-	// The question, as it is asked.
-	Text string `json:"text"`
-	// Its English translation, when one is known.
-	English OptString `json:"english"`
-}
-
-// GetID returns the value of ID.
-func (s *PromptDraftQuestion) GetID() OptString {
-	return s.ID
-}
-
-// GetFamily returns the value of Family.
-func (s *PromptDraftQuestion) GetFamily() PromptFamily {
-	return s.Family
-}
-
-// GetIntent returns the value of Intent.
-func (s *PromptDraftQuestion) GetIntent() IntentTier {
-	return s.Intent
-}
-
-// GetScope returns the value of Scope.
-func (s *PromptDraftQuestion) GetScope() PromptSetScopeId {
-	return s.Scope
-}
-
-// GetText returns the value of Text.
-func (s *PromptDraftQuestion) GetText() string {
-	return s.Text
-}
-
-// GetEnglish returns the value of English.
-func (s *PromptDraftQuestion) GetEnglish() OptString {
-	return s.English
-}
-
-// SetID sets the value of ID.
-func (s *PromptDraftQuestion) SetID(val OptString) {
-	s.ID = val
-}
-
-// SetFamily sets the value of Family.
-func (s *PromptDraftQuestion) SetFamily(val PromptFamily) {
-	s.Family = val
-}
-
-// SetIntent sets the value of Intent.
-func (s *PromptDraftQuestion) SetIntent(val IntentTier) {
-	s.Intent = val
-}
-
-// SetScope sets the value of Scope.
-func (s *PromptDraftQuestion) SetScope(val PromptSetScopeId) {
-	s.Scope = val
-}
-
-// SetText sets the value of Text.
-func (s *PromptDraftQuestion) SetText(val string) {
-	s.Text = val
-}
-
-// SetEnglish sets the value of English.
-func (s *PromptDraftQuestion) SetEnglish(val OptString) {
-	s.English = val
-}
-
 // How the extractor read an answer; failed when it could not, after a retry.
 // Ref: #/components/schemas/PromptExtraction
 type PromptExtraction struct {
@@ -11175,7 +10838,77 @@ func (s *PromptRunStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's
+// language, or Dutch, German or English with no region.
+// Ref: #/components/schemas/PromptScope
 type PromptScope string
+
+const (
+	PromptScopeTwente      PromptScope = "twente"
+	PromptScopeNetherlands PromptScope = "netherlands"
+	PromptScopeGermany     PromptScope = "germany"
+	PromptScopeDutch       PromptScope = "dutch"
+	PromptScopeGerman      PromptScope = "german"
+	PromptScopeEnglish     PromptScope = "english"
+)
+
+// AllValues returns all PromptScope values.
+func (PromptScope) AllValues() []PromptScope {
+	return []PromptScope{
+		PromptScopeTwente,
+		PromptScopeNetherlands,
+		PromptScopeGermany,
+		PromptScopeDutch,
+		PromptScopeGerman,
+		PromptScopeEnglish,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromptScope) MarshalText() ([]byte, error) {
+	switch s {
+	case PromptScopeTwente:
+		return []byte(s), nil
+	case PromptScopeNetherlands:
+		return []byte(s), nil
+	case PromptScopeGermany:
+		return []byte(s), nil
+	case PromptScopeDutch:
+		return []byte(s), nil
+	case PromptScopeGerman:
+		return []byte(s), nil
+	case PromptScopeEnglish:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromptScope) UnmarshalText(data []byte) error {
+	switch PromptScope(data) {
+	case PromptScopeTwente:
+		*s = PromptScopeTwente
+		return nil
+	case PromptScopeNetherlands:
+		*s = PromptScopeNetherlands
+		return nil
+	case PromptScopeGermany:
+		*s = PromptScopeGermany
+		return nil
+	case PromptScopeDutch:
+		*s = PromptScopeDutch
+		return nil
+	case PromptScopeGerman:
+		*s = PromptScopeGerman
+		return nil
+	case PromptScopeEnglish:
+		*s = PromptScopeEnglish
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // The fixed, versioned prompt set runs ask.
 // Ref: #/components/schemas/PromptSet
@@ -11204,48 +10937,6 @@ func (s *PromptSet) SetVersion(val int32) {
 // SetPrompts sets the value of Prompts.
 func (s *PromptSet) SetPrompts(val []PromptQuestion) {
 	s.Prompts = val
-}
-
-// An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the
-// version it was restored from, if any.
-// Ref: #/components/schemas/PromptSetDraft
-type PromptSetDraft struct {
-	// Its questions, in order.
-	Questions []PromptDraftQuestion `json:"questions"`
-	// The new scopes its questions ask in, which no version asked in yet.
-	Scopes []PromptSetScope `json:"scopes"`
-	// The version the draft was restored from, if it was.
-	RestoredFrom OptInt32 `json:"restoredFrom"`
-}
-
-// GetQuestions returns the value of Questions.
-func (s *PromptSetDraft) GetQuestions() []PromptDraftQuestion {
-	return s.Questions
-}
-
-// GetScopes returns the value of Scopes.
-func (s *PromptSetDraft) GetScopes() []PromptSetScope {
-	return s.Scopes
-}
-
-// GetRestoredFrom returns the value of RestoredFrom.
-func (s *PromptSetDraft) GetRestoredFrom() OptInt32 {
-	return s.RestoredFrom
-}
-
-// SetQuestions sets the value of Questions.
-func (s *PromptSetDraft) SetQuestions(val []PromptDraftQuestion) {
-	s.Questions = val
-}
-
-// SetScopes sets the value of Scopes.
-func (s *PromptSetDraft) SetScopes(val []PromptSetScope) {
-	s.Scopes = val
-}
-
-// SetRestoredFrom sets the value of RestoredFrom.
-func (s *PromptSetDraft) SetRestoredFrom(val OptInt32) {
-	s.RestoredFrom = val
 }
 
 // One question of a published Prompt set.
@@ -11945,26 +11636,6 @@ func (s *PromptWrongClaim) SetClaim(val string) {
 	s.Claim = val
 }
 
-type PublishPromptSetBadRequest ProblemStatusCode
-
-func (*PublishPromptSetBadRequest) publishPromptSetRes() {}
-
-type PublishPromptSetConflict ProblemStatusCode
-
-func (*PublishPromptSetConflict) publishPromptSetRes() {}
-
-type PublishPromptSetForbidden ProblemStatusCode
-
-func (*PublishPromptSetForbidden) publishPromptSetRes() {}
-
-type PublishPromptSetUnauthorized ProblemStatusCode
-
-func (*PublishPromptSetUnauthorized) publishPromptSetRes() {}
-
-type PublishPromptSetUnprocessableEntity ProblemStatusCode
-
-func (*PublishPromptSetUnprocessableEntity) publishPromptSetRes() {}
-
 // One published version of the Prompt set, with its questions.
 // Ref: #/components/schemas/PublishedPromptSet
 type PublishedPromptSet struct {
@@ -12018,7 +11689,26 @@ func (s *PublishedPromptSet) SetQuestions(val []PromptSetQuestion) {
 	s.Questions = val
 }
 
-func (*PublishedPromptSet) publishPromptSetRes() {}
+type PutBackTermBadRequest ProblemStatusCode
+
+func (*PutBackTermBadRequest) putBackTermRes() {}
+
+type PutBackTermForbidden ProblemStatusCode
+
+func (*PutBackTermForbidden) putBackTermRes() {}
+
+// PutBackTermNoContent is response for PutBackTerm operation.
+type PutBackTermNoContent struct{}
+
+func (*PutBackTermNoContent) putBackTermRes() {}
+
+type PutBackTermNotFound ProblemStatusCode
+
+func (*PutBackTermNotFound) putBackTermRes() {}
+
+type PutBackTermUnauthorized ProblemStatusCode
+
+func (*PutBackTermUnauthorized) putBackTermRes() {}
 
 // Whether a site follows one recommendation.
 // Ref: #/components/schemas/ReadinessAdvice
@@ -12591,6 +12281,27 @@ type RemoveQueuedAnalysesUnauthorized ProblemStatusCode
 
 func (*RemoveQueuedAnalysesUnauthorized) removeQueuedAnalysesRes() {}
 
+type RemoveTermBadRequest ProblemStatusCode
+
+func (*RemoveTermBadRequest) removeTermRes() {}
+
+type RemoveTermForbidden ProblemStatusCode
+
+func (*RemoveTermForbidden) removeTermRes() {}
+
+// RemoveTermNoContent is response for RemoveTerm operation.
+type RemoveTermNoContent struct{}
+
+func (*RemoveTermNoContent) removeTermRes() {}
+
+type RemoveTermNotFound ProblemStatusCode
+
+func (*RemoveTermNotFound) removeTermRes() {}
+
+type RemoveTermUnauthorized ProblemStatusCode
+
+func (*RemoveTermUnauthorized) removeTermRes() {}
+
 type RereadPromptRunBadRequest ProblemStatusCode
 
 func (*RereadPromptRunBadRequest) rereadPromptRunRes() {}
@@ -12815,26 +12526,6 @@ func (s *RobotsStatus) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
-
-type SaveClaudeStepVersionBadRequest ProblemStatusCode
-
-func (*SaveClaudeStepVersionBadRequest) saveClaudeStepVersionRes() {}
-
-type SaveClaudeStepVersionForbidden ProblemStatusCode
-
-func (*SaveClaudeStepVersionForbidden) saveClaudeStepVersionRes() {}
-
-type SaveClaudeStepVersionNotFound ProblemStatusCode
-
-func (*SaveClaudeStepVersionNotFound) saveClaudeStepVersionRes() {}
-
-type SaveClaudeStepVersionUnauthorized ProblemStatusCode
-
-func (*SaveClaudeStepVersionUnauthorized) saveClaudeStepVersionRes() {}
-
-type SaveClaudeStepVersionUnprocessableEntity ProblemStatusCode
-
-func (*SaveClaudeStepVersionUnprocessableEntity) saveClaudeStepVersionRes() {}
 
 // Two finished scans of a company compared, per group. A term moved when its score changed by at least
 // a quarter and 5 points, or its page count by at least 2.
@@ -13952,6 +13643,8 @@ func (s *Term) SetSource(val string) {
 	s.Source = val
 }
 
+func (*Term) addTermRes() {}
+
 // A candidate as it joins the terminology map.
 // Ref: #/components/schemas/TermAcceptance
 type TermAcceptance struct {
@@ -14513,14 +14206,15 @@ func (s *TermMaker) SetFromScan(val bool) {
 	s.FromScan = val
 }
 
-// Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator
-// accepted from the review queue.
+// Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator
+// accepted from the review queue, or a term an administrator added by hand.
 // Ref: #/components/schemas/TermOrigin
 type TermOrigin string
 
 const (
 	TermOriginResearch TermOrigin = "research"
 	TermOriginReview   TermOrigin = "review"
+	TermOriginHand     TermOrigin = "hand"
 )
 
 // AllValues returns all TermOrigin values.
@@ -14528,6 +14222,7 @@ func (TermOrigin) AllValues() []TermOrigin {
 	return []TermOrigin{
 		TermOriginResearch,
 		TermOriginReview,
+		TermOriginHand,
 	}
 }
 
@@ -14537,6 +14232,8 @@ func (s TermOrigin) MarshalText() ([]byte, error) {
 	case TermOriginResearch:
 		return []byte(s), nil
 	case TermOriginReview:
+		return []byte(s), nil
+	case TermOriginHand:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -14551,6 +14248,9 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 		return nil
 	case TermOriginReview:
 		*s = TermOriginReview
+		return nil
+	case TermOriginHand:
+		*s = TermOriginHand
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -14604,6 +14304,34 @@ func (s *TermPages) SetItems(val []CompanyTermPages) {
 }
 
 func (*TermPages) getTermPagesRes() {}
+
+// A search term on the list, by its text and language.
+// Ref: #/components/schemas/TermRef
+type TermRef struct {
+	// The term's text; case and accents do not matter.
+	Term     string   `json:"term"`
+	Language Language `json:"language"`
+}
+
+// GetTerm returns the value of Term.
+func (s *TermRef) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *TermRef) GetLanguage() Language {
+	return s.Language
+}
+
+// SetTerm sets the value of Term.
+func (s *TermRef) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *TermRef) SetLanguage(val Language) {
+	s.Language = val
+}
 
 // Whether the language model reviews the waiting candidates by itself, how far it is with them, and
 // what it used this month.

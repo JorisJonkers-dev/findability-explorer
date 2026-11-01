@@ -68,6 +68,14 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/llm/credentials
 	AddLlmCredential(ctx context.Context, request *NewLlmCredential) (AddLlmCredentialRes, error)
+	// AddTerm invokes addTerm operation.
+	//
+	// Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the
+	// next scans find it. 409 when the list has the term in that language, or had it and it was removed
+	// (put it back instead).
+	//
+	// POST /api/v1/admin/terms/hand
+	AddTerm(ctx context.Context, request *NewTerm) (AddTermRes, error)
 	// ClearActiveLlm invokes clearActiveLlm operation.
 	//
 	// Turns product matching off until a credential and model are chosen again.
@@ -149,15 +157,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/analyses/{analysisId}
 	GetAnalysis(ctx context.Context, params GetAnalysisParams) (GetAnalysisRes, error)
-	// GetClaudeStep invokes getClaudeStep operation.
-	//
-	// Administrators only. One step: the instructions the tool came with, every saved version (model and
-	// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
-	// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
-	// exist.
-	//
-	// GET /api/v1/admin/claude-steps/{stepId}
-	GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (GetClaudeStepRes, error)
 	// GetCompetitor invokes getCompetitor operation.
 	//
 	// Returns the company and its scans, newest first, each with its number.
@@ -291,13 +290,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/analyses
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
-	// ListClaudeSteps invokes listClaudeSteps operation.
-	//
-	// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
-	// and the version of the instructions it uses now and what one job of it costs with that model.
-	//
-	// GET /api/v1/admin/claude-steps
-	ListClaudeSteps(ctx context.Context) (ListClaudeStepsRes, error)
 	// ListCompetitorCandidates invokes listCompetitorCandidates operation.
 	//
 	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -322,6 +314,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/competitors
 	ListCompetitors(ctx context.Context) (ListCompetitorsRes, error)
+	// ListHandTerms invokes listHandTerms operation.
+	//
+	// Administrators only. Returns the terms administrators added to the list by hand, and the terms they
+	// removed from it, each with who did it and when, oldest first.
+	//
+	// GET /api/v1/admin/terms/hand
+	ListHandTerms(ctx context.Context) (ListHandTermsRes, error)
 	// ListLlmModels invokes listLlmModels operation.
 	//
 	// Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
@@ -354,17 +353,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/admin/term-candidates
 	ListTermCandidates(ctx context.Context, params ListTermCandidatesParams) (ListTermCandidatesRes, error)
-	// PublishPromptSet invokes publishPromptSet operation.
+	// PutBackTerm invokes putBackTerm operation.
 	//
-	// Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions
-	// in order, each keeping the id of the published question it keeps or getting a new one no version has
-	// used, and the new scopes it asks in (a language with or without a region). The note says what
-	// changed against the newest version, and from which version the draft was restored. The next Prompt
-	// run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or
-	// another publication took the number first; 422 when a question or scope cannot be asked.
+	// Administrators only. Puts a removed term back on the list. 404 when it was not removed.
 	//
-	// POST /api/v1/admin/prompt-sets
-	PublishPromptSet(ctx context.Context, request *PromptSetDraft) (PublishPromptSetRes, error)
+	// DELETE /api/v1/admin/terms/removed
+	PutBackTerm(ctx context.Context, params PutBackTermParams) (PutBackTermRes, error)
 	// RejectTermCandidate invokes rejectTermCandidate operation.
 	//
 	// Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone.
@@ -379,6 +373,14 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/admin/analyses/queue
 	RemoveQueuedAnalyses(ctx context.Context) (RemoveQueuedAnalysesRes, error)
+	// RemoveTerm invokes removeTerm operation.
+	//
+	// Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or
+	// looked for until it is put back. The text matches without regard to case or accents. 404 when the
+	// list has no such term.
+	//
+	// POST /api/v1/admin/terms/removed
+	RemoveTerm(ctx context.Context, request *TermRef) (RemoveTermRes, error)
 	// RereadPromptRun invokes rereadPromptRun operation.
 	//
 	// Administrators only. Reads a finished run's answers whose reading failed again, or only the one
@@ -402,16 +404,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/retry
 	RetryPromptRun(ctx context.Context, request *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error)
-	// SaveClaudeStepVersion invokes saveClaudeStepVersion operation.
-	//
-	// Administrators only. Saves the model and the instructions as the step's next version, which its next
-	// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
-	// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
-	// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
-	// that does not exist.
-	//
-	// POST /api/v1/admin/claude-steps/{stepId}/versions
-	SaveClaudeStepVersion(ctx context.Context, request *ClaudeStepChange, params SaveClaudeStepVersionParams) (SaveClaudeStepVersionRes, error)
 	// SearchTerms invokes searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of
@@ -1304,6 +1296,124 @@ func (c *Client) sendAddLlmCredential(ctx context.Context, request *NewLlmCreden
 
 	stage = "DecodeResponse"
 	result, err := decodeAddLlmCredentialResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// AddTerm invokes addTerm operation.
+//
+// Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the
+// next scans find it. 409 when the list has the term in that language, or had it and it was removed
+// (put it back instead).
+//
+// POST /api/v1/admin/terms/hand
+func (c *Client) AddTerm(ctx context.Context, request *NewTerm) (AddTermRes, error) {
+	res, err := c.sendAddTerm(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendAddTerm(ctx context.Context, request *NewTerm) (res AddTermRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("addTerm"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/terms/hand"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, AddTermOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/terms/hand"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeAddTermRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, AddTermOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeAddTermResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2600,140 +2710,6 @@ func (c *Client) sendGetAnalysis(ctx context.Context, params GetAnalysisParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeGetAnalysisResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetClaudeStep invokes getClaudeStep operation.
-//
-// Administrators only. One step: the instructions the tool came with, every saved version (model and
-// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
-// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
-// exist.
-//
-// GET /api/v1/admin/claude-steps/{stepId}
-func (c *Client) GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (GetClaudeStepRes, error) {
-	res, err := c.sendGetClaudeStep(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetClaudeStep(ctx context.Context, params GetClaudeStepParams) (res GetClaudeStepRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("getClaudeStep"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/admin/claude-steps/{stepId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetClaudeStepOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/admin/claude-steps/"
-	{
-		// Encode "stepId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "stepId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(string(params.StepId)))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:SessionCookie"
-			switch err := c.securitySessionCookie(ctx, GetClaudeStepOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"SessionCookie\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetClaudeStepResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4742,120 +4718,6 @@ func (c *Client) sendListAnalyses(ctx context.Context, params ListAnalysesParams
 	return result, nil
 }
 
-// ListClaudeSteps invokes listClaudeSteps operation.
-//
-// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
-// and the version of the instructions it uses now and what one job of it costs with that model.
-//
-// GET /api/v1/admin/claude-steps
-func (c *Client) ListClaudeSteps(ctx context.Context) (ListClaudeStepsRes, error) {
-	res, err := c.sendListClaudeSteps(ctx)
-	return res, err
-}
-
-func (c *Client) sendListClaudeSteps(ctx context.Context) (res ListClaudeStepsRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("listClaudeSteps"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/admin/claude-steps"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListClaudeStepsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/admin/claude-steps"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:SessionCookie"
-			switch err := c.securitySessionCookie(ctx, ListClaudeStepsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"SessionCookie\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListClaudeStepsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListCompetitorCandidates invokes listCompetitorCandidates operation.
 //
 // Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -5222,6 +5084,120 @@ func (c *Client) sendListCompetitors(ctx context.Context) (res ListCompetitorsRe
 	return result, nil
 }
 
+// ListHandTerms invokes listHandTerms operation.
+//
+// Administrators only. Returns the terms administrators added to the list by hand, and the terms they
+// removed from it, each with who did it and when, oldest first.
+//
+// GET /api/v1/admin/terms/hand
+func (c *Client) ListHandTerms(ctx context.Context) (ListHandTermsRes, error) {
+	res, err := c.sendListHandTerms(ctx)
+	return res, err
+}
+
+func (c *Client) sendListHandTerms(ctx context.Context) (res ListHandTermsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listHandTerms"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/terms/hand"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListHandTermsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/terms/hand"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, ListHandTermsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListHandTermsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListLlmModels invokes listLlmModels operation.
 //
 // Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
@@ -5458,10 +5434,7 @@ func (c *Client) sendListPromptAnswers(ctx context.Context, params ListPromptAns
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Scope.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
+				return e.EncodeValue(conv.StringToString(string(val)))
 			}
 			return nil
 		}); err != nil {
@@ -5819,26 +5792,21 @@ func (c *Client) sendListTermCandidates(ctx context.Context, params ListTermCand
 	return result, nil
 }
 
-// PublishPromptSet invokes publishPromptSet operation.
+// PutBackTerm invokes putBackTerm operation.
 //
-// Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions
-// in order, each keeping the id of the published question it keeps or getting a new one no version has
-// used, and the new scopes it asks in (a language with or without a region). The note says what
-// changed against the newest version, and from which version the draft was restored. The next Prompt
-// run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or
-// another publication took the number first; 422 when a question or scope cannot be asked.
+// Administrators only. Puts a removed term back on the list. 404 when it was not removed.
 //
-// POST /api/v1/admin/prompt-sets
-func (c *Client) PublishPromptSet(ctx context.Context, request *PromptSetDraft) (PublishPromptSetRes, error) {
-	res, err := c.sendPublishPromptSet(ctx, request)
+// DELETE /api/v1/admin/terms/removed
+func (c *Client) PutBackTerm(ctx context.Context, params PutBackTermParams) (PutBackTermRes, error) {
+	res, err := c.sendPutBackTerm(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendPublishPromptSet(ctx context.Context, request *PromptSetDraft) (res PublishPromptSetRes, err error) {
+func (c *Client) sendPutBackTerm(ctx context.Context, params PutBackTermParams) (res PutBackTermRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("publishPromptSet"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/admin/prompt-sets"),
+		otelogen.OperationID("putBackTerm"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/admin/terms/removed"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5854,7 +5822,7 @@ func (c *Client) sendPublishPromptSet(ctx context.Context, request *PromptSetDra
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, PublishPromptSetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, PutBackTermOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5872,16 +5840,45 @@ func (c *Client) sendPublishPromptSet(ctx context.Context, request *PromptSetDra
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/admin/prompt-sets"
+	pathParts[0] = "/api/v1/admin/terms/removed"
 	uri.AddPathParts(u, pathParts[:]...)
 
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "term" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "term",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.Term))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "language" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "language",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(string(params.Language)))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodePublishPromptSetRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -5889,7 +5886,7 @@ func (c *Client) sendPublishPromptSet(ctx context.Context, request *PromptSetDra
 		var satisfied bitset
 		{
 			stage = "Security:SessionCookie"
-			switch err := c.securitySessionCookie(ctx, PublishPromptSetOperation, r); {
+			switch err := c.securitySessionCookie(ctx, PutBackTermOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5932,7 +5929,7 @@ func (c *Client) sendPublishPromptSet(ctx context.Context, request *PromptSetDra
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodePublishPromptSetResponse(resp)
+	result, err := decodePutBackTermResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6183,6 +6180,124 @@ func (c *Client) sendRemoveQueuedAnalyses(ctx context.Context) (res RemoveQueued
 
 	stage = "DecodeResponse"
 	result, err := decodeRemoveQueuedAnalysesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RemoveTerm invokes removeTerm operation.
+//
+// Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or
+// looked for until it is put back. The text matches without regard to case or accents. 404 when the
+// list has no such term.
+//
+// POST /api/v1/admin/terms/removed
+func (c *Client) RemoveTerm(ctx context.Context, request *TermRef) (RemoveTermRes, error) {
+	res, err := c.sendRemoveTerm(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendRemoveTerm(ctx context.Context, request *TermRef) (res RemoveTermRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("removeTerm"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/terms/removed"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RemoveTermOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/terms/removed"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRemoveTermRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, RemoveTermOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRemoveTermResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6464,145 +6579,6 @@ func (c *Client) sendRetryPromptRun(ctx context.Context, request *PromptRetryReq
 
 	stage = "DecodeResponse"
 	result, err := decodeRetryPromptRunResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SaveClaudeStepVersion invokes saveClaudeStepVersion operation.
-//
-// Administrators only. Saves the model and the instructions as the step's next version, which its next
-// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
-// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
-// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
-// that does not exist.
-//
-// POST /api/v1/admin/claude-steps/{stepId}/versions
-func (c *Client) SaveClaudeStepVersion(ctx context.Context, request *ClaudeStepChange, params SaveClaudeStepVersionParams) (SaveClaudeStepVersionRes, error) {
-	res, err := c.sendSaveClaudeStepVersion(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendSaveClaudeStepVersion(ctx context.Context, request *ClaudeStepChange, params SaveClaudeStepVersionParams) (res SaveClaudeStepVersionRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("saveClaudeStepVersion"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/admin/claude-steps/{stepId}/versions"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SaveClaudeStepVersionOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/admin/claude-steps/"
-	{
-		// Encode "stepId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "stepId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(string(params.StepId)))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/versions"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSaveClaudeStepVersionRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:SessionCookie"
-			switch err := c.securitySessionCookie(ctx, SaveClaudeStepVersionOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"SessionCookie\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSaveClaudeStepVersionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

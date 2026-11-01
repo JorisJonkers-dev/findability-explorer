@@ -47,6 +47,14 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/llm/credentials
 	AddLlmCredential(ctx context.Context, req *NewLlmCredential) (AddLlmCredentialRes, error)
+	// AddTerm implements addTerm operation.
+	//
+	// Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the
+	// next scans find it. 409 when the list has the term in that language, or had it and it was removed
+	// (put it back instead).
+	//
+	// POST /api/v1/admin/terms/hand
+	AddTerm(ctx context.Context, req *NewTerm) (AddTermRes, error)
 	// ClearActiveLlm implements clearActiveLlm operation.
 	//
 	// Turns product matching off until a credential and model are chosen again.
@@ -128,15 +136,6 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses/{analysisId}
 	GetAnalysis(ctx context.Context, params GetAnalysisParams) (GetAnalysisRes, error)
-	// GetClaudeStep implements getClaudeStep operation.
-	//
-	// Administrators only. One step: the instructions the tool came with, every saved version (model and
-	// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
-	// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
-	// exist.
-	//
-	// GET /api/v1/admin/claude-steps/{stepId}
-	GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (GetClaudeStepRes, error)
 	// GetCompetitor implements getCompetitor operation.
 	//
 	// Returns the company and its scans, newest first, each with its number.
@@ -270,13 +269,6 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
-	// ListClaudeSteps implements listClaudeSteps operation.
-	//
-	// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
-	// and the version of the instructions it uses now and what one job of it costs with that model.
-	//
-	// GET /api/v1/admin/claude-steps
-	ListClaudeSteps(ctx context.Context) (ListClaudeStepsRes, error)
 	// ListCompetitorCandidates implements listCompetitorCandidates operation.
 	//
 	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -301,6 +293,13 @@ type Handler interface {
 	//
 	// GET /api/v1/competitors
 	ListCompetitors(ctx context.Context) (ListCompetitorsRes, error)
+	// ListHandTerms implements listHandTerms operation.
+	//
+	// Administrators only. Returns the terms administrators added to the list by hand, and the terms they
+	// removed from it, each with who did it and when, oldest first.
+	//
+	// GET /api/v1/admin/terms/hand
+	ListHandTerms(ctx context.Context) (ListHandTermsRes, error)
 	// ListLlmModels implements listLlmModels operation.
 	//
 	// Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
@@ -333,17 +332,12 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/term-candidates
 	ListTermCandidates(ctx context.Context, params ListTermCandidatesParams) (ListTermCandidatesRes, error)
-	// PublishPromptSet implements publishPromptSet operation.
+	// PutBackTerm implements putBackTerm operation.
 	//
-	// Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions
-	// in order, each keeping the id of the published question it keeps or getting a new one no version has
-	// used, and the new scopes it asks in (a language with or without a region). The note says what
-	// changed against the newest version, and from which version the draft was restored. The next Prompt
-	// run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or
-	// another publication took the number first; 422 when a question or scope cannot be asked.
+	// Administrators only. Puts a removed term back on the list. 404 when it was not removed.
 	//
-	// POST /api/v1/admin/prompt-sets
-	PublishPromptSet(ctx context.Context, req *PromptSetDraft) (PublishPromptSetRes, error)
+	// DELETE /api/v1/admin/terms/removed
+	PutBackTerm(ctx context.Context, params PutBackTermParams) (PutBackTermRes, error)
 	// RejectTermCandidate implements rejectTermCandidate operation.
 	//
 	// Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone.
@@ -358,6 +352,14 @@ type Handler interface {
 	//
 	// DELETE /api/v1/admin/analyses/queue
 	RemoveQueuedAnalyses(ctx context.Context) (RemoveQueuedAnalysesRes, error)
+	// RemoveTerm implements removeTerm operation.
+	//
+	// Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or
+	// looked for until it is put back. The text matches without regard to case or accents. 404 when the
+	// list has no such term.
+	//
+	// POST /api/v1/admin/terms/removed
+	RemoveTerm(ctx context.Context, req *TermRef) (RemoveTermRes, error)
 	// RereadPromptRun implements rereadPromptRun operation.
 	//
 	// Administrators only. Reads a finished run's answers whose reading failed again, or only the one
@@ -381,16 +383,6 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/retry
 	RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error)
-	// SaveClaudeStepVersion implements saveClaudeStepVersion operation.
-	//
-	// Administrators only. Saves the model and the instructions as the step's next version, which its next
-	// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
-	// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
-	// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
-	// that does not exist.
-	//
-	// POST /api/v1/admin/claude-steps/{stepId}/versions
-	SaveClaudeStepVersion(ctx context.Context, req *ClaudeStepChange, params SaveClaudeStepVersionParams) (SaveClaudeStepVersionRes, error)
 	// SearchTerms implements searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of

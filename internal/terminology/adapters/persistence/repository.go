@@ -24,7 +24,10 @@ type Repository struct {
 	store Store
 }
 
-var _ app.Reviews = (*Repository)(nil)
+var (
+	_ app.Reviews   = (*Repository)(nil)
+	_ app.HandTerms = (*Repository)(nil)
+)
 
 // New returns a Repository over store.
 func New(store Store) *Repository { return &Repository{store: store} }
@@ -194,4 +197,70 @@ func (r *Repository) SwitchReview(ctx context.Context, on bool, by string, at ti
 		return fmt.Errorf("store the review's switch: %w", err)
 	}
 	return nil
+}
+
+// Added returns the terms added by hand, oldest first.
+func (r *Repository) Added(ctx context.Context) ([]domain.HandTerm, error) {
+	rows, err := r.store.Queries().ListHandTerms(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select hand terms: %w", err)
+	}
+	out := make([]domain.HandTerm, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.HandTerm{
+			Term: domain.Term{
+				Text: row.Term, Language: domain.Language(row.Language), Family: domain.Family(row.Family), Tier: domain.Tier(row.Tier),
+				UsedBy: []string{}, Origin: domain.OriginHand,
+			},
+			By: row.AddedBy, At: row.AddedAt.UTC(),
+		})
+	}
+	return out, nil
+}
+
+// Add stores a term added by hand; domain.ErrTermExists when it is stored already.
+func (r *Repository) Add(ctx context.Context, t domain.HandTerm) error {
+	n, err := r.store.Queries().InsertHandTerm(ctx, queries.InsertHandTermParams{
+		Term: t.Term.Text, Language: string(t.Term.Language), Family: string(t.Term.Family), Tier: string(t.Term.Tier),
+		AddedBy: t.By, AddedAt: t.At,
+	})
+	if err != nil {
+		return fmt.Errorf("insert hand term: %w", err)
+	}
+	if n == 0 {
+		return domain.ErrTermExists
+	}
+	return nil
+}
+
+// Removed returns the removals, oldest first.
+func (r *Repository) Removed(ctx context.Context) ([]domain.Removal, error) {
+	rows, err := r.store.Queries().ListRemovedTerms(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select removed terms: %w", err)
+	}
+	out := make([]domain.Removal, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Removal{Key: domain.TermKey{Text: row.Term, Language: domain.Language(row.Language)}, By: row.RemovedBy, At: row.RemovedAt.UTC()})
+	}
+	return out, nil
+}
+
+// Remove stores a removal; a term removed already keeps its first removal.
+func (r *Repository) Remove(ctx context.Context, rm domain.Removal) error {
+	if err := r.store.Queries().InsertRemovedTerm(ctx, queries.InsertRemovedTermParams{
+		Term: rm.Key.Text, Language: string(rm.Key.Language), RemovedBy: rm.By, RemovedAt: rm.At,
+	}); err != nil {
+		return fmt.Errorf("insert removed term: %w", err)
+	}
+	return nil
+}
+
+// PutBack deletes the removal of the term with key; it reports whether there was one.
+func (r *Repository) PutBack(ctx context.Context, key domain.TermKey) (bool, error) {
+	n, err := r.store.Queries().DeleteRemovedTerm(ctx, queries.DeleteRemovedTermParams{Term: key.Text, Language: string(key.Language)})
+	if err != nil {
+		return false, fmt.Errorf("delete removed term: %w", err)
+	}
+	return n > 0, nil
 }

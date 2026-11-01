@@ -80,6 +80,20 @@ func encodeAddLlmCredentialRequest(
 	return nil
 }
 
+func encodeAddTermRequest(
+	req *NewTerm,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeDecideCompetitorCandidatesRequest(
 	req *CandidateDecisions,
 	r *http.Request,
@@ -94,8 +108,8 @@ func encodeDecideCompetitorCandidatesRequest(
 	return nil
 }
 
-func encodePublishPromptSetRequest(
-	req *PromptSetDraft,
+func encodeRemoveTermRequest(
+	req *TermRef,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -124,20 +138,6 @@ func encodeRereadPromptRunRequest(
 
 func encodeRetryPromptRunRequest(
 	req *PromptRetryRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeSaveClaudeStepVersionRequest(
-	req *ClaudeStepChange,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

@@ -21,6 +21,10 @@ type AddLlmCredentialRes interface {
 	addLlmCredentialRes()
 }
 
+type AddTermRes interface {
+	addTermRes()
+}
+
 type ClearActiveLlmRes interface {
 	clearActiveLlmRes()
 }
@@ -59,10 +63,6 @@ type GetAiSearchSummaryRes interface {
 
 type GetAnalysisRes interface {
 	getAnalysisRes()
-}
-
-type GetClaudeStepRes interface {
-	getClaudeStepRes()
 }
 
 type GetCompetitorProfileRes interface {
@@ -129,10 +129,6 @@ type ListAnalysesRes interface {
 	listAnalysesRes()
 }
 
-type ListClaudeStepsRes interface {
-	listClaudeStepsRes()
-}
-
 type ListCompetitorCandidatesRes interface {
 	listCompetitorCandidatesRes()
 }
@@ -143,6 +139,10 @@ type ListCompetitorChecksRes interface {
 
 type ListCompetitorsRes interface {
 	listCompetitorsRes()
+}
+
+type ListHandTermsRes interface {
+	listHandTermsRes()
 }
 
 type ListLlmModelsRes interface {
@@ -161,8 +161,8 @@ type ListTermCandidatesRes interface {
 	listTermCandidatesRes()
 }
 
-type PublishPromptSetRes interface {
-	publishPromptSetRes()
+type PutBackTermRes interface {
+	putBackTermRes()
 }
 
 type RejectTermCandidateRes interface {
@@ -173,16 +173,16 @@ type RemoveQueuedAnalysesRes interface {
 	removeQueuedAnalysesRes()
 }
 
+type RemoveTermRes interface {
+	removeTermRes()
+}
+
 type RereadPromptRunRes interface {
 	rereadPromptRunRes()
 }
 
 type RetryPromptRunRes interface {
 	retryPromptRunRes()
-}
-
-type SaveClaudeStepVersionRes interface {
-	saveClaudeStepVersionRes()
 }
 
 type SearchTermsRes interface {

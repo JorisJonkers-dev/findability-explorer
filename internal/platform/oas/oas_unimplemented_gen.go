@@ -67,6 +67,17 @@ func (UnimplementedHandler) AddLlmCredential(ctx context.Context, req *NewLlmCre
 	return r, ht.ErrNotImplemented
 }
 
+// AddTerm implements addTerm operation.
+//
+// Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the
+// next scans find it. 409 when the list has the term in that language, or had it and it was removed
+// (put it back instead).
+//
+// POST /api/v1/admin/terms/hand
+func (UnimplementedHandler) AddTerm(ctx context.Context, req *NewTerm) (r AddTermRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ClearActiveLlm implements clearActiveLlm operation.
 //
 // Turns product matching off until a credential and model are chosen again.
@@ -175,18 +186,6 @@ func (UnimplementedHandler) GetAiSearchSummary(ctx context.Context) (r GetAiSear
 //
 // GET /api/v1/analyses/{analysisId}
 func (UnimplementedHandler) GetAnalysis(ctx context.Context, params GetAnalysisParams) (r GetAnalysisRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetClaudeStep implements getClaudeStep operation.
-//
-// Administrators only. One step: the instructions the tool came with, every saved version (model and
-// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
-// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
-// exist.
-//
-// GET /api/v1/admin/claude-steps/{stepId}
-func (UnimplementedHandler) GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (r GetClaudeStepRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -371,16 +370,6 @@ func (UnimplementedHandler) ListAnalyses(ctx context.Context, params ListAnalyse
 	return r, ht.ErrNotImplemented
 }
 
-// ListClaudeSteps implements listClaudeSteps operation.
-//
-// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
-// and the version of the instructions it uses now and what one job of it costs with that model.
-//
-// GET /api/v1/admin/claude-steps
-func (UnimplementedHandler) ListClaudeSteps(ctx context.Context) (r ListClaudeStepsRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListCompetitorCandidates implements listCompetitorCandidates operation.
 //
 // Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -411,6 +400,16 @@ func (UnimplementedHandler) ListCompetitorChecks(ctx context.Context) (r ListCom
 //
 // GET /api/v1/competitors
 func (UnimplementedHandler) ListCompetitors(ctx context.Context) (r ListCompetitorsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListHandTerms implements listHandTerms operation.
+//
+// Administrators only. Returns the terms administrators added to the list by hand, and the terms they
+// removed from it, each with who did it and when, oldest first.
+//
+// GET /api/v1/admin/terms/hand
+func (UnimplementedHandler) ListHandTerms(ctx context.Context) (r ListHandTermsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -458,17 +457,12 @@ func (UnimplementedHandler) ListTermCandidates(ctx context.Context, params ListT
 	return r, ht.ErrNotImplemented
 }
 
-// PublishPromptSet implements publishPromptSet operation.
+// PutBackTerm implements putBackTerm operation.
 //
-// Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions
-// in order, each keeping the id of the published question it keeps or getting a new one no version has
-// used, and the new scopes it asks in (a language with or without a region). The note says what
-// changed against the newest version, and from which version the draft was restored. The next Prompt
-// run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or
-// another publication took the number first; 422 when a question or scope cannot be asked.
+// Administrators only. Puts a removed term back on the list. 404 when it was not removed.
 //
-// POST /api/v1/admin/prompt-sets
-func (UnimplementedHandler) PublishPromptSet(ctx context.Context, req *PromptSetDraft) (r PublishPromptSetRes, _ error) {
+// DELETE /api/v1/admin/terms/removed
+func (UnimplementedHandler) PutBackTerm(ctx context.Context, params PutBackTermParams) (r PutBackTermRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -489,6 +483,17 @@ func (UnimplementedHandler) RejectTermCandidate(ctx context.Context, params Reje
 //
 // DELETE /api/v1/admin/analyses/queue
 func (UnimplementedHandler) RemoveQueuedAnalyses(ctx context.Context) (r RemoveQueuedAnalysesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RemoveTerm implements removeTerm operation.
+//
+// Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or
+// looked for until it is put back. The text matches without regard to case or accents. 404 when the
+// list has no such term.
+//
+// POST /api/v1/admin/terms/removed
+func (UnimplementedHandler) RemoveTerm(ctx context.Context, req *TermRef) (r RemoveTermRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -518,19 +523,6 @@ func (UnimplementedHandler) RereadPromptRun(ctx context.Context, req *PromptRetr
 //
 // POST /api/v1/admin/prompt-runs/{runId}/retry
 func (UnimplementedHandler) RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (r RetryPromptRunRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// SaveClaudeStepVersion implements saveClaudeStepVersion operation.
-//
-// Administrators only. Saves the model and the instructions as the step's next version, which its next
-// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
-// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
-// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
-// that does not exist.
-//
-// POST /api/v1/admin/claude-steps/{stepId}/versions
-func (UnimplementedHandler) SaveClaudeStepVersion(ctx context.Context, req *ClaudeStepChange, params SaveClaudeStepVersionParams) (r SaveClaudeStepVersionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

@@ -350,6 +350,46 @@ func (s *AddLlmCredentialUnprocessableEntity) Validate() error {
 	return nil
 }
 
+func (s *AddTermBadRequest) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *AddTermConflict) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *AddTermForbidden) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *AddTermUnauthorized) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *AddTermUnprocessableEntity) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *AiReadiness) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -5726,6 +5766,136 @@ func (s *GetTermPagesUnauthorized) Validate() error {
 	return nil
 }
 
+func (s *HandTerm) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Term.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "term",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     0,
+			MinLengthSet:  false,
+			MaxLength:     200,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.By)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "by",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *HandTermList) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.Added == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    10000,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.Added)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Added {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "added",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.Removed == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    10000,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.Removed)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Removed {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "removed",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s IntentTier) Validate() error {
 	switch s {
 	case "spec":
@@ -6161,6 +6331,22 @@ func (s *ListCompetitorChecksForbidden) Validate() error {
 }
 
 func (s *ListCompetitorChecksUnauthorized) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *ListHandTermsForbidden) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *ListHandTermsUnauthorized) Validate() error {
 	alias := (*ProblemStatusCode)(s)
 	if err := alias.Validate(); err != nil {
 		return err
@@ -8037,6 +8223,74 @@ func (s *NewLlmCredential) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "apiKey",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *NewTerm) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     1,
+			MinLengthSet:  true,
+			MaxLength:     200,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.Term)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "term",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Language.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "language",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Family.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "family",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Tier.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "tier",
 			Error: err,
 		})
 	}
@@ -14892,6 +15146,38 @@ func (s *PublishedPromptSet) Validate() error {
 	return nil
 }
 
+func (s *PutBackTermBadRequest) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *PutBackTermForbidden) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *PutBackTermNotFound) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *PutBackTermUnauthorized) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *ReadinessAdvice) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -15441,6 +15727,38 @@ func (s *RemoveQueuedAnalysesNotFound) Validate() error {
 }
 
 func (s *RemoveQueuedAnalysesUnauthorized) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *RemoveTermBadRequest) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *RemoveTermForbidden) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *RemoveTermNotFound) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *RemoveTermUnauthorized) Validate() error {
 	alias := (*ProblemStatusCode)(s)
 	if err := alias.Validate(); err != nil {
 		return err
@@ -18335,6 +18653,8 @@ func (s TermOrigin) Validate() error {
 		return nil
 	case "review":
 		return nil
+	case "hand":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -18437,6 +18757,52 @@ func (s *TermPages) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "items",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *TermRef) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     1,
+			MinLengthSet:  true,
+			MaxLength:     200,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.Term)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "term",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Language.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "language",
 			Error: err,
 		})
 	}

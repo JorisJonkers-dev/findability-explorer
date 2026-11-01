@@ -4,7 +4,7 @@ import { nextTick, ref } from 'vue'
 import { promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
 import { json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
-import { RUN_POLL_MS, useCandidateDecision, useCompetitorCandidates, usePromptAnswers, usePromptResults } from './usePromptTest'
+import { RUN_POLL_MS, useCandidateDecision, useCompetitorCandidates, usePromptAnswers, usePromptResults, usePromptSettings, useStartRun } from './usePromptTest'
 
 describe('usePromptAnswers', () => {
   it('asks nothing without a run, then loads its answers', async () => {
@@ -169,5 +169,26 @@ describe('usePromptResults', () => {
       'POST /api/v1/admin/competitor-candidates/0123456789abcdef/split',
       'POST /api/v1/admin/competitor-candidates/review',
     ])
+  })
+})
+
+describe('usePromptSettings', () => {
+  it('says when the account may not read the settings', async () => {
+    const { state } = mountComposable(usePromptSettings, routes({ 'GET /api/v1/admin/prompt-test': () => problem(403, 'Forbidden') }))
+    await flushPromises()
+    expect(state.forbidden.value).toBe(true)
+    expect(state.settings.value).toBeUndefined()
+    expect(state.error.value).toBe('Only administrators can do this.')
+  })
+})
+
+describe('useStartRun', () => {
+  it('says why a run could not start', async () => {
+    const { state } = mountComposable(useStartRun, routes({ 'POST /api/v1/admin/prompt-runs': () => problem(409, 'Conflict', 'A Prompt run is running already.') }))
+    expect(state.error.value).toBeNull()
+    state.start()
+    await flushPromises()
+    expect(state.error.value).toBe('A Prompt run is running already.')
+    expect(state.notice.value).toBeNull()
   })
 })

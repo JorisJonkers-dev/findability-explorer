@@ -6,6 +6,8 @@ import { useReadinessTable } from '../../readiness/composables/useReadiness'
 import { familyBars, figuresOf, headline, type Row } from '../domain/compare'
 import { readinessScore } from '../domain/compare'
 import { shareOf, CHIP_COUNT } from '../domain/roster'
+import { useTermMap } from '../../terminology/composables/useTermSearch'
+import { competitorRows } from '../domain/table'
 import { useCompanies } from './useCompanies'
 
 /**
@@ -19,6 +21,7 @@ export function useCompetitorBoard() {
   const { rowOf } = useReadinessTable()
   const { readinessChecks } = useStandings()
   const { overview } = useOverview()
+  const { terms } = useTermMap()
 
   const outOf = computed(() => (readinessChecks.value > 0 ? readinessChecks.value : CHIP_COUNT))
   const active = computed(() => companies.value.filter((c) => !c.archived))
@@ -34,8 +37,23 @@ export function useCompetitorBoard() {
   const count = computed(() => overview.value?.competitors.makers ?? rows.value.length)
   const tribeltShare = computed(() => (tribelt.value ? shareOf(results.value, tribelt.value.id) : undefined))
   const tribeltReady = computed(() => (tribelt.value ? readinessScore(rowOf(tribelt.value.id)?.readiness) : undefined))
+  // The Competitors table: Tribelt and every competitor, archived ones too, each with its figures.
+  const termsOf = (id: string) =>
+    id === tribelt.value?.id ? terms.value.filter((t) => t.tribeltUses === true).length : terms.value.filter((t) => t.makers?.some((m) => m.competitorId === id) === true).length
+  const tableRows = computed(() =>
+    competitorRows(companies.value, { share: (id) => shareOf(results.value, id), ready: (id) => readinessScore(rowOf(id)?.readiness), terms: termsOf }),
+  )
+  const newestScan = computed(() =>
+    tableRows.value
+      .map((r) => r.scannedAt)
+      .filter((at) => at !== undefined)
+      .sort()
+      .at(-1),
+  )
   return {
     rows,
+    tableRows,
+    newestScan,
     count,
     outOf,
     tribelt,

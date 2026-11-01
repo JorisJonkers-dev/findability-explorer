@@ -1,6 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { bots, competitor, overview, promptResults, readiness, readinessRow, readinessTable, term, termSearch } from '../../../testing/fixtures'
+import { bots, competitor, overview, promptResults, readiness, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { useCompetitorBoard } from './useCompetitorBoard'
@@ -69,5 +69,33 @@ describe('useCompetitorBoard', () => {
     const { state } = mountComposable(useCompetitorBoard, api({ 'GET /api/v1/competitors': () => problem(500, 'Internal Server Error') }))
     await flushPromises()
     expect(state.error.value).toBe('Internal Server Error')
+  })
+})
+
+describe("the Competitors table's rows", () => {
+  it('hold Tribelt and every competitor, archived too, with their figures', async () => {
+    const scanned = competitor('Twentebelt', { beltNames: [], lastScan: summary({ createdAt: '2026-10-20T08:00:00Z', finishedAt: '2026-10-20T09:00:00Z' }) })
+    const { state } = mountComposable(
+      useCompetitorBoard,
+      api({ 'GET /api/v1/terms': () => json(termSearch([term({ usedBy: ['Twentebelt'] }), term({ term: 'x', usedBy: [], tribeltUses: true })])) }, [tribelt, scanned, martens, group, old]),
+    )
+    await flushPromises()
+    expect(state.tableRows.value.map((r) => [r.id, r.share, r.ready, r.terms, r.archived])).toEqual([
+      ['tribelt', 0.25, 8, 1, false],
+      ['twentebelt', 0.75, 7.5, 1, false],
+      ['martens', 0, undefined, 0, false],
+      ['old-belts', 0, undefined, 0, true],
+    ])
+    expect(state.newestScan.value).toBe('2026-10-20T09:00:00Z')
+  })
+
+  it('count no terms for a company the map credits none to, and have no newest scan before one', async () => {
+    const { state } = mountComposable(
+      useCompetitorBoard,
+      api({ 'GET /api/v1/terms': () => json(termSearch([{ ...term(), makers: undefined }])) }, [twentebelt]),
+    )
+    await flushPromises()
+    expect(state.tableRows.value.map((r) => [r.id, r.terms])).toEqual([['twentebelt', 0]])
+    expect(state.newestScan.value).toBeUndefined()
   })
 })

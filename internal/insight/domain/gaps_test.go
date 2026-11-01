@@ -58,7 +58,8 @@ func TestSearchTermsCompetitorsUseAndTribeltDoesNotAreGaps(t *testing.T) {
 
 func TestAFamilyWithoutATribeltPageInALanguageCompetitorsUseIsAGap(t *testing.T) {
 	run := &domain.Run{StartedAt: time.Now(), Answers: []domain.Answer{
-		{Family: "eyelink", Named: []string{"ashworth", "ashworth"}}, {Family: "eyelink", Named: []string{"ashworth", domain.TribeltID}},
+		{Family: "eyelink", Named: []string{"ashworth", "ashworth"}},
+		{Family: "eyelink", Named: []string{"ashworth", domain.TribeltID}},
 		{Family: "open_spiral", Named: []string{domain.TribeltID}},
 	}}
 	in := domain.GapInputs{

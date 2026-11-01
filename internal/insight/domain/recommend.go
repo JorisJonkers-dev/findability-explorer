@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 )
 
 // ForTheAgency is where a recommendation goes when the model could not place it on a tribelt.nl page.
@@ -205,4 +207,57 @@ func (r Recommendation) Item(newest string, standings []Standing) PlanItem {
 		item.Done, item.Tick = true, &Tick{ImprovementID: r.ID, By: r.DoneBy, At: r.DoneAt}
 	}
 	return item
+}
+
+// Typical tokens of the instructions and of one written recommendation, for an estimate.
+const (
+	typicalInstructions = 1500
+	typicalWritten      = 300
+)
+
+// EstimateRun is what writing gaps should cost with model, a batch at a time: each request reads
+// the instructions, its gaps and every page, and writes a recommendation per gap. Text is counted
+// at four characters a token.
+func EstimateRun(gaps []Gap, pages []Page, batch int, model string) llm.Micros {
+	if len(gaps) == 0 {
+		return 0
+	}
+	pageChars := 0
+	for _, p := range pages {
+		pageChars += len(p.URL) + len(p.Title) + len(p.Text)
+	}
+	gapChars := 0
+	for _, g := range gaps {
+		gapChars += len(g.Title) + len(strings.Join(g.Specifics, " ")) + 60
+	}
+	requests := int64((len(gaps) + batch - 1) / batch)
+	in := requests*(typicalInstructions+int64(pageChars/4)) + int64(gapChars/4)
+	out := int64(len(gaps)) * typicalWritten
+	return llm.ListPrice(model).Of(in, out)
+}
+
+// WithWritten adds the recommendations the runs wrote to the plan's items, best value first as
+// ByValue orders them; newest is the newest finished run, whose open recommendations are new.
+func WithWritten(items []PlanItem, recs []Recommendation, newest string, standings []Standing) []PlanItem {
+	out := slices.Clone(items)
+	for _, r := range recs {
+		out = append(out, r.Item(newest, standings))
+	}
+	slices.SortStableFunc(out, func(a, b PlanItem) int {
+		if c := b.Benefit*a.Effort - a.Benefit*b.Effort; c != 0 {
+			return c
+		}
+		return b.Benefit - a.Benefit
+	})
+	return out
+}
+
+// NewestDone is the id of the newest run of runs (newest first) that ended done; "" for none.
+func NewestDone(runs []RecRun) string {
+	for _, r := range runs {
+		if r.Ending == "done" {
+			return r.ID
+		}
+	}
+	return ""
 }

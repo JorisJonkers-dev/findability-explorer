@@ -53,8 +53,8 @@ WHERE id = $1 AND status = 'queued';
 
 -- name: AddAnalysisPage :exec
 WITH page AS (
-    INSERT INTO analysis_pages (analysis_id, position, url, title, description, language, word_count, family)
-    SELECT a.id, a.pages_crawled, $2, $3, $4, $5, $6, $7
+    INSERT INTO analysis_pages (analysis_id, position, url, title, description, language, word_count, family, body)
+    SELECT a.id, a.pages_crawled, $2, $3, $4, $5, $6, $7, $8
     FROM analyses AS a
     WHERE a.id = $1
 )
@@ -67,8 +67,8 @@ INSERT INTO analysis_keywords (analysis_id, position, phrase, language, score, p
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
 
 -- name: AddAnalysisKnownTerm :exec
-INSERT INTO analysis_known_terms (analysis_id, position, term, language, family, tier, occurrences, used_by_tribelt)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+INSERT INTO analysis_known_terms (analysis_id, position, term, language, family, tier, occurrences, used_by_tribelt, pages)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 
 -- name: SetAnalysisMatching :exec
 UPDATE analyses
@@ -99,6 +99,34 @@ FROM analysis_pages
 WHERE analysis_id = $1
 ORDER BY position;
 
+-- name: ListAnalysisPageBodies :many
+-- The text a scan kept of its pages (only a scan of tribelt.nl keeps any), in their order.
+SELECT url, body
+FROM analysis_pages
+WHERE analysis_id = $1 AND body <> ''
+ORDER BY position;
+
+-- name: TermPages :many
+-- The pages that use a term on each company's newest finished scan that found it, in the order
+-- the scan recorded them; a scan that found it before scans recorded the pages gives one row
+-- with page_position -1.
+WITH latest AS (
+    SELECT DISTINCT ON (competitor_id) id, competitor_id
+    FROM analyses
+    WHERE competitor_id IS NOT NULL AND status = 'done'
+    ORDER BY competitor_id, created_at DESC, id
+)
+SELECT latest.competitor_id::text AS competitor_id,
+    coalesce(p.position, -1)::bigint AS page_position,
+    coalesce(p.url, '')::text AS url,
+    coalesce(p.title, '')::text AS title
+FROM latest
+JOIN analysis_known_terms AS k ON k.analysis_id = latest.id
+LEFT JOIN LATERAL unnest(k.pages) WITH ORDINALITY AS u (position, ord) ON true
+LEFT JOIN analysis_pages AS p ON p.analysis_id = latest.id AND p.position = u.position
+WHERE lower(k.term) = lower(sqlc.arg(term)::text) AND k.language = sqlc.arg(language)::text
+ORDER BY latest.competitor_id, k.position, u.ord;
+
 -- name: ListAnalysisKeywords :many
 SELECT phrase, language, score, pages, coalesce(tier, 'broad')::text AS tier, coalesce(family, '')::text AS family,
     coalesce(closest_term, '')::text AS closest_term, coalesce(in_map, false)::boolean AS in_map
@@ -107,7 +135,7 @@ WHERE analysis_id = $1
 ORDER BY position;
 
 -- name: ListAnalysisKnownTerms :many
-SELECT term, language, family, tier, occurrences, used_by_tribelt
+SELECT term, language, family, tier, occurrences, used_by_tribelt, pages
 FROM analysis_known_terms
 WHERE analysis_id = $1
 ORDER BY position;
@@ -230,9 +258,10 @@ VALUES ($1, $2, $3, $4, $5);
 
 -- name: AddAnalysisReadinessFiles :exec
 INSERT INTO analysis_readiness_files (
-    analysis_id, robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated
+    analysis_id, robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated,
+    sitemap_url, sitemap_txt, sitemap_truncated
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7);
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
 
 -- name: GetAnalysisReadiness :many
 -- An analysis's readiness, or no row when it has none.
@@ -250,7 +279,8 @@ WHERE analysis_id = ANY(sqlc.arg(ids)::uuid [])
 ORDER BY analysis_id, position;
 
 -- name: GetAnalysisReadinessFiles :one
-SELECT robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated
+SELECT robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated,
+    sitemap_url, sitemap_txt, sitemap_truncated
 FROM analysis_readiness_files
 WHERE analysis_id = $1;
 

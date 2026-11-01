@@ -1616,6 +1616,57 @@ func (s *CompanyRole) UnmarshalText(data []byte) error {
 	}
 }
 
+// One company's pages that use the term. A scan made before scans recorded the pages of a term has
+// none; the company uses the term all the same.
+// Ref: #/components/schemas/CompanyTermPages
+type CompanyTermPages struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name  string      `json:"name"`
+	Role  CompanyRole `json:"role"`
+	Pages []TermPage  `json:"pages"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CompanyTermPages) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *CompanyTermPages) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *CompanyTermPages) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetPages returns the value of Pages.
+func (s *CompanyTermPages) GetPages() []TermPage {
+	return s.Pages
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CompanyTermPages) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *CompanyTermPages) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *CompanyTermPages) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetPages sets the value of Pages.
+func (s *CompanyTermPages) SetPages(val []TermPage) {
+	s.Pages = val
+}
+
 type CompareScansBadRequest ProblemStatusCode
 
 func (*CompareScansBadRequest) compareScansRes() {}
@@ -3353,6 +3404,14 @@ func (*GetReadinessFilesNotFound) getReadinessFilesRes() {}
 type GetReadinessFilesUnauthorized ProblemStatusCode
 
 func (*GetReadinessFilesUnauthorized) getReadinessFilesRes() {}
+
+type GetTermPagesBadRequest ProblemStatusCode
+
+func (*GetTermPagesBadRequest) getTermPagesRes() {}
+
+type GetTermPagesUnauthorized ProblemStatusCode
+
+func (*GetTermPagesUnauthorized) getTermPagesRes() {}
 
 // Whether an improvement is done.
 // Ref: #/components/schemas/ImprovementTick
@@ -11760,6 +11819,13 @@ type ReadinessFiles struct {
 	LlmsFullTxt string `json:"llmsFullTxt"`
 	// True when llms-full.txt was cut at 100 KB.
 	LlmsFullTruncated bool `json:"llmsFullTruncated"`
+	// The address of the first sitemap the scan read (the one robots.txt lists, or /sitemap.xml); empty
+	// when it read none, or was made before scans kept the sitemap.
+	SitemapUrl string `json:"sitemapUrl"`
+	// That sitemap's text, as served.
+	SitemapTxt string `json:"sitemapTxt"`
+	// True when the sitemap was cut at 100 KB.
+	SitemapTruncated bool `json:"sitemapTruncated"`
 }
 
 // GetRobotsTxt returns the value of RobotsTxt.
@@ -11792,6 +11858,21 @@ func (s *ReadinessFiles) GetLlmsFullTruncated() bool {
 	return s.LlmsFullTruncated
 }
 
+// GetSitemapUrl returns the value of SitemapUrl.
+func (s *ReadinessFiles) GetSitemapUrl() string {
+	return s.SitemapUrl
+}
+
+// GetSitemapTxt returns the value of SitemapTxt.
+func (s *ReadinessFiles) GetSitemapTxt() string {
+	return s.SitemapTxt
+}
+
+// GetSitemapTruncated returns the value of SitemapTruncated.
+func (s *ReadinessFiles) GetSitemapTruncated() bool {
+	return s.SitemapTruncated
+}
+
 // SetRobotsTxt sets the value of RobotsTxt.
 func (s *ReadinessFiles) SetRobotsTxt(val string) {
 	s.RobotsTxt = val
@@ -11820,6 +11901,21 @@ func (s *ReadinessFiles) SetLlmsFullTxt(val string) {
 // SetLlmsFullTruncated sets the value of LlmsFullTruncated.
 func (s *ReadinessFiles) SetLlmsFullTruncated(val bool) {
 	s.LlmsFullTruncated = val
+}
+
+// SetSitemapUrl sets the value of SitemapUrl.
+func (s *ReadinessFiles) SetSitemapUrl(val string) {
+	s.SitemapUrl = val
+}
+
+// SetSitemapTxt sets the value of SitemapTxt.
+func (s *ReadinessFiles) SetSitemapTxt(val string) {
+	s.SitemapTxt = val
+}
+
+// SetSitemapTruncated sets the value of SitemapTruncated.
+func (s *ReadinessFiles) SetSitemapTruncated(val bool) {
+	s.SitemapTruncated = val
 }
 
 func (*ReadinessFiles) getReadinessFilesRes() {}
@@ -13611,6 +13707,54 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// A page that uses the term.
+// Ref: #/components/schemas/TermPage
+type TermPage struct {
+	// The page's address.
+	URL string `json:"url"`
+	// The page's title; empty when it has none.
+	Title string `json:"title"`
+}
+
+// GetURL returns the value of URL.
+func (s *TermPage) GetURL() string {
+	return s.URL
+}
+
+// GetTitle returns the value of Title.
+func (s *TermPage) GetTitle() string {
+	return s.Title
+}
+
+// SetURL sets the value of URL.
+func (s *TermPage) SetURL(val string) {
+	s.URL = val
+}
+
+// SetTitle sets the value of Title.
+func (s *TermPage) SetTitle(val string) {
+	s.Title = val
+}
+
+// The pages that use one search term on each company's newest finished scan that found it, Tribelt
+// first, then the competitors and the group by name.
+// Ref: #/components/schemas/TermPages
+type TermPages struct {
+	Items []CompanyTermPages `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TermPages) GetItems() []CompanyTermPages {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TermPages) SetItems(val []CompanyTermPages) {
+	s.Items = val
+}
+
+func (*TermPages) getTermPagesRes() {}
 
 // How far the language model is with the waiting candidates.
 // Ref: #/components/schemas/TermReviewState

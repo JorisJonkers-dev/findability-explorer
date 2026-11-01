@@ -2228,6 +2228,52 @@ export type ReadinessFiles = {
      * True when llms-full.txt was cut at 100 KB.
      */
     llmsFullTruncated: boolean;
+    /**
+     * The address of the first sitemap the scan read (the one robots.txt lists, or /sitemap.xml); empty when it read none, or was made before scans kept the sitemap.
+     */
+    sitemapUrl: string;
+    /**
+     * That sitemap's text, as served.
+     */
+    sitemapTxt: string;
+    /**
+     * True when the sitemap was cut at 100 KB.
+     */
+    sitemapTruncated: boolean;
+};
+
+/**
+ * The pages that use one search term on each company's newest finished scan that found it, Tribelt first, then the competitors and the group by name.
+ */
+export type TermPages = {
+    items: Array<CompanyTermPages>;
+};
+
+/**
+ * One company's pages that use the term. A scan made before scans recorded the pages of a term has none; the company uses the term all the same.
+ */
+export type CompanyTermPages = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    pages: Array<TermPage>;
+};
+
+/**
+ * A page that uses the term.
+ */
+export type TermPage = {
+    /**
+     * The page's address.
+     */
+    url: string;
+    /**
+     * The page's title; empty when it has none.
+     */
+    title: string;
 };
 
 /**
@@ -3636,6 +3682,48 @@ export type SearchTermsResponses = {
 };
 
 export type SearchTermsResponse = SearchTermsResponses[keyof SearchTermsResponses];
+
+export type GetTermPagesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The term, as the terminology map writes it.
+         */
+        term: string;
+        /**
+         * The term's language.
+         */
+        language: Language;
+    };
+    url: '/api/v1/term-pages';
+};
+
+export type GetTermPagesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetTermPagesError = GetTermPagesErrors[keyof GetTermPagesErrors];
+
+export type GetTermPagesResponses = {
+    /**
+     * Each company's pages that use the term.
+     */
+    200: TermPages;
+};
+
+export type GetTermPagesResponse = GetTermPagesResponses[keyof GetTermPagesResponses];
 
 export type ListCompetitorsData = {
     body?: never;

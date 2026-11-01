@@ -26,6 +26,7 @@ type UseCases interface {
 	Compare(ctx context.Context, competitorID string, from, to uuid.UUID) (domain.Comparison, error)
 	ReadinessTable(ctx context.Context) ([]domain.ReadinessRow, error)
 	ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.RawFiles, error)
+	TermPages(ctx context.Context, term, language string) ([]domain.CompanyTermPages, error)
 	StartReadinessCheck(ctx context.Context) (app.ReadinessCheck, error)
 	ReadinessCheckState() app.ReadinessCheck
 	StopScan(ctx context.Context, id uuid.UUID) error
@@ -252,7 +253,27 @@ func (h *Handler) GetReadinessFiles(ctx context.Context, params oas.GetReadiness
 	return &oas.ReadinessFiles{
 		RobotsTxt: raw.Robots, RobotsTruncated: raw.RobotsTruncated, LlmsTxt: raw.LLMs, LlmsTruncated: raw.LLMsTruncated,
 		LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTruncated,
+		SitemapUrl: raw.SitemapURL, SitemapTxt: raw.Sitemap, SitemapTruncated: raw.SitemapTruncated,
 	}, nil
+}
+
+// GetTermPages implements getTermPages.
+func (h *Handler) GetTermPages(ctx context.Context, params oas.GetTermPagesParams) (oas.GetTermPagesRes, error) {
+	companies, err := h.uc.TermPages(ctx, params.Term, string(params.Language))
+	if err != nil {
+		return nil, err
+	}
+	items := make([]oas.CompanyTermPages, 0, len(companies))
+	for _, c := range companies {
+		pages := make([]oas.TermPage, 0, len(c.Pages))
+		for _, p := range c.Pages {
+			pages = append(pages, oas.TermPage{URL: p.URL, Title: p.Title})
+		}
+		items = append(items, oas.CompanyTermPages{
+			CompetitorId: oas.CompetitorId(c.Company.ID), Name: c.Company.Name, Role: oas.CompanyRole(c.Company.Role), Pages: pages,
+		})
+	}
+	return &oas.TermPages{Items: items}, nil
 }
 
 func toReadiness(r domain.Readiness) oas.AiReadiness {

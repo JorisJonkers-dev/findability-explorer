@@ -34,6 +34,7 @@ const (
 	GetPromptTestSettingsOperation      OperationName = "GetPromptTestSettings"
 	GetReadinessFilesOperation          OperationName = "GetReadinessFiles"
 	GetStandingsOperation               OperationName = "GetStandings"
+	GetTermPagesOperation               OperationName = "GetTermPages"
 	ListAnalysesOperation               OperationName = "ListAnalyses"
 	ListCompetitorCandidatesOperation   OperationName = "ListCompetitorCandidates"
 	ListCompetitorChecksOperation       OperationName = "ListCompetitorChecks"

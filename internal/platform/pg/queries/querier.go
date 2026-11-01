@@ -98,6 +98,8 @@ type Querier interface {
 	ListAnalysisEquivalents(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisEquivalentsRow, error)
 	ListAnalysisKeywords(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKeywordsRow, error)
 	ListAnalysisKnownTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKnownTermsRow, error)
+	// The text a scan kept of its pages (only a scan of tribelt.nl keeps any), in their order.
+	ListAnalysisPageBodies(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPageBodiesRow, error)
 	ListAnalysisPages(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPagesRow, error)
 	ListCompanies(ctx context.Context) ([]Company, error)
 	ListCompanyOverrides(ctx context.Context) ([]ListCompanyOverridesRow, error)
@@ -164,6 +166,10 @@ type Querier interface {
 	// Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,
 	// and only the re-scans when rescan_only is set.
 	StopQueuedAnalyses(ctx context.Context, arg StopQueuedAnalysesParams) ([]uuid.UUID, error)
+	// The pages that use a term on each company's newest finished scan that found it, in the order
+	// the scan recorded them; a scan that found it before scans recorded the pages gives one row
+	// with page_position -1.
+	TermPages(ctx context.Context, arg TermPagesParams) ([]TermPagesRow, error)
 	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error)
 	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
 	// How many scans the language model answered for, and the tokens in and out one of them used on average.

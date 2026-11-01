@@ -324,6 +324,16 @@ func (UnimplementedHandler) GetStandings(ctx context.Context) (r GetStandingsRes
 	return r, ht.ErrNotImplemented
 }
 
+// GetTermPages implements getTermPages operation.
+//
+// Returns, for each company whose newest finished scan found the term, the pages of that scan that use
+// it, at most ten each. The term matches without regard to case.
+//
+// GET /api/v1/term-pages
+func (UnimplementedHandler) GetTermPages(ctx context.Context, params GetTermPagesParams) (r GetTermPagesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListAnalyses implements listAnalyses operation.
 //
 // Returns at most `limit` analyses, newest first, without their results.

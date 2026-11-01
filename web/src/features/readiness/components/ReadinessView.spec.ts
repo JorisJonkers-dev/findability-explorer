@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { bots, details, me, readiness, readinessRow, readinessTable } from '../../../testing/fixtures'
-import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
+import { type Handler, json, mountApp, problem, routes } from '../../../testing/mountApp'
 
 const tribelt = readinessRow('Tribelt B.V.', {
   competitorId: 'tribelt',
@@ -128,24 +128,10 @@ describe('AI readiness', () => {
     expect(sites.text()).toContain('No sites match this filter.')
   })
 
-  it('lets an administrator check every site again, and leads to the scans', async () => {
-    let started = false
-    const { wrapper } = await mountApp(
-      api({
-        'GET /api/v1/me': () => json(me({ isAdmin: true })),
-        'GET /api/v1/ai-readiness': () => json(readinessTable(table, started ? { running: true, checked: 2, total: 5 } : {})),
-        'POST /api/v1/admin/readiness-checks': () => {
-          started = true
-          return json({ running: true, checked: 0, failed: 0, total: 5 }, 202)
-        },
-      }),
-      '/ai-readiness',
-    )
+  it('gives an administrator the Manage link, and leaves checking again to Manage', async () => {
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/ai-readiness')
     expect(wrapper.get('a[href="/manage/scans"]').text()).toBe('Manage the scans')
-    const check = wrapper.findAll('button').find((b) => b.text() === 'Check AI readiness again')
-    await check?.trigger('click')
-    await settle()
-    expect(wrapper.text()).toContain('Checking 2 of 5 sites again.')
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Check AI readiness again')).toBe(false)
   })
 
   it('shows no check and no Manage link to an account that is no administrator', async () => {

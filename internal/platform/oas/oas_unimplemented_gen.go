@@ -187,6 +187,18 @@ func (UnimplementedHandler) GetCompetitor(ctx context.Context, params GetCompeti
 	return r, ht.ErrNotImplemented
 }
 
+// GetCompetitorDefinition implements getCompetitorDefinition operation.
+//
+// Administrators only. The definition of who competes with Tribelt that every check of a company is
+// made against (the newest version), every version, newest first, and what checking again against it
+// would take - the competitors on the list and the waiting candidates checked against an older
+// version, and what checking them again should cost on the Anthropic key.
+//
+// GET /api/v1/admin/competitor-definition
+func (UnimplementedHandler) GetCompetitorDefinition(ctx context.Context) (r GetCompetitorDefinitionRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetCompetitorProfile implements getCompetitorProfile operation.
 //
 // Returns the search terms of the company's latest finished scan, grouped by Tribelt belt family, with
@@ -470,6 +482,17 @@ func (UnimplementedHandler) RereadPromptRun(ctx context.Context, req *PromptRetr
 	return r, ht.ErrNotImplemented
 }
 
+// RestoreCompetitorDefinition implements restoreCompetitorDefinition operation.
+//
+// Administrators only. Saves the text of an older version as a new version, recording which it
+// restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is
+// the one in use.
+//
+// POST /api/v1/admin/competitor-definition/versions/{version}/restore
+func (UnimplementedHandler) RestoreCompetitorDefinition(ctx context.Context, params RestoreCompetitorDefinitionParams) (r RestoreCompetitorDefinitionRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RetryPromptRun implements retryPromptRun operation.
 //
 // Administrators only. Asks a finished run's failed and missing answers again, or only the one
@@ -482,6 +505,19 @@ func (UnimplementedHandler) RereadPromptRun(ctx context.Context, req *PromptRetr
 //
 // POST /api/v1/admin/prompt-runs/{runId}/retry
 func (UnimplementedHandler) RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (r RetryPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SaveCompetitorDefinition implements saveCompetitorDefinition operation.
+//
+// Administrators only. Stores the text as a new version, which every check from now on is made
+// against, and records who saved it. It starts no check - what was checked against an older version is
+// checked again by the next check of the candidates or of the list (startCandidateReview,
+// startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text
+// is the one in use; 422 when it is empty or longer than 8,000 characters.
+//
+// PUT /api/v1/admin/competitor-definition
+func (UnimplementedHandler) SaveCompetitorDefinition(ctx context.Context, req *CompetitorDefinitionText) (r SaveCompetitorDefinitionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

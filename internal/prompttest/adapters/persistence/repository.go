@@ -46,7 +46,7 @@ func (r *Repository) Settings(ctx context.Context) (domain.Settings, bool, error
 	}
 	row := rows[0]
 	return domain.Settings{
-		CredentialID: row.CredentialID, Providers: row.Providers, MonthlyBudget: domain.Micros(row.MonthlyBudgetMicros),
+		CredentialID: row.CredentialID, Providers: row.Providers, Models: row.Models, MonthlyBudget: domain.Micros(row.MonthlyBudgetMicros),
 		Cadence: domain.Cadence(row.Cadence), NextDue: row.NextDue.UTC(),
 		FactSheet: domain.FactSheet{
 			Text: row.FactSheet, Version: int(row.FactSheetVersion), UpdatedBy: row.FactSheetUpdatedBy, UpdatedAt: timeOf(row.FactSheetUpdatedAt),
@@ -57,7 +57,7 @@ func (r *Repository) Settings(ctx context.Context) (domain.Settings, bool, error
 // SaveSettings stores the settings in place of the earlier ones.
 func (r *Repository) SaveSettings(ctx context.Context, s domain.Settings, by string, at time.Time) error {
 	if err := r.store.Queries().SavePromptSettings(ctx, queries.SavePromptSettingsParams{
-		CredentialID: optionalText(s.CredentialID), Providers: s.Providers, MonthlyBudgetMicros: int64(s.MonthlyBudget),
+		CredentialID: optionalText(s.CredentialID), Providers: s.Providers, Models: append([]string{}, s.Models...), MonthlyBudgetMicros: int64(s.MonthlyBudget),
 		Cadence: string(s.Cadence), NextDue: s.NextDue, FactSheet: s.FactSheet.Text, FactSheetVersion: int64(s.FactSheet.Version),
 		FactSheetUpdatedBy: optionalText(s.FactSheet.UpdatedBy), FactSheetUpdatedAt: optionalTime(s.FactSheet.UpdatedAt),
 		UpdatedBy: by, UpdatedAt: at,

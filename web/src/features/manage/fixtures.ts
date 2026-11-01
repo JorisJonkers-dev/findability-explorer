@@ -1,4 +1,4 @@
-import type { PromptSets, PromptTestHistory, PromptTestSettings } from '../../infrastructure/api/types.gen'
+import type { PromptCatalogueModel, PromptModelCatalogue, PromptSets, PromptTestHistory, PromptTestSettings } from '../../infrastructure/api/types.gen'
 import { STORED_ID } from '../settings/fixtures'
 
 /** The Prompt test's settings: two providers, a $10 budget with $2.50 spent, monthly runs. */
@@ -6,6 +6,7 @@ export function promptSettings(overrides: Partial<PromptTestSettings> = {}): Pro
   return {
     credentialId: STORED_ID,
     providers: ['openai', 'google'],
+    modelList: [],
     monthlyBudgetUsd: 10,
     spentThisMonthUsd: 2.5,
     cadence: 'monthly',
@@ -73,5 +74,24 @@ export function promptHistory(): PromptTestHistory {
       { version: 2, publishedAt: '2026-10-27T15:00:00Z', questions: 2, note: 'Adds German and English questions.' },
     ],
     runs: [],
+  }
+}
+
+function catalogueModel(id: string, extra: Partial<PromptCatalogueModel> = {}): PromptCatalogueModel {
+  return { id, name: id, provider: id.split('/')[0] ?? id, free: false, recommended: false, basis: 'catalogue', knowledgeUsd: 0.001, webUsd: 0.021, ...extra }
+}
+
+/** OpenRouter's catalogue as Add a model lists it: two recommended, a free one, and a paid one. */
+export function modelCatalogue(overrides: Partial<PromptModelCatalogue> = {}): PromptModelCatalogue {
+  return {
+    readAt: '2026-11-01T06:00:00Z',
+    questions: 2,
+    models: [
+      catalogueModel('openai/gpt-oss-20b', { name: 'OpenAI: gpt-oss-20b', recommended: true, basis: 'run', knowledgeUsd: 0.0012, webUsd: 0.0061, listedAt: '2025-08-05T17:17:09Z' }),
+      catalogueModel('google/gemma:free', { name: 'Google: Gemma 3 27B (free)', recommended: true, free: true, knowledgeUsd: 0, webUsd: 0.02, listedAt: '2025-03-12T05:12:39Z' }),
+      catalogueModel('qwen/qwen3-8b:free', { name: 'Qwen: Qwen3 8B (free)', free: true, knowledgeUsd: 0, webUsd: 0.02 }),
+      catalogueModel('openai/gpt-5-nano', { name: 'OpenAI: GPT-5 Nano', knowledgeUsd: 0.0004, webUsd: 0.0104, listedAt: '2025-08-07T17:23:33Z' }),
+    ],
+    ...overrides,
   }
 }

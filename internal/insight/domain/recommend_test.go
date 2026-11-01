@@ -76,24 +76,25 @@ func TestARunReplacesTheOpenRecommendationsAndKeepsTheDoneAndEditedOnes(t *testi
 func TestAWrittenRecommendationIsListedInThePlan(t *testing.T) {
 	standings := []domain.Standing{{Measure: domain.MeasureTermsUsed}}
 	r := domain.Recommendation{
-		ID: "r1", RunID: "run2", Gap: domain.Gap{Kind: domain.GapTerm}, Title: "Use it", Why: "Because.", Steps: []string{"Do it."}, DoneWhen: "Found.", Benefit: 4, Effort: 2,
+		ID: "r1", RunID: "run2", Gap: domain.Gap{Kind: domain.GapFact}, Title: "Use it", Why: "Because.", Steps: []string{"Do it."}, DoneWhen: "Found.", Benefit: 4, Effort: 2,
 	}
-	item := r.Item("run2", standings)
-	if item.ID != "r1" || item.Measure != domain.MeasureTermsUsed || item.Moves == "" || !item.Manual() || item.Done || !item.New || item.Written == nil ||
+	standings = []domain.Standing{{Measure: domain.MeasureShareOfVoice}}
+	item := r.Item("run2", standings, domain.DoneFacts{})
+	if item.ID != "r1" || item.Measure != domain.MeasureShareOfVoice || item.Moves == "" || !item.Manual() || item.Done || !item.New || item.Written == nil ||
 		item.Benefit != 4 || item.Steps[0] != "Do it." {
 		t.Errorf("item = %+v", item)
 	}
 	r.DoneAt, r.DoneBy = written, "joris"
-	if item := r.Item("run2", standings); !item.Done || item.New || item.Tick == nil || item.Tick.By != "joris" {
+	if item := r.Item("run2", standings, domain.DoneFacts{}); !item.Done || item.New || item.Tick == nil || item.Tick.By != "joris" {
 		t.Errorf("done = %+v", item)
 	}
 	r.DoneAt = time.Time{}
-	if item := r.Item("run3", standings); item.New {
+	if item := r.Item("run3", standings, domain.DoneFacts{}); item.New {
 		t.Error("an older run's recommendation is new")
 	}
-	for _, k := range []domain.GapKind{domain.GapPage, domain.GapListing, domain.GapFact, domain.GapReadiness} {
+	for _, k := range []domain.GapKind{domain.GapTerm, domain.GapPage, domain.GapListing, domain.GapReadiness} {
 		r.Gap.Kind = k
-		if item := r.Item("", nil); item.Moves == "" || item.Measure == "" {
+		if item := r.Item("", nil, domain.DoneFacts{}); item.Moves == "" || item.Measure == "" || !item.Auto {
 			t.Errorf("%s = %+v", k, item)
 		}
 	}
@@ -106,7 +107,7 @@ func TestWrittenRecommendationsJoinThePlanByValue(t *testing.T) {
 		{ID: "worst", RunID: "run1", Gap: domain.Gap{Kind: domain.GapPage}, Benefit: 1, Effort: 5},
 		{ID: "tie", RunID: "run1", Gap: domain.Gap{Kind: domain.GapTerm}, Benefit: 4, Effort: 4},
 	}
-	got := domain.WithWritten([]domain.PlanItem{hand}, recs, "run1", nil)
+	got := domain.WithWritten([]domain.PlanItem{hand}, recs, "run1", nil, domain.DoneFacts{})
 	var order []string
 	for _, it := range got {
 		order = append(order, it.ID)

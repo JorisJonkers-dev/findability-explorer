@@ -196,7 +196,7 @@ var kindMoves = map[GapKind]struct { //nolint:gochecknoglobals // a constant tab
 
 // Item is the recommendation as the plan lists it: ticked off by hand until the rules decide when
 // a written recommendation is done, and new when the newest run wrote it.
-func (r Recommendation) Item(newest string, standings []Standing) PlanItem {
+func (r Recommendation) Item(newest string, standings []Standing, f DoneFacts) PlanItem {
 	k := kindMoves[r.Gap.Kind]
 	item := PlanItem{
 		Improvement: Improvement{
@@ -204,12 +204,28 @@ func (r Recommendation) Item(newest string, standings []Standing) PlanItem {
 			Benefit: r.Benefit, Effort: r.Effort,
 		},
 		Leader: LeaderOf(standings, k.measure), Tribelt: tribeltOn(standings, k.measure),
-		Written: &r, New: r.RunID == newest && r.Open(),
+		Written: &r,
 	}
-	if !r.DoneAt.IsZero() {
+	switch {
+	case r.ScanChecked():
+		item.Auto = true
+		item.Done, item.Parts = r.DoneByRule(f)
+	case !r.DoneAt.IsZero():
 		item.Done, item.Tick = true, &Tick{ImprovementID: r.ID, By: r.DoneBy, At: r.DoneAt}
 	}
+	item.New = r.RunID == newest && !item.Done && r.EditedAt.IsZero()
 	return item
+}
+
+// KeepDone marks the recommendations the rules find done as done at at, so a run keeps them.
+func KeepDone(recs []Recommendation, f DoneFacts, at time.Time) []Recommendation {
+	out := slices.Clone(recs)
+	for i, r := range out {
+		if done, _ := r.DoneByRule(f); done && r.DoneAt.IsZero() {
+			out[i].DoneAt, out[i].DoneBy = at, "a scan"
+		}
+	}
+	return out
 }
 
 // Typical tokens of the instructions and of one written recommendation, for an estimate.
@@ -241,10 +257,10 @@ func EstimateRun(gaps []Gap, pages []Page, batch int, model string) llm.Micros {
 
 // WithWritten adds the recommendations the runs wrote to the plan's items, best value first as
 // ByValue orders them; newest is the newest finished run, whose open recommendations are new.
-func WithWritten(items []PlanItem, recs []Recommendation, newest string, standings []Standing) []PlanItem {
+func WithWritten(items []PlanItem, recs []Recommendation, newest string, standings []Standing, f DoneFacts) []PlanItem {
 	out := slices.Clone(items)
 	for _, r := range recs {
-		out = append(out, r.Item(newest, standings))
+		out = append(out, r.Item(newest, standings, f))
 	}
 	slices.SortStableFunc(out, func(a, b PlanItem) int {
 		if c := b.Benefit*a.Effort - a.Benefit*b.Effort; c != 0 {

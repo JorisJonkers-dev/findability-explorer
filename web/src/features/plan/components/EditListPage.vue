@@ -16,6 +16,7 @@ const items = computed(() => editable(plan.value?.improvements ?? []))
 <template>
   <ManageLayout
     title="Edit a recommendation"
+    help-topic="edit-recommendation"
     purpose="Change the wording and scores of a recommendation a Recommendation run wrote. An edited one is kept when the next run replaces the others."
     :back="{ to: '/manage/recommendations', label: 'Back to Recommendations' }"
     :results="{ to: '/recommendations', label: 'See the recommendations' }"

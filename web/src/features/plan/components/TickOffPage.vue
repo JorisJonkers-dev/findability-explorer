@@ -25,6 +25,7 @@ function mark(item: PlanImprovement, isDone: boolean): void {
 <template>
   <ManageLayout
     title="Tick off yourself"
+    help-topic="done"
     purpose="Recommendations that no scan can check."
     :back="{ to: '/manage/recommendations', label: 'Back to Recommendations' }"
     :results="{ to: '/recommendations', label: 'See the recommendations' }"

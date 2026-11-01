@@ -29,6 +29,7 @@ const past = computed(() => (runs.value?.runs ?? []).map((r) => ({ id: r.id, ...
 <template>
   <ManageLayout
     title="Recommendations"
+    help-topic="rec-run"
     purpose="Write new recommendations from the latest data, mark them as done, and set the goals."
     :results="{ to: '/recommendations', label: 'See the recommendations' }"
   >

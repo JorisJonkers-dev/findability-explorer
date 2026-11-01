@@ -15,7 +15,7 @@ test('an account that is no administrator sees the competitors, but no controls'
 
 test('a competitor’s page shows an account that is no administrator no way to scan or change it', async ({ page }) => {
   await page.goto('/competitors/twentebelt')
-  await expect(page.getByRole('heading', { level: 2, name: 'Twentebelt against Tribelt' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Against Tribelt' })).toBeVisible()
   await expect(page.getByRole('button', { name: /^(Scan again|Scan this website)$/ })).toHaveCount(0)
   await expect(page.getByRole('group', { name: 'Manage this company' })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'See its scan history' })).toBeVisible()

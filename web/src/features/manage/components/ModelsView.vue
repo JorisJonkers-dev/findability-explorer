@@ -95,6 +95,7 @@ const PILL = 'inline-flex rounded-full px-2 py-0.5 text-xs font-semibold whitesp
 <template>
   <ManageLayout
     title="Models"
+    help-topic="models"
     purpose="The AI models that are asked the buyer questions."
     :back="{ to: '/manage/prompt-test', label: 'Back to Prompt test' }"
     :results="{ to: '/ai-responses', label: 'See the AI responses' }"

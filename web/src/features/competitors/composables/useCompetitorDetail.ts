@@ -1,11 +1,13 @@
-import { computed, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { useStandings } from '../../catching-up/composables/useStandings'
 import { useOverview } from '../../home/composables/useOverview'
-import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
+import { usePromptAnswers, usePromptResults } from '../../prompt-test/composables/usePromptTest'
+import { latestRun } from '../../prompt-test/domain/results'
 import { useReadinessTable } from '../../readiness/composables/useReadiness'
 import { useTermMap } from '../../terminology/composables/useTermSearch'
 import { detailHeadline, measuresOf, readinessScore } from '../domain/compare'
 import { companyTerms } from '../domain/company'
+import { aheadLines, competitorPurpose, detailDataLine, modelShares, theirTerms } from '../domain/detail'
 import { beltRows, whereLine } from '../domain/list'
 import { shareOf, CHIP_COUNT } from '../domain/roster'
 import { useCompanies } from './useCompanies'
@@ -32,8 +34,44 @@ export function useCompetitorDetail(id: Ref<string>) {
     companyId === undefined ? undefined : rowOf(companyId)?.readiness?.sitemap.coverage?.share
   const termsOf = (c: { shortName: string } | undefined): number | undefined => (c ? companyTerms(map.terms.value, c.shortName).length : undefined)
 
+  // The newest run's responses, for how often each model names the company.
+  const run = computed(() => latestRun(results.value))
+  const { answers } = usePromptAnswers(
+    computed(() => run.value?.id),
+    ref({}),
+  )
+
+  const measures = computed(() =>
+    company.value
+      ? measuresOf({
+          name: company.value.shortName,
+          share: share.value,
+          tribeltShare: tribeltShare.value,
+          ready: ready.value,
+          tribeltReady: tribeltReady.value,
+          outOf: outOf.value,
+          sitemap: coverage(id.value),
+          tribeltSitemap: coverage(tribelt.value?.id),
+          // A site no scan read has no terms found on it.
+          terms: company.value.scans > 0 ? termsOf(company.value) : undefined,
+          tribeltTerms: termsOf(tribelt.value),
+          mapTerms: overview.value?.terms.total ?? map.terms.value.length,
+        })
+      : [],
+  )
+
   return {
     company,
+    purpose: computed(() => (company.value ? competitorPurpose(company.value) : '')),
+    dataLine: computed(() => {
+      const c = company.value
+      if (!c) return ''
+      const scan = c.lastScan
+      return detailDataLine(c.shortName, run.value?.finishedAt ?? run.value?.startedAt, scan ? (scan.finishedAt ?? scan.createdAt) : undefined)
+    }),
+    ahead: computed(() => aheadLines(measures.value)),
+    terms: computed(() => theirTerms(map.terms.value, id.value)),
+    modelBars: computed(() => modelShares(answers.value?.items ?? [], id.value)),
     tribelt,
     isLoading,
     notFound,
@@ -46,23 +84,6 @@ export function useCompetitorDetail(id: Ref<string>) {
     belts: computed(() => (company.value ? beltRows(company.value) : [])),
     /** The newest scan that finished, which the scan page opens. */
     latestScan: computed(() => detail.value?.scans.find((s) => s.status === 'done')),
-    measures: computed(() =>
-      company.value
-        ? measuresOf({
-            name: company.value.shortName,
-            share: share.value,
-            tribeltShare: tribeltShare.value,
-            ready: ready.value,
-            tribeltReady: tribeltReady.value,
-            outOf: outOf.value,
-            sitemap: coverage(id.value),
-            tribeltSitemap: coverage(tribelt.value?.id),
-            // A site no scan read has no terms found on it.
-            terms: company.value.scans > 0 ? termsOf(company.value) : undefined,
-            tribeltTerms: termsOf(tribelt.value),
-            mapTerms: overview.value?.terms.total ?? map.terms.value.length,
-          })
-        : [],
-    ),
+    measures,
   }
 }

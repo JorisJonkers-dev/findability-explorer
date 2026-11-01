@@ -114,7 +114,9 @@ func band(n int) int {
 }
 
 // strongIntent is whether a term's buyer intent shows a buyer close to buying.
-func strongIntent(tier string) bool { return tier == "spec" || tier == "product" || tier == "application" }
+func strongIntent(tier string) bool {
+	return tier == "spec" || tier == "product" || tier == "application"
+}
 
 // hasPage is whether tribelt.nl has a page about family in language.
 func hasPage(pages []Page, family, language string) bool {

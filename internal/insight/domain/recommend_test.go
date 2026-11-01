@@ -98,3 +98,34 @@ func TestAWrittenRecommendationIsListedInThePlan(t *testing.T) {
 		}
 	}
 }
+
+func TestWrittenRecommendationsJoinThePlanByValue(t *testing.T) {
+	hand := domain.PlanItem{Improvement: domain.Improvement{ID: "hand", Benefit: 2, Effort: 2}}
+	recs := []domain.Recommendation{
+		{ID: "best", RunID: "run1", Gap: domain.Gap{Kind: domain.GapFact}, Benefit: 5, Effort: 1},
+		{ID: "worst", RunID: "run1", Gap: domain.Gap{Kind: domain.GapPage}, Benefit: 1, Effort: 5},
+		{ID: "tie", RunID: "run1", Gap: domain.Gap{Kind: domain.GapTerm}, Benefit: 4, Effort: 4},
+	}
+	got := domain.WithWritten([]domain.PlanItem{hand}, recs, "run1", nil)
+	var order []string
+	for _, it := range got {
+		order = append(order, it.ID)
+	}
+	if fmt.Sprint(order) != "[best tie hand worst]" {
+		t.Errorf("order = %v", order)
+	}
+	runs := []domain.RecRun{{ID: "c", Ending: "failed"}, {ID: "b", Ending: "done"}, {ID: "a", Ending: "done"}}
+	if domain.NewestDone(runs) != "b" || domain.NewestDone(runs[:1]) != "" {
+		t.Error("NewestDone")
+	}
+}
+
+func TestARunIsEstimatedFromItsGapsAndPages(t *testing.T) {
+	gaps := make([]domain.Gap, 12)
+	pages := []domain.Page{{URL: "https://www.tribelt.nl/", Text: strings.Repeat("x", 4000)}}
+	one := domain.EstimateRun(gaps[:1], pages, 10, "claude-haiku-5-5")
+	two := domain.EstimateRun(gaps, pages, 10, "claude-haiku-5-5")
+	if one <= 0 || two <= one || domain.EstimateRun(nil, pages, 10, "claude-haiku-5-5") != 0 {
+		t.Errorf("estimates = %s, %s", one, two)
+	}
+}

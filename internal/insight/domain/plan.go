@@ -53,10 +53,10 @@ const (
 func Improvements() []Improvement {
 	return []Improvement{
 		{
-			ID: "submit-search-engines", Title: "Submit tribelt.nl to Google and Bing", Moves: "Helps Tribelt appear in Gemini and Copilot answers.",
+			ID: "submit-search-engines", Title: "Submit tribelt.nl to Google and Bing", Moves: "Helps Tribelt appear in Gemini and Copilot responses.",
 			Benefit: 4, Effort: 1,
 			Measure: MeasureShareOfVoice, Check: CheckNone,
-			Why: "Gemini answers from Google's index and Copilot from Bing's. A page these search engines don't know cannot turn up in their answers.",
+			Why: "Gemini answers from Google's index and Copilot from Bing's. A page these search engines don't know cannot turn up in their responses.",
 			Steps: []string{
 				"Add tribelt.nl to Google Search Console and to Bing Webmaster Tools, and confirm you own the domain.",
 				"Submit the sitemap in both.",
@@ -100,10 +100,10 @@ func Improvements() []Improvement {
 			DoneWhen: "tribelt.nl/index.md opens, or llms.txt links to Markdown pages.",
 		},
 		{
-			ID: "structured-data", Title: "Add structured data to the belt pages", Moves: "Improves AI readiness, and helps AI answers describe Tribelt correctly.",
+			ID: "structured-data", Title: "Add structured data to the belt pages", Moves: "Improves AI readiness, and helps AI responses describe Tribelt correctly.",
 			Benefit: 3, Effort: 3,
 			Measure: MeasureReadiness, Check: CheckStructuredData,
-			Why: "Structured data tells search engines and AI tools what a page is about: the product, its specifications, and the questions it answers. They use it to describe a company in their answers.",
+			Why: "Structured data tells search engines and AI tools what a page is about: the product, its specifications, and the questions it answers. They use it to describe a company in their responses.",
 			Steps: []string{
 				"Add Product structured data to each belt page, with the name, a description, and the main specifications.",
 				"Add FAQPage structured data to a page with buyers' common questions and their answers.",
@@ -115,7 +115,7 @@ func Improvements() []Improvement {
 			ID: "buyer-words", Title: "Add missing search terms", Moves: "The terms competitors use that tribelt.nl lacks, so more searches list Tribelt.",
 			Benefit: 4, Effort: 3,
 			Measure: MeasureTermsUsed, Check: CheckNone,
-			Why: "Buyers search in their own words, which are often not Tribelt's product names. A page that uses their words turns up in their searches and in AI answers to them.",
+			Why: "Buyers search in their own words, which are often not Tribelt's product names. A page that uses their words turns up in their searches and in AI responses to them.",
 			Steps: []string{
 				"Open Search terms and pick the most used terms for each belt family that tribelt.nl does not use yet.",
 				"Work them into the belt pages' headings and text, in each language.",
@@ -124,10 +124,10 @@ func Improvements() []Improvement {
 			DoneWhen: "Each belt family's page uses the terms buyers search for most.",
 		},
 		{
-			ID: "family-pages", Title: "One page per belt family in each language", Moves: "Helps Tribelt appear in answers to German and English questions.",
+			ID: "family-pages", Title: "One page per belt family in each language", Moves: "Helps Tribelt appear in responses to German and English questions.",
 			Benefit: 5, Effort: 5,
 			Measure: MeasureShareOfVoice, Check: CheckNone,
-			Why: "Answers to German and English questions draw on pages in those languages. Without a page per belt family in each language, those answers name competitors instead.",
+			Why: "Responses to German and English questions draw on pages in those languages. Without a page per belt family in each language, those responses name competitors instead.",
 			Steps: []string{
 				"Write a page for each belt family in Dutch, German and English, rather than one translated overview.",
 				"Use the terms buyers in each language search for.",
@@ -136,16 +136,16 @@ func Improvements() []Improvement {
 			DoneWhen: "Each of the " + InWords(len(Families())) + " belt families has its own page in all " + InWords(len(lang.Focus())) + " languages.",
 		},
 		{
-			ID: "listings", Title: "Get listed where answers find sources", Moves: "Makes web answers cite tribelt.nl more often.",
+			ID: "listings", Title: "Get listed where AI responses find sources", Moves: "Makes web responses cite tribelt.nl more often.",
 			Benefit: 5, Effort: 4,
 			Measure: MeasureCitationShare, Check: CheckNone,
-			Why: "Web answers cite sources they trust, such as trade directories, industry associations and articles. A listing there gives answers a reason to cite tribelt.nl.",
+			Why: "Web responses cite sources they trust, such as trade directories, industry associations and articles. A listing there gives responses a reason to cite tribelt.nl.",
 			Steps: []string{
-				"Open the Prompt test and note the sites the web answers cite for belt questions.",
+				"Open the Prompt test and note the sites the web responses cite for belt questions.",
 				"Get Tribelt listed on those sites, with a link to the right belt page.",
 				"Ask partners and customers who mention Tribelt to link to tribelt.nl.",
 			},
-			DoneWhen: "Tribelt is listed on the sites the web answers cite most.",
+			DoneWhen: "Tribelt is listed on the sites the web responses cite most.",
 		},
 	}
 }

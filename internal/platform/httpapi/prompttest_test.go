@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -37,6 +38,7 @@ type promptTests struct {
 	stopped    uuid.UUID
 	historyErr error
 	setsErr    error
+	catalogErr error
 	// draft is the draft published; publishErr makes publishing fail.
 	draft      domain.Draft
 	publishErr error
@@ -184,7 +186,7 @@ func (p *promptTests) History(context.Context) (app.HistoryView, error) {
 		Runs: []domain.RunFigures{
 			{RunID: partialID, StartedAt: answered.Add(-48 * time.Hour), Version: 1, Tasks: 1260, Answered: 62, Read: 47, Partial: true, All: share(0.4), Dutch: share(0.4)},
 			{
-				RunID: runID, StartedAt: answered, Version: 2, Tasks: 200, Answered: 196, Read: 194,
+				RunID: runID, StartedAt: answered, Version: 2, Tasks: 200, Answered: 196, Read: 194, Models: []string{"openai/gpt-oss-20b"},
 				All: share(0.25), Dutch: share(0.3), German: share(0.2), English: share(0.1), Twente: share(0.5), Citation: share(0.35),
 			},
 		},
@@ -196,6 +198,7 @@ func view() app.View {
 	s := domain.DefaultSettings(answered)
 	s.CredentialID = "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f"
 	s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt = "joris", answered
+	s.Models = []string{"google/gemma:free"}
 	models := []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini"}}
 	return app.View{
 		Settings: s, PromptSet: domaintest.Version2().PromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000,
@@ -209,6 +212,42 @@ func (p *promptTests) Settings(context.Context) (app.View, error) { return view(
 func (p *promptTests) Update(_ context.Context, actor string, ch app.Change) (app.View, error) {
 	p.actor, p.change = actor, ch
 	return view(), p.updateErr
+}
+
+func (p *promptTests) Catalogue(context.Context) (app.CatalogueView, error) {
+	listed := domain.CatalogueModel{ID: "openai/gpt-oss-20b", Name: "OpenAI: gpt-oss-20b", Created: answered, PromptPrice: 0.00000003, CompletionPrice: 0.00000014, InputModalities: []string{"text"}, OutputModalities: []string{"text"}}
+	unlisted := domain.CatalogueModel{ID: "qwen/qwen3:free", Name: "Qwen3 (free)", InputModalities: []string{"text"}, OutputModalities: []string{"text"}}
+	return app.CatalogueView{ReadAt: answered, Questions: 20, Entries: domain.Catalogue([]domain.CatalogueModel{unlisted, listed}, nil)}, p.catalogErr
+}
+
+func TestThePromptModelCatalogueIsForAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	const path = "/api/v1/admin/prompt-test/catalogue"
+	if r := callAs(t, srv, http.MethodGet, path, "", "tester"); r.code != http.StatusForbidden {
+		t.Errorf("a viewer read the catalogue: %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodGet, path, "", "admin")
+	if r.code != http.StatusOK || r.body["readAt"] != "2026-11-01T06:10:00Z" || r.body["questions"].(float64) != 20 {
+		t.Fatalf("catalogue = %d %v", r.code, r.body)
+	}
+	models := r.body["models"].([]any)
+	first, second := models[0].(map[string]any), models[1].(map[string]any)
+	if first["id"] != "openai/gpt-oss-20b" || first["recommended"] != true || first["provider"] != "openai" || first["listedAt"] != "2026-11-01T06:10:00Z" ||
+		first["basis"] != "catalogue" || first["free"] != false || first["knowledgeUsd"].(float64) != 0.000135 || first["webUsd"].(float64) != 0.020135 {
+		t.Errorf("first = %v", first)
+	}
+	if second["id"] != "qwen/qwen3:free" || second["recommended"] != false || second["free"] != true || second["listedAt"] != nil {
+		t.Errorf("second = %v", second)
+	}
+	a.prompts().catalogErr = domain.ErrNoKey
+	if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusUnprocessableEntity {
+		t.Errorf("no key: %d %v", r.code, r.body)
+	}
+	a.prompts().catalogErr = errors.New("down")
+	if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("failing: %d", r.code)
+	}
 }
 
 func candidate() domain.Candidate {
@@ -231,7 +270,7 @@ func (p *promptTests) DecideMany(_ context.Context, actor string, status domain.
 	p.actor, p.decided = actor, status
 	return []app.Decided{
 		{ID: ids[0], Name: "Ashworth", Outcome: app.OutcomeDone},
-		{ID: "3a7bd3e2360a9f02", Outcome: app.OutcomeSkipped, Reason: "the answers gave no website for it"},
+		{ID: "3a7bd3e2360a9f02", Outcome: app.OutcomeSkipped, Reason: "the responses gave no website for it"},
 	}, p.decideErr
 }
 
@@ -379,7 +418,7 @@ func TestPromptTestSettings(t *testing.T) {
 	if r.code != http.StatusOK || r.body["monthlyBudgetUsd"].(float64) != 10 || r.body["spentThisMonthUsd"].(float64) != 2.5 ||
 		len(r.body["promptSet"].(map[string]any)["prompts"].([]any)) != 20 || r.body["factSheet"].(map[string]any)["updatedBy"] != "joris" ||
 		r.body["credentialId"] != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" || r.body["keyWorks"] != true ||
-		r.body["models"].([]any)[0].(map[string]any)["fallback"] != "google/gemini" {
+		r.body["models"].([]any)[0].(map[string]any)["fallback"] != "google/gemini" || r.body["modelList"].([]any)[0] != "google/gemma:free" {
 		t.Fatalf("settings = %d %v", r.code, r.body)
 	}
 	prices := r.body["prices"].(map[string]any)
@@ -388,12 +427,13 @@ func TestPromptTestSettings(t *testing.T) {
 		provider["knowledgeUsd"].(float64) != 0.001 || provider["fallback"] != "google/gemini" {
 		t.Errorf("prices = %v", prices)
 	}
-	body := `{"credentialId":"3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f","providers":["openai"],"monthlyBudgetUsd":12.5,"cadence":"weekly","factSheet":"Tribelt makes belts in Haaksbergen."}`
+	body := `{"credentialId":"3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f","providers":["openai"],"models":["openai/gpt-oss-20b"],"monthlyBudgetUsd":12.5,"cadence":"weekly","factSheet":"Tribelt makes belts in Haaksbergen."}`
 	if r := callAs(t, srv, http.MethodPatch, "/api/v1/admin/prompt-test", body, "admin"); r.code != http.StatusOK {
 		t.Fatalf("update = %d %v", r.code, r.body)
 	}
 	ch := a.prompts().change
-	if *ch.CredentialID != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" || *ch.Budget != 12_500_000 || *ch.Cadence != "weekly" || *ch.FactSheet == "" || ch.Providers[0] != "openai" {
+	if *ch.CredentialID != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" || *ch.Budget != 12_500_000 || *ch.Cadence != "weekly" || *ch.FactSheet == "" || ch.Providers[0] != "openai" ||
+		!slices.Equal(ch.Models, []string{"openai/gpt-oss-20b"}) {
 		t.Errorf("change = %+v", ch)
 	}
 	a.prompts().updateErr = errors.Join(domain.ErrInvalid, errors.New("invalid: a month's budget is more than $0"))
@@ -489,7 +529,7 @@ func TestCandidatesFoldReviewAndAreDecidedTogether(t *testing.T) {
 	r = callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"add","ids":["3a7bd3e2360a9f01","3a7bd3e2360a9f02"]}`, "admin")
 	items := r.body["items"].([]any)
 	if r.code != http.StatusOK || a.prompts().decided != domain.CandidateAdded || len(items) != 2 ||
-		items[0].(map[string]any)["outcome"] != "done" || items[1].(map[string]any)["reason"] != "The answers gave no website for it." {
+		items[0].(map[string]any)["outcome"] != "done" || items[1].(map[string]any)["reason"] != "The responses gave no website for it." {
 		t.Fatalf("decide = %d %v", r.code, r.body)
 	}
 	if r := callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"dismiss","ids":["3a7bd3e2360a9f01"]}`, "admin"); r.code != http.StatusOK || a.prompts().decided != domain.CandidateDismissed {
@@ -670,6 +710,9 @@ func TestEverySignedInAccountReadsThePromptTestHistory(t *testing.T) {
 		t.Errorf("version 2 = %v", v)
 	}
 	partial, full := runs[0].(map[string]any), runs[1].(map[string]any)
+	if full["models"].([]any)[0] != "openai/gpt-oss-20b" || partial["models"] != nil {
+		t.Errorf("models = %v, %v", full["models"], partial["models"])
+	}
 	if partial["runId"] != partialID.String() || partial["partial"] != true || partial["promptSetVersion"].(float64) != 1 || partial["tasks"].(float64) != 1260 ||
 		partial["answered"].(float64) != 62 || partial["read"].(float64) != 47 || partial["failure"] != "OpenRouter answered 401: User not found." ||
 		partial["all"].(float64) != 0.4 || partial["dutch"].(float64) != 0.4 {

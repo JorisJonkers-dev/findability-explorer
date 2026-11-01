@@ -66,7 +66,7 @@ func TestMatchFailures(t *testing.T) {
 		want   string
 	}{
 		"provider fails": {&client{err: boom}, "refused the API key"},
-		"not JSON":       {&client{text: "Sure! Here are"}, "read the model's answer"},
+		"not JSON":       {&client{text: "Sure! Here are"}, "read the model's response"},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {

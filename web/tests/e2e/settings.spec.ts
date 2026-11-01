@@ -1,19 +1,15 @@
 import { expect, expectAccessible, test } from './fixtures'
 
-test('the Prompt test models show the prices and the providers, and take a new provider; Questions shows the published set', async ({ page }, info) => {
+test('the Prompt test models show the Model list and where to add one; Questions shows the published set', async ({ page }) => {
   await page.goto('/manage/prompt-test/models')
   await expect(page.getByRole('heading', { level: 1, name: 'Models' })).toBeVisible()
-  // The e2e run has no OpenRouter key, so the page says so and has no prices to go by.
+  // The e2e run has no OpenRouter key, so the page says so and reads no catalogue.
   await expect(page.getByRole('alert').filter({ hasText: 'The OpenRouter key does not work' })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'What runs cost' })).toContainText('No prices yet.')
+  await expect(page.getByRole('region', { name: 'The model list', exact: true })).toContainText('These models are asked in every run')
+  await expect(page.getByRole('region', { name: 'Add a model' })).toContainText('OpenRouter’s models can be listed once the key works.')
+  // Nothing has changed, so there is nothing to save.
+  await expect(page.getByRole('button', { name: 'Save the model list' })).toBeDisabled()
   await expectAccessible(page)
-  const providers = page.getByRole('list', { name: 'Providers' })
-  await expect(providers.getByRole('listitem')).not.toHaveCount(0)
-  // Adding is not saved here, so the projects sharing one database do not meet.
-  const id = info.project.name === 'phone' ? 'cohere' : 'ai21'
-  await page.getByLabel('Add a provider by its OpenRouter id').fill(id)
-  await page.getByRole('button', { name: 'Add', exact: true }).click()
-  await expect(providers).toContainText(id)
   const menu = page.getByRole('navigation', { name: 'Manage' })
   await expect(menu.getByRole('link', { name: /^Models/ })).toHaveAttribute('aria-current', 'page')
 

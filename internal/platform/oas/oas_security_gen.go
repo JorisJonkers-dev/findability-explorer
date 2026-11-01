@@ -65,6 +65,7 @@ var operationRolesSessionCookie = map[string][]string{
 	GetOverviewOperation:                 []string{},
 	GetPlanOperation:                     []string{},
 	GetProductsOperation:                 []string{},
+	GetPromptModelCatalogueOperation:     []string{},
 	GetPromptRetryPlanOperation:          []string{},
 	GetPromptTestHistoryOperation:        []string{},
 	GetPromptTestResultsOperation:        []string{},

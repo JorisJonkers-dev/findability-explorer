@@ -83,7 +83,7 @@ var (
 	// ErrDeclined is returned when the model declines the request; it is a domain.ErrNoAnswer.
 	ErrDeclined error = noAnswerError("the model declined the request")
 	// ErrCutOff is returned when the model's answer hit the token limit; it is a domain.ErrNoAnswer.
-	ErrCutOff error = noAnswerError("the model's answer was cut off")
+	ErrCutOff error = noAnswerError("the model's response was cut off")
 )
 
 // noAnswerError is an unusable answer, which errors.Is matches to domain.ErrNoAnswer.

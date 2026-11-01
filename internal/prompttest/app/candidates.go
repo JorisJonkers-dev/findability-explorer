@@ -233,7 +233,7 @@ func (s *Service) DecideMany(ctx context.Context, actor string, status domain.Ca
 		c, err := pending(all, id)
 		switch {
 		case err != nil:
-			out = append(out, Decided{ID: id, Outcome: OutcomeSkipped, Reason: "It was decided already, or the answers no longer give it."})
+			out = append(out, Decided{ID: id, Outcome: OutcomeSkipped, Reason: "It was decided already, or the responses no longer give it."})
 			continue
 		case slices.Contains(done, c.ID):
 			continue
@@ -253,7 +253,7 @@ func (s *Service) decideOne(ctx context.Context, actor string, status domain.Can
 	competitorID := ""
 	if status == domain.CandidateAdded {
 		if c.Website == "" {
-			r.Outcome, r.Reason = OutcomeSkipped, "The answers gave no website for it; add it on its own."
+			r.Outcome, r.Reason = OutcomeSkipped, "The responses gave no website for it; add it on its own."
 			return r, nil
 		}
 		id, err := s.directory.Add(ctx, actor, c.Name, c.Website)

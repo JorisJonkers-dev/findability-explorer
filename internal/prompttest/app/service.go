@@ -73,6 +73,8 @@ type Service struct {
 	extractors Extractors
 	// budget stops Claude Haiku once the month's Anthropic budget is spent; nil until WithBudget.
 	budget BudgetSpent
+	// read is OpenRouter's catalogue as Add a model last read it (Catalogue).
+	read catalogueRead
 }
 
 // Option changes how a Service waits and runs work in the background; tests use them.
@@ -176,13 +178,14 @@ func (s *Service) Settings(ctx context.Context) (View, error) {
 	return v, nil
 }
 
-// price fills in the latest run's models and the price overview for the providers set now: each
-// one the latest run asked by what its answers cost, and the others, before any run or added
-// since, by OpenRouter's price list when the key works. Reading is priced at the reader r that
-// will read the next run.
+// price fills in the latest run's models and the price overview for the models set now: the
+// Model list, or before one is saved the cheapest model of each provider. Each one the latest run
+// asked is priced by what its answers cost, and the others, before any run or added since, by
+// OpenRouter's price list when the key works. Reading is priced at the reader r that will read the
+// next run.
 func (s *Service) price(ctx context.Context, v *View, r reader) error {
 	questions := len(v.PromptSet.Prompts)
-	cadence, budget, providers := v.Settings.Cadence, v.Settings.MonthlyBudget, v.Settings.Providers
+	cadence, budget := v.Settings.Cadence, v.Settings.MonthlyBudget
 	runs, err := s.repo.Runs(ctx, 1)
 	if err != nil {
 		return fmt.Errorf("the latest run: %w", err)
@@ -194,7 +197,7 @@ func (s *Service) price(ctx context.Context, v *View, r reader) error {
 		return s.catalogue(ctx, v.Settings.CredentialID)
 	})
 	v.Prices = domain.NoPrices(cadence, budget)
-	missing := providers
+	missing := wanted(v.Settings)
 	if len(runs) > 0 {
 		v.Models = runs[0].Models
 		answers, err := s.repo.Answers(ctx, runs[0].ID, false)
@@ -203,20 +206,130 @@ func (s *Service) price(ctx context.Context, v *View, r reader) error {
 		}
 		if len(answers) > 0 {
 			var kept []domain.ModelChoice
-			kept, missing = domain.Asked(runs[0].Models, providers)
+			kept, missing = split(runs[0].Models, v.Settings)
 			v.Prices = domain.PricesFromRun(answers, kept, questions, cadence, budget, readerPrice(r, catalogue))
 		}
 	}
 	if len(missing) == 0 || catalogue() == nil {
 		return nil
 	}
-	estimate := domain.PricesFromCatalogue(catalogue(), domain.ChooseModels(catalogue(), missing), questions, cadence, budget, readerPrice(r, catalogue))
+	estimate := domain.PricesFromCatalogue(catalogue(), domain.OfModels(choices(catalogue(), v.Settings), missingModels(catalogue(), v.Settings, missing)), questions, cadence, budget, readerPrice(r, catalogue))
 	if v.Prices.Basis == domain.BasisRun {
 		v.Prices = v.Prices.With(estimate.Providers, questions, cadence)
 		return nil
 	}
 	v.Prices = estimate
 	return nil
+}
+
+// wanted are what the settings ask: the Model list, or before one is saved the providers.
+func wanted(s domain.Settings) []string {
+	if len(s.Models) > 0 {
+		return s.Models
+	}
+	return s.Providers
+}
+
+// split are a run's models still wanted, and the wanted ones it did not ask.
+func split(models []domain.ModelChoice, s domain.Settings) ([]domain.ModelChoice, []string) {
+	if len(s.Models) > 0 {
+		return domain.AskedModels(models, s.Models)
+	}
+	return domain.Asked(models, s.Providers)
+}
+
+// missingModels are the model ids of the wanted entries missing names: the listed models
+// themselves, or the cheapest model of each missing provider.
+func missingModels(catalogue []domain.CatalogueModel, s domain.Settings, missing []string) []string {
+	if len(s.Models) > 0 {
+		return missing
+	}
+	var ids []string
+	for _, c := range domain.ChooseModels(catalogue, missing) {
+		ids = append(ids, c.Model)
+	}
+	return ids
+}
+
+// choices are the models a run asks with the settings: the Model list, or before one is saved
+// the cheapest model of each provider.
+func choices(catalogue []domain.CatalogueModel, settings domain.Settings) []domain.ModelChoice {
+	if len(settings.Models) > 0 {
+		return domain.ChooseListed(catalogue, settings.Models)
+	}
+	return domain.ChooseModels(catalogue, settings.Providers)
+}
+
+// catalogueRead is OpenRouter's catalogue as last read with one key, and when.
+type catalogueRead struct {
+	mu     sync.Mutex
+	key    string
+	at     time.Time
+	models []domain.CatalogueModel
+}
+
+// catalogueAge is how long a read of the catalogue lasts: OpenRouter's list is read again daily.
+const catalogueAge = 24 * time.Hour
+
+// CatalogueView is Add a model: every text model on OpenRouter with what its responses cost, when
+// the list was read, and how many questions a run asks.
+type CatalogueView struct {
+	ReadAt    time.Time
+	Questions int
+	Entries   []domain.CatalogueEntry
+}
+
+// Catalogue is every text model on OpenRouter, read with the settings' key at most once a day; a
+// read that fails keeps the last list. Models the latest run asked are priced by its responses,
+// the rest by their list prices. It needs a working key (domain.ErrNoKey).
+func (s *Service) Catalogue(ctx context.Context) (CatalogueView, error) {
+	settings, err := s.settings(ctx)
+	if err != nil {
+		return CatalogueView{}, err
+	}
+	models, at, err := s.readCatalogue(ctx, settings.CredentialID)
+	if err != nil {
+		return CatalogueView{}, err
+	}
+	set, err := s.newestSet(ctx)
+	if err != nil {
+		return CatalogueView{}, err
+	}
+	runs, err := s.repo.Runs(ctx, 1)
+	if err != nil {
+		return CatalogueView{}, fmt.Errorf("the latest run: %w", err)
+	}
+	var answers []domain.Answer
+	if len(runs) > 0 {
+		if answers, err = s.repo.Answers(ctx, runs[0].ID, false); err != nil {
+			return CatalogueView{}, fmt.Errorf("the latest run's answers: %w", err)
+		}
+	}
+	return CatalogueView{ReadAt: at, Questions: len(set.Prompts), Entries: domain.Catalogue(models, answers)}, nil
+}
+
+// readCatalogue is the catalogue as read with key within the day, or read now; a read that fails
+// keeps the last list of that key.
+func (s *Service) readCatalogue(ctx context.Context, key string) ([]domain.CatalogueModel, time.Time, error) {
+	s.read.mu.Lock()
+	defer s.read.mu.Unlock()
+	now := s.now()
+	if s.read.key == key && s.read.models != nil && now.Sub(s.read.at) < catalogueAge {
+		return s.read.models, s.read.at, nil
+	}
+	gw, err := s.gateways.Gateway(ctx, key)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	models, err := gw.Models(ctx)
+	if err != nil {
+		if s.read.key == key && s.read.models != nil {
+			return s.read.models, s.read.at, nil
+		}
+		return nil, time.Time{}, fmt.Errorf("OpenRouter's catalogue: %w", err)
+	}
+	s.read.key, s.read.at, s.read.models = key, now, models
+	return models, now, nil
 }
 
 // catalogue is OpenRouter's price list, or nil when it cannot be had: the overview then has
@@ -322,6 +435,7 @@ func (s *Service) settings(ctx context.Context) (domain.Settings, error) {
 type Change struct {
 	CredentialID *string
 	Providers    []string
+	Models       []string
 	Budget       *domain.Micros
 	Cadence      *string
 	FactSheet    *string
@@ -380,6 +494,11 @@ func (s *Service) applyRuns(ctx context.Context, settings domain.Settings, ch Ch
 			return domain.Settings{}, err
 		}
 	}
+	if ch.Models != nil {
+		if settings.Models, err = domain.CheckModels(ch.Models); err != nil {
+			return domain.Settings{}, err
+		}
+	}
 	if ch.Budget != nil {
 		if settings.MonthlyBudget, err = domain.CheckBudget(*ch.Budget); err != nil {
 			return domain.Settings{}, err
@@ -411,8 +530,8 @@ func (s *Service) Start(ctx context.Context, actor string) (domain.Run, error) {
 	return run, nil
 }
 
-// prepare makes the run the settings ask for: the newest published Prompt set, on the cheapest
-// model of each provider now.
+// prepare makes the run the settings ask for: the newest published Prompt set, on the Model list,
+// or before one is saved on the cheapest model of each provider now.
 func (s *Service) prepare(ctx context.Context, trigger domain.Trigger, actor string) (domain.Run, error) {
 	settings, err := s.settings(ctx)
 	if err != nil {
@@ -426,7 +545,7 @@ func (s *Service) prepare(ctx context.Context, trigger domain.Trigger, actor str
 	if err != nil {
 		return domain.Run{}, fmt.Errorf("OpenRouter's price list: %w", err)
 	}
-	models := domain.ChooseModels(catalogue, settings.Providers)
+	models := choices(catalogue, settings)
 	if len(models) == 0 {
 		return domain.Run{}, domain.ErrNoModels
 	}

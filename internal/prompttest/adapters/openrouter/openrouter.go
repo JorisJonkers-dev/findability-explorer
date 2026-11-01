@@ -56,6 +56,7 @@ func (c *Client) Models(ctx context.Context) ([]domain.CatalogueModel, error) {
 		Data []struct {
 			ID           string `json:"id"`
 			Name         string `json:"name"`
+			Created      int64  `json:"created"`
 			Architecture struct {
 				InputModalities  []string `json:"input_modalities"`
 				OutputModalities []string `json:"output_modalities"`
@@ -79,8 +80,12 @@ func (c *Client) Models(ctx context.Context) ([]domain.CatalogueModel, error) {
 		}
 		// A model that does not search the web itself has no price for it, or 0.
 		search, _ := strconv.ParseFloat(m.Pricing.WebSearch, 64)
+		var created time.Time
+		if m.Created > 0 {
+			created = time.Unix(m.Created, 0).UTC()
+		}
 		out = append(out, domain.CatalogueModel{
-			ID: m.ID, Name: m.Name, PromptPrice: prompt, CompletionPrice: completion, WebSearchPrice: max(search, 0),
+			ID: m.ID, Name: m.Name, Created: created, PromptPrice: prompt, CompletionPrice: completion, WebSearchPrice: max(search, 0),
 			InputModalities: m.Architecture.InputModalities, OutputModalities: m.Architecture.OutputModalities,
 		})
 	}
@@ -217,7 +222,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
-		return fmt.Errorf("read OpenRouter's answer: %w", err)
+		return fmt.Errorf("read OpenRouter's response: %w", err)
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return fmt.Errorf("%w: %s", domain.ErrRateLimited, errorText(raw))
@@ -226,7 +231,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		return fmt.Errorf("OpenRouter answered %d: %s", resp.StatusCode, errorText(raw))
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
-		return fmt.Errorf("read OpenRouter's answer: %w", err)
+		return fmt.Errorf("read OpenRouter's response: %w", err)
 	}
 	return nil
 }

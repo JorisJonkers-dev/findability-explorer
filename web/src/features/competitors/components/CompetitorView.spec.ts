@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { competitor, me, overview, promptResults, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
+import { competitor, me, overview, promptAnswer, promptResults, RUN_ID, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 const SCAN_ID = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d'
@@ -17,6 +17,8 @@ function api(extra: Record<string, Handler> = {}) {
     'GET /api/v1/overview': () => json(overview()),
     'GET /api/v1/prompt-test': () => json(promptResults()),
     'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Tribelt', { role: 'tribelt' }), readinessRow('Twentebelt')])),
+    [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () =>
+      json({ run: promptResults().runs[0], items: [promptAnswer({ model: 'openai/gpt' }), promptAnswer({ model: 'openai/gpt' }, ['Tribelt:tribelt'])] }),
     ...extra,
   })
 }
@@ -24,16 +26,25 @@ function api(extra: Record<string, Handler> = {}) {
 const link = (wrapper: VueWrapper, text: string) => wrapper.findAll('a').find((a) => a.text() === text)
 
 describe('a competitor’s page', () => {
-  it('sets the competitor against Tribelt, with its belts and the ways to look closer', async () => {
+  it('is in the frame, with its sections side by side, and the ways to look closer', async () => {
     const { wrapper } = await mountApp(api(), '/competitors/twentebelt')
     expect(document.title).toBe('Competitor · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Twentebelt is named in three times as many AI answers as Tribelt.')
-    expect(wrapper.text()).toContain('Netherlands. Its website is in 2 languages. Last scan')
-    expect(wrapper.get('section[aria-label="Key figures"]').text()).toContain('75%of AI answers name itTribelt: 25%.')
-    expect(wrapper.get('section[aria-labelledby="compare-title"] h2').text()).toBe('Twentebelt against Tribelt')
+    expect(wrapper.get('h1').text()).toBe('Twentebelt')
+    expect(wrapper.get('[data-part="purpose"]').text()).toBe('twentebelt.com, on the competitor list. It sells Tri-Flex belts.')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('From the Prompt run of 1 November 2026 and the scan of Twentebelt on 22 October 2026.')
+    expect(wrapper.findAll('h2').map((h) => h.text())).toEqual([
+      'Against Tribelt',
+      'Where it is ahead of Tribelt',
+      'What it sells and what it calls it',
+      'Search terms it uses that tribelt.nl does not',
+      'In AI responses',
+    ])
+    expect(wrapper.get('section[aria-labelledby="ahead-title"]').text()).toContain('75%, against Tribelt’s 25%.')
     const belts = wrapper.get('section[aria-labelledby="belts-title"]')
     expect(belts.findAll('li').map((li) => li.text())).toContain('Tri-FlexTwenteFlex spiral belts')
     expect(belts.get('a[href="/terms/families/eyelink"]').text()).toBe('Eyelink')
+    expect(wrapper.get('section[aria-labelledby="their-terms-title"] a').attributes('href')).toBe('/terms/en--twenteflex')
+    expect(wrapper.get('section[aria-labelledby="models-title"] [role="img"]').attributes('aria-label')).toBe('How often each model names Twentebelt. openai/gpt: 50%.')
     const visit = wrapper.get('a[target="_blank"]')
     expect(visit.attributes('href')).toBe('https://www.twentebelt.com/')
     expect(visit.attributes('rel')).toBe('noopener noreferrer')
@@ -53,7 +64,9 @@ describe('a competitor’s page', () => {
 
   it('says when no scan has read the website, and has no latest scan to open', async () => {
     const { wrapper } = await mountApp(api(), '/competitors/martens')
-    expect(wrapper.text()).toContain('No scan of its website has run yet.')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('From the Prompt run of 1 November 2026 and Martens has not been scanned yet.')
+    expect(wrapper.text()).toContain('Martens is not ahead of Tribelt on any measure.')
+    expect(wrapper.text()).toContain('Every term this competitor uses is also on tribelt.nl.')
     expect(wrapper.find('a[target="_blank"]').exists()).toBe(false)
     expect(link(wrapper, 'Open its latest scan')).toBeUndefined()
   })

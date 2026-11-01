@@ -41,7 +41,7 @@ describe('one search term', () => {
     expect(wrapper.get('a[href="/terms/all"]').text()).toBe('Back to Every term')
     expect(wrapper.findAll('h2').map((h) => h.text())).toEqual(['Where competitors use it', 'On tribelt.nl', 'Related terms', 'The recommendation'])
     expect(wrapper.get('[data-part="columns"]').classes()).toContain('min-[1100px]:grid-cols-2')
-    expect(wrapper.get('a[href="/help/terms"]').exists()).toBe(true)
+    expect(wrapper.find('a[href="/help/terms"]').exists()).toBe(true)
   })
 
   it('lists the competitors that use it and where it was found, and whether tribelt.nl does', async () => {

@@ -672,6 +672,80 @@ func decodeGetAnalysisParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// GetClaudeStepParams is parameters of getClaudeStep operation.
+type GetClaudeStepParams struct {
+	// The step.
+	StepId ClaudeStepId
+}
+
+func unpackGetClaudeStepParams(packed middleware.Parameters) (params GetClaudeStepParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "stepId",
+			In:   "path",
+		}
+		params.StepId = packed[key].(ClaudeStepId)
+	}
+	return params
+}
+
+func decodeGetClaudeStepParams(args [1]string, argsEscaped bool, r *http.Request) (params GetClaudeStepParams, _ error) {
+	// Decode path: stepId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "stepId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.StepId = ClaudeStepId(c)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.StepId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "stepId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetCompetitorParams is parameters of getCompetitor operation.
 type GetCompetitorParams struct {
 	// The company's id.
@@ -2282,6 +2356,80 @@ func decodeRetryPromptRunParams(args [1]string, argsEscaped bool, r *http.Reques
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "runId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SaveClaudeStepVersionParams is parameters of saveClaudeStepVersion operation.
+type SaveClaudeStepVersionParams struct {
+	// The step.
+	StepId ClaudeStepId
+}
+
+func unpackSaveClaudeStepVersionParams(packed middleware.Parameters) (params SaveClaudeStepVersionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "stepId",
+			In:   "path",
+		}
+		params.StepId = packed[key].(ClaudeStepId)
+	}
+	return params
+}
+
+func decodeSaveClaudeStepVersionParams(args [1]string, argsEscaped bool, r *http.Request) (params SaveClaudeStepVersionParams, _ error) {
+	// Decode path: stepId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "stepId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.StepId = ClaudeStepId(c)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.StepId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "stepId",
 			In:   "path",
 			Err:  err,
 		}

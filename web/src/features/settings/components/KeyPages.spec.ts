@@ -51,7 +51,7 @@ describe('Keys and spending', () => {
     expect(document.title).toBe('Keys and spending · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('Keys and spending')
     expect(wrapper.get('nav[aria-label="Account"]').text()).toContain('Signed in as Ada')
-    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(['Anthropic this month', 'OpenRouter key', 'Anthropic key', 'Budgets', 'Events'])
+    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(['Anthropic this month', 'OpenRouter key', 'Anthropic key', 'Budgets', 'Events', 'Models and instructions'])
     expect(widget(wrapper, 'Anthropic this month').text()).toContain('$0.48 of $15.00 spent this month (3%), $14.52 left')
     expect(widget(wrapper, 'OpenRouter key').text()).toContain('Not tested. It pays for the Prompt test')
     expect(widget(wrapper, 'OpenRouter key').text()).toContain('9f86d081884cfingerprint')

@@ -1215,6 +1215,131 @@ export type TermSuggestion = {
 };
 
 /**
+ * A Claude step - matching (matching products in scans); the other steps join as they are built.
+ */
+export type ClaudeStepId = 'matching';
+
+/**
+ * One saved version of a Claude step - the model it uses and its instructions.
+ */
+export type ClaudeStepVersion = {
+    /**
+     * The version's number, from 1 for the instructions the tool came with.
+     */
+    number: number;
+    /**
+     * The Claude model's id on Anthropic's API.
+     */
+    model: string;
+    /**
+     * The model's name for people.
+     */
+    modelName: string;
+    /**
+     * The system message the step sends; the data follows it in a separate message.
+     */
+    instructions: string;
+    /**
+     * Where the version came from, such as "Restored from version 2.", or empty.
+     */
+    note: string;
+    /**
+     * Who saved it; "the tool" for version 1.
+     */
+    createdBy: string;
+    /**
+     * When it was saved.
+     */
+    createdAt: string;
+};
+
+/**
+ * A Claude model a step may use, with what one job of the step costs with it.
+ */
+export type ClaudeStepModel = {
+    /**
+     * The model's id on Anthropic's API.
+     */
+    id: string;
+    /**
+     * The model's name.
+     */
+    name: string;
+    jobCostUsd: Usd;
+};
+
+/**
+ * A Claude step as the overview lists it.
+ */
+export type ClaudeStepSummary = {
+    id: ClaudeStepId;
+    /**
+     * The step's name.
+     */
+    title: string;
+    /**
+     * True when the instructions are set in the code and only the model can be chosen.
+     */
+    fixedInstructions: boolean;
+    current: ClaudeStepVersion;
+    jobCostUsd: Usd;
+};
+
+/**
+ * Every Claude step.
+ */
+export type ClaudeStepList = {
+    items: Array<ClaudeStepSummary>;
+};
+
+/**
+ * One Claude step: its versions, oldest first, the newest of which it uses; the instructions it came with; and the models it may use, cheapest first, with the cost of one job with each. A job's cost is the tool's estimate with Claude Haiku 5.5, scaled by each model's price for the step's typical mix of tokens read and written.
+ */
+export type ClaudeStep = {
+    id: ClaudeStepId;
+    /**
+     * The step's name.
+     */
+    title: string;
+    /**
+     * True when the instructions are set in the code and only the model can be chosen.
+     */
+    fixedInstructions: boolean;
+    /**
+     * The instructions the tool came with.
+     */
+    original: string;
+    current: ClaudeStepVersion;
+    /**
+     * Every version, oldest first.
+     */
+    versions: Array<ClaudeStepVersion>;
+    /**
+     * The Claude models the step may use, cheapest first.
+     */
+    models: Array<ClaudeStepModel>;
+    jobCostUsd: Usd;
+};
+
+/**
+ * A new version of a Claude step.
+ */
+export type ClaudeStepChange = {
+    /**
+     * The Claude model's id.
+     */
+    model: string;
+    /**
+     * The system message.
+     */
+    instructions: string;
+    /**
+     * The version this one restores, when it does; it is noted on the new version.
+     */
+    restoredFrom?: number;
+};
+
+/**
  * The work running now, the last pieces ended, and this month's spending.
  */
 export type Activity = {
@@ -3571,6 +3696,11 @@ export type Problem = {
 };
 
 /**
+ * The step.
+ */
+export type ClaudeStepId2 = ClaudeStepId;
+
+/**
  * The company's id.
  */
 export type CompetitorIdPath = CompetitorId;
@@ -4550,6 +4680,134 @@ export type StopAnalysisResponses = {
 };
 
 export type StopAnalysisResponse = StopAnalysisResponses[keyof StopAnalysisResponses];
+
+export type ListClaudeStepsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/claude-steps';
+};
+
+export type ListClaudeStepsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListClaudeStepsError = ListClaudeStepsErrors[keyof ListClaudeStepsErrors];
+
+export type ListClaudeStepsResponses = {
+    /**
+     * The steps.
+     */
+    200: ClaudeStepList;
+};
+
+export type ListClaudeStepsResponse = ListClaudeStepsResponses[keyof ListClaudeStepsResponses];
+
+export type GetClaudeStepData = {
+    body?: never;
+    path: {
+        /**
+         * The step.
+         */
+        stepId: ClaudeStepId;
+    };
+    query?: never;
+    url: '/api/v1/admin/claude-steps/{stepId}';
+};
+
+export type GetClaudeStepErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetClaudeStepError = GetClaudeStepErrors[keyof GetClaudeStepErrors];
+
+export type GetClaudeStepResponses = {
+    /**
+     * The step.
+     */
+    200: ClaudeStep;
+};
+
+export type GetClaudeStepResponse = GetClaudeStepResponses[keyof GetClaudeStepResponses];
+
+export type SaveClaudeStepVersionData = {
+    /**
+     * The model and the instructions.
+     */
+    body: ClaudeStepChange;
+    path: {
+        /**
+         * The step.
+         */
+        stepId: ClaudeStepId;
+    };
+    query?: never;
+    url: '/api/v1/admin/claude-steps/{stepId}/versions';
+};
+
+export type SaveClaudeStepVersionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SaveClaudeStepVersionError = SaveClaudeStepVersionErrors[keyof SaveClaudeStepVersionErrors];
+
+export type SaveClaudeStepVersionResponses = {
+    /**
+     * The step with its new version.
+     */
+    201: ClaudeStep;
+};
+
+export type SaveClaudeStepVersionResponse = SaveClaudeStepVersionResponses[keyof SaveClaudeStepVersionResponses];
 
 export type GetActivityData = {
     body?: never;

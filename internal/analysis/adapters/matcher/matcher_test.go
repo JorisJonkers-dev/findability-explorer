@@ -36,7 +36,7 @@ func TestMatchSendsAStructuredPromptAndReadsTheAnswer(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			c := &client{text: text}
-			eqs, usage, err := matcher.New(c, "model-1").Match(t.Context(), "PAGE https://x.test/\nSpiral belts", true, domain.TribeltFamilies())
+			eqs, usage, err := matcher.New(c, "model-1", "Compare the site with Tribelt.").Match(t.Context(), "PAGE https://x.test/\nSpiral belts", true, domain.TribeltFamilies())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -49,7 +49,7 @@ func TestMatchSendsAStructuredPromptAndReadsTheAnswer(t *testing.T) {
 			}
 			p := c.got
 			if p.Model != "model-1" || p.SchemaName == "" || p.Schema["type"] != "object" || p.MaxTokens == 0 ||
-				!strings.Contains(p.System, "Tribelt") {
+				p.System != "Compare the site with Tribelt." {
 				t.Errorf("prompt = %+v", p)
 			}
 			if !strings.Contains(p.User, "website_text") || !strings.Contains(p.User, "cut off") || !strings.Contains(p.User, "tri_flex_turn_curve") {
@@ -70,7 +70,7 @@ func TestMatchFailures(t *testing.T) {
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			_, usage, err := matcher.New(c.client, "m").Match(t.Context(), "text", false, domain.TribeltFamilies())
+			_, usage, err := matcher.New(c.client, "m", "Compare.").Match(t.Context(), "text", false, domain.TribeltFamilies())
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("Match error = %v, want %q", err, c.want)
 			}

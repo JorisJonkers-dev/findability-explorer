@@ -28,6 +28,7 @@ type Querier interface {
 	AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams) error
 	AddAnalysisReadiness(ctx context.Context, arg AddAnalysisReadinessParams) error
 	AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error
+	AddClaudeStepVersion(ctx context.Context, arg AddClaudeStepVersionParams) error
 	// The next version of the competitor definition.
 	AddCompetitorDefinition(ctx context.Context, arg AddCompetitorDefinitionParams) (int64, error)
 	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
@@ -50,6 +51,8 @@ type Querier interface {
 	// say, in the phrase's own language: scans made before that rule stored in_map through a term in
 	// another language.
 	CandidateEvidence(ctx context.Context) ([]CandidateEvidenceRow, error)
+	// A Claude step's saved versions, oldest first.
+	ClaudeStepVersions(ctx context.Context, step string) ([]ClaudeStepVersion, error)
 	CountActiveAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) (int64, error)
 	// A company's scan takes the next number among its scans; the unique index refuses a duplicate.
 	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) (int64, error)
@@ -204,6 +207,8 @@ type Querier interface {
 	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)
 	// The language-model tokens in and out of analyses created since a moment.
 	TokensSince(ctx context.Context, createdAt time.Time) (TokensSinceRow, error)
+	// The language-model tokens in and out of analyses created since a moment, per model that matched.
+	TokensSinceByModel(ctx context.Context, createdAt time.Time) ([]TokensSinceByModelRow, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UntickPlanImprovement(ctx context.Context, improvementID string) error
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error

@@ -46,6 +46,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
       { label: 'Scan queue', to: '/manage/scans/queue' },
       { label: 'Recent scans', to: '/manage/scans/recent' },
       { label: 'Scan settings', to: '/manage/scans/settings' },
+      { label: 'Matching products', to: '/manage/claude-steps/matching' },
     ],
   },
   {
@@ -91,12 +92,18 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
       { label: 'Anthropic key', to: '/manage/keys/anthropic' },
       { label: 'Budgets', to: '/manage/keys/budgets' },
       { label: 'Events', to: '/manage/keys/events' },
+      { label: 'Models and instructions', to: '/manage/claude-steps' },
     ],
   },
 ]
 
-/** The section a Manage address belongs to: the one whose index address is the longest prefix of it. */
+/**
+ * The section a Manage address belongs to: the one listing it as a subpage, such as a Claude step
+ * under the section it works for, else the one whose index address is the longest prefix of it.
+ */
 export function groupOf(path: string): MenuGroup | undefined {
+  const listing = MANAGE_MENU.find((g) => g.children.some((c) => c.to === path))
+  if (listing) return listing
   return MANAGE_MENU.filter((g) => path === g.to || path.startsWith(`${g.to}/`)).sort((a, b) => b.to.length - a.to.length)[0]
 }
 

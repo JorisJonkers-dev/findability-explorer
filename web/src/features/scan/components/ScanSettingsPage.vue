@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StepCard from '../../claude-steps/components/StepCard.vue'
 import ManageWidget from '../../manage/components/widgets/ManageWidget.vue'
 import WidgetGrid from '../../manage/components/widgets/WidgetGrid.vue'
 import { FIELD, LABEL } from '../../manage/components/widgets/look'
@@ -44,6 +45,7 @@ function setPages(event: Event): void {
         <ModelChooser v-else-if="settings" :settings="settings" :heading="false" />
         <p v-else class="m-0 text-muted">Loading the settings…</p>
       </ManageWidget>
+      <StepCard step-id="matching" variant="widget" />
     </WidgetGrid>
   </ManageLayout>
 </template>

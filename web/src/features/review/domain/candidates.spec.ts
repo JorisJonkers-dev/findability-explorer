@@ -122,17 +122,17 @@ describe('the language model\'s review', () => {
   const verdict = { accept: true, sure: false, reason: 'Could go either way.', model: 'claude-haiku-5-5', at: '2026-10-27T09:00:00Z' }
 
   it('says how far it is', () => {
-    expect(reviewLine({ running: true, waiting: 41 })).toBe('The language model is reviewing 41 phrases.')
-    expect(reviewLine({ running: true, waiting: 1 })).toBe('The language model is reviewing 1 phrase.')
-    expect(reviewLine({ running: true, waiting: 0 })).toBe('The language model is reviewing the phrases.')
-    expect(reviewLine({ running: false, waiting: 3, problem: 'noModel' })).toBe('No Anthropic key is set up, so every phrase waits for you.')
+    expect(reviewLine({ running: true, waiting: 41 })).toBe('Claude Haiku is reviewing 41 search terms.')
+    expect(reviewLine({ running: true, waiting: 1 })).toBe('Claude Haiku is reviewing 1 search term.')
+    expect(reviewLine({ running: true, waiting: 0 })).toBe('Claude Haiku is reviewing the search terms.')
+    expect(reviewLine({ running: false, waiting: 3, problem: 'noModel' })).toBe('No Anthropic key is set up, so every search term waits for you.')
     expect(reviewLine({ running: false, waiting: 3, problem: 'budget' })).toBe(
-      "This month's language-model budget is used up, so the phrases wait for you or for next month.",
+      "This month's language-model budget is used up, so the search terms wait for you or for next month.",
     )
-    expect(reviewLine({ running: false, waiting: 3, problem: 'failed' })).toBe('The language model failed on its last try. It tries again within ten minutes.')
-    expect(reviewLine({ running: false, waiting: 3 })).toBe('3 phrases wait for the language model.')
-    expect(reviewLine({ running: false, waiting: 1 })).toBe('1 phrase waits for the language model.')
-    expect(reviewLine({ running: false, waiting: 0 })).toBe('The language model has reviewed every phrase.')
+    expect(reviewLine({ running: false, waiting: 3, problem: 'failed' })).toBe('Claude Haiku failed on its last try. It tries again within ten minutes.')
+    expect(reviewLine({ running: false, waiting: 3 })).toBe('3 search terms wait for Claude Haiku.')
+    expect(reviewLine({ running: false, waiting: 1 })).toBe('1 search term waits for Claude Haiku.')
+    expect(reviewLine({ running: false, waiting: 0 })).toBe('Claude Haiku has reviewed every search term.')
   })
 
   it('keeps the lists fresh while it reviews', () => {

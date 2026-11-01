@@ -166,8 +166,8 @@ func addRecommendation(ctx context.Context, q *queries.Queries, runID uuid.UUID,
 	g := rec.Gap
 	if err := q.AddRecommendation(ctx, queries.AddRecommendationParams{
 		ID: rec.ID, RunID: runID, GapKey: g.Key, Kind: string(g.Kind), Language: g.Language, Family: g.Family, Specifics: nonNil(g.Specifics),
-		RuleBenefit: int16(g.Benefit), RuleEffort: int16(g.Effort), Title: rec.Title, WhereUrl: rec.Where, WhereNote: rec.WhereNote, //nolint:gosec // scores of 1 to 5
-		Why: rec.Why, Steps: nonNil(rec.Steps), DoneWhen: rec.DoneWhen, Benefit: int16(rec.Benefit), Effort: int16(rec.Effort), //nolint:gosec // scores of 1 to 5
+		RuleBenefit: int64(g.Benefit), RuleEffort: int64(g.Effort), Title: rec.Title, WhereUrl: rec.Where, WhereNote: rec.WhereNote, //nolint:gosec // scores of 1 to 5
+		Why: rec.Why, Steps: nonNil(rec.Steps), DoneWhen: rec.DoneWhen, Benefit: int64(rec.Benefit), Effort: int64(rec.Effort), //nolint:gosec // scores of 1 to 5
 		ScoreReason: rec.ScoreReason, CreatedAt: rec.CreatedAt,
 	}); err != nil {
 		return fmt.Errorf("insert recommendation: %w", err)

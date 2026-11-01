@@ -420,16 +420,16 @@ type Recommendation struct {
 	Language    string
 	Family      string
 	Specifics   []string
-	RuleBenefit int16
-	RuleEffort  int16
+	RuleBenefit int64
+	RuleEffort  int64
 	Title       string
 	WhereUrl    string
 	WhereNote   string
 	Why         string
 	Steps       []string
 	DoneWhen    string
-	Benefit     int16
-	Effort      int16
+	Benefit     int64
+	Effort      int64
 	ScoreReason string
 	CreatedAt   time.Time
 	DoneBy      pgtype.Text

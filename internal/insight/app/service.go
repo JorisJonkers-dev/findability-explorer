@@ -55,6 +55,8 @@ type Store interface {
 	// SetRecDone ticks a written recommendation off, or with by empty, undoes the tick; false
 	// when there is no such recommendation.
 	SetRecDone(ctx context.Context, id, by string, at time.Time) (bool, error)
+	// UpdateRecommendation stores an edited recommendation's wording, scores and when it was edited.
+	UpdateRecommendation(ctx context.Context, r domain.Recommendation) error
 }
 
 // Ports are the other contexts the insight context reads, and its own store.

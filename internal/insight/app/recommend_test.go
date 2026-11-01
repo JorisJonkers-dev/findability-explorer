@@ -139,7 +139,10 @@ func TestARecommendationRunWritesAndPlacesEveryGap(t *testing.T) {
 
 func TestAWrittenRecommendationIsTickedOffByHand(t *testing.T) {
 	w := newWorld()
-	w.recs = []domain.Recommendation{{ID: "r1", Gap: domain.Gap{Kind: domain.GapListing}, Title: "List it", Benefit: 3, Effort: 3}}
+	w.recs = []domain.Recommendation{
+		{ID: "r1", Gap: domain.Gap{Kind: domain.GapFact}, Title: "Correct it", Benefit: 3, Effort: 3},
+		{ID: "r2", Gap: domain.Gap{Kind: domain.GapListing, Key: "listing:x.com"}, Title: "List it", Benefit: 3, Effort: 3},
+	}
 	svc := service(w)
 	if err := svc.Tick(t.Context(), "joris", "r1", true); err != nil || w.recs[0].DoneBy != "joris" || !w.recs[0].DoneAt.Equal(today) {
 		t.Fatalf("tick = %v, %+v", err, w.recs[0])
@@ -149,6 +152,10 @@ func TestAWrittenRecommendationIsTickedOffByHand(t *testing.T) {
 	}
 	if err := svc.Tick(t.Context(), "joris", "nothing", true); !errors.Is(err, domain.ErrUnknownImprovement) {
 		t.Errorf("an unknown one = %v", err)
+	}
+	// A listing a rule decides is not ticked by hand.
+	if err := svc.Tick(t.Context(), "joris", "r2", true); !errors.Is(err, domain.ErrCheckedByScan) {
+		t.Errorf("a scan-checked one = %v", err)
 	}
 	w.recErr = errDown
 	if err := svc.Tick(t.Context(), "joris", "r1", true); !errors.Is(err, errDown) {
@@ -289,4 +296,115 @@ func TestARunWhoseInputsOrStoreFailIsRecordedAsFailed(t *testing.T) {
 	if err := svc2.StartRecommendationRun(t.Context(), "joris"); err != nil || len(reported) != 2 {
 		t.Errorf("the store failing: %v; reported %v", err, reported)
 	}
+}
+
+// gone is a store that lost a recommendation between reading and ticking it.
+type gone struct{ *world }
+
+func (g gone) SetRecDone(context.Context, string, string, time.Time) (bool, error) { return false, nil }
+
+func TestARecommendationGoneMeanwhileIsUnknown(t *testing.T) {
+	w := newWorld()
+	w.recs = []domain.Recommendation{{ID: "r1", Gap: domain.Gap{Kind: domain.GapFact}, Title: "Correct it", Benefit: 3, Effort: 3}}
+	svc := app.New(app.Ports{Directory: w, PromptRuns: w, Readiness: w, Terms: w, Store: gone{w}}, func() time.Time { return today }, counter())
+	if err := svc.Tick(t.Context(), "joris", "r1", true); !errors.Is(err, domain.ErrUnknownImprovement) {
+		t.Errorf("gone meanwhile = %v", err)
+	}
+	broken := app.New(app.Ports{Directory: w, PromptRuns: w, Readiness: w, Terms: w, Store: brokenTick{w}}, func() time.Time { return today }, counter())
+	if err := broken.Tick(t.Context(), "joris", "r1", true); !errors.Is(err, errDown) {
+		t.Errorf("a failing tick = %v", err)
+	}
+}
+
+// brokenTick is a store whose SetRecDone fails.
+type brokenTick struct{ *world }
+
+func (brokenTick) SetRecDone(context.Context, string, string, time.Time) (bool, error) { return false, errDown }
+
+func TestTheRulesDecideAWrittenRecommendationAndARunKeepsIt(t *testing.T) {
+	w := gappy()
+	// The newest scan has a page with the term on it, and tribelt.nl has Organization markup.
+	r := w.readiness["tribelt"]
+	r.Organization = true
+	w.readiness["tribelt"] = r
+	w.recs = []domain.Recommendation{
+		{ID: "org", RunID: "run0", Gap: domain.Gap{Key: "readiness:organization", Kind: domain.GapReadiness}, Title: "Organization", Benefit: 3, Effort: 2},
+		{ID: "lang", RunID: "run0", Gap: domain.Gap{Key: "readiness:languages", Kind: domain.GapReadiness}, Title: "Languages", Benefit: 3, Effort: 4},
+	}
+	w.recRuns = []domain.RecRun{{ID: "run0", Ending: "done"}}
+	var reported []error
+	svc := writing(w, &writer{}, &journal{}, nil, &reported)
+	plan, err := svc.Plan(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range plan.Items {
+		switch it.ID {
+		case "org":
+			if !it.Auto || !it.Done || len(it.Parts) != 1 {
+				t.Errorf("Organization = %+v", it)
+			}
+		case "lang":
+			if !it.Auto || it.Done || !it.New {
+				t.Errorf("languages = %+v", it)
+			}
+		}
+	}
+	before, err := svc.RecommendationRuns(t.Context())
+	if err != nil || before.Replaces != 1 {
+		t.Fatalf("before = %+v, %v", before, err)
+	}
+	if err := svc.StartRecommendationRun(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	if run := w.recRuns[0]; run.Replaced != 1 || run.Kept != 1 {
+		t.Errorf("run = %+v", run)
+	}
+	broken := writing(w, &writer{}, &journal{}, nil, &reported)
+	broken.WithWriting(writers{w: &writer{}}, pages{err: errDown}, nil, nil, func(error) {}, func(f func()) { f() })
+	if _, err := broken.Plan(t.Context()); !errors.Is(err, errDown) {
+		t.Errorf("the plan with the pages failing = %v", err)
+	}
+}
+
+func TestAnAdministratorEditsARecommendationARunWrote(t *testing.T) {
+	w := newWorld()
+	w.recs = []domain.Recommendation{{ID: "r1", Gap: domain.Gap{Kind: domain.GapFact}, Title: "Correct it", Benefit: 3, Effort: 3, WhereNote: domain.ForTheAgency}}
+	svc := service(w)
+	e := domain.Edit{Title: "Correct the address", Why: "It is wrong.", Steps: []string{"Fix it."}, DoneWhen: "Fixed.", Benefit: 4, Effort: 1}
+	if err := svc.EditRecommendation(t.Context(), "r1", e); err != nil {
+		t.Fatal(err)
+	}
+	if r := w.recs[0]; r.Title != "Correct the address" || r.Benefit != 4 || !r.EditedAt.Equal(today) || r.Open() {
+		t.Errorf("edited = %+v", r)
+	}
+	if err := svc.EditRecommendation(t.Context(), "listings", e); !errors.Is(err, domain.ErrNotEditable) || !app.IsInputError(err) {
+		t.Errorf("a hand-written one = %v", err)
+	}
+	if err := svc.EditRecommendation(t.Context(), "nothing", e); !errors.Is(err, domain.ErrUnknownImprovement) {
+		t.Errorf("an unknown one = %v", err)
+	}
+	e.Benefit = 9
+	if err := svc.EditRecommendation(t.Context(), "r1", e); !app.IsInputError(err) {
+		t.Errorf("a bad edit = %v", err)
+	}
+	e.Benefit = 4
+	w.recErr = errDown
+	if err := svc.EditRecommendation(t.Context(), "r1", e); !errors.Is(err, errDown) {
+		t.Errorf("a failing store = %v", err)
+	}
+	failing := &failingUpdate{world: newWorld()}
+	failing.recs = w.recs
+	failing.recErr = nil
+	if err := app.New(app.Ports{Directory: failing, PromptRuns: failing, Readiness: failing, Terms: failing, Store: failing}, func() time.Time { return today }, counter()).
+		EditRecommendation(t.Context(), "r1", e); !errors.Is(err, errDown) {
+		t.Errorf("a failing update = %v", err)
+	}
+}
+
+// failingUpdate is a store whose UpdateRecommendation fails.
+type failingUpdate struct{ *world }
+
+func (failingUpdate) UpdateRecommendation(context.Context, domain.Recommendation) error {
+	return errDown
 }

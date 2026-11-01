@@ -56,7 +56,12 @@ func (s *Service) items(ctx context.Context, ticks []domain.Tick, f domain.Facts
 	if err != nil {
 		return nil, fmt.Errorf("the past runs: %w", err)
 	}
-	return domain.WithWritten(domain.PlanItems(ticks, tribeltReadiness(f), st), recs, domain.NewestDone(runs), st), nil
+	pages, _, err := s.writing.pages.Pages(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("tribelt.nl's pages: %w", err)
+	}
+	done := domain.DoneFacts{Pages: pages, Run: f.Run, Tribelt: tribeltReadiness(f)}
+	return domain.WithWritten(domain.PlanItems(ticks, tribeltReadiness(f), st), recs, domain.NewestDone(runs), st, done), nil
 }
 
 // Tick marks an improvement only an administrator can check as done, or, with done false, as not
@@ -108,6 +113,13 @@ func IsInputError(err error) bool {
 
 // tickWritten ticks a recommendation a run wrote off, or undoes the tick.
 func (s *Service) tickWritten(ctx context.Context, actor, id string, done bool) error {
+	r, err := s.written(ctx, id)
+	if err != nil {
+		return err
+	}
+	if r.ScanChecked() {
+		return domain.ErrCheckedByScan
+	}
 	by := ""
 	if done {
 		by = actor
@@ -118,6 +130,41 @@ func (s *Service) tickWritten(ctx context.Context, actor, id string, done bool) 
 	}
 	if !found {
 		return domain.ErrUnknownImprovement
+	}
+	return nil
+}
+
+// written is the recommendation a run wrote with id, or domain.ErrUnknownImprovement.
+func (s *Service) written(ctx context.Context, id string) (domain.Recommendation, error) {
+	recs, err := s.ports.Store.Recommendations(ctx)
+	if err != nil {
+		return domain.Recommendation{}, fmt.Errorf("the written recommendations: %w", err)
+	}
+	for _, r := range recs {
+		if r.ID == id {
+			return r, nil
+		}
+	}
+	return domain.Recommendation{}, domain.ErrUnknownImprovement
+}
+
+// EditRecommendation stores an administrator's wording and scores of a recommendation a run wrote;
+// an edited one is kept when the next run replaces the others. domain.ErrNotEditable for one
+// written by hand, domain.ErrUnknownImprovement for none, domain.ErrInvalid for a bad edit.
+func (s *Service) EditRecommendation(ctx context.Context, id string, e domain.Edit) error {
+	if _, ok := domain.ImprovementByID(id); ok {
+		return domain.ErrNotEditable
+	}
+	r, err := s.written(ctx, id)
+	if err != nil {
+		return err
+	}
+	edited, err := r.Apply(e, s.now())
+	if err != nil {
+		return err
+	}
+	if err := s.ports.Store.UpdateRecommendation(ctx, edited); err != nil {
+		return fmt.Errorf("store the edit: %w", err)
 	}
 	return nil
 }

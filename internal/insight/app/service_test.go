@@ -77,6 +77,18 @@ func (w *world) FinishRecRun(_ context.Context, run domain.RecRun, r *domain.Rep
 	return nil
 }
 
+func (w *world) UpdateRecommendation(_ context.Context, r domain.Recommendation) error {
+	if w.recErr != nil {
+		return w.recErr
+	}
+	for i := range w.recs {
+		if w.recs[i].ID == r.ID {
+			w.recs[i] = r
+		}
+	}
+	return nil
+}
+
 func (w *world) SetRecDone(_ context.Context, id, by string, at time.Time) (bool, error) {
 	if w.recErr != nil {
 		return false, w.recErr

@@ -183,6 +183,16 @@ test('an administrator follows a Prompt run from Activity, stops it, and sees it
       },
     }),
   )
+  const work = { id: RUN, kind: 'promptRun', startedAt: run.startedAt, done: 100, total: 400, failed: 10, openRouterCostUsd: 0.1, anthropicCostUsd: 0 }
+  await page.route('**/api/v1/admin/activity', (route) =>
+    route.fulfill({
+      json: {
+        running: stopped ? [] : [work],
+        recent: stopped ? [{ ...work, finishedAt: '2026-11-01T08:40:00Z', ending: 'stoppedByHand' }] : [],
+        spending: { since: '2026-11-01T00:00:00Z', lines: [{ kind: 'promptRuns', key: 'openRouter', costUsd: 0.1 }] },
+      },
+    }),
+  )
   await page.route(`**/api/v1/admin/prompt-runs/${RUN}/stop`, async (route) => {
     stopped = true
     await route.fulfill({ status: 204 })

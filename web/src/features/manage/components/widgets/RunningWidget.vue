@@ -14,7 +14,9 @@ defineEmits<{ stop: [] }>()
 const NUMBER = new Intl.NumberFormat('en-GB')
 const TIME = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
 const fraction = computed(() => (props.work.total > 0 ? Math.min(props.work.done / props.work.total, 1) : 0))
-const counted = computed(() => `${NUMBER.format(props.work.done)} of ${NUMBER.format(props.work.total)} ${props.work.unit}`)
+const counted = computed(() =>
+  props.work.total > 0 ? `${NUMBER.format(props.work.done)} of ${NUMBER.format(props.work.total)} ${props.work.unit}` : `${NUMBER.format(props.work.done)} ${props.work.unit}`,
+)
 const share = computed(() => `${String(Math.floor(fraction.value * 100))}%`)
 </script>
 
@@ -30,12 +32,12 @@ const share = computed(() => `${String(Math.floor(fraction.value * 100))}%`)
     </div>
     <ProgressBar :fraction="fraction" :label="work.label" :text="counted" thick />
     <p class="m-0 flex flex-wrap gap-x-5 gap-y-1 text-ink-2">
-      <span v-if="work.costSoFarUsd !== undefined"><strong class="text-black">{{ costLabel(work.costSoFarUsd) }}</strong> so far</span>
+      <span><strong class="text-black">{{ costLabel(work.costSoFarUsd) }}</strong> so far</span>
       <span v-if="work.costToGoUsd !== undefined"><strong class="text-black">{{ costLabel(work.costToGoUsd) }}</strong> to go</span>
-      <span v-if="work.startedAt">started {{ TIME.format(new Date(work.startedAt)) }}</span>
+      <span>started {{ TIME.format(new Date(work.startedAt)) }}</span>
     </p>
-    <template #foot>
-      <StopButton :label="work.stopLabel" :keeps="work.keeps" :disabled="stopping" @stop="$emit('stop')" />
+    <template v-if="work.stop" #foot>
+      <StopButton :label="work.stop.label" :keeps="work.stop.keeps" :disabled="stopping" @stop="$emit('stop')" />
     </template>
   </ManageWidget>
 </template>

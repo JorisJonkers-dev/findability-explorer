@@ -6,7 +6,7 @@ import { usePromptResults, usePromptSettings, useStartRun } from '../../prompt-t
 import { costLabel } from '../../prompt-test/domain/results'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
 import { useStopWork } from '../composables/useManage'
-import { dayLabel, lastEnded, needsFinishing, runningWork, timeLabel } from '../domain/activity'
+import { dayLabel, lastEnded, needsFinishing, runAsWork, runningWork, timeLabel } from '../domain/activity'
 import { budgetFraction, leftUsd } from '../domain/estimate'
 import HubWidget from './widgets/HubWidget.vue'
 import ManageWidget from './widgets/ManageWidget.vue'
@@ -27,7 +27,7 @@ const stopper = useStopWork()
 const NUMBER = new Intl.NumberFormat('en-GB')
 const runs = computed(() => results.value?.runs ?? [])
 const last = computed(() => lastEnded(runs.value))
-const running = computed(() => runningWork(runs.value, [], undefined, settings.value?.prices.runUsd))
+const running = computed(() => runningWork(runs.value.filter((r) => r.status === 'running').map(runAsWork), settings.value?.prices.runUsd))
 const finishing = computed(() => runs.value.filter(needsFinishing).length)
 const questions = computed(() => settings.value?.promptSet.prompts.length ?? 0)
 const models = computed(() => settings.value?.providers.length ?? 0)

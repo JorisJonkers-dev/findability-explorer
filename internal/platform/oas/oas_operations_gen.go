@@ -17,6 +17,7 @@ const (
 	DeleteCompetitorOperation            OperationName = "DeleteCompetitor"
 	DeleteLlmCredentialOperation         OperationName = "DeleteLlmCredential"
 	DismissCompetitorCandidateOperation  OperationName = "DismissCompetitorCandidate"
+	EditRecommendationOperation          OperationName = "EditRecommendation"
 	GetActivityOperation                 OperationName = "GetActivity"
 	GetAiReadinessOperation              OperationName = "GetAiReadiness"
 	GetAiSearchSummaryOperation          OperationName = "GetAiSearchSummary"

@@ -91,8 +91,8 @@ paths:
       summary: Tick an improvement off, or undo the tick
       description: >-
         Administrators only. Marks an improvement no scan can check as done, recording who and
-        when, or as not done again. 404 for an unknown improvement; 422 for one a scan of
-        tribelt.nl checks.
+        when, or as not done again; a recommendation a run wrote too, when no rule decides it (a fact
+        sheet correction). 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
       tags: [admin]
       parameters:
         - name: improvementId
@@ -115,6 +115,51 @@ paths:
       responses:
         "200":
           description: The plan, with the tick.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/recommendations/{recommendationId}:
+    put:
+      operationId: editRecommendation
+      summary: Edit a recommendation a Recommendation run wrote
+      description: >-
+        Administrators only. Stores the wording and scores of a recommendation a Recommendation run
+        wrote, and when it was edited; an edited one is kept when the next run replaces the others.
+        A blank page leaves it for the web agency to place. 404 for an unknown recommendation; 422
+        for one written by hand, which stays in code, or for an edit out of bounds.
+      tags: [admin]
+      parameters:
+        - name: recommendationId
+          in: path
+          required: true
+          description: The recommendation's id.
+          schema:
+            type: string
+            maxLength: 60
+            pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      requestBody:
+        required: true
+        description: The wording and scores.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendationEdit"
+      responses:
+        "200":
+          description: The plan, with the edit.
           content:
             application/json:
               schema:
@@ -4920,6 +4965,11 @@ components:
           type: string
           maxLength: 300
           description: Why the model moved a score from the rules' by a point; absent when it did not.
+        editedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When an administrator edited a generated one; absent when nobody did.
         facts:
           type: array
           maxItems: 10
@@ -5012,6 +5062,48 @@ components:
           example: 2.5
         leader:
           $ref: "#/components/schemas/MeasureLeader"
+    RecommendationEdit:
+      description: An administrator's wording and scores of a recommendation a run wrote.
+      type: object
+      additionalProperties: false
+      required: [title, why, steps, doneWhen, benefit, effort]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: What to do.
+        where:
+          type: string
+          maxLength: 500
+          description: The tribelt.nl page it belongs on; absent or blank for the web agency to place.
+        why:
+          type: string
+          maxLength: 500
+          description: Why it matters.
+        steps:
+          type: array
+          maxItems: 6
+          description: How to do it.
+          items:
+            type: string
+            maxLength: 300
+        doneWhen:
+          type: string
+          maxLength: 300
+          description: When it counts as done.
+        benefit:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+          description: How much it helps.
+        effort:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+          description: How much work it takes.
     RecommendationKind:
       description: >-
         What kind of change a recommendation asks for - term (a search term to add), page (a page

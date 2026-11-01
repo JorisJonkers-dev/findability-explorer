@@ -108,6 +108,34 @@ func encodeDecideCompetitorCandidatesRequest(
 	return nil
 }
 
+func encodeEditRecommendationRequest(
+	req *RecommendationEdit,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePublishPromptSetRequest(
+	req *PromptSetDraft,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeRemoveTermRequest(
 	req *TermRef,
 	r *http.Request,
@@ -138,6 +166,34 @@ func encodeRereadPromptRunRequest(
 
 func encodeRetryPromptRunRequest(
 	req *PromptRetryRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSaveClaudeStepVersionRequest(
+	req *ClaudeStepChange,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSaveCompetitorDefinitionRequest(
+	req *CompetitorDefinitionText,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

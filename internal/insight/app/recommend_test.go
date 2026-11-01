@@ -319,7 +319,9 @@ func TestARecommendationGoneMeanwhileIsUnknown(t *testing.T) {
 // brokenTick is a store whose SetRecDone fails.
 type brokenTick struct{ *world }
 
-func (brokenTick) SetRecDone(context.Context, string, string, time.Time) (bool, error) { return false, errDown }
+func (brokenTick) SetRecDone(context.Context, string, string, time.Time) (bool, error) {
+	return false, errDown
+}
 
 func TestTheRulesDecideAWrittenRecommendationAndARunKeepsIt(t *testing.T) {
 	w := gappy()

@@ -168,6 +168,7 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.GetRecommendationRunsOperation:  domain.NeedAdminView,
 	oas.StartRecommendationRunOperation: domain.NeedAdminChange,
 	oas.StopRecommendationRunOperation:  domain.NeedAdminChange,
+	oas.EditRecommendationOperation:     domain.NeedAdminChange,
 	// Activity: what runs, what ended, and this month's spending.
 	oas.GetActivityOperation: domain.NeedAdminView,
 	// The review queue of the terminology map.

@@ -20,6 +20,9 @@ type recRunCases struct {
 	stopErr  error
 	started  string
 	stopped  int
+	edited   string
+	edit     domain.Edit
+	editErr  error
 }
 
 func (c *insightCases) RecommendationRuns(context.Context) (app.RecRuns, error) {
@@ -36,6 +39,11 @@ func (c *insightCases) RecommendationRuns(context.Context) (app.RecRuns, error) 
 func (c *insightCases) StartRecommendationRun(_ context.Context, user string) error {
 	c.runs.started = user
 	return c.runs.startErr
+}
+
+func (c *insightCases) EditRecommendation(_ context.Context, id string, e domain.Edit) error {
+	c.runs.edited, c.runs.edit = id, e
+	return c.runs.editErr
 }
 
 func (c *insightCases) StopRecommendationRun(context.Context) error {
@@ -122,11 +130,46 @@ func TestThePlanSaysEachRecommendationsKindAndWhere(t *testing.T) {
 		t.Errorf("by hand = %v; scanned = %v", hand, scanned)
 	}
 	w := items[2].(map[string]any)
-	if w["kind"] != "listing" || w["generated"] != true || w["new"] != true || w["where"] != nil || w["whereNote"] != "Where to put this is for the web agency to decide." ||
+	if w["kind"] != "listing" || w["generated"] != true || w["new"] != false || w["editedAt"] != "2026-11-02T09:00:00Z" || w["auto"] != true || w["where"] != nil || w["whereNote"] != "Where to put this is for the web agency to decide." ||
 		w["scoreReason"] != "Moved." || w["facts"].([]any)[0] != "Cited twice." {
 		t.Errorf("written = %v", w)
 	}
-	if placed := items[3].(map[string]any); placed["where"] != "https://www.tribelt.nl/" || placed["whereNote"] != nil || placed["new"] != false || placed["scoreReason"] != nil {
+	if placed := items[3].(map[string]any); placed["where"] != "https://www.tribelt.nl/" || placed["whereNote"] != nil || placed["new"] != false || placed["scoreReason"] != nil ||
+		placed["editedAt"] != nil {
 		t.Errorf("placed = %v", placed)
+	}
+}
+
+func TestAnAdministratorEditsARecommendationARunWrote(t *testing.T) {
+	a := &analyses{}
+	a.insights().written = true
+	srv := serve(t, a)
+	const path = "/api/v1/admin/recommendations/3fa85f64-5717-4562-b3fc-2c963f66afa6"
+	body := `{"title":"Get listed on DirectIndustry","where":"https://www.tribelt.nl/","why":"It is cited.","steps":["Ask."],"doneWhen":"Listed.","benefit":4,"effort":2}`
+	if r := call(t, srv, http.MethodPut, path, body, true); r.code != http.StatusForbidden {
+		t.Fatalf("a viewer editing: status %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPut, path, body, "admin")
+	c := a.insights().runs
+	if r.code != http.StatusOK || c.edited != "3fa85f64-5717-4562-b3fc-2c963f66afa6" || c.edit.Title != "Get listed on DirectIndustry" || c.edit.Where != "https://www.tribelt.nl/" ||
+		c.edit.Benefit != 4 || c.edit.Effort != 2 || c.edit.Steps[0] != "Ask." || r.body["improvements"] == nil {
+		t.Fatalf("edit = %d %v; %+v", r.code, r.body, c)
+	}
+	for _, bad := range []string{`{}`, `{"title":"x","why":"","steps":[],"doneWhen":"","benefit":6,"effort":1}`} {
+		if r := callAs(t, srv, http.MethodPut, path, bad, "admin"); r.code != http.StatusBadRequest {
+			t.Errorf("%s: status %d", bad, r.code)
+		}
+	}
+	cases := map[error]int{
+		domain.ErrUnknownImprovement: http.StatusNotFound,
+		domain.ErrNotEditable:        http.StatusUnprocessableEntity,
+		domain.ErrInvalid:            http.StatusUnprocessableEntity,
+		errors.New("database down"):  http.StatusInternalServerError,
+	}
+	for err, want := range cases {
+		a.insights().runs.editErr = err
+		if r := callAs(t, srv, http.MethodPut, path, body, "admin"); r.code != want || (want < 500 && r.body["detail"] == nil) {
+			t.Errorf("%v: %d %v", err, r.code, r.body)
+		}
 	}
 }

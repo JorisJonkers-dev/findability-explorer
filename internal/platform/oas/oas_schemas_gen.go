@@ -3669,6 +3669,26 @@ type DismissCompetitorCandidateUnauthorized ProblemStatusCode
 
 func (*DismissCompetitorCandidateUnauthorized) dismissCompetitorCandidateRes() {}
 
+type EditRecommendationBadRequest ProblemStatusCode
+
+func (*EditRecommendationBadRequest) editRecommendationRes() {}
+
+type EditRecommendationForbidden ProblemStatusCode
+
+func (*EditRecommendationForbidden) editRecommendationRes() {}
+
+type EditRecommendationNotFound ProblemStatusCode
+
+func (*EditRecommendationNotFound) editRecommendationRes() {}
+
+type EditRecommendationUnauthorized ProblemStatusCode
+
+func (*EditRecommendationUnauthorized) editRecommendationRes() {}
+
+type EditRecommendationUnprocessableEntity ProblemStatusCode
+
+func (*EditRecommendationUnprocessableEntity) editRecommendationRes() {}
+
 // A product on the site matched to a Tribelt belt family by the language model.
 // Ref: #/components/schemas/Equivalent
 type Equivalent struct {
@@ -8253,9 +8273,10 @@ func (s *Plan) SetReadinessChecks(val ReadinessCheckCount) {
 	s.ReadinessChecks = val
 }
 
-func (*Plan) getPlanRes()         {}
-func (*Plan) setPlanTargetsRes()  {}
-func (*Plan) tickImprovementRes() {}
+func (*Plan) editRecommendationRes() {}
+func (*Plan) getPlanRes()            {}
+func (*Plan) setPlanTargetsRes()     {}
+func (*Plan) tickImprovementRes()    {}
 
 // One improvement of the plan.
 // Ref: #/components/schemas/PlanImprovement
@@ -8272,6 +8293,8 @@ type PlanImprovement struct {
 	WhereNote OptString `json:"whereNote"`
 	// Why the model moved a score from the rules' by a point; absent when it did not.
 	ScoreReason OptString `json:"scoreReason"`
+	// When an administrator edited a generated one; absent when nobody did.
+	EditedAt OptDateTime `json:"editedAt"`
 	// The facts behind a generated one, as the rules found them.
 	Facts []string `json:"facts"`
 	// Its id.
@@ -8335,6 +8358,11 @@ func (s *PlanImprovement) GetWhereNote() OptString {
 // GetScoreReason returns the value of ScoreReason.
 func (s *PlanImprovement) GetScoreReason() OptString {
 	return s.ScoreReason
+}
+
+// GetEditedAt returns the value of EditedAt.
+func (s *PlanImprovement) GetEditedAt() OptDateTime {
+	return s.EditedAt
 }
 
 // GetFacts returns the value of Facts.
@@ -8450,6 +8478,11 @@ func (s *PlanImprovement) SetWhereNote(val OptString) {
 // SetScoreReason sets the value of ScoreReason.
 func (s *PlanImprovement) SetScoreReason(val OptString) {
 	s.ScoreReason = val
+}
+
+// SetEditedAt sets the value of EditedAt.
+func (s *PlanImprovement) SetEditedAt(val OptDateTime) {
+	s.EditedAt = val
 }
 
 // SetFacts sets the value of Facts.
@@ -12787,6 +12820,95 @@ func (s *ReadinessRank) SetRole(val CompanyRole) {
 // SetScore sets the value of Score.
 func (s *ReadinessRank) SetScore(val float64) {
 	s.Score = val
+}
+
+// An administrator's wording and scores of a recommendation a run wrote.
+// Ref: #/components/schemas/RecommendationEdit
+type RecommendationEdit struct {
+	// What to do.
+	Title string `json:"title"`
+	// The tribelt.nl page it belongs on; absent or blank for the web agency to place.
+	Where OptString `json:"where"`
+	// Why it matters.
+	Why string `json:"why"`
+	// How to do it.
+	Steps []string `json:"steps"`
+	// When it counts as done.
+	DoneWhen string `json:"doneWhen"`
+	// How much it helps.
+	Benefit int32 `json:"benefit"`
+	// How much work it takes.
+	Effort int32 `json:"effort"`
+}
+
+// GetTitle returns the value of Title.
+func (s *RecommendationEdit) GetTitle() string {
+	return s.Title
+}
+
+// GetWhere returns the value of Where.
+func (s *RecommendationEdit) GetWhere() OptString {
+	return s.Where
+}
+
+// GetWhy returns the value of Why.
+func (s *RecommendationEdit) GetWhy() string {
+	return s.Why
+}
+
+// GetSteps returns the value of Steps.
+func (s *RecommendationEdit) GetSteps() []string {
+	return s.Steps
+}
+
+// GetDoneWhen returns the value of DoneWhen.
+func (s *RecommendationEdit) GetDoneWhen() string {
+	return s.DoneWhen
+}
+
+// GetBenefit returns the value of Benefit.
+func (s *RecommendationEdit) GetBenefit() int32 {
+	return s.Benefit
+}
+
+// GetEffort returns the value of Effort.
+func (s *RecommendationEdit) GetEffort() int32 {
+	return s.Effort
+}
+
+// SetTitle sets the value of Title.
+func (s *RecommendationEdit) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetWhere sets the value of Where.
+func (s *RecommendationEdit) SetWhere(val OptString) {
+	s.Where = val
+}
+
+// SetWhy sets the value of Why.
+func (s *RecommendationEdit) SetWhy(val string) {
+	s.Why = val
+}
+
+// SetSteps sets the value of Steps.
+func (s *RecommendationEdit) SetSteps(val []string) {
+	s.Steps = val
+}
+
+// SetDoneWhen sets the value of DoneWhen.
+func (s *RecommendationEdit) SetDoneWhen(val string) {
+	s.DoneWhen = val
+}
+
+// SetBenefit sets the value of Benefit.
+func (s *RecommendationEdit) SetBenefit(val int32) {
+	s.Benefit = val
+}
+
+// SetEffort sets the value of Effort.
+func (s *RecommendationEdit) SetEffort(val int32) {
+	s.Effort = val
 }
 
 // What kind of change a recommendation asks for - term (a search term to add), page (a page to add),

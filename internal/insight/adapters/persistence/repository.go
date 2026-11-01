@@ -4,6 +4,7 @@ package persistence
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -208,4 +209,22 @@ func timeOf(t pgtype.Timestamptz) time.Time {
 		return time.Time{}
 	}
 	return t.Time.UTC()
+}
+
+// errNoRecommendation is returned by UpdateRecommendation for a recommendation there is not.
+var errNoRecommendation = errors.New("no recommendation has this id")
+
+// UpdateRecommendation stores an edited recommendation's wording, scores and when it was edited.
+func (r *Repository) UpdateRecommendation(ctx context.Context, rec domain.Recommendation) error {
+	n, err := r.q.UpdateRecommendation(ctx, queries.UpdateRecommendationParams{
+		ID: rec.ID, Title: rec.Title, WhereUrl: rec.Where, WhereNote: rec.WhereNote, Why: rec.Why, Steps: nonNil(rec.Steps), DoneWhen: rec.DoneWhen,
+		Benefit: int64(rec.Benefit), Effort: int64(rec.Effort), EditedAt: pgtype.Timestamptz{Time: rec.EditedAt, Valid: !rec.EditedAt.IsZero()},
+	})
+	if err != nil {
+		return fmt.Errorf("update recommendation: %w", err)
+	}
+	if n == 0 {
+		return errNoRecommendation
+	}
+	return nil
 }

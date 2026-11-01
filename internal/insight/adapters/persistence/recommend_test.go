@@ -61,6 +61,18 @@ func TestARunReplacesTheOpenRecommendationsInOneGo(t *testing.T) {
 	if ok, err := repo.SetRecDone(ctx, "nothing", "joris", at); ok || err != nil {
 		t.Errorf("an unknown one = %v, %v", ok, err)
 	}
+	// An edit is stored with when it was made.
+	edited := a
+	edited.Title, edited.Steps, edited.Benefit, edited.EditedAt = "Use it on the spiral page", []string{"Add it."}, 5, at.Add(30*time.Minute)
+	if err := repo.UpdateRecommendation(ctx, edited); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := repo.Recommendations(ctx); got[0].Title != "Use it on the spiral page" && got[1].Title != "Use it on the spiral page" {
+		t.Errorf("not edited: %+v", got)
+	}
+	if err := repo.UpdateRecommendation(ctx, domain.Recommendation{ID: "nothing", Title: "x", Benefit: 1, Effort: 1}); err == nil {
+		t.Error("an unknown recommendation was edited")
+	}
 	// A second run replaces b and keeps a; a stopped third changes nothing.
 	second := domain.RecRun{ID: uuid.NewString(), StartedAt: at.Add(2 * time.Hour), By: "ada", Model: "m"}
 	if err := repo.BeginRecRun(ctx, second); err != nil {

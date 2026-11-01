@@ -220,6 +220,8 @@ type Querier interface {
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error
 	// An added company's name and website, whether it is archived, and whether a person kept it.
 	UpdateCompany(ctx context.Context, arg UpdateCompanyParams) (int64, error)
+	// An administrator's wording and scores of a recommendation a run wrote.
+	UpdateRecommendation(ctx context.Context, arg UpdateRecommendationParams) (int64, error)
 	UpsertAccount(ctx context.Context, arg UpsertAccountParams) (int64, error)
 	UpsertCompanyOverride(ctx context.Context, arg UpsertCompanyOverrideParams) error
 }

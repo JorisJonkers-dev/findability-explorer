@@ -38,7 +38,7 @@ func candidates() []domain.Candidate {
 func TestTheModelMergesNamesOfOneCompany(t *testing.T) {
 	c := &client{text: "```json\n" + `{"clusters":[{"ids":["00000000000000aa","00000000000000bb"],"competitorId":""},{"ids":["00000000000000cc"],"competitorId":"ashworth"}]}` + "\n```"}
 	dir := []domain.DirectoryCompany{{ID: "ashworth", Name: "Ashworth Bros", Host: "ashworth.com"}, {ID: "esfo", Name: "ESFO"}}
-	got, used, err := reviewer.New(c, "claude-haiku-5-5").Merge(t.Context(), candidates(), dir)
+	got, used, err := reviewer.New(c, reviewer.Step{Model: "claude-haiku-5-5", Instructions: "Tidy the metal conveyor belts names."}, reviewer.Step{}).Merge(t.Context(), candidates(), dir)
 	if err != nil || len(got) != 2 || len(got[0].IDs) != 2 || got[1].CompetitorID != "ashworth" || used.InputTokens != 120 || used.OutputTokens != 30 {
 		t.Fatalf("Merge = %+v, %+v, %v", got, used, err)
 	}
@@ -52,7 +52,7 @@ func TestTheModelMergesNamesOfOneCompany(t *testing.T) {
 			t.Errorf("the prompt lacks %q:\n%s", want, c.prompt.User)
 		}
 	}
-	if c.prompt.Model != "claude-haiku-5-5" || c.prompt.SchemaName != "candidate_clusters" || !strings.Contains(c.prompt.System, "metal conveyor belts") {
+	if c.prompt.Model != "claude-haiku-5-5" || c.prompt.SchemaName != "candidate_clusters" || c.prompt.System != "Tidy the metal conveyor belts names." {
 		t.Errorf("prompt = %+v", c.prompt)
 	}
 }
@@ -76,13 +76,13 @@ const definition = "A competitor makes metal conveyor belts for process uses."
 func TestTheModelChecksEachCompany(t *testing.T) {
 	// Companies go by their number: one the model does not name, or names wrongly, gets no verdict.
 	c := &client{text: `{"verdicts":[{"id":" 1","competitor":true,"sure":true,"reason":"  Makes wire mesh belts. "},{"id":"2","competitor":false,"sure":false,"reason":"` + strings.Repeat("x", 400) + `"},{"id":"9","sure":true,"reason":"Out of range."},{"id":"00000000000000cc","sure":true,"reason":"Not a number."}]}`}
-	got, used, err := reviewer.New(c, "m").Check(t.Context(), definition, dossiers())
+	got, used, err := reviewer.New(c, reviewer.Step{}, reviewer.Step{Model: "m", Instructions: "Check them."}).Check(t.Context(), definition, dossiers())
 	if err != nil || len(got) != 2 || got[0].CandidateID != "00000000000000aa" || got[1].CandidateID != "00000000000000bb" || !got[0].Competitor || !got[0].Sure ||
 		got[0].Reason != "Makes wire mesh belts." || len([]rune(got[1].Reason)) != 300 || used.InputTokens != 120 {
 		t.Fatalf("Check = %+v, %+v, %v", got, used, err)
 	}
 	if c.prompt.SchemaName != "candidate_checks" || !strings.Contains(c.prompt.User, "Give one verdict for every company, by its number") ||
-		!strings.Contains(c.prompt.System, "<competitor_definition>\n"+definition+"\n</competitor_definition>") {
+		c.prompt.System != "Check them." || !strings.HasPrefix(c.prompt.User, "<competitor_definition>\n"+definition+"\n</competitor_definition>\n\n") {
 		t.Errorf("prompt = %+v", c.prompt)
 	}
 	for _, want := range []string{
@@ -100,10 +100,10 @@ func TestTheModelChecksEachCompany(t *testing.T) {
 
 func TestTheModelFailing(t *testing.T) {
 	for _, c := range []*client{{err: errors.New("provider down")}, {text: "Sure! Here goes."}} {
-		if _, used, err := reviewer.New(c, "m").Merge(t.Context(), candidates(), nil); err == nil || used.InputTokens != 120 {
+		if _, used, err := reviewer.New(c, reviewer.Step{Model: "m", Instructions: "Tidy."}, reviewer.Step{}).Merge(t.Context(), candidates(), nil); err == nil || used.InputTokens != 120 {
 			t.Errorf("Merge with %+v = %+v, %v", c, used, err)
 		}
-		if _, used, err := reviewer.New(c, "m").Check(t.Context(), definition, dossiers()); err == nil || used.InputTokens != 120 {
+		if _, used, err := reviewer.New(c, reviewer.Step{}, reviewer.Step{Model: "m", Instructions: "Check them."}).Check(t.Context(), definition, dossiers()); err == nil || used.InputTokens != 120 {
 			t.Errorf("Check with %+v = %+v, %v", c, used, err)
 		}
 	}

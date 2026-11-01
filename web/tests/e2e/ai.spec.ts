@@ -44,6 +44,38 @@ test('the AI responses page shows the key figures and who the answers name, and 
   await expect(page).toHaveURL('/ai-readiness')
 })
 
+test('Over time on AI responses switches Prompt set versions and keeps the choice in the address', async ({ page }) => {
+  // Made-up figures: a partial run of version 1, its key refused, then a run of version 2.
+  await page.route('**/api/v1/prompt-test/history', (route) =>
+    route.fulfill({
+      json: {
+        versions: [
+          { version: 1, publishedAt: '2026-10-26T15:04:51Z', questions: 90, note: 'A supplier, an application, and a problem question for each belt family, in six scopes.' },
+          { version: 2, publishedAt: '2026-10-27T06:35:33Z', questions: 20, note: 'Kept the application question a buyer most often asks, in four scopes.' },
+        ],
+        runs: [
+          { runId: '0b6a1c52-3e0f-4c1e-9a8d-6f1e2d3c4b5a', startedAt: '2026-10-27T06:03:12Z', promptSetVersion: 1, tasks: 1260, answered: 62, read: 47, partial: true, failure: 'OpenRouter answered 401: User not found.', all: 0.4, dutch: 0.48 },
+          { runId: '7c2d9e41-5a6b-4f70-8e1d-2b3c4d5e6f70', startedAt: '2026-10-27T08:36:32Z', promptSetVersion: 2, tasks: 200, answered: 200, read: 183, partial: false, all: 0.25, dutch: 0.41, english: 0.1 },
+        ],
+      },
+    }),
+  )
+  await page.goto('/ai-responses')
+  const overTime = page.getByRole('region', { name: 'Over time' })
+  await expect(overTime.getByText('The questions changed with each version, so the line breaks between versions.', { exact: false })).toBeVisible()
+  await expect(overTime.getByRole('img', { name: 'Over time' })).toBeVisible()
+  await expectAccessible(page)
+  const versions = overTime.getByRole('group', { name: 'Prompt set' })
+  await versions.getByRole('button', { name: 'Version 1' }).click()
+  await expect(page).toHaveURL(/version=1/)
+  await expect(versions.getByRole('button', { name: 'Version 1' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(overTime.getByText(/^Version 1, published 26 October 2026: 90 questions\..*It has one run so far, so there is no line yet\.$/)).toBeVisible()
+  await expect(overTime.getByText(/a partial run of version 1\. Only 62 of its 1,260 requests got a response/)).toBeVisible()
+  await page.reload()
+  await expect(versions.getByRole('button', { name: 'Version 1' })).toHaveAttribute('aria-pressed', 'true')
+  await expectAccessible(page)
+})
+
 const RUN = '9d8e7f6a-5b4c-4d3e-8f2a-1b0c9d8e7f6a'
 
 const run = {

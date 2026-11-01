@@ -33,8 +33,8 @@ const COLUMNS: readonly Column<ClaudeStepSummary>[] = [
     <WidgetGrid v-else>
       <ManageWidget title="The steps" :span="12">
         <p class="m-0 text-ink-2">
-          Open a step to change its model or its instructions. Each change is saved as a version you can go back to. The other steps join
-          this list as they become configurable.
+          Open a step to change its model or its instructions. The instructions for reading responses are set in the code, so every run is
+          read the same way; only its model is chosen here. Each change is saved as a version you can go back to.
         </p>
         <DataTable :rows="steps" :columns="COLUMNS" :row-key="(s) => s.id" label="Claude steps">
           <template #cell-title="{ row }">

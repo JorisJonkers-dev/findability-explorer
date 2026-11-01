@@ -155,6 +155,8 @@ describe('the filters of Every response', () => {
       { value: 'twente', label: 'Twente, in Dutch' },
       { value: 'english', label: 'English, no region' },
     ])
+    // A scope a later version added follows the known ones, by its id.
+    expect(scopeOptions([promptAnswer({ scope: 'fr-lyon' }), promptAnswer({ scope: 'dutch' })]).map((o) => o.label)).toEqual(['All scopes', 'Dutch, no region', 'fr-lyon'])
     expect(FAMILY_OPTIONS.map((f) => f.label)).toEqual(['All belt families', 'Eyelink belts', 'Open spiral belts', 'Closed spiral belts', 'Tri-Flex curve and spiral belts', 'Other metal belts'])
   })
 })

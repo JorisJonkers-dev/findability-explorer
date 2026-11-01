@@ -1,5 +1,6 @@
 import type { LocationQuery, RouteLocationRaw } from 'vue-router'
 import type {
+  IntentTier,
   PromptAnswer,
   PromptFamily,
   PromptKind,
@@ -9,17 +10,12 @@ import type {
   PromptScope,
   PromptSetQuestion,
 } from '../../../infrastructure/api/types.gen'
+import { clock, longDate } from '../../../shared/dates'
+import { BUYER_INTENT } from '../../../shared/tiers'
 import { isTribeltSite, TRIBELT_ID } from './grid'
 import { providerName } from './results'
 
 const NUMBER = new Intl.NumberFormat('en-GB')
-const DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Amsterdam' })
-const TIME = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Amsterdam' })
-
-/** A day in full, in Dutch time: "27 October 2026". */
-export function longDate(at: string): string {
-  return DATE.format(new Date(at))
-}
 
 const plural = (n: number, one: string, many = `${one}s`): string => `${NUMBER.format(n)} ${n === 1 ? one : many}`
 
@@ -44,18 +40,20 @@ const SCOPES: Record<PromptScope, { short: string; long: string }> = {
 }
 const SCOPE_ORDER = Object.keys(SCOPES) as PromptScope[]
 
-/** Each kind of question as the buyer intent it stands for, with one sentence on what it means. */
-const INTENTS: Record<PromptKind, { name: string; help: string }> = {
-  supplier: { name: 'product', help: 'The buyer names the type of belt.' },
-  application: { name: 'application', help: 'The buyer describes what the belt is for, such as a bakery oven.' },
-  problem: { name: 'problem', help: 'The buyer describes a problem to solve.' },
+/** A scope's names; a scope a later Prompt set version added goes by its id until it has words here. */
+function scopeText(scope: PromptScope): { short: string; long: string } {
+  return SCOPES[scope] ?? { short: scope, long: scope }
 }
+
+/** Each kind of question as the buyer intent it stands for: a supplier question names the type of belt. */
+const INTENTS: Record<PromptKind, IntentTier> = { supplier: 'product', application: 'application', problem: 'problem' }
 const INTENT_ORDER = Object.keys(INTENTS) as PromptKind[]
 
 /** A question's buyer intent, and what it means for the hover text. */
 export function intentOf(kind: PromptKind): { name: string; help: string } {
-  const intent = INTENTS[kind]
-  return { name: intent.name, help: `Buyer intent: ${intent.name}. ${intent.help}` }
+  const intent = BUYER_INTENT[INTENTS[kind]]
+  const name = intent.label.toLowerCase()
+  return { name, help: `Buyer intent: ${name}. ${intent.help}` }
 }
 
 /** The search modes, in full and as a column heading. */
@@ -152,7 +150,7 @@ export function runLabel(run: Pick<PromptRun, 'startedAt' | 'promptSetVersion' |
       how = plural(run.answered, 'response')
       break
   }
-  return `${longDate(run.startedAt)}, ${TIME.format(new Date(run.startedAt))}, prompt set version ${String(run.promptSetVersion)}. ${how}`
+  return `${longDate(run.startedAt)}, ${clock(run.startedAt)}, prompt set version ${String(run.promptSetVersion)}. ${how}`
 }
 
 /** Where the figures of a page about one run come from. */
@@ -206,7 +204,7 @@ export function shown(answers: readonly PromptAnswer[], f: Filters): PromptAnswe
 /** The scopes a run asked, for the scope filter. */
 export function scopeOptions(answers: readonly PromptAnswer[]): { value: PromptScope | 'all'; label: string }[] {
   const asked = new Set(answers.map((a) => a.scope))
-  return [{ value: 'all' as const, label: 'All scopes' }, ...SCOPE_ORDER.filter((s) => asked.has(s)).map((s) => ({ value: s, label: SCOPES[s].long }))]
+  return [{ value: 'all' as const, label: 'All scopes' }, ...[...SCOPE_ORDER.filter((s) => asked.has(s)), ...[...asked].filter((s) => !SCOPE_ORDER.includes(s)).sort()].map((s) => ({ value: s, label: scopeText(s).long }))]
 }
 
 /** Every belt family, for the family filter. */
@@ -256,7 +254,7 @@ export function gridOf(run: Pick<PromptRun, 'models'>, list: readonly PromptAnsw
       question: q.prompt,
       family: q.family,
       scope: q.scope,
-      place: `${FAMILIES[q.family].short}, ${SCOPES[q.scope].short}`,
+      place: `${FAMILIES[q.family].short}, ${scopeText(q.scope).short}`,
       intent: intentOf(q.kind),
       cells: columns.map((c) => found.get(keyOf({ promptId: q.promptId, ...c }))),
     }))
@@ -310,7 +308,7 @@ export function questionsOf(set: readonly PromptSetQuestion[] | undefined, answe
   } else {
     for (const a of answers) {
       if (!seen.has(a.promptId)) {
-        seen.set(a.promptId, { family: a.family, question: { id: a.promptId, text: a.prompt, language: a.language, where: SCOPES[a.scope].long, english: undefined } })
+        seen.set(a.promptId, { family: a.family, question: { id: a.promptId, text: a.prompt, language: a.language, where: scopeText(a.scope).long, english: undefined } })
       }
     }
   }
@@ -349,8 +347,8 @@ export function responsesCsv(answers: readonly PromptAnswer[]): string {
   const rows = answers.map((a) => [
     a.promptId,
     FAMILIES[a.family].long,
-    SCOPES[a.scope].long,
-    INTENTS[a.kind].name,
+    scopeText(a.scope).long,
+    intentOf(a.kind).name,
     a.language,
     a.prompt,
     a.model,

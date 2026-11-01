@@ -159,7 +159,7 @@ describe('Runs', () => {
     const panel = wrapper.get('section[aria-label="Run of 1 November 2026"]')
     await button(panel, 'Retry the 2 failed responses').trigger('click')
     await settle()
-    expect(wrapper.text()).toContain('Asking 2 answers again')
+    expect(wrapper.text()).toContain('Asking 2 responses again')
     await button(panel, 'Read them again with Claude Haiku').trigger('click')
     await settle()
     expect(sent).toEqual(['retry', 'reread'])

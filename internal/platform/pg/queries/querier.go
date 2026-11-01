@@ -42,10 +42,12 @@ type Querier interface {
 	// reading used stays counted. An answer read already keeps its reading, and no row is touched.
 	AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) (int64, error)
 	AddPromptRunModel(ctx context.Context, arg AddPromptRunModelParams) error
+	AddRecommendation(ctx context.Context, arg AddRecommendationParams) error
 	// Takes over the running run whose holder was last heard of before stale_before.
 	AdoptStalePromptRun(ctx context.Context, arg AdoptStalePromptRunParams) ([]uuid.UUID, error)
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
 	AnalysisStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
+	BeginRecommendationRun(ctx context.Context, arg BeginRecommendationRunParams) error
 	BeginWork(ctx context.Context, arg BeginWorkParams) error
 	// Every phrase a finished scan of a company found. Whether the map holds it is the review's to
 	// say, in the phrase's own language: scans made before that rule stored in_map through a term in
@@ -66,6 +68,7 @@ type Querier interface {
 	DeleteExpiredSessions(ctx context.Context, now time.Time) error
 	DeleteLlmCredential(ctx context.Context, id uuid.UUID) (int64, error)
 	DeletePromptCandidateDecision(ctx context.Context, id string) (int64, error)
+	DeleteRecommendation(ctx context.Context, id string) error
 	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
 	DeleteTermDecision(ctx context.Context, candidateID string) (int64, error)
 	// Work the journal records runs in memory: a server that stops ends it.
@@ -75,6 +78,7 @@ type Querier interface {
 	FailRunningAnalyses(ctx context.Context, arg FailRunningAnalysesParams) error
 	FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) error
 	FinishPromptRun(ctx context.Context, arg FinishPromptRunParams) error
+	FinishRecommendationRun(ctx context.Context, arg FinishRecommendationRunParams) error
 	GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow, error)
 	// An analysis's readiness, or no row when it has none.
 	GetAnalysisReadiness(ctx context.Context, analysisID uuid.UUID) ([]AnalysisReadiness, error)
@@ -142,6 +146,10 @@ type Querier interface {
 	ListPromptSetQuestions(ctx context.Context) ([]ListPromptSetQuestionsRow, error)
 	// Every published Prompt set, newest first.
 	ListPromptSets(ctx context.Context) ([]PromptSet, error)
+	// The newest lim Recommendation runs, the newest first.
+	ListRecommendationRuns(ctx context.Context, lim int32) ([]ListRecommendationRunsRow, error)
+	// Every recommendation the runs wrote that is kept, the oldest first.
+	ListRecommendations(ctx context.Context) ([]ListRecommendationsRow, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
 	ListTermVerdicts(ctx context.Context) ([]TermVerdict, error)
 	// The running work and the newest lim ended pieces.
@@ -167,6 +175,8 @@ type Querier interface {
 	// readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 	PromptSpentSince(ctx context.Context, since time.Time) (int64, error)
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
+	// The tokens in and out the Recommendation runs used since a moment.
+	RecommendationTokensSince(ctx context.Context, since time.Time) (RecommendationTokensSinceRow, error)
 	// Runs a finished run again, held by owner, unless any run is running: the run lock.
 	ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error)
 	// Asks the running scans a stop picks to stop, as StopQueuedAnalyses picks them; the first request
@@ -184,6 +194,7 @@ type Querier interface {
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
 	SetLlmBudget(ctx context.Context, arg SetLlmBudgetParams) error
 	SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) error
+	SetRecommendationDone(ctx context.Context, arg SetRecommendationDoneParams) (int64, error)
 	// Records how many of the pages a scan read its sitemaps list, once the crawl is done.
 	SetSitemapCoverage(ctx context.Context, arg SetSitemapCoverageParams) (int64, error)
 	// Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,

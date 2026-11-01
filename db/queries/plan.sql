@@ -22,3 +22,53 @@ INSERT INTO plan_targets (target, value, set_by, set_at)
 VALUES (@target, @value, @set_by, @set_at)
 ON CONFLICT (target) DO UPDATE
 SET value = excluded.value, set_by = excluded.set_by, set_at = excluded.set_at;
+
+-- name: ListRecommendations :many
+-- Every recommendation the runs wrote that is kept, the oldest first.
+SELECT id, run_id, gap_key, kind, language, family, specifics, rule_benefit, rule_effort, title, where_url, where_note, why, steps,
+    done_when, benefit, effort, score_reason, created_at, coalesce(done_by, '')::text AS done_by, done_at, edited_at
+FROM recommendations
+ORDER BY created_at, id;
+
+-- name: ListRecommendationRuns :many
+-- The newest lim Recommendation runs, the newest first.
+SELECT id, started_at, finished_at, coalesce(ending, '')::text AS ending, started_by, model, gaps, added, replaced, kept,
+    input_tokens, output_tokens
+FROM recommendation_runs
+ORDER BY started_at DESC, id
+LIMIT @lim;
+
+-- name: BeginRecommendationRun :exec
+INSERT INTO recommendation_runs (id, started_at, started_by, model)
+VALUES (@id, @started_at, @started_by, @model);
+
+-- name: FinishRecommendationRun :exec
+UPDATE recommendation_runs
+SET finished_at = @finished_at, ending = @ending, gaps = @gaps, added = @added, replaced = @replaced, kept = @kept,
+    input_tokens = @input_tokens, output_tokens = @output_tokens
+WHERE id = @id;
+
+-- name: DeleteRecommendation :exec
+DELETE FROM recommendations
+WHERE id = @id;
+
+-- name: AddRecommendation :exec
+INSERT INTO recommendations (
+    id, run_id, gap_key, kind, language, family, specifics, rule_benefit, rule_effort, title, where_url, where_note, why, steps,
+    done_when, benefit, effort, score_reason, created_at
+)
+VALUES (
+    @id, @run_id, @gap_key, @kind, @language, @family, @specifics, @rule_benefit, @rule_effort, @title, @where_url, @where_note, @why,
+    @steps, @done_when, @benefit, @effort, @score_reason, @created_at
+);
+
+-- name: SetRecommendationDone :execrows
+UPDATE recommendations
+SET done_by = sqlc.narg(done_by), done_at = sqlc.narg(done_at)
+WHERE id = @id;
+
+-- name: RecommendationTokensSince :one
+-- The tokens in and out the Recommendation runs used since a moment.
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+FROM recommendation_runs
+WHERE started_at >= @since;

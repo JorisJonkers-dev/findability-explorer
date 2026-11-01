@@ -197,7 +197,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		// Each review of the candidates and check of the list goes in the work journal.
 		prompttestapp.WithJournal(journal))
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
-	insight := newInsight(insightpersistence.New(store.Queries()), companies, promptTest, analysis, terminology, now)
+	insight := newInsight(insightpersistence.New(store), companies, promptTest, analysis, terminology, now)
 	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
 
 	gate, err := newGate(ctx, logger, getenv, store, secret, now)

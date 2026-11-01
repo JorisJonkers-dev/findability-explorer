@@ -403,6 +403,46 @@ type PromptSetting struct {
 	UpdatedAt           time.Time
 }
 
+type Recommendation struct {
+	ID          string
+	RunID       uuid.UUID
+	GapKey      string
+	Kind        string
+	Language    string
+	Family      string
+	Specifics   []string
+	RuleBenefit int16
+	RuleEffort  int16
+	Title       string
+	WhereUrl    string
+	WhereNote   string
+	Why         string
+	Steps       []string
+	DoneWhen    string
+	Benefit     int16
+	Effort      int16
+	ScoreReason string
+	CreatedAt   time.Time
+	DoneBy      pgtype.Text
+	DoneAt      pgtype.Timestamptz
+	EditedAt    pgtype.Timestamptz
+}
+
+type RecommendationRun struct {
+	ID           uuid.UUID
+	StartedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	Ending       pgtype.Text
+	StartedBy    string
+	Model        string
+	Gaps         int64
+	Added        int64
+	Replaced     int64
+	Kept         int64
+	InputTokens  int64
+	OutputTokens int64
+}
+
 type Session struct {
 	ID             string
 	AccountID      int64

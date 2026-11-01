@@ -21,50 +21,27 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/goals/:measure',
         name: 'goal',
-        component: () => import('../features/goals/components/GoalView.vue'),
+        component: () => import('../features/numbers/components/NumberDetailView.vue'),
         props: (to) => ({ measure: String(to.params.measure) }),
         meta: { title: 'Goal', view: 'results' },
       },
       {
         path: '/ai-responses',
         name: 'ai-responses',
-        component: () => import('../features/ai-search/components/AiResponsesView.vue'),
+        component: () => import('../features/ai-search/components/AiSearchView.vue'),
         meta: { title: 'AI responses', view: 'results' },
       },
       {
         path: '/ai-responses/all',
         name: 'every-response',
-        component: () => import('../features/prompt-test/components/EveryResponseView.vue'),
+        component: () => import('../features/prompt-test/components/PromptTestView.vue'),
         meta: { title: 'Every response', view: 'results' },
-      },
-      {
-        path: '/ai-responses/:id',
-        name: 'response',
-        component: () => import('../features/prompt-test/components/ResponseView.vue'),
-        props: (to) => ({ id: String(to.params.id) }),
-        meta: { title: 'Response', view: 'results' },
       },
       {
         path: '/ai-readiness',
         name: 'ai-readiness',
         component: () => import('../features/readiness/components/ReadinessView.vue'),
         meta: { title: 'AI readiness', view: 'results' },
-        // 1.12.0 picked a site on this page with ?site=; it has a page of its own now.
-        beforeEnter: (to) => (typeof to.query.site === 'string' ? `/ai-readiness/${to.query.site}` : true),
-      },
-      {
-        path: '/ai-readiness/:id',
-        name: 'site',
-        component: () => import('../features/readiness/components/CompanyReadiness.vue'),
-        props: (to) => ({ companyId: String(to.params.id) }),
-        meta: { title: 'Site', view: 'results' },
-      },
-      {
-        path: '/ai-readiness/:id/files',
-        name: 'site-files',
-        component: () => import('../features/readiness/components/FilesView.vue'),
-        props: (to) => ({ companyId: String(to.params.id) }),
-        meta: { title: 'Files found', view: 'results' },
       },
       { path: '/terms', name: 'terms', component: () => import('../features/terminology/components/TermsView.vue'), meta: { title: 'Search terms', view: 'results' } },
       // Every term in the map, ranked, with its filters in the query: a page of its own, linked from Search terms.
@@ -128,44 +105,18 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/manage/prompt-test',
         name: 'manage-prompt-test',
-        component: () => import('../features/manage/components/PromptTestIndex.vue'),
+        component: () => import('../features/prompt-test/components/PromptSettingsPage.vue'),
         meta: { title: 'Prompt test', view: 'manage' },
       },
+      // Website scans.
+      { path: '/manage/scans', name: 'manage-scans', component: () => import('../features/manage/components/ScansIndex.vue'), meta: { title: 'Website scans', view: 'manage' } },
+      { path: '/manage/scans/queue', name: 'scan-queue', component: () => import('../features/scan/components/ScanQueuePage.vue'), meta: { title: 'Scan queue', view: 'manage' } },
+      { path: '/manage/scans/recent', name: 'recent-scans', component: () => import('../features/scan/components/RecentScansPage.vue'), meta: { title: 'Recent scans', view: 'manage' } },
       {
-        path: '/manage/prompt-test/questions',
-        name: 'prompt-questions',
-        component: () => import('../features/manage/components/QuestionsView.vue'),
-        meta: { title: 'Questions', view: 'manage' },
-      },
-      {
-        path: '/manage/prompt-test/models',
-        name: 'prompt-models',
-        component: () => import('../features/manage/components/ModelsView.vue'),
-        meta: { title: 'Models', view: 'manage' },
-      },
-      {
-        path: '/manage/prompt-test/schedule',
-        name: 'prompt-schedule',
-        component: () => import('../features/manage/components/ScheduleView.vue'),
-        meta: { title: 'Schedule', view: 'manage' },
-      },
-      {
-        path: '/manage/prompt-test/fact-sheet',
-        name: 'prompt-fact-sheet',
-        component: () => import('../features/manage/components/FactSheetView.vue'),
-        meta: { title: 'Fact sheet', view: 'manage' },
-      },
-      {
-        path: '/manage/prompt-test/runs',
-        name: 'prompt-runs',
-        component: () => import('../features/manage/components/RunsView.vue'),
-        meta: { title: 'Runs', view: 'manage' },
-      },
-      {
-        path: '/manage/scans',
-        name: 'manage-scans',
-        component: () => import('../features/scan/components/ScanView.vue'),
-        meta: { title: 'Website scans', view: 'manage' },
+        path: '/manage/scans/settings',
+        name: 'scan-settings',
+        component: () => import('../features/scan/components/ScanSettingsPage.vue'),
+        meta: { title: 'Scan settings', view: 'manage' },
       },
       {
         path: '/manage/scans/:id',
@@ -174,31 +125,71 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         props: (to) => ({ scanId: String(to.params.id) }),
         meta: { title: 'Scan', view: 'manage' },
       },
-      { path: '/manage/competitors', redirect: '/manage/competitors/candidates' },
+      // Competitor list.
+      {
+        path: '/manage/competitors',
+        name: 'competitor-list',
+        component: () => import('../features/manage/components/CompetitorListIndex.vue'),
+        meta: { title: 'Competitor list', view: 'manage' },
+      },
+      {
+        path: '/manage/competitors/companies',
+        name: 'companies',
+        component: () => import('../features/competitors/components/CompaniesPage.vue'),
+        meta: { title: 'Companies', view: 'manage' },
+      },
+      {
+        path: '/manage/competitors/companies/:id',
+        name: 'manage-company',
+        component: () => import('../features/competitors/components/CompanyPage.vue'),
+        props: (to) => ({ companyId: String(to.params.id) }),
+        meta: { title: 'Company', view: 'manage' },
+      },
       {
         path: '/manage/competitors/candidates',
         name: 'competitor-candidates',
         component: () => import('../features/competitors/components/CompetitorReviewPage.vue'),
         meta: { title: 'Candidates', view: 'manage' },
       },
-      { path: '/manage/terms', redirect: '/manage/terms/waiting' },
+      {
+        path: '/manage/competitors/check',
+        name: 'check-the-list',
+        component: () => import('../features/competitors/components/CheckListPage.vue'),
+        meta: { title: 'Check the list', view: 'manage' },
+      },
+      // Search term list.
+      { path: '/manage/terms', name: 'term-list', component: () => import('../features/manage/components/TermListIndex.vue'), meta: { title: 'Search term list', view: 'manage' } },
+      { path: '/manage/terms/review', name: 'term-review', component: () => import('../features/review/components/TermReviewRunPage.vue'), meta: { title: 'Term review', view: 'manage' } },
       {
         path: '/manage/terms/waiting',
         name: 'waiting-terms',
         component: () => import('../features/review/components/TermReviewPage.vue'),
         meta: { title: 'Waiting terms', view: 'manage' },
       },
+      // Recommendations.
       {
         path: '/manage/recommendations',
         name: 'manage-recommendations',
-        component: () => import('../features/manage/components/ManageRecommendationsView.vue'),
+        component: () => import('../features/manage/components/RecommendationsIndex.vue'),
         meta: { title: 'Recommendations', view: 'manage' },
       },
       {
-        path: '/manage/keys',
-        name: 'keys',
-        component: () => import('../features/settings/components/SettingsPage.vue'),
-        meta: { title: 'Keys and spending', view: 'manage' },
+        path: '/manage/recommendations/tick-off',
+        name: 'tick-off',
+        component: () => import('../features/plan/components/TickOffPage.vue'),
+        meta: { title: 'Tick off yourself', view: 'manage' },
+      },
+      { path: '/manage/recommendations/goals', name: 'goals-edit', component: () => import('../features/plan/components/GoalsPage.vue'), meta: { title: 'Goals', view: 'manage' } },
+      // Keys and spending.
+      { path: '/manage/keys', name: 'keys', component: () => import('../features/manage/components/KeysIndex.vue'), meta: { title: 'Keys and spending', view: 'manage' } },
+      { path: '/manage/keys/budgets', name: 'budgets', component: () => import('../features/settings/components/BudgetsPage.vue'), meta: { title: 'Budgets', view: 'manage' } },
+      { path: '/manage/keys/events', name: 'events', component: () => import('../features/settings/components/EventsPage.vue'), meta: { title: 'Events', view: 'manage' } },
+      {
+        path: '/manage/keys/:provider(openrouter|anthropic|mistral)',
+        name: 'key',
+        component: () => import('../features/settings/components/KeyPage.vue'),
+        props: (to) => ({ provider: String(to.params.provider) }),
+        meta: { title: 'Key', view: 'manage' },
       },
 
       // The addresses of 1.12.0, which links and bookmarks may still carry. A redirect keeps the query.
@@ -230,8 +221,6 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
     ],
     scrollBehavior: (to, from, saved) => {
       if (saved) return saved
-      // Help brings the topic at its address into view itself.
-      if (to.name === 'help-topic') return false
       // Filters, a picked company and polling change the query, not the view; only a new view starts at the top.
       return to.matched[0]?.components?.default === from.matched[0]?.components?.default ? false : { top: 0 }
     },

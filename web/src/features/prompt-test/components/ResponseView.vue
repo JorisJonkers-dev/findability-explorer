@@ -42,7 +42,7 @@ const EMPTY = 'm-0 rounded-2xl bg-mist p-5 text-ink-2'
     <div class="grid gap-10 min-[1100px]:grid-cols-2">
       <FrameSection title="The response">
         <p v-if="state === 'failed'" :class="EMPTY">This response failed, so the model gave no text. {{ answer.failure }}</p>
-        <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes the whole response before it adds any markup. -->
+        <!-- eslint-disable vue/no-v-html -- renderMarkdown escapes the whole response before it adds any markup. -->
         <div
           v-else
           data-part="response"
@@ -50,6 +50,7 @@ const EMPTY = 'm-0 rounded-2xl bg-mist p-5 text-ink-2'
           class="min-w-0 rounded-3xl bg-mist p-5 leading-relaxed break-words sm:p-6 [&_a]:text-orange-ink [&_a]:underline [&_h4]:mt-4 [&_h4]:mb-2 [&_h4]:text-base [&_h4]:font-bold [&_h4:first-child]:mt-0 [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_p:first-child]:mt-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6"
           v-html="html"
         ></div>
+        <!-- eslint-enable vue/no-v-html -->
       </FrameSection>
 
       <div class="flex min-w-0 flex-col gap-10">

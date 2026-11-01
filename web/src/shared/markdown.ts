@@ -22,7 +22,7 @@ type List = { tag: 'ul' | 'ol'; items: string[] }
 export function renderMarkdown(src: string): string {
   const out: string[] = []
   let para: string[] = []
-  let list: List | null = null
+  let list = null as List | null
   const flushPara = () => {
     if (para.length > 0) out.push(`<p>${inline(para.join(' '))}</p>`)
     para = []

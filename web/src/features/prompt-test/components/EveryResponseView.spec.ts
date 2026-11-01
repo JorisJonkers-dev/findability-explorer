@@ -146,7 +146,7 @@ describe('Every response', () => {
   it('says so before the first run, and reports failures', async () => {
     const none = await mountApp(api({ 'GET /api/v1/prompt-test': () => json(promptResults({ runs: [] })), 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/ai-responses/all')
     expect(none.wrapper.text()).toContain('No Prompt run has finished yet.')
-    expect(none.wrapper.get('a[href="/manage/prompt-test"]').exists()).toBe(true)
+    expect(none.wrapper.find('a[href="/manage/prompt-test"]').exists()).toBe(true)
     const down = await mountApp(api({ 'GET /api/v1/prompt-test': () => problem(500, 'Internal Server Error', 'Down.') }), '/ai-responses/all')
     expect(down.wrapper.get('[role="alert"]').text()).toContain('Down.')
     const gone = await mountApp(api({ [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () => problem(500, 'Internal Server Error', 'Gone.') }), '/ai-responses/all')

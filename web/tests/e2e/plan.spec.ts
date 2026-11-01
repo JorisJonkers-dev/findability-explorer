@@ -2,7 +2,7 @@ import { expect, expectAccessible, test } from './fixtures'
 
 test('the recommendations are ranked, a bubble narrows them, and an administrator marks one as done and undoes it', async ({ page }, info) => {
   // The projects share one database, so each marks a recommendation of its own.
-  const mine = info.project.name === 'phone' ? { id: 'family-pages', title: 'One page per belt family in each language' } : { id: 'listings', title: 'Get listed where answers find sources' }
+  const mine = info.project.name === 'phone' ? { id: 'family-pages', title: 'One page per belt family in each language' } : { id: 'listings', title: 'Get listed where AI responses find sources' }
   await page.goto('/recommendations')
   await expect(page.getByRole('heading', { level: 1, name: 'Recommendations' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: 'Benefit against effort' })).toBeVisible()

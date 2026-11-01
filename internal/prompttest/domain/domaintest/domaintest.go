@@ -104,3 +104,12 @@ func question(f domain.Family, language string, twente bool) string {
 	}
 	return situation(f, language) + ask
 }
+
+// Definition is the competitor definition as the import stores it first: version 2, the target
+// market of ADR-0009, here in short.
+func Definition() domain.Definition {
+	return domain.Definition{
+		Version: 2, SavedBy: "import", SavedAt: time.Date(2026, 10, 27, 0, 0, 0, 0, time.UTC),
+		Text: "A competitor makes metal conveyor belts for process uses and sells them to Tribelt's customers.",
+	}
+}

@@ -50,7 +50,7 @@ test('a section opens from the top bar, and Overview links back', async ({ page 
 
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Overview', exact: true }).click()
   await expect(page).toHaveURL('/')
-  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
   // The browser's own back agrees with the links.
   await page.goBack()
   await expect(page).toHaveURL('/recommendations')

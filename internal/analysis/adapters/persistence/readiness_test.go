@@ -22,7 +22,7 @@ func TestReadinessRoundTrips(t *testing.T) {
 
 	files := domain.ReadinessFiles{
 		Robots:   domain.File{Status: 200, ContentType: "text/plain", Body: "User-agent: GPTBot\nDisallow: /\nSitemap: /s.xml\n"},
-		Sitemaps: []domain.Sitemap{{Pages: []string{"https://www.example.test/de/a"}}},
+		Sitemaps: []domain.Sitemap{{URL: "https://www.example.test/s.xml", Text: "<urlset><url><loc>https://www.example.test/de/a</loc></url></urlset>", Pages: []string{"https://www.example.test/de/a"}}},
 		LLMs:     domain.File{Status: 200, ContentType: "text/plain", Body: strings.Repeat("- [A](/a.md)\n", 10_000)},
 		Home: domain.File{Status: 200, ContentType: "text/html", Body: `<link rel="alternate" hreflang="nl" href="/">` +
 			`<script type="application/ld+json">{"@type":"Organization"}</script>`, Header: map[string]string{"cf-ray": "1"}},
@@ -47,7 +47,7 @@ func TestReadinessRoundTrips(t *testing.T) {
 		t.Errorf("a scan without readiness reads %+v", blank.Readiness)
 	}
 	back, err := repo.ReadinessFiles(ctx, newer.ID)
-	if err != nil || back != raw || !back.LLMsTruncated || back.Robots == "" {
+	if err != nil || back != raw || !back.LLMsTruncated || back.Robots == "" || back.SitemapURL != "https://www.example.test/s.xml" || !strings.HasPrefix(back.Sitemap, "<urlset>") {
 		t.Errorf("raw files = %+v, %v", back.LLMsTruncated, err)
 	}
 	if _, err := repo.ReadinessFiles(ctx, uuid.New()); !errors.Is(err, domain.ErrNoReadiness) {

@@ -9,7 +9,18 @@ const tribelt = readinessRow('Tribelt B.V.', {
   readiness: readiness({ llmsFullTxt: false }),
 })
 const robots = 'User-agent: *\nDisallow: /admin/\n\nUser-agent: GPTBot\nDisallow: /admin/'
-const files = { robotsTxt: robots, robotsTruncated: false, llmsTxt: '# Tribelt\n> Metal belts', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }
+const SITEMAP = '<?xml version="1.0"?>\n<urlset>\n  <url><loc>https://www.tribelt.nl/de/</loc></url>\n</urlset>'
+const files = {
+  robotsTxt: robots,
+  robotsTruncated: false,
+  llmsTxt: '# Tribelt\n> Metal belts',
+  llmsTruncated: false,
+  llmsFullTxt: '',
+  llmsFullTruncated: false,
+  sitemapUrl: 'https://www.tribelt.nl/sitemap_index.xml',
+  sitemapTxt: SITEMAP,
+  sitemapTruncated: false,
+}
 
 const api = (extra: Record<string, Handler> = {}) =>
   routes({
@@ -88,9 +99,29 @@ describe('the files found on a site', () => {
     expect(wrapper.findAll('button').some((b) => b.text() === 'Copy')).toBe(false)
   })
 
-  it('says the sitemap’s text is not kept yet', async () => {
+  it('shows the sitemap’s text, from its address, and downloads it under its own name', async () => {
+    const createObjectURL = vi.fn(() => 'blob:sitemap')
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
     const { wrapper } = await mountApp(api(), '/ai-readiness/tribelt/files?file=sitemap')
-    expect(wrapper.get('[role="tabpanel"]').text()).toContain("This release does not keep the sitemap's text yet.")
+    const panel = wrapper.get('[role="tabpanel"]')
+    expect(panel.get('h3').text()).toBe('sitemap.xml')
+    expect(panel.text()).toContain('From https://www.tribelt.nl/sitemap_index.xml')
+    expect(panel.text()).toContain('4 lines')
+    expect(panel.findAll('[data-line]')[2]?.text()).toContain('<url><loc>https://www.tribelt.nl/de/</loc></url>')
+    await wrapper.get('input[type="search"]').setValue('/de/')
+    expect(panel.findAll('mark').map((m) => m.text())).toEqual(['/de/'])
+    await wrapper.findAll('button').find((b) => b.text() === 'Download')?.trigger('click')
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('sitemap_index.xml')
+    click.mockRestore()
+  })
+
+  it('says when the scan was made before scans kept the sitemap', async () => {
+    const { wrapper } = await mountApp(
+      api({ [`GET /api/v1/analyses/${ANALYSIS_ID}/readiness-files`]: () => json({ ...files, sitemapUrl: '', sitemapTxt: '' }) }),
+      '/ai-readiness/tribelt/files?file=sitemap',
+    )
+    expect(wrapper.get('[role="tabpanel"]').text()).toContain("This scan was made before scans kept the sitemap's text. Scan the site again to read it.")
   })
 
   it('says when no scan recorded the site, and when the files cannot load', async () => {

@@ -1240,7 +1240,35 @@ export const zReadinessFiles = z.object({
     llmsTxt: z.string().max(100000),
     llmsTruncated: z.boolean(),
     llmsFullTxt: z.string().max(100000),
-    llmsFullTruncated: z.boolean()
+    llmsFullTruncated: z.boolean(),
+    sitemapUrl: z.string().max(2000),
+    sitemapTxt: z.string().max(100000),
+    sitemapTruncated: z.boolean()
+});
+
+/**
+ * A page that uses the term.
+ */
+export const zTermPage = z.object({
+    url: z.string().max(2000),
+    title: z.string().max(500)
+});
+
+/**
+ * One company's pages that use the term. A scan made before scans recorded the pages of a term has none; the company uses the term all the same.
+ */
+export const zCompanyTermPages = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    pages: z.array(zTermPage).max(10)
+});
+
+/**
+ * The pages that use one search term on each company's newest finished scan that found it, Tribelt first, then the competitors and the group by name.
+ */
+export const zTermPages = z.object({
+    items: z.array(zCompanyTermPages).max(1000)
 });
 
 /**
@@ -2121,6 +2149,16 @@ export const zSearchTermsQuery = z.object({
  * The matching terms and the facet counts.
  */
 export const zSearchTermsResponse = zTermSearch;
+
+export const zGetTermPagesQuery = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage
+});
+
+/**
+ * Each company's pages that use the term.
+ */
+export const zGetTermPagesResponse = zTermPages;
 
 /**
  * The companies: researched competitors by name, then added ones by name, then Tribelt's own group.

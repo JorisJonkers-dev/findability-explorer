@@ -46,6 +46,10 @@ type analyses struct {
 	readinessRows    []domain.ReadinessRow
 	readinessErr     error
 	rawFiles         map[uuid.UUID]domain.RawFiles
+	// termPages is what TermPages returns; termAsked the term and language asked, termErr fails it.
+	termPages []domain.CompanyTermPages
+	termAsked string
+	termErr   error
 	// check is the readiness check's state; checkErr fails starting one.
 	check    analysisapp.ReadinessCheck
 	checkErr error

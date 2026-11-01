@@ -2,6 +2,7 @@ package persistence_test
 
 import (
 	"errors"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -89,7 +90,7 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 	if len(got.Pages) != 2 || len([]rune(got.Pages[0].Title)) != 500 || got.Pages[1].Title != "Förderbänder" {
 		t.Fatalf("pages = %+v", got.Pages)
 	}
-	if len(got.Keywords) != 2 || got.Keywords[0] != kws[0] || got.Keywords[1] != kws[1] || len(got.KnownTerms) != 1 || got.KnownTerms[0] != known[0] {
+	if len(got.Keywords) != 2 || got.Keywords[0] != kws[0] || got.Keywords[1] != kws[1] || !reflect.DeepEqual(got.KnownTerms, known) {
 		t.Fatalf("findings = %+v %+v", got.Keywords, got.KnownTerms)
 	}
 	if len(got.Equivalents) != 2 || len(got.Equivalents[0].SearchTerms) != 2 || got.Equivalents[0].SearchTerms[1].Term != "Spiralband" ||

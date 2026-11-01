@@ -31,6 +31,9 @@ type repo struct {
 	// pages reads as asked to stop too, as when another instance asks it.
 	stops  map[uuid.UUID]bool
 	stopAt int
+	// termPages are what TermPages returns, and asked the term and language it was asked for.
+	termPages []domain.TermPageRow
+	asked     string
 }
 
 func newRepo(failOn ...string) *repo {
@@ -180,6 +183,11 @@ func (r *repo) SaveReadiness(_ context.Context, id uuid.UUID, rd domain.Readines
 
 func (r *repo) SaveSitemapCoverage(_ context.Context, id uuid.UUID, c domain.SitemapCoverage) error {
 	return r.update("SaveSitemapCoverage", id, func(a *domain.Analysis) { a.Readiness.Sitemap.Coverage = &c })
+}
+
+func (r *repo) TermPages(_ context.Context, term, language string) ([]domain.TermPageRow, error) {
+	r.asked = term + "/" + language
+	return r.termPages, r.err("TermPages")
 }
 
 func (r *repo) ReadinessFiles(_ context.Context, id uuid.UUID) (domain.RawFiles, error) {
@@ -476,6 +484,48 @@ func TestRunRecordsAllFindings(t *testing.T) {
 	// A finished analysis is not run again.
 	if err := svc.Run(t.Context(), a.ID); err != nil || m.calls != 1 {
 		t.Fatalf("second Run = %v, %d matcher calls", err, m.calls)
+	}
+}
+
+// A scan of tribelt.nl keeps each page's text, for the Recommendation run; a competitor's does not.
+func TestRunKeepsThePageTextOfTribeltsScansOnly(t *testing.T) {
+	r := newRepo()
+	svc := service(r, crawler{pages: pages()}, nil, limits())
+	for _, site := range []string{"https://tribelt.test/", "https://x.test/"} {
+		a, err := svc.Start(t.Context(), "u", site, 5, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := svc.Run(t.Context(), a.ID); err != nil {
+			t.Fatal(err)
+		}
+		want := ""
+		if site == "https://tribelt.test/" {
+			want = "Our spiral belt for freezers."
+		}
+		if got := r.analyses[a.ID].Pages[0].Text; got != want {
+			t.Errorf("%s keeps %q, want %q", site, got, want)
+		}
+	}
+}
+
+func TestTermPagesGroupsThePagesByCompany(t *testing.T) {
+	r := newRepo()
+	r.termPages = []domain.TermPageRow{{CompetitorID: "x", Position: 0, URL: "https://x.test/", Title: "X"}}
+	d := &directory{companies: []domain.Company{{ID: "x", Name: "X", Role: domain.RoleCompetitor}}}
+	svc := app.New(r, d, crawler{}, source{}, glossary, func() time.Time { return now }, limits())
+	got, err := svc.TermPages(t.Context(), "eyelink belt", "en")
+	if err != nil || len(got) != 1 || got[0].Pages[0].URL != "https://x.test/" || r.asked != "eyelink belt/en" {
+		t.Fatalf("TermPages = %+v, %v (asked %q)", got, err, r.asked)
+	}
+	d.companiesErr = errBoom
+	if _, err := svc.TermPages(t.Context(), "eyelink belt", "en"); !errors.Is(err, errBoom) {
+		t.Errorf("a directory that fails: %v", err)
+	}
+	d.companiesErr = nil
+	r.failOn["TermPages"] = true
+	if _, err := svc.TermPages(t.Context(), "eyelink belt", "en"); !errors.Is(err, errBoom) {
+		t.Errorf("a store that fails: %v", err)
 	}
 }
 

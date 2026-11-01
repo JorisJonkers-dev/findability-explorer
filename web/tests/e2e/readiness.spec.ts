@@ -38,12 +38,13 @@ const table = {
   check: { running: false, checked: 0, failed: 0, total: 0 },
 }
 
+const SITEMAP = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset>\n  <url><loc>https://www.tribelt.nl/de/</loc></url>\n  <url><loc>https://www.tribelt.nl/en/</loc></url>\n</urlset>'
 const ROBOTS = 'User-agent: *\nDisallow: /admin/\n\nUser-agent: GPTBot\nDisallow: /\n\nSitemap: https://www.tribelt.nl/sitemap.xml'
 
 async function mockReadiness(page: Page): Promise<void> {
   await page.route('**/api/v1/ai-readiness', (route) => route.fulfill({ json: table }))
   await page.route(`**/api/v1/analyses/${SCAN}/readiness-files`, (route) =>
-    route.fulfill({ json: { robotsTxt: ROBOTS, robotsTruncated: false, llmsTxt: '# Tribelt\n> Metal conveyor belts.', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false } }),
+    route.fulfill({ json: { robotsTxt: ROBOTS, robotsTruncated: false, llmsTxt: '# Tribelt\n> Metal conveyor belts.', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false, sitemapUrl: 'https://www.tribelt.nl/sitemap.xml', sitemapTxt: SITEMAP, sitemapTruncated: false } }),
   )
 }
 
@@ -73,7 +74,10 @@ test("AI readiness leads to tribelt.nl's page and its files, which a search high
   await page.getByRole('tab', { name: 'llms-full.txt' }).click()
   await expect(panel).toContainText('The scan found no llms-full.txt on tribelt.nl.')
   await page.getByRole('tab', { name: 'sitemap.xml' }).click()
-  await expect(panel).toContainText("This release does not keep the sitemap's text yet.")
+  await expect(panel).toContainText('From https://www.tribelt.nl/sitemap.xml')
+  await page.getByRole('searchbox', { name: 'Search in the file' }).fill('/de/')
+  await expect(panel.locator('mark')).toHaveCount(1)
+  await expectAccessible(page)
 })
 
 for (const width of [390, 800, 1024, 1440]) {

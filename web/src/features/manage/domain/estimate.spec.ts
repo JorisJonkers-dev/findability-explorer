@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { budgetFraction, confirmLine, estimateLine, leftUsd, overBudgetLine, scheduleCosts, scheduleWarning, spendingByKind } from './estimate'
+import { budgetFraction, confirmLine, estimateLine, leftUsd, overBudgetLine, scheduleCosts, scheduleWarning } from './estimate'
 
 describe('leftUsd and budgetFraction', () => {
   it('is what is left of the budget, never below nothing', () => {
@@ -46,16 +46,5 @@ describe('the schedule', () => {
       text: 'At this schedule the runs cost about $12.00 a month, which is more than the $10.00 monthly budget. Runs will stop when the budget is spent. Raise the budget, or take a provider off the list.',
       setMonthly: false,
     })
-  })
-})
-
-describe('spendingByKind', () => {
-  it('splits the Anthropic key’s spending into the term review and the rest', () => {
-    expect(spendingByKind(1.88, 2.46, 0.52)).toEqual([
-      { kind: 'Prompt runs', paidFrom: 'OpenRouter', usd: 1.88 },
-      { kind: 'Term review', paidFrom: 'Anthropic', usd: 0.52 },
-      { kind: 'Scans, candidate checks, and reading responses', paidFrom: 'Anthropic', usd: 1.94 },
-    ])
-    expect(spendingByKind(0, 0.1, 0.5).map((s) => s.usd)).toEqual([0, 0.1, 0])
   })
 })

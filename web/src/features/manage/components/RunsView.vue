@@ -4,7 +4,7 @@ import { usePromptResults, usePromptSettings, useRetryRun } from '../../prompt-t
 import { costLabel } from '../../prompt-test/domain/results'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
 import { useStopWork } from '../composables/useManage'
-import { dayLabel, endedOf, needsFinishing, runningWork, whenLabel } from '../domain/activity'
+import { dayLabel, endedOf, needsFinishing, runAsWork, runningWork, whenLabel } from '../domain/activity'
 import { leftUsd } from '../domain/estimate'
 import EndedPill from './widgets/EndedPill.vue'
 import ManageWidget from './widgets/ManageWidget.vue'
@@ -21,7 +21,7 @@ const stopper = useStopWork()
 
 const NUMBER = new Intl.NumberFormat('en-GB')
 const runs = computed(() => results.value?.runs ?? [])
-const running = computed(() => runningWork(runs.value, [], undefined, settings.value?.prices.runUsd))
+const running = computed(() => runningWork(runs.value.filter((r) => r.status === 'running').map(runAsWork), settings.value?.prices.runUsd))
 const failing = computed(() => runs.value.filter(needsFinishing))
 const busy = computed(() => running.value.length > 0)
 const left = computed(() => (settings.value ? leftUsd({ budgetUsd: settings.value.monthlyBudgetUsd, spentUsd: settings.value.spentThisMonthUsd }) : 0))

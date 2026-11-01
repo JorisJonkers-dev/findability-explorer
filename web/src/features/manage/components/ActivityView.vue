@@ -2,15 +2,14 @@
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ProgressBar from '../../../shared/ui/ProgressBar.vue'
-import { useCompetitorCandidates, usePromptResults, usePromptSettings } from '../../prompt-test/composables/usePromptTest'
+import { useCompetitorCandidates, usePromptSettings } from '../../prompt-test/composables/usePromptTest'
 import { costLabel } from '../../prompt-test/domain/results'
-import { useReadinessTable } from '../../readiness/composables/useReadiness'
 import { useTermCandidates } from '../../review/composables/useTermReview'
 import { useLlmSettings } from '../../settings/composables/useLlmSettings'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
-import { useStopWork, useWorkScans } from '../composables/useManage'
-import { missingKeys, queuedScans, recentWork, runningWork, waitLine, whenLabel } from '../domain/activity'
-import { budgetFraction, leftUsd, spendingByKind } from '../domain/estimate'
+import { useActivity, useStopWork, useWorkScans } from '../composables/useManage'
+import { missingKeys, queuedScans, recentWork, runningWork, spendingRows, waitLine, whenLabel } from '../domain/activity'
+import { budgetFraction, leftUsd } from '../domain/estimate'
 import EndedPill from './widgets/EndedPill.vue'
 import ManageWidget from './widgets/ManageWidget.vue'
 import RunningWidget from './widgets/RunningWidget.vue'
@@ -20,9 +19,8 @@ import WidgetGrid from './widgets/WidgetGrid.vue'
  * Activity: what runs, each with its Stop; what comes next; what waits for an administrator; the
  * two budgets; what the month cost by kind of work; and the last 20 pieces of work.
  */
-const { results } = usePromptResults()
+const { activity, error } = useActivity()
 const { scans } = useWorkScans()
-const { check } = useReadinessTable()
 const { settings } = usePromptSettings()
 const llm = useLlmSettings()
 const { counts: terms, review: termReview } = useTermCandidates(ref('pending'))
@@ -30,10 +28,9 @@ const { counts: candidates } = useCompetitorCandidates(ref('pending'))
 const stopper = useStopWork()
 
 const NUMBER = new Intl.NumberFormat('en-GB')
-const runs = computed(() => results.value?.runs ?? [])
-const running = computed(() => runningWork(runs.value, scans.value, check.value, settings.value?.prices.runUsd))
+const running = computed(() => runningWork(activity.value?.running ?? [], settings.value?.prices.runUsd))
 const runningSpan = computed(() => (running.value.length === 1 ? 12 : running.value.length === 2 ? 6 : 4))
-const recent = computed(() => recentWork(runs.value, scans.value))
+const recent = computed(() => recentWork(activity.value?.recent ?? []))
 const queued = computed(() => queuedScans(scans.value))
 const termsWaiting = computed(() => terms.value?.pending ?? 0)
 const candidatesWaiting = computed(() => candidates.value?.pending ?? 0)
@@ -64,18 +61,14 @@ const anthropic = computed(() => {
     used: `${String(Math.round(fraction * 100))}%`,
   }
 })
-const spending = computed(() =>
-  settings.value && llm.settings.value
-    ? spendingByKind(settings.value.spentThisMonthUsd, llm.settings.value.budget.spentThisMonthUsd, termReview.value?.monthCostUsd ?? 0)
-    : [],
-)
-const spentInAll = computed(() => costLabel(spending.value.reduce((sum, s) => sum + s.usd, 0)))
+const spending = computed(() => spendingRows(activity.value?.spending.lines ?? []))
 
 const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:pb-0'
 </script>
 
 <template>
   <ManageLayout title="Activity" purpose="See what is running, what comes next, and what is waiting for you." :results="{ to: '/', label: 'See the Overview' }">
+    <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>
     <WidgetGrid>
       <template v-if="running.length > 0">
         <RunningWidget v-for="w in running" :key="w.id" :work="w" :span="runningSpan" :stopping="stopper.isStopping.value" @stop="stopper.stop(w)" />
@@ -184,7 +177,7 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
               </tr>
             </thead>
             <tbody>
-              <tr v-for="k in spending" :key="k.kind" class="border-b border-grey">
+              <tr v-for="k in spending.rows" :key="`${k.kind} ${k.paidFrom}`" class="border-b border-grey">
                 <th scope="row" class="py-2 pr-3 font-medium">{{ k.kind }}</th>
                 <td class="py-2 pr-3">{{ k.paidFrom }}</td>
                 <td class="py-2 text-right tabular-nums">{{ costLabel(k.usd) }}</td>
@@ -193,7 +186,7 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
             <tfoot>
               <tr class="border-t-2 border-black">
                 <th scope="row" colspan="2" class="py-2 pr-3 font-semibold">All work</th>
-                <td class="py-2 text-right font-semibold tabular-nums">{{ spentInAll }}</td>
+                <td class="py-2 text-right font-semibold tabular-nums">{{ costLabel(spending.totalUsd) }}</td>
               </tr>
             </tfoot>
           </table>
@@ -222,7 +215,7 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
                 <th scope="row" class="py-2 pr-3 font-medium">{{ w.work }}</th>
                 <td class="py-2 pr-3"><EndedPill :ended="w.ended" /></td>
                 <td class="py-2 pr-3">{{ w.did }}</td>
-                <td class="py-2 pr-3 text-right tabular-nums">{{ w.costUsd === undefined ? '' : costLabel(w.costUsd) }}</td>
+                <td class="py-2 pr-3 text-right tabular-nums">{{ costLabel(w.costUsd) }}</td>
                 <td class="py-2"><RouterLink :to="w.to" class="font-medium">Open<span class="sr-only">{{ ` ${w.work}, ${whenLabel(w.at)}` }}</span></RouterLink></td>
               </tr>
             </tbody>

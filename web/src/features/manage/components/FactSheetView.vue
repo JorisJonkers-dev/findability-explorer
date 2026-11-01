@@ -32,7 +32,7 @@ function submit(): void {
   <ManageLayout
     title="Fact sheet"
     purpose="The text about Tribelt that the AI responses are checked against."
-    :back="{ to: '/manage/prompt-test', label: 'Prompt test' }"
+    :back="{ to: '/manage/prompt-test', label: 'Back to Prompt test' }"
     :results="{ to: '/ai-responses', label: 'See the AI responses' }"
   >
     <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>

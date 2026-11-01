@@ -26,7 +26,7 @@ const plural = (n: number) => (n === 1 ? '1 question' : `${NUMBER.format(n)} que
   <ManageLayout
     title="Questions"
     purpose="The buyer questions that the AI assistants are asked."
-    :back="{ to: '/manage/prompt-test', label: 'Prompt test' }"
+    :back="{ to: '/manage/prompt-test', label: 'Back to Prompt test' }"
     :results="{ to: '/ai-responses', label: 'See the AI responses' }"
   >
     <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>

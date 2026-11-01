@@ -135,7 +135,7 @@ describe('Runs', () => {
   it('shows the figures, a panel per run with failed responses, and every run with how it ended', async () => {
     const { wrapper } = await mountApp(server({ 'GET /api/v1/prompt-test': () => json(promptResults({ runs })) }).handle, '/manage/prompt-test/runs')
     expect(wrapper.get('h1').text()).toBe('Runs')
-    expect(wrapper.get('a[href="/manage/prompt-test"]').text()).toContain('Prompt test')
+    expect(wrapper.findAll('a[href="/manage/prompt-test"]').map((a) => a.text())).toContain('Back to Prompt test')
     expect(wrapper.get('nav[aria-label="Manage"] a[aria-current="page"]').text()).toBe('Runs')
     expect(widget(wrapper, 'Runs').text()).toContain('The last one was on 28 October 2026.')
     expect(widget(wrapper, 'Need a retry').text()).toContain('2')

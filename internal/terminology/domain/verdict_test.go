@@ -136,3 +136,13 @@ func TestExamplesAreAFewTermsOfEachTier(t *testing.T) {
 		t.Errorf("Examples = %+v", got)
 	}
 }
+
+func TestTheReviewsUsageIsPricedAtHaikusListPrice(t *testing.T) {
+	u := domain.Usage{InputTokens: 2_000_000, OutputTokens: 400_000}
+	if u.Tokens() != 2_400_000 || u.CostUSD() != 0.4 {
+		t.Errorf("tokens %d, cost $%v", u.Tokens(), u.CostUSD())
+	}
+	if (domain.Usage{}).CostUSD() != 0 {
+		t.Error("nothing used costs something")
+	}
+}

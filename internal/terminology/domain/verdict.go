@@ -39,6 +39,20 @@ type Usage struct {
 	At           time.Time
 }
 
+// Claude Haiku's list price on Anthropic's API, in dollars per million tokens: the review asks it.
+const (
+	haikuInputPerMillion  = 0.10
+	haikuOutputPerMillion = 0.50
+)
+
+// Tokens is how many tokens u counts, input and output together.
+func (u Usage) Tokens() int64 { return u.InputTokens + u.OutputTokens }
+
+// CostUSD is what u cost in dollars at Claude Haiku's list price.
+func (u Usage) CostUSD() float64 {
+	return (haikuInputPerMillion*float64(u.InputTokens) + haikuOutputPerMillion*float64(u.OutputTokens)) / 1e6
+}
+
 // Unreviewed are the waiting candidates without the model's verdict, in their order.
 func Unreviewed(candidates []Candidate) []Candidate {
 	var out []Candidate

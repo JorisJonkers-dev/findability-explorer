@@ -5,7 +5,7 @@ test('the Prompt test models show the Model list and where to add one; Questions
   await expect(page.getByRole('heading', { level: 1, name: 'Models' })).toBeVisible()
   // The e2e run has no OpenRouter key, so the page says so and reads no catalogue.
   await expect(page.getByRole('alert').filter({ hasText: 'The OpenRouter key does not work' })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'The model list' })).toContainText('These models are asked in every run')
+  await expect(page.getByRole('region', { name: 'The model list', exact: true })).toContainText('These models are asked in every run')
   await expect(page.getByRole('region', { name: 'Add a model' })).toContainText('OpenRouter’s models can be listed once the key works.')
   // Nothing has changed, so there is nothing to save.
   await expect(page.getByRole('button', { name: 'Save the model list' })).toBeDisabled()

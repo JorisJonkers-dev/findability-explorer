@@ -37,6 +37,8 @@ import (
 
 	"github.com/google/uuid"
 
+	activitypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/activity/adapters/persistence"
+	activityapp "github.com/JorisJonkers-dev/findability-explorer/internal/activity/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/crawler"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/matcher"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/persistence"
@@ -122,6 +124,16 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		return err
 	}
 	now := func() time.Time { return time.Now().UTC() }
+	// The work journal records the background work no table of its own keeps, for Activity. Work it
+	// shows running ran in memory and stopped with the last server: it ended then.
+	journal := activitypersistence.New(store)
+	activity := activityapp.New(journal, now)
+	if n, err := activity.EndAbandoned(ctx); err != nil {
+		return err
+	} else if n > 0 {
+		logger.InfoContext(ctx, "work left running by the last server ended as failed", "count", n)
+	}
+	reportJournal := func(err error) { logger.WarnContext(ctx, "work journal", "error", err) }
 	analysisRepo := persistence.New(store)
 	var companies *companiesapp.Service
 	terminologyRepo := terminologypersistence.New(store)
@@ -154,11 +166,13 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	// Haiku reviews the phrases scans find, on an Anthropic key, until the month's Anthropic budget is spent.
 	terminology.WithReviewer(terminologyRepo, judges{llm: llm})
 	terminology.WithBudget(llm.BudgetSpent)
+	terminology.WithJournal(journal, reportJournal)
 	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
 	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, now)
 	if err != nil {
 		return err
 	}
+	analysis.WithJournal(journal, reportJournal)
 	go analysis.Work(ctx, func(id uuid.UUID, err error) {
 		logger.ErrorContext(ctx, "analysis could not be recorded", "analysis", id, "error", err)
 	})
@@ -173,7 +187,9 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		// Haiku on an Anthropic key reads the answers while one works (ADR-0007).
 		prompttestapp.WithExtractors(extractors{llm: llm}),
 		// Both stop using Haiku once the month's Anthropic budget is spent.
-		prompttestapp.WithBudget(llm.BudgetSpent))
+		prompttestapp.WithBudget(llm.BudgetSpent),
+		// Each review of the candidates and check of the list goes in the work journal.
+		prompttestapp.WithJournal(journal))
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
 	insight := newInsight(insightpersistence.New(store.Queries()), companies, promptTest, analysis, terminology, now)
 	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
@@ -183,7 +199,8 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		return err
 	}
 	api, err := httpapi.New(logger, httpapi.Contexts{
-		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Insight: insight, Auth: gate.auth,
+		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Insight: insight, Activity: activity,
+		Auth: gate.auth,
 	})
 	if err != nil {
 		return err

@@ -169,6 +169,10 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.SetPlanTargetsOperation:  domain.NeedAdminChange,
 	// Activity: what runs, what ended, and this month's spending.
 	oas.GetActivityOperation: domain.NeedAdminView,
+	// The Claude steps: their models and instructions, and the versions of both.
+	oas.ListClaudeStepsOperation:       domain.NeedAdminView,
+	oas.GetClaudeStepOperation:         domain.NeedAdminView,
+	oas.SaveClaudeStepVersionOperation: domain.NeedAdminChange,
 	// The review queue of the terminology map.
 	oas.ListTermCandidatesOperation:  domain.NeedAdminView,
 	oas.AcceptTermCandidateOperation: domain.NeedAdminChange,

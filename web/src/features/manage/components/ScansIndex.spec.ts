@@ -59,6 +59,7 @@ describe('Website scans', () => {
       'Scan queue',
       'Recent scans',
       'Scan settings',
+      'Matching products',
     ])
     expect(widget(wrapper, 'Last scan').text()).toContain('27 October 2099')
     expect(widget(wrapper, 'Anthropic budget').text()).toContain('$0.48 of $15.00 spent this month (3%), $14.52 left')

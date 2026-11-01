@@ -44,6 +44,9 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/persistence"
 	analysisapp "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/app"
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
+	claudesteppersistence "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/adapters/persistence"
+	claudestepapp "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/app"
+	claudestepdomain "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/domain"
 	companiespersistence "github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/research"
 	companiesapp "github.com/JorisJonkers-dev/findability-explorer/internal/companies/app"
@@ -168,7 +171,10 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 	terminology.WithBudget(llm.BudgetSpent)
 	terminology.WithJournal(journal, reportJournal)
 	go terminology.ReviewLoop(ctx, termReviewEvery, func(err error) { logger.WarnContext(ctx, "term review", "error", err) })
-	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, now)
+	// The Claude steps keep their models and instructions as versions; the job of each is
+	// estimated from what it used on Claude Haiku 5.5.
+	claudeSteps := claudestepapp.New(claudesteppersistence.New(store), stepBase{llm: llm}.Of, now)
+	analysis, err := newAnalysis(ctx, getenv, analysisRepo, directory{companies: companies}, terminology, llm, claudeSteps, now)
 	if err != nil {
 		return err
 	}
@@ -199,7 +205,7 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		return err
 	}
 	api, err := httpapi.New(logger, httpapi.Contexts{
-		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Insight: insight, Activity: activity,
+		Terminology: terminology, Analysis: analysis, Companies: companies, LLM: llm, PromptTest: promptTest, Insight: insight, Activity: activity, ClaudeSteps: claudeSteps,
 		Auth: gate.auth,
 	})
 	if err != nil {
@@ -344,13 +350,21 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp
 }
 
 // spending is what every job on a Claude model used since since, per job, and what one scan's
-// matching used on average. Every one runs on Claude Haiku until the Claude steps choose models,
-// so each is priced as Haiku.
+// matching used on average. The scans' matching is priced at the model each scan used, as the
+// step matching products may name another; every other job runs on Claude Haiku until its step
+// chooses a model, so it is priced as Haiku.
 func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spending, error) {
 	sources := []func(context.Context, time.Time) (int64, int64, error){
-		sp.analyses.TokensSince, sp.terms.TokensSince, sp.candidates.ReviewTokensSince, sp.candidates.ReadingTokensSince,
+		sp.terms.TokensSince, sp.candidates.ReviewTokensSince, sp.candidates.ReadingTokensSince,
 	}
 	var s llmapp.Spending
+	scanUse, err := sp.analyses.TokensSinceByModel(ctx, since)
+	if err != nil {
+		return llmapp.Spending{}, err
+	}
+	for _, u := range scanUse {
+		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: claudeModelOf(u.Model), Input: u.Input, Output: u.Output})
+	}
 	for _, source := range sources {
 		in, out, err := source(ctx, since)
 		if err != nil {
@@ -365,6 +379,33 @@ func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spendin
 	s.AveragePerScan = llmdomain.TokenUse{Model: llmdomain.DefaultModel, Input: in, Output: out}
 	s.ScansMatched = scans
 	return s, nil
+}
+
+// claudeModelOf is the Claude model a scan records ("anthropic: claude-sonnet-5-5"), or Claude Haiku
+// 5.5 for a scan matched on another provider, which the Anthropic key did not pay.
+func claudeModelOf(described string) string {
+	if m, ok := strings.CutPrefix(described, string(llmdomain.Anthropic)+": "); ok {
+		return m
+	}
+	return llmdomain.DefaultModel
+}
+
+// stepBase estimates one job of a Claude step on Claude Haiku 5.5 from what it used: a scan's
+// matching from the average scan, priced as Haiku. A step without an estimate of its own is
+// estimated from its typical tokens.
+type stepBase struct {
+	llm *llmapp.Service
+}
+
+func (b stepBase) Of(ctx context.Context, step claudestepdomain.ID) (llmdomain.Micros, error) {
+	if step != claudestepdomain.Matching {
+		return 0, nil
+	}
+	s, err := b.llm.Settings(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return s.Budget.AverageScanCost, nil
 }
 
 func monthStart(t time.Time) time.Time {
@@ -418,10 +459,12 @@ func (x extractors) Current(ctx context.Context) (prompttestapp.Extractor, strin
 }
 
 // matchers hands the analysis context its matcher: none when an administrator turned matching
-// off, else Haiku on an Anthropic key while one works (ADR-0007), else the model the
-// language-model settings name now.
+// off, else, on an Anthropic key while one works (ADR-0007), the Claude model the step matching
+// products names now, else the model the language-model settings name. The step's newest
+// instructions are the system message either way.
 type matchers struct {
-	llm *llmapp.Service
+	llm   *llmapp.Service
+	steps *claudestepapp.Service
 }
 
 func (m matchers) Current(ctx context.Context) (analysisdomain.Matcher, string, error) {
@@ -429,19 +472,26 @@ func (m matchers) Current(ctx context.Context) (analysisdomain.Matcher, string, 
 	if err != nil || client == nil {
 		return nil, "", err
 	}
-	return matcher.New(client, model), llmdomain.Describe(provider, model), nil
+	step, err := m.steps.Current(ctx, claudestepdomain.Matching)
+	if err != nil {
+		return nil, "", err
+	}
+	if provider == llmdomain.Anthropic {
+		model = step.Model
+	}
+	return matcher.New(client, model, step.Instructions), llmdomain.Describe(provider, model), nil
 }
 
 // newAnalysis builds the analysis use cases and queues every analysis a restart left waiting.
 func newAnalysis(ctx context.Context, getenv func(string) string, repo *persistence.Repository,
 	directory analysisdomain.Directory, terminology *terminologyapp.Service, llm *llmapp.Service,
-	now func() time.Time,
+	steps *claudestepapp.Service, now func() time.Time,
 ) (*analysisapp.Service, error) {
 	svc := analysisapp.New(
 		repo,
 		directory,
 		crawler.New(crawler.Options{Contact: getenv("CRAWLER_CONTACT")}),
-		matchers{llm: llm},
+		matchers{llm: llm, steps: steps},
 		func(ctx context.Context) []analysisdomain.GlossaryTerm {
 			// Without the scans' sightings, the research's credits say which terms tribelt.nl uses.
 			use, err := terminology.SiteUse(ctx)

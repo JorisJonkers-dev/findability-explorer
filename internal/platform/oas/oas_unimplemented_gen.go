@@ -178,6 +178,18 @@ func (UnimplementedHandler) GetAnalysis(ctx context.Context, params GetAnalysisP
 	return r, ht.ErrNotImplemented
 }
 
+// GetClaudeStep implements getClaudeStep operation.
+//
+// Administrators only. One step: the instructions the tool came with, every saved version (model and
+// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
+// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
+// exist.
+//
+// GET /api/v1/admin/claude-steps/{stepId}
+func (UnimplementedHandler) GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (r GetClaudeStepRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetCompetitor implements getCompetitor operation.
 //
 // Returns the company and its scans, newest first, each with its number.
@@ -384,6 +396,16 @@ func (UnimplementedHandler) ListAnalyses(ctx context.Context, params ListAnalyse
 	return r, ht.ErrNotImplemented
 }
 
+// ListClaudeSteps implements listClaudeSteps operation.
+//
+// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
+// and the version of the instructions it uses now and what one job of it costs with that model.
+//
+// GET /api/v1/admin/claude-steps
+func (UnimplementedHandler) ListClaudeSteps(ctx context.Context) (r ListClaudeStepsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListCompetitorCandidates implements listCompetitorCandidates operation.
 //
 // Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -518,6 +540,19 @@ func (UnimplementedHandler) RestoreCompetitorDefinition(ctx context.Context, par
 //
 // POST /api/v1/admin/prompt-runs/{runId}/retry
 func (UnimplementedHandler) RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (r RetryPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SaveClaudeStepVersion implements saveClaudeStepVersion operation.
+//
+// Administrators only. Saves the model and the instructions as the step's next version, which its next
+// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
+// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
+// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
+// that does not exist.
+//
+// POST /api/v1/admin/claude-steps/{stepId}/versions
+func (UnimplementedHandler) SaveClaudeStepVersion(ctx context.Context, req *ClaudeStepChange, params SaveClaudeStepVersionParams) (r SaveClaudeStepVersionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

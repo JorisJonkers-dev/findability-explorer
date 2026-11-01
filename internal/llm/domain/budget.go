@@ -35,20 +35,13 @@ func (p Price) Of(input, output int64) Micros {
 	return (Micros(input)*p.InputPerMillion + Micros(output)*p.OutputPerMillion + 500_000) / 1_000_000
 }
 
-// listPrices are the Claude models' list prices on Anthropic's API, for prompts up to 100,000
-// tokens. Claude Haiku 5.5 costs $0.10 per million input tokens and $0.50 per million output
-// tokens (ADR-0007).
-var listPrices = map[string]Price{ //nolint:gochecknoglobals // a constant table
-	DefaultModel: {InputPerMillion: 100_000, OutputPerMillion: 500_000},
-}
-
-// ListPrice is model's list price on Anthropic's API. Every Claude step uses Claude Haiku 5.5 until
-// the steps can choose other models, so a model without a price of its own here is priced as Haiku.
+// ListPrice is model's list price on Anthropic's API (ClaudeModels); a model not listed there is
+// priced as Claude Haiku 5.5 (ADR-0007), which every Claude step uses until it is given another.
 func ListPrice(model string) Price {
-	if p, ok := listPrices[model]; ok {
-		return p
+	if m, ok := ClaudeModel(model); ok {
+		return m.Price
 	}
-	return listPrices[DefaultModel]
+	return claudeModels[0].Price
 }
 
 // TokenUse is what one model used: its tokens in and out.

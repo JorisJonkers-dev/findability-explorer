@@ -149,6 +149,16 @@ type AnalysisReadinessFile struct {
 	SitemapTruncated  bool
 }
 
+type ClaudeStepVersion struct {
+	Step         string
+	Number       int32
+	Model        string
+	Instructions string
+	Note         string
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
 type Company struct {
 	ID         string
 	Name       string

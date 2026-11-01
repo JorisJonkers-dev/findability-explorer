@@ -1595,3 +1595,39 @@ func (q *Queries) TokensSince(ctx context.Context, createdAt time.Time) (TokensS
 	err := row.Scan(&i.Input, &i.Output)
 	return i, err
 }
+
+const tokensSinceByModel = `-- name: TokensSinceByModel :many
+SELECT coalesce(matching_model, '')::text AS model,
+    coalesce(sum(llm_input_tokens), 0)::bigint AS input, coalesce(sum(llm_output_tokens), 0)::bigint AS output
+FROM analyses
+WHERE created_at >= $1 AND llm_input_tokens + llm_output_tokens > 0
+GROUP BY 1
+ORDER BY 1
+`
+
+type TokensSinceByModelRow struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// The language-model tokens in and out of analyses created since a moment, per model that matched.
+func (q *Queries) TokensSinceByModel(ctx context.Context, createdAt time.Time) ([]TokensSinceByModelRow, error) {
+	rows, err := q.db.Query(ctx, tokensSinceByModel, createdAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TokensSinceByModelRow{}
+	for rows.Next() {
+		var i TokensSinceByModelRow
+		if err := rows.Scan(&i.Model, &i.Input, &i.Output); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -225,6 +225,28 @@ func (r *Repository) TokensSince(ctx context.Context, since time.Time) (input, o
 	return row.Input, row.Output, nil
 }
 
+// ModelTokens is what the scans one model matched for used: the model as the scan records it
+// ("anthropic: claude-haiku-5-5"), and its tokens in and out.
+type ModelTokens struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// TokensSinceByModel returns the tokens in and out of the analyses created since since, per model
+// that matched, so each is priced at its own model's list price.
+func (r *Repository) TokensSinceByModel(ctx context.Context, since time.Time) ([]ModelTokens, error) {
+	rows, err := r.store.Queries().TokensSinceByModel(ctx, since)
+	if err != nil {
+		return nil, fmt.Errorf("sum tokens per model: %w", err)
+	}
+	out := make([]ModelTokens, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, ModelTokens{Model: row.Model, Input: row.Input, Output: row.Output})
+	}
+	return out, nil
+}
+
 // TokensPerScan returns how many scans the language model answered for, and the tokens in and out
 // one of them used on average; scans with matching off or skipped used none and are left out.
 func (r *Repository) TokensPerScan(ctx context.Context) (scans int, input, output int64, err error) {

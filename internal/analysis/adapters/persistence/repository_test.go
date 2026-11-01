@@ -100,6 +100,10 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 	if in, out, err := repo.TokensSince(ctx, created); err != nil || in != 900 || out != 100 {
 		t.Fatalf("TokensSince = %d in, %d out, %v", in, out, err)
 	}
+	if m, err := repo.TokensSinceByModel(ctx, created); err != nil || len(m) != 1 ||
+		m[0] != (persistence.ModelTokens{Model: "openrouter: anthropic/claude-haiku-5-5", Input: 900, Output: 100}) {
+		t.Fatalf("TokensSinceByModel = %+v, %v", m, err)
+	}
 	// What the company's newest finished scan found: the map term, with the languages of the pages
 	// it read, and the matched products.
 	if s, err := repo.Sightings(ctx); err != nil || len(s) != 1 || s[0].CompetitorID != "example" || s[0].Term != "spiral belt" ||

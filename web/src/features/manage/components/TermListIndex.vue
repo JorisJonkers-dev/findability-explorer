@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StepCard from '../../claude-steps/components/StepCard.vue'
 import { ref } from 'vue'
 import { useTermCandidates } from '../../review/composables/useTermReview'
 import { reviewLine } from '../../review/domain/candidates'
@@ -40,13 +41,7 @@ const { counts, review } = useTermCandidates(ref('pending'))
         link="Review the terms"
         :span="6"
       />
-      <IndexCard
-        title="Add or remove terms"
-        text="Add a search term by hand, or take one off the list."
-        to="/manage/terms/edit"
-        link="Change the list"
-        :span="6"
-      />
+      <StepCard step-id="termReview" />
     </WidgetGrid>
   </ManageLayout>
 </template>

@@ -35,3 +35,14 @@ export function claudeStep(overrides: Partial<ClaudeStep> = {}): ClaudeStep {
     ...overrides,
   }
 }
+
+/** A step on the instructions it came with, on Claude Haiku 5.5. */
+export function originalStep(id: ClaudeStep['id'], title: string, fixedInstructions = false): ClaudeStep {
+  return claudeStep({
+    id,
+    title,
+    fixedInstructions,
+    current: stepVersion({ number: 1, model: 'claude-haiku-5-5', modelName: 'Claude Haiku 5.5', createdBy: 'the tool', instructions: 'Compare the site with Tribelt.' }),
+    jobCostUsd: 0.0044,
+  })
+}

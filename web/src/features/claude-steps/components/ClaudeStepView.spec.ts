@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { ClaudeStep } from '../../../infrastructure/api/types.gen'
-import { claudeStep, stepVersion } from '../../../testing/claudeStepFixtures'
+import { claudeStep, originalStep, stepVersion } from '../../../testing/claudeStepFixtures'
 import { buttonNamed, manageApi } from '../../../testing/manageApi'
 import { json, mountApp, problem, settle } from '../../../testing/mountApp'
 
@@ -159,5 +159,50 @@ describe('the step where it works', () => {
     scans.wrapper.unmount()
     const settings = await mountApp(server().handle, '/manage/scans/settings')
     expect(widget(settings.wrapper, 'Model and instructions').text()).toContain('Claude Sonnet 5.5 does this step, with instructions version 2. About $0.088 for a scan.')
+  })
+})
+
+describe('the other steps', () => {
+  it('shows reading responses under the Prompt test, its instructions set in the code and only its model to save', async () => {
+    const bodies: unknown[] = []
+    const reading = originalStep('reading', 'Reading responses', true)
+    const { wrapper } = await mountApp(
+      manageApi({
+        'POST /api/v1/admin/claude-steps/reading/versions': async (r) => (bodies.push(await r.json()), json({ ...reading, current: stepVersion({ model: 'claude-sonnet-5-5' }) }, 201)),
+      }),
+      '/manage/claude-steps/reading',
+    )
+    expect(wrapper.get('h1').text()).toBe('Reading responses')
+    expect(wrapper.get('nav[aria-label="Manage"] a[aria-current="page"]').text()).toBe('Reading responses')
+    expect(wrapper.get('nav[aria-label="Manage"] [data-open]').text()).toContain('Prompt test')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('Claude Haiku 5.5 since 1 November 2026. Paid by the Anthropic key.')
+    expect(wrapper.find('textarea').exists()).toBe(false)
+    expect(widget(wrapper, 'Instructions').text()).toContain('Set in the code')
+    expect(wrapper.get('[data-part="cost"]').text()).toBe('About $0.0044 for reading 100 responses.')
+    expect(widget(wrapper, 'Model').text()).toContain('the AI responses charts mark the date')
+    await widget(wrapper, 'Model').get('select').setValue('claude-sonnet-5-5')
+    await buttonNamed(wrapper, 'Undo').trigger('click')
+    expect((widget(wrapper, 'Model').get('select').element as HTMLSelectElement).value).toBe('claude-haiku-5-5')
+    await widget(wrapper, 'Model').get('select').setValue('claude-sonnet-5-5')
+    await buttonNamed(wrapper, 'Save the model').trigger('click')
+    await settle()
+    expect(bodies).toEqual([{ model: 'claude-sonnet-5-5', instructions: 'Compare the site with Tribelt.' }])
+  })
+
+  it('shows checking companies under the Competitor list, with the definition as data it gets', async () => {
+    const { wrapper } = await mountApp(manageApi(), '/manage/claude-steps/candidateCheck')
+    expect(wrapper.get('h1').text()).toBe('Checking companies')
+    expect(wrapper.get('nav[aria-label="Manage"] a[aria-current="page"]').text()).toBe('Checking companies')
+    expect(widget(wrapper, 'What the model gets').text()).toContain('The competitor definition')
+    expect(wrapper.find('textarea').exists()).toBe(true)
+    wrapper.unmount()
+    for (const [path, title] of [
+      ['/manage/claude-steps/candidateMerge', 'Tidying candidate names'],
+      ['/manage/claude-steps/termReview', 'Reviewing search terms'],
+    ] as const) {
+      const page = await mountApp(manageApi(), path)
+      expect(page.wrapper.get('h1').text()).toBe(title)
+      page.wrapper.unmount()
+    }
   })
 })

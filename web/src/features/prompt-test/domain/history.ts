@@ -85,6 +85,32 @@ function modelBreaks(runs: readonly PromptRunFigures[]): Break[] {
   return out
 }
 
+/**
+ * A break where the model that read the responses changed from one run to the next: the runs
+ * either side were read another way. Runs whose readings recorded no model draw none.
+ */
+export function readerBreaksOf(runs: readonly PromptRunFigures[]): Break[] {
+  const out: Break[] = []
+  let before: string | undefined
+  for (const r of runs) {
+    if (!r.readingModel) continue
+    if (before && r.readingModel !== before) {
+      out.push({
+        x: r.startedAt,
+        label: `Read by ${r.readingModel}`,
+        note: `${r.readingModel} reads the responses from here, instead of ${before}, so the figures before and after are not read the same way.`,
+      })
+    }
+    before = r.readingModel
+  }
+  return out
+}
+
+/** Every break a chart shows, in time order: where the questions changed, and where the reader did. */
+export function allBreaks(versions: readonly PromptSetVersionInfo[], runs: readonly PromptRunFigures[]): Break[] {
+  return [...breaksOf(versions, runs), ...readerBreaksOf(runs)].sort((a, b) => at(a.x) - at(b.x))
+}
+
 // A refused key is said plainly; any other reason is quoted as the run gave it.
 const why = (failure: string): string => (/\b401\b/.test(failure) ? 'the OpenRouter key was refused' : failure.replace(/\.$/, ''))
 

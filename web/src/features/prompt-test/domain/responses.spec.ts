@@ -225,6 +225,9 @@ describe('one response', () => {
 
   it('says who checked it, or that nobody has', () => {
     expect(checkedBy(named(['Tribelt:tribelt']))).toBe('A model read this response to find the companies it names and to check it against the fact sheet.')
+    expect(checkedBy(promptAnswer({}, [], { readBy: 'Claude Sonnet 5.5' }))).toBe(
+      'Checked by Claude Sonnet 5.5, which read this response to find the companies it names and to check it against the fact sheet.',
+    )
     expect(checkedBy(promptAnswer({ extraction: undefined }))).toBe('No model has checked this response yet.')
     expect(checkedBy(promptAnswer({}, [], { failed: true }))).toBe('No model has checked this response yet.')
   })

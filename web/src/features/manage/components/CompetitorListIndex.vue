@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StepCard from '../../claude-steps/components/StepCard.vue'
 import { computed, ref } from 'vue'
 import { useCompetitorChecks } from '../../competitors/composables/useCompetitorChecks'
 import { useCompetitorDefinition } from '../../competitors/composables/useCompetitorDefinition'
@@ -74,6 +75,8 @@ const checking = computed(() => {
         link="Change the definition"
         :figures="definition ? [{ value: `Version ${String(definition.current.version)}`, label: 'in use' }] : []"
       />
+      <StepCard step-id="candidateMerge" />
+      <StepCard step-id="candidateCheck" />
     </WidgetGrid>
   </ManageLayout>
 </template>

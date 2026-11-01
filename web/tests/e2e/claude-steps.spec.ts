@@ -24,3 +24,23 @@ test('an administrator opens the Claude steps and edits matching products withou
   await page.getByRole('button', { name: 'Undo the changes' }).click()
   await expect(page.getByRole('button', { name: 'Save as a new version' })).toBeDisabled()
 })
+
+test('reading responses shows its instructions set in the code, with only the model to choose', async ({ page }) => {
+  await page.goto('/manage/prompt-test')
+  await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: 'Reading responses' }).click()
+  await expect(page).toHaveURL('/manage/claude-steps/reading')
+  await expect(page.getByRole('heading', { level: 1, name: 'Reading responses' })).toBeVisible()
+  await expect(page.getByText('Set in the code')).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Instructions' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Save the model' })).toBeDisabled()
+  await expectAccessible(page)
+  for (const [step, title] of [
+    ['candidateMerge', 'Tidying candidate names'],
+    ['candidateCheck', 'Checking companies'],
+    ['termReview', 'Reviewing search terms'],
+  ] as const) {
+    await page.goto(`/manage/claude-steps/${step}`)
+    await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+    await expectAccessible(page)
+  }
+})

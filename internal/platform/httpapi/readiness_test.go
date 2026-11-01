@@ -131,12 +131,18 @@ func TestAScanShowsItsReadiness(t *testing.T) {
 
 func TestReadinessFilesAreForEveryoneSignedIn(t *testing.T) {
 	id := uuid.New()
-	a := &analyses{rawFiles: map[uuid.UUID]domain.RawFiles{id: {Robots: "User-agent: GPTBot\nDisallow: /", LLMsTruncated: true}}}
+	a := &analyses{rawFiles: map[uuid.UUID]domain.RawFiles{id: {
+		Robots: "User-agent: GPTBot\nDisallow: /", LLMsTruncated: true,
+		SitemapURL: "https://www.tribelt.nl/sitemap.xml", Sitemap: "<urlset/>", SitemapTruncated: true,
+	}}}
 	srv := serve(t, a)
 	path := "/api/v1/analyses/" + id.String() + "/readiness-files"
 	r := callAs(t, srv, http.MethodGet, path, "", "tester")
 	if r.code != http.StatusOK || r.body["robotsTxt"] != "User-agent: GPTBot\nDisallow: /" || r.body["llmsTruncated"] != true || r.body["llmsTxt"] != "" {
 		t.Fatalf("files = %d %v", r.code, r.body)
+	}
+	if r.body["sitemapUrl"] != "https://www.tribelt.nl/sitemap.xml" || r.body["sitemapTxt"] != "<urlset/>" || r.body["sitemapTruncated"] != true {
+		t.Errorf("sitemap = %v", r.body)
 	}
 	if r := callAs(t, srv, http.MethodGet, "/api/v1/analyses/"+uuid.NewString()+"/readiness-files", "", "admin"); r.code != http.StatusNotFound {
 		t.Errorf("files of a scan without readiness: %d", r.code)
@@ -158,5 +164,38 @@ func TestCompareShowsReadinessChanges(t *testing.T) {
 	a.readinessChanges = nil
 	if r := call(t, srv, http.MethodGet, "/api/v1/competitors/twentebelt/scans/compare", "", true); r.body["readiness"] != nil {
 		t.Errorf("a comparison without readiness lists %v", r.body["readiness"])
+	}
+}
+
+func (a *analyses) TermPages(_ context.Context, term, language string) ([]domain.CompanyTermPages, error) {
+	a.termAsked = term + "/" + language
+	return a.termPages, a.termErr
+}
+
+func TestTermPagesAreForEveryoneSignedIn(t *testing.T) {
+	a := &analyses{termPages: []domain.CompanyTermPages{
+		{Company: domain.Company{ID: "tribelt", Name: "Tribelt B.V.", Role: domain.RoleTribelt}, Pages: []domain.TermPage{{URL: "https://www.tribelt.nl/en", Title: "Belts"}}},
+		{Company: domain.Company{ID: "twentebelt", Name: "Twentebelt", Role: domain.RoleCompetitor}, Pages: []domain.TermPage{}},
+	}}
+	srv := serve(t, a)
+	r := callAs(t, srv, http.MethodGet, "/api/v1/term-pages?term=eyelink%20belt&language=en", "", "tester")
+	items, _ := r.body["items"].([]any)
+	if r.code != http.StatusOK || len(items) != 2 || a.termAsked != "eyelink belt/en" {
+		t.Fatalf("term pages = %d %v (asked %q)", r.code, r.body, a.termAsked)
+	}
+	first := items[0].(map[string]any)
+	pages := first["pages"].([]any)
+	if first["competitorId"] != "tribelt" || first["role"] != "tribelt" || first["name"] != "Tribelt B.V." || pages[0].(map[string]any)["url"] != "https://www.tribelt.nl/en" {
+		t.Errorf("first = %v", first)
+	}
+	if second := items[1].(map[string]any); len(second["pages"].([]any)) != 0 {
+		t.Errorf("a company without recorded pages = %v", second)
+	}
+	if r := callAs(t, srv, http.MethodGet, "/api/v1/term-pages?term=x&language=xx", "", "tester"); r.code != http.StatusBadRequest {
+		t.Errorf("an unknown language: %d", r.code)
+	}
+	a.termErr = errors.New("down")
+	if r := callAs(t, srv, http.MethodGet, "/api/v1/term-pages?term=x&language=en", "", "tester"); r.code != http.StatusInternalServerError {
+		t.Errorf("failing term pages: %d", r.code)
 	}
 }

@@ -117,6 +117,10 @@ type GetStandingsRes interface {
 	getStandingsRes()
 }
 
+type GetTermPagesRes interface {
+	getTermPagesRes()
+}
+
 type ListAnalysesRes interface {
 	listAnalysesRes()
 }

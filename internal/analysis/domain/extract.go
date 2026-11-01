@@ -33,6 +33,8 @@ type PageSummary struct {
 	WordCount   int
 	// Family is the Tribelt family the page is about, or empty when that is not clear.
 	Family string
+	// Text is the page's visible text, kept only by a scan of tribelt.nl (KeptPageText).
+	Text string
 }
 
 // Keyword is a phrase about metal belts that a site emphasises, scored by where and how often it

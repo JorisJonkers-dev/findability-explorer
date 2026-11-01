@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorCandidateData, AddCompetitorCandidateErrors, AddCompetitorCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddCompetitorsData, AddCompetitorsErrors, AddCompetitorsResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DecideCompetitorCandidatesData, DecideCompetitorCandidatesErrors, DecideCompetitorCandidatesResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, DismissCompetitorCandidateData, DismissCompetitorCandidateErrors, DismissCompetitorCandidateResponses, GetActivityData, GetActivityErrors, GetActivityResponses, GetAiReadinessData, GetAiReadinessErrors, GetAiReadinessResponses, GetAiSearchSummaryData, GetAiSearchSummaryErrors, GetAiSearchSummaryResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmKeyUsageData, GetLlmKeyUsageErrors, GetLlmKeyUsageResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, GetOverviewData, GetOverviewErrors, GetOverviewResponses, GetPlanData, GetPlanErrors, GetPlanResponses, GetProductsData, GetProductsErrors, GetProductsResponses, GetPromptRetryPlanData, GetPromptRetryPlanErrors, GetPromptRetryPlanResponses, GetPromptTestHistoryData, GetPromptTestHistoryErrors, GetPromptTestHistoryResponses, GetPromptTestResultsData, GetPromptTestResultsErrors, GetPromptTestResultsResponses, GetPromptTestSettingsData, GetPromptTestSettingsErrors, GetPromptTestSettingsResponses, GetReadinessFilesData, GetReadinessFilesErrors, GetReadinessFilesResponses, GetStandingsData, GetStandingsErrors, GetStandingsResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorCandidatesData, ListCompetitorCandidatesErrors, ListCompetitorCandidatesResponses, ListCompetitorChecksData, ListCompetitorChecksErrors, ListCompetitorChecksResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListPromptAnswersData, ListPromptAnswersErrors, ListPromptAnswersResponses, ListPromptSetsData, ListPromptSetsErrors, ListPromptSetsResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, RemoveQueuedAnalysesData, RemoveQueuedAnalysesErrors, RemoveQueuedAnalysesResponses, RereadPromptRunData, RereadPromptRunErrors, RereadPromptRunResponses, RetryPromptRunData, RetryPromptRunErrors, RetryPromptRunResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, SetPlanTargetsData, SetPlanTargetsErrors, SetPlanTargetsResponses, SetTermReviewData, SetTermReviewErrors, SetTermReviewResponses, SplitCompetitorCandidateData, SplitCompetitorCandidateErrors, SplitCompetitorCandidateResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartCandidateReviewData, StartCandidateReviewErrors, StartCandidateReviewResponses, StartCompetitorCheckData, StartCompetitorCheckErrors, StartCompetitorCheckResponses, StartPromptRunData, StartPromptRunErrors, StartPromptRunResponses, StartReadinessCheckData, StartReadinessCheckErrors, StartReadinessCheckResponses, StartRescansData, StartRescansErrors, StartRescansResponses, StartTermReviewData, StartTermReviewErrors, StartTermReviewResponses, StopAnalysisData, StopAnalysisErrors, StopAnalysisResponses, StopCandidateReviewData, StopCandidateReviewErrors, StopCandidateReviewResponses, StopCompetitorCheckData, StopCompetitorCheckErrors, StopCompetitorCheckResponses, StopPromptRunData, StopPromptRunErrors, StopPromptRunResponses, StopReadinessCheckData, StopReadinessCheckErrors, StopReadinessCheckResponses, StopRescanData, StopRescanErrors, StopRescanResponses, StopTermReviewData, StopTermReviewErrors, StopTermReviewResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, TickImprovementData, TickImprovementErrors, TickImprovementResponses, UndoCompetitorCandidateData, UndoCompetitorCandidateErrors, UndoCompetitorCandidateResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses, UpdateLlmBudgetData, UpdateLlmBudgetErrors, UpdateLlmBudgetResponses, UpdatePromptTestSettingsData, UpdatePromptTestSettingsErrors, UpdatePromptTestSettingsResponses } from './types.gen';
-import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorCandidateBody, zAddCompetitorCandidatePath, zAddCompetitorCandidateResponse, zAddCompetitorResponse, zAddCompetitorsBody, zAddCompetitorsResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDecideCompetitorCandidatesBody, zDecideCompetitorCandidatesResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zDismissCompetitorCandidatePath, zDismissCompetitorCandidateResponse, zGetActivityResponse, zGetAiReadinessResponse, zGetAiSearchSummaryResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmKeyUsagePath, zGetLlmKeyUsageResponse, zGetLlmSettingsResponse, zGetMeResponse, zGetOverviewResponse, zGetPlanResponse, zGetProductsResponse, zGetPromptRetryPlanPath, zGetPromptRetryPlanResponse, zGetPromptTestHistoryResponse, zGetPromptTestResultsResponse, zGetPromptTestSettingsResponse, zGetReadinessFilesPath, zGetReadinessFilesResponse, zGetStandingsResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorCandidatesQuery, zListCompetitorCandidatesResponse, zListCompetitorChecksResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListPromptAnswersPath, zListPromptAnswersQuery, zListPromptAnswersResponse, zListPromptSetsResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zRemoveQueuedAnalysesResponse, zRereadPromptRunBody, zRereadPromptRunPath, zRereadPromptRunResponse, zRetryPromptRunBody, zRetryPromptRunPath, zRetryPromptRunResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zSetPlanTargetsBody, zSetPlanTargetsResponse, zSetTermReviewBody, zSetTermReviewResponse, zSplitCompetitorCandidatePath, zSplitCompetitorCandidateResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartCandidateReviewResponse, zStartCompetitorCheckResponse, zStartPromptRunResponse, zStartReadinessCheckResponse, zStartRescansBody, zStartRescansResponse, zStartTermReviewResponse, zStopAnalysisPath, zStopAnalysisResponse, zStopCandidateReviewResponse, zStopCompetitorCheckResponse, zStopPromptRunPath, zStopPromptRunResponse, zStopReadinessCheckResponse, zStopRescanResponse, zStopTermReviewResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zTickImprovementBody, zTickImprovementPath, zTickImprovementResponse, zUndoCompetitorCandidatePath, zUndoCompetitorCandidateResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse, zUpdateLlmBudgetBody, zUpdateLlmBudgetResponse, zUpdatePromptTestSettingsBody, zUpdatePromptTestSettingsResponse } from './zod.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorCandidateData, AddCompetitorCandidateErrors, AddCompetitorCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddCompetitorsData, AddCompetitorsErrors, AddCompetitorsResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DecideCompetitorCandidatesData, DecideCompetitorCandidatesErrors, DecideCompetitorCandidatesResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, DismissCompetitorCandidateData, DismissCompetitorCandidateErrors, DismissCompetitorCandidateResponses, GetAiReadinessData, GetAiReadinessErrors, GetAiReadinessResponses, GetAiSearchSummaryData, GetAiSearchSummaryErrors, GetAiSearchSummaryResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmKeyUsageData, GetLlmKeyUsageErrors, GetLlmKeyUsageResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, GetOverviewData, GetOverviewErrors, GetOverviewResponses, GetPlanData, GetPlanErrors, GetPlanResponses, GetProductsData, GetProductsErrors, GetProductsResponses, GetPromptRetryPlanData, GetPromptRetryPlanErrors, GetPromptRetryPlanResponses, GetPromptTestHistoryData, GetPromptTestHistoryErrors, GetPromptTestHistoryResponses, GetPromptTestResultsData, GetPromptTestResultsErrors, GetPromptTestResultsResponses, GetPromptTestSettingsData, GetPromptTestSettingsErrors, GetPromptTestSettingsResponses, GetReadinessFilesData, GetReadinessFilesErrors, GetReadinessFilesResponses, GetStandingsData, GetStandingsErrors, GetStandingsResponses, GetTermPagesData, GetTermPagesErrors, GetTermPagesResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorCandidatesData, ListCompetitorCandidatesErrors, ListCompetitorCandidatesResponses, ListCompetitorChecksData, ListCompetitorChecksErrors, ListCompetitorChecksResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListPromptAnswersData, ListPromptAnswersErrors, ListPromptAnswersResponses, ListPromptSetsData, ListPromptSetsErrors, ListPromptSetsResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, RemoveQueuedAnalysesData, RemoveQueuedAnalysesErrors, RemoveQueuedAnalysesResponses, RereadPromptRunData, RereadPromptRunErrors, RereadPromptRunResponses, RetryPromptRunData, RetryPromptRunErrors, RetryPromptRunResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, SetPlanTargetsData, SetPlanTargetsErrors, SetPlanTargetsResponses, SplitCompetitorCandidateData, SplitCompetitorCandidateErrors, SplitCompetitorCandidateResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartCandidateReviewData, StartCandidateReviewErrors, StartCandidateReviewResponses, StartCompetitorCheckData, StartCompetitorCheckErrors, StartCompetitorCheckResponses, StartPromptRunData, StartPromptRunErrors, StartPromptRunResponses, StartReadinessCheckData, StartReadinessCheckErrors, StartReadinessCheckResponses, StartRescansData, StartRescansErrors, StartRescansResponses, StartTermReviewData, StartTermReviewErrors, StartTermReviewResponses, StopAnalysisData, StopAnalysisErrors, StopAnalysisResponses, StopPromptRunData, StopPromptRunErrors, StopPromptRunResponses, StopReadinessCheckData, StopReadinessCheckErrors, StopReadinessCheckResponses, StopRescanData, StopRescanErrors, StopRescanResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, TickImprovementData, TickImprovementErrors, TickImprovementResponses, UndoCompetitorCandidateData, UndoCompetitorCandidateErrors, UndoCompetitorCandidateResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses, UpdateLlmBudgetData, UpdateLlmBudgetErrors, UpdateLlmBudgetResponses, UpdatePromptTestSettingsData, UpdatePromptTestSettingsErrors, UpdatePromptTestSettingsResponses } from './types.gen';
+import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorCandidateBody, zAddCompetitorCandidatePath, zAddCompetitorCandidateResponse, zAddCompetitorResponse, zAddCompetitorsBody, zAddCompetitorsResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDecideCompetitorCandidatesBody, zDecideCompetitorCandidatesResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zDismissCompetitorCandidatePath, zDismissCompetitorCandidateResponse, zGetAiReadinessResponse, zGetAiSearchSummaryResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmKeyUsagePath, zGetLlmKeyUsageResponse, zGetLlmSettingsResponse, zGetMeResponse, zGetOverviewResponse, zGetPlanResponse, zGetProductsResponse, zGetPromptRetryPlanPath, zGetPromptRetryPlanResponse, zGetPromptTestHistoryResponse, zGetPromptTestResultsResponse, zGetPromptTestSettingsResponse, zGetReadinessFilesPath, zGetReadinessFilesResponse, zGetStandingsResponse, zGetTermPagesQuery, zGetTermPagesResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorCandidatesQuery, zListCompetitorCandidatesResponse, zListCompetitorChecksResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListPromptAnswersPath, zListPromptAnswersQuery, zListPromptAnswersResponse, zListPromptSetsResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zRemoveQueuedAnalysesResponse, zRereadPromptRunBody, zRereadPromptRunPath, zRereadPromptRunResponse, zRetryPromptRunBody, zRetryPromptRunPath, zRetryPromptRunResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zSetPlanTargetsBody, zSetPlanTargetsResponse, zSplitCompetitorCandidatePath, zSplitCompetitorCandidateResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartCandidateReviewResponse, zStartCompetitorCheckResponse, zStartPromptRunResponse, zStartReadinessCheckResponse, zStartRescansBody, zStartRescansResponse, zStartTermReviewResponse, zStopAnalysisPath, zStopAnalysisResponse, zStopPromptRunPath, zStopPromptRunResponse, zStopReadinessCheckResponse, zStopRescanResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zTickImprovementBody, zTickImprovementPath, zTickImprovementResponse, zUndoCompetitorCandidatePath, zUndoCompetitorCandidateResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse, zUpdateLlmBudgetBody, zUpdateLlmBudgetResponse, zUpdatePromptTestSettingsBody, zUpdatePromptTestSettingsResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -194,6 +194,27 @@ export const searchTerms = <ThrowOnError extends boolean = false>(options?: Opti
             type: 'apiKey'
         }],
     url: '/api/v1/terms',
+    ...options
+});
+
+/**
+ * Get the pages that use a search term
+ *
+ * Returns, for each company whose newest finished scan found the term, the pages of that scan that use it, at most ten each. The term matches without regard to case.
+ */
+export const getTermPages = <ThrowOnError extends boolean = false>(options: Options<GetTermPagesData, ThrowOnError>): RequestResult<GetTermPagesResponses, GetTermPagesErrors, ThrowOnError> => (options.client ?? client).get<GetTermPagesResponses, GetTermPagesErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: zGetTermPagesQuery
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetTermPagesResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/term-pages',
     ...options
 });
 
@@ -529,27 +550,6 @@ export const stopAnalysis = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
- * What runs, what ended, and this month's spending
- *
- * Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness checks, the term review, reviews of the competitor candidates, checks of the competitor list, and Recommendation runs - running now, newest first, and the last 20 ended, the last ended first, each with how it ended, what it did, and what it cost on each key. A running piece is stopped by its own operation - stopPromptRun and stopAnalysis take its id, stopRescan, stopReadinessCheck, stopTermReview, stopCandidateReview and stopCompetitorCheck none. With this month's spending by kind of work and the key that paid; the Anthropic key's is priced at the model's list price from the stored tokens.
- */
-export const getActivity = <ThrowOnError extends boolean = false>(options?: Options<GetActivityData, ThrowOnError>): RequestResult<GetActivityResponses, GetActivityErrors, ThrowOnError> => (options?.client ?? client).get<GetActivityResponses, GetActivityErrors, ThrowOnError>({
-    requestValidator: async (data) => await z.object({
-        body: z.never().optional(),
-        path: z.never().optional(),
-        query: z.never().optional()
-    }).parseAsync(data),
-    responseValidator: async (data) => await zGetActivityResponse.parseAsync(data),
-    security: [{
-            in: 'cookie',
-            name: 'fe_session',
-            type: 'apiKey'
-        }],
-    url: '/api/v1/admin/activity',
-    ...options
-});
-
-/**
  * List the search terms scans found outside the map
  *
  * Administrators only. Every phrase a finished scan found that the terminology map did not hold in its language, across companies, with its evidence and the classifier's suggestion; filtered by review status, most companies and highest score first. The same phrase in another language is another candidate.
@@ -588,52 +588,6 @@ export const startTermReview = <ThrowOnError extends boolean = false>(options?: 
             type: 'apiKey'
         }],
     url: '/api/v1/admin/term-candidates/review',
-    ...options
-});
-
-/**
- * Switch the term review on or off
- *
- * Administrators only. On, the language model reviews the waiting candidates by itself every ten minutes; off, it reviews only when an administrator asks (startTermReview). A review that runs goes on until it ends or is stopped. The review is on until it is first switched off. Records who switched it. Returns the review's state.
- */
-export const setTermReview = <ThrowOnError extends boolean = false>(options: Options<SetTermReviewData, ThrowOnError>): RequestResult<SetTermReviewResponses, SetTermReviewErrors, ThrowOnError> => (options.client ?? client).put<SetTermReviewResponses, SetTermReviewErrors, ThrowOnError>({
-    requestValidator: async (data) => await z.object({
-        body: zSetTermReviewBody,
-        path: z.never().optional(),
-        query: z.never().optional()
-    }).parseAsync(data),
-    responseValidator: async (data) => await zSetTermReviewResponse.parseAsync(data),
-    security: [{
-            in: 'cookie',
-            name: 'fe_session',
-            type: 'apiKey'
-        }],
-    url: '/api/v1/admin/term-candidates/review/switch',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Stop the term review
- *
- * Administrators only. Stops the review of the waiting candidates that runs, after the batch it asks about, which it keeps, as it keeps every decision made before; a review asked for that has not started does not start. The review's state says it was stopped by hand (problem stopped). Whether the review is on does not change. 404 when no review runs or is asked for.
- */
-export const stopTermReview = <ThrowOnError extends boolean = false>(options?: Options<StopTermReviewData, ThrowOnError>): RequestResult<StopTermReviewResponses, StopTermReviewErrors, ThrowOnError> => (options?.client ?? client).post<StopTermReviewResponses, StopTermReviewErrors, ThrowOnError>({
-    requestValidator: async (data) => await z.object({
-        body: z.never().optional(),
-        path: z.never().optional(),
-        query: z.never().optional()
-    }).parseAsync(data),
-    responseValidator: async (data) => await zStopTermReviewResponse.parseAsync(data),
-    security: [{
-            in: 'cookie',
-            name: 'fe_session',
-            type: 'apiKey'
-        }],
-    url: '/api/v1/admin/term-candidates/review/stop',
     ...options
 });
 
@@ -1078,27 +1032,6 @@ export const startCandidateReview = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * Stop Claude Haiku's review of the competitor candidates
- *
- * Administrators only. Stops the review of the competitor candidates that runs, after the step it is on (the merge, or a batch of checks), which it keeps, as it keeps every decision made before. The review's state says it was stopped by hand (problem stopped). 404 when no review runs.
- */
-export const stopCandidateReview = <ThrowOnError extends boolean = false>(options?: Options<StopCandidateReviewData, ThrowOnError>): RequestResult<StopCandidateReviewResponses, StopCandidateReviewErrors, ThrowOnError> => (options?.client ?? client).post<StopCandidateReviewResponses, StopCandidateReviewErrors, ThrowOnError>({
-    requestValidator: async (data) => await z.object({
-        body: z.never().optional(),
-        path: z.never().optional(),
-        query: z.never().optional()
-    }).parseAsync(data),
-    responseValidator: async (data) => await zStopCandidateReviewResponse.parseAsync(data),
-    security: [{
-            in: 'cookie',
-            name: 'fe_session',
-            type: 'apiKey'
-        }],
-    url: '/api/v1/admin/competitor-candidates/review/stop',
-    ...options
-});
-
-/**
  * List Claude Haiku's checks of the companies on the competitor list
  *
  * Administrators only. Claude Haiku's check of each competitor on the list against Tribelt's target market, as for a candidate. A check made before the current version of the check is left out for a company still on the list and not kept, since the next check makes it again. With how many companies wait for a check, and whether a check runs.
@@ -1137,27 +1070,6 @@ export const startCompetitorCheck = <ThrowOnError extends boolean = false>(optio
             type: 'apiKey'
         }],
     url: '/api/v1/admin/competitor-checks',
-    ...options
-});
-
-/**
- * Stop Claude Haiku's check of the competitor list
- *
- * Administrators only. Stops the check of the companies on the competitor list that runs, after the batch it is on, which it keeps, as it keeps every company archived before. The check's state says it was stopped by hand (problem stopped). 404 when no check runs.
- */
-export const stopCompetitorCheck = <ThrowOnError extends boolean = false>(options?: Options<StopCompetitorCheckData, ThrowOnError>): RequestResult<StopCompetitorCheckResponses, StopCompetitorCheckErrors, ThrowOnError> => (options?.client ?? client).post<StopCompetitorCheckResponses, StopCompetitorCheckErrors, ThrowOnError>({
-    requestValidator: async (data) => await z.object({
-        body: z.never().optional(),
-        path: z.never().optional(),
-        query: z.never().optional()
-    }).parseAsync(data),
-    responseValidator: async (data) => await zStopCompetitorCheckResponse.parseAsync(data),
-    security: [{
-            in: 'cookie',
-            name: 'fe_session',
-            type: 'apiKey'
-        }],
-    url: '/api/v1/admin/competitor-checks/stop',
     ...options
 });
 

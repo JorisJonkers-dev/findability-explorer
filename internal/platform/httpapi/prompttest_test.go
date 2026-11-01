@@ -167,7 +167,7 @@ func (p *promptTests) History(context.Context) (app.HistoryView, error) {
 		Runs: []domain.RunFigures{
 			{RunID: partialID, StartedAt: answered.Add(-48 * time.Hour), Version: 1, Tasks: 1260, Answered: 62, Read: 47, Partial: true, All: share(0.4), Dutch: share(0.4)},
 			{
-				RunID: runID, StartedAt: answered, Version: 2, Tasks: 200, Answered: 196, Read: 194,
+				RunID: runID, StartedAt: answered, Version: 2, Tasks: 200, Answered: 196, Read: 194, Models: []string{"openai/gpt-oss-20b"},
 				All: share(0.25), Dutch: share(0.3), German: share(0.2), English: share(0.1), Twente: share(0.5), Citation: share(0.35),
 			},
 		},
@@ -691,6 +691,9 @@ func TestEverySignedInAccountReadsThePromptTestHistory(t *testing.T) {
 		t.Errorf("version 2 = %v", v)
 	}
 	partial, full := runs[0].(map[string]any), runs[1].(map[string]any)
+	if full["models"].([]any)[0] != "openai/gpt-oss-20b" || partial["models"] != nil {
+		t.Errorf("models = %v, %v", full["models"], partial["models"])
+	}
 	if partial["runId"] != partialID.String() || partial["partial"] != true || partial["promptSetVersion"].(float64) != 1 || partial["tasks"].(float64) != 1260 ||
 		partial["answered"].(float64) != 62 || partial["read"].(float64) != 47 || partial["failure"] != "OpenRouter answered 401: User not found." ||
 		partial["all"].(float64) != 0.4 || partial["dutch"].(float64) != 0.4 {

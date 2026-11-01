@@ -34,6 +34,8 @@ type RunFigures struct {
 	// Read is how many responses were read and count in the shares.
 	Read    int
 	Partial bool
+	// Models are the models the run asked, by OpenRouter id: the charts break where they changed.
+	Models []string
 
 	All, Dutch, German, English, Twente, Citation *float64
 }
@@ -70,7 +72,7 @@ func figuresOf(r RunFigureInput) (RunFigures, bool) {
 		RunID: r.Run.ID, StartedAt: r.Run.StartedAt, Version: r.Run.PromptSetVersion, Tasks: r.Run.Tasks,
 		Answered: r.Progress.Answered, Read: all.of, Partial: r.Progress.Answered*2 < r.Run.Tasks,
 		All: all.value(), Dutch: languages["nl"].value(), German: languages["de"].value(), English: languages["en"].value(),
-		Twente: twente.value(), Citation: web.value(),
+		Twente: twente.value(), Citation: web.value(), Models: modelsOf(r.Run.Models),
 	}, true
 }
 
@@ -103,4 +105,13 @@ func CommonestFailure(answers []Answer) string {
 		}
 	}
 	return best
+}
+
+// modelsOf are the model ids of a run's choices.
+func modelsOf(choices []ModelChoice) []string {
+	out := make([]string, 0, len(choices))
+	for _, c := range choices {
+		out = append(out, c.Model)
+	}
+	return out
 }

@@ -1709,6 +1709,7 @@ export const zPromptSetVersionInfo = z.object({
  */
 export const zPromptRunFigures = z.object({
     runId: z.uuid().max(36),
+    models: z.array(z.string().max(200)).max(20).optional(),
     startedAt: z.iso.datetime({ offset: true }).max(64),
     promptSetVersion: z.int().gte(1).lte(100000),
     tasks: z.int().gte(0).lte(100000),

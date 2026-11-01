@@ -25,6 +25,10 @@ type UseCases interface {
 	Plan(ctx context.Context) (app.Plan, error)
 	Tick(ctx context.Context, actor, id string, done bool) error
 	SetTargets(ctx context.Context, actor string, targets map[domain.Target]float64) error
+	RecommendationRuns(ctx context.Context) (app.RecRuns, error)
+	StartRecommendationRun(ctx context.Context, user string) error
+	StopRecommendationRun(ctx context.Context) error
+	EditRecommendation(ctx context.Context, id string, e domain.Edit) error
 }
 
 // Handler implements the insight operations. Business rules stay in the use cases.
@@ -240,6 +244,28 @@ func (h *Handler) TickImprovement(ctx context.Context, req *oas.ImprovementTick,
 	return h.plan(ctx)
 }
 
+// EditRecommendation implements editRecommendation.
+func (h *Handler) EditRecommendation(ctx context.Context, req *oas.RecommendationEdit, params oas.EditRecommendationParams) (oas.EditRecommendationRes, error) {
+	err := h.uc.EditRecommendation(ctx, params.RecommendationId, domain.Edit{
+		Title: req.Title, Where: req.Where.Or(""), Why: req.Why, Steps: req.Steps, DoneWhen: req.DoneWhen, Benefit: int(req.Benefit), Effort: int(req.Effort),
+	})
+	switch {
+	case errors.Is(err, domain.ErrUnknownImprovement):
+		return &oas.EditRecommendationNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No recommendation has this id.")}, nil
+	case errors.Is(err, domain.ErrNotEditable):
+		return &oas.EditRecommendationUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, "Only a recommendation a Recommendation run wrote can be edited."),
+		}, nil
+	case app.IsInputError(err):
+		return &oas.EditRecommendationUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, "A title has 1 to 200 characters, and each score is from 1 to 5."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return h.plan(ctx)
+}
+
 // SetPlanTargets implements setPlanTargets.
 func (h *Handler) SetPlanTargets(ctx context.Context, req *oas.PlanTargetsChange) (oas.SetPlanTargetsRes, error) {
 	targets := make(map[domain.Target]float64, len(req.Targets))
@@ -289,6 +315,10 @@ func toImprovements(items []domain.PlanItem) []oas.PlanImprovement {
 		o := oas.PlanImprovement{
 			ID: it.ID, Title: it.Title, Moves: it.Moves, Measure: oas.StandingMeasure(it.Measure), Benefit: int32(it.Benefit), Effort: int32(it.Effort), Auto: it.Auto, Done: it.Done, //nolint:gosec // a score from one to five
 			Why: it.Why, Steps: it.Steps, DoneWhen: it.DoneWhen, Parts: make([]oas.PlanPart, 0, len(it.Parts)),
+			Kind: oas.RecommendationKind(it.Kind()), Generated: it.Written != nil, New: it.New,
+		}
+		if it.Written != nil {
+			withWritten(&o, *it.Written)
 		}
 		for _, p := range it.Parts {
 			o.Parts = append(o.Parts, oas.PlanPart{Name: p.Name, Present: p.Present})
@@ -317,4 +347,22 @@ func toSource(s domain.TermsSource) oas.OptTermsSource {
 
 func toLeader(l domain.Leader) oas.MeasureLeader {
 	return oas.MeasureLeader{CompetitorId: oas.CompetitorId(l.CompanyID), Name: l.Name, Value: l.Value}
+}
+
+// withWritten adds what a Recommendation run wrote to o: where it goes, why a score moved, and the
+// facts behind it.
+func withWritten(o *oas.PlanImprovement, w domain.Recommendation) {
+	if w.Where != "" {
+		o.Where = oas.NewOptString(w.Where)
+	}
+	if w.WhereNote != "" {
+		o.WhereNote = oas.NewOptString(w.WhereNote)
+	}
+	if w.ScoreReason != "" {
+		o.ScoreReason = oas.NewOptString(w.ScoreReason)
+	}
+	if !w.EditedAt.IsZero() {
+		o.EditedAt = oas.NewOptDateTime(w.EditedAt)
+	}
+	o.Facts = w.Gap.Specifics
 }

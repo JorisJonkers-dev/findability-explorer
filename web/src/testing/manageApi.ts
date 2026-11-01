@@ -23,6 +23,7 @@ export function manageApi(extra: Record<string, Handler> = {}, companies: Compet
     'GET /api/v1/admin/claude-steps/candidateMerge': () => json(originalStep('candidateMerge', 'Tidying candidate names')),
     'GET /api/v1/admin/claude-steps/candidateCheck': () => json(originalStep('candidateCheck', 'Checking companies')),
     'GET /api/v1/admin/claude-steps/termReview': () => json(originalStep('termReview', 'Reviewing search terms')),
+    'GET /api/v1/admin/claude-steps/recommendations': () => json(originalStep('recommendations', 'Writing recommendations')),
     'GET /api/v1/admin/claude-steps/matching': () =>
       json(claudeStep({ current: stepVersion({ number: 1, model: 'claude-haiku-5-5', modelName: 'Claude Haiku 5.5', createdBy: 'the tool' }), jobCostUsd: 0.0044 })),
     ...extra,

@@ -65,4 +65,6 @@ SELECT
     coalesce((SELECT sum(input_tokens) FROM term_review_usage WHERE used_at >= @since), 0)::bigint AS term_review_input,
     coalesce((SELECT sum(output_tokens) FROM term_review_usage WHERE used_at >= @since), 0)::bigint AS term_review_output,
     coalesce((SELECT sum(input_tokens) FROM prompt_review_usage WHERE used_at >= @since), 0)::bigint AS candidate_check_input,
-    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage WHERE used_at >= @since), 0)::bigint AS candidate_check_output;
+    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage WHERE used_at >= @since), 0)::bigint AS candidate_check_output,
+    coalesce((SELECT sum(input_tokens) FROM recommendation_runs WHERE started_at >= @since), 0)::bigint AS recommendation_input,
+    coalesce((SELECT sum(output_tokens) FROM recommendation_runs WHERE started_at >= @since), 0)::bigint AS recommendation_output;

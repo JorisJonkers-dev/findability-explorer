@@ -63,4 +63,31 @@ describe('usePlan', () => {
     await flushPromises()
     expect(state.saveError.value).toBe('Out of range.')
   })
+
+  it('stores an edit of a recommendation a run wrote, and says when it is refused', async () => {
+    const sent: unknown[] = []
+    let refuse = false
+    const { state } = mountComposable(
+      usePlan,
+      routes({
+        'GET /api/v1/plan': () => json(plan(false)),
+        'PUT /api/v1/admin/recommendations/g1': async (r) => {
+          sent.push(await r.json())
+          return refuse ? problem(422, 'Unprocessable', 'A title has 1 to 200 characters, and each score is from 1 to 5.') : json(plan(true))
+        },
+      }),
+    )
+    await flushPromises()
+    const done: string[] = []
+    state.edit('g1', { title: 'New', why: '', steps: [], doneWhen: '', benefit: 3, effort: 2 }, () => done.push('saved'))
+    expect(state.isSaving.value).toBe(true)
+    await flushPromises()
+    expect(sent).toEqual([{ title: 'New', why: '', steps: [], doneWhen: '', benefit: 3, effort: 2 }])
+    expect(done).toEqual(['saved'])
+    expect(state.plan.value?.improvements[0]?.done).toBe(true)
+    refuse = true
+    state.edit('g1', { title: 'New', why: '', steps: [], doneWhen: '', benefit: 3, effort: 2 })
+    await flushPromises()
+    expect(state.saveError.value).toBe('A title has 1 to 200 characters, and each score is from 1 to 5.')
+  })
 })

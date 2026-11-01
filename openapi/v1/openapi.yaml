@@ -91,8 +91,8 @@ paths:
       summary: Tick an improvement off, or undo the tick
       description: >-
         Administrators only. Marks an improvement no scan can check as done, recording who and
-        when, or as not done again. 404 for an unknown improvement; 422 for one a scan of
-        tribelt.nl checks.
+        when, or as not done again; a recommendation a run wrote too, when no rule decides it (a fact
+        sheet correction). 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
       tags: [admin]
       parameters:
         - name: improvementId
@@ -128,6 +128,121 @@ paths:
         "404":
           $ref: "#/components/responses/Problem"
         "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/recommendations/{recommendationId}:
+    put:
+      operationId: editRecommendation
+      summary: Edit a recommendation a Recommendation run wrote
+      description: >-
+        Administrators only. Stores the wording and scores of a recommendation a Recommendation run
+        wrote, and when it was edited; an edited one is kept when the next run replaces the others.
+        A blank page leaves it for the web agency to place. 404 for an unknown recommendation; 422
+        for one written by hand, which stays in code, or for an edit out of bounds.
+      tags: [admin]
+      parameters:
+        - name: recommendationId
+          in: path
+          required: true
+          description: The recommendation's id.
+          schema:
+            type: string
+            maxLength: 60
+            pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      requestBody:
+        required: true
+        description: The wording and scores.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendationEdit"
+      responses:
+        "200":
+          description: The plan, with the edit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/recommendation-runs:
+    get:
+      operationId: getRecommendationRuns
+      summary: The Recommendation run, what starting one would do, and the past runs
+      description: >-
+        Administrators only. Whether a Recommendation run runs; what a new one would read (the
+        newest Prompt run, the tribelt.nl scan, the search term list), how many gaps its rules find,
+        how many open recommendations it would replace, whether tribelt.nl was last scanned before
+        the newest Prompt run, and its estimate on the Anthropic key; and the last 20 runs, each
+        with what it added, replaced and kept.
+      tags: [admin]
+      responses:
+        "200":
+          description: The Recommendation runs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationRuns"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: startRecommendationRun
+      summary: Start a Recommendation run
+      description: >-
+        Administrators only. In the background, the rules find the gaps from the newest Prompt run,
+        each company's newest scan and the search term list, and the Claude step writing
+        recommendations places and words them from tribelt.nl's page text, a batch at a time. A run
+        that ends replaces the open recommendations an earlier run wrote, and keeps the done and
+        edited ones and those written by hand; one stopped, cut short by the budget, or failed
+        changes nothing. 409 when one runs already or no Anthropic key is set up.
+      tags: [admin]
+      responses:
+        "202":
+          description: The run is under way.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationRuns"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/recommendation-runs/stop:
+    post:
+      operationId: stopRecommendationRun
+      summary: Stop the Recommendation run
+      description: >-
+        Administrators only. Stops the Recommendation run that runs after the batch it writes; the
+        recommendations stay as they were, and the run is recorded as stopped by hand. 404 when none
+        runs.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -4184,9 +4299,10 @@ components:
         A Claude step - reading (reading a Prompt run's responses, its instructions set in the
         code), matching (matching products in scans), candidateMerge (tidying the names of the
         competitor candidates), candidateCheck (checking companies against the competitor
-        definition), or termReview (reviewing the search terms the scans found).
+        definition), termReview (reviewing the search terms the scans found), or recommendations
+        (writing recommendations).
       type: string
-      enum: [reading, matching, candidateMerge, candidateCheck, termReview]
+      enum: [reading, matching, candidateMerge, candidateCheck, termReview, recommendations]
     ClaudeStepVersion:
       description: One saved version of a Claude step - the model it uses and its instructions.
       type: object
@@ -5086,8 +5202,42 @@ components:
       description: One improvement of the plan.
       type: object
       additionalProperties: false
-      required: [id, title, moves, measure, benefit, effort, auto, done, why, steps, doneWhen, parts]
+      required: [id, title, moves, measure, benefit, effort, auto, done, why, steps, doneWhen, parts, kind, generated, new]
       properties:
+        kind:
+          $ref: "#/components/schemas/RecommendationKind"
+        generated:
+          type: boolean
+          description: True for one a Recommendation run wrote, false for one written by hand.
+        new:
+          type: boolean
+          description: True for an open one the newest Recommendation run wrote.
+        where:
+          type: string
+          maxLength: 500
+          description: The tribelt.nl page it belongs on; absent when it applies to the whole site or the model could not place it.
+          example: https://www.tribelt.nl/spiraalbanden
+        whereNote:
+          type: string
+          maxLength: 200
+          description: Present instead of where when the model could not place it.
+          example: Where to put this is for the web agency to decide.
+        scoreReason:
+          type: string
+          maxLength: 300
+          description: Why the model moved a score from the rules' by a point; absent when it did not.
+        editedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When an administrator edited a generated one; absent when nobody did.
+        facts:
+          type: array
+          maxItems: 10
+          description: The facts behind a generated one, as the rules found them.
+          items:
+            type: string
+            maxLength: 600
         id:
           type: string
           maxLength: 60
@@ -5173,6 +5323,173 @@ components:
           example: 2.5
         leader:
           $ref: "#/components/schemas/MeasureLeader"
+    RecommendationEdit:
+      description: An administrator's wording and scores of a recommendation a run wrote.
+      type: object
+      additionalProperties: false
+      required: [title, why, steps, doneWhen, benefit, effort]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: What to do.
+        where:
+          type: string
+          maxLength: 500
+          description: The tribelt.nl page it belongs on; absent or blank for the web agency to place.
+        why:
+          type: string
+          maxLength: 500
+          description: Why it matters.
+        steps:
+          type: array
+          maxItems: 6
+          description: How to do it.
+          items:
+            type: string
+            maxLength: 300
+        doneWhen:
+          type: string
+          maxLength: 300
+          description: When it counts as done.
+        benefit:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+          description: How much it helps.
+        effort:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+          description: How much work it takes.
+    RecommendationKind:
+      description: >-
+        What kind of change a recommendation asks for - term (a search term to add), page (a page
+        to add), listing (a site to get listed on), fact (a fact sheet correction), readiness (AI
+        readiness), or general (written by hand for the whole site).
+      type: string
+      enum: [term, page, listing, fact, readiness, general]
+    RecommendationRuns:
+      description: The Recommendation run, what starting one would do, and the past runs.
+      type: object
+      additionalProperties: false
+      required: [running, noKey, replaces, stale, terms, gaps, estimatedCostUsd, runs]
+      properties:
+        running:
+          type: boolean
+          description: Whether a run runs now.
+        noKey:
+          type: boolean
+          description: True when no Anthropic key is set up, so no run can start.
+        model:
+          type: string
+          maxLength: 200
+          description: The model the step writing recommendations uses now; absent without a key.
+          example: claude-haiku-5-5
+        replaces:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many open recommendations an earlier run wrote that a new run replaces.
+          example: 12
+        stale:
+          type: boolean
+          description: True when tribelt.nl was last scanned before the newest Prompt run started.
+        promptRunAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the newest Prompt run started; absent before any.
+        scanAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the newest scan of tribelt.nl finished; absent before any.
+        terms:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many terms the search term list holds.
+          example: 420
+        gaps:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many gaps the rules find now, at most 40.
+          example: 40
+        estimatedCostUsd:
+          $ref: "#/components/schemas/Usd"
+        runs:
+          type: array
+          maxItems: 20
+          description: The last runs, the newest first.
+          items:
+            $ref: "#/components/schemas/RecommendationRun"
+    RecommendationRun:
+      description: One Recommendation run.
+      type: object
+      additionalProperties: false
+      required: [id, startedAt, startedBy, model, gaps, added, replaced, kept, costUsd]
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: The run's id.
+        startedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it started.
+        finishedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it ended; absent while it runs.
+        ending:
+          description: How it ended; absent while it runs.
+          type: string
+          enum: [done, doneWithFailures, stoppedByHand, stoppedByBudget, failed]
+        startedBy:
+          type: string
+          maxLength: 200
+          description: Who started it.
+        model:
+          type: string
+          maxLength: 200
+          description: The model that wrote.
+        gaps:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many gaps it wrote recommendations for.
+        added:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many recommendations it added.
+        replaced:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many open recommendations it replaced.
+        kept:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many done or edited recommendations it kept.
+        costUsd:
+          $ref: "#/components/schemas/Usd"
     PlanPart:
       description: One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
       type: object

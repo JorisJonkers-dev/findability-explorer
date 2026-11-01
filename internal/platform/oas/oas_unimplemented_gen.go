@@ -141,6 +141,18 @@ func (UnimplementedHandler) DismissCompetitorCandidate(ctx context.Context, para
 	return r, ht.ErrNotImplemented
 }
 
+// EditRecommendation implements editRecommendation operation.
+//
+// Administrators only. Stores the wording and scores of a recommendation a Recommendation run wrote,
+// and when it was edited; an edited one is kept when the next run replaces the others. A blank page
+// leaves it for the web agency to place. 404 for an unknown recommendation; 422 for one written by
+// hand, which stays in code, or for an edit out of bounds.
+//
+// PUT /api/v1/admin/recommendations/{recommendationId}
+func (UnimplementedHandler) EditRecommendation(ctx context.Context, req *RecommendationEdit, params EditRecommendationParams) (r EditRecommendationRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetActivity implements getActivity operation.
 //
 // Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness
@@ -373,6 +385,19 @@ func (UnimplementedHandler) GetPromptTestSettings(ctx context.Context) (r GetPro
 //
 // GET /api/v1/analyses/{analysisId}/readiness-files
 func (UnimplementedHandler) GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (r GetReadinessFilesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetRecommendationRuns implements getRecommendationRuns operation.
+//
+// Administrators only. Whether a Recommendation run runs; what a new one would read (the newest Prompt
+// run, the tribelt.nl scan, the search term list), how many gaps its rules find, how many open
+// recommendations it would replace, whether tribelt.nl was last scanned before the newest Prompt run,
+// and its estimate on the Anthropic key; and the last 20 runs, each with what it added, replaced and
+// kept.
+//
+// GET /api/v1/admin/recommendation-runs
+func (UnimplementedHandler) GetRecommendationRuns(ctx context.Context) (r GetRecommendationRunsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -744,6 +769,20 @@ func (UnimplementedHandler) StartReadinessCheck(ctx context.Context) (r StartRea
 	return r, ht.ErrNotImplemented
 }
 
+// StartRecommendationRun implements startRecommendationRun operation.
+//
+// Administrators only. In the background, the rules find the gaps from the newest Prompt run, each
+// company's newest scan and the search term list, and the Claude step writing recommendations places
+// and words them from tribelt.nl's page text, a batch at a time. A run that ends replaces the open
+// recommendations an earlier run wrote, and keeps the done and edited ones and those written by hand;
+// one stopped, cut short by the budget, or failed changes nothing. 409 when one runs already or no
+// Anthropic key is set up.
+//
+// POST /api/v1/admin/recommendation-runs
+func (UnimplementedHandler) StartRecommendationRun(ctx context.Context) (r StartRecommendationRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StartRescans implements startRescans operation.
 //
 // Administrators only. Queues one scan for each named company with a website, or with `all`, for every
@@ -825,6 +864,16 @@ func (UnimplementedHandler) StopReadinessCheck(ctx context.Context) (r StopReadi
 	return r, ht.ErrNotImplemented
 }
 
+// StopRecommendationRun implements stopRecommendationRun operation.
+//
+// Administrators only. Stops the Recommendation run that runs after the batch it writes; the
+// recommendations stay as they were, and the run is recorded as stopped by hand. 404 when none runs.
+//
+// POST /api/v1/admin/recommendation-runs/stop
+func (UnimplementedHandler) StopRecommendationRun(ctx context.Context) (r StopRecommendationRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StopRescan implements stopRescan operation.
 //
 // Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting one is
@@ -863,7 +912,8 @@ func (UnimplementedHandler) TestLlmCredential(ctx context.Context, params TestLl
 // TickImprovement implements tickImprovement operation.
 //
 // Administrators only. Marks an improvement no scan can check as done, recording who and when, or as
-// not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+// not done again; a recommendation a run wrote too, when no rule decides it (a fact sheet correction).
+// 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
 //
 // PUT /api/v1/admin/plan/improvements/{improvementId}
 func (UnimplementedHandler) TickImprovement(ctx context.Context, req *ImprovementTick, params TickImprovementParams) (r TickImprovementRes, _ error) {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 // Directory is the port to the companies context: every company that is not archived.
@@ -42,6 +43,20 @@ type Store interface {
 	// Targets returns the targets an administrator set; one never set is absent.
 	Targets(ctx context.Context) (map[domain.Target]float64, error)
 	SetTarget(ctx context.Context, t domain.Target, value float64, by string, at time.Time) error
+	// Recommendations returns every recommendation a Recommendation run wrote that is still kept.
+	Recommendations(ctx context.Context) ([]domain.Recommendation, error)
+	// RecRuns returns the newest limit Recommendation runs, newest first.
+	RecRuns(ctx context.Context, limit int) ([]domain.RecRun, error)
+	// BeginRecRun records a run begun.
+	BeginRecRun(ctx context.Context, run domain.RecRun) error
+	// FinishRecRun records how a run ended and, with a replacement, replaces the open
+	// recommendations with the new ones, in one transaction.
+	FinishRecRun(ctx context.Context, run domain.RecRun, r *domain.Replacement) error
+	// SetRecDone ticks a written recommendation off, or with by empty, undoes the tick; false
+	// when there is no such recommendation.
+	SetRecDone(ctx context.Context, id, by string, at time.Time) (bool, error)
+	// UpdateRecommendation stores an edited recommendation's wording, scores and when it was edited.
+	UpdateRecommendation(ctx context.Context, r domain.Recommendation) error
 }
 
 // Ports are the other contexts the insight context reads, and its own store.
@@ -57,11 +72,39 @@ type Ports struct {
 type Service struct {
 	ports Ports
 	now   func() time.Time
+	newID func() string
+	// writing is what a Recommendation run needs; rec whether one runs.
+	writing writing
+	rec     recState
 }
 
-// New returns a Service.
-func New(ports Ports, now func() time.Time) *Service {
-	return &Service{ports: ports, now: now}
+// writing is what a Recommendation run needs, set by WithWriting.
+type writing struct {
+	writers Writers
+	pages   TribeltPages
+	budget  BudgetSpent
+	journal work.Journal
+	report  func(error)
+	spawn   func(func())
+}
+
+// noWriters is the writers before WithWriting: none.
+type noWriters struct{}
+
+func (noWriters) Current(context.Context) (Writer, string, error) { return nil, "", nil }
+
+// noPages is tribelt.nl's pages before WithWriting: none.
+type noPages struct{}
+
+func (noPages) Pages(context.Context) ([]domain.Page, time.Time, error) { return nil, time.Time{}, nil }
+
+// New returns a Service; newID names a Recommendation run and each recommendation it writes.
+func New(ports Ports, now func() time.Time, newID func() string) *Service {
+	return &Service{
+		ports: ports, now: now, newID: newID,
+		// Without WithWriting, no model writes, so no run starts.
+		writing: writing{writers: noWriters{}, pages: noPages{}},
+	}
 }
 
 // targets are the plan's targets now: the ones set, and the defaults for the rest.
@@ -130,7 +173,10 @@ func (s *Service) Standings(ctx context.Context) (Standings, error) {
 	if err != nil {
 		return Standings{}, fmt.Errorf("the ticked improvements: %w", err)
 	}
-	items := domain.PlanItems(ticks, tribeltReadiness(f), st)
+	items, err := s.items(ctx, ticks, f, st)
+	if err != nil {
+		return Standings{}, err
+	}
 	return Standings{
 		Standings: st, Trailing: domain.Trailing(st), Run: f.Run, Companies: companies, Open: domain.Open(items, OpenShown), TermsFrom: f.TermsFrom,
 	}, nil

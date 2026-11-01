@@ -73,8 +73,7 @@ export const SORTS: readonly { id: Sort; label: string }[] = [
  * larger benefit first, the least work first, kinds and names from A. Ascending turns it round.
  */
 export function listed(items: readonly PlanImprovement[], sort: Sort, direction: Direction): PlanImprovement[] {
-  const place = new Map(items.map((it, i) => [it.id, i]))
-  const value = (a: PlanImprovement, b: PlanImprovement) => (place.get(a.id) ?? 0) - (place.get(b.id) ?? 0)
+  const value = (a: PlanImprovement, b: PlanImprovement) => items.indexOf(a) - items.indexOf(b)
   const by: Record<Sort, (a: PlanImprovement, b: PlanImprovement) => number> = {
     value,
     benefit: (a, b) => b.benefit - a.benefit || value(a, b),

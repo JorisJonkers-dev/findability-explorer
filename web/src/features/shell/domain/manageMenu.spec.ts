@@ -22,6 +22,11 @@ describe('the Manage menu', () => {
 
   it('lists only the subpages that exist, each under its section', () => {
     expect(MANAGE_MENU.flatMap((g) => g.children.map((c) => [g.label, c.label, c.to]))).toEqual([
+      ['Prompt test', 'Questions', '/manage/prompt-test/questions'],
+      ['Prompt test', 'Models', '/manage/prompt-test/models'],
+      ['Prompt test', 'Schedule', '/manage/prompt-test/schedule'],
+      ['Prompt test', 'Fact sheet', '/manage/prompt-test/fact-sheet'],
+      ['Prompt test', 'Runs', '/manage/prompt-test/runs'],
       ['Website scans', 'Scan queue', '/manage/scans/queue'],
       ['Website scans', 'Recent scans', '/manage/scans/recent'],
       ['Website scans', 'Scan settings', '/manage/scans/settings'],
@@ -67,10 +72,10 @@ describe('the Manage menu', () => {
     expect(badgePlacement(named('Competitor list'), false)).toBe('group')
     expect(badgePlacement(named('Competitor list'), true)).toBe('child')
     expect(badgePlacement(named('Search term list'), true)).toBe('child')
+    expect(badgePlacement(named('Prompt test'), true)).toBe('child')
   })
 
   it('keeps a count on the section when no subpage holds it', () => {
-    expect(badgePlacement(named('Prompt test'), true)).toBe('group')
     expect(badgePlacement(named('Website scans'), false)).toBe('group')
     const orphan: MenuGroup = { label: 'Lost', to: '/manage/lost', summary: 'Lost.', countLabel: 'waiting', countOn: '/manage/lost/gone', children: [] }
     expect(badgePlacement(orphan, true)).toBe('group')

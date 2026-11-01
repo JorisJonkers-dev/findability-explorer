@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Plan } from '../../../infrastructure/api/types.gen'
-import { competitor, details, overview, product, term, termSearch } from '../../../testing/fixtures'
-import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
+import { competitor, details, me, overview, product, term, termSearch } from '../../../testing/fixtures'
+import { json, mountApp, problem, routes } from '../../../testing/mountApp'
 
 const plan = (): Plan => ({
   catalogueVersion: 1,
@@ -25,67 +25,115 @@ const FIGURES = overview({
   },
 })
 
+const TERMS = [
+  term({ term: 'draadogenband', language: 'nl', family: 'eyelink', usedBy: ['Twentebelt', 'Ashworth'] }),
+  term({ term: 'eyelink belt', language: 'en-US', family: 'eyelink', tribeltUses: true }),
+  term({ term: 'Spiralband', language: 'de', family: 'open_spiral', usedBy: ['Twentebelt'] }),
+  term({ term: 'mesh belt', language: 'en', family: 'all', usedBy: [] }),
+]
+
 const api = (extra = {}) =>
   routes({
     'GET /api/v1/overview': () => json(FIGURES),
     'GET /api/v1/plan': () => json(plan()),
-    'GET /api/v1/terms': () => json(termSearch([term({ language: 'en-US' }), term({ term: 'b', language: 'en' })])),
-    'GET /api/v1/competitors': () => json({ items: [competitor('Twentebelt')] }),
-    'GET /api/v1/products': () =>
-      json({ items: [product(), product({ family: 'open_spiral', tribeltNames: [], termsUsed: 0, terms: [] })], standouts: [] }),
+    'GET /api/v1/terms': () => json(termSearch(TERMS)),
+    'GET /api/v1/competitors': () => json({ items: [competitor('Twentebelt'), competitor('Ashworth')] }),
+    'GET /api/v1/products': () => json({ items: [product(), product({ family: 'open_spiral', tribeltNames: [], termsUsed: 0, terms: [] })], standouts: [] }),
     ...extra,
   })
 
+const rows = (table: ReturnType<Awaited<ReturnType<typeof mountApp>>['wrapper']['get']>) =>
+  table.findAll('tbody tr, tfoot tr').map((r) => r.findAll('th, td').map((c) => c.text()))
+
 describe('the Search terms page', () => {
-  it('heads itself with the size of the map and what tribelt.nl uses, with three figures', async () => {
+  it('is in the frame, with its purpose, its data line, and its sections in order', async () => {
     const { wrapper } = await mountApp(api(), '/terms')
-    expect(wrapper.get('h1').text()).toBe('Competitors list belts using 10 terms, tribelt.nl uses only 4 of them.')
-    const figures = wrapper.get('section[aria-label="Key figures"]').findAll(':scope > div').map((d) => d.text())
+    expect(wrapper.get('h1').text()).toBe('Search terms')
+    expect(wrapper.get('[data-part="purpose"]').text()).toBe(
+      'The words buyers use to look for metal conveyor belts, and how many of them tribelt.nl uses. Pages with these words are easier to find.',
+    )
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe("From the search term list (4 terms) and each site's newest scan.")
+    expect(wrapper.findAll('main h2, h2').map((h) => h.text())).toEqual([
+      'Search term adoption over time',
+      'By language',
+      'By belt family',
+      'Terms competitors use and tribelt.nl does not',
+    ])
+    expect(wrapper.get('details summary').text()).toBe('What buyer intent means')
+    expect(wrapper.get('a[href="/help/terms"]').text()).toBe('How this is measured, in Help')
+    expect(wrapper.find('a[href="/manage/terms"]').exists()).toBe(false)
+  })
+
+  it('gives an administrator the way to manage the list', async () => {
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/terms')
+    expect(wrapper.get('a[href="/manage/terms"]').text()).toBe('Manage the search term list')
+  })
+
+  it('shows three figures, the second against its goal', async () => {
+    const { wrapper } = await mountApp(api(), '/terms')
+    const figures = wrapper.get('[aria-label="Key figures"]').findAll(':scope > div').map((d) => d.text())
     expect(figures).toEqual([
       '10terms in the search term listIn English, German, and Dutch.',
-      '4are used on tribelt.nlThe target is 20.',
-      '6are used only by competitorsEach one is a search in which Tribelt does not turn up.',
+      '4used on tribelt.nlGoal 20',
+      '6used only by competitorsEach one is a search in which Tribelt does not turn up.',
     ])
   })
 
-  it('is neutral before the figures load', async () => {
-    const { wrapper } = await mountApp(api({ 'GET /api/v1/overview': () => new Promise<Response>(() => undefined) }), '/terms')
-    expect(wrapper.get('h1').text()).toBe('Ways to search for a metal belt.')
+  it('says what adoption over time is still missing', async () => {
+    const { wrapper } = await mountApp(api(), '/terms')
+    expect(wrapper.get('section[aria-labelledby="adoption-title"]').text()).toContain(
+      'The share over time follows once the app keeps which terms each scan of tribelt.nl found. Today it knows the newest scan only.',
+    )
   })
 
-  it('stresses the language with the most terms, and another when its legend button is pressed', async () => {
+  it('counts the terms by language and by belt family, each row opening its terms', async () => {
     const { wrapper } = await mountApp(api(), '/terms')
-    const legend = () => wrapper.get('[role="group"][aria-label="Pick a language"]').findAll('button')
-    expect(legend().map((b) => [b.attributes('aria-label'), b.attributes('aria-pressed')])).toEqual([
-      ['English: 5 terms', 'true'],
-      ['German: 3 terms', 'false'],
-      ['Dutch: 2 terms', 'false'],
+    const languages = wrapper.get('section[aria-labelledby="by-language-title"] table')
+    expect(rows(languages)).toEqual([
+      ['Dutch', '1', '0', '1'],
+      ['German', '1', '0', '1'],
+      ['English', '2', '1', '0'],
+      ['All three languages', '4', '1', '2'],
     ])
-    expect(wrapper.get('svg[role="img"]').attributes('aria-label')).toBe('The 10 terms by language: English 5, German 3, Dutch 2.')
-    expect(wrapper.text()).toContain('English, 50% of the list')
-    expect(wrapper.text()).toContain('5 terms, 1 of them American English. tribelt.nl uses 2 of them.')
-    await legend()[1]?.trigger('click')
-    await settle()
-    expect(legend().map((b) => b.attributes('aria-pressed'))).toEqual(['false', 'true', 'false'])
-    expect(wrapper.text()).toContain('German, 30% of the list')
-    expect(wrapper.text()).toContain('Germany is where Tribelt wants to grow.')
+    expect(languages.findAll('tbody a').map((a) => a.attributes('href'))).toEqual(['/terms/all?language=nl', '/terms/all?language=de', '/terms/all?language=en'])
+    const families = wrapper.get('section[aria-labelledby="by-family-title"] table')
+    expect(rows(families)[0]).toEqual(['Eyelink belts', 'Draadogenbanden', '2', '1'])
+    expect(rows(families)[1]).toEqual(['Open spiral belts', 'None recorded', '1', '0'])
+    expect(rows(families).at(-1)).toEqual(['All belt families', 'Not counted above: 1 term that applies to every belt, 0 of them used', '3', '1'])
+    expect(families.get('tbody a').attributes('href')).toBe('/terms/families/eyelink')
   })
 
-  it('lists the belt families, each linking to its page, and links to every term', async () => {
+  it('folds what each kind of buyer intent means', async () => {
     const { wrapper } = await mountApp(api(), '/terms')
-    const families = wrapper.get('ul[aria-label="Belt families"]').findAll('a')
-    expect(families.map((a) => a.attributes('href'))).toEqual(['/terms/families/eyelink', '/terms/families/open-spiral'])
-    expect(families[0]?.text()).toBe('EyelinkTribelt calls it Draadogenbanden1 of 4terms tribelt.nl uses')
-    expect(families[1]?.text()).toContain('Tribelt names none for it yet')
-    expect(wrapper.get('a[href="/terms/all"]').text()).toBe('its own page')
+    const fold = wrapper.get('details')
+    expect(fold.attributes('open')).toBeUndefined()
+    expect(fold.findAll('li').map((l) => l.text())).toEqual([
+      'Specification. The buyer already knows the exact belt and its sizes.',
+      'Product. The buyer names the type of belt.',
+      'Application. The buyer describes what the belt is for, such as a bakery oven.',
+      'Problem. The buyer describes a problem to solve.',
+      'Broad. A general search about conveyor belts.',
+    ])
   })
 
-  it('shows no target when the plan holds none, and says when the families cannot be loaded', async () => {
+  it('lists the terms competitors use and tribelt.nl does not, each opening its page', async () => {
+    const { wrapper } = await mountApp(api(), '/terms')
+    const top = wrapper.get('section[aria-labelledby="missing-title"]')
+    expect(top.text()).toContain('The 15 terms that the most competitors use.')
+    expect(rows(top.get('table'))).toEqual([
+      ['draadogenband', 'Dutch', 'Eyelink belts', 'Product', '2'],
+      ['Spiralband', 'German', 'Open spiral belts', 'Product', '1'],
+    ])
+    expect(top.findAll('tbody a').map((a) => a.attributes('href'))).toEqual(['/terms/nl--draadogenband', '/terms/de--spiralband'])
+    expect(top.get('a[href="/terms/all"]').text()).toBe('See every term')
+  })
+
+  it('shows no goal when the plan holds none, and says when the families cannot be loaded', async () => {
     const { wrapper } = await mountApp(
       api({ 'GET /api/v1/plan': () => json({ ...plan(), watched: [] }), 'GET /api/v1/products': () => problem(500, 'Internal Server Error', 'Down.') }),
       '/terms',
     )
-    expect(wrapper.text()).not.toContain('The target is')
+    expect(wrapper.text()).not.toContain('Goal 20')
     expect(wrapper.get('[role="alert"]').text()).toContain('Down.')
   })
 })

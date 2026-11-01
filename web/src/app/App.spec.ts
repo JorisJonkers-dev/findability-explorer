@@ -219,5 +219,8 @@ describe('the routes', () => {
     expect(await scroll?.(at(`/manage/scans/${ANALYSIS_ID}`), at(`/competitors`), null)).toEqual({ top: 0 })
     expect(await scroll?.(at('/competitors'), at('/terms'), null)).toEqual({ top: 0 })
     expect(await scroll?.(at('/competitors'), at('/terms'), { left: 0, top: 120 })).toEqual({ left: 0, top: 120 })
+    // A Help topic's address brings the topic into view itself.
+    expect(await scroll?.(at('/help/stop'), at('/terms'), null)).toBe(false)
+    expect(await scroll?.(at('/help'), at('/terms'), null)).toEqual({ top: 0 })
   })
 })

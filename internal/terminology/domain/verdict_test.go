@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
@@ -134,5 +135,15 @@ func TestExamplesAreAFewTermsOfEachTier(t *testing.T) {
 	got := domain.Examples(terms, 2)
 	if len(got) != 3 || got[0].Text != "a" || got[1].Text != "b" || got[2].Text != "d" {
 		t.Errorf("Examples = %+v", got)
+	}
+}
+
+func TestTheReviewsUsageIsPricedAtTheReviewModelsListPrice(t *testing.T) {
+	u := domain.Usage{InputTokens: 2_000_000, OutputTokens: 400_000}
+	if u.Tokens() != 2_400_000 || u.Cost() != llm.ListPrice(llm.DefaultModel).Of(2_000_000, 400_000) || u.Cost().Dollars() != 0.4 {
+		t.Errorf("tokens %d, cost %s", u.Tokens(), u.Cost())
+	}
+	if (domain.Usage{}).Cost() != 0 {
+		t.Error("nothing used costs something")
 	}
 }

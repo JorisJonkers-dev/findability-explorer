@@ -4,11 +4,13 @@ import { RouterLink } from 'vue-router'
 import DonutChart from '../../../shared/ui/charts/DonutChart.vue'
 import PillButton from '../../../shared/ui/PillButton.vue'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
+import HistorySection from '../../prompt-test/components/HistorySection.vue'
+import { LANGUAGE_MEASURES } from '../../prompt-test/domain/history'
 import { tally } from '../../prompt-test/domain/results'
 import PageView from '../../shell/components/PageView.vue'
 import { useAiSearchPage } from '../composables/useAiSearchPage'
 import { pct } from '../domain/summary'
-import { type Scope, slice } from '../domain/voice'
+import { goalOf, type Scope, slice } from '../domain/voice'
 
 const page = useAiSearchPage()
 const scope = ref<Scope>('all')
@@ -17,6 +19,7 @@ const SCOPES: readonly { id: Scope; label: string }[] = [
   { id: 'twente', label: 'Answers about Twente' },
 ]
 const shown = computed(() => (page.summary.value ? slice(scope.value, page.cells.value, page.summary.value, page.plan.value) : undefined))
+const OVER_TIME_INTRO = 'How often AI responses name Tribelt in each Prompt run. The lines show each language the questions were asked in. Twente counts as Dutch.'
 const total = computed(() => tally(page.cells.value).answers)
 </script>
 
@@ -113,5 +116,7 @@ const total = computed(() => tally(page.cells.value).answers)
         </RouterLink>
       </div>
     </div>
+
+    <HistorySection id="over-time" title="Over time" :intro="OVER_TIME_INTRO" :measures="LANGUAGE_MEASURES" :goal="goalOf(page.plan.value, 'aiShareOfVoice')" />
   </PageView>
 </template>

@@ -105,6 +105,19 @@ func (q *Queries) GetLlmActive(ctx context.Context) (GetLlmActiveRow, error) {
 	return i, err
 }
 
+const getLlmBudget = `-- name: GetLlmBudget :one
+SELECT monthly_budget_micros
+FROM llm_budget
+WHERE singleton
+`
+
+func (q *Queries) GetLlmBudget(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, getLlmBudget)
+	var monthly_budget_micros int64
+	err := row.Scan(&monthly_budget_micros)
+	return monthly_budget_micros, err
+}
+
 const getLlmCredential = `-- name: GetLlmCredential :one
 SELECT id, provider, label, secret, key_id, fingerprint, created_by, created_at
 FROM llm_credentials
@@ -294,5 +307,24 @@ func (q *Queries) SetLlmActive(ctx context.Context, arg SetLlmActiveParams) erro
 		arg.UpdatedBy,
 		arg.UpdatedAt,
 	)
+	return err
+}
+
+const setLlmBudget = `-- name: SetLlmBudget :exec
+INSERT INTO llm_budget (singleton, monthly_budget_micros, updated_by, updated_at)
+VALUES (true, $1, $2, $3)
+ON CONFLICT (singleton) DO UPDATE
+SET monthly_budget_micros = excluded.monthly_budget_micros, updated_by = excluded.updated_by,
+    updated_at = excluded.updated_at
+`
+
+type SetLlmBudgetParams struct {
+	MonthlyBudgetMicros int64
+	UpdatedBy           string
+	UpdatedAt           time.Time
+}
+
+func (q *Queries) SetLlmBudget(ctx context.Context, arg SetLlmBudgetParams) error {
+	_, err := q.db.Exec(ctx, setLlmBudget, arg.MonthlyBudgetMicros, arg.UpdatedBy, arg.UpdatedAt)
 	return err
 }

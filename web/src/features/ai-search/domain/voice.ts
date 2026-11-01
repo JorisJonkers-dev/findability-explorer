@@ -83,7 +83,7 @@ export function voiceLede(cells: readonly PromptCell[]): string {
 export type Figure = { to: string; big: string; text: string; note: string }
 
 /** The goal of a number to watch, if the plan has it. */
-function goalOf(plan: Plan | undefined, target: Plan['watched'][number]['target']): number | undefined {
+export function goalOf(plan: Plan | undefined, target: Plan['watched'][number]['target']): number | undefined {
   return plan?.watched.find((w) => w.target === target)?.goal
 }
 

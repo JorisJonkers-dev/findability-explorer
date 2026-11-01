@@ -96,8 +96,8 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 		len(got.Equivalents[1].SearchTerms) != 0 {
 		t.Fatalf("equivalents = %+v", got.Equivalents)
 	}
-	if n, err := repo.TokensSince(ctx, created); err != nil || n != 1000 {
-		t.Fatalf("TokensSince = %d, %v", n, err)
+	if in, out, err := repo.TokensSince(ctx, created); err != nil || in != 900 || out != 100 {
+		t.Fatalf("TokensSince = %d in, %d out, %v", in, out, err)
 	}
 	// What the company's newest finished scan found: the map term, with the languages of the pages
 	// it read, and the matched products.
@@ -110,16 +110,16 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 		p[1].Product != "Eyelink belts" {
 		t.Fatalf("MatchedProducts = %+v, %v", p, err)
 	}
-	if n, err := repo.TokensSince(ctx, created.Add(time.Hour)); err != nil || n != 0 {
-		t.Fatalf("TokensSince later = %d, %v", n, err)
+	if in, out, err := repo.TokensSince(ctx, created.Add(time.Hour)); err != nil || in != 0 || out != 0 {
+		t.Fatalf("TokensSince later = %d in, %d out, %v", in, out, err)
 	}
 	// A scan whose matching did not run used no tokens and does not count.
 	other := queued(t, repo, "joris", created.Add(time.Second))
 	if err := repo.SaveMatching(ctx, other.ID, domain.MatchingDisabled, "", nil, domain.Usage{}); err != nil {
 		t.Fatal(err)
 	}
-	if scans, avg, err := repo.TokensPerScan(ctx); err != nil || scans != 1 || avg != 1000 {
-		t.Fatalf("TokensPerScan = %d, %d, %v", scans, avg, err)
+	if scans, in, out, err := repo.TokensPerScan(ctx); err != nil || scans != 1 || in != 900 || out != 100 {
+		t.Fatalf("TokensPerScan = %d, %d in, %d out, %v", scans, in, out, err)
 	}
 }
 

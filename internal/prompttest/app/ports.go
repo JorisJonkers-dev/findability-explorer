@@ -34,7 +34,7 @@ type Extractor interface {
 
 // Extractors hands out the extractor and the model it asks: Claude Haiku on an Anthropic key. A
 // nil Extractor without an error means no Anthropic key works, and OpenRouter reads the answers
-// with domain.ExtractorModel, as it does once the month's language-model tokens are spent.
+// with domain.ExtractorModel, as it does once the month's Anthropic budget is spent.
 type Extractors interface {
 	Current(ctx context.Context) (Extractor, string, error)
 }
@@ -156,7 +156,7 @@ type HomePages interface {
 	Fetch(ctx context.Context, website string) domain.HomePage
 }
 
-// BudgetSpent reports whether the month's language-model tokens, of every job together, are spent.
+// BudgetSpent reports whether the month's Anthropic budget, of every job together, is spent.
 type BudgetSpent func(ctx context.Context) (bool, error)
 
 // Reviewers hands out the reviewer and the model it asks: Claude Haiku on an Anthropic key. A nil

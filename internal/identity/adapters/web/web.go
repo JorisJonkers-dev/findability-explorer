@@ -128,6 +128,7 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.TestLlmCredentialOperation:   domain.NeedAdminChange,
 	oas.SetActiveLlmOperation:        domain.NeedAdminChange,
 	oas.ClearActiveLlmOperation:      domain.NeedAdminChange,
+	oas.UpdateLlmBudgetOperation:     domain.NeedAdminChange,
 	// Scans and companies: everyone signed in reads them, only administrators change them.
 	oas.StartAnalysisOperation:        domain.NeedAdminChange,
 	oas.StartRescansOperation:         domain.NeedAdminChange,
@@ -157,6 +158,8 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.StartCandidateReviewOperation:       domain.NeedAdminChange,
 	oas.ListCompetitorChecksOperation:       domain.NeedAdminView,
 	oas.StartCompetitorCheckOperation:       domain.NeedAdminChange,
+	oas.StopCandidateReviewOperation:        domain.NeedAdminChange,
+	oas.StopCompetitorCheckOperation:        domain.NeedAdminChange,
 	// The plan: everyone signed in reads it, only administrators tick it off and set its targets.
 	oas.TickImprovementOperation: domain.NeedAdminChange,
 	oas.SetPlanTargetsOperation:  domain.NeedAdminChange,
@@ -166,6 +169,8 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.RejectTermCandidateOperation: domain.NeedAdminChange,
 	oas.UndoTermDecisionOperation:    domain.NeedAdminChange,
 	oas.StartTermReviewOperation:     domain.NeedAdminChange,
+	oas.SetTermReviewOperation:       domain.NeedAdminChange,
+	oas.StopTermReviewOperation:      domain.NeedAdminChange,
 }
 
 // HandleSessionCookie resolves the session and puts the principal, and its subject, on ctx. The

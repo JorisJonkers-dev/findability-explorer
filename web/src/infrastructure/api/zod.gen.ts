@@ -367,7 +367,8 @@ export const zLlmEventAction = z.enum([
     'credential_deleted',
     'credential_tested',
     'active_set',
-    'active_cleared'
+    'active_cleared',
+    'budget_set'
 ]);
 
 /**
@@ -385,26 +386,10 @@ export const zLlmEvent = z.object({
 });
 
 /**
- * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
+ * The Anthropic key's new monthly budget.
  */
-export const zLlmBudget = z.object({
-    monthlyTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    usedThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    averageTokensPerScan: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    scansMatched: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
-});
-
-/**
- * The language-model settings.
- */
-export const zLlmSettings = z.object({
-    credentials: z.array(zLlmCredential).max(100),
-    choice: zLlmChoice,
-    active: zActiveLlm.optional(),
-    haiku: zActiveLlm.optional(),
-    matchingEnabled: z.boolean(),
-    budget: zLlmBudget,
-    events: z.array(zLlmEvent).max(50)
+export const zLlmBudgetChange = z.object({
+    monthlyBudgetUsd: z.number().gte(0.01).lte(1000)
 });
 
 /**
@@ -593,16 +578,10 @@ export const zTermCandidate = z.object({
 });
 
 /**
- * How far the language model is with the waiting candidates.
+ * Whether the term review runs by itself.
  */
-export const zTermReviewState = z.object({
-    running: z.boolean(),
-    waiting: z.int().gte(0).lte(1000000),
-    problem: z.enum([
-        'noModel',
-        'budget',
-        'failed'
-    ]).optional()
+export const zTermReviewSwitch = z.object({
+    on: z.boolean()
 });
 
 /**
@@ -612,15 +591,6 @@ export const zTermCandidateCounts = z.object({
     pending: z.int().gte(0).lte(1000000),
     accepted: z.int().gte(0).lte(1000000),
     rejected: z.int().gte(0).lte(1000000)
-});
-
-/**
- * The candidates with one status, and how far the language model is with them.
- */
-export const zTermCandidateList = z.object({
-    items: z.array(zTermCandidate).max(10000),
-    counts: zTermCandidateCounts,
-    review: zTermReviewState
 });
 
 /**
@@ -1392,6 +1362,58 @@ export const zPromptTrigger = z.enum(['manual', 'schedule']);
 export const zUsd = z.number().gte(0).lte(1000000);
 
 /**
+ * What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers - and what they spent, priced at the models' list prices from their stored token counts. Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
+ */
+export const zLlmBudget = z.object({
+    monthlyBudgetUsd: zUsd,
+    spentThisMonthUsd: zUsd,
+    leftUsd: zUsd,
+    tokensThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    averageTokensPerScan: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    averageScanUsd: zUsd,
+    scansMatched: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
+});
+
+/**
+ * The language-model settings.
+ */
+export const zLlmSettings = z.object({
+    credentials: z.array(zLlmCredential).max(100),
+    choice: zLlmChoice,
+    active: zActiveLlm.optional(),
+    haiku: zActiveLlm.optional(),
+    matchingEnabled: z.boolean(),
+    budget: zLlmBudget,
+    events: z.array(zLlmEvent).max(50)
+});
+
+/**
+ * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
+ */
+export const zTermReviewState = z.object({
+    on: z.boolean(),
+    running: z.boolean(),
+    waiting: z.int().gte(0).lte(1000000),
+    problem: z.enum([
+        'noModel',
+        'budget',
+        'failed',
+        'stopped'
+    ]).optional(),
+    monthTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    monthCostUsd: zUsd
+});
+
+/**
+ * The candidates with one status, and how far the language model is with them.
+ */
+export const zTermCandidateList = z.object({
+    items: z.array(zTermCandidate).max(10000),
+    counts: zTermCandidateCounts,
+    review: zTermReviewState
+});
+
+/**
  * What asking one provider's answer again in one mode should cost, reading included.
  */
 export const zPromptAnswerCost = z.object({
@@ -1863,7 +1885,8 @@ export const zCandidateReviewState = z.object({
     problem: z.enum([
         'noKey',
         'budget',
-        'failed'
+        'failed',
+        'stopped'
     ]).optional()
 });
 
@@ -2169,6 +2192,21 @@ export const zListTermCandidatesResponse = zTermCandidateList;
 export const zStartTermReviewResponse = zTermReviewState;
 
 /**
+ * Whether the review runs by itself.
+ */
+export const zSetTermReviewBody = zTermReviewSwitch;
+
+/**
+ * The review's state, switched.
+ */
+export const zSetTermReviewResponse = zTermReviewState;
+
+/**
+ * Stopped.
+ */
+export const zStopTermReviewResponse = z.void();
+
+/**
  * The term as it joins the map.
  */
 export const zAcceptTermCandidateBody = zTermAcceptance;
@@ -2349,6 +2387,11 @@ export const zListCompetitorCandidatesResponse = zCompetitorCandidateList;
 export const zStartCandidateReviewResponse = zCandidateReviewState;
 
 /**
+ * Stopped.
+ */
+export const zStopCandidateReviewResponse = z.void();
+
+/**
  * The checks.
  */
 export const zListCompetitorChecksResponse = zCompetitorCheckList;
@@ -2357,6 +2400,11 @@ export const zListCompetitorChecksResponse = zCompetitorCheckList;
  * The check is under way.
  */
 export const zStartCompetitorCheckResponse = zCandidateReviewState;
+
+/**
+ * Stopped.
+ */
+export const zStopCompetitorCheckResponse = z.void();
 
 /**
  * What to do, and to which candidates.
@@ -2464,6 +2512,16 @@ export const zGetLlmKeyUsagePath = z.object({
  * The usage.
  */
 export const zGetLlmKeyUsageResponse = zLlmKeyUsage;
+
+/**
+ * The new budget.
+ */
+export const zUpdateLlmBudgetBody = zLlmBudgetChange;
+
+/**
+ * The settings after the change.
+ */
+export const zUpdateLlmBudgetResponse = zLlmSettings;
 
 /**
  * The settings after the change.

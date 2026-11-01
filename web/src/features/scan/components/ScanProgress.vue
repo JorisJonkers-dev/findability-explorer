@@ -16,7 +16,7 @@ const width = computed(() => (state.value.fraction === null ? '100%' : percent(M
     <p aria-live="polite" class="m-0 text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase">{{ state.label }}</p>
     <p class="m-0 font-display text-2xl font-semibold">{{ siteHost(summary.url) }}</p>
     <p class="m-0 text-sm text-ink-2">
-      The scan reads up to {{ summary.maxPages }} pages, respecting robots.txt, then ranks the phrases and matches the products.
+      The scan reads up to {{ summary.maxPages }} pages, respecting robots.txt, then ranks the search terms and matches the products.
     </p>
     <div
       role="progressbar"

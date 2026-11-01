@@ -19,7 +19,7 @@ const check = computed(() => checkLine(props.candidate))
 const decided = computed(() => candidateDecisionLine(props.candidate))
 const evidence = computed(() => {
   const c = props.candidate
-  return `Named in ${c.answers === 1 ? '1 answer' : `${String(c.answers)} answers`} by ${joinWords(c.providers.map(providerName))}.`
+  return `Named in ${c.answers === 1 ? '1 response' : `${String(c.answers)} responses`} by ${joinWords(c.providers.map(providerName))}.`
 })
 const editing = ref(false)
 const draft = ref<CandidateDraft>(candidateDraft(props.candidate))

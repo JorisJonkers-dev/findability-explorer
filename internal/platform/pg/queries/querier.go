@@ -28,6 +28,8 @@ type Querier interface {
 	AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams) error
 	AddAnalysisReadiness(ctx context.Context, arg AddAnalysisReadinessParams) error
 	AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error
+	// The next version of the competitor definition.
+	AddCompetitorDefinition(ctx context.Context, arg AddCompetitorDefinitionParams) (int64, error)
 	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
 	AddLlmEvent(ctx context.Context, arg AddLlmEventParams) error
 	// An answer, or, for a task whose earlier answer failed, that answer replaced: what the failed try
@@ -114,6 +116,8 @@ type Querier interface {
 	ListAnalysisPages(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPagesRow, error)
 	ListCompanies(ctx context.Context) ([]Company, error)
 	ListCompanyOverrides(ctx context.Context) ([]ListCompanyOverridesRow, error)
+	// Every version of the competitor definition, the newest first.
+	ListCompetitorDefinitions(ctx context.Context) ([]ListCompetitorDefinitionsRow, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
 	ListPlanTargets(ctx context.Context) ([]PlanTarget, error)
@@ -144,6 +148,8 @@ type Querier interface {
 	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
 	MarkAnalysisRunning(ctx context.Context, id uuid.UUID) error
 	MovePromptSchedule(ctx context.Context, nextDue time.Time) error
+	// What every request of the reviews and checks used, and how many companies they checked.
+	PromptCheckUsage(ctx context.Context) (PromptCheckUsageRow, error)
 	// Every name an answer gave, matched or not, the newest answer first: what the answers say of a
 	// company on the list.
 	PromptNamings(ctx context.Context) ([]PromptNamingsRow, error)

@@ -9,7 +9,7 @@ SET statement_timeout = '60s';
 -- first save stores that original as version 1 before the new one, so the history keeps it.
 CREATE TABLE IF NOT EXISTS claude_step_versions (
     step text NOT NULL CHECK (char_length(step) BETWEEN 1 AND 50),
-    number integer NOT NULL CHECK (number >= 1),
+    number bigint NOT NULL CHECK (number >= 1),
     model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 100),
     instructions text NOT NULL CHECK (char_length(instructions) BETWEEN 1 AND 20000),
     note text NOT NULL DEFAULT '' CHECK (char_length(note) <= 300),

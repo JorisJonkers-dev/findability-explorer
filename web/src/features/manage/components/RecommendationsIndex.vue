@@ -33,7 +33,7 @@ const past = computed(() => (runs.value?.runs ?? []).map((r) => ({ id: r.id, ...
     <WidgetGrid>
       <ManageWidget v-if="runs?.stale" title="The page text is older than the responses" :span="12" accent>
         <p class="m-0 text-ink-2">
-          tribelt.nl was last scanned before the newest Prompt run. <RouterLink to="/manage/scans">Scan tribelt.nl first</RouterLink>, or start the run anyway.
+          tribelt.nl was last scanned before the newest Prompt run. <RouterLink to="/manage/scans" class="underline">Scan tribelt.nl first</RouterLink>, or start the run anyway.
         </p>
       </ManageWidget>
 
@@ -43,7 +43,7 @@ const past = computed(() => (runs.value?.runs ?? []).map((r) => ({ id: r.id, ...
           <p class="m-0 font-semibold">{{ replacesLine(runs.replaces) }}</p>
           <p class="m-0 text-ink-2">{{ estimateLine(runs) }}</p>
           <p class="m-0 text-sm text-ink-2">
-            Claude writes them as the step <RouterLink to="/manage/claude-steps/recommendations">Writing recommendations</RouterLink> says.
+            Claude writes them as the step <RouterLink to="/manage/claude-steps/recommendations" class="underline">Writing recommendations</RouterLink> says.
             <template v-if="runs.model">It uses {{ runs.model }}.</template>
           </p>
         </template>

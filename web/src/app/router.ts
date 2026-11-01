@@ -28,14 +28,21 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/ai-responses',
         name: 'ai-responses',
-        component: () => import('../features/ai-search/components/AiSearchView.vue'),
+        component: () => import('../features/ai-search/components/AiResponsesView.vue'),
         meta: { title: 'AI responses', view: 'results' },
       },
       {
         path: '/ai-responses/all',
         name: 'every-response',
-        component: () => import('../features/prompt-test/components/PromptTestView.vue'),
+        component: () => import('../features/prompt-test/components/EveryResponseView.vue'),
         meta: { title: 'Every response', view: 'results' },
+      },
+      {
+        path: '/ai-responses/:id',
+        name: 'response',
+        component: () => import('../features/prompt-test/components/ResponseView.vue'),
+        props: (to) => ({ id: String(to.params.id) }),
+        meta: { title: 'Response', view: 'results' },
       },
       {
         path: '/ai-readiness',

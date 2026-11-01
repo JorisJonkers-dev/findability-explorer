@@ -34,6 +34,25 @@ func (v CompanyVerdict) Decides(c Candidate) (CandidateStatus, bool) {
 	}
 }
 
+// Redecides is what a recheck makes of c by v: a waiting candidate is decided as Decides has it.
+// One the language model dismissed is added when v is sure it competes, and waits for a person
+// again when v is not sure it does not. Anything else stays as it is (false): what a person
+// decided, and a company the model added, which a recheck never takes off the list.
+func (v CompanyVerdict) Redecides(c Candidate) (CandidateStatus, bool) {
+	switch {
+	case c.Decision == nil:
+		return v.Decides(c)
+	case c.Decision.By != ModelDecider || c.Decision.Status != CandidateDismissed:
+		return "", false
+	case v.Sure && !v.Competitor:
+		return "", false
+	}
+	if status, ok := v.Decides(c); ok && status == CandidateAdded {
+		return CandidateAdded, true
+	}
+	return CandidatePending, true
+}
+
 // HomePage is what a company's home page says of it, clipped short; Problem says why it could not
 // be read, and is "" when it was.
 type HomePage struct {

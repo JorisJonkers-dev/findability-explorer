@@ -429,7 +429,7 @@ func (r *Repository) Merges(ctx context.Context) ([]domain.Merge, error) {
 	for _, row := range rows {
 		out = append(out, domain.Merge{
 			CandidateID: row.CandidateID, IntoID: row.IntoID, CompetitorID: row.CompetitorID, Separate: row.KeptApart,
-			By: row.MergedBy, At: row.MergedAt.UTC(),
+			SplitFrom: row.SplitFrom, By: row.MergedBy, At: row.MergedAt.UTC(),
 		})
 	}
 	return out, nil
@@ -441,7 +441,7 @@ func (r *Repository) SaveMerges(ctx context.Context, merges []domain.Merge) erro
 		for _, m := range merges {
 			if err := q.SavePromptCandidateMerge(ctx, queries.SavePromptCandidateMergeParams{
 				CandidateID: m.CandidateID, IntoID: optionalText(m.IntoID), CompetitorID: optionalText(m.CompetitorID),
-				KeptApart: m.Separate, MergedBy: clip(m.By, 200), MergedAt: m.At,
+				KeptApart: m.Separate, SplitFrom: optionalText(m.SplitFrom), MergedBy: clip(m.By, 200), MergedAt: m.At,
 			}); err != nil {
 				return fmt.Errorf("store candidate merge: %w", err)
 			}

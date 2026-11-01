@@ -45,12 +45,14 @@ type CandidateDecision struct {
 
 // Merge records that a candidate is one company with another candidate (IntoID) or with a
 // company on the list (CompetitorID), as the language model or an administrator found; Separate
-// marks one a person split off, which is never merged again.
+// marks one a person split off, which is never merged again, and SplitFrom the candidate it was
+// split off, so Undo the split can merge it back.
 type Merge struct {
 	CandidateID  string
 	IntoID       string
 	CompetitorID string
 	Separate     bool
+	SplitFrom    string
 	By           string
 	At           time.Time
 }
@@ -103,6 +105,9 @@ type Candidate struct {
 	// Verdict is the language model's check of it, once it has one against the definition in use,
 	// or, for a decided candidate, with any version.
 	Verdict *CompanyVerdict
+	// SplitFrom is the candidate a person split it off, which Undo the split merges it back into;
+	// "" for one never split off.
+	SplitFrom string
 }
 
 // Status is the candidate's status: its decision's, or pending.
@@ -135,11 +140,22 @@ func Candidates(sightings []Sighting, decisions []CandidateDecision, directory [
 	for _, d := range decisions {
 		decided[d.ID] = d
 	}
+	splitFrom := map[string]string{}
+	for _, m := range merges {
+		if m.Separate && m.SplitFrom != "" {
+			splitFrom[m.CandidateID] = m.SplitFrom
+		}
+	}
 	out := make([]Candidate, 0, len(groups))
 	for _, g := range groups {
 		c, known := combine(g, decided)
 		if known && c.Decision == nil {
 			continue
+		}
+		for _, id := range c.MemberIDs() {
+			if from := splitFrom[id]; from != "" {
+				c.SplitFrom = from
+			}
 		}
 		out = append(out, c)
 	}
@@ -514,6 +530,42 @@ func Unchecked(candidates []Candidate) []Candidate {
 		}
 	}
 	return out
+}
+
+// Waiting are the candidates no one decided yet, in their order.
+func Waiting(candidates []Candidate) []Candidate {
+	var out []Candidate
+	for _, c := range candidates {
+		if c.Status() == CandidatePending {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// ToRecheck are what a review that also rechecks the model's decisions asks about: each candidate
+// the language model decided, and each waiting one it has not checked, in their order. What a
+// person decided is never asked about again.
+func ToRecheck(candidates []Candidate) []Candidate {
+	var out []Candidate
+	for _, c := range candidates {
+		if (c.Decision != nil && c.Decision.By == ModelDecider) || (c.Status() == CandidatePending && c.Verdict == nil) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// DecidedByPerson is how many candidates an administrator decided; the language model never
+// changes those.
+func DecidedByPerson(candidates []Candidate) int {
+	n := 0
+	for _, c := range candidates {
+		if c.Decision != nil && c.Decision.By != ModelDecider {
+			n++
+		}
+	}
+	return n
 }
 
 // CompleteVerdicts keeps the model's verdicts on the candidates it was asked about, at most one

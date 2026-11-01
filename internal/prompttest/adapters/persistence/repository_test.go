@@ -351,11 +351,12 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A person splits a name off: it replaces the model's merge.
-	if err := r.SaveMerges(ctx, []domain.Merge{{CandidateID: "00000000000000a2", Separate: true, By: "joris", At: at.Add(time.Hour)}}); err != nil {
+	if err := r.SaveMerges(ctx, []domain.Merge{{CandidateID: "00000000000000a2", Separate: true, SplitFrom: "00000000000000a1", By: "joris", At: at.Add(time.Hour)}}); err != nil {
 		t.Fatal(err)
 	}
 	got, err := r.Merges(ctx)
-	if err != nil || len(got) != 2 || got[0] != merges[1] || !got[1].Separate || got[1].IntoID != "" || got[1].By != "joris" {
+	if err != nil || len(got) != 2 || got[0] != merges[1] || !got[1].Separate || got[1].IntoID != "" || got[1].By != "joris" ||
+		got[1].SplitFrom != "00000000000000a1" || got[0].SplitFrom != "" {
 		t.Fatalf("merges = %+v, %v", got, err)
 	}
 	if err := r.SaveMerges(ctx, []domain.Merge{{CandidateID: "00000000000000c1", By: "joris", At: at}}); err == nil {

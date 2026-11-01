@@ -877,7 +877,7 @@ func (q *Queries) ListPromptCandidateDecisions(ctx context.Context) ([]ListPromp
 
 const listPromptCandidateMerges = `-- name: ListPromptCandidateMerges :many
 SELECT candidate_id, coalesce(into_id, '')::text AS into_id, coalesce(competitor_id, '')::text AS competitor_id,
-    kept_apart, merged_by, merged_at
+    kept_apart, coalesce(split_from, '')::text AS split_from, merged_by, merged_at
 FROM prompt_candidate_merges
 ORDER BY merged_at, candidate_id
 `
@@ -887,6 +887,7 @@ type ListPromptCandidateMergesRow struct {
 	IntoID       string
 	CompetitorID string
 	KeptApart    bool
+	SplitFrom    string
 	MergedBy     string
 	MergedAt     time.Time
 }
@@ -905,6 +906,7 @@ func (q *Queries) ListPromptCandidateMerges(ctx context.Context) ([]ListPromptCa
 			&i.IntoID,
 			&i.CompetitorID,
 			&i.KeptApart,
+			&i.SplitFrom,
 			&i.MergedBy,
 			&i.MergedAt,
 		); err != nil {
@@ -1527,11 +1529,11 @@ func (q *Queries) SavePromptCandidateCheck(ctx context.Context, arg SavePromptCa
 }
 
 const savePromptCandidateMerge = `-- name: SavePromptCandidateMerge :exec
-INSERT INTO prompt_candidate_merges (candidate_id, into_id, competitor_id, kept_apart, merged_by, merged_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO prompt_candidate_merges (candidate_id, into_id, competitor_id, kept_apart, split_from, merged_by, merged_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (candidate_id) DO UPDATE SET
     into_id = excluded.into_id, competitor_id = excluded.competitor_id, kept_apart = excluded.kept_apart,
-    merged_by = excluded.merged_by, merged_at = excluded.merged_at
+    split_from = excluded.split_from, merged_by = excluded.merged_by, merged_at = excluded.merged_at
 `
 
 type SavePromptCandidateMergeParams struct {
@@ -1539,6 +1541,7 @@ type SavePromptCandidateMergeParams struct {
 	IntoID       pgtype.Text
 	CompetitorID pgtype.Text
 	KeptApart    bool
+	SplitFrom    pgtype.Text
 	MergedBy     string
 	MergedAt     time.Time
 }
@@ -1549,6 +1552,7 @@ func (q *Queries) SavePromptCandidateMerge(ctx context.Context, arg SavePromptCa
 		arg.IntoID,
 		arg.CompetitorID,
 		arg.KeptApart,
+		arg.SplitFrom,
 		arg.MergedBy,
 		arg.MergedAt,
 	)

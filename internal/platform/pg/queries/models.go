@@ -311,6 +311,7 @@ type PromptCandidateMerge struct {
 	KeptApart    bool
 	MergedBy     string
 	MergedAt     time.Time
+	SplitFrom    pgtype.Text
 }
 
 type PromptCompanyCheck struct {
@@ -459,6 +460,13 @@ type RemovedTerm struct {
 	Language  string
 	RemovedBy string
 	RemovedAt time.Time
+}
+
+type ScanSetting struct {
+	Singleton    bool
+	DefaultPages int32
+	UpdatedBy    string
+	UpdatedAt    time.Time
 }
 
 type Session struct {

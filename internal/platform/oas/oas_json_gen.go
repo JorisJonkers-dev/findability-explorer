@@ -3822,8 +3822,16 @@ func (s *ClaudeStepId) Decode(d *jx.Decoder) error {
 	}
 	// Try to use constant string.
 	switch ClaudeStepId(v) {
+	case ClaudeStepIdReading:
+		*s = ClaudeStepIdReading
 	case ClaudeStepIdMatching:
 		*s = ClaudeStepIdMatching
+	case ClaudeStepIdCandidateMerge:
+		*s = ClaudeStepIdCandidateMerge
+	case ClaudeStepIdCandidateCheck:
+		*s = ClaudeStepIdCandidateCheck
+	case ClaudeStepIdTermReview:
+		*s = ClaudeStepIdTermReview
 	default:
 		*s = ClaudeStepId(v)
 	}

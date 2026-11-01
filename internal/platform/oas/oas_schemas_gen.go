@@ -1745,25 +1745,44 @@ func (s *ClaudeStepChange) SetRestoredFrom(val OptInt32) {
 	s.RestoredFrom = val
 }
 
-// A Claude step - matching (matching products in scans); the other steps join as they are built.
+// A Claude step - reading (reading a Prompt run's responses, its instructions set in the code),
+// matching (matching products in scans), candidateMerge (tidying the names of the competitor
+// candidates), candidateCheck (checking companies against the competitor definition), or termReview
+// (reviewing the search terms the scans found).
 // Ref: #/components/schemas/ClaudeStepId
 type ClaudeStepId string
 
 const (
-	ClaudeStepIdMatching ClaudeStepId = "matching"
+	ClaudeStepIdReading        ClaudeStepId = "reading"
+	ClaudeStepIdMatching       ClaudeStepId = "matching"
+	ClaudeStepIdCandidateMerge ClaudeStepId = "candidateMerge"
+	ClaudeStepIdCandidateCheck ClaudeStepId = "candidateCheck"
+	ClaudeStepIdTermReview     ClaudeStepId = "termReview"
 )
 
 // AllValues returns all ClaudeStepId values.
 func (ClaudeStepId) AllValues() []ClaudeStepId {
 	return []ClaudeStepId{
+		ClaudeStepIdReading,
 		ClaudeStepIdMatching,
+		ClaudeStepIdCandidateMerge,
+		ClaudeStepIdCandidateCheck,
+		ClaudeStepIdTermReview,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s ClaudeStepId) MarshalText() ([]byte, error) {
 	switch s {
+	case ClaudeStepIdReading:
+		return []byte(s), nil
 	case ClaudeStepIdMatching:
+		return []byte(s), nil
+	case ClaudeStepIdCandidateMerge:
+		return []byte(s), nil
+	case ClaudeStepIdCandidateCheck:
+		return []byte(s), nil
+	case ClaudeStepIdTermReview:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1773,8 +1792,20 @@ func (s ClaudeStepId) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *ClaudeStepId) UnmarshalText(data []byte) error {
 	switch ClaudeStepId(data) {
+	case ClaudeStepIdReading:
+		*s = ClaudeStepIdReading
+		return nil
 	case ClaudeStepIdMatching:
 		*s = ClaudeStepIdMatching
+		return nil
+	case ClaudeStepIdCandidateMerge:
+		*s = ClaudeStepIdCandidateMerge
+		return nil
+	case ClaudeStepIdCandidateCheck:
+		*s = ClaudeStepIdCandidateCheck
+		return nil
+	case ClaudeStepIdTermReview:
+		*s = ClaudeStepIdTermReview
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

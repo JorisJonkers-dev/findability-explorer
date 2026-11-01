@@ -91,7 +91,7 @@ func TestAnAdministratorReadsOneClaudeStep(t *testing.T) {
 		models[0].(map[string]any)["id"] != llm.DefaultModel || models[0].(map[string]any)["jobCostUsd"] != 0.0044 {
 		t.Errorf("step = %v", r.body)
 	}
-	if r := callAs(t, srv, http.MethodGet, "/api/v1/admin/claude-steps/reading", "", "admin"); r.code != http.StatusBadRequest {
+	if r := callAs(t, srv, http.MethodGet, "/api/v1/admin/claude-steps/nothing", "", "admin"); r.code != http.StatusBadRequest {
 		t.Errorf("a step the contract does not name: status %d", r.code)
 	}
 	a.claudeSteps().err = errors.New("database down")
@@ -130,5 +130,12 @@ func TestAnAdministratorSavesAVersionOfAClaudeStep(t *testing.T) {
 	}
 	if r := callAs(t, srv, http.MethodPost, path, `{"model":"","instructions":""}`, "admin"); r.code != http.StatusBadRequest {
 		t.Errorf("empty: status %d", r.code)
+	}
+}
+
+func TestAStepTheServiceDoesNotKnowIsNotFound(t *testing.T) {
+	srv := serve(t, &analyses{})
+	if r := callAs(t, srv, http.MethodGet, "/api/v1/admin/claude-steps/reading", "", "admin"); r.code != http.StatusNotFound {
+		t.Errorf("status %d", r.code)
 	}
 }

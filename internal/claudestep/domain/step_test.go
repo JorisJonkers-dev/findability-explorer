@@ -26,8 +26,12 @@ func TestMatchingProductsIsAStepWithTheInstructionsTheToolCameWith(t *testing.T)
 	if d.Title != "Matching products" || d.Fixed || !strings.Contains(d.Original, "Tribelt") {
 		t.Errorf("matching = %+v", d)
 	}
-	if len(domain.Definitions()) == 0 || domain.Definitions()[0].ID != domain.Matching {
-		t.Error("the steps do not list matching")
+	ids := []domain.ID{}
+	for _, d := range domain.Definitions() {
+		ids = append(ids, d.ID)
+	}
+	if strings.Join([]string{string(ids[0]), string(ids[1]), string(ids[2]), string(ids[3]), string(ids[4])}, ",") != "reading,matching,candidateMerge,candidateCheck,termReview" || len(ids) != 5 {
+		t.Errorf("the steps = %v", ids)
 	}
 	if _, ok := domain.Lookup("nothing"); ok {
 		t.Error("an unknown step was found")
@@ -113,5 +117,23 @@ func TestAJobsCostScalesWithTheModelsPriceForTheStepsMixOfTokens(t *testing.T) {
 func TestAStepWithoutTypicalTokensCostsTheSameWithEveryModel(t *testing.T) {
 	if got := domain.Scale(domain.Definition{}, "claude-opus-5-5"); got != 1 {
 		t.Errorf("scale = %v", got)
+	}
+}
+
+func TestReadingResponsesHasItsInstructionsSetInTheCode(t *testing.T) {
+	d, ok := domain.Lookup(domain.Reading)
+	if !ok || !d.Fixed || d.Original != domain.ReadingInstructions || d.Title != "Reading responses" {
+		t.Errorf("reading = %+v", d)
+	}
+	for _, id := range []domain.ID{domain.TidyingNames, domain.CheckingCompanies, domain.ReviewingTerms} {
+		d, ok := domain.Lookup(id)
+		if !ok || d.Fixed || d.Original == "" || d.Typical.Input == 0 {
+			t.Errorf("%s = %+v", id, d)
+		}
+	}
+	// The competitor definition is data in the user message, never part of the instructions.
+	check, _ := domain.Lookup(domain.CheckingCompanies)
+	if strings.Contains(check.Original, "<competitor_definition>") || !strings.Contains(check.Original, "competitor definition") {
+		t.Errorf("checking companies = %s", check.Original)
 	}
 }

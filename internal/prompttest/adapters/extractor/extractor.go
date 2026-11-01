@@ -10,22 +10,15 @@ import (
 	"fmt"
 	"strings"
 
+	claudestep "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/domain"
 	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
 
-// System tells the extractor how to read a response. Claims the fact sheet contradicts and facts
-// the response leaves out are two lists, so only the wrong claims become fact sheet corrections.
-const System = `You read an AI assistant's response to a buyer's question about metal conveyor belts and report, in the JSON schema given, exactly what it says:
-- companies: every company the response names as a maker or supplier, in the order it first names them, with the web address it gives for that company ("" when none).
-- addresses: every web address the response cites or links to.
-- namesTribelt: whether it names Tribelt (Tribelt B.V.).
-- citesTribelt: whether it cites or links a Tribelt web address.
-- correctness: when it names Tribelt, whether what it says about Tribelt agrees with the fact sheet: "correct" (the fact sheet contradicts none of it), "partly" (it contradicts some of it) or "wrong" (it contradicts most or all of it); "none" when it does not name Tribelt. What the response leaves out does not make it less correct.
-- wrongClaims: each claim the response makes about Tribelt that the fact sheet contradicts, quoted from the response; empty when there is none. A fact from the fact sheet the response does not mention is not a wrong claim: it belongs in leftOut.
-- leftOut: when it names Tribelt, each fact from the fact sheet that a buyer asking this question would want to know and the response does not mention, as a short sentence; empty when it does not name Tribelt or leaves nothing out. A claim the fact sheet contradicts is not left out: it belongs in wrongClaims.
-Report only what the response says. Do not add companies it does not name.`
+// System tells the extractor how to read a response: the instructions of the Claude step reading
+// responses, set in the code so every run is read the same way (ADR-0004, ADR-0018).
+const System = claudestep.ReadingInstructions
 
 // SchemaName names the strict format.
 const SchemaName = "answer_reading"

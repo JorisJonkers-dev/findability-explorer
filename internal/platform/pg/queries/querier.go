@@ -166,11 +166,14 @@ type Querier interface {
 	// Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,
 	// and only the re-scans when rescan_only is set.
 	StopQueuedAnalyses(ctx context.Context, arg StopQueuedAnalysesParams) ([]uuid.UUID, error)
+	SwitchTermReview(ctx context.Context, arg SwitchTermReviewParams) error
 	// The pages that use a term on each company's newest finished scan that found it, in the order
 	// the scan recorded them; a scan that found it before scans recorded the pages gives one row
 	// with page_position -1.
 	TermPages(ctx context.Context, arg TermPagesParams) ([]TermPagesRow, error)
+	TermReviewOn(ctx context.Context) (bool, error)
 	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error)
+	TermReviewUsageSince(ctx context.Context, usedAt time.Time) (TermReviewUsageSinceRow, error)
 	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
 	// How many scans the language model answered for, and the tokens in and out one of them used on average.
 	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)

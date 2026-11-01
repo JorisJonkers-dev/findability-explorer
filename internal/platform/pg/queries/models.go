@@ -405,6 +405,13 @@ type TermDecision struct {
 	DecidedAt   time.Time
 }
 
+type TermReviewSwitch struct {
+	Singleton bool
+	ReviewOn  bool
+	UpdatedBy string
+	UpdatedAt time.Time
+}
+
 type TermReviewUsage struct {
 	ID           int64
 	InputTokens  int64

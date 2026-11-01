@@ -3277,6 +3277,8 @@ func (s *CandidateReviewStateProblem) Decode(d *jx.Decoder) error {
 		*s = CandidateReviewStateProblemBudget
 	case CandidateReviewStateProblemFailed:
 		*s = CandidateReviewStateProblemFailed
+	case CandidateReviewStateProblemStopped:
+		*s = CandidateReviewStateProblemStopped
 	default:
 		*s = CandidateReviewStateProblem(v)
 	}
@@ -26720,6 +26722,10 @@ func (s *TermReviewState) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *TermReviewState) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("on")
+		e.Bool(s.On)
+	}
+	{
 		e.FieldStart("running")
 		e.Bool(s.Running)
 	}
@@ -26733,12 +26739,23 @@ func (s *TermReviewState) encodeFields(e *jx.Encoder) {
 			s.Problem.Encode(e)
 		}
 	}
+	{
+		e.FieldStart("monthTokens")
+		e.Int64(s.MonthTokens)
+	}
+	{
+		e.FieldStart("monthCostUsd")
+		s.MonthCostUsd.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfTermReviewState = [3]string{
-	0: "running",
-	1: "waiting",
-	2: "problem",
+var jsonFieldsNameOfTermReviewState = [6]string{
+	0: "on",
+	1: "running",
+	2: "waiting",
+	3: "problem",
+	4: "monthTokens",
+	5: "monthCostUsd",
 }
 
 // Decode decodes TermReviewState from json.
@@ -26750,8 +26767,20 @@ func (s *TermReviewState) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "running":
+		case "on":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.On = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"on\"")
+			}
+		case "running":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Bool()
 				s.Running = bool(v)
@@ -26763,7 +26792,7 @@ func (s *TermReviewState) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"running\"")
 			}
 		case "waiting":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int32()
 				s.Waiting = int32(v)
@@ -26784,6 +26813,28 @@ func (s *TermReviewState) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"problem\"")
 			}
+		case "monthTokens":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Int64()
+				s.MonthTokens = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"monthTokens\"")
+			}
+		case "monthCostUsd":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.MonthCostUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"monthCostUsd\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -26794,7 +26845,7 @@ func (s *TermReviewState) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00110111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -26862,6 +26913,8 @@ func (s *TermReviewStateProblem) Decode(d *jx.Decoder) error {
 		*s = TermReviewStateProblemBudget
 	case TermReviewStateProblemFailed:
 		*s = TermReviewStateProblemFailed
+	case TermReviewStateProblemStopped:
+		*s = TermReviewStateProblemStopped
 	default:
 		*s = TermReviewStateProblem(v)
 	}
@@ -26878,6 +26931,102 @@ func (s TermReviewStateProblem) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TermReviewStateProblem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *TermReviewSwitch) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *TermReviewSwitch) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("on")
+		e.Bool(s.On)
+	}
+}
+
+var jsonFieldsNameOfTermReviewSwitch = [1]string{
+	0: "on",
+}
+
+// Decode decodes TermReviewSwitch from json.
+func (s *TermReviewSwitch) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TermReviewSwitch to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "on":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.On = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"on\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode TermReviewSwitch")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfTermReviewSwitch) {
+					name = jsonFieldsNameOfTermReviewSwitch[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *TermReviewSwitch) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TermReviewSwitch) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

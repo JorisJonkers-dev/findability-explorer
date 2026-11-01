@@ -24,6 +24,11 @@ func (s *Service) StartListCheck(ctx context.Context) bool {
 	return s.startIn(ctx, &s.review.list, s.CheckList)
 }
 
+// StopListCheck stops the check of the list that runs: it asks nothing after the batch it is on,
+// which it finishes and keeps, as it keeps every company archived before. The check's state says
+// it was stopped by hand. ErrNothingToStop when no check runs.
+func (s *Service) StopListCheck(context.Context) error { return s.review.list.stop() }
+
 // ListChecks returns the model's checks of the competitors on the list to show a person, and how
 // many competitors the next check takes.
 func (s *Service) ListChecks(ctx context.Context) ([]domain.ListCheck, int, error) {
@@ -41,7 +46,8 @@ func (s *Service) ListChecks(ctx context.Context) ([]domain.ListCheck, int, erro
 // CheckList has the model check each competitor on the list it has not checked with the current
 // domain.CheckVersion, a batch at a time, and archives each it is sure does not compete.
 // ErrNoReviewer when no Anthropic key is set up; ErrBudgetSpent when the month's Anthropic
-// budget is spent before a batch, with what was checked before kept.
+// budget is spent before a batch, and ErrStopped when an administrator stopped it, with what was
+// checked before kept either way.
 func (s *Service) CheckList(ctx context.Context) error {
 	r, model, err := s.reviewer(ctx)
 	if err != nil {
@@ -64,7 +70,7 @@ func (s *Service) CheckList(ctx context.Context) error {
 		return err
 	}
 	for len(todo) > 0 {
-		if err := s.tokensLeft(ctx); err != nil {
+		if err := s.goOn(ctx, &s.review.list); err != nil {
 			return err
 		}
 		batch := todo[:min(CheckBatch, len(todo))]

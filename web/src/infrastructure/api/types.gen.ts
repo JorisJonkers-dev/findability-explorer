@@ -1215,9 +1215,13 @@ export type TermSuggestion = {
 };
 
 /**
- * How far the language model is with the waiting candidates.
+ * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
  */
 export type TermReviewState = {
+    /**
+     * Whether it reviews by itself every ten minutes; off, only when asked.
+     */
+    on: boolean;
     /**
      * Whether it is reviewing now.
      */
@@ -1227,9 +1231,24 @@ export type TermReviewState = {
      */
     waiting: number;
     /**
-     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
-    problem?: 'noModel' | 'budget' | 'failed';
+    problem?: 'noModel' | 'budget' | 'failed' | 'stopped';
+    /**
+     * The tokens it used this month, input and output together.
+     */
+    monthTokens: number;
+    monthCostUsd: Usd;
+};
+
+/**
+ * Whether the term review runs by itself.
+ */
+export type TermReviewSwitch = {
+    /**
+     * On, it reviews every ten minutes; off, only when an administrator asks.
+     */
+    on: boolean;
 };
 
 /**
@@ -3216,9 +3235,9 @@ export type CandidateReviewState = {
      */
     running: boolean;
     /**
-     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
-    problem?: 'noKey' | 'budget' | 'failed';
+    problem?: 'noKey' | 'budget' | 'failed' | 'stopped';
 };
 
 /**
@@ -4418,6 +4437,83 @@ export type StartTermReviewResponses = {
 
 export type StartTermReviewResponse = StartTermReviewResponses[keyof StartTermReviewResponses];
 
+export type SetTermReviewData = {
+    /**
+     * Whether the review runs by itself.
+     */
+    body: TermReviewSwitch;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/term-candidates/review/switch';
+};
+
+export type SetTermReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SetTermReviewError = SetTermReviewErrors[keyof SetTermReviewErrors];
+
+export type SetTermReviewResponses = {
+    /**
+     * The review's state, switched.
+     */
+    200: TermReviewState;
+};
+
+export type SetTermReviewResponse = SetTermReviewResponses[keyof SetTermReviewResponses];
+
+export type StopTermReviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/term-candidates/review/stop';
+};
+
+export type StopTermReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopTermReviewError = StopTermReviewErrors[keyof StopTermReviewErrors];
+
+export type StopTermReviewResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopTermReviewResponse = StopTermReviewResponses[keyof StopTermReviewResponses];
+
 export type AcceptTermCandidateData = {
     /**
      * The term as it joins the map.
@@ -5286,6 +5382,43 @@ export type StartCandidateReviewResponses = {
 
 export type StartCandidateReviewResponse = StartCandidateReviewResponses[keyof StartCandidateReviewResponses];
 
+export type StopCandidateReviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/review/stop';
+};
+
+export type StopCandidateReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopCandidateReviewError = StopCandidateReviewErrors[keyof StopCandidateReviewErrors];
+
+export type StopCandidateReviewResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopCandidateReviewResponse = StopCandidateReviewResponses[keyof StopCandidateReviewResponses];
+
 export type ListCompetitorChecksData = {
     body?: never;
     path?: never;
@@ -5351,6 +5484,43 @@ export type StartCompetitorCheckResponses = {
 };
 
 export type StartCompetitorCheckResponse = StartCompetitorCheckResponses[keyof StartCompetitorCheckResponses];
+
+export type StopCompetitorCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-checks/stop';
+};
+
+export type StopCompetitorCheckErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopCompetitorCheckError = StopCompetitorCheckErrors[keyof StopCompetitorCheckErrors];
+
+export type StopCompetitorCheckResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopCompetitorCheckResponse = StopCompetitorCheckResponses[keyof StopCompetitorCheckResponses];
 
 export type DecideCompetitorCandidatesData = {
     /**

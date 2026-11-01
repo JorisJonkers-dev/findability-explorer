@@ -40,6 +40,8 @@ type UseCases interface {
 	ReviewState() app.ReviewState
 	ListChecks(ctx context.Context) ([]domain.ListCheck, int, error)
 	StartListCheck(ctx context.Context) bool
+	StopReview(ctx context.Context) error
+	StopListCheck(ctx context.Context) error
 	ListCheckState() app.ReviewState
 }
 
@@ -397,6 +399,34 @@ func (h *Handler) StartCompetitorCheck(ctx context.Context) (oas.StartCompetitor
 	h.uc.StartListCheck(ctx)
 	out := toReviewState(h.uc.ListCheckState())
 	return &out, nil
+}
+
+// StopCandidateReview implements stopCandidateReview.
+func (h *Handler) StopCandidateReview(ctx context.Context) (oas.StopCandidateReviewRes, error) {
+	err := h.uc.StopReview(ctx)
+	switch {
+	case errors.Is(err, app.ErrNothingToStop):
+		return &oas.StopCandidateReviewNotFound{
+			StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No review of the competitor candidates runs."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.StopCandidateReviewNoContent{}, nil
+}
+
+// StopCompetitorCheck implements stopCompetitorCheck.
+func (h *Handler) StopCompetitorCheck(ctx context.Context) (oas.StopCompetitorCheckRes, error) {
+	err := h.uc.StopListCheck(ctx)
+	switch {
+	case errors.Is(err, app.ErrNothingToStop):
+		return &oas.StopCompetitorCheckNotFound{
+			StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No check of the competitor list runs."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.StopCompetitorCheckNoContent{}, nil
 }
 
 func toReviewState(s app.ReviewState) oas.CandidateReviewState {

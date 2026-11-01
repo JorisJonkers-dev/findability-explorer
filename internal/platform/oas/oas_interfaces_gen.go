@@ -177,6 +177,10 @@ type SetPlanTargetsRes interface {
 	setPlanTargetsRes()
 }
 
+type SetTermReviewRes interface {
+	setTermReviewRes()
+}
+
 type SplitCompetitorCandidateRes interface {
 	splitCompetitorCandidateRes()
 }
@@ -213,6 +217,14 @@ type StopAnalysisRes interface {
 	stopAnalysisRes()
 }
 
+type StopCandidateReviewRes interface {
+	stopCandidateReviewRes()
+}
+
+type StopCompetitorCheckRes interface {
+	stopCompetitorCheckRes()
+}
+
 type StopPromptRunRes interface {
 	stopPromptRunRes()
 }
@@ -223,6 +235,10 @@ type StopReadinessCheckRes interface {
 
 type StopRescanRes interface {
 	stopRescanRes()
+}
+
+type StopTermReviewRes interface {
+	stopTermReviewRes()
 }
 
 type TestLlmCredentialRes interface {

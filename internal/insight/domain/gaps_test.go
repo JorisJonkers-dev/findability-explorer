@@ -85,6 +85,11 @@ func TestAFamilyWithoutATribeltPageInALanguageCompetitorsUseIsAGap(t *testing.T)
 	if g := gaps["page:de:open_spiral"]; g.Benefit != 2 || len(g.Specifics) != 1 {
 		t.Errorf("open spiral in German = %+v", g)
 	}
+	// Without a run, the responses add nothing.
+	in.Run = nil
+	if g := byKey(domain.Gaps(in))["page:de:eyelink"]; g.Benefit != 3 || len(g.Specifics) != 1 {
+		t.Errorf("without a run = %+v", g)
+	}
 	for _, k := range []string{"page:en:eyelink", "page:nl:open_spiral", "page:fr:eyelink"} {
 		if _, ok := gaps[k]; ok {
 			t.Errorf("%s is a gap", k)

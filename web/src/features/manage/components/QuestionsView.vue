@@ -116,6 +116,7 @@ function publish(): void {
 <template>
   <ManageLayout
     title="Questions"
+    help-topic="questions"
     purpose="The buyer questions that the AI assistants are asked."
     :back="{ to: '/manage/prompt-test', label: 'Back to Prompt test' }"
     :results="{ to: '/ai-responses', label: 'See the AI responses' }"

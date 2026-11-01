@@ -51,6 +51,7 @@ const COLUMNS: Column<HandTerm>[] = [
 <template>
   <ManageLayout
     title="Add or remove terms"
+    help-topic="add-term"
     purpose="Add a search term by hand, or take one off the list."
     :back="{ to: '/manage/terms', label: 'Back to Search term list' }"
     :results="{ to: '/terms/all', label: 'See every term' }"

@@ -65,8 +65,10 @@ const WORDS: readonly [string, string, string?][] = [
   ['Manage', 'Where administrators start, stop, and change the work behind the results.'],
   ['Prompt run', 'One execution of the Prompt test: every question, to every model, from the model’s own knowledge and with web search.'],
   ['Partial run', 'A Prompt run that got fewer than half its responses.'],
+  ['Prompt set version', 'One published Prompt set. Publishing makes a new version, and the charts mark a break where the version changes.'],
   ['Prompt set', 'The buyer questions a Prompt run asks. Each publication is a new version.'],
-  ['Model list', 'The models a Prompt run asks.'],
+  ['Model list', 'The models a Prompt run asks, chosen from OpenRouter’s catalogue.'],
+  ['Claude step', 'One piece of work a Claude model does, such as reading responses or matching products.'],
   ['Scope', 'Where and in which language a question asks: a region in its language, or a language with no region.'],
   ['Response', 'One model’s reply to one question, with what it names and cites.'],
   ['AI share of voice', 'The share of a Prompt run’s responses that name a company. If 30 of 100 responses name Tribelt, its share is 30 percent.'],
@@ -78,9 +80,10 @@ const WORDS: readonly [string, string, string?][] = [
   ['Typical competitor', 'The middle value across all competitors on the list.', 'median'],
   ['Gap', 'A measure where the best competitor is ahead of Tribelt.'],
   ['Recommendation', 'One change to make on tribelt.nl, ranked by its benefit against its effort.'],
+  ['Recommendation run', 'The final step that writes specific recommendations from the latest data.'],
   [
     'Haiku, Sonnet, and Opus',
-    'AI models from Anthropic, called Claude. The tool uses them to read pages and responses and to write recommendations. Haiku is the cheapest and fastest, Sonnet is more careful, and Opus is the most careful and costs the most.',
+    'AI models from Anthropic, called Claude. The tool uses them to read pages and responses and to write recommendations. Haiku is the cheapest and fastest, Sonnet is more careful, and Opus is the most careful and costs the most. Each step can use a different one.',
     'anthropic claude model haiku sonnet opus',
   ],
   ['Buyer intent', 'How far along a buyer is when they ask, from knowing the exact belt to a general search. See Buyer intent under Reading the results.', 'intent tier'],
@@ -111,9 +114,8 @@ const GOALS: readonly [string, string][] = [
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z]+/g, '-')
 
 /**
- * Every topic of Help, the reviewed prototype's copy. Topics about what the tool does not have yet
- * (editing the questions, choosing models from the catalogue, the Claude steps, the Recommendation
- * run, and terms added by hand) join with their releases.
+ * Every topic of Help, the reviewed prototype's copy, as far as the tool does it today. Topics about
+ * the Recommendation run join with it.
  */
 export const TOPICS: readonly Topic[] = [
   // Getting started
@@ -200,7 +202,7 @@ export const TOPICS: readonly Topic[] = [
     'results',
     'Why a trend line has a gap',
     [
-      'A line breaks where the questions or the model list changed. The figures before and after are not the same measure, so the line is never joined. A note under the chart says what changed.',
+      'A line breaks where the questions, the model list, or the model that reads the responses changed. The figures before and after are not the same measure, so the line is never joined. A note under the chart says what changed.',
     ],
     [{ label: 'A goal over time', to: '/goals/aiShareOfVoice' }],
     'trend chart version history',
@@ -250,6 +252,38 @@ export const TOPICS: readonly Topic[] = [
     ],
     [manage('Activity', '/manage'), manage('Prompt runs', '/manage/prompt-test/runs')],
     'cancel halt abort stop',
+  ),
+  topic(
+    'questions',
+    'prompt',
+    'Change the questions',
+    [
+      'Edit the draft in Manage, Prompt test, Questions. Press Add a question under a belt family to write a new one in place. Nothing changes until you publish. Publishing makes a new version and says how much more or less a run will cost.',
+      'Every earlier version can be restored into the draft, and publishing it makes a new version, so the history is never lost. The charts mark a break where the questions changed.',
+    ],
+    [manage('Questions', '/manage/prompt-test/questions')],
+    'prompt set edit publish version restore add question draft',
+  ),
+  topic(
+    'language',
+    'prompt',
+    'Ask in another language, such as French or Polish',
+    [
+      'In Manage, Prompt test, Questions, press Add a question under a belt family and pick A new scope: a language, with or without a region. The tool then offers to add a question in that scope for every other belt family. Edit the wording, and publish.',
+    ],
+    [manage('Questions', '/manage/prompt-test/questions')],
+    'scope french polish region translate',
+  ),
+  topic(
+    'models',
+    'prompt',
+    'Choose which models are asked',
+    [
+      'Manage, Prompt test, Models shows OpenRouter’s catalogue. The recommended models come first: the cheapest of the five providers whose assistants buyers use most. A provider can have several models, and each one gets its own column in the results.',
+      'The new cost of a run shows before you save. Saving marks the date on the trend charts, so results from before and after are not compared.',
+    ],
+    [manage('Models', '/manage/prompt-test/models')],
+    'model provider gemini gpt claude catalogue free recommended model list',
   ),
   topic(
     'schedule',
@@ -335,6 +369,17 @@ export const TOPICS: readonly Topic[] = [
     ['Every term has a page that shows which competitors use it, on which of their pages, and whether tribelt.nl does.'],
     [{ label: 'Every term', to: '/terms/all' }],
     'keyword competitor pages usage',
+  ),
+  topic(
+    'add-term',
+    'terms',
+    'Add or remove a search term by hand',
+    [
+      'Sales staff often know words buyers use that no scan has found. Add them in Manage, Search term list, Add or remove terms. A term added by hand is marked as such, and scans look for it from the next scan on.',
+      'A term can be taken off the list on the same page.',
+    ],
+    [manage('Add or remove terms', '/manage/terms/edit')],
+    'add remove keyword manual by hand',
   ),
   topic(
     'term-review',
@@ -434,6 +479,20 @@ export const TOPICS: readonly Topic[] = [
     ['Work that would cost more than is left asks for a second click before it starts. Running work stops when its budget is spent, and keeps what it has done.'],
     [manage('Activity', '/manage')],
     'over budget limit stop',
+  ),
+
+  topic(
+    'claude-steps',
+    'costs',
+    'Change a Claude model or its instructions',
+    [
+      'Five steps ask a Claude model: reading responses, matching products, tidying candidate names, checking companies, and reviewing search terms. Each has a page in its own part of Manage, and Keys and spending lists all five.',
+      'On a step’s page, pick the model and edit the instructions. The page shows what the step costs with each model, what the model gets with the instructions and where that comes from, and the parts it must reply with. Saving makes a new version, and every version can be restored.',
+      'The data and the reply format are set by the program, so editing the instructions cannot break a step. The instructions for reading responses are set in the code, so every Prompt run is read the same way. For that step, only the model is chosen.',
+      'Changing how responses are read changes the measure, so the AI responses charts mark the date.',
+    ],
+    [manage('Claude models and instructions', '/manage/claude-steps')],
+    'prompt instructions model claude haiku sonnet opus change cost anthropic step version restore',
   ),
 
   // Words used in this tool

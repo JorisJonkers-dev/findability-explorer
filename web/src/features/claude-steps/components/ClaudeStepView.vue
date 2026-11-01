@@ -70,6 +70,7 @@ function submit(): void {
 <template>
   <ManageLayout
     :title="step?.title ?? 'Claude step'"
+    help-topic="claude-steps"
     :purpose="info.does"
     :data-line="step ? dataLine(step) : undefined"
     :back="{ to: info.section.to, label: `Back to ${info.section.label}` }"

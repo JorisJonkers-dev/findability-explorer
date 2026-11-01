@@ -6046,6 +6046,14 @@ components:
           maxLength: 36
           description: The run's id.
           example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
+        models:
+          type: array
+          maxItems: 20
+          description: The models the run asked, by OpenRouter id; the charts break where they changed.
+          items:
+            type: string
+            maxLength: 200
+            example: openai/gpt-oss-20b
         startedAt:
           type: string
           format: date-time

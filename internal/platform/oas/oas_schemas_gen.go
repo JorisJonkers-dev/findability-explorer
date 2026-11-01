@@ -10525,6 +10525,8 @@ func (*PromptRun) startPromptRunRes() {}
 type PromptRunFigures struct {
 	// The run's id.
 	RunId uuid.UUID `json:"runId"`
+	// The models the run asked, by OpenRouter id; the charts break where they changed.
+	Models []string `json:"models"`
 	// When it started.
 	StartedAt time.Time `json:"startedAt"`
 	// The version of the Prompt set it asked.
@@ -10556,6 +10558,11 @@ type PromptRunFigures struct {
 // GetRunId returns the value of RunId.
 func (s *PromptRunFigures) GetRunId() uuid.UUID {
 	return s.RunId
+}
+
+// GetModels returns the value of Models.
+func (s *PromptRunFigures) GetModels() []string {
+	return s.Models
 }
 
 // GetStartedAt returns the value of StartedAt.
@@ -10626,6 +10633,11 @@ func (s *PromptRunFigures) GetCitation() OptFloat64 {
 // SetRunId sets the value of RunId.
 func (s *PromptRunFigures) SetRunId(val uuid.UUID) {
 	s.RunId = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptRunFigures) SetModels(val []string) {
+	s.Models = val
 }
 
 // SetStartedAt sets the value of StartedAt.

@@ -114,7 +114,7 @@ func (h *Handler) GetPromptTestHistory(ctx context.Context) (oas.GetPromptTestHi
 			RunId: f.RunID, StartedAt: f.StartedAt, PromptSetVersion: int32(f.Version), Partial: f.Partial, //nolint:gosec // small versions
 			Tasks: int32(f.Tasks), Answered: int32(f.Answered), Read: int32(f.Read), //nolint:gosec // at most a few thousand
 			All: optShare(f.All), Dutch: optShare(f.Dutch), German: optShare(f.German), English: optShare(f.English),
-			Twente: optShare(f.Twente), Citation: optShare(f.Citation),
+			Twente: optShare(f.Twente), Citation: optShare(f.Citation), Models: f.Models,
 		}
 		if why := v.FailureOf[f.RunID]; why != "" {
 			r.Failure = oas.NewOptString(why)

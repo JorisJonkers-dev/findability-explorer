@@ -2838,6 +2838,10 @@ export type PromptRunFigures = {
      */
     runId: string;
     /**
+     * The models the run asked, by OpenRouter id; the charts break where they changed.
+     */
+    models?: Array<string>;
+    /**
      * When it started.
      */
     startedAt: string;

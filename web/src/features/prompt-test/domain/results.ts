@@ -24,8 +24,12 @@ const PROVIDERS: Record<string, string> = {
   deepseek: 'DeepSeek',
 }
 
+/** A column's name: its provider's, and for a column keyed by a model id, the model after it. */
 export function providerName(id: string): string {
-  return PROVIDERS[id] ?? id
+  const cut = id.indexOf('/')
+  if (cut < 0) return PROVIDERS[id] ?? id
+  const provider = id.slice(0, cut)
+  return `${PROVIDERS[provider] ?? provider}, ${id.slice(cut + 1)}`
 }
 
 export const SCOPES: readonly { value: PromptScope; label: string }[] = [

@@ -603,3 +603,40 @@ func isUniqueViolation(err error) bool {
 	var pg *pgconn.PgError
 	return errors.As(err, &pg) && pg.Code == "23505"
 }
+
+// Definitions returns every version of the competitor definition, the newest first.
+func (r *Repository) Definitions(ctx context.Context) ([]domain.Definition, error) {
+	rows, err := r.store.Queries().ListCompetitorDefinitions(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select competitor definitions: %w", err)
+	}
+	out := make([]domain.Definition, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Definition{
+			Version: int(row.Version), Text: row.Text, SavedAt: row.SavedAt.UTC(), SavedBy: row.SavedBy, RestoredFrom: int(row.RestoredFrom),
+		})
+	}
+	return out, nil
+}
+
+// AddDefinition stores text as the next version of the competitor definition and returns it.
+func (r *Repository) AddDefinition(ctx context.Context, text, by string, restoredFrom int, at time.Time) (domain.Definition, error) {
+	from := pgtype.Int8{Int64: int64(restoredFrom), Valid: restoredFrom > 0}
+	version, err := r.store.Queries().AddCompetitorDefinition(ctx, queries.AddCompetitorDefinitionParams{
+		Text: text, SavedAt: at, SavedBy: by, RestoredFrom: from,
+	})
+	if err != nil {
+		return domain.Definition{}, fmt.Errorf("insert competitor definition: %w", err)
+	}
+	return domain.Definition{Version: int(version), Text: text, SavedAt: at.UTC(), SavedBy: by, RestoredFrom: restoredFrom}, nil
+}
+
+// CheckUsage sums what every request of the reviews and checks used, and counts the companies
+// they checked.
+func (r *Repository) CheckUsage(ctx context.Context) (domain.ReviewUsage, int, error) {
+	row, err := r.store.Queries().PromptCheckUsage(ctx)
+	if err != nil {
+		return domain.ReviewUsage{}, 0, fmt.Errorf("sum what the checks used: %w", err)
+	}
+	return domain.ReviewUsage{InputTokens: row.Input, OutputTokens: row.Output}, int(row.Checked), nil
+}

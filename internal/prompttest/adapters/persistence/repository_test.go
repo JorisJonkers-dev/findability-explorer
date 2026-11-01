@@ -353,7 +353,7 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 
 	checks := []domain.CompanyVerdict{
 		{CandidateID: "00000000000000a1", Competitor: true, Sure: true, Reason: "Makes metal belts.", Model: "anthropic: claude-haiku-5-5", Version: 1, At: at},
-		{CandidateID: "00000000000000b1", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: at},
+		{CandidateID: "00000000000000b1", Model: "anthropic: claude-haiku-5-5", Version: 2, At: at},
 	}
 	if err := r.SaveCompanyVerdicts(ctx, checks); err != nil {
 		t.Fatal(err)
@@ -373,14 +373,14 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 
 	// The checks of the companies on the list.
 	list := []domain.ListCheck{
-		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting.", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: at},
+		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting.", Model: "anthropic: claude-haiku-5-5", Version: 2, At: at},
 		{CompanyID: "wire-belt", Competitor: true, Model: "anthropic: claude-haiku-5-5", Version: 1, At: at.Add(time.Minute)},
 	}
 	if err := r.SaveListChecks(ctx, list); err != nil {
 		t.Fatal(err)
 	}
 	redone := list[1]
-	redone.Sure, redone.Version, redone.At = true, domain.CheckVersion, at.Add(time.Hour)
+	redone.Sure, redone.Version, redone.At = true, 2, at.Add(time.Hour)
 	if err := r.SaveListChecks(ctx, []domain.ListCheck{redone}); err != nil {
 		t.Fatal(err)
 	}

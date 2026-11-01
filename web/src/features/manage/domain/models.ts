@@ -37,7 +37,7 @@ export function modelName(e: PromptCatalogueModel | undefined, id = ''): string 
   return cut >= 0 ? e.name.slice(cut + 2) : e.name
 }
 
-const providerOf = (id: string): string => id.split('/')[0] ?? id
+const providerOf = (id: string): string => id.replace(/\/.*$/, '')
 
 /** What one run of the model costs: every question from its own knowledge and with web search. */
 const perRun = (e: PromptCatalogueModel, questions: number): number => questions * (e.knowledgeUsd + e.webUsd)

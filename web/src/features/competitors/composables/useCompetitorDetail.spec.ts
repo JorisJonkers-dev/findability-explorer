@@ -1,7 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
-import { competitor, overview, promptResults, readiness, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
+import { competitor, overview, promptAnswer, promptResults, readiness, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { useCompetitorDetail } from './useCompetitorDetail'
@@ -80,5 +80,46 @@ describe('useCompetitorDetail', () => {
     expect(ready?.usText).toBe('Not known')
     expect(sitemap?.usText).toBe('Not known')
     expect(terms?.usText).toBe('Not known')
+  })
+
+  it("says what the competitor page needs: its purpose, its data line, where it is ahead, its terms, and each model's share", async () => {
+    const run = promptResults().runs[0]
+    const answers = [promptAnswer({ model: 'openai/gpt' }), promptAnswer({ model: 'openai/gpt' }, ['Tribelt:tribelt'])]
+    const { state, sent } = mountComposable(
+      () => useCompetitorDetail(ref('twentebelt')),
+      api({ [`GET /api/v1/prompt-runs/${run?.id ?? ''}/answers`]: () => json({ run, items: answers }) }),
+    )
+    await flushPromises()
+    expect(state.purpose.value).toBe('twentebelt.com, on the competitor list. It sells Tri-Flex belts.')
+    expect(state.dataLine.value).toBe('From the Prompt run of 1 November 2026 and Twentebelt has not been scanned yet.')
+    expect(state.ahead.value).toHaveLength(2)
+    expect(state.ahead.value[0]).toContain('75%, against Tribelt’s 25%.')
+    expect(state.terms.value.shown.map((t) => t.term)).toEqual(['TwenteFlex'])
+    expect(state.modelBars.value).toEqual([{ label: 'openai/gpt', value: 0.5, display: '50%', tone: 'blue-grey', highlight: false }])
+    expect(sent.some((r) => r.includes('/answers'))).toBe(true)
+  })
+
+  it('asks for no responses before a run, and says nothing of a company it does not know', async () => {
+    const { state, sent } = mountComposable(() => useCompetitorDetail(ref('nobody')), api({ 'GET /api/v1/prompt-test': () => json(promptResults({ runs: [] })) }))
+    await flushPromises()
+    expect(state.purpose.value).toBe('')
+    expect(state.dataLine.value).toBe('')
+    expect(state.modelBars.value).toEqual([])
+    expect(sent.some((r) => r.includes('/answers'))).toBe(false)
+  })
+
+  it('dates a running run by its start, and a scan by its finish or its start', async () => {
+    const running = { ...promptResults().runs[0], finishedAt: undefined, status: 'running' as const }
+    const finished = competitor('Twentebelt', { scans: 2, lastScan: summary({ createdAt: '2026-10-19T08:00:00Z', finishedAt: '2026-10-20T09:00:00Z' }) })
+    const started = competitor('Martens', { lastScan: summary({ createdAt: '2026-10-21T08:00:00Z', finishedAt: undefined }) })
+    const { state } = mountComposable(
+      () => useCompetitorDetail(ref('twentebelt')),
+      api({ 'GET /api/v1/prompt-test': () => json(promptResults({ runs: [running] })) }, [tribelt, finished, started]),
+    )
+    await flushPromises()
+    expect(state.dataLine.value).toBe('From the Prompt run of 1 November 2026 and the scan of Twentebelt on 20 October 2026.')
+    const other = mountComposable(() => useCompetitorDetail(ref('martens')), api({}, [tribelt, finished, started]))
+    await flushPromises()
+    expect(other.state.dataLine.value).toBe('From the Prompt run of 1 November 2026 and the scan of Martens on 21 October 2026.')
   })
 })

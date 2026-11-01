@@ -152,6 +152,9 @@ func TestHaikuHandsTheReadingToOpenRouterOnceTheMonthsTokensAreSpent(t *testing.
 
 func TestHaikuKeepsReadingWhenTheBudgetCannotBeReadDuringARun(t *testing.T) {
 	e := newEnv(t, newRepo(), "a")
+	// One provider, so its answers are read one after another: with two, each provider's goroutine
+	// reads its own, and the two failures could fall on two answers, each then read on its retry.
+	e.repo.settings.Providers = []string{"openai"}
 	h := &haiku{fail: 2} // the first answer cannot be read: its tokens still count
 	var mu sync.Mutex
 	calls := 0
@@ -167,7 +170,7 @@ func TestHaikuKeepsReadingWhenTheBudgetCannotBeReadDuringARun(t *testing.T) {
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)
 	}
-	if got := e.run(t); got.Status != domain.RunDone || h.read != 79 || e.gw.extracted != 0 {
+	if got := e.run(t); got.Status != domain.RunDone || h.read != 39 || e.gw.extracted != 0 {
 		t.Fatalf("status %s, %d read by Haiku, %d by OpenRouter", got.Status, h.read, e.gw.extracted)
 	}
 	failed := 0

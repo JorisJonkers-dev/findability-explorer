@@ -1192,11 +1192,12 @@ func (q *Queries) PromptSightings(ctx context.Context) ([]PromptSightingsRow, er
 const promptSpentSince = `-- name: PromptSpentSince :one
 SELECT (
     coalesce((SELECT sum(cost_micros) FROM prompt_answers WHERE answered_at >= $1), 0)
-    + coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= $1), 0)
+    + coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= $1 AND haiku_tokens = 0), 0)
 )::bigint AS spent
 `
 
-// What answers and extractions cost since a moment, in millionths of a dollar.
+// What the OpenRouter key paid since a moment, in millionths of a dollar: the answers, and the
+// readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 func (q *Queries) PromptSpentSince(ctx context.Context, since time.Time) (int64, error) {
 	row := q.db.QueryRow(ctx, promptSpentSince, since)
 	var spent int64

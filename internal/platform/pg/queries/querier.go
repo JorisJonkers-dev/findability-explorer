@@ -137,7 +137,8 @@ type Querier interface {
 	PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)
-	// What answers and extractions cost since a moment, in millionths of a dollar.
+	// What the OpenRouter key paid since a moment, in millionths of a dollar: the answers, and the
+	// readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 	PromptSpentSince(ctx context.Context, since time.Time) (int64, error)
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
 	// Runs a finished run again, held by owner, unless any run is running: the run lock.

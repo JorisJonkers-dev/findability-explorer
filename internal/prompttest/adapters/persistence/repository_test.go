@@ -223,7 +223,9 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if bare, _ := repo.Answers(ctx, r.ID, false); bare[0].Text != "" || bare[0].Extraction == nil {
 		t.Errorf("answers without text = %+v", bare[0])
 	}
-	if spent, err := repo.SpentSince(ctx, at); err != nil || spent != 1500+200+7+3 {
+	// The OpenRouter key paid for the answers and the reading OpenRouter did; Claude Haiku's
+	// reading is the Anthropic key's, counted there only.
+	if spent, err := repo.SpentSince(ctx, at); err != nil || spent != 1500+200 {
 		t.Errorf("spent = %d, %v", spent, err)
 	}
 	if spent, _ := repo.SpentSince(ctx, at.Add(time.Hour)); spent != 0 {

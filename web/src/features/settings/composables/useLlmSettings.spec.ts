@@ -4,14 +4,16 @@ import { ref } from 'vue'
 import { getLlmSettingsQueryKey } from '../../../infrastructure/api/@tanstack/vue-query.gen'
 import type { LlmSettings } from '../../../infrastructure/api/types.gen'
 import { mountComposable } from '../../../testing/mountComposable'
-import { json, llmSettings, models, problem, routes, STORED_ID } from '../fixtures'
+import { json, llmSettings, models, OTHER_ID, problem, routes, STORED_ID, storedCredential, vaultCredential } from '../fixtures'
 import {
   useActiveModel,
+  useBudgetChange,
   useAddCredential,
   useCredentialTest,
   useLlmModels,
   useLlmSettings,
   useRemoveCredential,
+  useReplaceCredential,
 } from './useLlmSettings'
 
 const SETTINGS = 'GET /api/v1/admin/llm'
@@ -162,5 +164,78 @@ describe('the changes', () => {
     await flushPromises()
     expect(state.error.value).toBe('Internal Server Error')
     expect(state.notice.value).toBeNull()
+  })
+})
+
+describe('useReplaceCredential', () => {
+  const ADD = 'POST /api/v1/admin/llm/credentials'
+  const REMOVE = `DELETE /api/v1/admin/llm/credentials/${STORED_ID}`
+
+  it('adds the new key, then removes the stored one it replaces', async () => {
+    const bodies: unknown[] = []
+    const { state, sent } = mountComposable(
+      useReplaceCredential,
+      routes({
+        [ADD]: async (r) => (bodies.push(await r.json()), json(storedCredential({ id: OTHER_ID }), 201)),
+        [REMOVE]: () => new Response(null, { status: 204 }),
+        [SETTINGS]: () => json(llmSettings()),
+      }),
+    )
+    let replaced = 0
+    state.replace(storedCredential(), 'New key', 'sk-or-new', () => replaced++)
+    expect(state.isReplacing.value).toBe(true)
+    await flushPromises()
+    expect(bodies).toEqual([{ provider: 'openrouter', label: 'New key', apiKey: 'sk-or-new' }])
+    expect(sent.filter((r) => !r.startsWith('GET'))).toEqual([ADD, REMOVE])
+    expect(replaced).toBe(1)
+    expect(state.error.value).toBeNull()
+  })
+
+  it('keeps the Vault key, which Vault delivers', async () => {
+    const { state, sent } = mountComposable(useReplaceCredential, routes({ [ADD]: () => json(storedCredential({ id: OTHER_ID, provider: 'anthropic' }), 201) }))
+    let replaced = 0
+    state.replace(vaultCredential(), 'Course key', 'sk-ant-new', () => replaced++)
+    await flushPromises()
+    expect(sent).toEqual([ADD])
+    expect(replaced).toBe(1)
+  })
+
+  it('says why the new key was refused, or why the old one stayed', async () => {
+    const refused = mountComposable(useReplaceCredential, routes({ [ADD]: () => problem(422, 'Unprocessable', 'Invalid key.') }))
+    refused.state.replace(storedCredential(), 'New key', 'sk-or-refused-key', () => undefined)
+    await flushPromises()
+    expect(refused.state.error.value).toBe('The provider refused this key. Invalid key.')
+    expect(refused.sent).toEqual([ADD])
+    const stuck = mountComposable(
+      useReplaceCredential,
+      routes({ [ADD]: () => json(storedCredential({ id: OTHER_ID }), 201), [REMOVE]: () => problem(404, 'Not Found'), [SETTINGS]: () => json(llmSettings()) }),
+    )
+    stuck.state.replace(storedCredential(), 'New key', 'sk-or-new', () => undefined)
+    await flushPromises()
+    expect(stuck.state.error.value).toBe('That key no longer exists. Reload the page.')
+  })
+})
+
+describe('useBudgetChange', () => {
+  it('sets the budget and keeps the settings it answers with', async () => {
+    const bodies: unknown[] = []
+    const { state, queryClient } = mountComposable(
+      useBudgetChange,
+      routes({ 'PATCH /api/v1/admin/llm/budget': async (r) => (bodies.push(await r.json()), json(llmSettings())) }),
+    )
+    let saved = 0
+    state.save(20, () => saved++)
+    await flushPromises()
+    expect(bodies).toEqual([{ monthlyBudgetUsd: 20 }])
+    expect(saved).toBe(1)
+    expect(queryClient.getQueryData(getLlmSettingsQueryKey())).toBeDefined()
+    expect(state.error.value).toBeNull()
+  })
+
+  it('says why the budget was refused', async () => {
+    const { state } = mountComposable(useBudgetChange, routes({ 'PATCH /api/v1/admin/llm/budget': () => problem(422, 'Unprocessable', 'Too high.') }))
+    state.save(20, () => undefined)
+    await flushPromises()
+    expect(state.error.value).toBe('The budget was not saved. Too high.')
   })
 })

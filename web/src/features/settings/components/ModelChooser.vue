@@ -6,7 +6,7 @@ import { useActiveModel, useLlmModels } from '../composables/useLlmSettings'
 import { activeState, choosableCredentials, credentialName } from '../domain/credentials'
 import { filterModels, modelLabel } from '../domain/models'
 
-const props = defineProps<{ settings: LlmSettings }>()
+const props = withDefaults(defineProps<{ settings: LlmSettings; heading?: boolean }>(), { heading: true })
 
 const state = computed(() => activeState(props.settings))
 const keys = computed(() => choosableCredentials(props.settings.credentials))
@@ -36,7 +36,7 @@ function submit(): void {
 
 <template>
   <section aria-labelledby="model-title" class="flex flex-col gap-5">
-    <h2 id="model-title" class="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">Model for product matching</h2>
+    <h2 id="model-title" :class="heading ? '' : 'sr-only'" class="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">Model for product matching</h2>
 
     <div class="flex flex-col gap-3 rounded-2xl bg-mist p-5 sm:p-6">
       <span class="text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase">In use now</span>

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, toRef, useTemplateRef } from 'vue'
 import type { LlmCredential } from '../../../infrastructure/api/types.gen'
-import { useCredentialTest, useKeyUsage, useRemoveCredential } from '../composables/useLlmSettings'
+import { ACTIONS, FIELD, LABEL, PRIMARY } from '../../manage/components/widgets/look'
+import { useCredentialTest, useKeyUsage, useRemoveCredential, useReplaceCredential } from '../composables/useLlmSettings'
+import { checkNewKey, MAX_KEY_LENGTH, MAX_LABEL_LENGTH, type NewKeyCheck } from '../domain/credentials'
+import { keyStatus } from '../domain/keys'
 import { canRemove, credentialName, originLabel, sourceLabel, testOutcome } from '../domain/credentials'
 import { usageLines } from '../domain/usage'
 
 const props = defineProps<{ credential: LlmCredential }>()
-const emit = defineEmits<{ removed: [] }>()
+const emit = defineEmits<{ removed: []; replaced: [] }>()
 
 const { isTesting, outcome, error: testError, test } = useCredentialTest()
 const { isRemoving, error: removeError, remove } = useRemoveCredential()
@@ -20,6 +23,21 @@ const cancelButton = useTemplateRef<HTMLButtonElement>('cancelButton')
 const titleId = computed(() => `key-${props.credential.id}`)
 // The test just run, or else the last one on record.
 const lastTest = computed(() => outcome.value ?? (props.credential.lastTest ? testOutcome(props.credential.lastTest) : null))
+
+// Replacing the key: a new name and key, checked by the provider before the old key goes.
+const { isReplacing, error: replaceError, replace } = useReplaceCredential()
+const newLabel = ref(props.credential.label)
+const newKey = ref('')
+const check = ref<NewKeyCheck>(null)
+
+function submitReplace(): void {
+  check.value = checkNewKey(newLabel.value, newKey.value)
+  if (check.value) return
+  replace(props.credential, newLabel.value.trim(), newKey.value.trim(), () => {
+    newKey.value = ''
+    emit('replaced')
+  })
+}
 
 async function askToRemove(): Promise<void> {
   confirming.value = true
@@ -42,10 +60,13 @@ function confirmRemove(): void {
 </script>
 
 <template>
-  <li class="flex flex-col gap-3 rounded-2xl bg-mist p-5 sm:p-6" :aria-labelledby="titleId">
+  <li class="flex flex-col gap-3 rounded-2xl bg-white p-5 sm:p-6" :aria-labelledby="titleId">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <h3 :id="titleId" class="m-0 text-xl font-semibold">{{ credentialName(credential) }}</h3>
-      <span class="rounded-full bg-white px-3 py-0.5 text-sm font-medium">{{ sourceLabel(credential) }}</span>
+      <span class="flex flex-wrap gap-2">
+        <span data-part="status" class="rounded-full bg-mist px-3 py-0.5 text-sm font-medium">{{ keyStatus(credential) }}</span>
+        <span class="rounded-full bg-mist px-3 py-0.5 text-sm font-medium">{{ sourceLabel(credential) }}</span>
+      </span>
     </div>
     <p class="m-0 text-sm text-ink-2">
       Fingerprint <code class="font-mono text-black">{{ credential.fingerprint }}</code>.
@@ -61,7 +82,7 @@ function confirmRemove(): void {
       </template>
       <span v-else class="text-muted">Not tested yet.</span>
     </p>
-    <div v-if="showUsage" class="flex flex-col gap-1 rounded-xl bg-white p-4 text-sm" aria-live="polite" data-testid="key-usage">
+    <div v-if="showUsage" class="flex flex-col gap-1 rounded-xl bg-mist p-4 text-sm" aria-live="polite" data-testid="key-usage">
       <p v-if="usageLoading" class="m-0 text-muted">Asking the provider…</p>
       <p v-else-if="usageError" role="alert" class="m-0 font-medium text-orange-ink">{{ usageError }}</p>
       <template v-else-if="usage">
@@ -80,7 +101,7 @@ function confirmRemove(): void {
         :aria-describedby="titleId"
         @click="test(credential.id)"
       >
-        {{ isTesting ? 'Testing…' : 'Test' }}
+        {{ isTesting ? 'Testing…' : 'Test the key' }}
       </button>
       <button
         type="button"
@@ -125,5 +146,27 @@ function confirmRemove(): void {
       </template>
       <span v-else class="text-sm text-muted">Vault delivers this key; change or remove it in Vault.</span>
     </div>
+
+    <details class="group rounded-xl bg-mist px-4 py-3">
+      <summary class="min-h-11 cursor-pointer content-center font-semibold text-orange-ink">Replace the key</summary>
+      <form novalidate :aria-label="`Replace ${credentialName(credential)}`" class="mt-3 flex flex-col gap-3" @submit.prevent="submitReplace">
+        <p class="m-0 text-sm text-ink-2">
+          The provider checks the new key first. Once it is stored, {{ canRemove(credential) ? 'this key is removed' : 'this key stays in Vault, and the new one is used alongside it' }}.
+        </p>
+        <label :class="LABEL">
+          Label
+          <input v-model="newLabel" type="text" :maxlength="MAX_LABEL_LENGTH" autocomplete="off" :class="FIELD" />
+        </label>
+        <label :class="LABEL">
+          Key
+          <input v-model="newKey" type="password" autocomplete="off" spellcheck="false" :maxlength="MAX_KEY_LENGTH" :class="[FIELD, 'font-mono']" />
+        </label>
+        <p v-if="check" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ check.message }}</p>
+        <p v-if="replaceError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ replaceError }}</p>
+        <div :class="ACTIONS">
+          <button type="submit" :class="PRIMARY" :disabled="isReplacing">{{ isReplacing ? 'Checking the key…' : 'Save the new key' }}</button>
+        </div>
+      </form>
+    </details>
   </li>
 </template>

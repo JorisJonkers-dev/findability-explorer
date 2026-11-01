@@ -192,8 +192,8 @@ describe('the routes', () => {
       [`/scan/${ANALYSIS_ID}?company=twentebelt`, `/manage/scans/${ANALYSIS_ID}?company=twentebelt`],
       ['/settings', '/manage/keys'],
       ['/settings/prompt-test', '/manage/prompt-test'],
-      ['/settings/terms?status=accepted', '/manage/terms/waiting?status=accepted'],
-      ['/settings/competitors', '/manage/competitors/candidates'],
+      ['/settings/terms?status=accepted', '/manage/terms?status=accepted'],
+      ['/settings/competitors', '/manage/competitors'],
       ['/how-it-works', '/help'],
     ]
     for (const [from, to] of moves) {
@@ -202,11 +202,11 @@ describe('the routes', () => {
     }
   })
 
-  it('opens a Manage section on its one subpage until the section has a page of its own', async () => {
+  it('opens each Manage section on its own index page', async () => {
     const { router } = await mountApp(api, '/manage/competitors')
-    expect(router.currentRoute.value.fullPath).toBe('/manage/competitors/candidates')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/competitors')
     await router.push('/manage/terms')
-    expect(router.currentRoute.value.fullPath).toBe('/manage/terms/waiting')
+    expect(router.currentRoute.value.fullPath).toBe('/manage/terms')
   })
 
   it('keeps the scroll position within a view, and starts a new view at the top', async () => {

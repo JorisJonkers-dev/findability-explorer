@@ -10,8 +10,9 @@ import {
   listLlmModelsOptions,
   setActiveLlmMutation,
   testLlmCredentialMutation,
+  updateLlmBudgetMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
-import type { ActiveLlm, LlmKeyUsage, LlmModel, LlmSettings, NewLlmCredential } from '../../../infrastructure/api/types.gen'
+import type { ActiveLlm, LlmCredential, LlmKeyUsage, LlmModel, LlmSettings, NewLlmCredential } from '../../../infrastructure/api/types.gen'
 import { testOutcome } from '../domain/credentials'
 import { isForbidden, type SettingsAction, settingsProblem } from '../domain/problems'
 
@@ -164,6 +165,69 @@ export function useActiveModel() {
       last.value = 'turnOff'
       notice.value = null
       clear.mutate({}, { onSuccess: (settings) => { store(settings, 'Product matching is off.') } })
+    },
+  }
+}
+
+/**
+ * Replaces a key: the provider checks the new one and it is stored, then the old one is removed if
+ * it was stored here (Vault's stays, as Vault delivers it). A refused key replaces nothing.
+ */
+export function useReplaceCredential() {
+  const refresh = useRefresh()
+  const add = useMutation(addLlmCredentialMutation())
+  const remove = useMutation(deleteLlmCredentialMutation())
+  const last = ref<'add' | 'remove'>('add')
+  return {
+    isReplacing: computed(() => add.isPending.value || remove.isPending.value),
+    error: computed(() => {
+      const failure = last.value === 'add' ? add.error.value : remove.error.value
+      return failure ? settingsProblem(failure, last.value) : null
+    }),
+    replace: (old: Pick<LlmCredential, 'id' | 'source' | 'provider'>, label: string, apiKey: string, onReplaced: () => void) => {
+      last.value = 'add'
+      remove.reset()
+      add.mutate(
+        { body: { provider: old.provider, label, apiKey } },
+        {
+          onSuccess: () => {
+            if (old.source !== 'stored') {
+              refresh()
+              onReplaced()
+              return
+            }
+            last.value = 'remove'
+            remove.mutate(
+              { path: { credentialId: old.id } },
+              {
+                onSettled: refresh,
+                onSuccess: onReplaced,
+              },
+            )
+          },
+        },
+      )
+    },
+  }
+}
+
+/** Sets the Anthropic key's monthly budget in dollars; the answer is the settings, so they are kept. */
+export function useBudgetChange() {
+  const queryClient = useQueryClient()
+  const change = useMutation(updateLlmBudgetMutation())
+  return {
+    isSaving: change.isPending,
+    error: computed(() => (change.error.value ? settingsProblem(change.error.value, 'budget') : null)),
+    save: (monthlyBudgetUsd: number, onSaved: () => void) => {
+      change.mutate(
+        { body: { monthlyBudgetUsd } },
+        {
+          onSuccess: (settings) => {
+            queryClient.setQueryData(getLlmSettingsQueryKey(), settings)
+            onSaved()
+          },
+        },
+      )
     },
   }
 }

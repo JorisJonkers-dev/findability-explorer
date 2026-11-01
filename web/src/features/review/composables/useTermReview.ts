@@ -4,7 +4,9 @@ import {
   acceptTermCandidateMutation,
   listTermCandidatesOptions,
   rejectTermCandidateMutation,
+  setTermReviewMutation,
   startTermReviewMutation,
+  stopTermReviewMutation,
   undoTermDecisionMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
 import type { TermAcceptance, TermCandidate, TermCandidateCounts, TermCandidateStatus, TermReviewState } from '../../../infrastructure/api/types.gen'
@@ -64,7 +66,7 @@ export function useTermDecision() {
     }),
     accept: (candidateId: string, body: TermAcceptance) => {
       begin('accept')
-      accept.mutate({ path: { candidateId }, body }, { onSuccess: () => { done(`Added “${body.term}” to the terminology map.`) } })
+      accept.mutate({ path: { candidateId }, body }, { onSuccess: () => { done(`Added “${body.term}” to the search term list.`) } })
     },
     reject: (candidateId: string, phrase: string) => {
       begin('reject')
@@ -86,6 +88,30 @@ export function useStartReview() {
     error: computed(() => (start.error.value ? reviewProblem(start.error.value) : null)),
     start: () => {
       start.mutate({}, { onSuccess: () => void queryClient.invalidateQueries({ queryKey: [{ _id: 'listTermCandidates' }] }) })
+    },
+  }
+}
+
+/**
+ * Switches the term review on, so it reviews by itself every ten minutes, or off, so it reviews only
+ * when asked; and stops a review that runs, which keeps what it decided.
+ */
+export function useTermReviewControl() {
+  const queryClient = useQueryClient()
+  const sw = useMutation(setTermReviewMutation())
+  const stop = useMutation(stopTermReviewMutation())
+  const refresh = () => void queryClient.invalidateQueries({ queryKey: [{ _id: 'listTermCandidates' }] })
+  const failure = computed(() => sw.error.value ?? stop.error.value)
+  return {
+    isBusy: computed(() => sw.isPending.value || stop.isPending.value),
+    error: computed(() => (failure.value ? reviewProblem(failure.value) : null)),
+    setOn: (on: boolean) => {
+      stop.reset()
+      sw.mutate({ body: { on } }, { onSuccess: refresh })
+    },
+    stop: () => {
+      sw.reset()
+      stop.mutate({}, { onSuccess: refresh })
     },
   }
 }

@@ -101,6 +101,7 @@ describe('finding and acting on many companies', () => {
     expect(reviewLine({ running: false, problem: 'noKey' }, 3)).toBe('No Anthropic key is set up, so Haiku cannot check the companies.')
     expect(reviewLine({ running: false, problem: 'budget' }, 3)).toBe("This month's language-model budget is used up, so Haiku checks the rest next month.")
     expect(reviewLine({ running: false, problem: 'failed' }, 3)).toBe('Haiku failed on its last try. Try again.')
+    expect(reviewLine({ running: false, problem: 'stopped' }, 3)).toBe('An administrator stopped the review. What Haiku decided is kept.')
     expect(reviewLine({ running: false }, 1)).toBe('Haiku has not checked 1 company yet.')
     expect(reviewLine({ running: false }, 12)).toBe('Haiku has not checked 12 companies yet.')
     expect(reviewLine({ running: false }, 0)).toBe('Haiku has checked every company.')

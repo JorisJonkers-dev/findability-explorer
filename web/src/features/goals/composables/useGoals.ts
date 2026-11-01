@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { getPlanOptions, getStandingsOptions } from '../../../infrastructure/api/@tanstack/vue-query.gen'
 import { describeError } from '../../../shared/describeError'
-import type { Facts } from '../domain/numbers'
+import type { Facts } from '../domain/goals'
 
 /** Server state for the numbers to watch: the plan holds their targets, the standings the competitors. Both are shared, cached requests. */
-export function useNumbers() {
+export function useGoals() {
   const plan = useQuery(getPlanOptions())
   const standings = useQuery(getStandingsOptions())
   const failure = computed(() => plan.error.value ?? standings.error.value)

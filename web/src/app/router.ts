@@ -21,7 +21,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/goals/:measure',
         name: 'goal',
-        component: () => import('../features/numbers/components/NumberDetailView.vue'),
+        component: () => import('../features/goals/components/GoalView.vue'),
         props: (to) => ({ measure: String(to.params.measure) }),
         meta: { title: 'Goal', view: 'results' },
       },

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
@@ -71,6 +72,9 @@ type Service struct {
 
 	// review is the language model's part of the queue; nil until WithReviewer.
 	review *reviewer
+	// journal records each review for Activity, report hears that it failed; nil until WithJournal.
+	journal work.Journal
+	report  func(error)
 	// budget stops the review once the month's Anthropic budget is spent; nil until WithBudget.
 	budget BudgetSpent
 }

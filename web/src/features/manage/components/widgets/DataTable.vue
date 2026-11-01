@@ -1,11 +1,8 @@
 <script setup lang="ts" generic="T">
 import { computed, ref, useId } from 'vue'
-import { directionOf, nextSort, type Sort, sortLabel, sortRows, type SortValue } from '../../../../shared/sort'
-import { searchable, searchRows, shownLine, visibleRows } from '../../domain/table'
+import { directionOf, nextSort, type Sort, sortLabel, sortRows } from '../../../../shared/sort'
+import { type Column, searchable, searchRows, shownLine, visibleRows } from '../../domain/table'
 import { FIELD, LABEL, SECONDARY, TABLE, TABLE_BOX, TD, TH } from './look'
-
-/** A column: its key, its heading, and the value it sorts by; num right-aligns a count. */
-export type Column<R> = { key: string; label: string; value?: (row: R) => SortValue; num?: boolean }
 
 /**
  * A Manage table: every column with a value sorts, a long table searches, and it shows the first

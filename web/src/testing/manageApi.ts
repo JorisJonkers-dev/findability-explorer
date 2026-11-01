@@ -1,3 +1,4 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { Competitor } from '../infrastructure/api/types.gen'
 import { llmSettings } from '../features/settings/fixtures'
 import { me, readinessTable } from './fixtures'
@@ -24,8 +25,8 @@ export function manageApi(extra: Record<string, Handler> = {}, companies: Compet
 export const noContent = (): Response => new Response(null, { status: 204 })
 
 /** The button with exactly this text, or an error naming it. */
-export function buttonNamed<W extends { findAll: (s: string) => { text: () => string }[] }>(wrapper: W, text: string): ReturnType<W['findAll']>[number] {
+export function buttonNamed(wrapper: Pick<VueWrapper, 'findAll'>, text: string): DOMWrapper<HTMLButtonElement> {
   const found = wrapper.findAll('button').find((b) => b.text() === text)
   if (!found) throw new Error(`no button "${text}"`)
-  return found as ReturnType<W['findAll']>[number]
+  return found
 }

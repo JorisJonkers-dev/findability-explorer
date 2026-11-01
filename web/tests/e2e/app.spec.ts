@@ -1,7 +1,7 @@
 import { expect, expectAccessible, test } from './fixtures'
 
 const SECTIONS = [
-  { path: '/ai-responses', title: 'AI responses', heading: /^(Tribelt .* AI answers name|AI assistants, and what they say about Tribelt|AI assistants have not been asked about Tribelt yet)/ },
+  { path: '/ai-responses', title: 'AI responses', heading: 'AI responses' },
   { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors? sells? metal belts that Tribelt’s buyers could buy instead\.$/ },
   { path: '/terms', title: 'Search terms', heading: /^Competitors list belts using \d+ terms/ },
   { path: '/recommendations', title: 'Recommendations', heading: 'Start with the changes that help Tribelt most.' },

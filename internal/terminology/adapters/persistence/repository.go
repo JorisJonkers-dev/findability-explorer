@@ -161,11 +161,11 @@ func insertUsage(ctx context.Context, q *queries.Queries, usage []domain.Usage) 
 	return nil
 }
 
-// TokensSince is how many tokens asking the language model for verdicts used since t.
-func (r *Repository) TokensSince(ctx context.Context, t time.Time) (int64, error) {
-	n, err := r.store.Queries().TermReviewTokensSince(ctx, t)
+// TokensSince is how many tokens in and out asking the language model for verdicts used since t.
+func (r *Repository) TokensSince(ctx context.Context, t time.Time) (input, output int64, err error) {
+	row, err := r.store.Queries().TermReviewTokensSince(ctx, t)
 	if err != nil {
-		return 0, fmt.Errorf("sum the review's tokens: %w", err)
+		return 0, 0, fmt.Errorf("sum the review's tokens: %w", err)
 	}
-	return n, nil
+	return row.Input, row.Output, nil
 }

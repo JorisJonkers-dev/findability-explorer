@@ -140,8 +140,9 @@ type Handler interface {
 	GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (GetLlmKeyUsageRes, error)
 	// GetLlmSettings implements getLlmSettings operation.
 	//
-	// Returns every credential (never a secret), the model product matching uses now, the token budget,
-	// and the latest 50 changes and tests, newest first.
+	// Returns every credential (never a secret), the model product matching uses now, the Anthropic key's
+	// monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and
+	// tests, newest first.
 	//
 	// GET /api/v1/admin/llm
 	GetLlmSettings(ctx context.Context) (GetLlmSettingsRes, error)
@@ -506,6 +507,14 @@ type Handler interface {
 	//
 	// PATCH /api/v1/competitors/{competitorId}
 	UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (UpdateCompetitorRes, error)
+	// UpdateLlmBudget implements updateLlmBudget operation.
+	//
+	// Administrators only. Sets what every job a Claude model does may spend in a month together, in
+	// dollars, from one cent to $1,000, and records the change in the events. Work already spent past a
+	// lower budget stops at its next step and keeps what it did.
+	//
+	// PATCH /api/v1/admin/llm/budget
+	UpdateLlmBudget(ctx context.Context, req *LlmBudgetChange) (UpdateLlmBudgetRes, error)
 	// UpdatePromptTestSettings implements updatePromptTestSettings operation.
 	//
 	// Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact

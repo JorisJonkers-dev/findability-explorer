@@ -64,6 +64,7 @@ type Querier interface {
 	GetAnalysisReadiness(ctx context.Context, analysisID uuid.UUID) ([]AnalysisReadiness, error)
 	GetAnalysisReadinessFiles(ctx context.Context, analysisID uuid.UUID) (GetAnalysisReadinessFilesRow, error)
 	GetLlmActive(ctx context.Context) (GetLlmActiveRow, error)
+	GetLlmBudget(ctx context.Context) (int64, error)
 	GetLlmCredential(ctx context.Context, id uuid.UUID) (LlmCredential, error)
 	GetPromptRun(ctx context.Context, id uuid.UUID) (GetPromptRunRow, error)
 	// The settings, or no row before an administrator saved any.
@@ -131,9 +132,10 @@ type Querier interface {
 	// Every name an answer gave, matched or not, the newest answer first: what the answers say of a
 	// company on the list.
 	PromptNamings(ctx context.Context) ([]PromptNamingsRow, error)
-	// The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
-	PromptReadingTokensSince(ctx context.Context, since time.Time) (int64, error)
-	PromptReviewTokensSince(ctx context.Context, since time.Time) (int64, error)
+	// The tokens in and out Claude Haiku on an Anthropic key used reading answers since a moment: the
+	// readings whose tokens count as Haiku's.
+	PromptReadingTokensSince(ctx context.Context, since time.Time) (PromptReadingTokensSinceRow, error)
+	PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error)
 	PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)
@@ -155,17 +157,19 @@ type Querier interface {
 	SaveSessionRefresh(ctx context.Context, arg SaveSessionRefreshParams) error
 	SetAnalysisMatching(ctx context.Context, arg SetAnalysisMatchingParams) error
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
+	SetLlmBudget(ctx context.Context, arg SetLlmBudgetParams) error
 	SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) error
 	// Records how many of the pages a scan read its sitemaps list, once the crawl is done.
 	SetSitemapCoverage(ctx context.Context, arg SetSitemapCoverageParams) (int64, error)
 	// Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,
 	// and only the re-scans when rescan_only is set.
 	StopQueuedAnalyses(ctx context.Context, arg StopQueuedAnalysesParams) ([]uuid.UUID, error)
-	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (int64, error)
+	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error)
 	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
-	// How many scans the language model answered for, and the tokens one of them used on average.
+	// How many scans the language model answered for, and the tokens in and out one of them used on average.
 	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)
-	TokensSince(ctx context.Context, createdAt time.Time) (int64, error)
+	// The language-model tokens in and out of analyses created since a moment.
+	TokensSince(ctx context.Context, createdAt time.Time) (TokensSinceRow, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UntickPlanImprovement(ctx context.Context, improvementID string) error
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error

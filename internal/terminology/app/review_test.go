@@ -402,7 +402,7 @@ func waitFor(t *testing.T, ok func() bool) {
 	}
 }
 
-// budget is the month's tokens: spent once the judge was asked after times requests, or failing with err.
+// budget is the month's Anthropic budget: spent once the judge was asked after times requests, or failing with err.
 type budget struct {
 	mu    sync.Mutex
 	j     *judge

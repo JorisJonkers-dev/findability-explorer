@@ -37,6 +37,6 @@ INSERT INTO term_review_usage (input_tokens, output_tokens, used_at)
 VALUES ($1, $2, $3);
 
 -- name: TermReviewTokensSince :one
-SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM term_review_usage
 WHERE used_at >= $1;

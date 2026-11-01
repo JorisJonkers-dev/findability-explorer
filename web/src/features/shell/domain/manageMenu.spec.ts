@@ -22,8 +22,20 @@ describe('the Manage menu', () => {
 
   it('lists only the subpages that exist, each under its section', () => {
     expect(MANAGE_MENU.flatMap((g) => g.children.map((c) => [g.label, c.label, c.to]))).toEqual([
+      ['Website scans', 'Scan queue', '/manage/scans/queue'],
+      ['Website scans', 'Recent scans', '/manage/scans/recent'],
+      ['Website scans', 'Scan settings', '/manage/scans/settings'],
+      ['Competitor list', 'Companies', '/manage/competitors/companies'],
       ['Competitor list', 'Candidates', '/manage/competitors/candidates'],
+      ['Competitor list', 'Check the list', '/manage/competitors/check'],
+      ['Search term list', 'Term review', '/manage/terms/review'],
       ['Search term list', 'Waiting terms', '/manage/terms/waiting'],
+      ['Recommendations', 'Tick off yourself', '/manage/recommendations/tick-off'],
+      ['Recommendations', 'Goals', '/manage/recommendations/goals'],
+      ['Keys and spending', 'OpenRouter key', '/manage/keys/openrouter'],
+      ['Keys and spending', 'Anthropic key', '/manage/keys/anthropic'],
+      ['Keys and spending', 'Budgets', '/manage/keys/budgets'],
+      ['Keys and spending', 'Events', '/manage/keys/events'],
     ])
     for (const group of MANAGE_MENU) {
       for (const child of group.children) expect(child.to.startsWith(`${group.to}/`)).toBe(true)

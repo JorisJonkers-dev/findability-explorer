@@ -40,7 +40,7 @@ test('Manage is closed to an account that is no administrator, with the way to t
 
 test('the term review is closed to an account that is no administrator', async ({ page, consoleErrors }) => {
   await page.goto('/settings/terms')
-  await expect(page).toHaveURL('/manage/terms/waiting')
+  await expect(page).toHaveURL('/manage/terms')
   await expect(page.getByText('Only administrators can start, stop, and change the work behind the results.')).toBeVisible()
   await expect(page.getByRole('list', { name: 'Candidates' })).toHaveCount(0)
   await expectAccessible(page)

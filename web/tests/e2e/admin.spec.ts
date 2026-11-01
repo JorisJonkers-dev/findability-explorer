@@ -110,7 +110,7 @@ test('a company’s search terms, scan history and comparison render', async ({ 
   await expectAccessible(page)
 })
 
-test('an administrator accepts a candidate into the terminology map', async ({ page }) => {
+test('an administrator accepts a candidate into the search term list', async ({ page }) => {
   const candidate = {
     id: '3a7bd3e2360a9f01',
     phrase: 'spiral freezer belt',
@@ -135,18 +135,20 @@ test('an administrator accepts a candidate into the terminology map', async ({ p
   })
   await page.goto('/manage')
   await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: /^Search term list/ }).click()
+  await expect(page).toHaveURL('/manage/terms')
+  await page.getByRole('link', { name: 'Review the terms' }).click()
   await expect(page).toHaveURL('/manage/terms/waiting')
   await expect(page.getByRole('heading', { level: 1, name: 'Waiting terms' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: /^Waiting terms/ })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByRole('heading', { level: 3, name: 'spiral freezer belt' })).toBeVisible()
-  await expect(page.getByText('The language model has reviewed every phrase.')).toBeVisible()
+  await expect(page.getByText('Claude Haiku has reviewed every search term.')).toBeVisible()
   await expectAccessible(page)
   await page.getByRole('button', { name: 'Accept…' }).click()
   const form = page.getByRole('form', { name: 'Accept spiral freezer belt' })
   await form.getByLabel('Term').fill('spiral freezer belt')
-  await form.getByLabel('Intent tier').selectOption('product')
-  await form.getByRole('button', { name: 'Add to the map' }).click()
-  await expect(page.getByText('Added “spiral freezer belt” to the terminology map.')).toBeVisible()
+  await form.getByLabel('Buyer intent').selectOption('product')
+  await form.getByRole('button', { name: 'Add to the list' }).click()
+  await expect(page.getByText('Added “spiral freezer belt” to the search term list.')).toBeVisible()
   expect(accepted).toEqual({ term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'product', usedBy: ['Twentebelt'] })
   await expect(page.getByRole('button', { name: 'Accepted (1)' })).toBeVisible()
 })

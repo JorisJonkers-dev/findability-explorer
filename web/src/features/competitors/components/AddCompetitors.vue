@@ -9,7 +9,7 @@ import { hostOf } from '../domain/company'
 import { addToTray, batchSummary, pasteIntoTray, type Suggestion, type TrayItem, traySuggestions } from '../domain/tray'
 
 /** Adding several competitors at once: picks from a type-ahead or a pasted list collect in a tray. */
-const props = defineProps<{ companies: readonly Competitor[] }>()
+const props = withDefaults(defineProps<{ companies: readonly Competitor[]; heading?: boolean }>(), { heading: true })
 
 const id = useId()
 const mode = ref<'type' | 'paste'>('type')
@@ -83,7 +83,7 @@ function send(): void {
 <template>
   <section aria-labelledby="add-title" class="flex flex-col gap-4">
     <div class="flex flex-wrap items-baseline justify-between gap-3">
-      <h2 id="add-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em]">Add competitors</h2>
+      <h2 id="add-title" :class="heading ? '' : 'sr-only'" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em]">Add competitors</h2>
       <button
         type="button"
         class="border-0 bg-transparent p-0 font-medium text-orange-ink underline underline-offset-4"

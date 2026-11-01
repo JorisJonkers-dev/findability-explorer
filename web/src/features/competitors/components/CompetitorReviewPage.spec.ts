@@ -87,8 +87,9 @@ describe('the competitor review', () => {
     const { wrapper } = await mountApp(api(sent), '/manage/competitors/candidates')
     expect(document.title).toBe('Candidates · Findability Explorer')
     expect(wrapper.get('nav[aria-label="Manage"] a[href="/manage/competitors/candidates"]').text()).toBe('Candidates 2 waiting')
-    const review = wrapper.get('section[aria-label="Haiku\'s review"]')
-    expect(review.text()).toContain('Haiku has not checked 3 companies yet.')
+    expect(wrapper.get('h1').text()).toBe('Candidates')
+    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(['Waiting', 'Added', 'Dismissed', 'Classify automatically', 'All candidates'])
+    expect(wrapper.get('[data-part="review-line"]').text()).toContain('Haiku has not checked 3 companies yet.')
     const first = rows(wrapper)[0]
     expect(first?.get('h3').text()).toBe('Taiwan Metiz Alliance')
     expect(first?.text()).toContain('Named in 8 answers by OpenAI and xAI.')
@@ -97,7 +98,7 @@ describe('the competitor review', () => {
     expect(first?.get('a[target="_blank"]').attributes('href')).toBe('https://metiz.tw/')
     // Only a merged name can be split off; one on the same website cannot.
     expect(first?.findAll('button').filter((b) => b.text().startsWith('Split off')).map((b) => b.text())).toEqual(['Split off Metiz Wire'])
-    await button(wrapper, 'Review with Haiku').trigger('click')
+    await button(wrapper, 'Classify automatically').trigger('click')
     await settle()
     expect(calls(sent)).toEqual(['POST /api/v1/admin/competitor-candidates/review'])
   })
@@ -184,7 +185,7 @@ describe('the competitor review', () => {
 
   it('says when no Anthropic key is set up, and is closed to an account that is no administrator', async () => {
     const none = await mountApp(api([], { running: false, problem: 'noKey' }), '/manage/competitors/candidates')
-    expect(none.wrapper.get('section[aria-label="Haiku\'s review"] a').attributes('href')).toBe('/manage/keys')
+    expect(none.wrapper.get('a[href="/manage/keys/anthropic"]').text()).toBe('Add an Anthropic key in Keys and spending')
     none.wrapper.unmount()
     const { wrapper } = await mountApp(api([], { running: false }, { 'GET /api/v1/admin/competitor-candidates': () => problem(403, 'Forbidden') }), '/manage/competitors/candidates')
     expect(wrapper.text()).toContain('Only administrators can review competitors.')

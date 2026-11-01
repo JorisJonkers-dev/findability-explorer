@@ -5,6 +5,8 @@ import {
   listCompetitorChecksQueryKey,
   listCompetitorsQueryKey,
   startCompetitorCheckMutation,
+  stopCandidateReviewMutation,
+  stopCompetitorCheckMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
 import type { CandidateReviewState, Competitor, CompetitorCheck } from '../../../infrastructure/api/types.gen'
 import { reviewPoll } from '../../review/domain/candidates'
@@ -70,6 +72,26 @@ export function useListDecision() {
     },
     restore: (c: Pick<Competitor, 'id' | 'name'>) => {
       send(c, { archived: false }, `${c.name} is back on the list, and Haiku will not archive it again.`)
+    },
+  }
+}
+
+/** Stops Claude Haiku's check of the list, or its review of the candidates; each keeps what it decided. */
+export function useStopHaiku() {
+  const queryClient = useQueryClient()
+  const check = useMutation(stopCompetitorCheckMutation())
+  const review = useMutation(stopCandidateReviewMutation())
+  const failure = computed(() => check.error.value ?? review.error.value)
+  return {
+    isStopping: computed(() => check.isPending.value || review.isPending.value),
+    error: computed(() => (failure.value ? companyProblem(failure.value) : null)),
+    stopCheck: () => {
+      review.reset()
+      check.mutate({}, { onSuccess: () => void queryClient.invalidateQueries({ queryKey: listCompetitorChecksQueryKey() }) })
+    },
+    stopReview: () => {
+      check.reset()
+      review.mutate({}, { onSuccess: () => void queryClient.invalidateQueries({ queryKey: [{ _id: 'listCompetitorCandidates' }] }) })
     },
   }
 }

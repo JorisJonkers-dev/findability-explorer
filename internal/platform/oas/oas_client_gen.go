@@ -242,6 +242,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/products
 	GetProducts(ctx context.Context) (GetProductsRes, error)
+	// GetPromptModelCatalogue invokes getPromptModelCatalogue operation.
+	//
+	// Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read
+	// with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest
+	// model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest
+	// cheapest first. A model the latest run asked is priced by its responses, the others by their list
+	// price for a typical response with the web search fee. 422 without a working OpenRouter key.
+	//
+	// GET /api/v1/admin/prompt-test/catalogue
+	GetPromptModelCatalogue(ctx context.Context) (GetPromptModelCatalogueRes, error)
 	// GetPromptRetryPlan invokes getPromptRetryPlan operation.
 	//
 	// Administrators only. Says how many of a run's failed and missing answers asking again would ask, how
@@ -4012,6 +4022,123 @@ func (c *Client) sendGetProducts(ctx context.Context) (res GetProductsRes, err e
 
 	stage = "DecodeResponse"
 	result, err := decodeGetProductsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetPromptModelCatalogue invokes getPromptModelCatalogue operation.
+//
+// Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read
+// with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest
+// model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest
+// cheapest first. A model the latest run asked is priced by its responses, the others by their list
+// price for a typical response with the web search fee. 422 without a working OpenRouter key.
+//
+// GET /api/v1/admin/prompt-test/catalogue
+func (c *Client) GetPromptModelCatalogue(ctx context.Context) (GetPromptModelCatalogueRes, error) {
+	res, err := c.sendGetPromptModelCatalogue(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetPromptModelCatalogue(ctx context.Context) (res GetPromptModelCatalogueRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getPromptModelCatalogue"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/prompt-test/catalogue"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPromptModelCatalogueOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/prompt-test/catalogue"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetPromptModelCatalogueOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPromptModelCatalogueResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

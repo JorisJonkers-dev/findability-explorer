@@ -105,6 +105,10 @@ type GetProductsRes interface {
 	getProductsRes()
 }
 
+type GetPromptModelCatalogueRes interface {
+	getPromptModelCatalogueRes()
+}
+
 type GetPromptRetryPlanRes interface {
 	getPromptRetryPlanRes()
 }

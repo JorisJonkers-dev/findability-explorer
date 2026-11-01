@@ -1654,11 +1654,11 @@ func decodeListPromptAnswersParams(args [1]string, argsEscaped bool, r *http.Req
 						if err := (validate.String{
 							MinLength:     0,
 							MinLengthSet:  false,
-							MaxLength:     40,
+							MaxLength:     200,
 							MaxLengthSet:  true,
 							Email:         false,
 							Hostname:      false,
-							Regex:         regexMap["^[a-z0-9][a-z0-9-]*$"],
+							Regex:         regexMap["^[a-z0-9][a-z0-9._:/-]*$"],
 							MinNumeric:    0,
 							MinNumericSet: false,
 							MaxNumeric:    0,

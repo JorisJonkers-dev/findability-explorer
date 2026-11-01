@@ -45,19 +45,21 @@ func TestSettingsRoundTrip(t *testing.T) {
 	s := domain.DefaultSettings(at)
 	s.CredentialID = "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f"
 	s.FactSheet = domain.FactSheet{Text: "Tribelt makes belts.", Version: 2, UpdatedBy: "joris", UpdatedAt: at}
+	s.Models = []string{"openai/gpt-oss-20b", "google/gemma:free"}
 	if err := repo.SaveSettings(ctx, s, "joris", at); err != nil {
 		t.Fatal(err)
 	}
 	got, ok, err := repo.Settings(ctx)
-	if err != nil || !ok || got.CredentialID != s.CredentialID || !slices.Equal(got.Providers, s.Providers) || got.MonthlyBudget != s.MonthlyBudget ||
+	if err != nil || !ok || got.CredentialID != s.CredentialID || !slices.Equal(got.Providers, s.Providers) || !slices.Equal(got.Models, s.Models) ||
+		got.MonthlyBudget != s.MonthlyBudget ||
 		got.Cadence != s.Cadence || !got.NextDue.Equal(s.NextDue) || got.FactSheet != s.FactSheet {
 		t.Errorf("settings = %+v, %v, %v", got, ok, err)
 	}
-	s.CredentialID, s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt = "", "", time.Time{}
+	s.CredentialID, s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt, s.Models = "", "", time.Time{}, nil
 	if err := repo.SaveSettings(ctx, s, "joris", at); err != nil {
 		t.Fatal(err)
 	}
-	if got, _, _ := repo.Settings(ctx); got.CredentialID != "" || !got.FactSheet.UpdatedAt.IsZero() {
+	if got, _, _ := repo.Settings(ctx); got.CredentialID != "" || !got.FactSheet.UpdatedAt.IsZero() || len(got.Models) != 0 {
 		t.Errorf("cleared settings = %+v", got)
 	}
 }

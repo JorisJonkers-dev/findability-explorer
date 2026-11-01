@@ -4,6 +4,7 @@ import type { PromptTestSettings } from '../../infrastructure/api/types.gen'
 export function promptSettings(prices: { runUsd: number; monthUsd: number }, cadence: PromptTestSettings['cadence'] = 'monthly'): PromptTestSettings {
   return {
     providers: ['openai'],
+    modelList: [],
     monthlyBudgetUsd: 10,
     spentThisMonthUsd: 0,
     cadence,

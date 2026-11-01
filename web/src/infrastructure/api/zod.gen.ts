@@ -1438,7 +1438,7 @@ export const zPromptMode = z.enum(['knowledge', 'web']);
  */
 export const zPromptRetryRequest = z.object({
     promptId: z.string().max(80).regex(/^[a-z0-9_-]+$/).optional(),
-    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/).optional(),
+    provider: z.string().max(200).regex(/^[a-z0-9][a-z0-9._:\/-]*$/).optional(),
     mode: zPromptMode.optional()
 });
 
@@ -1614,7 +1614,7 @@ export const zTermCandidateList = z.object({
  * What asking one provider's answer again in one mode should cost, reading included.
  */
 export const zPromptAnswerCost = z.object({
-    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/),
+    provider: z.string().max(200).regex(/^[a-z0-9][a-z0-9._:\/-]*$/),
     mode: zPromptMode,
     costUsd: zUsd
 });
@@ -1636,7 +1636,7 @@ export const zPromptRetryPlan = z.object({
  * The model a run asks for one provider, and the paid fallback of a free one.
  */
 export const zPromptModelChoice = z.object({
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     model: z.string().max(200),
     free: z.boolean(),
     fallback: z.string().max(200).optional()
@@ -1646,7 +1646,7 @@ export const zPromptModelChoice = z.object({
  * One provider's part of a run.
  */
 export const zPromptProviderProgress = z.object({
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     answered: z.int().gte(0).lte(100000),
     failed: z.int().gte(0).lte(100000),
     costUsd: zUsd,
@@ -1657,7 +1657,7 @@ export const zPromptProviderProgress = z.object({
  * The answers of one provider, scope, belt family and mode that were read, and how many name and cite Tribelt.
  */
 export const zPromptCell = z.object({
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     scope: zPromptScope,
     family: zPromptFamily,
     mode: zPromptMode,
@@ -1728,7 +1728,7 @@ export const zPromptWrongClaim = z.object({
     answerId: z.uuid().max(36),
     runId: z.uuid().max(36),
     at: z.iso.datetime({ offset: true }).max(64),
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     model: z.string().max(200),
     promptId: z.string().max(80),
     mode: zPromptMode,
@@ -1830,6 +1830,7 @@ export const zPromptSetVersionInfo = z.object({
  */
 export const zPromptRunFigures = z.object({
     runId: z.uuid().max(36),
+    models: z.array(z.string().max(200)).max(20).optional(),
     startedAt: z.iso.datetime({ offset: true }).max(64),
     promptSetVersion: z.int().gte(1).lte(100000),
     tasks: z.int().gte(0).lte(100000),
@@ -1890,7 +1891,7 @@ export const zPromptAnswer = z.object({
     language: z.string().max(2),
     prompt: z.string().max(1000),
     promptSetVersion: z.int().gte(1).lte(100000),
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     model: z.string().max(200),
     mode: zPromptMode,
     text: z.string().max(100000),
@@ -1959,7 +1960,7 @@ export const zPromptPriceBasis = z.enum([
  * What one provider's answers cost.
  */
 export const zPromptProviderPrice = z.object({
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     model: z.string().max(200),
     fallback: z.string().max(200).optional(),
     knowledgeUsd: zUsd,
@@ -1982,11 +1983,36 @@ export const zPromptPrices = z.object({
 });
 
 /**
+ * One text model on OpenRouter, with what one response costs.
+ */
+export const zPromptCatalogueModel = z.object({
+    id: z.string().max(200),
+    name: z.string().max(200),
+    provider: z.string().max(200),
+    listedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    free: z.boolean(),
+    recommended: z.boolean(),
+    basis: zPromptPriceBasis,
+    knowledgeUsd: zUsd,
+    webUsd: zUsd
+});
+
+/**
+ * Every text model on OpenRouter, as Add a model lists it.
+ */
+export const zPromptModelCatalogue = z.object({
+    readAt: z.iso.datetime({ offset: true }).max(64),
+    questions: z.int().gte(0).lte(1000),
+    models: z.array(zPromptCatalogueModel).max(2000)
+});
+
+/**
  * The Prompt test's settings.
  */
 export const zPromptTestSettings = z.object({
     credentialId: zLlmCredentialId.optional(),
     providers: z.array(z.string().max(40)).max(20),
+    modelList: z.array(z.string().max(200)).max(20),
     monthlyBudgetUsd: zUsd,
     spentThisMonthUsd: zUsd,
     cadence: zPromptCadence,
@@ -2005,6 +2031,7 @@ export const zPromptTestSettings = z.object({
 export const zPromptTestSettingsChange = z.object({
     credentialId: zLlmCredentialId.optional(),
     providers: z.array(z.string().max(40)).min(1).max(20).optional(),
+    models: z.array(z.string().max(200)).min(1).max(20).optional(),
     monthlyBudgetUsd: z.number().gte(0.01).lte(1000).optional(),
     cadence: zPromptCadence.optional(),
     factSheet: z.string().min(20).max(4000).optional()
@@ -2084,7 +2111,7 @@ export const zCompetitorCandidate = z.object({
     name: z.string().max(200),
     status: zCompetitorCandidateStatus,
     answers: z.int().gte(1).lte(1000000),
-    providers: z.array(z.string().max(40)).max(20),
+    providers: z.array(z.string().max(200)).max(20),
     models: z.array(z.string().max(200)).max(50),
     addresses: z.array(z.string().max(500)).max(50),
     lastSeenAt: z.iso.datetime({ offset: true }).max(64),
@@ -2632,7 +2659,7 @@ export const zListPromptAnswersPath = z.object({
 });
 
 export const zListPromptAnswersQuery = z.object({
-    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/).optional(),
+    provider: z.string().max(200).regex(/^[a-z0-9][a-z0-9._:\/-]*$/).optional(),
     scope: zPromptScope.optional(),
     family: zPromptFamily.optional(),
     mode: zPromptMode.optional()
@@ -2693,6 +2720,11 @@ export const zRereadPromptRunPath = z.object({
  * The run, running again, with how many answers it reads and what reading them should cost.
  */
 export const zRereadPromptRunResponse = zPromptRetry;
+
+/**
+ * The catalogue.
+ */
+export const zGetPromptModelCatalogueResponse = zPromptModelCatalogue;
 
 /**
  * The settings.

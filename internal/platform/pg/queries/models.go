@@ -410,6 +410,7 @@ type PromptSetting struct {
 	FactSheetUpdatedAt  pgtype.Timestamptz
 	UpdatedBy           string
 	UpdatedAt           time.Time
+	Models              []string
 }
 
 type RemovedTerm struct {

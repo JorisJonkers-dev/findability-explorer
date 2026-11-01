@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ func TestHistoryGivesTheSharesOverallPerLanguageForTwenteAndOfCitations(t *testi
 	at := time.Date(2026, 10, 27, 8, 0, 0, 0, time.UTC)
 	id := uuid.New()
 	got := domain.History([]domain.RunFigureInput{{
-		Run:      domain.Run{ID: id, PromptSetVersion: 2, StartedAt: at, Tasks: 40},
+		Run:      domain.Run{ID: id, PromptSetVersion: 2, StartedAt: at, Tasks: 40, Models: []domain.ModelChoice{{Provider: "openai", Model: "openai/gpt-oss-20b"}, {Provider: "google", Model: "google/gemma:free"}}},
 		Progress: domain.Progress{Answered: 40},
 		Cells: []domain.Cell{
 			cell(domain.ScopeTwente, domain.ModeKnowledge, 10, 5, 0),
@@ -38,7 +39,8 @@ func TestHistoryGivesTheSharesOverallPerLanguageForTwenteAndOfCitations(t *testi
 			t.Errorf("%s = %v, want %v", k, shares[k], w)
 		}
 	}
-	if r.RunID != id || !r.StartedAt.Equal(at) || r.Version != 2 || r.Tasks != 40 || r.Answered != 40 || r.Read != 40 || r.Partial {
+	if r.RunID != id || !r.StartedAt.Equal(at) || r.Version != 2 || r.Tasks != 40 || r.Answered != 40 || r.Read != 40 || r.Partial ||
+		!slices.Equal(r.Models, []string{"openai/gpt-oss-20b", "google/gemma:free"}) {
 		t.Errorf("figures = %+v", r)
 	}
 }

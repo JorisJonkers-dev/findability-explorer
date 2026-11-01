@@ -396,7 +396,7 @@ func (q *Queries) GetPromptRun(ctx context.Context, id uuid.UUID) (GetPromptRunR
 }
 
 const getPromptSettings = `-- name: GetPromptSettings :many
-SELECT coalesce(credential_id, '')::text AS credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet,
+SELECT coalesce(credential_id, '')::text AS credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet,
     fact_sheet_version, coalesce(fact_sheet_updated_by, '')::text AS fact_sheet_updated_by, fact_sheet_updated_at
 FROM prompt_settings
 WHERE singleton
@@ -405,6 +405,7 @@ WHERE singleton
 type GetPromptSettingsRow struct {
 	CredentialID        string
 	Providers           []string
+	Models              []string
 	MonthlyBudgetMicros int64
 	Cadence             string
 	NextDue             time.Time
@@ -427,6 +428,7 @@ func (q *Queries) GetPromptSettings(ctx context.Context) ([]GetPromptSettingsRow
 		if err := rows.Scan(
 			&i.CredentialID,
 			&i.Providers,
+			&i.Models,
 			&i.MonthlyBudgetMicros,
 			&i.Cadence,
 			&i.NextDue,
@@ -1509,15 +1511,15 @@ func (q *Queries) SavePromptCompanyCheck(ctx context.Context, arg SavePromptComp
 
 const savePromptSettings = `-- name: SavePromptSettings :exec
 INSERT INTO prompt_settings (
-    singleton, credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
+    singleton, credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
     fact_sheet_updated_by, fact_sheet_updated_at, updated_by, updated_at
 )
 VALUES (
-    true, $1, $2, $3, $4, $5, $6, $7,
-    $8, $9, $10, $11
+    true, $1, $2, $3::text [], $4, $5, $6, $7, $8,
+    $9, $10, $11, $12
 )
 ON CONFLICT (singleton) DO UPDATE
-SET credential_id = excluded.credential_id, providers = excluded.providers,
+SET credential_id = excluded.credential_id, providers = excluded.providers, models = excluded.models,
     monthly_budget_micros = excluded.monthly_budget_micros, cadence = excluded.cadence, next_due = excluded.next_due,
     fact_sheet = excluded.fact_sheet, fact_sheet_version = excluded.fact_sheet_version,
     fact_sheet_updated_by = excluded.fact_sheet_updated_by, fact_sheet_updated_at = excluded.fact_sheet_updated_at,
@@ -1527,6 +1529,7 @@ SET credential_id = excluded.credential_id, providers = excluded.providers,
 type SavePromptSettingsParams struct {
 	CredentialID        pgtype.Text
 	Providers           []string
+	Models              []string
 	MonthlyBudgetMicros int64
 	Cadence             string
 	NextDue             time.Time
@@ -1542,6 +1545,7 @@ func (q *Queries) SavePromptSettings(ctx context.Context, arg SavePromptSettings
 	_, err := q.db.Exec(ctx, savePromptSettings,
 		arg.CredentialID,
 		arg.Providers,
+		arg.Models,
 		arg.MonthlyBudgetMicros,
 		arg.Cadence,
 		arg.NextDue,

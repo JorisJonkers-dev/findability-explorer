@@ -28,6 +28,8 @@ describe('the Prompt test’s measures', () => {
 
   it('names providers, scopes, families, modes and statuses', () => {
     expect([providerName('meta-llama'), providerName('cohere')]).toEqual(['Meta', 'cohere'])
+    // Two models of one provider are a column each, keyed by the model's id.
+    expect([providerName('google/gemma-3-27b-it:free'), providerName('qwen/qwen3-8b')]).toEqual(['Google, gemma-3-27b-it:free', 'qwen, qwen3-8b'])
     expect([scopeName('germany'), familyName('tri_flex_turn_curve'), modeName('web')]).toEqual(['Germany (German)', 'Curve-going (Tri-Flex)', 'With web search'])
     expect([statusName('running'), statusName('failed')]).toEqual(['Running', 'Failed'])
     // A value the contract adds later still reads as itself.

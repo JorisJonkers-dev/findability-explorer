@@ -225,6 +225,10 @@ type PlanItem struct {
 	Tick    *Tick
 	Tribelt *float64
 	Leader  *Leader
+	// Written is the recommendation a Recommendation run wrote, nil for one written by hand; New
+	// marks one the newest run wrote that is still open.
+	Written *Recommendation
+	New     bool
 }
 
 // PlanItems are the improvements in order, each done by the latest scan of tribelt.nl when a scan

@@ -103,7 +103,7 @@ describe('Website scans', () => {
     await settle()
     expect(bodies.check).toBe(true)
     expect(widget(wrapper, 'AI readiness check').text()).toContain('Checking, 1 of 4 sites.')
-    expect(wrapper.get('[data-part="readiness-check"]').exists()).toBe(true)
+    expect(wrapper.find('[data-part="readiness-check"]').exists()).toBe(true)
   })
 
   it('says a stopped check stopped, and that an empty group has nobody to rescan', async () => {

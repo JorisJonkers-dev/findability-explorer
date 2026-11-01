@@ -127,7 +127,7 @@ describe('scan settings', () => {
 
   it('says why the settings could not be read', async () => {
     const { wrapper } = await mountApp(api({ 'GET /api/v1/admin/llm': () => problem(500, 'Internal Server Error') }), '/manage/scans/settings')
-    expect(widget(wrapper, 'Product matching').get('[role="alert"]').exists()).toBe(true)
+    expect(widget(wrapper, 'Product matching').find('[role="alert"]').exists()).toBe(true)
   })
 })
 

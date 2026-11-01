@@ -22,8 +22,8 @@ in code, editing the instructions cannot break a step.
   model's list price for the step's typical mix of tokens read and written (`claudestep/domain.Scale`).
 - **One step is built so far: matching products.** The scans' matcher takes the step's newest
   instructions as its system message, and its model while an Anthropic key works; on another key the
-  model from the language-model settings answers, with the same instructions. The pages
-  `listClaudeSteps`, `getClaudeStep` and `saveClaudeStepVersion` serve it in Manage.
+  model from the language-model settings answers, with the same instructions. The operations
+  `listClaudeSteps`, `getClaudeStep` and `saveClaudeStepVersion` serve its page in Manage.
 - **The other steps follow** with their own ticket: reading responses, tidying names, checking
   companies, and reviewing terms. Reading responses is the exception the spec names: its instructions
   stay set in code so every run is read the same way, and only its model is chosen in the app (a

@@ -136,7 +136,9 @@ func TestPublishRefusesADraftItCannotAsk(t *testing.T) {
 		change(&d.Questions[0])
 		return d
 	}
-	withScope := func(s domain.ScopeInfo) domain.Draft { return domain.Draft{Questions: keep(), Scopes: []domain.ScopeInfo{s}} }
+	withScope := func(s domain.ScopeInfo) domain.Draft {
+		return domain.Draft{Questions: keep(), Scopes: []domain.ScopeInfo{s}}
+	}
 	tooMany := make([]domain.DraftQuestion, domain.MaxQuestions+1)
 	cases := map[string]domain.Draft{
 		"no questions":       {},

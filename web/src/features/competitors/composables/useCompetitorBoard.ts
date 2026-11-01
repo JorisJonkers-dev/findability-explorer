@@ -3,17 +3,16 @@ import { useStandings } from '../../catching-up/composables/useStandings'
 import { useOverview } from '../../home/composables/useOverview'
 import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
 import { useReadinessTable } from '../../readiness/composables/useReadiness'
-import { familyBars, figuresOf, headline, type Row } from '../domain/compare'
-import { readinessScore } from '../domain/compare'
-import { shareOf, CHIP_COUNT } from '../domain/roster'
 import { useTermMap } from '../../terminology/composables/useTermSearch'
+import { readinessScore } from '../domain/compare'
+import { CHIP_COUNT, shareOf } from '../domain/roster'
 import { competitorRows } from '../domain/table'
 import { useCompanies } from './useCompanies'
 
 /**
- * What the Competitors page says: the competitors on the list, each with its share of AI answers
- * and its readiness score, the figures and the belt-family chart. Everything is read from the
- * server's lists, counts and the newest Prompt run.
+ * What the Competitors page says: Tribelt and every competitor, archived ones too, each with its
+ * share of AI responses, its readiness score, and the search terms it uses; how many competitors
+ * the server counts; and the group's own companies, which the list leaves out.
  */
 export function useCompetitorBoard() {
   const { companies, isLoading, error } = useCompanies()
@@ -28,21 +27,13 @@ export function useCompetitorBoard() {
   const tribelt = computed(() => active.value.find((c) => c.role === 'tribelt'))
   /** The group's own companies, which the list leaves out. */
   const group = computed(() => active.value.filter((c) => c.role === 'group'))
-  const rows = computed<Row[]>(() =>
-    active.value
-      .filter((c) => c.role === 'competitor')
-      .map((c) => ({ id: c.id, name: c.shortName, share: shareOf(results.value, c.id), ready: readinessScore(rowOf(c.id)?.readiness) })),
-  )
-  // The server counts the competitors on the list, as every page shows them.
-  const count = computed(() => overview.value?.competitors.makers ?? rows.value.length)
-  const tribeltShare = computed(() => (tribelt.value ? shareOf(results.value, tribelt.value.id) : undefined))
-  const tribeltReady = computed(() => (tribelt.value ? readinessScore(rowOf(tribelt.value.id)?.readiness) : undefined))
-  // The Competitors table: Tribelt and every competitor, archived ones too, each with its figures.
   const termsOf = (id: string) =>
     id === tribelt.value?.id ? terms.value.filter((t) => t.tribeltUses === true).length : terms.value.filter((t) => t.makers?.some((m) => m.competitorId === id) === true).length
   const tableRows = computed(() =>
     competitorRows(companies.value, { share: (id) => shareOf(results.value, id), ready: (id) => readinessScore(rowOf(id)?.readiness), terms: termsOf }),
   )
+  // The server counts the competitors on the list, as every page shows them.
+  const count = computed(() => overview.value?.competitors.makers ?? active.value.filter((c) => c.role === 'competitor').length)
   const newestScan = computed(() =>
     tableRows.value
       .map((r) => r.scannedAt)
@@ -50,20 +41,5 @@ export function useCompetitorBoard() {
       .sort()
       .at(-1),
   )
-  return {
-    rows,
-    tableRows,
-    newestScan,
-    count,
-    outOf,
-    tribelt,
-    tribeltShare,
-    tribeltReady,
-    group,
-    title: computed(() => headline(count.value)),
-    figures: computed(() => figuresOf({ count: count.value, rows: rows.value, tribeltShare: tribeltShare.value, tribeltReady: tribeltReady.value, outOf: outOf.value })),
-    bars: computed(() => familyBars(overview.value?.competitors.families ?? [], tribelt.value)),
-    isLoading,
-    error,
-  }
+  return { tableRows, newestScan, count, outOf, tribelt, group, isLoading, error }
 }

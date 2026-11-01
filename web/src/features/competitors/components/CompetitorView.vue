@@ -1,27 +1,20 @@
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import BarList from '../../../shared/ui/charts/BarList.vue'
 import FrameSection from '../../../shared/ui/FrameSection.vue'
 import PageFrame from '../../shell/components/PageFrame.vue'
-import { useMe } from '../../shell/composables/useMe'
 import { companyPath, familySlug } from '../../shell/domain/sections'
 import { languageLabel } from '../../../shared/vocabulary'
 import { familyName, termPath } from '../../terminology/domain/searchTerms'
 import { useCompetitorDetail } from '../composables/useCompetitorDetail'
-import { useRescan } from '../composables/useCompanyAdmin'
-import { rescanSummary } from '../domain/admin'
-import CompanyAdmin from './CompanyAdmin.vue'
 import MeasureChart from './MeasureChart.vue'
 
 /** One competitor: against Tribelt, where it is ahead, what it sells, its terms tribelt.nl lacks, and how often each model names it. */
 const props = defineProps<{ companyId: string }>()
 
-const router = useRouter()
 const id = toRef(() => props.companyId)
-const { isAdmin } = useMe()
-const { company, isLoading, notFound, error, purpose, dataLine, ahead, terms, modelBars, belts, latestScan, measures } = useCompetitorDetail(id)
-const { isQueuing, batch, error: rescanError, rescan } = useRescan()
+const { company, isLoading, notFound, error, purpose, dataLine, ahead, terms, modelBars, belts, measures } = useCompetitorDetail(id)
 const button = 'inline-flex min-h-11 items-center rounded-full border-2 border-solid border-silver px-4 font-medium text-black no-underline hover:border-black hover:text-black'
 </script>
 
@@ -32,7 +25,7 @@ const button = 'inline-flex min-h-11 items-center rounded-full border-2 border-s
     :purpose="purpose || 'A company on the competitor list.'"
     :data-line="dataLine || undefined"
     :back="{ to: '/competitors', label: 'Back to Competitors' }"
-    :manage="{ to: '/manage/competitors', label: 'Manage the competitor list' }"
+    :manage="{ to: `/manage/competitors/companies/${encodeURIComponent(companyId)}`, label: 'Manage this company' }"
     help-topic="competitors"
   >
     <template v-if="company" #aside>
@@ -40,25 +33,12 @@ const button = 'inline-flex min-h-11 items-center rounded-full border-2 border-s
         Visit its website<span class="sr-only"> (opens in a new tab)</span>
       </a>
       <RouterLink :to="`${companyPath(company.id)}/history`" :class="button">See its scan history</RouterLink>
-      <RouterLink v-if="isAdmin && latestScan" :to="`/manage/scans/${latestScan.id}`" :class="button">Open its latest scan</RouterLink>
-      <button
-        v-if="isAdmin && company.websiteUrl"
-        type="button"
-        class="min-h-11 cursor-pointer rounded-full border-0 bg-orange px-5 font-semibold text-black hover:bg-orange-soft disabled:opacity-60"
-        :disabled="isQueuing"
-        @click="rescan({ competitorIds: [company.id] })"
-      >
-        {{ company.scans > 0 ? 'Scan again' : 'Scan this website' }}
-      </button>
     </template>
 
     <p v-if="notFound" role="alert" class="m-0 text-orange-ink">No company has this id.</p>
     <p v-else-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading || !company" class="m-0 text-muted">Loading the company…</p>
     <template v-else>
-      <p v-if="batch" aria-live="polite" class="m-0 text-sm font-medium">{{ rescanSummary(batch) }}</p>
-      <p v-if="rescanError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ rescanError }}</p>
-
       <div class="grid grid-cols-1 items-start gap-10 min-[1100px]:grid-cols-2">
         <FrameSection id="compare" title="Against Tribelt">
           <MeasureChart :name="company.shortName" :measures="measures" />
@@ -105,8 +85,6 @@ const button = 'inline-flex min-h-11 items-center rounded-full border-2 border-s
           <RouterLink to="/ai-responses/all" class="self-start font-medium">See every response</RouterLink>
         </FrameSection>
       </div>
-
-      <CompanyAdmin v-if="isAdmin" :company="company" @removed="router.push('/competitors')" />
     </template>
   </PageFrame>
 </template>

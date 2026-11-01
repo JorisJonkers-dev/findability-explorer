@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { competitor, me, overview, promptAnswer, promptResults, RUN_ID, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
-import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
+import { type Handler, json, mountApp, problem, routes } from '../../../testing/mountApp'
 
 const SCAN_ID = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d'
 const tribelt = competitor('Tribelt', { role: 'tribelt' })
@@ -52,23 +52,23 @@ describe('a competitor’s page', () => {
     expect(wrapper.text()).toContain('Back to Competitors')
   })
 
-  it('opens its newest finished scan for an administrator only, as a scan’s page is in Manage', async () => {
+  it('gives an administrator one way into Manage, and no tools on the page itself', async () => {
     const reader = await mountApp(api(), '/competitors/twentebelt')
-    expect(link(reader.wrapper, 'Open its latest scan')).toBeUndefined()
+    expect(reader.wrapper.find('a[href="/manage/competitors/companies/twentebelt"]').exists()).toBe(false)
     reader.wrapper.unmount()
-    const { wrapper, router } = await mountApp(api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/competitors/twentebelt')
-    await link(wrapper, 'Open its latest scan')?.trigger('click')
-    await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/manage/scans/5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c')
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })) }), '/competitors/twentebelt')
+    expect(wrapper.get('a[href="/manage/competitors/companies/twentebelt"]').text()).toBe('Manage this company')
+    expect(wrapper.findAll('button').some((b) => /^(Scan again|Scan this website)$/.test(b.text()))).toBe(false)
+    expect(wrapper.find('[aria-label="Manage this company"]').exists()).toBe(false)
+    expect(link(wrapper, 'Open its latest scan')).toBeUndefined()
   })
 
-  it('says when no scan has read the website, and has no latest scan to open', async () => {
+  it('says when no scan has read the website', async () => {
     const { wrapper } = await mountApp(api(), '/competitors/martens')
     expect(wrapper.get('[data-part="data-line"]').text()).toBe('From the Prompt run of 1 November 2026 and Martens has not been scanned yet.')
     expect(wrapper.text()).toContain('Martens is not ahead of Tribelt on any measure.')
     expect(wrapper.text()).toContain('Every term this competitor uses is also on tribelt.nl.')
     expect(wrapper.find('a[target="_blank"]').exists()).toBe(false)
-    expect(link(wrapper, 'Open its latest scan')).toBeUndefined()
   })
 
   it('says when no company has the id, or the company cannot be loaded', async () => {
@@ -77,47 +77,6 @@ describe('a competitor’s page', () => {
     missing.wrapper.unmount()
     const failing = await mountApp(api({ 'GET /api/v1/competitors/twentebelt': () => problem(500, 'Internal Server Error') }), '/competitors/twentebelt')
     expect(failing.wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
-  })
-
-  it('shows no controls to an account that is no administrator', async () => {
-    const { wrapper } = await mountApp(api(), '/competitors/twentebelt')
-    expect(wrapper.findAll('button').some((b) => b.text() === 'Scan again')).toBe(false)
-    expect(wrapper.find('[aria-label="Manage this company"]').exists()).toBe(false)
-  })
-
-  it('lets an administrator scan it again, and says what was queued', async () => {
-    let sent: unknown = null
-    const { wrapper } = await mountApp(
-      api({
-        'GET /api/v1/me': () => json(me({ isAdmin: true })),
-        'POST /api/v1/admin/rescans': async (request) => {
-          sent = await request.json()
-          return json({ queued: [summary()], skipped: [] }, 202)
-        },
-      }),
-      '/competitors/twentebelt',
-    )
-    await wrapper.findAll('button').find((b) => b.text() === 'Scan again')?.trigger('click')
-    await settle()
-    expect(sent).toEqual({ competitorIds: ['twentebelt'] })
-    expect(wrapper.get('[aria-live="polite"]').text()).toBe('Queued 1 scan.')
-    expect(wrapper.find('[aria-label="Manage this company"]').exists()).toBe(true)
-  })
-
-  it('offers an administrator to scan a website no scan has read, and says when the request fails', async () => {
-    const withSite = { ...martens, websiteUrl: 'https://www.martens-belts.com/' }
-    const { wrapper } = await mountApp(
-      api({
-        'GET /api/v1/me': () => json(me({ isAdmin: true })),
-        'GET /api/v1/competitors/martens': () => json({ competitor: withSite, scans: [] }),
-        'GET /api/v1/competitors': () => json({ items: [tribelt, twentebelt, withSite] }),
-        'POST /api/v1/admin/rescans': () => problem(500, 'Internal Server Error'),
-      }),
-      '/competitors/martens',
-    )
-    await wrapper.findAll('button').find((b) => b.text() === 'Scan this website')?.trigger('click')
-    await settle()
-    expect(wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
   })
 
   it('shows what a measure means when it is picked', async () => {

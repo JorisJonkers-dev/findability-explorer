@@ -36,8 +36,6 @@ describe('useCompetitorDetail', () => {
     expect(state.outOf.value).toBe(9)
     expect(state.share.value).toBe(0.75)
     expect(state.ready.value).toBe(8)
-    expect(state.title.value).toBe('Twentebelt is named in three times as many AI answers as Tribelt.')
-    expect(state.where.value).toBe('Netherlands. Its website is in 2 languages.')
     expect(state.belts.value.find((b) => b.family === 'tri_flex_turn_curve')?.name).toBe('TwenteFlex spiral belts')
     expect(state.measures.value.map((m) => [m.id, m.themText, m.usText])).toEqual([
       ['answers', '75%', '25%'],
@@ -46,7 +44,6 @@ describe('useCompetitorDetail', () => {
       ['terms', '2', '1'],
     ])
     expect(state.measures.value[3]?.text).toContain('of the 3 terms on the search term list')
-    expect(state.latestScan.value?.status).toBe('done')
     expect(state.notFound.value).toBe(false)
   })
 
@@ -55,7 +52,6 @@ describe('useCompetitorDetail', () => {
     await flushPromises()
     expect(state.outOf.value).toBe(8)
     expect(state.ready.value).toBeUndefined()
-    expect(state.latestScan.value).toBeUndefined()
     const [, ready, sitemap, terms] = state.measures.value
     expect(ready?.themText).toBe('Not known')
     expect(sitemap?.themText).toBe('Not known')
@@ -68,14 +64,11 @@ describe('useCompetitorDetail', () => {
     await flushPromises()
     expect(unknown.state.notFound.value).toBe(true)
     expect(unknown.state.company.value).toBeUndefined()
-    expect(unknown.state.title.value).toBe('A competitor.')
-    expect(unknown.state.where.value).toBe('')
     expect(unknown.state.belts.value).toEqual([])
     expect(unknown.state.measures.value).toEqual([])
     const alone = mountComposable(() => useCompetitorDetail(ref('twentebelt')), api({}, [twentebelt]))
     await flushPromises()
     expect(alone.state.tribelt.value).toBeUndefined()
-    expect(alone.state.title.value).toBe('Twentebelt is named in 75% of AI answers.')
     const [, ready, sitemap, terms] = alone.state.measures.value
     expect(ready?.usText).toBe('Not known')
     expect(sitemap?.usText).toBe('Not known')

@@ -5,10 +5,10 @@ import { usePromptAnswers, usePromptResults } from '../../prompt-test/composable
 import { latestRun } from '../../prompt-test/domain/results'
 import { useReadinessTable } from '../../readiness/composables/useReadiness'
 import { useTermMap } from '../../terminology/composables/useTermSearch'
-import { detailHeadline, measuresOf, readinessScore } from '../domain/compare'
+import { measuresOf, readinessScore } from '../domain/compare'
 import { companyTerms } from '../domain/company'
 import { aheadLines, competitorPurpose, detailDataLine, modelShares, theirTerms } from '../domain/detail'
-import { beltRows, whereLine } from '../domain/list'
+import { beltRows } from '../domain/list'
 import { shareOf, CHIP_COUNT } from '../domain/roster'
 import { useCompanies } from './useCompanies'
 import { useCompany } from './useCompany'
@@ -16,7 +16,7 @@ import { useCompany } from './useCompany'
 /** One competitor set against Tribelt: its headline, its measures, its belts and its newest finished scan. */
 export function useCompetitorDetail(id: Ref<string>) {
   const { companies, byId, isLoading } = useCompanies()
-  const { detail, notFound, error } = useCompany(id)
+  const { notFound, error } = useCompany(id)
   const { results } = usePromptResults()
   const { rowOf } = useReadinessTable()
   const { readinessChecks } = useStandings()
@@ -79,11 +79,7 @@ export function useCompetitorDetail(id: Ref<string>) {
     outOf,
     share,
     ready,
-    title: computed(() => (company.value ? detailHeadline(company.value.shortName, share.value, tribeltShare.value) : 'A competitor.')),
-    where: computed(() => (company.value ? whereLine(company.value) : '')),
     belts: computed(() => (company.value ? beltRows(company.value) : [])),
-    /** The newest scan that finished, which the scan page opens. */
-    latestScan: computed(() => detail.value?.scans.find((s) => s.status === 'done')),
     measures,
   }
 }

@@ -68,8 +68,8 @@ test('a section opens from the top bar, and Overview links back', async ({ page 
   await expect(page).toHaveURL('/recommendations')
 })
 
-test('the company picker suggests a known company, and names an unknown one', async ({ page }) => {
-  await page.goto('/competitors')
+test('the company picker in Website scans suggests a known company, and names an unknown one', async ({ page }) => {
+  await page.goto('/manage/scans')
   const field = page.getByRole('combobox', { name: 'Website address' })
   await field.fill('twente')
   const options = page.getByRole('listbox', { name: 'Known companies' })
@@ -97,14 +97,14 @@ test('picking a competitor opens its page, which survives a reload', async ({ pa
   await expect(page.getByRole('heading', { level: 2, name: 'Against Tribelt' })).toBeVisible()
 })
 
-test('the scan form refuses an address it cannot scan', async ({ page }) => {
-  await page.goto('/competitors')
+test('the scan form in Website scans refuses an address it cannot scan', async ({ page }) => {
+  await page.goto('/manage/scans')
   const field = page.getByRole('combobox', { name: 'Website address' })
   await field.fill('https://intranet')
-  await page.getByRole('button', { name: 'Scan website' }).click()
-  await expect(page.getByRole('alert')).toHaveText('Enter an address with a full host name, like https://www.example.com.')
+  await page.getByRole('button', { name: 'Scan this site' }).click()
+  await expect(page.getByRole('alert').filter({ hasText: 'Enter an address with a full host name' })).toHaveText('Enter an address with a full host name, like https://www.example.com.')
   await expect(field).toHaveAttribute('aria-invalid', 'true')
-  await expect(page).toHaveURL('/competitors')
+  await expect(page).toHaveURL('/manage/scans')
 })
 
 test('Search terms counts by language and belt family, each opening its terms', async ({ page }) => {

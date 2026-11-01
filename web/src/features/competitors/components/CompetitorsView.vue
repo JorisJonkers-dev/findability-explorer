@@ -1,32 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import type { BeltFamily } from '../../../infrastructure/api/types.gen'
 import { directionOf, nextSort, type Sort, type SortDirection } from '../../../shared/sort'
 import FrameSection from '../../../shared/ui/FrameSection.vue'
 import SortButton from '../../../shared/ui/SortButton.vue'
 import { TABLE } from '../../../shared/ui/table'
 import { PRODUCT_FAMILIES } from '../../../shared/vocabulary'
-import ScanForm from '../../scan/components/ScanForm.vue'
 import PageFrame from '../../shell/components/PageFrame.vue'
-import { useMe } from '../../shell/composables/useMe'
 import { companyPath } from '../../shell/domain/sections'
 import { familyName } from '../../terminology/domain/searchTerms'
-import { useCompanies } from '../composables/useCompanies'
 import { useCompetitorBoard } from '../composables/useCompetitorBoard'
 import { oxford, scoreText, shareText } from '../domain/compare'
 import { bestCompetitor, type CompetitorColumn, competitorTable, countriesOf, familiesCell, scanDate, summaryLine } from '../domain/table'
-import AddCompetitors from './AddCompetitors.vue'
-import AdminTools from './AdminTools.vue'
-import ListUpkeep from './ListUpkeep.vue'
 
-/** Competitors: one table of Tribelt and every competitor, each opening its own page. */
-const router = useRouter()
-const { isAdmin } = useMe()
-const { companies } = useCompanies()
+/** Competitors: one table of Tribelt and every competitor, each opening its own page. The list is managed in Manage. */
 const { tableRows, newestScan, count, outOf, group, isLoading, error } = useCompetitorBoard()
-// The scanning tools work on the companies on the list, not on the archived ones.
-const active = computed(() => companies.value.filter((c) => !c.archived && c.role !== 'mirror'))
 
 const q = ref('')
 const family = ref<BeltFamily | ''>('')
@@ -54,10 +43,6 @@ const COLUMNS: readonly { key: CompetitorColumn; label: string; first: SortDirec
 ]
 const archivedLabel = computed(() => `${archived.value ? 'Hide' : 'Show'} ${String(archivedCount.value)} ${archivedCount.value === 1 ? 'archived company' : 'archived companies'}`)
 
-/** A started scan opens on its own page. */
-function started(id: string): void {
-  void router.push(`/manage/scans/${id}`)
-}
 </script>
 
 <template>
@@ -140,13 +125,6 @@ function started(id: string): void {
         </p>
       </FrameSection>
 
-      <section v-if="isAdmin" aria-labelledby="admin-tools-title" class="flex flex-col gap-8 rounded-3xl bg-mist p-6">
-        <h2 id="admin-tools-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em]">Manage the list</h2>
-        <ScanForm @started="started" />
-        <AdminTools :companies="active" @added="(id: string) => router.push(`/competitors/${id}`)" />
-        <AddCompetitors :companies="active" />
-        <ListUpkeep />
-      </section>
     </template>
   </PageFrame>
 </template>

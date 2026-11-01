@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { promptRun, summary } from '../../../testing/fixtures'
-import { endedOf, endedTone, hostOf, missingKeys, queuedScans, recentWork, runningWork, scanEnded, waitLine, whenLabel } from './activity'
+import { dayLabel, endedOf, endedTone, hostOf, lastEnded, missingKeys, needsFinishing, timeLabel, queuedScans, recentWork, runningWork, scanEnded, waitLine, whenLabel } from './activity'
 
 const HAND = 'Stopped by hand. The responses so far are kept, and a retry finishes the run.'
 const BUDGET = "The month's budget for Prompt runs was reached; the answers so far are kept."
@@ -167,5 +167,24 @@ describe('what waits', () => {
   it('says how many wait', () => {
     expect(waitLine(1, 'search term', 'search terms')).toBe('1 search term waits')
     expect(waitLine(6072, 'search term', 'search terms')).toBe('6,072 search terms wait')
+  })
+})
+
+describe('the runs of the Prompt test', () => {
+  it('writes a day and a time', () => {
+    expect(dayLabel('2026-10-27T06:03:00Z')).toBe('27 October 2026')
+    expect(timeLabel('2026-10-27T06:03:00Z')).toBe('06:03')
+  })
+
+  it('knows which ended runs a retry would finish', () => {
+    expect(needsFinishing(promptRun({ status: 'done', answered: 358, tasks: 360 }))).toBe(true)
+    expect(needsFinishing(promptRun({ status: 'stopped', answered: 40, tasks: 360 }))).toBe(true)
+    expect(needsFinishing(promptRun({ status: 'done', answered: 360, tasks: 360 }))).toBe(false)
+    expect(needsFinishing(promptRun({ status: 'running', answered: 0, tasks: 360 }))).toBe(false)
+  })
+
+  it('finds the newest run that has ended', () => {
+    expect(lastEnded([promptRun({ id: 'a', status: 'running' }), promptRun({ id: 'b' })])?.id).toBe('b')
+    expect(lastEnded([promptRun({ status: 'running' })])).toBeUndefined()
   })
 })

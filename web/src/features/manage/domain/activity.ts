@@ -205,3 +205,26 @@ export function missingKeys(credentials: readonly Pick<LlmCredential, 'provider'
 export function waitLine(n: number, one: string, many: string): string {
   return n === 1 ? `1 ${one} waits` : `${NUMBER.format(n)} ${many} wait`
 }
+
+const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+const TIME = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
+
+/** A day in words: "27 October 2026" (UTC). */
+export function dayLabel(iso: string): string {
+  return DAY.format(new Date(iso))
+}
+
+/** A time of day: "06:00" (UTC). */
+export function timeLabel(iso: string): string {
+  return TIME.format(new Date(iso))
+}
+
+/** Whether a run that ended still lacks responses, so a retry would finish it. */
+export function needsFinishing(run: Pick<PromptRun, 'status' | 'answered' | 'tasks'>): boolean {
+  return run.status !== 'running' && run.answered < run.tasks
+}
+
+/** The newest run that has ended. */
+export function lastEnded<T extends Pick<PromptRun, 'status'>>(runs: readonly T[]): T | undefined {
+  return runs.find((r) => r.status !== 'running')
+}

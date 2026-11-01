@@ -175,7 +175,7 @@ describe('the topics the pages link to', () => {
     query: '?raw',
     import: 'default',
     eager: true,
-  }) as Record<string, string>
+  })
   const linked = new Set<string>()
   for (const text of Object.values(sources)) {
     for (const m of text.matchAll(/help-topic="([a-z0-9-]+)"|helpTopic: '([a-z0-9-]+)'|['"`]\/help\/([a-z0-9-]+)/g)) linked.add(m[1] ?? m[2] ?? m[3] ?? '')

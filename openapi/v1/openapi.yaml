@@ -792,6 +792,131 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/terms/hand:
+    get:
+      operationId: listHandTerms
+      summary: List the terms added and removed by hand
+      description: >-
+        Administrators only. Returns the terms administrators added to the list by hand, and the
+        terms they removed from it, each with who did it and when, oldest first.
+      tags: [admin]
+      responses:
+        "200":
+          description: The terms added and removed by hand.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HandTermList"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: addTerm
+      summary: Add a search term by hand
+      description: >-
+        Administrators only. Adds the term to the list, marked as added by hand; search, the
+        figures and the next scans find it. 409 when the list has the term in that language, or
+        had it and it was removed (put it back instead).
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The term as it joins the list.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTerm"
+            example:
+              term: oven belt
+              language: en
+              family: eyelink
+              tier: application
+      responses:
+        "201":
+          description: The term, added.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Term"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/terms/removed:
+    post:
+      operationId: removeTerm
+      summary: Remove a search term
+      description: >-
+        Administrators only. Takes the term off the list, whatever its origin; it is no longer
+        counted or looked for until it is put back. The text matches without regard to case or
+        accents. 404 when the list has no such term.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The term to remove.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermRef"
+            example:
+              term: spiral belt
+              language: en
+      responses:
+        "204":
+          description: Removed.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: putBackTerm
+      summary: Put a removed search term back
+      description: Administrators only. Puts a removed term back on the list. 404 when it was not removed.
+      tags: [admin]
+      parameters:
+        - name: term
+          in: query
+          required: true
+          description: The removed term, as the list wrote it.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - name: language
+          in: query
+          required: true
+          description: The removed term's language.
+          schema:
+            $ref: "#/components/schemas/Language"
+      responses:
+        "204":
+          description: Put back.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/term-candidates:
     get:
       operationId: listTermCandidates
@@ -3316,10 +3441,10 @@ components:
             $ref: "#/components/schemas/LlmEvent"
     TermOrigin:
       description: >-
-        Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an
-        administrator accepted from the review queue.
+        Where a term comes from - the desk research of 22 October 2026, a scan's phrase an
+        administrator accepted from the review queue, or a term an administrator added by hand.
       type: string
-      enum: [research, review]
+      enum: [research, review, hand]
     CompetitorUpdate:
       description: The fields of a company to change; at least one.
       type: object
@@ -4007,6 +4132,72 @@ components:
           $ref: "#/components/schemas/TermCandidateCounts"
         review:
           $ref: "#/components/schemas/TermReviewState"
+    NewTerm:
+      description: A search term an administrator adds by hand.
+      type: object
+      additionalProperties: false
+      required: [term, language, family, tier]
+      properties:
+        term:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The term as the list shows it.
+          example: oven belt
+        language:
+          $ref: "#/components/schemas/Language"
+        family:
+          $ref: "#/components/schemas/BeltFamily"
+        tier:
+          $ref: "#/components/schemas/IntentTier"
+    TermRef:
+      description: A search term on the list, by its text and language.
+      type: object
+      additionalProperties: false
+      required: [term, language]
+      properties:
+        term:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The term's text; case and accents do not matter.
+          example: spiral belt
+        language:
+          $ref: "#/components/schemas/Language"
+    HandTerm:
+      description: A term added or removed by hand, with who did it and when.
+      type: object
+      additionalProperties: false
+      required: [term, by, at]
+      properties:
+        term:
+          $ref: "#/components/schemas/Term"
+        by:
+          type: string
+          maxLength: 200
+          description: Who added or removed it.
+          example: Joris Jonkers
+        at:
+          type: string
+          format: date-time
+          maxLength: 40
+          description: When.
+    HandTermList:
+      description: The terms added by hand and the terms removed, oldest first.
+      type: object
+      additionalProperties: false
+      required: [added, removed]
+      properties:
+        added:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: "#/components/schemas/HandTerm"
+        removed:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: "#/components/schemas/HandTerm"
     TermAcceptance:
       description: A candidate as it joins the terminology map.
       type: object

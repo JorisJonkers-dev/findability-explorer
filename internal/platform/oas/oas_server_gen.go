@@ -47,6 +47,14 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/llm/credentials
 	AddLlmCredential(ctx context.Context, req *NewLlmCredential) (AddLlmCredentialRes, error)
+	// AddTerm implements addTerm operation.
+	//
+	// Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the
+	// next scans find it. 409 when the list has the term in that language, or had it and it was removed
+	// (put it back instead).
+	//
+	// POST /api/v1/admin/terms/hand
+	AddTerm(ctx context.Context, req *NewTerm) (AddTermRes, error)
 	// ClearActiveLlm implements clearActiveLlm operation.
 	//
 	// Turns product matching off until a credential and model are chosen again.
@@ -285,6 +293,13 @@ type Handler interface {
 	//
 	// GET /api/v1/competitors
 	ListCompetitors(ctx context.Context) (ListCompetitorsRes, error)
+	// ListHandTerms implements listHandTerms operation.
+	//
+	// Administrators only. Returns the terms administrators added to the list by hand, and the terms they
+	// removed from it, each with who did it and when, oldest first.
+	//
+	// GET /api/v1/admin/terms/hand
+	ListHandTerms(ctx context.Context) (ListHandTermsRes, error)
 	// ListLlmModels implements listLlmModels operation.
 	//
 	// Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
@@ -317,6 +332,12 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/term-candidates
 	ListTermCandidates(ctx context.Context, params ListTermCandidatesParams) (ListTermCandidatesRes, error)
+	// PutBackTerm implements putBackTerm operation.
+	//
+	// Administrators only. Puts a removed term back on the list. 404 when it was not removed.
+	//
+	// DELETE /api/v1/admin/terms/removed
+	PutBackTerm(ctx context.Context, params PutBackTermParams) (PutBackTermRes, error)
 	// RejectTermCandidate implements rejectTermCandidate operation.
 	//
 	// Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone.
@@ -331,6 +352,14 @@ type Handler interface {
 	//
 	// DELETE /api/v1/admin/analyses/queue
 	RemoveQueuedAnalyses(ctx context.Context) (RemoveQueuedAnalysesRes, error)
+	// RemoveTerm implements removeTerm operation.
+	//
+	// Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or
+	// looked for until it is put back. The text matches without regard to case or accents. 404 when the
+	// list has no such term.
+	//
+	// POST /api/v1/admin/terms/removed
+	RemoveTerm(ctx context.Context, req *TermRef) (RemoveTermRes, error)
 	// RereadPromptRun implements rereadPromptRun operation.
 	//
 	// Administrators only. Reads a finished run's answers whose reading failed again, or only the one

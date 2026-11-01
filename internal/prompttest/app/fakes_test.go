@@ -30,7 +30,9 @@ type repo struct {
 	checks    []domain.ListCheck
 	usage     []domain.ReviewUsage
 	// sets are the published Prompt sets, version 2 unless a test publishes others.
-	sets   []domain.PublishedSet
+	sets []domain.PublishedSet
+	// scopes are the scopes published with a Prompt set, beyond the imported ones.
+	scopes []domain.ScopeInfo
 	failOn map[string]bool
 	// heartbeatsLeft, when not negative, is how many heartbeats succeed before the run is
 	// taken over by another instance.
@@ -68,7 +70,20 @@ func (r *repo) PromptSets(context.Context) ([]domain.PublishedSet, error) {
 }
 
 func (r *repo) PromptScopes(context.Context) ([]domain.ScopeInfo, error) {
-	return domaintest.Scopes(), r.err("PromptScopes")
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append(domaintest.Scopes(), r.scopes...), r.err("PromptScopes")
+}
+
+func (r *repo) PublishPromptSet(_ context.Context, set domain.PublishedSet, scopes []domain.ScopeInfo) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("PublishPromptSet"); err != nil {
+		return err
+	}
+	r.sets = append([]domain.PublishedSet{set}, r.sets...)
+	r.scopes = append(r.scopes, scopes...)
+	return nil
 }
 
 func (r *repo) Settings(context.Context) (domain.Settings, bool, error) {

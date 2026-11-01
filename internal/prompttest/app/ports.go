@@ -80,6 +80,9 @@ type Repository interface {
 	PromptSets(ctx context.Context) ([]domain.PublishedSet, error)
 	// PromptScopes returns every scope a question can be asked in.
 	PromptScopes(ctx context.Context) ([]domain.ScopeInfo, error)
+	// PublishPromptSet stores a new version with its questions and the new scopes it asks in, in one
+	// transaction, or returns domain.ErrVersionTaken when another publication took its number first.
+	PublishPromptSet(ctx context.Context, set domain.PublishedSet, scopes []domain.ScopeInfo) error
 
 	// CreateRun stores a running run held by owner, or returns domain.ErrRunActive when one is
 	// running already.

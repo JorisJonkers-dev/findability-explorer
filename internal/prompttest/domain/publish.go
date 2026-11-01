@@ -33,6 +33,9 @@ type DraftError struct{ Reason string }
 
 func (e DraftError) Error() string { return e.Reason }
 
+// ErrVersionTaken is returned when another publication stored the version number first.
+var ErrVersionTaken = errors.New("another publication took this version number first; publish again")
+
 // ErrNothingChanged is returned when the draft asks exactly what the newest version asks.
 var ErrNothingChanged = errors.New("the draft asks what the published Prompt set asks")
 

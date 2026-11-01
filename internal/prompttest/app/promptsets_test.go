@@ -132,3 +132,42 @@ func TestThePromptSetsAreThePublishedVersionsWithEveryScope(t *testing.T) {
 		t.Errorf("scopes = %+v", got.Scopes)
 	}
 }
+
+func TestPublishStoresTheNextVersionWithItsNewScopeAndANewRunAsksIt(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	lyon := domain.ScopeInfo{ID: "fr-lyon", Language: "fr", Region: "Lyon", Name: "French, Lyon"}
+	draft := domain.Draft{
+		Questions: []domain.DraftQuestion{{Family: domain.FamilyEyelink, Intent: domain.IntentApplication, Scope: "fr-lyon", Text: "Quelle bande ?"}},
+		Scopes:    []domain.ScopeInfo{lyon},
+	}
+	set, err := e.svc.Publish(t.Context(), "joris", draft)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set.Version != 3 || set.PublishedBy != "joris" || set.Questions[0].ID != "eyelink-application-fr-lyon" {
+		t.Fatalf("set = %+v", set)
+	}
+	sets, err := e.svc.PromptSets(t.Context())
+	if err != nil || sets.Sets[0].Version != 3 || sets.Scopes[len(sets.Scopes)-1] != lyon {
+		t.Fatalf("sets = %+v, %v", sets, err)
+	}
+	run, err := e.svc.Start(t.Context(), "joris")
+	if err != nil || run.PromptSetVersion != 3 || e.repo.answers[0].Prompt.Language != "fr" {
+		t.Fatalf("run = %+v, %v", run, err)
+	}
+}
+
+func TestPublishPassesOnWhatStopsIt(t *testing.T) {
+	draft := domain.Draft{Questions: []domain.DraftQuestion{{Family: domain.FamilyOther, Intent: domain.IntentProblem, Scope: domain.ScopeGerman, Text: "Warum?"}}}
+	for _, op := range []string{"PromptSets", "PromptScopes", "PublishPromptSet"} {
+		e := newEnv(t, newRepo(op), "a")
+		if _, err := e.svc.Publish(t.Context(), "joris", draft); !errors.Is(err, errBoom) {
+			t.Errorf("%s fails: err = %v", op, err)
+		}
+	}
+	e := newEnv(t, newRepo(), "a")
+	var de domain.DraftError
+	if _, err := e.svc.Publish(t.Context(), "joris", domain.Draft{}); !errors.As(err, &de) {
+		t.Errorf("an empty draft: err = %v", err)
+	}
+}

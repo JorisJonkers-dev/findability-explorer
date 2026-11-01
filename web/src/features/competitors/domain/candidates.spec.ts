@@ -20,8 +20,8 @@ const check = (over: Partial<NonNullable<CompetitorCandidate['check']>> = {}) =>
 
 describe('a company named in AI answers', () => {
   it('says how often and by whom it was named', () => {
-    expect(candidateEvidence(candidate())).toBe('Named in 37 answers by OpenAI, xAI and Google, last on 1 Nov 2026, 06:10 UTC')
-    expect(candidateEvidence(candidate({ answers: 1, providers: ['deepseek'] }))).toBe('Named in 1 answer by DeepSeek, last on 1 Nov 2026, 06:10 UTC')
+    expect(candidateEvidence(candidate())).toBe('Named in 37 responses by OpenAI, xAI and Google, last on 1 Nov 2026, 06:10 UTC')
+    expect(candidateEvidence(candidate({ answers: 1, providers: ['deepseek'] }))).toBe('Named in 1 response by DeepSeek, last on 1 Nov 2026, 06:10 UTC')
   })
 
   it('says who decided and when', () => {
@@ -93,7 +93,7 @@ describe('finding and acting on many companies', () => {
     expect(checkLine(yes)).toBe('Haiku says a competitor. Makes wire mesh belts.')
     expect(checkLine(no)).toBe('Haiku says not a competitor. Makes plastic belts.')
     expect(checkLine(unsure)).toBe('Haiku is unsure. Could be either.')
-    expect(checkLine(silent)).toBe('Haiku gave no answer for it.')
+    expect(checkLine(silent)).toBe('Haiku gave no reason for it.')
   })
 
   it('says how far Haiku is, and what acting on several did', () => {

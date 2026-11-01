@@ -9,7 +9,8 @@ const route = useRoute()
 const { me, error } = useMe()
 
 watchEffect(() => {
-  const title = typeof route.meta.title === 'string' ? route.meta.title : null
+  const meta = route.meta.title
+  const title = typeof meta === 'function' ? meta(route) : (meta ?? null)
   document.title = title ? `${title} · Findability Explorer` : 'Findability Explorer'
 })
 </script>

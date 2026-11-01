@@ -193,6 +193,15 @@ type CompetitorDefinition struct {
 	RestoredFrom pgtype.Int8
 }
 
+type HandTerm struct {
+	Term     string
+	Language string
+	Family   string
+	Tier     string
+	AddedBy  string
+	AddedAt  time.Time
+}
+
 type LlmActive struct {
 	Singleton    bool
 	Mode         string
@@ -441,6 +450,13 @@ type RecommendationRun struct {
 	Kept         int64
 	InputTokens  int64
 	OutputTokens int64
+}
+
+type RemovedTerm struct {
+	Term      string
+	Language  string
+	RemovedBy string
+	RemovedAt time.Time
 }
 
 type Session struct {

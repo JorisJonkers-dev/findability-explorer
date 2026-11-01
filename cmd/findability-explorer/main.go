@@ -147,6 +147,8 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		func(ctx context.Context) ([]terminologydomain.Sighting, error) { return sightings(ctx, analysisRepo) },
 		now)
 	terminology.WithTribeltScans(func(ctx context.Context) (bool, error) { return tribeltScanned(ctx, analysisRepo) })
+	// Terms added and removed by hand count from the next scan on (decision 12 of the redesign).
+	terminology.WithHandTerms(terminologyRepo)
 	if err := terminology.Load(ctx); err != nil {
 		return err
 	}

@@ -26,6 +26,11 @@ type UseCases interface {
 	StartReview()
 	SwitchReview(ctx context.Context, user string, on bool) error
 	StopReview(ctx context.Context) error
+	HandTerms() []domain.HandTerm
+	RemovedTerms() []domain.HandTerm
+	AddTerm(ctx context.Context, user string, a domain.Acceptance) (domain.Term, error)
+	RemoveTerm(ctx context.Context, user string, key domain.TermKey) error
+	PutBack(ctx context.Context, key domain.TermKey) error
 }
 
 // Handler implements the terminology operations. Business rules stay in the use cases.
@@ -181,6 +186,7 @@ func (h *Handler) UndoTermDecision(ctx context.Context, params oas.UndoTermDecis
 func problem(status int, err error) oas.Problem {
 	for _, known := range []error{
 		domain.ErrCandidateNotFound, domain.ErrDecided, domain.ErrPending, domain.ErrTermExists, domain.ErrInvalidTerm,
+		domain.ErrTermNotFound, domain.ErrNotRemoved,
 	} {
 		if errors.Is(err, known) {
 			err = known
@@ -286,4 +292,58 @@ func nonNil(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+// ListHandTerms implements listHandTerms.
+func (h *Handler) ListHandTerms(context.Context) (oas.ListHandTermsRes, error) {
+	return &oas.HandTermList{Added: toHandTerms(h.uc.HandTerms()), Removed: toHandTerms(h.uc.RemovedTerms())}, nil
+}
+
+func toHandTerms(terms []domain.HandTerm) []oas.HandTerm {
+	out := make([]oas.HandTerm, 0, len(terms))
+	for _, t := range terms {
+		out = append(out, oas.HandTerm{Term: ToTerm(t.Term), By: t.By, At: t.At})
+	}
+	return out
+}
+
+// AddTerm implements addTerm.
+func (h *Handler) AddTerm(ctx context.Context, req *oas.NewTerm) (oas.AddTermRes, error) {
+	t, err := h.uc.AddTerm(ctx, h.actor(ctx), domain.Acceptance{
+		Text: req.Term, Language: string(req.Language), Family: string(req.Family), Tier: string(req.Tier),
+	})
+	switch {
+	case errors.Is(err, domain.ErrTermExists):
+		return &oas.AddTermConflict{StatusCode: http.StatusConflict, Response: problem(http.StatusConflict, err)}, nil
+	case errors.Is(err, domain.ErrInvalidTerm), errors.Is(err, domain.ErrUnknownValue):
+		return &oas.AddTermUnprocessableEntity{StatusCode: http.StatusUnprocessableEntity, Response: problem(http.StatusUnprocessableEntity, err)}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := ToTerm(t)
+	return &out, nil
+}
+
+// RemoveTerm implements removeTerm.
+func (h *Handler) RemoveTerm(ctx context.Context, req *oas.TermRef) (oas.RemoveTermRes, error) {
+	err := h.uc.RemoveTerm(ctx, h.actor(ctx), domain.TermKey{Text: req.Term, Language: domain.Language(req.Language)})
+	switch {
+	case errors.Is(err, domain.ErrTermNotFound):
+		return &oas.RemoveTermNotFound{StatusCode: http.StatusNotFound, Response: problem(http.StatusNotFound, err)}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.RemoveTermNoContent{}, nil
+}
+
+// PutBackTerm implements putBackTerm.
+func (h *Handler) PutBackTerm(ctx context.Context, params oas.PutBackTermParams) (oas.PutBackTermRes, error) {
+	err := h.uc.PutBack(ctx, domain.TermKey{Text: params.Term, Language: domain.Language(params.Language)})
+	switch {
+	case errors.Is(err, domain.ErrNotRemoved):
+		return &oas.PutBackTermNotFound{StatusCode: http.StatusNotFound, Response: problem(http.StatusNotFound, err)}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.PutBackTermNoContent{}, nil
 }

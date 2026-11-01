@@ -71,6 +71,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     children: [
       { label: 'Term review', to: '/manage/terms/review' },
       { label: 'Waiting terms', to: '/manage/terms/waiting' },
+      { label: 'Add or remove terms', to: '/manage/terms/edit' },
     ],
   },
   {

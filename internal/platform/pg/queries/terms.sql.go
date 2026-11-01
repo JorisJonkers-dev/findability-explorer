@@ -10,6 +10,24 @@ import (
 	"time"
 )
 
+const deleteRemovedTerm = `-- name: DeleteRemovedTerm :execrows
+DELETE FROM removed_terms
+WHERE term = $1 AND language = $2
+`
+
+type DeleteRemovedTermParams struct {
+	Term     string
+	Language string
+}
+
+func (q *Queries) DeleteRemovedTerm(ctx context.Context, arg DeleteRemovedTermParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteRemovedTerm, arg.Term, arg.Language)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteTermDecision = `-- name: DeleteTermDecision :execrows
 DELETE FROM term_decisions
 WHERE candidate_id = $1
@@ -47,6 +65,59 @@ func (q *Queries) InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTerm
 		arg.Tier,
 		arg.UsedBy,
 		arg.Source,
+	)
+	return err
+}
+
+const insertHandTerm = `-- name: InsertHandTerm :execrows
+INSERT INTO hand_terms (term, language, family, tier, added_by, added_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (term, language) DO NOTHING
+`
+
+type InsertHandTermParams struct {
+	Term     string
+	Language string
+	Family   string
+	Tier     string
+	AddedBy  string
+	AddedAt  time.Time
+}
+
+func (q *Queries) InsertHandTerm(ctx context.Context, arg InsertHandTermParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertHandTerm,
+		arg.Term,
+		arg.Language,
+		arg.Family,
+		arg.Tier,
+		arg.AddedBy,
+		arg.AddedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const insertRemovedTerm = `-- name: InsertRemovedTerm :exec
+INSERT INTO removed_terms (term, language, removed_by, removed_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (term, language) DO NOTHING
+`
+
+type InsertRemovedTermParams struct {
+	Term      string
+	Language  string
+	RemovedBy string
+	RemovedAt time.Time
+}
+
+func (q *Queries) InsertRemovedTerm(ctx context.Context, arg InsertRemovedTermParams) error {
+	_, err := q.db.Exec(ctx, insertRemovedTerm,
+		arg.Term,
+		arg.Language,
+		arg.RemovedBy,
+		arg.RemovedAt,
 	)
 	return err
 }
@@ -156,6 +227,70 @@ func (q *Queries) ListAcceptedTerms(ctx context.Context) ([]AcceptedTerm, error)
 			&i.Tier,
 			&i.UsedBy,
 			&i.Source,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listHandTerms = `-- name: ListHandTerms :many
+SELECT term, language, family, tier, added_by, added_at
+FROM hand_terms
+ORDER BY added_at, term, language
+`
+
+func (q *Queries) ListHandTerms(ctx context.Context) ([]HandTerm, error) {
+	rows, err := q.db.Query(ctx, listHandTerms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []HandTerm{}
+	for rows.Next() {
+		var i HandTerm
+		if err := rows.Scan(
+			&i.Term,
+			&i.Language,
+			&i.Family,
+			&i.Tier,
+			&i.AddedBy,
+			&i.AddedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRemovedTerms = `-- name: ListRemovedTerms :many
+SELECT term, language, removed_by, removed_at
+FROM removed_terms
+ORDER BY removed_at, term, language
+`
+
+func (q *Queries) ListRemovedTerms(ctx context.Context) ([]RemovedTerm, error) {
+	rows, err := q.db.Query(ctx, listRemovedTerms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RemovedTerm{}
+	for rows.Next() {
+		var i RemovedTerm
+		if err := rows.Scan(
+			&i.Term,
+			&i.Language,
+			&i.RemovedBy,
+			&i.RemovedAt,
 		); err != nil {
 			return nil, err
 		}

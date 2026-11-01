@@ -38,6 +38,9 @@ const plural = (n: number) => `${String(n)} ${n === 1 ? 'competitor' : 'competit
     <p v-else-if="isLoading" class="m-0 text-muted">Loading the search term list…</p>
     <p v-else-if="!term" role="alert" class="m-0 rounded-2xl bg-mist p-5">There is no term with this address.</p>
     <template v-else>
+      <p v-if="term.origin === 'hand'" data-part="hand" class="m-0 self-start rounded-full bg-orange-pale px-3.5 py-1 text-sm font-semibold text-orange-ink">
+        Added by hand
+      </p>
       <TermPages :term="term.term" :language="term.language" />
       <div data-part="columns" class="grid grid-cols-1 items-start gap-10 min-[1100px]:grid-cols-2">
         <FrameSection id="related" title="Related terms" intro="Other terms of the same belt family and language.">

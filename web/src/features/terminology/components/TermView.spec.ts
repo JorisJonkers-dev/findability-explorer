@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Plan } from '../../../infrastructure/api/types.gen'
 import { competitor, details, me, overview, term, termSearch } from '../../../testing/fixtures'
 import { json, mountApp, routes } from '../../../testing/mountApp'
+import { termPath } from '../domain/searchTerms'
 
 const plan = (): Plan => ({
   catalogueVersion: 1,
@@ -90,6 +91,14 @@ describe('one search term', () => {
     expect(wrapper.text()).toContain('No competitor’s newest scan found this term.')
     expect(wrapper.text()).toContain('No other term of this belt family and language is in the list.')
     expect(wrapper.text()).toContain('No recommendation for search terms is open.')
+  })
+
+  it('marks a term added by hand, and only that one', async () => {
+    const oven = term({ term: 'oven belt', language: 'en', family: 'eyelink', usedBy: [], origin: 'hand' })
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/terms': () => json(termSearch([...TERMS, oven])) }), termPath(oven))
+    expect(wrapper.get('[data-part="hand"]').text()).toBe('Added by hand')
+    const { wrapper: research } = await mountApp(api(), termPath(TERMS[3] ?? oven))
+    expect(research.find('[data-part="hand"]').exists()).toBe(false)
   })
 
   it('says when the address names no term', async () => {

@@ -96,9 +96,9 @@ export function modelLine(models: readonly PromptModelChoice[], provider: string
 export function basisLine(prices: Pick<PromptPrices, 'basis'>): string {
   switch (prices.basis) {
     case 'run':
-      return 'From what the latest run cost. Reading is priced at the model that reads the answers now.'
+      return 'From what the latest run cost. Reading is priced at the model that reads the responses now.'
     case 'catalogue':
-      return 'An estimate from OpenRouter’s prices, until the first run. An answer with web search includes the search fee.'
+      return 'An estimate from OpenRouter’s prices, until the first run. A response with web search includes the search fee.'
     case 'none':
       return 'No prices yet. They follow once the key works or a run has finished.'
   }

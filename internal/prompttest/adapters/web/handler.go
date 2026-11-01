@@ -28,6 +28,7 @@ type UseCases interface {
 	StopRun(ctx context.Context, actor string, runID uuid.UUID) error
 	History(ctx context.Context) (app.HistoryView, error)
 	PromptSets(ctx context.Context) (app.PromptSets, error)
+	Publish(ctx context.Context, actor string, d domain.Draft) (domain.PublishedSet, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error)
@@ -134,17 +135,7 @@ func (h *Handler) ListPromptSets(ctx context.Context) (oas.ListPromptSetsRes, er
 	}
 	out := &oas.PromptSets{Versions: make([]oas.PublishedPromptSet, 0, len(v.Sets)), Scopes: make([]oas.PromptSetScope, 0, len(v.Scopes))}
 	for _, set := range v.Sets {
-		p := oas.PublishedPromptSet{
-			Version: int32(set.Version), PublishedAt: set.PublishedAt, Note: set.Note, //nolint:gosec // small versions
-			Questions: make([]oas.PromptSetQuestion, 0, len(set.Questions)),
-		}
-		for _, q := range set.Questions {
-			p.Questions = append(p.Questions, oas.PromptSetQuestion{
-				ID: q.ID, Family: oas.PromptFamily(q.Family), Intent: oas.IntentTier(q.Intent), Scope: oas.PromptSetScopeId(q.Scope.ID),
-				ScopeName: q.Scope.Name, Language: q.Scope.Language, Region: optText(q.Scope.Region), Text: q.Text, English: optText(q.English),
-			})
-		}
-		out.Versions = append(out.Versions, p)
+		out.Versions = append(out.Versions, toPublished(set))
 	}
 	for _, s := range v.Scopes {
 		out.Scopes = append(out.Scopes, oas.PromptSetScope{
@@ -152,6 +143,49 @@ func (h *Handler) ListPromptSets(ctx context.Context) (oas.ListPromptSetsRes, er
 		})
 	}
 	return out, nil
+}
+
+// toPublished is a published Prompt set as the contract has it.
+func toPublished(set domain.PublishedSet) oas.PublishedPromptSet {
+	p := oas.PublishedPromptSet{
+		Version: int32(set.Version), PublishedAt: set.PublishedAt, Note: set.Note, //nolint:gosec // small versions
+		Questions: make([]oas.PromptSetQuestion, 0, len(set.Questions)),
+	}
+	for _, q := range set.Questions {
+		p.Questions = append(p.Questions, oas.PromptSetQuestion{
+			ID: q.ID, Family: oas.PromptFamily(q.Family), Intent: oas.IntentTier(q.Intent), Scope: oas.PromptSetScopeId(q.Scope.ID),
+			ScopeName: q.Scope.Name, Language: q.Scope.Language, Region: optText(q.Scope.Region), Text: q.Text, English: optText(q.English),
+		})
+	}
+	return p
+}
+
+// PublishPromptSet implements publishPromptSet.
+func (h *Handler) PublishPromptSet(ctx context.Context, req *oas.PromptSetDraft) (oas.PublishPromptSetRes, error) {
+	d := domain.Draft{RestoredFrom: int(req.RestoredFrom.Or(0))}
+	for _, q := range req.Questions {
+		d.Questions = append(d.Questions, domain.DraftQuestion{
+			ID: q.ID.Or(""), Family: domain.Family(q.Family), Intent: domain.Intent(q.Intent), Scope: domain.Scope(q.Scope),
+			Text: q.Text, English: q.English.Or(""),
+		})
+	}
+	for _, s := range req.Scopes {
+		d.Scopes = append(d.Scopes, domain.ScopeInfo{ID: domain.Scope(s.ID), Language: s.Language, Region: s.Region.Or(""), Name: s.Name})
+	}
+	set, err := h.uc.Publish(ctx, h.actor(ctx), d)
+	var invalid domain.DraftError
+	switch {
+	case errors.As(err, &invalid):
+		return &oas.PublishPromptSetUnprocessableEntity{StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, invalid.Reason)}, nil
+	case errors.Is(err, domain.ErrNothingChanged):
+		return &oas.PublishPromptSetConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, "The draft asks what the published Prompt set asks, so there is nothing to publish.")}, nil
+	case errors.Is(err, domain.ErrVersionTaken):
+		return &oas.PublishPromptSetConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, "Another publication took this version number first. Publish again.")}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := toPublished(set)
+	return &out, nil
 }
 
 // optText is a text, absent when empty.

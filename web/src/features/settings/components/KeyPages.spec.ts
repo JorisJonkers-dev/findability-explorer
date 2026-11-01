@@ -247,7 +247,7 @@ describe('testing and removing a key', () => {
     answer = () => problem(502, 'Bad Gateway')
     await button(stored(), 'Test the key').trigger('click')
     await settle()
-    expect(stored().get('[role="alert"]').text()).toBe('The provider did not answer. Try again in a minute.')
+    expect(stored().get('[role="alert"]').text()).toBe('The provider did not reply. Try again in a minute.')
   })
 
   it('asks before removing a key, in place', async () => {
@@ -328,7 +328,7 @@ describe('choosing the model', () => {
     const { wrapper } = await mountApp(server(llmSettings(), { [`GET /api/v1/admin/llm/credentials/${STORED_ID}/models`]: () => problem(502, 'Bad Gateway') }).handle, '/manage/scans/settings')
     await chooser(wrapper).get('select').setValue(STORED_ID)
     await settle()
-    expect(chooser(wrapper).get('[role="alert"]').text()).toBe('The provider did not answer. Try again in a minute.')
+    expect(chooser(wrapper).get('[role="alert"]').text()).toBe('The provider did not reply. Try again in a minute.')
   })
 
   it('turns matching off', async () => {
@@ -392,6 +392,6 @@ describe('a key’s usage and cost', () => {
     const vault = keyItem(anthropic.wrapper, 'Vault key (Anthropic (Claude))')
     await button(vault, 'Usage and cost').trigger('click')
     await settle()
-    expect(vault.get('[role="alert"]').text()).toBe('The provider did not answer: Anthropic answered 500. Try again in a minute.')
+    expect(vault.get('[role="alert"]').text()).toBe('The provider did not reply: Anthropic answered 500. Try again in a minute.')
   })
 })

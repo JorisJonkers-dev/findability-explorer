@@ -4,47 +4,92 @@ import { RouterLink } from 'vue-router'
 import { useLlmSettings } from '../../settings/composables/useLlmSettings'
 import { credentialName } from '../../settings/domain/credentials'
 import { usePromptSettings, useUpdatePromptSettings } from '../../prompt-test/composables/usePromptTest'
-import { answerCost } from '../../prompt-test/domain/grid'
-import { costLabel, providerName } from '../../prompt-test/domain/results'
-import { addProvider, basisLine, modelLine, openRouterKeys } from '../../prompt-test/domain/settings'
+import { costLabel } from '../../prompt-test/domain/results'
+import { openRouterKeys } from '../../prompt-test/domain/settings'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
+import { useModelCatalogue } from '../composables/useModelCatalogue'
+import {
+  addModel,
+  catalogueIntro,
+  catalogueRows,
+  type CatalogueRow,
+  filterCatalogue,
+  listRows,
+  type ListRow,
+  MAX_MODELS,
+  providerOptions,
+  removeModel,
+  saveLine,
+  savedList,
+  sameList,
+} from '../domain/models'
+import type { Column } from '../domain/table'
+import DataTable from './widgets/DataTable.vue'
+import { FIELD, LABEL, PRIMARY, ROW_BUTTON, SECONDARY } from './widgets/look'
 import ManageWidget from './widgets/ManageWidget.vue'
 import WidgetGrid from './widgets/WidgetGrid.vue'
 
 /**
- * The providers whose cheapest model every run asks, the OpenRouter key that pays, and what each
- * costs. The model list from OpenRouter's catalogue replaces this with its own ticket.
+ * The Model list: the OpenRouter models every run asks, each its own column, and the key that pays;
+ * Save says what the changes cost and that the charts mark the date; Add a model lists every text
+ * model on OpenRouter, the recommended five first.
  */
 const { settings, isLoading, error } = usePromptSettings()
 const llm = useLlmSettings()
 const { isSaving, notice, error: saveError, save } = useUpdatePromptSettings()
+const keyWorks = computed(() => settings.value?.keyWorks ?? false)
+const catalogue = useModelCatalogue(keyWorks)
 
 const keys = computed(() => openRouterKeys(llm.settings.value?.credentials ?? []))
 const credentialId = ref('')
-const providers = ref<string[]>([])
-const newProvider = ref('')
-const formError = ref<string | null>(null)
+const draft = ref<string[]>([])
+const saved = computed(() => (settings.value ? savedList(settings.value) : []))
 
 watch(
   settings,
   (s) => {
     if (!s) return
     credentialId.value = s.credentialId ?? ''
-    providers.value = [...s.providers]
+    draft.value = savedList(s)
   },
   { immediate: true },
 )
 
-function add(): void {
-  const next = addProvider(providers.value, newProvider.value)
-  formError.value = next.problem
-  providers.value = next.list
-  if (next.problem === null) newProvider.value = ''
-}
+const questions = computed(() => settings.value?.promptSet.prompts.length ?? 0)
+const reading = computed(() => settings.value?.prices.readingUsd ?? 0)
+const changed = computed(() => !sameList(saved.value, draft.value) || credentialId.value !== (settings.value?.credentialId ?? ''))
+const line = computed(() => saveLine(saved.value, draft.value, catalogue.models.value, questions.value, reading.value))
+const rows = computed(() => listRows(draft.value, catalogue.models.value, questions.value))
+
+const provider = ref('all')
+const freeOnly = ref(false)
+const providers = computed(() => providerOptions(catalogue.models.value))
+const offered = computed(() => catalogueRows(filterCatalogue(catalogue.models.value, provider.value, freeOnly.value), draft.value, questions.value))
+const full = computed(() => draft.value.length >= MAX_MODELS)
 
 function submit(): void {
-  save({ ...(credentialId.value === '' ? {} : { credentialId: credentialId.value }), providers: providers.value }, 'The model list is saved.')
+  save({ ...(credentialId.value === '' ? {} : { credentialId: credentialId.value }), models: draft.value }, 'The model list is saved. Charts will mark a break where it changed.')
 }
+function undo(): void {
+  draft.value = [...saved.value]
+  credentialId.value = settings.value?.credentialId ?? ''
+}
+
+const LIST_COLUMNS: readonly Column<ListRow>[] = [
+  { key: 'provider', label: 'Provider', value: (r) => r.provider },
+  { key: 'name', label: 'Model', value: (r) => r.name },
+  { key: 'cost', label: 'Cost per run', value: (r) => r.runUsd, num: true },
+  { key: 'free', label: 'Free or not', value: (r) => (r.free ? 'Free to ask' : 'Paid') },
+  { key: 'remove', label: 'Change' },
+]
+const catalogueColumns = computed<readonly Column<CatalogueRow>[]>(() => [
+  { key: 'provider', label: 'Provider', value: (r) => r.provider },
+  { key: 'name', label: 'Model', value: (r) => r.name },
+  { key: 'listed', label: 'On OpenRouter since', value: (r) => r.listedAt, wide: true },
+  { key: 'cost', label: `Cost per run of ${String(questions.value)} questions`, value: (r) => r.runUsd, num: true },
+  { key: 'add', label: 'Add' },
+])
+const PILL = 'inline-flex rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap'
 </script>
 
 <template>
@@ -57,107 +102,80 @@ function submit(): void {
     <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the models…</p>
     <WidgetGrid v-else-if="settings">
-      <div v-if="!settings.keyWorks" role="alert" class="flex flex-col gap-1 rounded-3xl border-2 border-orange-ink bg-orange-pale p-5 min-[1100px]:col-span-12">
+      <div v-if="!settings.keyWorks" role="alert" class="flex basis-full flex-col gap-1 rounded-3xl border-2 border-orange-ink bg-orange-pale p-5">
         <p class="m-0 font-semibold">The OpenRouter key does not work, so no Prompt run can start.</p>
         <p class="m-0">Choose a working key below, or add one in <RouterLink to="/manage/keys" class="underline underline-offset-4">Keys and spending</RouterLink>.</p>
       </div>
 
       <ManageWidget title="The model list" :span="8">
-        <form id="models-form" novalidate class="flex flex-col gap-4" @submit.prevent="submit">
-          <label class="flex flex-col gap-1.5 font-medium">
-            OpenRouter key
-            <select v-model="credentialId" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base">
-              <option value="" disabled>Choose a key</option>
-              <option v-for="k in keys" :key="k.id" :value="k.id">{{ credentialName(k) }}</option>
-            </select>
-            <span v-if="keys.length === 0" class="text-sm font-normal text-ink-2">
-              Add an OpenRouter key in <RouterLink to="/manage/keys" class="underline underline-offset-4">Keys and spending</RouterLink> first.
-            </span>
-          </label>
-          <fieldset class="m-0 flex flex-col gap-2 border-0 p-0">
-            <legend class="mb-1.5 font-medium">Providers to ask, each with its cheapest model</legend>
-            <ul aria-label="Providers" class="m-0 flex list-none flex-col gap-1.5 p-0">
-              <li v-for="p in providers" :key="p" class="flex flex-wrap items-center gap-3 rounded-xl bg-white px-3 py-2">
-                <span class="min-w-32 flex-1">
-                  <span class="font-medium">{{ providerName(p) }}</span>
-                  <span class="block text-xs text-muted">{{ modelLine(settings.models, p) }}</span>
-                </span>
-                <button
-                  type="button"
-                  class="min-h-10 border-0 bg-transparent px-2 text-sm font-medium text-ink-2 underline underline-offset-4 disabled:opacity-50"
-                  :disabled="providers.length === 1"
-                  @click="providers = providers.filter((x) => x !== p)"
-                >
-                  Remove<span class="sr-only">{{ ' ' + providerName(p) }}</span>
-                </button>
-              </li>
-            </ul>
-            <div class="flex flex-wrap items-end gap-2">
-              <label class="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium">
-                Add a provider by its OpenRouter id
-                <input
-                  v-model="newProvider"
-                  type="text"
-                  spellcheck="false"
-                  placeholder="meta-llama"
-                  class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base"
-                  @keydown.enter.prevent="add"
-                />
-              </label>
-              <button type="button" class="min-h-11 rounded-full border-2 border-black bg-white px-5 font-semibold hover:bg-mist" @click="add">Add</button>
-            </div>
-          </fieldset>
-          <p v-if="formError" role="alert" class="m-0 font-medium text-orange-ink">{{ formError }}</p>
-        </form>
+        <p class="m-0 text-ink-2">These models are asked in every run, {{ questions }} questions each. Each one is its own column on the AI responses page.</p>
+        <label :class="LABEL" class="max-w-md">
+          OpenRouter key
+          <select v-model="credentialId" :class="FIELD">
+            <option value="" disabled>Choose a key</option>
+            <option v-for="k in keys" :key="k.id" :value="k.id">{{ credentialName(k) }}</option>
+          </select>
+          <span v-if="keys.length === 0" class="font-normal">
+            Add an OpenRouter key in <RouterLink to="/manage/keys" class="underline underline-offset-4">Keys and spending</RouterLink> first.
+          </span>
+        </label>
+        <DataTable :rows="rows" :columns="LIST_COLUMNS" :row-key="(r) => r.id" label="The model list" empty="The list is empty. Add a model below, or a run has nobody to ask.">
+          <template #cell-cost="{ row }">{{ row.known ? costLabel(row.runUsd) : 'Not on OpenRouter now' }}</template>
+          <template #cell-free="{ row }">
+            <span :class="[PILL, row.free ? 'bg-orange-pale text-orange-ink' : 'bg-white text-ink-2']">{{ row.free ? 'Free to ask' : 'Paid' }}</span>
+          </template>
+          <template #cell-remove="{ row }">
+            <button type="button" :class="ROW_BUTTON" @click="draft = removeModel(draft, row.id)">Remove<span class="sr-only">{{ ' ' + row.name }}</span></button>
+          </template>
+        </DataTable>
       </ManageWidget>
-      <ManageWidget title="Save the model list" :span="4">
-        <p class="m-0 text-ink-2">A run of {{ settings.promptSet.prompts.length }} questions costs about {{ costLabel(settings.prices.runUsd) }} with the saved list.</p>
+
+      <ManageWidget title="Save the model list" :span="4" :accent="changed">
+        <p class="m-0 text-ink-2">{{ line }}</p>
         <template #foot>
-          <button type="submit" form="models-form" :disabled="isSaving" class="min-h-11 rounded-full border-0 bg-black px-6 font-semibold text-white hover:bg-ink-2 disabled:opacity-60">
-            Save the model list
-          </button>
+          <button type="button" :class="PRIMARY" :disabled="!changed || draft.length === 0 || isSaving" @click="submit">Save the model list</button>
+          <button type="button" :class="SECONDARY" :disabled="!changed" @click="undo">Undo the changes</button>
           <p class="m-0 w-full font-medium" aria-live="polite">{{ notice }}</p>
           <p v-if="saveError" role="alert" class="m-0 w-full font-medium text-orange-ink">{{ saveError }}</p>
         </template>
       </ManageWidget>
 
-      <ManageWidget title="What runs cost">
-        <p class="m-0 text-ink-2">{{ basisLine(settings.prices) }}</p>
-        <div class="overflow-x-auto" tabindex="0" role="region" aria-label="The cost table">
-          <table class="w-full border-collapse text-sm">
-            <caption class="sr-only">The cost of one response per provider, with and without web search, and of a run</caption>
-            <thead>
-              <tr class="border-b-2 border-black text-left text-muted">
-                <th scope="col" class="py-1.5 font-medium">Provider and model</th>
-                <th scope="col" class="px-2 py-1.5 text-right font-medium">One response</th>
-                <th scope="col" class="px-2 py-1.5 text-right font-medium">With web search</th>
-                <th scope="col" class="px-2 py-1.5 text-right font-medium">A run</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="p in settings.prices.providers" :key="p.provider" class="border-b border-grey">
-                <th scope="row" class="py-2 text-left font-medium">
-                  {{ providerName(p.provider) }}<span class="block text-xs font-normal text-muted">{{ p.fallback ? `${p.model}, then ${p.fallback}` : p.model }}</span>
-                </th>
-                <td class="px-2 py-2 text-right">{{ answerCost(p.knowledgeUsd) }}</td>
-                <td class="px-2 py-2 text-right">{{ answerCost(p.webUsd) }}</td>
-                <td class="px-2 py-2 text-right font-semibold">{{ costLabel(p.runUsd) }}</td>
-              </tr>
-              <tr class="border-b border-grey">
-                <th scope="row" class="py-2 text-left font-medium">Reading every response<span class="block text-xs font-normal text-muted">{{ settings.extractorModel }}</span></th>
-                <td class="px-2 py-2 text-right">{{ answerCost(settings.prices.readingUsd) }}</td>
-                <td class="px-2 py-2"></td>
-                <td class="px-2 py-2"></td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr class="border-b-2 border-black">
-                <th scope="row" colspan="3" class="py-2 text-left">One run</th>
-                <td class="px-2 py-2 text-right font-semibold">{{ costLabel(settings.prices.runUsd) }}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+      <ManageWidget title="Add a model" :span="12">
+        <p v-if="!settings.keyWorks" class="m-0 text-ink-2">OpenRouter’s models can be listed once the key works.</p>
+        <p v-else-if="catalogue.error.value" role="alert" class="m-0 font-medium text-orange-ink">{{ catalogue.error.value }}</p>
+        <p v-else-if="catalogue.isLoading.value" class="m-0 text-muted">Reading OpenRouter’s models…</p>
+        <template v-else>
+          <p class="m-0 text-ink-2">{{ catalogueIntro(catalogue.models.value, catalogue.readAt.value, questions) }}</p>
+          <div class="flex flex-wrap items-end gap-4">
+            <label :class="LABEL" class="max-w-xs">
+              Provider
+              <select v-model="provider" :class="FIELD">
+                <option v-for="p in providers" :key="p.value" :value="p.value">{{ p.label }}</option>
+              </select>
+            </label>
+            <label class="inline-flex min-h-12 cursor-pointer items-center gap-2 font-medium">
+              <input v-model="freeOnly" type="checkbox" class="size-5 accent-black" />
+              Free only
+            </label>
+          </div>
+          <p v-if="full" class="m-0 text-ink-2">The list holds at most {{ MAX_MODELS }} models. Remove one to add another.</p>
+          <p v-if="offered.length === 0" class="m-0 text-ink-2">No model matches these filters.</p>
+          <DataTable v-else :rows="offered" :columns="catalogueColumns" :row-key="(r) => r.id" label="OpenRouter’s models" :search-text="(r) => r.search">
+            <template #cell-name="{ row }">
+              {{ row.name }}<span v-if="row.recommended" :class="PILL" class="ml-2 bg-orange-pale text-orange-ink">Recommended</span>
+            </template>
+            <template #cell-listed="{ row }">{{ row.listed }}</template>
+            <template #cell-cost="{ row }">
+              {{ costLabel(row.runUsd) }}<span v-if="row.free" class="block text-xs text-muted">Free, apart from web search</span>
+            </template>
+            <template #cell-add="{ row }">
+              <span v-if="row.onList" class="text-sm text-muted">On the list</span>
+              <button v-else type="button" :class="ROW_BUTTON" :disabled="full" @click="draft = addModel(draft, row.id)">
+                Add<span class="sr-only">{{ ' ' + row.name }}</span>
+              </button>
+            </template>
+          </DataTable>
+        </template>
       </ManageWidget>
     </WidgetGrid>
   </ManageLayout>

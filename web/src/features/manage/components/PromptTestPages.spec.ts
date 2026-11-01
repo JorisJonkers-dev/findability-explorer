@@ -1,11 +1,11 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import type { PromptTestSettings } from '../../../infrastructure/api/types.gen'
+import type { PromptTestSettingsChange } from '../../../infrastructure/api/types.gen'
 import { me, promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
 import { manageCounts } from '../../../testing/manageFixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { llmSettings, STORED_ID } from '../../settings/fixtures'
-import { promptHistory, promptSets, promptSettings } from '../fixtures'
+import { modelCatalogue, promptHistory, promptSets, promptSettings } from '../fixtures'
 
 const STOPPED = '00000000-0000-4000-8000-000000000009'
 const HAND = 'Stopped by hand. The responses so far are kept, and a retry finishes the run.'
@@ -22,10 +22,10 @@ function server(extra: Record<string, Handler> = {}) {
     'GET /api/v1/prompt-test/prompt-sets': () => json(promptSets()),
     'GET /api/v1/prompt-test/history': () => json(promptHistory()),
     'PATCH /api/v1/admin/prompt-test': async (r) => {
-      const body = (await r.json()) as Partial<PromptTestSettings> & { factSheet?: string }
+      const body = (await r.json()) as PromptTestSettingsChange
       bodies.push(body)
-      const { factSheet, ...rest } = body
-      return json(promptSettings({ ...rest, ...(factSheet ? { factSheet: { text: factSheet, version: 3 } } : {}) }))
+      const { factSheet, models, ...rest } = body
+      return json(promptSettings({ ...rest, ...(models ? { modelList: models } : {}), ...(factSheet ? { factSheet: { text: factSheet, version: 3 } } : {}) }))
     },
     'POST /api/v1/admin/prompt-runs': () => (sent.push('start'), json({ ...promptRun(), status: 'running', tasks: 8 }, 202)),
     [`POST /api/v1/admin/prompt-runs/${RUN_ID}/stop`]: () => (sent.push('stop'), new Response(null, { status: 204 })),
@@ -286,42 +286,115 @@ describe('Fact sheet', () => {
 })
 
 describe('Models', () => {
-  it('shows the key, the providers, and what runs cost, and saves the list', async () => {
-    const { handle, bodies } = server()
-    const { wrapper } = await mountApp(handle, '/manage/prompt-test/models')
+  const catalogueServer = (extra: Record<string, Handler> = {}) =>
+    server({
+      'GET /api/v1/admin/prompt-test': () => json(promptSettings({ modelList: ['openai/gpt-oss-20b', 'google/gemma:free'] })),
+      'GET /api/v1/admin/prompt-test/catalogue': () => json(modelCatalogue()),
+      ...extra,
+    })
+  const cells = (w: Found) => w.findAll('tbody tr').map((r) => r.findAll('td').map((c) => c.text()))
+
+  it('shows the list with what each model costs a run, and every model on OpenRouter to add', async () => {
+    const { wrapper } = await mountApp(catalogueServer().handle, '/manage/prompt-test/models')
     expect(wrapper.get('h1').text()).toBe('Models')
     const list = widget(wrapper, 'The model list')
+    expect(list.text()).toContain('These models are asked in every run, 2 questions each. Each one is its own column on the AI responses page.')
     expect(list.get('select').findAll('option').map((o) => o.text())).toEqual(['Choose a key', 'Course budget key (OpenRouter)'])
-    expect(list.findAll('ul[aria-label="Providers"] li').map((l) => l.find('span').text())).toEqual([
-      'OpenAIopenai/gpt-oss-20b',
-      'Googlegoogle/gemma:free, then google/gemini-2.5-flash-lite',
+    expect(cells(list)).toEqual([
+      ['OpenAI', 'gpt-oss-20b', '$0.01', 'Paid', 'Remove gpt-oss-20b'],
+      ['Google', 'Gemma 3 27B (free)', '$0.04', 'Free to ask', 'Remove Gemma 3 27B (free)'],
     ])
-    const rows = widget(wrapper, 'What runs cost').findAll('tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
-    expect(rows[0]).toEqual(['OpenAIopenai/gpt-oss-20b', '$0.0012', '$0.0061', '$0.15'])
-    const input = list.get('input')
-    await input.setValue('Open AI')
-    await button(list, 'Add').trigger('click')
-    expect(list.get('[role="alert"]').text()).toBe('A provider is an OpenRouter id, such as openai or meta-llama.')
-    await input.setValue('x-ai')
-    await input.trigger('keydown', { key: 'Enter' })
-    await list.findAll('ul[aria-label="Providers"] button')[1]?.trigger('click')
-    await list.get('form').trigger('submit')
-    await settle()
-    expect(bodies).toEqual([{ credentialId: STORED_ID, providers: ['openai', 'x-ai'] }])
-    expect(wrapper.text()).toContain('The model list is saved.')
+    const save = widget(wrapper, 'Save the model list')
+    expect(save.text()).toContain('The list is saved. A run asks 2 models and costs about $0.06.')
+    expect(button(save, 'Save the model list').attributes('disabled')).toBeDefined()
+    const add = widget(wrapper, 'Add a model')
+    expect(add.text()).toContain('Every text model on OpenRouter, 4 from 3 providers, as listed on 1 November 2026.')
+    const rows = cells(add)
+    expect(rows[0]).toEqual(['OpenAI', 'gpt-oss-20bRecommended', '5 August 2025', '$0.01', 'On the list'])
+    expect(rows[2]).toEqual(['qwen', 'Qwen3 8B (free)', '', '$0.04Free, apart from web search', 'Add Qwen3 8B (free)'])
   })
 
-  it('warns when the key does not work, and asks for a key when there is none', async () => {
+  it('adds, removes, and saves the list, with what it changes', async () => {
+    const { handle, bodies } = catalogueServer()
+    const { wrapper } = await mountApp(handle, '/manage/prompt-test/models')
+    const add = widget(wrapper, 'Add a model')
+    await button(add, 'Add GPT-5 Nano').trigger('click')
+    const list = widget(wrapper, 'The model list')
+    expect(cells(list).map((r) => r[1])).toEqual(['gpt-oss-20b', 'Gemma 3 27B (free)', 'GPT-5 Nano'])
+    expect(cells(add)[3]?.[4]).toBe('On the list')
+    const save = widget(wrapper, 'Save the model list')
+    expect(save.text()).toContain('With these changes, a run asks 3 models and costs about $0.08, $0.02 more than the saved list. Saving marks this date on the trend charts')
+    await button(list, 'Remove gpt-oss-20b').trigger('click')
+    expect(cells(list).map((r) => r[1])).toEqual(['Gemma 3 27B (free)', 'GPT-5 Nano'])
+    await button(save, 'Undo the changes').trigger('click')
+    expect(cells(list).map((r) => r[1])).toEqual(['gpt-oss-20b', 'Gemma 3 27B (free)'])
+    await button(add, 'Add Qwen3 8B (free)').trigger('click')
+    await button(save, 'Save the model list').trigger('click')
+    await settle()
+    expect(bodies).toEqual([{ credentialId: STORED_ID, models: ['openai/gpt-oss-20b', 'google/gemma:free', 'qwen/qwen3-8b:free'] }])
+    expect(save.text()).toContain('The model list is saved. Charts will mark a break where it changed.')
+  })
+
+  it('narrows the catalogue to a provider and to the free models', async () => {
+    const { wrapper } = await mountApp(catalogueServer().handle, '/manage/prompt-test/models')
+    const add = widget(wrapper, 'Add a model')
+    const provider = add.get('select')
+    expect(provider.findAll('option').map((o) => o.text())).toEqual(['All 3 providers', 'Google (1)', 'OpenAI (2)', 'qwen (1)'])
+    await provider.setValue('openai')
+    expect(cells(add).map((r) => r[1])).toEqual(['gpt-oss-20bRecommended', 'GPT-5 Nano'])
+    await provider.setValue('all')
+    await add.get('input[type="checkbox"]').setValue(true)
+    expect(cells(add).map((r) => r[1])).toEqual(['Gemma 3 27B (free)Recommended', 'Qwen3 8B (free)'])
+    await provider.setValue('openai')
+    expect(add.text()).toContain('No model matches these filters.')
+  })
+
+  it('starts from what runs ask before a list is saved, and saves a key chosen with it', async () => {
+    const { handle, bodies } = server({
+      'GET /api/v1/admin/prompt-test': () => json(promptSettings({ credentialId: undefined })),
+      'GET /api/v1/admin/prompt-test/catalogue': () => json(modelCatalogue()),
+    })
+    const { wrapper } = await mountApp(handle, '/manage/prompt-test/models')
+    const list = widget(wrapper, 'The model list')
+    expect(cells(list).map((r) => r[1])).toEqual(['gpt-oss-20b', 'Gemma 3 27B (free)'])
+    const save = button(widget(wrapper, 'Save the model list'), 'Save the model list')
+    expect(save.attributes('disabled')).toBeDefined()
+    await list.get('select').setValue(STORED_ID)
+    expect(save.attributes('disabled')).toBeUndefined()
+    await save.trigger('click')
+    await settle()
+    expect(bodies).toEqual([{ credentialId: STORED_ID, models: ['openai/gpt-oss-20b', 'google/gemma:free'] }])
+  })
+
+  it('cannot save an empty list, and names a model OpenRouter no longer lists', async () => {
     const { wrapper } = await mountApp(
-      server({
-        'GET /api/v1/admin/prompt-test': () => json(promptSettings({ keyWorks: false, credentialId: undefined })),
-        'GET /api/v1/admin/llm': () => json(llmSettings({ credentials: [] })),
-      }).handle,
+      catalogueServer({ 'GET /api/v1/admin/prompt-test': () => json(promptSettings({ modelList: ['gone/model'] })) }).handle,
       '/manage/prompt-test/models',
     )
+    const list = widget(wrapper, 'The model list')
+    expect(cells(list)[0]).toEqual(['gone', 'gone/model', 'Not on OpenRouter now', 'Paid', 'Remove gone/model'])
+    await button(list, 'Remove gone/model').trigger('click')
+    expect(list.text()).toContain('The list is empty. Add a model below, or a run has nobody to ask.')
+    expect(button(widget(wrapper, 'Save the model list'), 'Save the model list').attributes('disabled')).toBeDefined()
+  })
+
+  it('warns when the key does not work, and reads no catalogue without one', async () => {
+    const { handle } = server({
+      'GET /api/v1/admin/prompt-test': () => json(promptSettings({ keyWorks: false, credentialId: undefined })),
+      'GET /api/v1/admin/llm': () => json(llmSettings({ credentials: [] })),
+    })
+    const { wrapper, requests } = await mountApp(handle, '/manage/prompt-test/models')
     expect(wrapper.get('[role="alert"]').text()).toContain('The OpenRouter key does not work, so no Prompt run can start.')
     expect(wrapper.text()).toContain('Add an OpenRouter key in Keys and spending first.')
-    await widget(wrapper, 'The model list').get('form').trigger('submit')
-    await settle()
+    expect(widget(wrapper, 'Add a model').text()).toContain('OpenRouter’s models can be listed once the key works.')
+    expect(requests().some((r) => r.includes('/catalogue'))).toBe(false)
+  })
+
+  it('says when the catalogue cannot be read', async () => {
+    const { wrapper } = await mountApp(
+      catalogueServer({ 'GET /api/v1/admin/prompt-test/catalogue': () => problem(422, 'No OpenRouter key works.') }).handle,
+      '/manage/prompt-test/models',
+    )
+    expect(widget(wrapper, 'Add a model').get('[role="alert"]').text()).toBe('No OpenRouter key works.')
   })
 })

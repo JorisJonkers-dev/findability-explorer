@@ -41,6 +41,8 @@ type promptTests struct {
 	// workStops are the reviews and checks stopped; workStopErr makes their stops fail.
 	workStops   []string
 	workStopErr error
+	// definitions stands in for the competitor definition's use cases; a fresh one when nil.
+	definitions *definitions
 }
 
 func (a *analyses) prompts() *promptTests {

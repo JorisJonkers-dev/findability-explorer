@@ -64,36 +64,41 @@ func DefinitionVersion(versions []Definition, version int) (Definition, bool) {
 // list the model checks, and the waiting candidates whose newest check with a reason is older.
 // Both are checked again by the next check.
 func Outdated(directory []DirectoryCompany, checks []ListCheck, candidates []Candidate, verdicts []CompanyVerdict, version int) (int, int) {
+	return outdatedCompetitors(directory, checks, version), outdatedCandidates(candidates, verdicts, version)
+}
+
+func outdatedCompetitors(directory []DirectoryCompany, checks []ListCheck, version int) int {
 	checked := map[string]int{}
 	for _, c := range checks {
 		checked[c.CompanyID] = c.Version
 	}
-	competitors := 0
+	n := 0
 	for _, c := range directory {
 		if v, ok := checked[c.ID]; ok && c.Checkable() && v < version {
-			competitors++
+			n++
 		}
 	}
+	return n
+}
+
+func outdatedCandidates(candidates []Candidate, verdicts []CompanyVerdict, version int) int {
 	newest := map[string]int{}
 	for _, v := range verdicts {
 		if v.Reason != "" && v.Version > newest[v.CandidateID] {
 			newest[v.CandidateID] = v.Version
 		}
 	}
-	waiting := 0
+	n := 0
 	for _, c := range candidates {
-		if c.Decision != nil {
-			continue
-		}
 		best := 0
 		for _, id := range c.MemberIDs() {
 			best = max(best, newest[id])
 		}
-		if best > 0 && best < version {
-			waiting++
+		if c.Decision == nil && best > 0 && best < version {
+			n++
 		}
 	}
-	return competitors, waiting
+	return n
 }
 
 // Typical tokens of checking one company, for an estimate before any check.

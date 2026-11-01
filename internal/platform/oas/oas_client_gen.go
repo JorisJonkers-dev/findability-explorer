@@ -155,6 +155,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/competitors/{competitorId}
 	GetCompetitor(ctx context.Context, params GetCompetitorParams) (GetCompetitorRes, error)
+	// GetCompetitorDefinition invokes getCompetitorDefinition operation.
+	//
+	// Administrators only. The definition of who competes with Tribelt that every check of a company is
+	// made against (the newest version), every version, newest first, and what checking again against it
+	// would take - the competitors on the list and the waiting candidates checked against an older
+	// version, and what checking them again should cost on the Anthropic key.
+	//
+	// GET /api/v1/admin/competitor-definition
+	GetCompetitorDefinition(ctx context.Context) (GetCompetitorDefinitionRes, error)
 	// GetCompetitorProfile invokes getCompetitorProfile operation.
 	//
 	// Returns the search terms of the company's latest finished scan, grouped by Tribelt belt family, with
@@ -372,6 +381,14 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/reread
 	RereadPromptRun(ctx context.Context, request *PromptRetryRequest, params RereadPromptRunParams) (RereadPromptRunRes, error)
+	// RestoreCompetitorDefinition invokes restoreCompetitorDefinition operation.
+	//
+	// Administrators only. Saves the text of an older version as a new version, recording which it
+	// restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is
+	// the one in use.
+	//
+	// POST /api/v1/admin/competitor-definition/versions/{version}/restore
+	RestoreCompetitorDefinition(ctx context.Context, params RestoreCompetitorDefinitionParams) (RestoreCompetitorDefinitionRes, error)
 	// RetryPromptRun invokes retryPromptRun operation.
 	//
 	// Administrators only. Asks a finished run's failed and missing answers again, or only the one
@@ -384,6 +401,16 @@ type Invoker interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/retry
 	RetryPromptRun(ctx context.Context, request *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error)
+	// SaveCompetitorDefinition invokes saveCompetitorDefinition operation.
+	//
+	// Administrators only. Stores the text as a new version, which every check from now on is made
+	// against, and records who saved it. It starts no check - what was checked against an older version is
+	// checked again by the next check of the candidates or of the list (startCandidateReview,
+	// startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text
+	// is the one in use; 422 when it is empty or longer than 8,000 characters.
+	//
+	// PUT /api/v1/admin/competitor-definition
+	SaveCompetitorDefinition(ctx context.Context, request *CompetitorDefinitionText) (SaveCompetitorDefinitionRes, error)
 	// SearchTerms invokes searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of
@@ -2698,6 +2725,122 @@ func (c *Client) sendGetCompetitor(ctx context.Context, params GetCompetitorPara
 
 	stage = "DecodeResponse"
 	result, err := decodeGetCompetitorResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetCompetitorDefinition invokes getCompetitorDefinition operation.
+//
+// Administrators only. The definition of who competes with Tribelt that every check of a company is
+// made against (the newest version), every version, newest first, and what checking again against it
+// would take - the competitors on the list and the waiting candidates checked against an older
+// version, and what checking them again should cost on the Anthropic key.
+//
+// GET /api/v1/admin/competitor-definition
+func (c *Client) GetCompetitorDefinition(ctx context.Context) (GetCompetitorDefinitionRes, error) {
+	res, err := c.sendGetCompetitorDefinition(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetCompetitorDefinition(ctx context.Context) (res GetCompetitorDefinitionRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("getCompetitorDefinition"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-definition"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetCompetitorDefinitionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/competitor-definition"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, GetCompetitorDefinitionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetCompetitorDefinitionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6038,6 +6181,140 @@ func (c *Client) sendRereadPromptRun(ctx context.Context, request *PromptRetryRe
 	return result, nil
 }
 
+// RestoreCompetitorDefinition invokes restoreCompetitorDefinition operation.
+//
+// Administrators only. Saves the text of an older version as a new version, recording which it
+// restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is
+// the one in use.
+//
+// POST /api/v1/admin/competitor-definition/versions/{version}/restore
+func (c *Client) RestoreCompetitorDefinition(ctx context.Context, params RestoreCompetitorDefinitionParams) (RestoreCompetitorDefinitionRes, error) {
+	res, err := c.sendRestoreCompetitorDefinition(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendRestoreCompetitorDefinition(ctx context.Context, params RestoreCompetitorDefinitionParams) (res RestoreCompetitorDefinitionRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("restoreCompetitorDefinition"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-definition/versions/{version}/restore"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RestoreCompetitorDefinitionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/competitor-definition/versions/"
+	{
+		// Encode "version" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "version",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int32ToString(params.Version))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/restore"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, RestoreCompetitorDefinitionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRestoreCompetitorDefinitionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RetryPromptRun invokes retryPromptRun operation.
 //
 // Administrators only. Asks a finished run's failed and missing answers again, or only the one
@@ -6172,6 +6449,126 @@ func (c *Client) sendRetryPromptRun(ctx context.Context, request *PromptRetryReq
 
 	stage = "DecodeResponse"
 	result, err := decodeRetryPromptRunResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SaveCompetitorDefinition invokes saveCompetitorDefinition operation.
+//
+// Administrators only. Stores the text as a new version, which every check from now on is made
+// against, and records who saved it. It starts no check - what was checked against an older version is
+// checked again by the next check of the candidates or of the list (startCandidateReview,
+// startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text
+// is the one in use; 422 when it is empty or longer than 8,000 characters.
+//
+// PUT /api/v1/admin/competitor-definition
+func (c *Client) SaveCompetitorDefinition(ctx context.Context, request *CompetitorDefinitionText) (SaveCompetitorDefinitionRes, error) {
+	res, err := c.sendSaveCompetitorDefinition(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendSaveCompetitorDefinition(ctx context.Context, request *CompetitorDefinitionText) (res SaveCompetitorDefinitionRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("saveCompetitorDefinition"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-definition"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SaveCompetitorDefinitionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/competitor-definition"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSaveCompetitorDefinitionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, SaveCompetitorDefinitionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSaveCompetitorDefinitionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

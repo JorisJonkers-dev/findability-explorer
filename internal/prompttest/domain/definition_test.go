@@ -43,8 +43,11 @@ func TestTheNewestDefinitionIsTheOneInUse(t *testing.T) {
 
 func TestCompaniesCheckedAgainstAnOlderDefinitionAreCounted(t *testing.T) {
 	directory := []domain.DirectoryCompany{
-		{ID: "old", Role: domain.RoleCompetitor}, {ID: "new", Role: domain.RoleCompetitor}, {ID: "never", Role: domain.RoleCompetitor},
-		{ID: "kept", Role: domain.RoleCompetitor, Kept: true}, {ID: "tribelt", Role: domain.RoleTribelt},
+		{ID: "old", Role: domain.RoleCompetitor},
+		{ID: "new", Role: domain.RoleCompetitor},
+		{ID: "never", Role: domain.RoleCompetitor},
+		{ID: "kept", Role: domain.RoleCompetitor, Kept: true},
+		{ID: "tribelt", Role: domain.RoleTribelt},
 	}
 	checks := []domain.ListCheck{{CompanyID: "old", Version: 2}, {CompanyID: "new", Version: 3}, {CompanyID: "kept", Version: 2}, {CompanyID: "tribelt", Version: 2}}
 	waiting := domain.Candidate{ID: "w", Members: []domain.Member{{ID: "w"}}}
@@ -52,8 +55,10 @@ func TestCompaniesCheckedAgainstAnOlderDefinitionAreCounted(t *testing.T) {
 	current := domain.Candidate{ID: "c", Members: []domain.Member{{ID: "c"}}}
 	silent := domain.Candidate{ID: "s", Members: []domain.Member{{ID: "s"}}}
 	verdicts := []domain.CompanyVerdict{
-		{CandidateID: "w", Reason: "Makes belts.", Version: 2}, {CandidateID: "d", Reason: "Makes belts.", Version: 2},
-		{CandidateID: "c", Reason: "Makes belts.", Version: 3}, {CandidateID: "s", Version: 2},
+		{CandidateID: "w", Reason: "Makes belts.", Version: 2},
+		{CandidateID: "d", Reason: "Makes belts.", Version: 2},
+		{CandidateID: "c", Reason: "Makes belts.", Version: 3},
+		{CandidateID: "s", Version: 2},
 	}
 	competitors, candidates := domain.Outdated(directory, checks, []domain.Candidate{waiting, decided, current, silent}, verdicts, 3)
 	if competitors != 1 || candidates != 1 {

@@ -305,7 +305,7 @@ const heatGrid =
       </FrameSection>
     </div>
     <p data-part="intent-note" class="m-0 text-sm text-muted">
-      Buyer intent is what the buyer already knows when they search. <RouterLink to="/terms">See what each kind means</RouterLink>.
+      Buyer intent is what the buyer already knows when they search. <RouterLink to="/terms" class="underline">See what each kind means</RouterLink>.
     </p>
   </PageFrame>
 </template>

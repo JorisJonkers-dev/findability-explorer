@@ -23,7 +23,7 @@ export const ORIGIN_WORDS: Record<TermOrigin, string> = { research: 'The desk re
 export function draftError(text: string): string {
   const t = text.trim()
   if (t === '') return 'Write the term.'
-  return [...t].length > 200 ? 'A term has at most 200 characters.' : ''
+  return Array.from(t).length > 200 ? 'A term has at most 200 characters.' : ''
 }
 
 /** "oven belt (English)". */

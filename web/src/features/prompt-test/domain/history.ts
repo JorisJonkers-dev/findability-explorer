@@ -1,5 +1,6 @@
 import type { PromptRunFigures, PromptSetVersionInfo } from '../../../infrastructure/api/types.gen'
 import { clock, longDate } from '../../../shared/dates'
+import { joinWords } from '../../../shared/words'
 import type { Tone } from '../../../shared/ui/charts/tones'
 
 /** One run's figure on a line: when the run started, its share, and whether it was partial. */
@@ -14,7 +15,7 @@ export type ChartSeries = Series & { tone: Tone; strong?: boolean }
 /** A share the history gives per run, with the line it is drawn as. */
 export type Measure = { label: string; tone: Tone; strong?: boolean; pick: (r: PromptRunFigures) => number | undefined }
 
-/** A place where the questions changed: the chart shades from here, and a note says why. */
+/** A place where the questions or the model list changed: the chart shades from here, and a note says why. */
 export type Break = { x: string; label: string; note: string }
 
 /** The Prompt set filter's choice: one version, or every version. */
@@ -50,9 +51,12 @@ export function forVersion(runs: readonly PromptRunFigures[], v: VersionChoice):
   return v === 'all' ? [...runs] : runs.filter((r) => r.promptSetVersion === v)
 }
 
-/** A break where each later version was published, but only where runs sit on both sides of it. */
+/**
+ * A break where each later version was published, but only where runs sit on both sides of it; and
+ * one at each run that asked other models than the run before it, in the order of the chart.
+ */
 export function breaksOf(versions: readonly PromptSetVersionInfo[], runs: readonly PromptRunFigures[]): Break[] {
-  return versions
+  const questionsChanged = versions
     .slice(1)
     .filter((s) => runs.some((r) => at(r.startedAt) < at(s.publishedAt)) && runs.some((r) => at(r.startedAt) >= at(s.publishedAt)))
     .map((s) => ({
@@ -60,6 +64,25 @@ export function breaksOf(versions: readonly PromptSetVersionInfo[], runs: readon
       label: `Prompt set version ${String(s.version)}`,
       note: `The questions changed here (prompt set version ${String(s.version)}), so the figures before and after are not the same measure.`,
     }))
+  return [...questionsChanged, ...modelBreaks(runs)].sort((a, b) => at(a.x) - at(b.x))
+}
+
+/** A break at each run whose models differ from the run before it; a run that does not say has none. */
+function modelBreaks(runs: readonly PromptRunFigures[]): Break[] {
+  const out: Break[] = []
+  let before: readonly string[] | undefined
+  for (const r of runs) {
+    const now = r.models
+    if (before && now) {
+      const was = before
+      const added = now.filter((m) => !was.includes(m))
+      const removed = was.filter((m) => !now.includes(m))
+      const what = [added.length ? `added ${joinWords(added)}` : '', removed.length ? `removed ${joinWords(removed)}` : ''].filter(Boolean).join(', and ')
+      if (what) out.push({ x: r.startedAt, label: 'Model list', note: `The model list changed here (${what}), so the figures before and after are not the same measure.` })
+    }
+    before = now
+  }
+  return out
 }
 
 // A refused key is said plainly; any other reason is quoted as the run gave it.

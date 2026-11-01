@@ -22,6 +22,21 @@ describe('the Prompt test history', () => {
     expect(breaksOf(versions, runs)).toEqual([{ x: '2026-10-27T06:35:33Z', label: 'Prompt set version 2', note: 'The questions changed here (prompt set version 2), so the figures before and after are not the same measure.' }])
     expect(breaksOf(versions, forVersion(runs, 2))).toEqual([])
   })
+  it('breaks where the model list changed between two runs, beside the versions', () => {
+    const before = { ...runB, runId: 'c', startedAt: '2026-10-28T06:00:00Z', models: ['openai/gpt-oss-20b', 'google/gemma:free'] }
+    const same = { ...runB, runId: 'd', startedAt: '2026-10-29T06:00:00Z', models: ['google/gemma:free', 'openai/gpt-oss-20b'] }
+    const after = { ...runB, runId: 'e', startedAt: '2026-10-30T06:00:00Z', models: ['openai/gpt-oss-20b', 'openai/gpt-5-nano', 'mistralai/small'] }
+    const dropped = { ...runB, runId: 'f', startedAt: '2026-10-31T06:00:00Z', models: ['openai/gpt-oss-20b', 'openai/gpt-5-nano'] }
+    expect(breaksOf(versions, [runA, runB, before, same, after, dropped])).toEqual([
+      { x: '2026-10-27T06:35:33Z', label: 'Prompt set version 2', note: 'The questions changed here (prompt set version 2), so the figures before and after are not the same measure.' },
+      {
+        x: '2026-10-30T06:00:00Z',
+        label: 'Model list',
+        note: 'The model list changed here (added openai/gpt-5-nano and mistralai/small, and removed google/gemma:free), so the figures before and after are not the same measure.',
+      },
+      { x: '2026-10-31T06:00:00Z', label: 'Model list', note: 'The model list changed here (removed mistralai/small), so the figures before and after are not the same measure.' },
+    ])
+  })
   it('explains a partial run, and names a refused key plainly', () => {
     expect(partialNote(runA)).toBe('27 October 2026, 06:03: a partial run of version 1. Only 62 of its 1,260 requests got a response (the rest failed because the OpenRouter key was refused), and 47 of those could be read, so its figure rests on few responses.')
   })

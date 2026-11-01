@@ -113,7 +113,7 @@ export function recentWork(runs: readonly PromptRun[], scans: readonly AnalysisS
       to: `/manage/scans/${s.id}`,
     })
   }
-  return lines.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, limit)
+  return lines.sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit)
 }
 
 /** A piece of work that runs now, with its progress and its own Stop. */

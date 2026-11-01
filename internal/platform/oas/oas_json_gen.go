@@ -15701,6 +15701,12 @@ func (s *PlanImprovement) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.EditedAt.Set {
+			e.FieldStart("editedAt")
+			s.EditedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
 		if s.Facts != nil {
 			e.FieldStart("facts")
 			e.ArrStart()
@@ -15792,30 +15798,31 @@ func (s *PlanImprovement) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPlanImprovement = [23]string{
+var jsonFieldsNameOfPlanImprovement = [24]string{
 	0:  "kind",
 	1:  "generated",
 	2:  "new",
 	3:  "where",
 	4:  "whereNote",
 	5:  "scoreReason",
-	6:  "facts",
-	7:  "id",
-	8:  "title",
-	9:  "moves",
-	10: "measure",
-	11: "benefit",
-	12: "effort",
-	13: "auto",
-	14: "done",
-	15: "tickedBy",
-	16: "tickedAt",
-	17: "why",
-	18: "steps",
-	19: "doneWhen",
-	20: "parts",
-	21: "tribelt",
-	22: "leader",
+	6:  "editedAt",
+	7:  "facts",
+	8:  "id",
+	9:  "title",
+	10: "moves",
+	11: "measure",
+	12: "benefit",
+	13: "effort",
+	14: "auto",
+	15: "done",
+	16: "tickedBy",
+	17: "tickedAt",
+	18: "why",
+	19: "steps",
+	20: "doneWhen",
+	21: "parts",
+	22: "tribelt",
+	23: "leader",
 }
 
 // Decode decodes PlanImprovement from json.
@@ -15891,6 +15898,16 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"scoreReason\"")
 			}
+		case "editedAt":
+			if err := func() error {
+				s.EditedAt.Reset()
+				if err := s.EditedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"editedAt\"")
+			}
 		case "facts":
 			if err := func() error {
 				s.Facts = make([]string, 0)
@@ -15911,7 +15928,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"facts\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.ID = string(v)
@@ -15923,7 +15940,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "title":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Title = string(v)
@@ -15935,7 +15952,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"title\"")
 			}
 		case "moves":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Moves = string(v)
@@ -15947,7 +15964,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"moves\"")
 			}
 		case "measure":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.Measure.Decode(d); err != nil {
 					return err
@@ -15957,7 +15974,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"measure\"")
 			}
 		case "benefit":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int32()
 				s.Benefit = int32(v)
@@ -15969,7 +15986,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"benefit\"")
 			}
 		case "effort":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int32()
 				s.Effort = int32(v)
@@ -15981,7 +15998,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"effort\"")
 			}
 		case "auto":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := d.Bool()
 				s.Auto = bool(v)
@@ -15993,7 +16010,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"auto\"")
 			}
 		case "done":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := d.Bool()
 				s.Done = bool(v)
@@ -16025,7 +16042,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tickedAt\"")
 			}
 		case "why":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Why = string(v)
@@ -16037,7 +16054,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"why\"")
 			}
 		case "steps":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				s.Steps = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -16057,7 +16074,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"steps\"")
 			}
 		case "doneWhen":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.DoneWhen = string(v)
@@ -16069,7 +16086,7 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"doneWhen\"")
 			}
 		case "parts":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				s.Parts = make([]PlanPart, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -16116,9 +16133,9 @@ func (s *PlanImprovement) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
-		0b10000111,
-		0b01111111,
-		0b00011110,
+		0b00000111,
+		0b11111111,
+		0b00111100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -25643,6 +25660,216 @@ func (s *ReadinessRank) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ReadinessRank) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *RecommendationEdit) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *RecommendationEdit) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("title")
+		e.Str(s.Title)
+	}
+	{
+		if s.Where.Set {
+			e.FieldStart("where")
+			s.Where.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("why")
+		e.Str(s.Why)
+	}
+	{
+		e.FieldStart("steps")
+		e.ArrStart()
+		for _, elem := range s.Steps {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("doneWhen")
+		e.Str(s.DoneWhen)
+	}
+	{
+		e.FieldStart("benefit")
+		e.Int32(s.Benefit)
+	}
+	{
+		e.FieldStart("effort")
+		e.Int32(s.Effort)
+	}
+}
+
+var jsonFieldsNameOfRecommendationEdit = [7]string{
+	0: "title",
+	1: "where",
+	2: "why",
+	3: "steps",
+	4: "doneWhen",
+	5: "benefit",
+	6: "effort",
+}
+
+// Decode decodes RecommendationEdit from json.
+func (s *RecommendationEdit) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode RecommendationEdit to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "title":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Title = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"title\"")
+			}
+		case "where":
+			if err := func() error {
+				s.Where.Reset()
+				if err := s.Where.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"where\"")
+			}
+		case "why":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Why = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"why\"")
+			}
+		case "steps":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				s.Steps = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Steps = append(s.Steps, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"steps\"")
+			}
+		case "doneWhen":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.DoneWhen = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"doneWhen\"")
+			}
+		case "benefit":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Int32()
+				s.Benefit = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"benefit\"")
+			}
+		case "effort":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Int32()
+				s.Effort = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"effort\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode RecommendationEdit")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b01111101,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfRecommendationEdit) {
+					name = jsonFieldsNameOfRecommendationEdit[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *RecommendationEdit) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *RecommendationEdit) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

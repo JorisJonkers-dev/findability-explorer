@@ -72,3 +72,10 @@ WHERE id = @id;
 SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM recommendation_runs
 WHERE started_at >= @since;
+
+-- name: UpdateRecommendation :execrows
+-- An administrator's wording and scores of a recommendation a run wrote.
+UPDATE recommendations
+SET title = @title, where_url = @where_url, where_note = @where_note, why = @why, steps = @steps, done_when = @done_when,
+    benefit = @benefit, effort = @effort, edited_at = @edited_at
+WHERE id = @id;

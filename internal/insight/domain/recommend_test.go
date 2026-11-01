@@ -74,11 +74,10 @@ func TestARunReplacesTheOpenRecommendationsAndKeepsTheDoneAndEditedOnes(t *testi
 }
 
 func TestAWrittenRecommendationIsListedInThePlan(t *testing.T) {
-	standings := []domain.Standing{{Measure: domain.MeasureTermsUsed}}
 	r := domain.Recommendation{
 		ID: "r1", RunID: "run2", Gap: domain.Gap{Kind: domain.GapFact}, Title: "Use it", Why: "Because.", Steps: []string{"Do it."}, DoneWhen: "Found.", Benefit: 4, Effort: 2,
 	}
-	standings = []domain.Standing{{Measure: domain.MeasureShareOfVoice}}
+	standings := []domain.Standing{{Measure: domain.MeasureShareOfVoice}}
 	item := r.Item("run2", standings, domain.DoneFacts{})
 	if item.ID != "r1" || item.Measure != domain.MeasureShareOfVoice || item.Moves == "" || !item.Manual() || item.Done || !item.New || item.Written == nil ||
 		item.Benefit != 4 || item.Steps[0] != "Do it." {

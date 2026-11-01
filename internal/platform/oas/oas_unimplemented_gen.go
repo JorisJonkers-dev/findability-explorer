@@ -141,6 +141,18 @@ func (UnimplementedHandler) DismissCompetitorCandidate(ctx context.Context, para
 	return r, ht.ErrNotImplemented
 }
 
+// EditRecommendation implements editRecommendation operation.
+//
+// Administrators only. Stores the wording and scores of a recommendation a Recommendation run wrote,
+// and when it was edited; an edited one is kept when the next run replaces the others. A blank page
+// leaves it for the web agency to place. 404 for an unknown recommendation; 422 for one written by
+// hand, which stays in code, or for an edit out of bounds.
+//
+// PUT /api/v1/admin/recommendations/{recommendationId}
+func (UnimplementedHandler) EditRecommendation(ctx context.Context, req *RecommendationEdit, params EditRecommendationParams) (r EditRecommendationRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetActivity implements getActivity operation.
 //
 // Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness
@@ -887,7 +899,8 @@ func (UnimplementedHandler) TestLlmCredential(ctx context.Context, params TestLl
 // TickImprovement implements tickImprovement operation.
 //
 // Administrators only. Marks an improvement no scan can check as done, recording who and when, or as
-// not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+// not done again; a recommendation a run wrote too, when no rule decides it (a fact sheet correction).
+// 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
 //
 // PUT /api/v1/admin/plan/improvements/{improvementId}
 func (UnimplementedHandler) TickImprovement(ctx context.Context, req *ImprovementTick, params TickImprovementParams) (r TickImprovementRes, _ error) {

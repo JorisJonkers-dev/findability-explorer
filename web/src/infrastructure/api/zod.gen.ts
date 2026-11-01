@@ -890,6 +890,19 @@ export const zAiSearchSummary = z.object({
 });
 
 /**
+ * An administrator's wording and scores of a recommendation a run wrote.
+ */
+export const zRecommendationEdit = z.object({
+    title: z.string().min(1).max(200),
+    where: z.string().max(500).optional(),
+    why: z.string().max(500),
+    steps: z.array(z.string().max(300)).max(6),
+    doneWhen: z.string().max(300),
+    benefit: z.int().gte(1).lte(5),
+    effort: z.int().gte(1).lte(5)
+});
+
+/**
  * What kind of change a recommendation asks for - term (a search term to add), page (a page to add), listing (a site to get listed on), fact (a fact sheet correction), readiness (AI readiness), or general (written by hand for the whole site).
  */
 export const zRecommendationKind = z.enum([
@@ -1032,6 +1045,7 @@ export const zPlanImprovement = z.object({
     where: z.string().max(500).optional(),
     whereNote: z.string().max(200).optional(),
     scoreReason: z.string().max(300).optional(),
+    editedAt: z.iso.datetime({ offset: true }).max(64).optional(),
     facts: z.array(z.string().max(600)).max(10).optional(),
     id: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
     title: z.string().max(200),
@@ -2324,6 +2338,20 @@ export const zTickImprovementPath = z.object({
  * The plan, with the tick.
  */
 export const zTickImprovementResponse = zPlan;
+
+/**
+ * The wording and scores.
+ */
+export const zEditRecommendationBody = zRecommendationEdit;
+
+export const zEditRecommendationPath = z.object({
+    recommendationId: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+});
+
+/**
+ * The plan, with the edit.
+ */
+export const zEditRecommendationResponse = zPlan;
 
 /**
  * The Recommendation runs.

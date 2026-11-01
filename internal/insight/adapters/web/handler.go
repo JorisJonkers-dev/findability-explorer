@@ -28,6 +28,7 @@ type UseCases interface {
 	RecommendationRuns(ctx context.Context) (app.RecRuns, error)
 	StartRecommendationRun(ctx context.Context, user string) error
 	StopRecommendationRun(ctx context.Context) error
+	EditRecommendation(ctx context.Context, id string, e domain.Edit) error
 }
 
 // Handler implements the insight operations. Business rules stay in the use cases.
@@ -243,6 +244,28 @@ func (h *Handler) TickImprovement(ctx context.Context, req *oas.ImprovementTick,
 	return h.plan(ctx)
 }
 
+// EditRecommendation implements editRecommendation.
+func (h *Handler) EditRecommendation(ctx context.Context, req *oas.RecommendationEdit, params oas.EditRecommendationParams) (oas.EditRecommendationRes, error) {
+	err := h.uc.EditRecommendation(ctx, params.RecommendationId, domain.Edit{
+		Title: req.Title, Where: req.Where.Or(""), Why: req.Why, Steps: req.Steps, DoneWhen: req.DoneWhen, Benefit: int(req.Benefit), Effort: int(req.Effort),
+	})
+	switch {
+	case errors.Is(err, domain.ErrUnknownImprovement):
+		return &oas.EditRecommendationNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No recommendation has this id.")}, nil
+	case errors.Is(err, domain.ErrNotEditable):
+		return &oas.EditRecommendationUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, "Only a recommendation a Recommendation run wrote can be edited."),
+		}, nil
+	case app.IsInputError(err):
+		return &oas.EditRecommendationUnprocessableEntity{
+			StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, "A title has 1 to 200 characters, and each score is from 1 to 5."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return h.plan(ctx)
+}
+
 // SetPlanTargets implements setPlanTargets.
 func (h *Handler) SetPlanTargets(ctx context.Context, req *oas.PlanTargetsChange) (oas.SetPlanTargetsRes, error) {
 	targets := make(map[domain.Target]float64, len(req.Targets))
@@ -337,6 +360,9 @@ func withWritten(o *oas.PlanImprovement, w domain.Recommendation) {
 	}
 	if w.ScoreReason != "" {
 		o.ScoreReason = oas.NewOptString(w.ScoreReason)
+	}
+	if !w.EditedAt.IsZero() {
+		o.EditedAt = oas.NewOptDateTime(w.EditedAt)
 	}
 	o.Facts = w.Gap.Specifics
 }

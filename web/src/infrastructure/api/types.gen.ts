@@ -1908,6 +1908,10 @@ export type PlanImprovement = {
      */
     scoreReason?: string;
     /**
+     * When an administrator edited a generated one; absent when nobody did.
+     */
+    editedAt?: string;
+    /**
      * The facts behind a generated one, as the rules found them.
      */
     facts?: Array<string>;
@@ -1969,6 +1973,40 @@ export type PlanImprovement = {
      */
     tribelt?: number;
     leader?: MeasureLeader;
+};
+
+/**
+ * An administrator's wording and scores of a recommendation a run wrote.
+ */
+export type RecommendationEdit = {
+    /**
+     * What to do.
+     */
+    title: string;
+    /**
+     * The tribelt.nl page it belongs on; absent or blank for the web agency to place.
+     */
+    where?: string;
+    /**
+     * Why it matters.
+     */
+    why: string;
+    /**
+     * How to do it.
+     */
+    steps: Array<string>;
+    /**
+     * When it counts as done.
+     */
+    doneWhen: string;
+    /**
+     * How much it helps.
+     */
+    benefit: number;
+    /**
+     * How much work it takes.
+     */
+    effort: number;
 };
 
 /**
@@ -3998,6 +4036,59 @@ export type TickImprovementResponses = {
 };
 
 export type TickImprovementResponse = TickImprovementResponses[keyof TickImprovementResponses];
+
+export type EditRecommendationData = {
+    /**
+     * The wording and scores.
+     */
+    body: RecommendationEdit;
+    path: {
+        /**
+         * The recommendation's id.
+         */
+        recommendationId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/recommendations/{recommendationId}';
+};
+
+export type EditRecommendationErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type EditRecommendationError = EditRecommendationErrors[keyof EditRecommendationErrors];
+
+export type EditRecommendationResponses = {
+    /**
+     * The plan, with the edit.
+     */
+    200: Plan;
+};
+
+export type EditRecommendationResponse = EditRecommendationResponses[keyof EditRecommendationResponses];
 
 export type GetRecommendationRunsData = {
     body?: never;

@@ -1,87 +1,124 @@
-import type { EyeOnReason, MeasureLeader, Plan, PlanImprovement, PlanTarget, Standing, StandingMeasure, Standings, WatchedNumber } from '../../../infrastructure/api/types.gen'
+import type {
+  EyeOnReason,
+  MeasureLeader,
+  Overview,
+  OverviewLanguage,
+  Plan,
+  PlanImprovement,
+  PlanTarget,
+  PromptCell,
+  PromptRun,
+  ReadinessCheckSummary,
+  Standing,
+  StandingMeasure,
+  Standings,
+} from '../../../infrastructure/api/types.gen'
+import { localDate } from '../../../shared/dates'
+import type { Tone } from '../../../shared/ui/charts/tones'
+import { languageLabel } from '../../../shared/vocabulary'
 import { formatValue, inWords } from '../../catching-up/domain/standings'
+import type { Measure } from '../../prompt-test/domain/history'
+import { FAMILIES, providerName, SCOPES } from '../../prompt-test/domain/results'
+import { CHECK_WHAT } from '../../readiness/domain/checks'
+import { CHECK_LABELS } from '../../readiness/domain/overview'
 
-/** A list as a sentence writes it, with the Oxford comma: "1", "1 and 5", "1, 2, and 5". */
-export function oxford(items: readonly string[]): string {
-  if (items.length <= 2) return items.join(' and ')
-  /* v8 ignore next -- the list has at least three items here, so the last one exists */
-  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1] ?? ''}`
-}
+/** How a goal is measured: by the Prompt test, or by the scans of the sites. */
+type Process = 'prompt-test' | 'scans'
 
-/** What the page knows about each number to watch. The server decides which numbers there are and their targets. */
+/** What the pages know about each goal. The server decides which goals there are and their values. */
 type Definition = {
-  /** The address, `/goals/:slug`: the standing measure's own name, or the target's when no standing measure matches (Twente). */
-  slug: string
-  label: string
-  /** What the number counts, as a sentence. */
-  counts: string
+  name: string
+  /** One sentence on what the goal measures; the readiness checks say how many there are. */
+  purpose: (readinessChecks: number) => string
   /** How its values are written. */
   unit: StandingMeasure
-  /** The standing that compares Tribelt with the competitors in the number's own unit. */
+  process: Process
+  /** The standing that compares Tribelt with the competitors in the goal's own unit. */
   compare?: StandingMeasure
   /** The competitor to look at, when the plan names one instead of the standings. */
   eyeOn?: EyeOnReason
-  /** The improvements that move it are the ones for this measure. */
+  /** The recommendations aimed at it are the ones for this measure. */
   improvedBy: StandingMeasure
+  /** Its line over time, from the Prompt test history. */
+  history?: Measure
 }
 
 const DEFINITIONS: Record<PlanTarget, Definition> = {
   aiShareOfVoice: {
-    slug: 'aiShareOfVoice',
-    label: 'AI answers that name Tribelt',
-    counts: "the share of the newest Prompt run's answers that name Tribelt at least once.",
+    name: 'AI responses that name Tribelt',
+    purpose: () => "The share of a Prompt run's responses that name Tribelt.",
     unit: 'aiShareOfVoice',
+    process: 'prompt-test',
     compare: 'aiShareOfVoice',
     improvedBy: 'aiShareOfVoice',
+    history: { label: 'Tribelt', tone: 'orange', strong: true, pick: (r) => r.all },
   },
   twenteShareOfVoice: {
-    slug: 'twenteShareOfVoice',
-    label: 'Answers about Twente that name Tribelt',
-    counts: "the share of the newest Prompt run's answers to questions about Twente that name Tribelt at least once.",
+    name: 'AI responses about the Twente region name Tribelt',
+    purpose: () => "The share of a Prompt run's responses about the Twente region that name Tribelt.",
     unit: 'aiShareOfVoice',
+    process: 'prompt-test',
     eyeOn: 'twente',
     improvedBy: 'aiShareOfVoice',
+    history: { label: 'Tribelt', tone: 'orange', strong: true, pick: (r) => r.twente },
   },
   citationShare: {
-    slug: 'citationShare',
-    label: 'Web answers that cite tribelt.nl',
-    counts: "the share of the newest Prompt run's web answers that cite tribelt.nl.",
+    name: 'Web responses that cite tribelt.nl',
+    purpose: () => "The share of a Prompt run's responses with web search that link to a tribelt.nl page.",
     unit: 'citationShare',
+    process: 'prompt-test',
     compare: 'citationShare',
     improvedBy: 'citationShare',
+    history: { label: 'Tribelt', tone: 'orange', strong: true, pick: (r) => r.citation },
   },
   readinessChecks: {
-    slug: 'readinessChecks',
-    label: 'AI readiness checks passed',
-    counts: 'how many of the AI readiness checks the newest scan of tribelt.nl passes.',
+    name: 'AI readiness checks passed',
+    purpose: (n) => `How many of the ${inWords(n)} AI readiness checks tribelt.nl passes.`,
     unit: 'readinessChecks',
+    process: 'scans',
     compare: 'readinessChecks',
     improvedBy: 'readinessChecks',
   },
   termsUsed: {
-    slug: 'termsUsed',
-    label: 'Search terms tribelt.nl uses',
-    counts: "how many of the terms on our search term list the newest scan of tribelt.nl found.",
+    name: 'Search terms tribelt.nl uses',
+    purpose: () => 'How many search terms on the list appear on tribelt.nl.',
     unit: 'termsUsed',
+    process: 'scans',
     compare: 'termsUsed',
     improvedBy: 'termsUsed',
   },
 }
 
-/** The number to watch with this address, or undefined when there is none. */
+/** The five goals, in the order the spec names them. */
+export const GOAL_ORDER: readonly PlanTarget[] = ['aiShareOfVoice', 'twenteShareOfVoice', 'citationShare', 'readinessChecks', 'termsUsed']
+
+/** The goal with this address, or undefined when there is none. */
 export function targetOfSlug(slug: string): PlanTarget | undefined {
-  return (Object.keys(DEFINITIONS) as PlanTarget[]).find((t) => DEFINITIONS[t].slug === slug)
+  return GOAL_ORDER.find((t) => t === slug)
 }
 
-/** The address of a number's page. */
+/** The address of a goal's page. */
 export function pathOfTarget(target: PlanTarget): string {
-  return `/goals/${DEFINITIONS[target].slug}`
+  return `/goals/${target}`
 }
 
-/** What the page has to work with: the plan, the standings and how many readiness checks there are. */
+/** Whether the Prompt test measures the goal, so its page draws the history with the Prompt set filter. */
+export function isPromptGoal(target: PlanTarget): boolean {
+  return DEFINITIONS[target].process === 'prompt-test'
+}
+
+/** The goal's line over time, from the Prompt test history; undefined for a goal the scans measure. */
+export function historyMeasure(target: PlanTarget): Measure | undefined {
+  return DEFINITIONS[target].history
+}
+
+/** What the pages have to work with: the plan and the standings. */
 export type Facts = { plan: Plan; standings: Standings }
 
-/** A value as the page writes it: "24%", "3 of 8", "45". */
+/** A labelled bar, as the shared bar list draws it. */
+export type Bar = { label: string; value: number; display: string; tone: Tone; highlight?: boolean }
+
+/** A value as the pages write it: "24%", "3 of 8", "45". */
 export function valueText(target: PlanTarget, value: number, readinessChecks: number): string {
   const def = DEFINITIONS[target]
   const text = formatValue(def.unit, value)
@@ -92,157 +129,198 @@ function standingOf(standings: Standings, measure: StandingMeasure | undefined):
   return measure === undefined ? undefined : standings.measures.find((s) => s.measure === measure)
 }
 
-/** The recommendation numbers that improve a number: the places in the plan's order, from 1. */
-export function improvementRanks(plan: Plan, target: PlanTarget): number[] {
-  const measure = DEFINITIONS[target].improvedBy
-  return plan.improvements.flatMap((it, index) => (it.measure === measure ? [index + 1] : []))
-}
-
-/** The competitor to look at: the leader of a standing, or the one the plan names. */
-function leaderOf({ plan, standings }: Facts, def: Definition): MeasureLeader | undefined {
+/** The best competitor: the leader of a standing, or the one the plan names. */
+function bestOf({ plan, standings }: Facts, def: Definition): MeasureLeader | undefined {
   if (def.eyeOn) return plan.eyeOn.find((e) => e.why === def.eyeOn)?.leader
   return standingOf(standings, def.compare)?.leader
 }
 
-/** The share of the way to the target, as a whole percentage. */
-function wayThere(now: number, goal: number): number {
-  return goal > 0 ? Math.round(Math.min(1, now / goal) * 100) : 100
+/** Where a bar ends: a share at 100%, the checks at all of them, a count at its largest value. */
+function scaleOf(def: Definition, readinessChecks: number, values: readonly number[]): number {
+  switch (def.unit) {
+    case 'aiShareOfVoice':
+    case 'citationShare':
+    case 'sitemapCoverage':
+      return 1
+    case 'readinessChecks':
+      return readinessChecks
+    case 'termsUsed':
+      return Math.max(...values, 0.0001)
+  }
 }
 
-/** One number to watch as the overview draws it: a row with a bar, the target and the leader. */
-export type NumberRow = {
+/** One row of the Overview's Goals table. */
+export type GoalRow = {
   target: PlanTarget
   path: string
-  label: string
-  /** Tribelt's value, or what is missing. */
+  name: string
   now: string
   measured: boolean
   goal: string
-  /** Where the bar ends, the target mark and the leader's dot, each from 0 to 100. */
-  fill: number
-  goalAt: number
-  leaderAt: number | undefined
-  /** A sentence on how far along it is. */
-  progress: string
-  /** "Improved by recommendations 1 and 5", or empty. */
-  improvedBy: string
+  /** "Ashworth, 57%", or "None yet". */
+  best: string
+  /** Tribelt, the goal, and the best competitor on the progress bar, each from 0 to 100. */
+  bar: { now: number; goal: number; best: number | undefined }
   aria: string
 }
 
-/** The sentence under a number's bar: how far it is, and who leads. */
-function progressLine(def: Definition, w: WatchedNumber, leader: MeasureLeader | undefined): string {
-  if (w.now === undefined) return 'Not measured yet.'
-  const head = w.met === true ? 'The target is met.' : `${String(wayThere(w.now, w.goal))}% of the way to the target.`
-  if (leader === undefined) return head
-  return w.now >= leader.value ? `${head} Tribelt leads the field.` : `${head} ${leader.name} is at ${formatValue(def.unit, leader.value)}.`
-}
+const at = (v: number, scale: number): number => Math.round((Math.max(0, v) / scale) * 10_000) / 100
 
-/** The rows of the numbers to watch, in the order the server gives them. */
-export function numberRows(facts: Facts): NumberRow[] {
-  const { plan, standings } = facts
-  const checks = standings.readinessChecks
-  return plan.watched.map((w) => {
-    const def = DEFINITIONS[w.target]
-    const leader = leaderOf(facts, def)
-    const scale = Math.max(w.goal, w.now ?? 0, leader?.value ?? 0, 0.0001) * 1.08
-    const at = (v: number) => (Math.max(0, v) / scale) * 100
-    const goal = valueText(w.target, w.goal, checks)
-    const now = w.now === undefined ? 'Not measured' : valueText(w.target, w.now, checks)
-    const progress = progressLine(def, w, leader)
-    const ranks = improvementRanks(plan, w.target)
-    return {
-      target: w.target,
-      path: pathOfTarget(w.target),
-      label: def.label,
-      now,
-      measured: w.now !== undefined,
-      goal,
-      fill: w.now === undefined ? 0 : at(w.now),
-      goalAt: at(w.goal),
-      leaderAt: leader === undefined ? undefined : at(leader.value),
-      progress,
-      improvedBy: ranks.length === 0 ? '' : `Improved by recommendation${ranks.length > 1 ? 's' : ''} ${oxford(ranks.map(String))}`,
-      aria: `${def.label}: ${now}, target ${goal}. ${progress} Open its page.`,
-    }
+/** The Goals table: a row per goal the plan holds, in the spec's order. */
+export function goalRows(facts: Facts): GoalRow[] {
+  const checks = facts.plan.readinessChecks
+  return GOAL_ORDER.flatMap((target) => {
+    const w = facts.plan.watched.find((x) => x.target === target)
+    if (!w) return []
+    const def = DEFINITIONS[target]
+    const best = bestOf(facts, def)
+    const scale = scaleOf(def, checks, [w.goal * 1.2, w.now ?? 0, best?.value ?? 0])
+    const now = w.now === undefined ? 'Not measured' : valueText(target, w.now, checks)
+    const goal = valueText(target, w.goal, checks)
+    const bestValue = best ? valueText(target, best.value, checks) : ''
+    return [
+      {
+        target,
+        path: pathOfTarget(target),
+        name: def.name,
+        now,
+        measured: w.now !== undefined,
+        goal,
+        best: best ? `${best.name}, ${bestValue}` : 'None yet',
+        bar: { now: w.now === undefined ? 0 : at(w.now, scale), goal: at(w.goal, scale), best: best ? at(best.value, scale) : undefined },
+        aria: `${def.name}: Tribelt ${w.now === undefined ? 'not measured' : now}, the goal ${goal}, ${best ? `the best competitor ${best.name} with ${bestValue}` : 'no best competitor yet'}. Open its page.`,
+      },
+    ]
   })
 }
 
-export type BarTone = 'orange' | 'blue-grey' | 'ink' | 'silver'
+/** The Overview's sentence: how AI responses name Tribelt, the readiness checks, and the search terms. */
+export function overviewSummary(facts: Facts, overview: Overview): string {
+  const companies = overview.aiSearch.companies
+  const mine = companies.find((c) => c.role === 'tribelt')?.share
+  let first = 'No Prompt run has finished yet'
+  if (mine !== undefined) {
+    const ahead = companies.filter((c) => c.role === 'competitor' && c.share !== undefined && c.share > mine).length
+    if (ahead === 0) first = 'AI responses name Tribelt more often than any competitor'
+    else first = `AI responses name ${ahead === 1 ? 'one competitor' : `${String(ahead)} competitors`} more often than Tribelt`
+  }
+  const score = facts.plan.watched.find((w) => w.target === 'readinessChecks')?.now
+  const checks = facts.plan.readinessChecks
+  const ready =
+    score === undefined ? 'tribelt.nl has not been checked for AI readiness yet' : `tribelt.nl passes ${formatValue('readinessChecks', score)} of the ${String(checks)} AI readiness checks`
+  const terms = `tribelt.nl uses ${formatValue('termsUsed', overview.terms.tribelt)} of the ${formatValue('termsUsed', overview.terms.total)} search terms buyers use`
+  return `${first}, ${ready}, and ${terms}.`
+}
 
-/** Everything the page of one number shows. */
-export type NumberDetail = {
+/** Everything a goal's page shows from the plan and the standings. */
+export type GoalPage = {
   target: PlanTarget
-  label: string
-  headline: string
-  counts: string
-  figures: { big: string; title: string; note: string; tone: 'tribelt' | 'plain' }[]
-  /** Tribelt, the typical competitor, the leader and the target, where the number's unit allows. */
-  bars: { label: string; value: number; display: string; tone: BarTone; highlight?: boolean }[]
+  name: string
+  purpose: string
+  /** Whether Tribelt or the best competitor is ahead, and the goal. */
+  summary: string
+  /** Tribelt, the typical competitor (where there is one), the best competitor, and the goal. */
+  bars: Bar[]
   barsMax: number
-  /** Who the typical competitor is, or how competitors are compared on this number. */
+  /** How the competitors are compared on this goal. */
   comparison: string
   leader: MeasureLeader | undefined
-  improvements: { rank: number; improvement: PlanImprovement }[]
+  /** The open recommendations aimed at it, in the plan's order. */
+  improvements: PlanImprovement[]
 }
 
-/** The headline: who is ahead, or how far Tribelt is. */
-function headlineOf(def: Definition, w: WatchedNumber, nowText: string, goalText: string, leader: MeasureLeader | undefined): string {
-  if (w.now === undefined) return `${def.label} is not measured yet.`
-  if (leader === undefined) return `Tribelt is at ${nowText}, against a target of ${goalText}.`
-  if (w.now >= leader.value) return `Tribelt leads on this number, with ${nowText}.`
-  return `${leader.name} is ahead with ${formatValue(def.unit, leader.value)}, against Tribelt's ${nowText}.`
+function summaryOf(f: (v: number) => string, now: number | undefined, goalText: string, leader: MeasureLeader | undefined): string {
+  if (now === undefined) return `Tribelt is not measured on this goal yet. The goal is ${goalText}.`
+  if (leader && leader.value > now) return `${leader.name} is ahead of Tribelt, with ${f(leader.value)} against ${f(now)}. The goal is ${goalText}.`
+  const against = leader ? ` against ${leader.name}'s ${f(leader.value)}` : ''
+  return `Tribelt leads every competitor, with ${f(now)}${against}. The goal is ${goalText}.`
 }
 
-/** How the competitors are compared on a number, in a sentence. */
 function comparisonOf(def: Definition, standing: Standing | undefined, leader: MeasureLeader | undefined): string {
-  if (def.eyeOn) return leader ? `${leader.name} is named most when buyers ask for Twente. The other competitors are not compared on this number.` : 'No competitor is named for Twente yet.'
-  if (standing?.median === undefined) return 'No competitor has data on this number yet.'
-  return `The typical competitor is the middle value over the ${inWords(standing.competitors)} competitors with data.`
+  if (def.eyeOn) return leader ? `${leader.name} is named most when buyers ask about Twente. The other competitors are not compared on this goal.` : 'No competitor is named for Twente yet.'
+  if (standing?.median === undefined) return 'No competitor has data on this goal yet.'
+  return 'The typical competitor is the middle figure across all competitors on the list.'
 }
 
-/** The page of one number to watch, from the plan and the standings; undefined when the plan has no target for it. */
-export function numberDetail(facts: Facts, target: PlanTarget): NumberDetail | undefined {
-  const { plan, standings } = facts
-  const w = plan.watched.find((x) => x.target === target)
+/** A goal's page; undefined when the plan does not hold that goal. */
+export function goalPage(facts: Facts, target: PlanTarget): GoalPage | undefined {
+  const w = facts.plan.watched.find((x) => x.target === target)
   if (!w) return undefined
   const def = DEFINITIONS[target]
-  const checks = standings.readinessChecks
-  const standing = standingOf(standings, def.compare)
-  const leader = leaderOf(facts, def)
-  const nowText = w.now === undefined ? 'No data yet' : valueText(target, w.now, checks)
-  const goalText = valueText(target, w.goal, checks)
+  const checks = facts.plan.readinessChecks
+  const standing = standingOf(facts.standings, def.compare)
+  const leader = bestOf(facts, def)
+  const f = (v: number) => valueText(target, v, checks)
+  const goalText = f(w.goal)
 
-  const bars: NumberDetail['bars'] = [{ label: 'Tribelt', value: w.now ?? 0, display: nowText, tone: 'orange', highlight: true }]
+  const bars: Bar[] = [{ label: 'Tribelt', value: w.now ?? 0, display: w.now === undefined ? 'Not measured' : f(w.now), tone: 'orange', highlight: true }]
   if (def.compare !== undefined) {
     const typical = standing?.median
-    bars.push({ label: 'Typical competitor', value: typical ?? 0, display: typical === undefined ? 'No data yet' : valueText(target, typical, checks), tone: 'blue-grey' })
+    bars.push({ label: 'The typical competitor', value: typical ?? 0, display: typical === undefined ? 'No data yet' : f(typical), tone: 'blue-grey' })
   }
-  if (leader !== undefined) bars.push({ label: leader.name, value: leader.value, display: valueText(target, leader.value, checks), tone: 'ink' })
-  bars.push({ label: 'Target', value: w.goal, display: goalText, tone: 'silver' })
-
-  let way = 'The first scan or Prompt run fills this in.'
-  if (w.now !== undefined) way = w.met === true ? 'Tribelt has met the target.' : `Tribelt is ${String(wayThere(w.now, w.goal))}% of the way there.`
-  const leaderBig = leader === undefined ? 'None' : valueText(target, leader.value, checks)
+  bars.push(
+    leader
+      ? { label: `${leader.name}, the best competitor`, value: leader.value, display: f(leader.value), tone: 'ink' }
+      : { label: 'The best competitor', value: 0, display: 'None yet', tone: 'ink' },
+  )
+  bars.push({ label: 'The goal', value: w.goal, display: goalText, tone: 'silver' })
 
   return {
     target,
-    label: def.label,
-    headline: headlineOf(def, w, nowText, goalText, leader),
-    counts: `This number is ${def.counts}`,
-    figures: [
-      { big: w.now === undefined ? 'No data' : nowText, title: 'Tribelt now', note: way, tone: 'tribelt' },
-      {
-        big: leaderBig,
-        title: leader === undefined ? 'No leader yet' : `${leader.name}, the leader`,
-        note: 'The competitor with the best value now.',
-        tone: 'plain',
-      },
-      { big: goalText, title: 'Target for the year', note: w.met === true ? 'The target is met.' : 'The goal for this number by the end of the year.', tone: 'plain' },
-    ],
+    name: def.name,
+    purpose: def.purpose(checks),
+    summary: summaryOf(f, w.now, goalText, leader),
     bars,
-    barsMax: Math.max(...bars.map((b) => b.value), 0.0001) * 1.08,
+    barsMax: scaleOf(def, checks, bars.map((b) => b.value * 1.1)),
     comparison: comparisonOf(def, standing, leader),
     leader,
-    improvements: plan.improvements.flatMap((improvement, index) => (improvement.measure === def.improvedBy ? [{ rank: index + 1, improvement }] : [])),
+    improvements: facts.plan.improvements.filter((i) => i.measure === def.improvedBy && !i.done),
   }
+}
+
+/** Where a Prompt test goal's figures come from: the newest run, its questions, models, and responses. */
+export function promptDataLine(run: PromptRun | undefined): string {
+  if (!run) return 'No Prompt run has finished yet.'
+  const models = run.models.length
+  const responses = `${run.answered.toLocaleString('en-GB')} ${run.answered === 1 ? 'response' : 'responses'} in all`
+  const asked = models > 0 ? `${String(Math.round(run.tasks / (models * 2)))} questions to ${String(models)} models, each from the model’s own knowledge and with web search, ` : ''
+  return `From the Prompt run of ${localDate(run.startedAt)}: ${asked}${responses}. Prompt set version ${String(run.promptSetVersion)}.`
+}
+
+/** One list of Broken down: a title, and a bar per part with the total last. */
+export type BreakdownGroup = { title: string; rows: Bar[] }
+
+/** A Prompt test goal broken down by model, scope (except for Twente), and belt family, from the newest run. */
+export function promptBreakdown(target: PlanTarget, cells: readonly PromptCell[]): BreakdownGroup[] {
+  if (!isPromptGoal(target)) return []
+  const twente = target === 'twenteShareOfVoice'
+  const citing = target === 'citationShare'
+  const base = cells.filter((c) => (!twente || c.scope === 'twente') && (!citing || c.mode === 'web'))
+  const hit = (c: PromptCell) => (citing ? c.cited : c.named)
+  const row = (label: string, xs: readonly PromptCell[], total = false): Bar[] => {
+    const answers = xs.reduce((n, c) => n + c.answers, 0)
+    if (answers === 0) return []
+    const share = xs.reduce((n, c) => n + hit(c), 0) / answers
+    const bar: Bar = { label, value: share, display: `${String(Math.round(share * 100))}%`, tone: total ? 'ink' : 'orange' }
+    return [total ? { ...bar, highlight: true } : bar]
+  }
+  const all = (label: string) => row(label, base, true)
+  if (all('All').length === 0) return []
+  const providers = [...new Set(base.map((c) => c.provider))]
+  const byModel = providers.flatMap((p) => row(providerName(p), base.filter((c) => c.provider === p))).sort((a, b) => b.value - a.value)
+  const groups: BreakdownGroup[] = [{ title: 'By model', rows: [...byModel, ...all('All models')] }]
+  if (!twente) groups.push({ title: 'By scope', rows: [...SCOPES.flatMap((s) => row(s.label, base.filter((c) => c.scope === s.value))), ...all('All scopes')] })
+  groups.push({ title: 'By belt family', rows: [...FAMILIES.flatMap((f) => row(f.label, base.filter((c) => c.family === f.value))), ...all('All belt families')] })
+  return groups
+}
+
+/** The readiness checks tribelt.nl is scored on, each passed, failed, or not known. */
+export function readinessBreakdown(checks: readonly ReadinessCheckSummary[]): { label: string; what: string; passed: boolean | null }[] {
+  return checks.filter((c) => c.scored).map((c) => ({ label: CHECK_LABELS[c.check], what: CHECK_WHAT[c.check], passed: c.tribelt ?? null }))
+}
+
+/** The search terms tribelt.nl uses, per language, with where the bars end. */
+export function termsBreakdown(languages: readonly OverviewLanguage[]): { rows: Bar[]; max: number } {
+  const rows: Bar[] = languages.map((l) => ({ label: `${languageLabel(l.language)}, of ${formatValue('termsUsed', l.terms)}`, value: l.tribelt, display: formatValue('termsUsed', l.tribelt), tone: 'orange' }))
+  return { rows, max: rows.length ? Math.max(...rows.map((r) => r.value)) * 1.1 : 1 }
 }

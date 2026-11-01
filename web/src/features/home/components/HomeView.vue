@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { headline } from '../../catching-up/domain/standings'
-import { numberRows } from '../../numbers/domain/numbers'
+import { numberRows } from '../../goals/domain/goals'
 import PageView from '../../shell/components/PageView.vue'
 import { useHome } from '../composables/useHome'
 import { sectionCards } from '../domain/cards'

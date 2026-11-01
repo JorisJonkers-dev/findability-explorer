@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Plan, PlanTarget, Standings } from '../../../infrastructure/api/types.gen'
 import { planFixture, standingsFixture } from '../../../testing/numbersFixtures'
-import { improvementRanks, numberDetail, numberRows, oxford, pathOfTarget, targetOfSlug, valueText } from './numbers'
+import { improvementRanks, numberDetail, numberRows, oxford, pathOfTarget, targetOfSlug, valueText } from './goals'
 
 const facts = (change: (plan: Plan, standings: Standings) => void = () => undefined) => {
   const plan = planFixture()

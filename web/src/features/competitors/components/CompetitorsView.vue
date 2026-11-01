@@ -80,11 +80,11 @@ function started(id: string): void {
             Search by name
             <input v-model="q" type="search" class="h-11 rounded-full border-2 border-solid border-grey bg-white px-4 text-base" />
           </label>
-          <select v-model="family" aria-label="Belt family" class="h-11 rounded-full border-2 border-solid border-grey bg-white px-3 text-sm">
+          <select v-model="family" aria-label="Belt family" class="h-11 max-w-full min-w-0 rounded-full border-2 border-solid border-grey bg-white px-3 text-sm">
             <option value="">All belt families</option>
             <option v-for="f in PRODUCT_FAMILIES" :key="f" :value="f">{{ familyName(f) }}</option>
           </select>
-          <select v-model="country" aria-label="Country" class="h-11 rounded-full border-2 border-solid border-grey bg-white px-3 text-sm">
+          <select v-model="country" aria-label="Country" class="h-11 max-w-full min-w-0 rounded-full border-2 border-solid border-grey bg-white px-3 text-sm">
             <option value="">All countries</option>
             <option v-for="c in countries" :key="c" :value="c">{{ c }}</option>
           </select>

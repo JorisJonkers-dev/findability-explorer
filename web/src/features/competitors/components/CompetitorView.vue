@@ -92,7 +92,7 @@ const button = 'inline-flex min-h-11 items-center rounded-full border-2 border-s
               </li>
             </ul>
             <p v-if="terms.total > terms.shown.length" class="m-0 text-sm text-muted">
-              Showing {{ terms.shown.length }} of {{ terms.total }}. <RouterLink :to="{ path: '/terms/all', query: { user: company.shortName } }">See them all</RouterLink>.
+              Showing {{ terms.shown.length }} of {{ terms.total }}. <RouterLink :to="{ path: '/terms/all', query: { user: company.shortName } }" class="underline">See them all</RouterLink>.
             </p>
           </div>
         </FrameSection>

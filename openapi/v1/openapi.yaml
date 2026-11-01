@@ -1218,8 +1218,8 @@ paths:
           description: Only this provider's answers.
           schema:
             type: string
-            maxLength: 40
-            pattern: "^[a-z0-9][a-z0-9-]*$"
+            maxLength: 200
+            pattern: "^[a-z0-9][a-z0-9._:/-]*$"
         - name: scope
           in: query
           required: false
@@ -1425,6 +1425,33 @@ paths:
         "404":
           $ref: "#/components/responses/Problem"
         "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/prompt-test/catalogue:
+    get:
+      operationId: getPromptModelCatalogue
+      summary: Every text model on OpenRouter, for the Model list
+      description: >-
+        Administrators only. Lists every text model on OpenRouter's catalogue (no routers or
+        aliases), read with the Prompt test's key at most once a day; a read that fails keeps the
+        last list. The cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is
+        recommended and listed first, the rest cheapest first. A model the latest run asked is
+        priced by its responses, the others by their list price for a typical response with the
+        web search fee. 422 without a working OpenRouter key.
+      tags: [admin]
+      responses:
+        "200":
+          description: The catalogue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptModelCatalogue"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
           $ref: "#/components/responses/Problem"
         "422":
           $ref: "#/components/responses/Problem"
@@ -5392,8 +5419,8 @@ components:
           example: eyelink-application-twente
         provider:
           type: string
-          maxLength: 40
-          pattern: "^[a-z0-9][a-z0-9-]*$"
+          maxLength: 200
+          pattern: "^[a-z0-9][a-z0-9._:/-]*$"
           description: The provider whose model to ask.
           example: openai
         mode:
@@ -5466,8 +5493,8 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 40
-          pattern: "^[a-z0-9][a-z0-9-]*$"
+          maxLength: 200
+          pattern: "^[a-z0-9][a-z0-9._:/-]*$"
           description: The provider, by its OpenRouter id prefix.
           example: openai
         mode:
@@ -5503,7 +5530,7 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 40
+          maxLength: 200
           description: The provider's OpenRouter id.
           example: google
         model:
@@ -5527,7 +5554,7 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 40
+          maxLength: 200
           description: The provider.
           example: openai
         answered:
@@ -5564,7 +5591,7 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 40
+          maxLength: 200
           description: The provider.
           example: openai
         scope:
@@ -5772,7 +5799,7 @@ components:
           example: "2026-11-01T06:10:00Z"
         provider:
           type: string
-          maxLength: 40
+          maxLength: 200
           description: The provider.
           example: openai
         model:
@@ -6225,7 +6252,7 @@ components:
           example: 1
         provider:
           type: string
-          maxLength: 40
+          maxLength: 200
           description: The provider.
           example: openai
         model:
@@ -6384,7 +6411,7 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 40
+          maxLength: 200
           description: The provider.
           example: openai
         model:
@@ -6436,22 +6463,96 @@ components:
           type: boolean
           description: Whether a month of runs would cost more than the budget.
           example: true
+    PromptModelCatalogue:
+      description: Every text model on OpenRouter, as Add a model lists it.
+      type: object
+      additionalProperties: false
+      required: [readAt, questions, models]
+      properties:
+        readAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the catalogue was read from OpenRouter.
+          example: "2026-11-01T06:00:00Z"
+        questions:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many questions a run asks, for the cost of a run.
+          example: 20
+        models:
+          type: array
+          maxItems: 2000
+          description: The models, the recommended first, then cheapest first.
+          items:
+            $ref: "#/components/schemas/PromptCatalogueModel"
+    PromptCatalogueModel:
+      description: One text model on OpenRouter, with what one response costs.
+      type: object
+      additionalProperties: false
+      required: [id, name, provider, free, recommended, basis, knowledgeUsd, webUsd]
+      properties:
+        id:
+          type: string
+          maxLength: 200
+          description: Its OpenRouter id.
+          example: openai/gpt-oss-20b
+        name:
+          type: string
+          maxLength: 200
+          description: Its name on OpenRouter.
+          example: "OpenAI: gpt-oss-20b"
+        provider:
+          type: string
+          maxLength: 200
+          description: Its provider's OpenRouter id.
+          example: openai
+        listedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When OpenRouter listed it; absent when OpenRouter does not say.
+          example: "2025-08-05T17:17:09Z"
+        free:
+          type: boolean
+          description: True when its tokens cost nothing.
+        recommended:
+          type: boolean
+          description: True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
+        basis:
+          $ref: "#/components/schemas/PromptPriceBasis"
+        knowledgeUsd:
+          $ref: "#/components/schemas/Usd"
+        webUsd:
+          $ref: "#/components/schemas/Usd"
     PromptTestSettings:
       description: The Prompt test's settings.
       type: object
       additionalProperties: false
-      required: [providers, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel, models, keyWorks, prices]
+      required: [providers, modelList, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel, models, keyWorks, prices]
       properties:
         credentialId:
           $ref: "#/components/schemas/LlmCredentialId"
         providers:
           type: array
           maxItems: 20
-          description: The providers whose cheapest model runs ask, by OpenRouter id.
+          description: The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
           items:
             type: string
             maxLength: 40
             example: openai
+        modelList:
+          type: array
+          maxItems: 20
+          description: >-
+            The Model list, the OpenRouter models every run asks, each its own column; empty
+            until one is saved, when runs ask the cheapest model of each provider.
+          items:
+            type: string
+            maxLength: 200
+            example: openai/gpt-oss-20b
         monthlyBudgetUsd:
           $ref: "#/components/schemas/Usd"
         spentThisMonthUsd:
@@ -6504,6 +6605,15 @@ components:
             type: string
             maxLength: 40
             example: openai
+        models:
+          type: array
+          minItems: 1
+          maxItems: 20
+          description: The Model list, by OpenRouter model id.
+          items:
+            type: string
+            maxLength: 200
+            example: openai/gpt-oss-20b
         monthlyBudgetUsd:
           type: number
           format: double
@@ -6579,7 +6689,7 @@ components:
           description: The providers whose models named it.
           items:
             type: string
-            maxLength: 40
+            maxLength: 200
             example: openai
         models:
           type: array

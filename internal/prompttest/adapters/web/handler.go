@@ -30,6 +30,7 @@ type UseCases interface {
 	PromptSets(ctx context.Context) (app.PromptSets, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
+	Catalogue(ctx context.Context) (app.CatalogueView, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error)
 	AddCandidate(ctx context.Context, actor, id, name, website string) (domain.Candidate, error)
 	DismissCandidate(ctx context.Context, actor, id string) (domain.Candidate, error)
@@ -319,9 +320,32 @@ func (h *Handler) GetPromptTestSettings(ctx context.Context) (oas.GetPromptTestS
 	return &out, nil
 }
 
+// GetPromptModelCatalogue implements getPromptModelCatalogue.
+func (h *Handler) GetPromptModelCatalogue(ctx context.Context) (oas.GetPromptModelCatalogueRes, error) {
+	v, err := h.uc.Catalogue(ctx)
+	switch {
+	case errors.Is(err, domain.ErrNoKey):
+		return &oas.GetPromptModelCatalogueUnprocessableEntity{StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, sentence(err))}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := oas.PromptModelCatalogue{ReadAt: v.ReadAt, Questions: int32(v.Questions), Models: make([]oas.PromptCatalogueModel, 0, len(v.Entries))} //nolint:gosec // a small count
+	for _, e := range v.Entries {
+		m := oas.PromptCatalogueModel{
+			ID: e.Model.ID, Name: e.Model.Name, Provider: e.Model.Provider(), Free: e.Model.Free(), Recommended: e.Recommended,
+			Basis: oas.PromptPriceBasis(e.Basis), KnowledgeUsd: oas.Usd(e.Knowledge.Dollars()), WebUsd: oas.Usd(e.Web.Dollars()),
+		}
+		if !e.Model.Created.IsZero() {
+			m.ListedAt = oas.NewOptDateTime(e.Model.Created)
+		}
+		out.Models = append(out.Models, m)
+	}
+	return &out, nil
+}
+
 // UpdatePromptTestSettings implements updatePromptTestSettings.
 func (h *Handler) UpdatePromptTestSettings(ctx context.Context, req *oas.PromptTestSettingsChange) (oas.UpdatePromptTestSettingsRes, error) {
-	ch := app.Change{Providers: req.Providers}
+	ch := app.Change{Providers: req.Providers, Models: req.Models}
 	if v, ok := req.CredentialId.Get(); ok {
 		id := string(v)
 		ch.CredentialID = &id
@@ -600,7 +624,7 @@ func toAnswer(a domain.Answer) oas.PromptAnswer {
 func toSettings(v app.View) oas.PromptTestSettings {
 	s := v.Settings
 	out := oas.PromptTestSettings{
-		Providers: s.Providers, MonthlyBudgetUsd: oas.Usd(s.MonthlyBudget.Dollars()), SpentThisMonthUsd: oas.Usd(v.SpentThisMonth.Dollars()),
+		Providers: s.Providers, ModelList: append([]string{}, s.Models...), MonthlyBudgetUsd: oas.Usd(s.MonthlyBudget.Dollars()), SpentThisMonthUsd: oas.Usd(v.SpentThisMonth.Dollars()),
 		Cadence: oas.PromptCadence(s.Cadence), NextDueAt: s.NextDue, ExtractorModel: v.ExtractorModel,
 		FactSheet: oas.PromptFactSheet{Text: s.FactSheet.Text, Version: int32(s.FactSheet.Version)},                                     //nolint:gosec // small versions
 		PromptSet: oas.PromptSet{Version: int32(v.PromptSet.Version), Prompts: make([]oas.PromptQuestion, 0, len(v.PromptSet.Prompts))}, //nolint:gosec // small versions

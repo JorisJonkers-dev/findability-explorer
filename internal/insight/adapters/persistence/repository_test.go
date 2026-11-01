@@ -18,7 +18,7 @@ func TestTicksAndTargetsRoundTrip(t *testing.T) {
 	}
 	defer store.Close()
 	ctx := t.Context()
-	repo := persistence.New(store.Queries())
+	repo := persistence.New(store)
 	at := time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC)
 	if err := repo.Tick(ctx, domain.Tick{ImprovementID: "listings", Version: 1, By: "joris", At: at}); err != nil {
 		t.Fatal(err)

@@ -5,7 +5,21 @@ import PageFrame from '../../shell/components/PageFrame.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { companyPath } from '../../shell/domain/sections'
 import { usePlan } from '../composables/usePlan'
-import { doneLine, effortWhy, formatMeasure, goalBar, goalOf, goalSentence, kindOf, lcFirst, measureName, nowSentence, placeLine } from '../domain/recommendations'
+import {
+  detailLine,
+  doneLine,
+  effortWhy,
+  formatMeasure,
+  goalBar,
+  goalOf,
+  goalSentence,
+  kindOf,
+  lcFirst,
+  measureName,
+  nowSentence,
+  placeLine,
+  whereLine,
+} from '../domain/recommendations'
 import { foundLine } from '../domain/routine'
 import RecSection from './RecSection.vue'
 
@@ -42,7 +56,7 @@ const PURPOSE = 'The steps to make this change, why it ranks where it does, and 
     section="recommendations"
     :title="it?.title ?? 'Recommendation'"
     :purpose="PURPOSE"
-    :data-line="it ? 'Written by hand, and applies in general.' : undefined"
+    :data-line="it ? detailLine(it) : undefined"
     :back="back"
     :manage="manage"
     help-topic="recommendations"
@@ -53,13 +67,18 @@ const PURPOSE = 'The steps to make this change, why it ranks where it does, and 
     <template v-else>
       <div class="grid items-start gap-10 min-[1100px]:grid-cols-2">
         <RecSection title="Where, and how" heading-id="where-title">
-          <p class="m-0">This applies to the whole site.</p>
+          <p class="m-0 [overflow-wrap:anywhere]">{{ whereLine(it) }}</p>
+          <span v-if="it.new" class="self-start rounded-md bg-orange px-2 py-0.5 text-sm font-semibold text-black">New</span>
         </RecSection>
         <RecSection title="Why it ranks here" heading-id="why-title">
           <div class="flex max-w-[64ch] flex-col gap-3.5">
             <p class="m-0">{{ it.why }}</p>
             <p class="m-0">{{ it.moves }}</p>
+            <ul v-if="it.facts && it.facts.length > 0" aria-label="What the rules found" class="m-0 flex flex-col gap-1.5 pl-6">
+              <li v-for="f in it.facts" :key="f">{{ f }}</li>
+            </ul>
             <p class="m-0">Benefit {{ it.benefit }} of 5. Effort {{ it.effort }} of 5. {{ effortWhy(kindOf(it)) }}</p>
+            <p v-if="it.scoreReason" class="m-0">The model moved a score by one point: {{ it.scoreReason }}</p>
             <p v-if="place" class="m-0">{{ place }}</p>
           </div>
         </RecSection>

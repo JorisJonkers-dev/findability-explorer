@@ -31,6 +31,10 @@ const (
 	ReviewingTerms ID = "termReview"
 )
 
+// Recommendations is writing recommendations: a Recommendation run's placing and wording of the
+// gaps its rules found.
+const Recommendations ID = "recommendations"
+
 // ByTheTool is who made version 1 of a step: the tool itself.
 const ByTheTool = "the tool"
 
@@ -71,6 +75,7 @@ var definitions = []Definition{ //nolint:gochecknoglobals // a constant table
 	{ID: TidyingNames, Title: "Tidying candidate names", Original: tidyingInstructions, Typical: Tokens{Input: 6_000, Output: 1_500}},
 	{ID: CheckingCompanies, Title: "Checking companies", Original: checkingInstructions, Typical: Tokens{Input: 250_000, Output: 12_000}},
 	{ID: ReviewingTerms, Title: "Reviewing search terms", Original: reviewingInstructions, Typical: Tokens{Input: 25_000, Output: 12_000}},
+	{ID: Recommendations, Title: "Writing recommendations", Original: recommendationsInstructions, Typical: Tokens{Input: 60_000, Output: 12_000}},
 }
 
 // Definitions returns every step.

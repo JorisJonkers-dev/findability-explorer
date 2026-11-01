@@ -49,6 +49,10 @@ type DismissCompetitorCandidateRes interface {
 	dismissCompetitorCandidateRes()
 }
 
+type EditRecommendationRes interface {
+	editRecommendationRes()
+}
+
 type GetActivityRes interface {
 	getActivityRes()
 }
@@ -127,6 +131,10 @@ type GetPromptTestSettingsRes interface {
 
 type GetReadinessFilesRes interface {
 	getReadinessFilesRes()
+}
+
+type GetRecommendationRunsRes interface {
+	getRecommendationRunsRes()
 }
 
 type GetStandingsRes interface {
@@ -257,6 +265,10 @@ type StartReadinessCheckRes interface {
 	startReadinessCheckRes()
 }
 
+type StartRecommendationRunRes interface {
+	startRecommendationRunRes()
+}
+
 type StartRescansRes interface {
 	startRescansRes()
 }
@@ -283,6 +295,10 @@ type StopPromptRunRes interface {
 
 type StopReadinessCheckRes interface {
 	stopReadinessCheckRes()
+}
+
+type StopRecommendationRunRes interface {
+	stopRecommendationRunRes()
 }
 
 type StopRescanRes interface {

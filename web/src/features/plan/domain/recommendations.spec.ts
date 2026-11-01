@@ -26,6 +26,8 @@ import {
   scrollCue,
   SORTS,
   whereText,
+  whereLine,
+  detailLine,
 } from './recommendations'
 
 const leader = { competitorId: 'example-belts', name: 'Example Belts', value: 0.3 }
@@ -35,7 +37,7 @@ function imp(id: string, benefit: number, effort: number, extra: Partial<PlanImp
 }
 
 // Best value first, as the server sends them.
-const items = [imp('a', 4, 1), imp('b', 3, 1, { auto: true }), imp('c', 4, 3, { title: 'Another' }), imp('d', 5, 5, { done: true })]
+const items = [imp('a', 4, 1), imp('b', 3, 1, { auto: true, kind: 'readiness' }), imp('c', 4, 3, { title: 'Another' }), imp('d', 5, 5, { done: true })]
 
 const watched: WatchedNumber[] = [
   { target: 'aiShareOfVoice', now: 0.2, goal: 0.4, max: 1 },
@@ -45,8 +47,9 @@ const watched: WatchedNumber[] = [
 ]
 
 describe('the kinds', () => {
-  it('reads a kind from what decides it is done, and names each', () => {
-    expect(kindOf(imp('x', 1, 1, { auto: true }))).toBe('readiness')
+  it('reads a kind as the server says it, and names each', () => {
+    expect(kindOf(imp('x', 1, 1, { auto: true, kind: 'readiness' }))).toBe('readiness')
+    expect(kindOf(imp('x', 1, 1, { kind: 'listing', generated: true }))).toBe('listing')
     expect(kindOf(imp('x', 1, 1))).toBe('general')
     expect(KIND_LABEL.term).toBe('Search term')
     expect(KIND_PLURAL.listing).toBe('Sites to get listed on')
@@ -94,8 +97,22 @@ describe('the ranked list', () => {
 
   it('writes the scores, where, and the data line', () => {
     expect(scoreLine(imp('x', 4, 1))).toBe('Benefit 4 of 5, effort 1 of 5')
-    expect(whereText()).toBe('The whole site')
-    expect(dataLine(3)).toBe('Written by hand, version 3 of the catalogue. No Recommendation run has written any yet.')
+    expect(whereText(imp('x', 1, 1))).toBe('The whole site')
+    expect(whereText(imp('x', 1, 1, { generated: true, where: 'https://www.tribelt.nl/spiraalbanden' }))).toBe('www.tribelt.nl/spiraalbanden')
+    expect(whereText(imp('x', 1, 1, { generated: true, whereNote: 'Where to put this is for the web agency to decide.' }))).toBe('For the web agency to place')
+    expect(whereLine(imp('x', 1, 1))).toBe('This applies to the whole site.')
+    expect(whereLine(imp('x', 1, 1, { generated: true, where: 'https://www.tribelt.nl/' }))).toBe('On https://www.tribelt.nl/.')
+    expect(whereLine(imp('x', 1, 1, { generated: true, whereNote: 'Where to put this is for the web agency to decide.' }))).toBe(
+      'Where to put this is for the web agency to decide.',
+    )
+    expect(dataLine(3, [imp('x', 1, 1)])).toBe('Written by hand, version 3 of the catalogue. No Recommendation run has written any yet.')
+    expect(dataLine(3, [imp('x', 1, 1), imp('y', 1, 1, { generated: true })])).toBe(
+      'Written by hand, version 3 of the catalogue, and by Recommendation runs: 1 of them.',
+    )
+    expect(detailLine(imp('x', 1, 1))).toBe('Written by hand, and applies in general.')
+    expect(detailLine(imp('x', 1, 1, { generated: true, new: true }))).toBe('Written by the newest Recommendation run.')
+    expect(detailLine(imp('x', 1, 1, { generated: true }))).toBe('Written by a Recommendation run.')
+    expect(detailLine(imp('x', 1, 1, { generated: true, editedAt: '2026-11-01T09:00:00Z' }))).toBe('Written by a Recommendation run, and edited by hand.')
   })
 })
 

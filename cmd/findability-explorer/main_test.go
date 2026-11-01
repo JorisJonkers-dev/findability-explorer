@@ -14,6 +14,7 @@ import (
 	claudestepapp "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/app"
 	claudestepdomain "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/oidc/oidctest"
+	insightpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/providers"
 	llmapp "github.com/JorisJonkers-dev/findability-explorer/internal/llm/app"
 	llmdomain "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
@@ -166,9 +167,9 @@ func TestTheMonthsSpendingPricesEachScanAtItsModelAndTheOtherJobsAsHaiku(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	sp := spenders{persistence.New(store), terminologypersistence.New(store), prompttestpersistence.New(store)}
+	sp := spenders{persistence.New(store), terminologypersistence.New(store), prompttestpersistence.New(store), insightpersistence.New(store)}
 	s, err := spending(t.Context(), sp, monthStart(time.Now()))
-	if err != nil || len(s.ThisMonth) != 2 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
+	if err != nil || len(s.ThisMonth) != 3 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
 		t.Fatalf("spending of an empty month = %+v, %v", s, err)
 	}
 	for _, u := range s.ThisMonth {

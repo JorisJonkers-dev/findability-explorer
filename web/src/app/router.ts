@@ -252,6 +252,19 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         component: () => import('../features/plan/components/TickOffPage.vue'),
         meta: { title: 'Tick off yourself', view: 'manage' },
       },
+      {
+        path: '/manage/recommendations/edit',
+        name: 'recommendations-edit',
+        component: () => import('../features/plan/components/EditListPage.vue'),
+        meta: { title: 'Edit a recommendation', view: 'manage' },
+      },
+      {
+        path: '/manage/recommendations/edit/:id',
+        name: 'recommendation-edit',
+        component: () => import('../features/plan/components/EditRecommendationPage.vue'),
+        props: (to) => ({ id: String(to.params.id) }),
+        meta: { title: 'Edit a recommendation', view: 'manage' },
+      },
       { path: '/manage/recommendations/goals', name: 'goals-edit', component: () => import('../features/plan/components/GoalsPage.vue'), meta: { title: 'Goals', view: 'manage' } },
       // Keys and spending.
       // The Claude steps: all of them, and each under the section it works for.
@@ -262,7 +275,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         meta: { title: 'Claude models and instructions', view: 'manage' },
       },
       {
-        path: '/manage/claude-steps/:step(reading|matching|candidateMerge|candidateCheck|termReview)',
+        path: '/manage/claude-steps/:step(reading|matching|candidateMerge|candidateCheck|termReview|recommendations)',
         name: 'claude-step',
         component: () => import('../features/claude-steps/components/ClaudeStepView.vue'),
         props: (to) => ({ stepId: String(to.params.step) }),

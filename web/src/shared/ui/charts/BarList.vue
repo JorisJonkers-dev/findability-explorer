@@ -8,7 +8,7 @@ const props = defineProps<{ rows: readonly BarRow[]; max: number; target?: numbe
 
 const at = (v: number): number => (props.max > 0 ? Math.min(100, Math.max(0, (v / props.max) * 100)) : 0)
 const aria = computed(
-  () => `${props.label ?? 'Bars'}. ${props.rows.map((r) => `${r.label}: ${r.display}`).join('. ')}.${props.target === undefined ? '' : ` Target ${String(props.target)}.`}`,
+  () => `${props.label ?? 'Bars'}. ${props.rows.map((r) => `${r.label}: ${r.display}`).join('. ')}.${props.target === undefined ? '' : ` Goal ${String(props.target)}.`}`,
 )
 </script>
 

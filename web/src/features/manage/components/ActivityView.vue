@@ -27,7 +27,6 @@ const { counts: terms, review: termReview } = useTermCandidates(ref('pending'))
 const { counts: candidates } = useCompetitorCandidates(ref('pending'))
 const stopper = useStopWork()
 
-const NUMBER = new Intl.NumberFormat('en-GB')
 const running = computed(() => runningWork(activity.value?.running ?? [], settings.value?.prices.runUsd))
 const runningSpan = computed(() => (running.value.length === 1 ? 12 : running.value.length === 2 ? 6 : 4))
 const recent = computed(() => recentWork(activity.value?.recent ?? []))

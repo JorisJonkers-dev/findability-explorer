@@ -33,6 +33,10 @@ func (s *Service) StopListCheck(context.Context) error { return s.review.list.st
 // ListChecks returns the model's checks of the competitors on the list to show a person, and how
 // many competitors the next check takes.
 func (s *Service) ListChecks(ctx context.Context) ([]domain.ListCheck, int, error) {
+	def, err := s.definition(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
 	directory, err := s.directory.Companies(ctx)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list the companies: %w", err)
@@ -41,16 +45,20 @@ func (s *Service) ListChecks(ctx context.Context) ([]domain.ListCheck, int, erro
 	if err != nil {
 		return nil, 0, fmt.Errorf("the checks of the list: %w", err)
 	}
-	return domain.ShownChecks(directory, checks), len(domain.ToCheck(directory, checks)), nil
+	return domain.ShownChecks(directory, checks, def.Version), len(domain.ToCheck(directory, checks, def.Version)), nil
 }
 
-// CheckList has the model check each competitor on the list it has not checked with the current
-// domain.CheckVersion, a batch at a time, and archives each it is sure does not compete.
-// ErrNoReviewer when no Anthropic key is set up; ErrBudgetSpent when the month's language-model
-// tokens are spent before a batch, and ErrStopped when an administrator stopped it, with what was
+// CheckList has the model check each competitor on the list it has not checked against the
+// competitor definition in use, a batch at a time, and archives each it is sure does not compete.
+// ErrNoReviewer when no Anthropic key is set up; ErrBudgetSpent when the month's Anthropic
+// budget is spent before a batch, and ErrStopped when an administrator stopped it, with what was
 // checked before kept either way.
 func (s *Service) CheckList(ctx context.Context) error {
 	r, model, err := s.reviewer(ctx)
+	if err != nil {
+		return err
+	}
+	def, err := s.definition(ctx)
 	if err != nil {
 		return err
 	}
@@ -62,7 +70,7 @@ func (s *Service) CheckList(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("the checks of the list: %w", err)
 	}
-	todo := domain.ToCheck(directory, checks)
+	todo := domain.ToCheck(directory, checks, def.Version)
 	if len(todo) == 0 {
 		return nil
 	}
@@ -77,7 +85,7 @@ func (s *Service) CheckList(ctx context.Context) error {
 		}
 		batch := todo[:min(CheckBatch, len(todo))]
 		todo = todo[len(batch):]
-		if err := s.checkListBatch(ctx, r, model, batch, quotes); err != nil {
+		if err := s.checkListBatch(ctx, r, model, def, batch, quotes); err != nil {
 			return err
 		}
 		s.review.list.did(len(batch))
@@ -104,7 +112,7 @@ func (s *Service) namedIn(ctx context.Context, directory []domain.DirectoryCompa
 
 // checkListBatch has the model check batch from each company's dossier, stores its checks and what
 // asking used, and archives each company it is sure does not compete.
-func (s *Service) checkListBatch(ctx context.Context, r Reviewer, model string, batch []domain.DirectoryCompany, quotes map[string]domain.Quotes) error {
+func (s *Service) checkListBatch(ctx context.Context, r Reviewer, model string, def domain.Definition, batch []domain.DirectoryCompany, quotes map[string]domain.Quotes) error {
 	asked := make([]domain.Candidate, 0, len(batch))
 	for _, c := range batch {
 		asked = append(asked, domain.AsCandidate(c, quotes[c.ID]))
@@ -113,12 +121,12 @@ func (s *Service) checkListBatch(ctx context.Context, r Reviewer, model string, 
 	if err != nil {
 		return err
 	}
-	answered, usage, err := r.Check(ctx, dossiers)
+	answered, usage, err := r.Check(ctx, def.Text, dossiers)
 	s.review.list.used(usage)
 	if saveErr := s.saveUsage(ctx, usage); err != nil || saveErr != nil {
 		return errors.Join(wrap("check the companies on the list", err), saveErr)
 	}
-	checks := domain.ListChecksOf(domain.CompleteVerdicts(asked, answered, model, s.now()))
+	checks := domain.ListChecksOf(domain.CompleteVerdicts(asked, answered, model, def.Version, s.now()))
 	if err := s.repo.SaveListChecks(ctx, checks); err != nil {
 		return fmt.Errorf("store the checks of the list: %w", err)
 	}

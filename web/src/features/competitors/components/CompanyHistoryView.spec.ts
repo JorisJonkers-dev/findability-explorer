@@ -185,7 +185,7 @@ describe('a company’s AI readiness over time', () => {
   })
 
   it('shows administrators the raw files, with the lines about AI crawlers marked', async () => {
-    const files = { robotsTxt: 'User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nAllow: /', robotsTruncated: false, llmsTxt: '# Twentebelt', llmsTruncated: true, llmsFullTxt: '', llmsFullTruncated: false }
+    const files = { robotsTxt: 'User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nAllow: /', robotsTruncated: false, llmsTxt: '# Twentebelt', llmsTruncated: true, llmsFullTxt: '', llmsFullTruncated: false, sitemapUrl: '', sitemapTxt: '', sitemapTruncated: false }
     const { wrapper, requests } = await mountApp(
       api({
         'GET /api/v1/me': () => json(me({ isAdmin: true })),

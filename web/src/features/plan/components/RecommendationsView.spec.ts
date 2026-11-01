@@ -1,6 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { Plan, PlanImprovement } from '../../../infrastructure/api/types.gen'
+import { usesOldWord } from '../../../shared/words'
 import { details, me } from '../../../testing/fixtures'
 import { json, mountApp, routes } from '../../../testing/mountApp'
 
@@ -149,7 +150,7 @@ describe('the recommendations', () => {
     expect(wrapper.get('a[href="/manage/recommendations"]').text()).toBe('Manage the recommendations')
     expect(button(wrapper, 'Mark as done')).toBeUndefined()
     expect(button(wrapper, 'Undo')).toBeUndefined()
-    expect(wrapper.text()).not.toContain('target')
+    expect(usesOldWord(wrapper.text())).toBe(false)
   })
 
   it('says when it cannot load', async () => {

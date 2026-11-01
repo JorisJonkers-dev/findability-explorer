@@ -1,4 +1,5 @@
 import type { PlanImprovement, PlanTarget, StandingMeasure, WatchedNumber } from '../../../infrastructure/api/types.gen'
+import { longDate } from '../../../shared/dates'
 import { formatValue, MEASURES } from '../../catching-up/domain/standings'
 
 /**
@@ -121,11 +122,9 @@ export function scoreLine(it: Pick<PlanImprovement, 'benefit' | 'effort'>): stri
   return `Benefit ${String(it.benefit)} of 5, effort ${String(it.effort)} of 5`
 }
 
-const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-
 /** When a recommendation was marked done, and by whom: an administrator, or the scan of tribelt.nl. */
 export function doneLine(it: Pick<PlanImprovement, 'auto' | 'tickedBy' | 'tickedAt'>): string {
-  const when = it.tickedAt ? `Marked done on ${DAY.format(new Date(it.tickedAt))}` : 'Marked done, and the date was not recorded'
+  const when = it.tickedAt ? `Marked done on ${longDate(it.tickedAt)}` : 'Marked done, and the date was not recorded'
   const who = it.auto ? 'the scan of tribelt.nl' : (it.tickedBy ?? 'an administrator')
   return `${when}, by ${who}.`
 }

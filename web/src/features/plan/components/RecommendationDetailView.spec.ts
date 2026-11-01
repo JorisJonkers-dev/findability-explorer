@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Plan, PlanImprovement } from '../../../infrastructure/api/types.gen'
+import { usesOldWord } from '../../../shared/words'
 import { details, me } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, routes, settle } from '../../../testing/mountApp'
 
@@ -72,6 +73,8 @@ describe('a recommendation', () => {
     expect(goal.get('a[href="/competitors/example-belts"]').text()).toBe('Example Belts')
     // "AI" keeps its capitals inside the sentence.
     expect(goal.text()).toContain('Example Belts is the best competitor on AI responses that name Tribelt. Look at how it does this.')
+    // The page keeps to the tool's words: goal, best competitor, response.
+    expect(usesOldWord(wrapper.text())).toBe(false)
   })
 
   it('says Tribelt is ahead when it leads', async () => {

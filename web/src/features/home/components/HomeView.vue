@@ -26,7 +26,7 @@ const { isAdmin } = useMe()
       </p>
 
       <GoalSection id="goals" title="Goals" intro="Click a goal to see who is ahead and what would improve it.">
-        <div class="overflow-x-auto rounded-3xl bg-mist p-4 sm:p-5">
+        <div class="relative overflow-x-auto rounded-3xl bg-mist p-4 sm:p-5">
           <table class="w-full min-w-[640px] border-collapse text-left">
             <thead>
               <tr class="border-b border-silver text-sm text-ink-2">
@@ -82,7 +82,7 @@ const { isAdmin } = useMe()
       </nav>
 
       <GoalSection id="latest" title="Latest runs and scans" intro="When each process last ran, and what comes next.">
-        <div class="overflow-x-auto rounded-3xl bg-mist p-4 sm:p-5">
+        <div class="relative overflow-x-auto rounded-3xl bg-mist p-4 sm:p-5">
           <table class="w-full min-w-[560px] border-collapse text-left">
             <thead>
               <tr class="border-b border-silver text-sm text-ink-2">

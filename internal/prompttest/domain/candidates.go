@@ -100,7 +100,7 @@ type Candidate struct {
 	// Quoted are a few of the answers that name it, to quote what they say around its name.
 	Quoted   []uuid.UUID
 	Decision *CandidateDecision
-	// Verdict is the language model's check of it, once it has one with the current CheckVersion,
+	// Verdict is the language model's check of it, once it has one against the definition in use,
 	// or, for a decided candidate, with any version.
 	Verdict *CompanyVerdict
 }
@@ -476,14 +476,15 @@ type CompanyVerdict struct {
 	Sure        bool
 	Reason      string
 	Model       string
-	// Version is the CheckVersion that made it.
+	// Version is the version of the competitor definition it was checked against.
 	Version int
 	At      time.Time
 }
 
 // WithVerdicts attaches to each candidate the newest verdict on any of its names. A waiting
-// candidate's verdict of an older CheckVersion is left off, so the candidate is checked again.
-func WithVerdicts(candidates []Candidate, verdicts []CompanyVerdict) []Candidate {
+// candidate's verdict against a definition older than version, the one in use, is left off, so the
+// candidate is checked again.
+func WithVerdicts(candidates []Candidate, verdicts []CompanyVerdict, version int) []Candidate {
 	byID := map[string]CompanyVerdict{}
 	for _, v := range verdicts {
 		byID[v.CandidateID] = v
@@ -493,7 +494,7 @@ func WithVerdicts(candidates []Candidate, verdicts []CompanyVerdict) []Candidate
 			v, ok := byID[id]
 			// A check without a reason is the model having said nothing about the company: it
 			// counts as no check, so the company is asked about again.
-			if !ok || v.Reason == "" || (c.Decision == nil && v.Version < CheckVersion) {
+			if !ok || v.Reason == "" || (c.Decision == nil && v.Version < version) {
 				continue
 			}
 			if candidates[i].Verdict == nil || v.At.After(candidates[i].Verdict.At) {
@@ -516,10 +517,10 @@ func Unchecked(candidates []Candidate) []Candidate {
 }
 
 // CompleteVerdicts keeps the model's verdicts on the candidates it was asked about, at most one
-// each, in their order, stamped with the model, the CheckVersion and the time. A candidate it gave
+// each, in their order, stamped with the model, the definition version and the time. A candidate it gave
 // no verdict on, or one without a reason, gets none, so it is asked about again; a verdict on a
 // candidate it was not asked about is dropped.
-func CompleteVerdicts(asked []Candidate, answered []CompanyVerdict, model string, at time.Time) []CompanyVerdict {
+func CompleteVerdicts(asked []Candidate, answered []CompanyVerdict, model string, version int, at time.Time) []CompanyVerdict {
 	out := make([]CompanyVerdict, 0, len(asked))
 	for _, c := range asked {
 		i := slices.IndexFunc(answered, func(a CompanyVerdict) bool { return a.CandidateID == c.ID })
@@ -527,7 +528,7 @@ func CompleteVerdicts(asked []Candidate, answered []CompanyVerdict, model string
 			continue
 		}
 		v := answered[i]
-		v.Model, v.Version, v.At = model, CheckVersion, at
+		v.Model, v.Version, v.At = model, version, at
 		out = append(out, v)
 	}
 	return out

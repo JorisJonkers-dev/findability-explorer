@@ -128,8 +128,38 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/manage/prompt-test',
         name: 'manage-prompt-test',
-        component: () => import('../features/prompt-test/components/PromptSettingsPage.vue'),
+        component: () => import('../features/manage/components/PromptTestIndex.vue'),
         meta: { title: 'Prompt test', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/questions',
+        name: 'prompt-questions',
+        component: () => import('../features/manage/components/QuestionsView.vue'),
+        meta: { title: 'Questions', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/models',
+        name: 'prompt-models',
+        component: () => import('../features/manage/components/ModelsView.vue'),
+        meta: { title: 'Models', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/schedule',
+        name: 'prompt-schedule',
+        component: () => import('../features/manage/components/ScheduleView.vue'),
+        meta: { title: 'Schedule', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/fact-sheet',
+        name: 'prompt-fact-sheet',
+        component: () => import('../features/manage/components/FactSheetView.vue'),
+        meta: { title: 'Fact sheet', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/runs',
+        name: 'prompt-runs',
+        component: () => import('../features/manage/components/RunsView.vue'),
+        meta: { title: 'Runs', view: 'manage' },
       },
       // Website scans.
       { path: '/manage/scans', name: 'manage-scans', component: () => import('../features/manage/components/ScansIndex.vue'), meta: { title: 'Website scans', view: 'manage' } },
@@ -179,6 +209,12 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         name: 'check-the-list',
         component: () => import('../features/competitors/components/CheckListPage.vue'),
         meta: { title: 'Check the list', view: 'manage' },
+      },
+      {
+        path: '/manage/competitors/definition',
+        name: 'competitor-definition',
+        component: () => import('../features/competitors/components/DefinitionPage.vue'),
+        meta: { title: 'Competitor definition', view: 'manage' },
       },
       // Search term list.
       { path: '/manage/terms', name: 'term-list', component: () => import('../features/manage/components/TermListIndex.vue'), meta: { title: 'Search term list', view: 'manage' } },

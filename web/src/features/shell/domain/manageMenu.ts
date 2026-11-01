@@ -27,7 +27,14 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     to: '/manage/prompt-test',
     summary: 'The questions, the providers, the schedule, the budget, and the fact sheet of the Prompt test.',
     countLabel: 'running',
-    children: [],
+    countOn: '/manage/prompt-test/runs',
+    children: [
+      { label: 'Questions', to: '/manage/prompt-test/questions' },
+      { label: 'Models', to: '/manage/prompt-test/models' },
+      { label: 'Schedule', to: '/manage/prompt-test/schedule' },
+      { label: 'Fact sheet', to: '/manage/prompt-test/fact-sheet' },
+      { label: 'Runs', to: '/manage/prompt-test/runs' },
+    ],
   },
   {
     label: 'Website scans',
@@ -52,6 +59,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
       { label: 'Companies', to: '/manage/competitors/companies' },
       { label: 'Candidates', to: '/manage/competitors/candidates' },
       { label: 'Check the list', to: '/manage/competitors/check' },
+      { label: 'Competitor definition', to: '/manage/competitors/definition' },
     ],
   },
   {

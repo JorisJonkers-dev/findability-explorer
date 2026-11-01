@@ -179,12 +179,12 @@ func TestTheModelsCheckAttachesToTheWholeCompany(t *testing.T) {
 		{ID: "c", Members: []domain.Member{{ID: "c"}}, Decision: &domain.CandidateDecision{Status: domain.CandidateDismissed}},
 	}
 	got := domain.WithVerdicts(cs, []domain.CompanyVerdict{
-		{CandidateID: "a", Competitor: true, Version: domain.CheckVersion, At: early},
-		{CandidateID: "a2", Reason: "Plastic belts.", Version: domain.CheckVersion, At: late},
+		{CandidateID: "a", Competitor: true, Version: checkVersion, At: early},
+		{CandidateID: "a2", Reason: "Plastic belts.", Version: checkVersion, At: late},
 		// An older check: a waiting candidate is checked again, a decided one keeps it.
 		{CandidateID: "b", Reason: "By name alone.", Version: 1, At: late},
 		{CandidateID: "c", Reason: "By name alone.", Version: 1, At: late},
-	})
+	}, checkVersion)
 	if got[0].Verdict == nil || got[0].Verdict.Reason != "Plastic belts." || got[1].Verdict != nil || got[2].Verdict == nil {
 		t.Errorf("verdicts = %+v, %+v, %+v", got[0].Verdict, got[1].Verdict, got[2].Verdict)
 	}
@@ -199,8 +199,8 @@ func TestOnlyWhatTheModelSaidIsKept(t *testing.T) {
 	// and c are asked about again.
 	got := domain.CompleteVerdicts([]domain.Candidate{{ID: "a"}, {ID: "b"}, {ID: "c"}}, []domain.CompanyVerdict{
 		{CandidateID: "b", Competitor: true, Sure: true, Reason: "Makes mesh belts."}, {CandidateID: "c", Sure: true, Reason: "  "}, {CandidateID: "zz", Sure: true, Reason: "x"},
-	}, "m", at)
-	if len(got) != 1 || got[0].CandidateID != "b" || !got[0].Competitor || got[0].Model != "m" || !got[0].At.Equal(at) || got[0].Version != domain.CheckVersion {
+	}, "m", checkVersion, at)
+	if len(got) != 1 || got[0].CandidateID != "b" || !got[0].Competitor || got[0].Model != "m" || !got[0].At.Equal(at) || got[0].Version != checkVersion {
 		t.Errorf("verdicts = %+v", got)
 	}
 }

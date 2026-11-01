@@ -65,6 +65,10 @@ type GetClaudeStepRes interface {
 	getClaudeStepRes()
 }
 
+type GetCompetitorDefinitionRes interface {
+	getCompetitorDefinitionRes()
+}
+
 type GetCompetitorProfileRes interface {
 	getCompetitorProfileRes()
 }
@@ -173,12 +177,20 @@ type RereadPromptRunRes interface {
 	rereadPromptRunRes()
 }
 
+type RestoreCompetitorDefinitionRes interface {
+	restoreCompetitorDefinitionRes()
+}
+
 type RetryPromptRunRes interface {
 	retryPromptRunRes()
 }
 
 type SaveClaudeStepVersionRes interface {
 	saveClaudeStepVersionRes()
+}
+
+type SaveCompetitorDefinitionRes interface {
+	saveCompetitorDefinitionRes()
 }
 
 type SearchTermsRes interface {

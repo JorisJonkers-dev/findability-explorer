@@ -15,12 +15,15 @@ test('an administrator adds a company in Manage, opens it, and removes it again'
   await form.getByLabel('Website').fill(`https://e2e-manage-${stamp}.example.com`)
   await form.getByRole('button', { name: 'Add the company' }).click()
   await expect(form).toContainText(`${name} is added to the list.`)
+  // The list shows its first rows; the search finds the new one.
+  await page.getByRole('searchbox', { name: 'Search' }).fill(name)
   await page.getByRole('table', { name: 'Companies' }).getByRole('link', { name, exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
   await expectAccessible(page)
   await page.getByRole('button', { name: 'Remove', exact: true }).click()
   await page.getByRole('button', { name: 'Delete with its 0 scans' }).click()
   await expect(page).toHaveURL('/manage/competitors/companies')
+  await page.getByRole('searchbox', { name: 'Search' }).fill(name)
   await expect(page.getByRole('table', { name: 'Companies' }).getByRole('link', { name, exact: true })).toHaveCount(0)
 })
 

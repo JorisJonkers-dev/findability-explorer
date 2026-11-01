@@ -1,7 +1,10 @@
 import type { SortValue } from '../../../shared/sort'
 
-/** A table's column: its key, its heading, and the value it sorts by; num right-aligns a count. */
-export type Column<R> = { key: string; label: string; value?: (row: R) => SortValue; num?: boolean }
+/**
+ * A table's column: its key, its heading, and the value it sorts by; num right-aligns a count, and
+ * wide shows a column only where there is room for it, so a phone keeps the columns that matter.
+ */
+export type Column<R> = { key: string; label: string; value?: (row: R) => SortValue; num?: boolean; wide?: boolean }
 
 /** How many rows a long table shows before Show all. */
 export const ROW_LIMIT = 12

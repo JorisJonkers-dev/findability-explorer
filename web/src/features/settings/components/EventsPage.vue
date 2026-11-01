@@ -17,7 +17,7 @@ const lines = computed(() => eventLines(settings.value?.events ?? []))
 const COLUMNS: readonly Column<EventLine>[] = [
   { key: 'when', label: 'When', value: (l) => l.key },
   { key: 'text', label: 'What happened', value: (l) => l.text },
-  { key: 'actor', label: 'By', value: (l) => l.actor },
+  { key: 'actor', label: 'By', value: (l) => l.actor, wide: true },
   { key: 'ok', label: 'Result', value: (l) => (l.ok === null ? '' : l.ok ? 'Accepted' : 'Refused') },
 ]
 </script>

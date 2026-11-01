@@ -24,6 +24,9 @@ const sorted = computed(() => sortRows(found.value, sort.value, (row, key) => pr
 const shown = computed(() => visibleRows(sorted.value, all.value))
 const line = computed(() => shownLine(shown.value.length, sorted.value.length))
 
+// A wide column shows only where there is room for it.
+const WIDE = 'hidden min-[700px]:table-cell'
+
 function sortBy(c: Column<T>): void {
   sort.value = nextSort(sort.value, c.key, c.num ? 'desc' : 'asc')
 }
@@ -44,7 +47,7 @@ function sortBy(c: Column<T>): void {
               v-for="c in columns"
               :key="c.key"
               scope="col"
-              :class="[TH, c.num ? 'text-right' : '']"
+              :class="[TH, c.num ? 'text-right' : '', c.wide ? WIDE : '']"
               :aria-sort="directionOf(sort, c.key) === 'asc' ? 'ascending' : directionOf(sort, c.key) === 'desc' ? 'descending' : undefined"
             >
               <button
@@ -62,7 +65,7 @@ function sortBy(c: Column<T>): void {
         </thead>
         <tbody>
           <tr v-for="row in shown" :key="rowKey(row)">
-            <td v-for="c in columns" :key="c.key" :class="[TD, c.num ? 'text-right tabular-nums' : '']">
+            <td v-for="c in columns" :key="c.key" :class="[TD, c.num ? 'text-right tabular-nums' : '', c.wide ? WIDE : '']">
               <slot :name="`cell-${c.key}`" :row="row">{{ c.value ? c.value(row) : '' }}</slot>
             </td>
           </tr>

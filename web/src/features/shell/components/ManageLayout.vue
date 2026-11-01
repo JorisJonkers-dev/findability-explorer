@@ -32,7 +32,7 @@ const eyebrow = computed(() => {
 <template>
   <div class="mx-auto flex w-full max-w-[1360px] flex-col gap-10 px-4 pt-5 pb-16 sm:px-10">
     <TopBar />
-    <div v-if="isAdmin" class="grid gap-10 min-[1000px]:grid-cols-[15rem_minmax(0,1fr)]">
+    <div v-if="isAdmin" class="grid grid-cols-[minmax(0,1fr)] gap-10 min-[1000px]:grid-cols-[15rem_minmax(0,1fr)]">
       <ManageMenu />
       <div class="flex min-w-0 flex-col gap-10">
         <FrameBody

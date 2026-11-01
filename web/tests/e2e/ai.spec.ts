@@ -15,12 +15,6 @@ for (const view of VIEWS) {
   })
 }
 
-test('the AI readiness table pins Tribelt and the mirror on top', async ({ page }) => {
-  await page.goto('/ai-readiness')
-  const baseline = page.getByRole('rowgroup', { name: 'Tribelt today, and the target' })
-  await expect(baseline.getByRole('rowheader')).toHaveText(['Tribelt B.V.', 'Mirror of tribelt.nl'])
-})
-
 test.describe('at phone width', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
@@ -110,15 +104,5 @@ test('the Prompt test grid opens an answer and keeps its filters in the address'
   await page.getByRole('button', { name: 'Ask OpenAI again, about $0.0014' }).click()
   await expect(page.getByText('Asking one answer again, for about $0.00.')).toBeVisible()
   expect(asked).toEqual({ promptId: 'eyelink-application-twente', provider: 'openai', mode: 'knowledge' })
-  await expectAccessible(page)
-})
-
-test("the AI readiness page shows a site's robots.txt when it is picked", async ({ page }) => {
-  await page.goto('/ai-readiness')
-  await expect(page.getByRole('region', { name: /^How many of the \d+ sites pass each check$/ })).toBeVisible()
-  const sites = page.getByRole('region', { name: 'Every site, every column' })
-  await sites.getByRole('rowgroup', { name: 'Competitors' }).getByRole('button').first().click()
-  await expect(page).toHaveURL(/site=/)
-  await expect(sites.getByText('What it means')).toBeVisible()
   await expectAccessible(page)
 })

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -149,7 +150,7 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 	}, func(context.Context) ([]terminologydomain.Sighting, error) {
 		return []terminologydomain.Sighting{{Text: "Drahtösengliederband", Language: "de", CompanyID: "pelger"}}, nil
 	}, time.Now)
-	terminology.WithReviewer(verdictStore{}, noJudge{})
+	terminology.WithReviewer(&verdictStore{}, noJudge{})
 	terminology.WithCompetitors(func(context.Context) ([]terminologydomain.Listed, error) {
 		return []terminologydomain.Listed{{ID: "pelger", Name: "PELGER GmbH"}, {ID: "martens", Name: "Märtens Transportbänder GmbH"}}, nil
 	})
@@ -439,10 +440,14 @@ func TestUnknownPathsAndMethods(t *testing.T) {
 	}
 }
 
-// verdictStore holds the language model's one verdict: unsure about "belt news".
-type verdictStore struct{}
+// verdictStore holds the language model's one verdict, unsure about "belt news", the review's
+// switch, and this month's usage: 1,000,000 input and 200,000 output tokens.
+type verdictStore struct {
+	mu  sync.Mutex
+	off bool
+}
 
-func (verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, error) {
+func (*verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, error) {
 	return []terminologydomain.Verdict{{
 		CandidateID: terminologydomain.CandidateID("belt news", "en"), Phrase: "belt news", Accept: true, Reason: "Could go either way.",
 		Term:  terminologydomain.Acceptance{Text: "belt news", Language: "en", Family: "all", Tier: "broad"},
@@ -450,7 +455,24 @@ func (verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, erro
 	}}, nil
 }
 
-func (verdictStore) SaveReview(context.Context, []terminologydomain.Verdict, []terminologydomain.Decision, []terminologydomain.Usage) error {
+func (*verdictStore) SaveReview(context.Context, []terminologydomain.Verdict, []terminologydomain.Decision, []terminologydomain.Usage) error {
+	return nil
+}
+
+func (*verdictStore) UsageSince(context.Context, time.Time) (terminologydomain.Usage, error) {
+	return terminologydomain.Usage{InputTokens: 1_000_000, OutputTokens: 200_000}, nil
+}
+
+func (v *verdictStore) ReviewOn(context.Context) (bool, error) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return !v.off, nil
+}
+
+func (v *verdictStore) SwitchReview(_ context.Context, on bool, _ string, _ time.Time) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	v.off = !on
 	return nil
 }
 

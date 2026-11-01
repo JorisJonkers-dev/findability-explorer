@@ -37,7 +37,7 @@ const SCOPE_LABELS: Record<BeltFamily, string> = {
   spec_all: 'all belts',
 }
 
-/** The Tribelt product that answers to a family. */
+/** The Tribelt product that matches a family. */
 const TRIBELT_PRODUCTS: Record<BeltFamily, string> = {
   eyelink: 'Eyelink belt',
   open_spiral: 'Open spiral belt',
@@ -64,7 +64,7 @@ const TIER_LABELS: Record<IntentTier, string> = {
 export const LANGUAGES: readonly Language[] = ['nl', 'de', 'en', 'en-US']
 /** Every belt family, in the contract's order. */
 export const FAMILIES = Object.keys(FAMILY_LABELS) as BeltFamily[]
-/** Every intent tier, in the contract's order. */
+/** Every kind of buyer intent, in the contract's order. */
 export const TIERS = Object.keys(TIER_LABELS) as IntentTier[]
 
 export function isLanguage(value: string): value is Language {
@@ -111,7 +111,7 @@ export function scopeLabel(family: BeltFamily): string {
   return SCOPE_LABELS[family]
 }
 
-/** The Tribelt product that answers to a family. */
+/** The Tribelt product that matches a family. */
 export function tribeltProduct(family: BeltFamily): string {
   return TRIBELT_PRODUCTS[family]
 }

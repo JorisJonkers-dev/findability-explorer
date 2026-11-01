@@ -36,6 +36,9 @@ type promptTests struct {
 	stopped    uuid.UUID
 	historyErr error
 	setsErr    error
+	// workStops are the reviews and checks stopped; workStopErr makes their stops fail.
+	workStops   []string
+	workStopErr error
 }
 
 func (a *analyses) prompts() *promptTests {

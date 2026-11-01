@@ -169,6 +169,8 @@ export type RankedTerm = {
   tribelt: boolean
   /** What Tribelt's own site calls the same thing: "Uses it", its term, or "Lacks it". */
   tribeltTerm: string
+  /** Whether an administrator added it by hand. */
+  hand: boolean
 }
 
 /**
@@ -202,6 +204,7 @@ export function rankTerms(shown: readonly (Term & { scanMakers?: readonly string
       share: makers.length / top,
       tribelt: tribeltUses(t),
       tribeltTerm: tribeltTerm(t, all),
+      hand: t.origin === 'hand',
     }))
 }
 

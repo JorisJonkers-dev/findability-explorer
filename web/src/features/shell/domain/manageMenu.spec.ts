@@ -30,6 +30,7 @@ describe('the Manage menu', () => {
       ['Competitor list', 'Check the list', '/manage/competitors/check'],
       ['Search term list', 'Term review', '/manage/terms/review'],
       ['Search term list', 'Waiting terms', '/manage/terms/waiting'],
+      ['Search term list', 'Add or remove terms', '/manage/terms/edit'],
       ['Recommendations', 'Tick off yourself', '/manage/recommendations/tick-off'],
       ['Recommendations', 'Goals', '/manage/recommendations/goals'],
       ['Keys and spending', 'OpenRouter key', '/manage/keys/openrouter'],

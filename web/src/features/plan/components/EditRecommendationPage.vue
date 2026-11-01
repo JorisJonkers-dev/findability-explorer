@@ -34,6 +34,7 @@ function save(): void {
 <template>
   <ManageLayout
     :title="it?.title ?? 'Edit a recommendation'"
+    help-topic="edit-recommendation"
     purpose="Change the wording and scores. An edited recommendation is kept when the next run replaces the others."
     :back="{ to: '/manage/recommendations/edit', label: 'Back to Edit a recommendation' }"
     :results="{ to: `/recommendations/${id}`, label: 'See the recommendation' }"

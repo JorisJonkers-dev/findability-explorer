@@ -114,8 +114,7 @@ const GOALS: readonly [string, string][] = [
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z]+/g, '-')
 
 /**
- * Every topic of Help, the reviewed prototype's copy, as far as the tool does it today. Topics about
- * the Recommendation run join with it.
+ * Every topic of Help, the reviewed prototype's copy, as far as the tool does it today.
  */
 export const TOPICS: readonly Topic[] = [
   // Getting started
@@ -146,7 +145,7 @@ export const TOPICS: readonly Topic[] = [
     'start',
     'Set the tool up for the first time',
     [
-      'Add an OpenRouter key to pay for the Prompt test, and an Anthropic key to pay for reading responses, product matching, and the term review.',
+      'Add an OpenRouter key to pay for the Prompt test, and an Anthropic key to pay for reading responses, product matching, the term review, and the Recommendation runs.',
       'Then set a monthly budget for each key. Work stops by itself when its budget is spent.',
     ],
     [manage('Keys and spending', '/manage/keys'), manage('Budgets', '/manage/keys/budgets')],
@@ -432,20 +431,45 @@ export const TOPICS: readonly Topic[] = [
     'recommendations',
     'How the recommendations are ranked',
     [
-      'Every recommendation has a benefit and an effort from 1 to 5. The list is ranked by benefit divided by effort. Some are written by hand and apply in general. The rest name a page, a search term, or a site.',
+      'Every recommendation has a benefit and an effort from 1 to 5. The list is ranked by benefit divided by effort. Some are written by hand and apply in general. The rest come from a Recommendation run and name a page, a search term, or a site.',
     ],
     [{ label: 'See the recommendations', to: '/recommendations' }],
     'rank priority benefit effort',
+  ),
+  topic(
+    'rec-run',
+    'recommendations',
+    'Write new recommendations',
+    [
+      'A Recommendation run uses the newest Prompt run, scans, and search term list. Rules find where tribelt.nl falls behind and score each gap; a language model reads tribelt.nl to say where each change belongs and words it. It may move a score by one point, and must say why.',
+      'Start one in Manage, Recommendations. Before it starts, the page says what it reads, how many open recommendations it replaces, and what it costs. When tribelt.nl was last scanned before the newest Prompt run, it warns that the page text is older than the responses: scan tribelt.nl first, or start the run anyway.',
+      'A new run replaces the open generated recommendations, and keeps the ones marked done or edited. A run that is stopped, runs out of budget, or fails changes nothing.',
+    ],
+    [manage('Recommendation runs', '/manage/recommendations'), manage('Writing recommendations', '/manage/claude-steps/recommendations')],
+    'generate run model write replace keep stale page text',
   ),
   topic(
     'done',
     'recommendations',
     'When a recommendation counts as done',
     [
-      'Rules decide, never a model: a term found on the page it names, a new page found in the right language, a listing that names Tribelt, or a readiness check that passes, all in the next scan. What no scan can see is ticked by hand.',
+      'Rules decide, never a model, from the newest scan of tribelt.nl and the newest Prompt run.',
+      'A search term is done when the page it names uses it, or any page when it names none. A new page is done when tribelt.nl has a page about the belt family in that language. A listing is done when a web response that cites the site names Tribelt or links to tribelt.nl. An AI readiness check is done when it passes.',
+      'A fact sheet correction no scan can see, so you tick it off yourself, as you do a hand-written recommendation no scan can check. A wrong click can be undone.',
     ],
     [manage('Recommendations to tick off yourself', '/manage/recommendations/tick-off')],
-    'done tick complete check',
+    'done tick complete check rule undo',
+  ),
+  topic(
+    'edit-recommendation',
+    'recommendations',
+    'Edit a recommendation a run wrote',
+    [
+      'In Manage, Recommendations, Edit a recommendation, change the title, the page on tribelt.nl, why, the steps, when it counts as done, and the benefit and effort. An edited recommendation is kept when the next run replaces the others.',
+      'The hand-written recommendations are part of the tool and cannot be edited.',
+    ],
+    [manage('Edit a recommendation', '/manage/recommendations/edit')],
+    'edit change wording scores generated written',
   ),
 
   // Costs and budgets
@@ -486,7 +510,7 @@ export const TOPICS: readonly Topic[] = [
     'costs',
     'Change a Claude model or its instructions',
     [
-      'Five steps ask a Claude model: reading responses, matching products, tidying candidate names, checking companies, and reviewing search terms. Each has a page in its own part of Manage, and Keys and spending lists all five.',
+      'Six steps ask a Claude model: reading responses, matching products, tidying candidate names, checking companies, reviewing search terms, and writing recommendations. Each has a page in its own part of Manage, and Keys and spending lists all six.',
       'On a step’s page, pick the model and edit the instructions. The page shows what the step costs with each model, what the model gets with the instructions and where that comes from, and the parts it must reply with. Saving makes a new version, and every version can be restored.',
       'The data and the reply format are set by the program, so editing the instructions cannot break a step. The instructions for reading responses are set in the code, so every Prompt run is read the same way. For that step, only the model is chosen.',
       'Changing how responses are read changes the measure, so the AI responses charts mark the date.',

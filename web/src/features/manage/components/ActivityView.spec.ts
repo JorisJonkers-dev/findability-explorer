@@ -169,8 +169,9 @@ describe('Activity', () => {
   })
 
   it('tells someone who is no administrator that Manage is for administrators, with the way to the Overview', async () => {
-    const { wrapper } = await mountApp(routes({}), '/manage')
+    const { wrapper, requests } = await mountApp(routes({}), '/manage')
     expect(wrapper.text()).toContain('Only administrators can start, stop, and change the work behind the results.')
+    expect(requests().filter((r) => r.includes('/admin/'))).toEqual([])
     expect(wrapper.get('a[data-part="to-overview"]').attributes('href')).toBe('/')
   })
 })

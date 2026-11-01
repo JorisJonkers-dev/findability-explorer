@@ -3143,14 +3143,69 @@ export type PromptPrices = {
 };
 
 /**
+ * Every text model on OpenRouter, as Add a model lists it.
+ */
+export type PromptModelCatalogue = {
+    /**
+     * When the catalogue was read from OpenRouter.
+     */
+    readAt: string;
+    /**
+     * How many questions a run asks, for the cost of a run.
+     */
+    questions: number;
+    /**
+     * The models, the recommended first, then cheapest first.
+     */
+    models: Array<PromptCatalogueModel>;
+};
+
+/**
+ * One text model on OpenRouter, with what one response costs.
+ */
+export type PromptCatalogueModel = {
+    /**
+     * Its OpenRouter id.
+     */
+    id: string;
+    /**
+     * Its name on OpenRouter.
+     */
+    name: string;
+    /**
+     * Its provider's OpenRouter id.
+     */
+    provider: string;
+    /**
+     * When OpenRouter listed it; absent when OpenRouter does not say.
+     */
+    listedAt?: string;
+    /**
+     * True when its tokens cost nothing.
+     */
+    free: boolean;
+    /**
+     * True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
+     */
+    recommended: boolean;
+    basis: PromptPriceBasis;
+    knowledgeUsd: Usd;
+    webUsd: Usd;
+};
+
+/**
  * The Prompt test's settings.
  */
 export type PromptTestSettings = {
     credentialId?: LlmCredentialId;
     /**
-     * The providers whose cheapest model runs ask, by OpenRouter id.
+     * The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
      */
     providers: Array<string>;
+    /**
+     * The Model list, the OpenRouter models every run asks, each its own column; empty until one is saved, when runs ask the cheapest model of each provider.
+     */
+    modelList: Array<string>;
     monthlyBudgetUsd: Usd;
     spentThisMonthUsd: Usd;
     cadence: PromptCadence;
@@ -3184,6 +3239,10 @@ export type PromptTestSettingsChange = {
      * The providers whose cheapest model runs ask.
      */
     providers?: Array<string>;
+    /**
+     * The Model list, by OpenRouter model id.
+     */
+    models?: Array<string>;
     /**
      * The month's budget in dollars.
      */
@@ -5348,6 +5407,43 @@ export type RereadPromptRunResponses = {
 };
 
 export type RereadPromptRunResponse = RereadPromptRunResponses[keyof RereadPromptRunResponses];
+
+export type GetPromptModelCatalogueData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-test/catalogue';
+};
+
+export type GetPromptModelCatalogueErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptModelCatalogueError = GetPromptModelCatalogueErrors[keyof GetPromptModelCatalogueErrors];
+
+export type GetPromptModelCatalogueResponses = {
+    /**
+     * The catalogue.
+     */
+    200: PromptModelCatalogue;
+};
+
+export type GetPromptModelCatalogueResponse = GetPromptModelCatalogueResponses[keyof GetPromptModelCatalogueResponses];
 
 export type GetPromptTestSettingsData = {
     body?: never;

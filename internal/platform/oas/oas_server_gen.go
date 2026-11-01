@@ -195,6 +195,16 @@ type Handler interface {
 	//
 	// GET /api/v1/products
 	GetProducts(ctx context.Context) (GetProductsRes, error)
+	// GetPromptModelCatalogue implements getPromptModelCatalogue operation.
+	//
+	// Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read
+	// with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest
+	// model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest
+	// cheapest first. A model the latest run asked is priced by its responses, the others by their list
+	// price for a typical response with the web search fee. 422 without a working OpenRouter key.
+	//
+	// GET /api/v1/admin/prompt-test/catalogue
+	GetPromptModelCatalogue(ctx context.Context) (GetPromptModelCatalogueRes, error)
 	// GetPromptRetryPlan implements getPromptRetryPlan operation.
 	//
 	// Administrators only. Says how many of a run's failed and missing answers asking again would ask, how

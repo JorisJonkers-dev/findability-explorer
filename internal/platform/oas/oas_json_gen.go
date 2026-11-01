@@ -16972,6 +16972,233 @@ func (s *PromptCadence) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *PromptCatalogueModel) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PromptCatalogueModel) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		e.Str(s.ID)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("provider")
+		e.Str(s.Provider)
+	}
+	{
+		if s.ListedAt.Set {
+			e.FieldStart("listedAt")
+			s.ListedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		e.FieldStart("free")
+		e.Bool(s.Free)
+	}
+	{
+		e.FieldStart("recommended")
+		e.Bool(s.Recommended)
+	}
+	{
+		e.FieldStart("basis")
+		s.Basis.Encode(e)
+	}
+	{
+		e.FieldStart("knowledgeUsd")
+		s.KnowledgeUsd.Encode(e)
+	}
+	{
+		e.FieldStart("webUsd")
+		s.WebUsd.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfPromptCatalogueModel = [9]string{
+	0: "id",
+	1: "name",
+	2: "provider",
+	3: "listedAt",
+	4: "free",
+	5: "recommended",
+	6: "basis",
+	7: "knowledgeUsd",
+	8: "webUsd",
+}
+
+// Decode decodes PromptCatalogueModel from json.
+func (s *PromptCatalogueModel) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PromptCatalogueModel to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.ID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "provider":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Provider = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"provider\"")
+			}
+		case "listedAt":
+			if err := func() error {
+				s.ListedAt.Reset()
+				if err := s.ListedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"listedAt\"")
+			}
+		case "free":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Bool()
+				s.Free = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"free\"")
+			}
+		case "recommended":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Bool()
+				s.Recommended = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"recommended\"")
+			}
+		case "basis":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.Basis.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"basis\"")
+			}
+		case "knowledgeUsd":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.KnowledgeUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"knowledgeUsd\"")
+			}
+		case "webUsd":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.WebUsd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"webUsd\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PromptCatalogueModel")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b11110111,
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPromptCatalogueModel) {
+					name = jsonFieldsNameOfPromptCatalogueModel[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PromptCatalogueModel) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PromptCatalogueModel) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *PromptCell) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -17947,6 +18174,146 @@ func (s PromptMode) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PromptMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PromptModelCatalogue) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PromptModelCatalogue) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("readAt")
+		json.EncodeDateTime(e, s.ReadAt)
+	}
+	{
+		e.FieldStart("questions")
+		e.Int32(s.Questions)
+	}
+	{
+		e.FieldStart("models")
+		e.ArrStart()
+		for _, elem := range s.Models {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfPromptModelCatalogue = [3]string{
+	0: "readAt",
+	1: "questions",
+	2: "models",
+}
+
+// Decode decodes PromptModelCatalogue from json.
+func (s *PromptModelCatalogue) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PromptModelCatalogue to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "readAt":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.ReadAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"readAt\"")
+			}
+		case "questions":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int32()
+				s.Questions = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"questions\"")
+			}
+		case "models":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				s.Models = make([]PromptCatalogueModel, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem PromptCatalogueModel
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Models = append(s.Models, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"models\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PromptModelCatalogue")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPromptModelCatalogue) {
+					name = jsonFieldsNameOfPromptModelCatalogue[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PromptModelCatalogue) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PromptModelCatalogue) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -21421,6 +21788,14 @@ func (s *PromptTestSettings) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
+		e.FieldStart("modelList")
+		e.ArrStart()
+		for _, elem := range s.ModelList {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("monthlyBudgetUsd")
 		s.MonthlyBudgetUsd.Encode(e)
 	}
@@ -21466,19 +21841,20 @@ func (s *PromptTestSettings) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPromptTestSettings = [12]string{
+var jsonFieldsNameOfPromptTestSettings = [13]string{
 	0:  "credentialId",
 	1:  "providers",
-	2:  "monthlyBudgetUsd",
-	3:  "spentThisMonthUsd",
-	4:  "cadence",
-	5:  "nextDueAt",
-	6:  "factSheet",
-	7:  "promptSet",
-	8:  "extractorModel",
-	9:  "models",
-	10: "keyWorks",
-	11: "prices",
+	2:  "modelList",
+	3:  "monthlyBudgetUsd",
+	4:  "spentThisMonthUsd",
+	5:  "cadence",
+	6:  "nextDueAt",
+	7:  "factSheet",
+	8:  "promptSet",
+	9:  "extractorModel",
+	10: "models",
+	11: "keyWorks",
+	12: "prices",
 }
 
 // Decode decodes PromptTestSettings from json.
@@ -21520,8 +21896,28 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"providers\"")
 			}
-		case "monthlyBudgetUsd":
+		case "modelList":
 			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				s.ModelList = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.ModelList = append(s.ModelList, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"modelList\"")
+			}
+		case "monthlyBudgetUsd":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.MonthlyBudgetUsd.Decode(d); err != nil {
 					return err
@@ -21531,7 +21927,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"monthlyBudgetUsd\"")
 			}
 		case "spentThisMonthUsd":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.SpentThisMonthUsd.Decode(d); err != nil {
 					return err
@@ -21541,7 +21937,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"spentThisMonthUsd\"")
 			}
 		case "cadence":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Cadence.Decode(d); err != nil {
 					return err
@@ -21551,7 +21947,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"cadence\"")
 			}
 		case "nextDueAt":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.NextDueAt = v
@@ -21563,7 +21959,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"nextDueAt\"")
 			}
 		case "factSheet":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.FactSheet.Decode(d); err != nil {
 					return err
@@ -21573,7 +21969,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"factSheet\"")
 			}
 		case "promptSet":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.PromptSet.Decode(d); err != nil {
 					return err
@@ -21583,7 +21979,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"promptSet\"")
 			}
 		case "extractorModel":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.ExtractorModel = string(v)
@@ -21595,7 +21991,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"extractorModel\"")
 			}
 		case "models":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				s.Models = make([]PromptModelChoice, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -21613,7 +22009,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"models\"")
 			}
 		case "keyWorks":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Bool()
 				s.KeyWorks = bool(v)
@@ -21625,7 +22021,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"keyWorks\"")
 			}
 		case "prices":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.Prices.Decode(d); err != nil {
 					return err
@@ -21645,7 +22041,7 @@ func (s *PromptTestSettings) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111110,
-		0b00001111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -21717,6 +22113,16 @@ func (s *PromptTestSettingsChange) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Models != nil {
+			e.FieldStart("models")
+			e.ArrStart()
+			for _, elem := range s.Models {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		if s.MonthlyBudgetUsd.Set {
 			e.FieldStart("monthlyBudgetUsd")
 			s.MonthlyBudgetUsd.Encode(e)
@@ -21736,12 +22142,13 @@ func (s *PromptTestSettingsChange) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPromptTestSettingsChange = [5]string{
+var jsonFieldsNameOfPromptTestSettingsChange = [6]string{
 	0: "credentialId",
 	1: "providers",
-	2: "monthlyBudgetUsd",
-	3: "cadence",
-	4: "factSheet",
+	2: "models",
+	3: "monthlyBudgetUsd",
+	4: "cadence",
+	5: "factSheet",
 }
 
 // Decode decodes PromptTestSettingsChange from json.
@@ -21782,6 +22189,25 @@ func (s *PromptTestSettingsChange) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"providers\"")
+			}
+		case "models":
+			if err := func() error {
+				s.Models = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Models = append(s.Models, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"models\"")
 			}
 		case "monthlyBudgetUsd":
 			if err := func() error {

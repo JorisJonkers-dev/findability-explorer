@@ -3424,6 +3424,18 @@ type GetLlmSettingsUnauthorized ProblemStatusCode
 
 func (*GetLlmSettingsUnauthorized) getLlmSettingsRes() {}
 
+type GetPromptModelCatalogueForbidden ProblemStatusCode
+
+func (*GetPromptModelCatalogueForbidden) getPromptModelCatalogueRes() {}
+
+type GetPromptModelCatalogueUnauthorized ProblemStatusCode
+
+func (*GetPromptModelCatalogueUnauthorized) getPromptModelCatalogueRes() {}
+
+type GetPromptModelCatalogueUnprocessableEntity ProblemStatusCode
+
+func (*GetPromptModelCatalogueUnprocessableEntity) getPromptModelCatalogueRes() {}
+
 type GetPromptRetryPlanBadRequest ProblemStatusCode
 
 func (*GetPromptRetryPlanBadRequest) getPromptRetryPlanRes() {}
@@ -9053,6 +9065,116 @@ func (s *PromptCadence) UnmarshalText(data []byte) error {
 	}
 }
 
+// One text model on OpenRouter, with what one response costs.
+// Ref: #/components/schemas/PromptCatalogueModel
+type PromptCatalogueModel struct {
+	// Its OpenRouter id.
+	ID string `json:"id"`
+	// Its name on OpenRouter.
+	Name string `json:"name"`
+	// Its provider's OpenRouter id.
+	Provider string `json:"provider"`
+	// When OpenRouter listed it; absent when OpenRouter does not say.
+	ListedAt OptDateTime `json:"listedAt"`
+	// True when its tokens cost nothing.
+	Free bool `json:"free"`
+	// True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
+	Recommended  bool             `json:"recommended"`
+	Basis        PromptPriceBasis `json:"basis"`
+	KnowledgeUsd Usd              `json:"knowledgeUsd"`
+	WebUsd       Usd              `json:"webUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptCatalogueModel) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *PromptCatalogueModel) GetName() string {
+	return s.Name
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptCatalogueModel) GetProvider() string {
+	return s.Provider
+}
+
+// GetListedAt returns the value of ListedAt.
+func (s *PromptCatalogueModel) GetListedAt() OptDateTime {
+	return s.ListedAt
+}
+
+// GetFree returns the value of Free.
+func (s *PromptCatalogueModel) GetFree() bool {
+	return s.Free
+}
+
+// GetRecommended returns the value of Recommended.
+func (s *PromptCatalogueModel) GetRecommended() bool {
+	return s.Recommended
+}
+
+// GetBasis returns the value of Basis.
+func (s *PromptCatalogueModel) GetBasis() PromptPriceBasis {
+	return s.Basis
+}
+
+// GetKnowledgeUsd returns the value of KnowledgeUsd.
+func (s *PromptCatalogueModel) GetKnowledgeUsd() Usd {
+	return s.KnowledgeUsd
+}
+
+// GetWebUsd returns the value of WebUsd.
+func (s *PromptCatalogueModel) GetWebUsd() Usd {
+	return s.WebUsd
+}
+
+// SetID sets the value of ID.
+func (s *PromptCatalogueModel) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *PromptCatalogueModel) SetName(val string) {
+	s.Name = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptCatalogueModel) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetListedAt sets the value of ListedAt.
+func (s *PromptCatalogueModel) SetListedAt(val OptDateTime) {
+	s.ListedAt = val
+}
+
+// SetFree sets the value of Free.
+func (s *PromptCatalogueModel) SetFree(val bool) {
+	s.Free = val
+}
+
+// SetRecommended sets the value of Recommended.
+func (s *PromptCatalogueModel) SetRecommended(val bool) {
+	s.Recommended = val
+}
+
+// SetBasis sets the value of Basis.
+func (s *PromptCatalogueModel) SetBasis(val PromptPriceBasis) {
+	s.Basis = val
+}
+
+// SetKnowledgeUsd sets the value of KnowledgeUsd.
+func (s *PromptCatalogueModel) SetKnowledgeUsd(val Usd) {
+	s.KnowledgeUsd = val
+}
+
+// SetWebUsd sets the value of WebUsd.
+func (s *PromptCatalogueModel) SetWebUsd(val Usd) {
+	s.WebUsd = val
+}
+
 // The answers of one provider, scope, belt family and mode that were read, and how many name and cite
 // Tribelt.
 // Ref: #/components/schemas/PromptCell
@@ -9600,6 +9722,49 @@ func (s *PromptMode) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// Every text model on OpenRouter, as Add a model lists it.
+// Ref: #/components/schemas/PromptModelCatalogue
+type PromptModelCatalogue struct {
+	// When the catalogue was read from OpenRouter.
+	ReadAt time.Time `json:"readAt"`
+	// How many questions a run asks, for the cost of a run.
+	Questions int32 `json:"questions"`
+	// The models, the recommended first, then cheapest first.
+	Models []PromptCatalogueModel `json:"models"`
+}
+
+// GetReadAt returns the value of ReadAt.
+func (s *PromptModelCatalogue) GetReadAt() time.Time {
+	return s.ReadAt
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PromptModelCatalogue) GetQuestions() int32 {
+	return s.Questions
+}
+
+// GetModels returns the value of Models.
+func (s *PromptModelCatalogue) GetModels() []PromptCatalogueModel {
+	return s.Models
+}
+
+// SetReadAt sets the value of ReadAt.
+func (s *PromptModelCatalogue) SetReadAt(val time.Time) {
+	s.ReadAt = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PromptModelCatalogue) SetQuestions(val int32) {
+	s.Questions = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptModelCatalogue) SetModels(val []PromptCatalogueModel) {
+	s.Models = val
+}
+
+func (*PromptModelCatalogue) getPromptModelCatalogueRes() {}
 
 // The model a run asks for one provider, and the paid fallback of a free one.
 // Ref: #/components/schemas/PromptModelChoice
@@ -11130,8 +11295,11 @@ func (*PromptTestResults) getPromptTestResultsRes() {}
 // Ref: #/components/schemas/PromptTestSettings
 type PromptTestSettings struct {
 	CredentialId OptLlmCredentialId `json:"credentialId"`
-	// The providers whose cheapest model runs ask, by OpenRouter id.
-	Providers         []string      `json:"providers"`
+	// The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
+	Providers []string `json:"providers"`
+	// The Model list, the OpenRouter models every run asks, each its own column; empty until one is saved,
+	// when runs ask the cheapest model of each provider.
+	ModelList         []string      `json:"modelList"`
 	MonthlyBudgetUsd  Usd           `json:"monthlyBudgetUsd"`
 	SpentThisMonthUsd Usd           `json:"spentThisMonthUsd"`
 	Cadence           PromptCadence `json:"cadence"`
@@ -11157,6 +11325,11 @@ func (s *PromptTestSettings) GetCredentialId() OptLlmCredentialId {
 // GetProviders returns the value of Providers.
 func (s *PromptTestSettings) GetProviders() []string {
 	return s.Providers
+}
+
+// GetModelList returns the value of ModelList.
+func (s *PromptTestSettings) GetModelList() []string {
+	return s.ModelList
 }
 
 // GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
@@ -11219,6 +11392,11 @@ func (s *PromptTestSettings) SetProviders(val []string) {
 	s.Providers = val
 }
 
+// SetModelList sets the value of ModelList.
+func (s *PromptTestSettings) SetModelList(val []string) {
+	s.ModelList = val
+}
+
 // SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
 func (s *PromptTestSettings) SetMonthlyBudgetUsd(val Usd) {
 	s.MonthlyBudgetUsd = val
@@ -11278,6 +11456,8 @@ type PromptTestSettingsChange struct {
 	CredentialId OptLlmCredentialId `json:"credentialId"`
 	// The providers whose cheapest model runs ask.
 	Providers []string `json:"providers"`
+	// The Model list, by OpenRouter model id.
+	Models []string `json:"models"`
 	// The month's budget in dollars.
 	MonthlyBudgetUsd OptFloat64       `json:"monthlyBudgetUsd"`
 	Cadence          OptPromptCadence `json:"cadence"`
@@ -11293,6 +11473,11 @@ func (s *PromptTestSettingsChange) GetCredentialId() OptLlmCredentialId {
 // GetProviders returns the value of Providers.
 func (s *PromptTestSettingsChange) GetProviders() []string {
 	return s.Providers
+}
+
+// GetModels returns the value of Models.
+func (s *PromptTestSettingsChange) GetModels() []string {
+	return s.Models
 }
 
 // GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
@@ -11318,6 +11503,11 @@ func (s *PromptTestSettingsChange) SetCredentialId(val OptLlmCredentialId) {
 // SetProviders sets the value of Providers.
 func (s *PromptTestSettingsChange) SetProviders(val []string) {
 	s.Providers = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptTestSettingsChange) SetModels(val []string) {
+	s.Models = val
 }
 
 // SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.

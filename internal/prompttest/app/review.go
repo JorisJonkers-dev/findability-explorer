@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"slices"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,6 +36,10 @@ var (
 	ErrNoReviewer = errors.New("no Anthropic key is set up")
 	// ErrBudgetSpent is returned by Review when the month's language-model tokens are spent.
 	ErrBudgetSpent = errors.New("this month's language-model budget is spent")
+	// ErrStopped is returned by Review and CheckList when an administrator stopped them.
+	ErrStopped = errors.New("stopped by hand")
+	// ErrNothingToStop is returned by a stop that finds nothing running.
+	ErrNothingToStop = errors.New("there is nothing running to stop")
 )
 
 // ReviewProblem is why the last review stopped short.
@@ -47,6 +50,8 @@ const (
 	ReviewProblemNoKey  ReviewProblem = "noKey"
 	ReviewProblemBudget ReviewProblem = "budget"
 	ReviewProblemFails  ReviewProblem = "failed"
+	// ReviewProblemStopped is a review an administrator stopped; what it decided before is kept.
+	ReviewProblemStopped ReviewProblem = "stopped"
 )
 
 // ReviewState is whether the model is reviewing, and why its last review stopped short.
@@ -63,15 +68,58 @@ type review struct {
 	candidates, list runState
 }
 
-// runState is whether a review runs in the background, and why its last run stopped short.
+// runState is whether a review runs in the background, whether an administrator asked it to stop,
+// and why its last run stopped short.
 type runState struct {
-	running atomic.Bool
-	problem atomic.Value // ReviewProblem
+	mu       sync.Mutex
+	running  bool
+	stopping bool
+	problem  ReviewProblem
 }
 
 func (r *runState) state() ReviewState {
-	problem, _ := r.problem.Load().(ReviewProblem)
-	return ReviewState{Running: r.running.Load(), Problem: problem}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return ReviewState{Running: r.running, Problem: r.problem}
+}
+
+// begin marks a run started, unless one runs already; it reports whether it started.
+func (r *runState) begin() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.running {
+		return false
+	}
+	r.running, r.stopping = true, false
+	return true
+}
+
+// end marks the run ended, with the problem it ran into.
+func (r *runState) end(problem ReviewProblem) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.running, r.stopping, r.problem = false, false, problem
+}
+
+// stop asks the run to stop before its next step; ErrNothingToStop when none runs.
+func (r *runState) stop() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.running {
+		return ErrNothingToStop
+	}
+	r.stopping = true
+	return nil
+}
+
+// goOn is ErrStopped once an administrator asked the run to stop.
+func (r *runState) goOn() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.stopping {
+		return ErrStopped
+	}
+	return nil
 }
 
 // ReviewState says whether the model is reviewing the candidates, and why its last review stopped short.
@@ -82,26 +130,32 @@ func (s *Service) StartReview(ctx context.Context) bool {
 	return s.startIn(ctx, &s.review.candidates, s.Review)
 }
 
+// StopReview stops the review of the candidates that runs: it asks nothing after the step it is
+// on, which it finishes and keeps, as it keeps every decision made before. The review's state says
+// it was stopped by hand. ErrNothingToStop when no review runs.
+func (s *Service) StopReview(context.Context) error { return s.review.candidates.stop() }
+
 // startIn runs work in the background on st, unless it runs already, within reviewTimeout; it
 // reports whether it started.
 func (s *Service) startIn(ctx context.Context, st *runState, work func(context.Context) error) bool {
-	if !st.running.CompareAndSwap(false, true) {
+	if !st.begin() {
 		return false
 	}
 	s.spawn(func() {
-		defer st.running.Store(false)
 		bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), reviewTimeout)
 		defer cancel()
 		err := work(bg)
 		switch {
 		case err == nil:
-			st.problem.Store(ReviewProblemNone)
+			st.end(ReviewProblemNone)
+		case errors.Is(err, ErrStopped):
+			st.end(ReviewProblemStopped)
 		case errors.Is(err, ErrNoReviewer):
-			st.problem.Store(ReviewProblemNoKey)
+			st.end(ReviewProblemNoKey)
 		case errors.Is(err, ErrBudgetSpent):
-			st.problem.Store(ReviewProblemBudget)
+			st.end(ReviewProblemBudget)
 		default:
-			st.problem.Store(ReviewProblemFails)
+			st.end(ReviewProblemFails)
 			s.review.onError(err)
 		}
 	})
@@ -111,13 +165,14 @@ func (s *Service) startIn(ctx context.Context, st *runState, work func(context.C
 // Review has the model merge the candidates that are one company, then check each waiting company
 // it has not checked, and records the decisions its sure verdicts make. ErrNoReviewer when no
 // Anthropic key is set up; ErrBudgetSpent when the month's language-model tokens are spent before
-// the merge or a batch, with what was checked before kept.
+// the merge or a batch, and ErrStopped when an administrator stopped it, with what was checked
+// before kept either way.
 func (s *Service) Review(ctx context.Context) error {
 	r, model, err := s.reviewer(ctx)
 	if err != nil {
 		return err
 	}
-	if err := s.tokensLeft(ctx); err != nil {
+	if err := s.goOn(ctx, &s.review.candidates); err != nil {
 		return err
 	}
 	directory, err := s.directory.Companies(ctx)
@@ -133,7 +188,7 @@ func (s *Service) Review(ctx context.Context) error {
 	}
 	unchecked := domain.Unchecked(all)
 	for len(unchecked) > 0 {
-		if err := s.tokensLeft(ctx); err != nil {
+		if err := s.goOn(ctx, &s.review.candidates); err != nil {
 			return err
 		}
 		batch := unchecked[:min(CheckBatch, len(unchecked))]
@@ -158,6 +213,15 @@ func (s *Service) reviewer(ctx context.Context) (Reviewer, string, error) {
 		return nil, "", ErrNoReviewer
 	}
 	return r, model, nil
+}
+
+// goOn is ErrStopped once an administrator stopped the run on st, ErrBudgetSpent once the month's
+// language-model tokens are spent.
+func (s *Service) goOn(ctx context.Context, st *runState) error {
+	if err := st.goOn(); err != nil {
+		return err
+	}
+	return s.tokensLeft(ctx)
 }
 
 // tokensLeft is ErrBudgetSpent once the month's language-model tokens are spent.

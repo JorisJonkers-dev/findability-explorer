@@ -61,6 +61,10 @@ type GetAnalysisRes interface {
 	getAnalysisRes()
 }
 
+type GetCompetitorDefinitionRes interface {
+	getCompetitorDefinitionRes()
+}
+
 type GetCompetitorProfileRes interface {
 	getCompetitorProfileRes()
 }
@@ -169,8 +173,16 @@ type RereadPromptRunRes interface {
 	rereadPromptRunRes()
 }
 
+type RestoreCompetitorDefinitionRes interface {
+	restoreCompetitorDefinitionRes()
+}
+
 type RetryPromptRunRes interface {
 	retryPromptRunRes()
+}
+
+type SaveCompetitorDefinitionRes interface {
+	saveCompetitorDefinitionRes()
 }
 
 type SearchTermsRes interface {

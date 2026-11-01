@@ -41,6 +41,8 @@ type promptTests struct {
 	// workStops are the reviews and checks stopped; workStopErr makes their stops fail.
 	workStops   []string
 	workStopErr error
+	// definitions stands in for the competitor definition's use cases; a fresh one when nil.
+	definitions *definitions
 }
 
 func (a *analyses) prompts() *promptTests {
@@ -271,8 +273,8 @@ func (p *promptTests) ReviewState() app.ReviewState {
 
 func (p *promptTests) ListChecks(context.Context) ([]domain.ListCheck, int, error) {
 	return []domain.ListCheck{
-		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting for quarries.", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: answered},
-		{CompanyID: "intralox", Competitor: true, Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: answered},
+		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting for quarries.", Model: "anthropic: claude-haiku-5-5", Version: 2, At: answered},
+		{CompanyID: "intralox", Competitor: true, Model: "anthropic: claude-haiku-5-5", Version: 2, At: answered},
 	}, 3, p.err
 }
 

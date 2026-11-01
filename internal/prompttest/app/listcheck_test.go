@@ -80,7 +80,7 @@ func TestHaikuArchivesTheListsSureNonCompetitors(t *testing.T) {
 		t.Errorf("usage = %+v", r.usage)
 	}
 	checks, unchecked, err = svc.ListChecks(t.Context())
-	if err != nil || len(checks) != 4 || unchecked != 0 || checks[0].Version != domain.CheckVersion || checks[0].Model != "anthropic: claude-haiku-5-5" {
+	if err != nil || len(checks) != 4 || unchecked != 0 || checks[0].Version != checkVersion || checks[0].Model != "anthropic: claude-haiku-5-5" {
 		t.Fatalf("after: %+v, %d, %v", checks, unchecked, err)
 	}
 	// A second check asks nothing: every company is checked with this version.
@@ -89,7 +89,7 @@ func TestHaikuArchivesTheListsSureNonCompetitors(t *testing.T) {
 	}
 	// A check of an older version is made again, unless the company left the list.
 	for i := range r.checks {
-		r.checks[i].Version = domain.CheckVersion - 1
+		r.checks[i].Version = checkVersion - 1
 	}
 	if err := svc.CheckList(t.Context()); err != nil || len(m.checked) != 2 || !slices.Equal(m.checked[1], []string{"twentebelt", "intralox", "wire-belt"}) {
 		t.Errorf("after a new version = %v, %v", err, m.checked)
@@ -127,7 +127,7 @@ func TestTheListCheckFails(t *testing.T) {
 	// Nothing to check asks nothing.
 	quiet := &model{verdicts: rubber}
 	r := newRepo()
-	r.checks = []domain.ListCheck{{CompanyID: "twentebelt", Version: domain.CheckVersion}}
+	r.checks = []domain.ListCheck{{CompanyID: "twentebelt", Version: checkVersion}}
 	if err := reviewing(r, &directory{}, models{m: quiet}, nil).CheckList(t.Context()); err != nil || len(quiet.checked) != 0 {
 		t.Errorf("nothing to check = %v, %v", err, quiet.checked)
 	}

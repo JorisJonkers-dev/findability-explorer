@@ -43,6 +43,9 @@ type UseCases interface {
 	StartListCheck(ctx context.Context) bool
 	StopReview(ctx context.Context) error
 	StopListCheck(ctx context.Context) error
+	CompetitorDefinition(ctx context.Context) (app.DefinitionView, error)
+	SaveDefinition(ctx context.Context, user, text string) (app.DefinitionView, error)
+	RestoreDefinition(ctx context.Context, user string, version int) (app.DefinitionView, error)
 	ListCheckState() app.ReviewState
 }
 

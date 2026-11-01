@@ -3376,6 +3376,62 @@ export type CandidateCheck = {
 };
 
 /**
+ * The competitor definition in use, its versions, and what checking again against it would take.
+ */
+export type CompetitorDefinition = {
+    current: CompetitorDefinitionVersion;
+    /**
+     * Every version, the newest first.
+     */
+    versions: Array<CompetitorDefinitionVersion>;
+    /**
+     * Competitors on the list the model checks whose check was made against an older version.
+     */
+    outdatedCompetitors: number;
+    /**
+     * Waiting candidates whose check was made against an older version.
+     */
+    outdatedCandidates: number;
+    recheckCostUsd: Usd;
+};
+
+/**
+ * One version of the competitor definition.
+ */
+export type CompetitorDefinitionVersion = {
+    /**
+     * The version's number; checks record it.
+     */
+    version: number;
+    /**
+     * Who competes with Tribelt, and who does not.
+     */
+    text: string;
+    /**
+     * When it was saved.
+     */
+    savedAt: string;
+    /**
+     * Who saved it; import for the version the code held.
+     */
+    savedBy: string;
+    /**
+     * The version whose text it restored; absent for a new text.
+     */
+    restoredFrom?: number;
+};
+
+/**
+ * A new text for the competitor definition.
+ */
+export type CompetitorDefinitionText = {
+    /**
+     * Who competes with Tribelt, and who does not.
+     */
+    text: string;
+};
+
+/**
  * Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last run stopped short.
  */
 export type CandidateReviewState = {
@@ -5637,6 +5693,137 @@ export type StopCandidateReviewResponses = {
 };
 
 export type StopCandidateReviewResponse = StopCandidateReviewResponses[keyof StopCandidateReviewResponses];
+
+export type GetCompetitorDefinitionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-definition';
+};
+
+export type GetCompetitorDefinitionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetCompetitorDefinitionError = GetCompetitorDefinitionErrors[keyof GetCompetitorDefinitionErrors];
+
+export type GetCompetitorDefinitionResponses = {
+    /**
+     * The definition and its versions.
+     */
+    200: CompetitorDefinition;
+};
+
+export type GetCompetitorDefinitionResponse = GetCompetitorDefinitionResponses[keyof GetCompetitorDefinitionResponses];
+
+export type SaveCompetitorDefinitionData = {
+    /**
+     * The definition's new text.
+     */
+    body: CompetitorDefinitionText;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-definition';
+};
+
+export type SaveCompetitorDefinitionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SaveCompetitorDefinitionError = SaveCompetitorDefinitionErrors[keyof SaveCompetitorDefinitionErrors];
+
+export type SaveCompetitorDefinitionResponses = {
+    /**
+     * The definition, saved.
+     */
+    200: CompetitorDefinition;
+};
+
+export type SaveCompetitorDefinitionResponse = SaveCompetitorDefinitionResponses[keyof SaveCompetitorDefinitionResponses];
+
+export type RestoreCompetitorDefinitionData = {
+    body?: never;
+    path: {
+        /**
+         * The version to restore.
+         */
+        version: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/competitor-definition/versions/{version}/restore';
+};
+
+export type RestoreCompetitorDefinitionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RestoreCompetitorDefinitionError = RestoreCompetitorDefinitionErrors[keyof RestoreCompetitorDefinitionErrors];
+
+export type RestoreCompetitorDefinitionResponses = {
+    /**
+     * The definition, restored.
+     */
+    200: CompetitorDefinition;
+};
+
+export type RestoreCompetitorDefinitionResponse = RestoreCompetitorDefinitionResponses[keyof RestoreCompetitorDefinitionResponses];
 
 export type ListCompetitorChecksData = {
     body?: never;

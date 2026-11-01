@@ -1591,6 +1591,107 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-definition:
+    get:
+      operationId: getCompetitorDefinition
+      summary: The competitor definition and its versions
+      description: >-
+        Administrators only. The definition of who competes with Tribelt that every check of a
+        company is made against (the newest version), every version, newest first, and what
+        checking again against it would take - the competitors on the list and the waiting
+        candidates checked against an older version, and what checking them again should cost on
+        the Anthropic key.
+      tags: [admin]
+      responses:
+        "200":
+          description: The definition and its versions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorDefinition"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: saveCompetitorDefinition
+      summary: Save the competitor definition as a new version
+      description: >-
+        Administrators only. Stores the text as a new version, which every check from now on is
+        made against, and records who saved it. It starts no check - what was checked against an
+        older version is checked again by the next check of the candidates or of the list
+        (startCandidateReview, startCompetitorCheck). Returns the definition with what checking
+        again would take. 409 when the text is the one in use; 422 when it is empty or longer than
+        8,000 characters.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The definition's new text.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompetitorDefinitionText"
+            example:
+              text: A competitor makes metal conveyor belts for process uses and sells them to Tribelt's customers.
+      responses:
+        "200":
+          description: The definition, saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorDefinition"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-definition/versions/{version}/restore:
+    post:
+      operationId: restoreCompetitorDefinition
+      summary: Restore a version of the competitor definition
+      description: >-
+        Administrators only. Saves the text of an older version as a new version, recording which
+        it restored and who; as with saving, no check starts. 404 for an unknown version; 409 when
+        its text is the one in use.
+      tags: [admin]
+      parameters:
+        - name: version
+          in: path
+          required: true
+          description: The version to restore.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100000
+      responses:
+        "200":
+          description: The definition, restored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitorDefinition"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/competitor-checks:
     get:
       operationId: listCompetitorChecks
@@ -6854,6 +6955,86 @@ components:
           maxLength: 64
           description: When.
           example: "2026-10-27T09:30:00Z"
+    CompetitorDefinition:
+      description: >-
+        The competitor definition in use, its versions, and what checking again against it would
+        take.
+      type: object
+      additionalProperties: false
+      required: [current, versions, outdatedCompetitors, outdatedCandidates, recheckCostUsd]
+      properties:
+        current:
+          $ref: "#/components/schemas/CompetitorDefinitionVersion"
+        versions:
+          type: array
+          maxItems: 100000
+          description: Every version, the newest first.
+          items:
+            $ref: "#/components/schemas/CompetitorDefinitionVersion"
+        outdatedCompetitors:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Competitors on the list the model checks whose check was made against an older version.
+          example: 12
+        outdatedCandidates:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: Waiting candidates whose check was made against an older version.
+          example: 40
+        recheckCostUsd:
+          $ref: "#/components/schemas/Usd"
+    CompetitorDefinitionVersion:
+      description: One version of the competitor definition.
+      type: object
+      additionalProperties: false
+      required: [version, text, savedAt, savedBy]
+      properties:
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version's number; checks record it.
+          example: 3
+        text:
+          type: string
+          maxLength: 8000
+          description: Who competes with Tribelt, and who does not.
+          example: A competitor makes metal conveyor belts for process uses and sells them to Tribelt's customers.
+        savedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it was saved.
+          example: "2026-11-01T09:00:00Z"
+        savedBy:
+          type: string
+          maxLength: 200
+          description: Who saved it; import for the version the code held.
+          example: joris
+        restoredFrom:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100000
+          description: The version whose text it restored; absent for a new text.
+          example: 2
+    CompetitorDefinitionText:
+      description: A new text for the competitor definition.
+      type: object
+      additionalProperties: false
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 8000
+          description: Who competes with Tribelt, and who does not.
+          example: A competitor makes metal conveyor belts for process uses and sells them to Tribelt's customers.
     CandidateReviewState:
       description: >-
         Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why

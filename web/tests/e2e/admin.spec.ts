@@ -3,24 +3,21 @@ import { expect, expectAccessible, test } from './fixtures'
 
 // The dev user of the default server is an administrator (playwright.config.ts).
 
-test('an administrator adds a company, sees it, and deletes it again', async ({ page }) => {
-  const stamp = `${String(Date.now())}${String(Math.floor(Math.random() * 1000))}`
-  const name = `E2E Belts ${stamp}`
+test('an administrator manages the competitors in Manage, reached from the Results pages, which have no tools of their own', async ({ page }) => {
   await page.goto('/competitors')
-  await page.getByRole('button', { name: 'Add a company' }).click()
-  const form = page.getByRole('form', { name: 'Add a company' })
-  await form.getByLabel('Company name').fill(name)
-  await form.getByLabel('Company website').fill(`https://e2e-${stamp}.example.com`)
-  await form.getByRole('button', { name: 'Add company' }).click()
-  // The added company opens on its own page.
-  await expect(page).toHaveURL(new RegExp(`/competitors/e2e-belts-${stamp}$`))
-  await expect(page.getByRole('heading', { level: 2, name: `${name} against Tribelt` })).toBeVisible()
-  await expectAccessible(page)
+  await expect(page.getByRole('button', { name: 'Add a company' })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: 'Website address' })).toHaveCount(0)
+  await page.getByRole('link', { name: 'Manage the competitor list' }).click()
+  await expect(page).toHaveURL('/manage/competitors')
+  await expect(page.getByRole('heading', { level: 1, name: 'Competitor list' })).toBeVisible()
 
-  await page.getByRole('group', { name: 'Manage this company' }).getByRole('button', { name: 'Remove' }).click()
-  await page.getByRole('button', { name: 'Delete with its 0 scans' }).click()
-  await expect(page).toHaveURL('/competitors')
-  await expect(page.getByRole('region', { name: 'The competitors' }).getByRole('link', { name: new RegExp(name) })).toHaveCount(0)
+  await page.goto('/competitors/twentebelt')
+  await expect(page.getByRole('group', { name: 'Manage this company' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^(Scan again|Scan this website)$/ })).toHaveCount(0)
+  await page.getByRole('link', { name: 'Manage this company' }).click()
+  await expect(page).toHaveURL('/manage/competitors/companies/twentebelt')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expectAccessible(page)
 })
 
 const SCAN_1 = '11111111-1111-4111-8111-111111111111'
@@ -95,8 +92,8 @@ test('a company’s search terms, scan history and comparison render', async ({ 
   await page.getByRole('link', { name: 'See its scan history' }).click()
   await expect(page).toHaveURL('/competitors/twentebelt/history')
   await expect(page).toHaveTitle('Over time · Findability Explorer')
-  await expect(page.getByRole('heading', { level: 1, name: 'How Twentebelt changed, scan by scan.' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Back to the latest scan' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Twentebelt, scan history' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Back to Twentebelt' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Tri-Flex (2)' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('table', { name: 'English (1)' })).toContainText('spiral belts')
   await expect(page.getByRole('table', { name: 'Dutch (1)' })).toContainText('new in this scan')

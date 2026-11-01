@@ -34,7 +34,7 @@ const NAMED = '00000000-0000-4000-8000-000000000001'
 
 const run = {
   id: RUN, promptSetVersion: 2, factSheetVersion: 1, trigger: 'manual', startedBy: 'e2e', startedAt: '2026-11-02T06:00:00Z',
-  finishedAt: '2026-11-02T06:20:00Z', status: 'done', models: [{ provider: 'openai', model: 'openai/gpt-oss-20b', free: false }],
+  finishedAt: '2026-11-02T06:20:00Z', status: 'done', complete: true, models: [{ provider: 'openai', model: 'openai/gpt-oss-20b', free: false }],
   tasks: 2, answered: 1, failed: 1, inputTokens: 900, outputTokens: 300, costUsd: 0.0014,
   byProvider: [{ provider: 'openai', answered: 1, failed: 1, costUsd: 0.0014, models: ['openai/gpt-oss-20b'] }],
   cells: [{ provider: 'openai', scope: 'twente', family: 'eyelink', mode: 'web', answers: 1, named: 1, cited: 1 }],

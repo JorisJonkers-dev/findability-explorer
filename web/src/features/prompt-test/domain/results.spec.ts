@@ -4,6 +4,7 @@ import {
   costLabel,
   familyName,
   fraction,
+  isShown,
   latestRun,
   mentionLine,
   modeName,
@@ -45,11 +46,15 @@ describe('the Prompt test’s measures', () => {
 })
 
 describe('the latest run and the companies it names', () => {
-  it('opens on the newest run with answers', () => {
-    const running = promptRun({ id: 'new', status: 'running', cells: [] })
-    expect(latestRun(promptResults({ runs: [running, promptRun()] }))?.id).toBe(promptRun().id)
-    expect(latestRun(promptResults({ runs: [running] }))?.id).toBe('new')
+  it('opens on the newest complete run, never one still running, stopped, or failed', () => {
+    const running = promptRun({ id: 'running', status: 'running', complete: false, finishedAt: undefined })
+    const stopped = promptRun({ id: 'stopped', status: 'stopped', complete: false })
+    const empty = promptRun({ id: 'empty', cells: [] })
+    expect(latestRun(promptResults({ runs: [running, stopped, empty, promptRun()] }))?.id).toBe(promptRun().id)
+    expect(latestRun(promptResults({ runs: [running, stopped] }))).toBeUndefined()
     expect(latestRun(undefined)).toBeUndefined()
+    expect(isShown(stopped)).toBe(false)
+    expect(isShown(promptRun())).toBe(true)
   })
 
   it('tells a card how often answers name its company', () => {

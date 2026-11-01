@@ -161,6 +161,7 @@ test('an administrator follows a Prompt run from Activity, stops it, and sees it
     startedBy: 'e2e',
     startedAt: '2026-11-01T08:29:00Z',
     status: 'running',
+    complete: false,
     models: [{ provider: 'openai', model: 'openai/gpt-oss-20b', free: false }],
     tasks: 400,
     answered: 90,

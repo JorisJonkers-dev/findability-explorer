@@ -226,6 +226,7 @@ export function promptRun(overrides: Partial<PromptRun> = {}): PromptRun {
     startedAt: '2026-11-01T06:00:00Z',
     finishedAt: '2026-11-01T06:20:00Z',
     status: 'done',
+    complete: true,
     models: [
       { provider: 'openai', model: 'openai/gpt-oss-20b', free: false },
       { provider: 'google', model: 'google/gemma:free', free: true, fallback: 'google/gemini-2.5-flash-lite' },

@@ -21,7 +21,13 @@ const readiness = [
 
 describe('Latest runs and scans', () => {
   it('says when each process last ran and what comes next, with its Results and Manage pages', () => {
-    const rows = latestRows({ runs: [promptRun({ status: 'running', finishedAt: undefined, startedAt: '2026-11-01T06:00:00Z' }), promptRun({ startedAt: '2026-10-27T06:00:00Z' })], nextRunAt: '2026-11-08T05:00:00Z', readiness, overview: overviewFixture(), plan: planFixture(), now: NOW })
+    // A stopped run finished, but is not complete: the goal figures come from the complete one.
+    const runs = [
+      promptRun({ status: 'running', complete: false, finishedAt: undefined, startedAt: '2026-11-01T06:00:00Z' }),
+      promptRun({ status: 'stopped', complete: false, startedAt: '2026-10-30T06:00:00Z' }),
+      promptRun({ startedAt: '2026-10-27T06:00:00Z' }),
+    ]
+    const rows = latestRows({ runs, nextRunAt: '2026-11-08T05:00:00Z', readiness, overview: overviewFixture(), plan: planFixture(), now: NOW })
     expect(rows.map((r) => [r.process, r.latest, r.next, r.to, r.manage])).toEqual([
       ['Prompt test', 'Last complete run on 27 October 2026', 'The next run is scheduled for 8 November 2026.', '/ai-responses', '/manage/prompt-test'],
       ['Website scans', 'tribelt.nl scanned on 26 October 2026', '1 of 3 competitors were scanned in the last 30 days.', '/ai-readiness', '/manage/scans'],

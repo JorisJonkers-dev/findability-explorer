@@ -1,5 +1,6 @@
 import type { AiReadinessRow, Overview, Plan, PromptRun } from '../../../infrastructure/api/types.gen'
 import { localDate } from '../../../shared/dates'
+import { isShown } from '../../prompt-test/domain/results'
 
 /** A row of Latest runs and scans: the process, when it last ran, what comes next, and its two pages. */
 export type LatestRow = { process: string; to: string; latest: string; next: string; manage: string }
@@ -19,7 +20,8 @@ const DAY_MS = 86_400_000
 
 /** When each process last ran and what comes next. */
 export function latestRows(f: LatestFacts): LatestRow[] {
-  const run = f.runs.find((r) => r.finishedAt !== undefined)
+  // The run the goal figures come from: the newest complete one.
+  const run = f.runs.find(isShown)
   const tribelt = f.readiness.find((r) => r.role === 'tribelt')?.scan?.finishedAt
   const competitors = f.readiness.filter((r) => r.role === 'competitor')
   const recent = competitors.filter((r) => r.scan?.finishedAt !== undefined && f.now.getTime() - Date.parse(r.scan.finishedAt) < 30 * DAY_MS).length

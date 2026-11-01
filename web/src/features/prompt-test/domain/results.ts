@@ -124,9 +124,17 @@ export function costLabel(usd: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(usd)
 }
 
-/** The run the results open on: the newest that has answers to show, else the newest. */
+/**
+ * Whether the Results pages show a run: complete, as the server says (done, even with failed
+ * responses), with responses read. A run still running, stopped, or failed is listed in Manage.
+ */
+export function isShown(run: Pick<PromptRun, 'complete' | 'cells'>): boolean {
+  return run.complete && run.cells.length > 0
+}
+
+/** The run the results open on: the newest complete run (the spec's decision 8); none before one. */
 export function latestRun(results: Pick<PromptTestResults, 'runs'> | undefined): PromptRun | undefined {
-  return results?.runs.find((r) => r.cells.length > 0) ?? results?.runs[0]
+  return results?.runs.find(isShown)
 }
 
 /** How often the latest run's answers name a company, for its card; null before any run named it. */

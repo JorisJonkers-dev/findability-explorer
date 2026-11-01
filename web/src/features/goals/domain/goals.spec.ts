@@ -62,6 +62,7 @@ describe('the Goals table', () => {
     // A count runs to the largest of a fifth past the goal, Tribelt, and the best competitor.
     expect(terms?.bar.goal).toBeCloseTo((35 / 45) * 100)
     expect(terms?.bar.now).toBeCloseTo(100)
+    expect(ai?.barLabel).toBe('Tribelt now 24%, the best competitor 57%, the goal 40%.')
     expect(ai?.aria).toBe('AI responses that name Tribelt: Tribelt 24%, the goal 40%, the best competitor Ashworth with 57%. Open its page.')
   })
 
@@ -74,6 +75,7 @@ describe('the Goals table', () => {
     )
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ now: 'Not measured', measured: false, best: 'None yet', bar: { now: 0, goal: 83.33, best: undefined } })
+    expect(rows[0]?.barLabel).toBe('Tribelt now not measured, the goal 10.')
     expect(rows[0]?.aria).toBe('Search terms tribelt.nl uses: Tribelt not measured, the goal 10, no best competitor yet. Open its page.')
   })
 })
@@ -111,7 +113,7 @@ describe('the Overview summary', () => {
 describe('a goal page', () => {
   it('names the goal, says what it measures, and who is ahead', () => {
     const page = goalPage(facts(), 'aiShareOfVoice')
-    expect(page).toMatchObject({ name: 'AI responses that name Tribelt', purpose: "The share of a Prompt run's responses that name Tribelt." })
+    expect(page).toMatchObject({ name: 'AI responses that name Tribelt', goal: 0.4, purpose: "The share of a Prompt run's responses that name Tribelt." })
     expect(page?.summary).toBe('Ashworth is ahead of Tribelt, with 57% against 24%. The goal is 40%.')
     expect(page?.bars.map((b) => [b.label, b.display, b.tone, b.highlight ?? false])).toEqual([
       ['Tribelt', '24%', 'orange', true],

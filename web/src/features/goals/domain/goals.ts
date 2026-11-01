@@ -161,6 +161,8 @@ export type GoalRow = {
   best: string
   /** Tribelt, the goal, and the best competitor on the progress bar, each from 0 to 100. */
   bar: { now: number; goal: number; best: number | undefined }
+  /** What the progress bar shows, for a screen reader. */
+  barLabel: string
   aria: string
 }
 
@@ -188,6 +190,7 @@ export function goalRows(facts: Facts): GoalRow[] {
         goal,
         best: best ? `${best.name}, ${bestValue}` : 'None yet',
         bar: { now: w.now === undefined ? 0 : at(w.now, scale), goal: at(w.goal, scale), best: best ? at(best.value, scale) : undefined },
+        barLabel: `Tribelt now ${w.now === undefined ? 'not measured' : now}${best ? `, the best competitor ${bestValue}` : ''}, the goal ${goal}.`,
         aria: `${def.name}: Tribelt ${w.now === undefined ? 'not measured' : now}, the goal ${goal}, ${best ? `the best competitor ${best.name} with ${bestValue}` : 'no best competitor yet'}. Open its page.`,
       },
     ]
@@ -217,6 +220,8 @@ export type GoalPage = {
   target: PlanTarget
   name: string
   purpose: string
+  /** The goal's value, for the line over time. */
+  goal: number
   /** Whether Tribelt or the best competitor is ahead, and the goal. */
   summary: string
   /** Tribelt, the typical competitor (where there is one), the best competitor, and the goal. */
@@ -269,6 +274,7 @@ export function goalPage(facts: Facts, target: PlanTarget): GoalPage | undefined
     target,
     name: def.name,
     purpose: def.purpose(checks),
+    goal: w.goal,
     summary: summaryOf(f, w.now, goalText, leader),
     bars,
     barsMax: scaleOf(def, checks, bars.map((b) => b.value * 1.1)),

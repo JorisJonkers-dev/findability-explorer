@@ -33,7 +33,7 @@ describe('the Prompt test’s measures', () => {
     expect([scopeName('germany'), familyName('tri_flex_turn_curve'), modeName('web')]).toEqual(['Germany (German)', 'Curve-going (Tri-Flex)', 'With web search'])
     expect([statusName('running'), statusName('failed')]).toEqual(['Running', 'Failed'])
     // A value the contract adds later still reads as itself.
-    expect([scopeName('mars' as never), familyName('x' as never), modeName('y' as never)]).toEqual(['mars', 'x', 'y'])
+    expect([scopeName('mars'), familyName('x' as never), modeName('y' as never)]).toEqual(['mars', 'x', 'y'])
   })
 
   it('tells a run’s progress, cost and date', () => {

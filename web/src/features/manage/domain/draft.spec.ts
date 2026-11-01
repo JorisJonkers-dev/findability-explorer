@@ -162,7 +162,9 @@ describe('what publishing changes', () => {
 
   it('sees a new order as a change', () => {
     const draft = draftOf(PUBLISHED)
-    const reordered = { ...draft, questions: [draft.questions[1]!, draft.questions[0]!, draft.questions[2]!] }
+    const [a, b, c] = draft.questions
+    if (!a || !b || !c) throw new Error('three questions')
+    const reordered = { ...draft, questions: [b, a, c] }
     expect(diffOf(PUBLISHED, reordered).reordered).toBe(true)
     expect(isUnchanged(diffOf(PUBLISHED, reordered))).toBe(false)
   })

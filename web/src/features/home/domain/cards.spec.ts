@@ -1,35 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { overviewFixture, planFixture } from '../../../testing/numbersFixtures'
-import { lowerFirst, sectionCards } from './cards'
+import { sectionTiles } from './cards'
 
-describe('lowerFirst', () => {
-  it('starts a title in lower case', () => {
-    expect(lowerFirst('Submit tribelt.nl')).toBe('submit tribelt.nl')
-    expect(lowerFirst('')).toBe('')
-  })
-})
-
-describe('sectionCards', () => {
-  it('shows a figure from each section, with the way in', () => {
-    const cards = sectionCards(overviewFixture(), planFixture())
-    expect(cards.map((c) => [c.id, c.number, c.label, c.big, c.cta, c.path])).toEqual([
-      ['ai-responses', '02', 'AI RESPONSES', '24%', 'Open AI responses', '/ai-responses'],
-      ['competitors', '05', 'COMPETITORS', '24', 'Open Competitors', '/competitors'],
-      ['terms', '04', 'SEARCH TERMS', '30', 'Open Search terms', '/terms'],
-      ['recommendations', '06', 'RECOMMENDATIONS', '4', 'Open Recommendations', '/recommendations'],
+describe('the numbered tiles', () => {
+  it('give each part of the app its key figure and the way in', () => {
+    const tiles = sectionTiles(overviewFixture(), planFixture())
+    expect(tiles.map((t) => [t.number, t.label, t.big, t.text, t.path])).toEqual([
+      ['02', 'AI responses', '24%', 'of AI responses name Tribelt.', '/ai-responses'],
+      ['03', 'AI readiness', '3 of 8', 'AI readiness checks passed by tribelt.nl.', '/ai-readiness'],
+      ['04', 'Search terms', '30', 'of the 387 search terms appear on tribelt.nl.', '/terms'],
+      ['05', 'Competitors', '24', 'competitors make metal belts buyers could choose instead.', '/competitors'],
+      ['06', 'Recommendations', '3', 'changes to make on tribelt.nl, ranked by value.', '/recommendations'],
     ])
-    expect(cards[2]?.text).toBe('of the 387 terms buyers search with appear on tribelt.nl.')
-    expect(cards[3]?.text).toBe('changes to tribelt.nl, ranked. The first is to submit tribelt.nl to Google and Bing.')
   })
 
-  it('says so when no Prompt run has finished or the plan is empty', () => {
+  it('says so before a Prompt run or a readiness check', () => {
     const overview = overviewFixture()
     overview.aiSearch.companies = []
     const plan = planFixture()
-    plan.improvements = []
-    const cards = sectionCards(overview, plan)
-    expect(cards[0]?.big).toBe('–')
-    expect(cards[0]?.text).toContain('No Prompt run has finished yet.')
-    expect(cards[3]).toMatchObject({ big: '0', text: 'changes to tribelt.nl, ranked.' })
+    plan.watched = []
+    const tiles = sectionTiles(overview, plan)
+    expect(tiles[0]).toMatchObject({ big: '–', text: 'No Prompt run has finished yet.' })
+    expect(tiles[1]).toMatchObject({ big: '–', text: 'tribelt.nl has not been checked for AI readiness yet.' })
   })
 })

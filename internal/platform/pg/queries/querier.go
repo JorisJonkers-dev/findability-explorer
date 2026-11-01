@@ -47,6 +47,7 @@ type Querier interface {
 	AdoptStalePromptRun(ctx context.Context, arg AdoptStalePromptRunParams) ([]uuid.UUID, error)
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
 	AnalysisStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
+	BeatWork(ctx context.Context, arg BeatWorkParams) (int64, error)
 	BeginRecommendationRun(ctx context.Context, arg BeginRecommendationRunParams) error
 	BeginWork(ctx context.Context, arg BeginWorkParams) error
 	// Every phrase a finished scan of a company found. Whether the map holds it is the review's to
@@ -72,8 +73,10 @@ type Querier interface {
 	DeleteRemovedTerm(ctx context.Context, arg DeleteRemovedTermParams) (int64, error)
 	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
 	DeleteTermDecision(ctx context.Context, candidateID string) (int64, error)
-	// Work the journal records runs in memory: a server that stops ends it.
-	EndAbandonedWork(ctx context.Context, finishedAt pgtype.Timestamptz) (int64, error)
+	// Work the journal records runs in memory, and beats while it runs: work last heard of before
+	// stale_before was left by a server that stopped. Work begun before the heartbeat counts from when
+	// it began, before unbeaten_before.
+	EndAbandonedWork(ctx context.Context, arg EndAbandonedWorkParams) (int64, error)
 	EndWork(ctx context.Context, arg EndWorkParams) (int64, error)
 	FailAnalysis(ctx context.Context, arg FailAnalysisParams) error
 	FailRunningAnalyses(ctx context.Context, arg FailRunningAnalysesParams) error

@@ -36,6 +36,8 @@ func (j *journal) End(_ context.Context, _ uuid.UUID, o work.Outcome, _ time.Tim
 	return nil
 }
 
+func (j *journal) Beat(context.Context, uuid.UUID, time.Time) error { return nil }
+
 func (j *journal) outcomes() []work.Outcome {
 	j.mu.Lock()
 	defer j.mu.Unlock()

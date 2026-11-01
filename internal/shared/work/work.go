@@ -7,6 +7,7 @@ package work
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,16 +66,53 @@ type Outcome struct {
 	InputTokens, OutputTokens int64
 }
 
-// Journal records a piece of work: begun, and later how it ended.
+// Journal records a piece of work: begun, beating while it runs, and later how it ended.
 type Journal interface {
 	Begin(ctx context.Context, kind Kind, by string, at time.Time) (uuid.UUID, error)
+	// Beat records that the work still runs, at.
+	Beat(ctx context.Context, id uuid.UUID, at time.Time) error
 	End(ctx context.Context, id uuid.UUID, o Outcome, at time.Time) error
+}
+
+const (
+	// Heartbeat is how often running work tells its journal it still runs.
+	Heartbeat = 30 * time.Second
+	// Stale is how long running work may go unheard of before it counts as left behind by a server
+	// that stopped: four heartbeats, so a slow beat or two does not end live work.
+	Stale = 4 * Heartbeat
+)
+
+// beatEvery is Heartbeat; tests shorten it.
+var beatEvery = Heartbeat //nolint:gochecknoglobals // a test seam for the heartbeat's interval
+
+// Beating calls beat every interval, under ctx, until the stop it returns is called; stop waits for
+// a beat under way, so none lands after it.
+func Beating(ctx context.Context, every time.Duration, beat func(context.Context)) (stop func()) {
+	ctx, cancel := context.WithCancel(ctx)
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		tick := time.NewTicker(every)
+		defer tick.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-tick.C:
+				beat(ctx)
+			}
+		}
+	})
+	return func() {
+		cancel()
+		wg.Wait()
+	}
 }
 
 // Entry is a piece of work begun in a journal, or nothing to record.
 type Entry struct {
 	journal Journal
 	id      uuid.UUID
+	stop    func()
 }
 
 // Start begins a piece of work in j, by whom, at; without a journal it records nothing. A journal
@@ -88,14 +126,20 @@ func Start(ctx context.Context, j Journal, kind Kind, by string, at time.Time, r
 		report(fmt.Errorf("record the %s begun: %w", kind, err))
 		return Entry{}
 	}
-	return Entry{journal: j, id: id}
+	stop := Beating(context.WithoutCancel(ctx), beatEvery, func(ctx context.Context) {
+		if err := j.Beat(ctx, id, time.Now().UTC()); err != nil {
+			report(fmt.Errorf("record that the %s still runs: %w", kind, err))
+		}
+	})
+	return Entry{journal: j, id: id, stop: stop}
 }
 
-// Finish records how the work ended; a journal that fails is reported.
+// Finish stops the work's heartbeat and records how it ended; a journal that fails is reported.
 func (e Entry) Finish(ctx context.Context, o Outcome, at time.Time, report func(error)) {
 	if e.journal == nil {
 		return
 	}
+	e.stop()
 	if err := e.journal.End(ctx, e.id, o, at); err != nil {
 		report(fmt.Errorf("record how the work ended: %w", err))
 	}

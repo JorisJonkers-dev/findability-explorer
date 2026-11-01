@@ -28,7 +28,7 @@ type source struct {
 	since     time.Time
 	limits    []int
 	failOn    string
-	abandoned time.Time
+	abandoned, staleBefore, unbeatenBefore time.Time
 }
 
 func (s *source) err(op string) error {
@@ -58,8 +58,8 @@ func (s *source) MonthUsage(_ context.Context, since time.Time) (domain.MonthUsa
 	return s.usage, s.err("MonthUsage")
 }
 
-func (s *source) EndAbandoned(_ context.Context, at time.Time) (int, error) {
-	s.abandoned = at
+func (s *source) EndAbandoned(_ context.Context, at, staleBefore, unbeatenBefore time.Time) (int, error) {
+	s.abandoned, s.staleBefore, s.unbeatenBefore = at, staleBefore, unbeatenBefore
 	return 2, s.err("EndAbandoned")
 }
 
@@ -108,8 +108,9 @@ func TestSpendingIsThisMonths(t *testing.T) {
 func TestWorkLeftRunningWhenTheServerStoppedIsEndedAsFailed(t *testing.T) {
 	src := &source{}
 	svc := app.New(src, func() time.Time { return now })
-	if n, err := svc.EndAbandoned(t.Context()); n != 2 || err != nil || !src.abandoned.Equal(now) {
-		t.Errorf("EndAbandoned = %d, %v at %s", n, err, src.abandoned)
+	if n, err := svc.EndAbandoned(t.Context()); n != 2 || err != nil || !src.abandoned.Equal(now) ||
+		!src.staleBefore.Equal(now.Add(-work.Stale)) || !src.unbeatenBefore.Equal(now.Add(-time.Hour)) {
+		t.Errorf("EndAbandoned = %d, %v at %s, stale before %s, unbeaten before %s", n, err, src.abandoned, src.staleBefore, src.unbeatenBefore)
 	}
 	src.failOn = "EndAbandoned"
 	if _, err := svc.EndAbandoned(t.Context()); !errors.Is(err, errBoom) {

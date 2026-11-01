@@ -1,6 +1,11 @@
 -- name: BeginWork :exec
-INSERT INTO work_runs (id, kind, started_by, started_at)
-VALUES (@id, @kind, @started_by, @started_at);
+INSERT INTO work_runs (id, kind, started_by, started_at, heartbeat_at)
+VALUES (@id, @kind, @started_by, @started_at, @started_at);
+
+-- name: BeatWork :execrows
+UPDATE work_runs
+SET heartbeat_at = @at
+WHERE id = @id AND finished_at IS NULL;
 
 -- name: EndWork :execrows
 UPDATE work_runs
@@ -9,10 +14,13 @@ SET finished_at = @finished_at, ending = @ending, done = @done, total = @total, 
 WHERE id = @id AND finished_at IS NULL;
 
 -- name: EndAbandonedWork :execrows
--- Work the journal records runs in memory: a server that stops ends it.
+-- Work the journal records runs in memory, and beats while it runs: work last heard of before
+-- stale_before was left by a server that stopped. Work begun before the heartbeat counts from when
+-- it began, before unbeaten_before.
 UPDATE work_runs
 SET finished_at = @finished_at, ending = 'failed'
-WHERE finished_at IS NULL;
+WHERE finished_at IS NULL
+    AND ((heartbeat_at IS NOT NULL AND heartbeat_at < @stale_before) OR (heartbeat_at IS NULL AND started_at < @unbeaten_before));
 
 -- name: ListWork :many
 -- The running work and the newest lim ended pieces.

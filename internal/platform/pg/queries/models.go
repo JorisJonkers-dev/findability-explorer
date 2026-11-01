@@ -440,18 +440,20 @@ type Recommendation struct {
 }
 
 type RecommendationRun struct {
-	ID           uuid.UUID
-	StartedAt    time.Time
-	FinishedAt   pgtype.Timestamptz
-	Ending       pgtype.Text
-	StartedBy    string
-	Model        string
-	Gaps         int64
-	Added        int64
-	Replaced     int64
-	Kept         int64
-	InputTokens  int64
-	OutputTokens int64
+	ID              uuid.UUID
+	StartedAt       time.Time
+	FinishedAt      pgtype.Timestamptz
+	Ending          pgtype.Text
+	StartedBy       string
+	Model           string
+	Gaps            int64
+	Added           int64
+	Replaced        int64
+	Kept            int64
+	InputTokens     int64
+	OutputTokens    int64
+	HeartbeatAt     pgtype.Timestamptz
+	StopRequestedAt pgtype.Timestamptz
 }
 
 type RemovedTerm struct {
@@ -521,4 +523,5 @@ type WorkRun struct {
 	Failed       int64
 	InputTokens  int64
 	OutputTokens int64
+	HeartbeatAt  pgtype.Timestamptz
 }

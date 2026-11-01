@@ -69,6 +69,8 @@ func (j *journal) End(_ context.Context, _ uuid.UUID, o work.Outcome, _ time.Tim
 	return nil
 }
 
+func (j *journal) Beat(context.Context, uuid.UUID, time.Time) error { return nil }
+
 // writing is the world's service with a model writing recommendations, runs in place.
 func writing(w *world, wr app.Writer, j *journal, budget app.BudgetSpent, reported *[]error) *app.Service {
 	svc := service(w)

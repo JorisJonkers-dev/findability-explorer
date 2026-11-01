@@ -192,9 +192,28 @@ func (q *Queries) ActivityScans(ctx context.Context, lim int32) ([]ActivityScans
 	return items, nil
 }
 
+const beatWork = `-- name: BeatWork :execrows
+UPDATE work_runs
+SET heartbeat_at = $1
+WHERE id = $2 AND finished_at IS NULL
+`
+
+type BeatWorkParams struct {
+	At pgtype.Timestamptz
+	ID uuid.UUID
+}
+
+func (q *Queries) BeatWork(ctx context.Context, arg BeatWorkParams) (int64, error) {
+	result, err := q.db.Exec(ctx, beatWork, arg.At, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const beginWork = `-- name: BeginWork :exec
-INSERT INTO work_runs (id, kind, started_by, started_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO work_runs (id, kind, started_by, started_at, heartbeat_at)
+VALUES ($1, $2, $3, $4, $4)
 `
 
 type BeginWorkParams struct {
@@ -218,11 +237,20 @@ const endAbandonedWork = `-- name: EndAbandonedWork :execrows
 UPDATE work_runs
 SET finished_at = $1, ending = 'failed'
 WHERE finished_at IS NULL
+    AND ((heartbeat_at IS NOT NULL AND heartbeat_at < $2) OR (heartbeat_at IS NULL AND started_at < $3))
 `
 
-// Work the journal records runs in memory: a server that stops ends it.
-func (q *Queries) EndAbandonedWork(ctx context.Context, finishedAt pgtype.Timestamptz) (int64, error) {
-	result, err := q.db.Exec(ctx, endAbandonedWork, finishedAt)
+type EndAbandonedWorkParams struct {
+	FinishedAt     pgtype.Timestamptz
+	StaleBefore    pgtype.Timestamptz
+	UnbeatenBefore time.Time
+}
+
+// Work the journal records runs in memory, and beats while it runs: work last heard of before
+// stale_before was left by a server that stopped. Work begun before the heartbeat counts from when
+// it began, before unbeaten_before.
+func (q *Queries) EndAbandonedWork(ctx context.Context, arg EndAbandonedWorkParams) (int64, error) {
+	result, err := q.db.Exec(ctx, endAbandonedWork, arg.FinishedAt, arg.StaleBefore, arg.UnbeatenBefore)
 	if err != nil {
 		return 0, err
 	}

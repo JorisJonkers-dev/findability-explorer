@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/activity/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 // ScanRows is how many of the newest scans Activity reads: enough for the last pieces of work when
@@ -24,8 +25,9 @@ type Source interface {
 	Recorded(ctx context.Context, limit int) ([]domain.Recorded, error)
 	// MonthUsage is what each kind of work used since since.
 	MonthUsage(ctx context.Context, since time.Time) (domain.MonthUsage, error)
-	// EndAbandoned ends, as failed at at, the journal's work still running, and counts it.
-	EndAbandoned(ctx context.Context, at time.Time) (int, error)
+	// EndAbandoned ends, as failed at at, the journal's running work last heard of before
+	// staleBefore, or begun before unbeatenBefore without a heartbeat, and counts it.
+	EndAbandoned(ctx context.Context, at, staleBefore, unbeatenBefore time.Time) (int, error)
 }
 
 // Service runs the Activity use cases.
@@ -73,10 +75,15 @@ func (s *Service) Spending(ctx context.Context) ([]domain.SpendLine, time.Time, 
 	return domain.SpendingOf(u), since, nil
 }
 
-// EndAbandoned ends, as failed, the recorded work a stopped server left running: it runs in memory
-// and stopped with the server. Call it at startup, before any work begins.
+// Unbeaten is how long work begun before work beat may run before it counts as left behind.
+const Unbeaten = time.Hour
+
+// EndAbandoned ends, as failed, the recorded work a stopped server left running: work runs in
+// memory and beats while it runs, so work unheard of for work.Stale is no live pod's. Call it at
+// startup and now and then; work a live pod runs, as in a rolling deploy, goes on.
 func (s *Service) EndAbandoned(ctx context.Context) (int, error) {
-	n, err := s.source.EndAbandoned(ctx, s.now())
+	now := s.now()
+	n, err := s.source.EndAbandoned(ctx, now, now.Add(-work.Stale), now.Add(-Unbeaten))
 	if err != nil {
 		return 0, fmt.Errorf("end the work left running: %w", err)
 	}

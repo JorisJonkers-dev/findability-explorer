@@ -64,9 +64,24 @@ func (r *Repository) End(ctx context.Context, id uuid.UUID, o work.Outcome, at t
 	return nil
 }
 
-// EndAbandoned ends, as failed at at, the work still running, and counts it.
-func (r *Repository) EndAbandoned(ctx context.Context, at time.Time) (int, error) {
-	n, err := r.store.Queries().EndAbandonedWork(ctx, pgtype.Timestamptz{Time: at, Valid: true})
+// Beat records that the work with id still runs, at; an error when it ended.
+func (r *Repository) Beat(ctx context.Context, id uuid.UUID, at time.Time) error {
+	n, err := r.store.Queries().BeatWork(ctx, queries.BeatWorkParams{ID: id, At: pgtype.Timestamptz{Time: at, Valid: true}})
+	if err != nil {
+		return fmt.Errorf("beat work: %w", err)
+	}
+	if n == 0 {
+		return errEnded
+	}
+	return nil
+}
+
+// EndAbandoned ends, as failed at at, the running work last heard of before staleBefore, or, begun
+// before work beat, begun before unbeatenBefore; and counts it.
+func (r *Repository) EndAbandoned(ctx context.Context, at, staleBefore, unbeatenBefore time.Time) (int, error) {
+	n, err := r.store.Queries().EndAbandonedWork(ctx, queries.EndAbandonedWorkParams{
+		FinishedAt: pgtype.Timestamptz{Time: at, Valid: true}, StaleBefore: pgtype.Timestamptz{Time: staleBefore, Valid: true}, UnbeatenBefore: unbeatenBefore,
+	})
 	if err != nil {
 		return 0, fmt.Errorf("end the work left running: %w", err)
 	}

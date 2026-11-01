@@ -36,6 +36,8 @@ func (j *journal) End(_ context.Context, _ uuid.UUID, o work.Outcome, _ time.Tim
 	return nil
 }
 
+func (j *journal) Beat(context.Context, uuid.UUID, time.Time) error { return nil }
+
 func journalled(r *repo, d *directory, rv app.Reviewers, j *journal, onError func(error)) *app.Service {
 	return app.New(r, gateways{gw: newGateway()}, d, func() time.Time { return start }, app.Config{Owner: "a"}, func(uuid.UUID, error) {},
 		app.WithSpawn(func(f func()) { f() }), app.WithReviewers(rv, &pages{}, onError), app.WithJournal(j))

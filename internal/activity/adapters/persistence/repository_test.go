@@ -1,10 +1,12 @@
 package persistence_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/activity/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/activity/domain"
@@ -71,9 +73,19 @@ func TestTheJournalRecordsWorkAsItBeginsAndEnds(t *testing.T) {
 	if got, _ := repo.Recorded(ctx, 0); len(got) != 1 || got[0].ID != check {
 		t.Errorf("with no room for ended work = %+v", got)
 	}
-	// A restart ends what was running, as failed.
-	if n, err := repo.EndAbandoned(ctx, at.Add(time.Hour)); n != 1 || err != nil {
+	// The check beats while it runs: an instance that sweeps before it went unheard ends nothing.
+	if err := repo.Beat(ctx, check, at.Add(10*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := repo.EndAbandoned(ctx, at.Add(11*time.Minute), at.Add(9*time.Minute), at.Add(-time.Hour)); n != 0 || err != nil {
+		t.Fatalf("EndAbandoned of live work = %d, %v", n, err)
+	}
+	// Once unheard of since before the stale moment, it was left by a server that stopped: ended as failed.
+	if n, err := repo.EndAbandoned(ctx, at.Add(time.Hour), at.Add(11*time.Minute), at.Add(-time.Hour)); n != 1 || err != nil {
 		t.Fatalf("EndAbandoned = %d, %v", n, err)
+	}
+	if err := repo.Beat(ctx, check, at.Add(2*time.Hour)); err == nil {
+		t.Error("ended work beat")
 	}
 	if got, _ := repo.Recorded(ctx, 10); len(got) != 2 {
 		t.Fatalf("after the restart = %+v", got)
@@ -204,5 +216,36 @@ func TestPromptRunsScansAndThisMonthsUsageAreReadWithTheirCost(t *testing.T) {
 		u.TermReview.Input != 300 || u.TermReview.Output != 30 || u.CandidateChecks.Input != 400 || u.CandidateChecks.Output != 40 ||
 		u.Scans.Input != 0 || u.RecommendationRuns.Input != 5000 || u.RecommendationRuns.Output != 500 {
 		t.Errorf("this month = %+v", u)
+	}
+}
+
+// Work begun before the heartbeat existed has none: it counts from when it began, and only after an hour.
+func TestWorkBegunWithoutAHeartbeatIsEndedOnlyLongAfter(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	url := pgtest.URL(t)
+	store, err := pg.Open(ctx, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(store.Close)
+	conn, err := pgx.Connect(ctx, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.Close(context.Background()) })
+	repo := persistence.New(store)
+	old, err := repo.Begin(ctx, work.KindTermReview, "language model", at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.Exec(ctx, "UPDATE work_runs SET heartbeat_at = NULL WHERE id = $1", old); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := repo.EndAbandoned(ctx, at.Add(30*time.Minute), at.Add(30*time.Minute), at.Add(-30*time.Minute)); n != 0 || err != nil {
+		t.Fatalf("EndAbandoned within the hour = %d, %v", n, err)
+	}
+	if n, err := repo.EndAbandoned(ctx, at.Add(2*time.Hour), at.Add(2*time.Hour), at.Add(time.Hour)); n != 1 || err != nil {
+		t.Fatalf("EndAbandoned after the hour = %d, %v", n, err)
 	}
 }

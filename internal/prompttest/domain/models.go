@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 )
 
 // DefaultProviders are the large providers whose cheapest model a Prompt run asks, by their
@@ -22,8 +23,10 @@ const ExtractorModel = "google/gemini-2.5-flash-lite"
 // CatalogueModel is a model on OpenRouter's price list. Prices are dollars per token; a price
 // below zero means it varies (a router, not a model).
 type CatalogueModel struct {
-	ID              string
-	Name            string
+	ID   string
+	Name string
+	// Created is when OpenRouter listed the model; zero when it does not say.
+	Created         time.Time
 	PromptPrice     float64
 	CompletionPrice float64
 	// WebSearchPrice is what one search of the model's own costs, in dollars, for a model that

@@ -62,6 +62,7 @@ type analyses struct {
 	insight *insightCases
 	// activity stands in for the Activity use cases; a fresh one when nil.
 	activity *activityCases
+	steps    *stepCases
 }
 
 // companyRepo is an in-memory store of added companies.
@@ -166,7 +167,7 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 	)
 	companies.WithBatch(batchPorts{}, batchPorts{})
 	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{
-		Terminology: terminology, Analysis: a, Companies: companies, LLM: l, PromptTest: a.prompts(), Insight: a.insights(), Activity: a.activities(), Auth: auth{},
+		Terminology: terminology, Analysis: a, Companies: companies, LLM: l, PromptTest: a.prompts(), Insight: a.insights(), Activity: a.activities(), ClaudeSteps: a.claudeSteps(), Auth: auth{},
 	})
 	if err != nil {
 		t.Fatal(err)

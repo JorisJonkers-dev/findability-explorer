@@ -1,11 +1,10 @@
-import { createRouter, createWebHistory, type RouteLocationNormalizedLoaded, type Router, type RouterHistory } from 'vue-router'
-import { goalTabTitle } from '../features/goals/domain/goals'
+import { createRouter, createWebHistory, type Router, type RouterHistory } from 'vue-router'
 import { trackPreviousPath } from '../features/shell/composables/navigation'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** The page's name in the browser tab, or how the page's address names it. */
-    title?: string | ((route: RouteLocationNormalizedLoaded) => string)
+    /** The page's name in the browser tab. */
+    title?: string
     /** Results is for everyone signed in; Manage is for administrators. */
     view?: 'results' | 'manage'
   }
@@ -22,27 +21,50 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/goals/:measure',
         name: 'goal',
-        component: () => import('../features/numbers/components/NumberDetailView.vue'),
+        component: () => import('../features/goals/components/GoalView.vue'),
         props: (to) => ({ measure: String(to.params.measure) }),
-        meta: { title: (route) => goalTabTitle(String(route.params.measure)), view: 'results' },
+        meta: { title: 'Goal', view: 'results' },
       },
       {
         path: '/ai-responses',
         name: 'ai-responses',
-        component: () => import('../features/ai-search/components/AiSearchView.vue'),
+        component: () => import('../features/ai-search/components/AiResponsesView.vue'),
         meta: { title: 'AI responses', view: 'results' },
       },
       {
         path: '/ai-responses/all',
         name: 'every-response',
-        component: () => import('../features/prompt-test/components/PromptTestView.vue'),
+        component: () => import('../features/prompt-test/components/EveryResponseView.vue'),
         meta: { title: 'Every response', view: 'results' },
+      },
+      {
+        path: '/ai-responses/:id',
+        name: 'response',
+        component: () => import('../features/prompt-test/components/ResponseView.vue'),
+        props: (to) => ({ id: String(to.params.id) }),
+        meta: { title: 'Response', view: 'results' },
       },
       {
         path: '/ai-readiness',
         name: 'ai-readiness',
         component: () => import('../features/readiness/components/ReadinessView.vue'),
         meta: { title: 'AI readiness', view: 'results' },
+        // 1.12.0 picked a site on this page with ?site=; it has a page of its own now.
+        beforeEnter: (to) => (typeof to.query.site === 'string' ? `/ai-readiness/${to.query.site}` : true),
+      },
+      {
+        path: '/ai-readiness/:id',
+        name: 'site',
+        component: () => import('../features/readiness/components/CompanyReadiness.vue'),
+        props: (to) => ({ companyId: String(to.params.id) }),
+        meta: { title: 'Site', view: 'results' },
+      },
+      {
+        path: '/ai-readiness/:id/files',
+        name: 'site-files',
+        component: () => import('../features/readiness/components/FilesView.vue'),
+        props: (to) => ({ companyId: String(to.params.id) }),
+        meta: { title: 'Files found', view: 'results' },
       },
       { path: '/terms', name: 'terms', component: () => import('../features/terminology/components/TermsView.vue'), meta: { title: 'Search terms', view: 'results' } },
       // Every term in the map, ranked, with its filters in the query: a page of its own, linked from Search terms.
@@ -113,8 +135,38 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       {
         path: '/manage/prompt-test',
         name: 'manage-prompt-test',
-        component: () => import('../features/prompt-test/components/PromptSettingsPage.vue'),
+        component: () => import('../features/manage/components/PromptTestIndex.vue'),
         meta: { title: 'Prompt test', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/questions',
+        name: 'prompt-questions',
+        component: () => import('../features/manage/components/QuestionsView.vue'),
+        meta: { title: 'Questions', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/models',
+        name: 'prompt-models',
+        component: () => import('../features/manage/components/ModelsView.vue'),
+        meta: { title: 'Models', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/schedule',
+        name: 'prompt-schedule',
+        component: () => import('../features/manage/components/ScheduleView.vue'),
+        meta: { title: 'Schedule', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/fact-sheet',
+        name: 'prompt-fact-sheet',
+        component: () => import('../features/manage/components/FactSheetView.vue'),
+        meta: { title: 'Fact sheet', view: 'manage' },
+      },
+      {
+        path: '/manage/prompt-test/runs',
+        name: 'prompt-runs',
+        component: () => import('../features/manage/components/RunsView.vue'),
+        meta: { title: 'Runs', view: 'manage' },
       },
       // Website scans.
       { path: '/manage/scans', name: 'manage-scans', component: () => import('../features/manage/components/ScansIndex.vue'), meta: { title: 'Website scans', view: 'manage' } },
@@ -175,12 +227,6 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       { path: '/manage/terms', name: 'term-list', component: () => import('../features/manage/components/TermListIndex.vue'), meta: { title: 'Search term list', view: 'manage' } },
       { path: '/manage/terms/review', name: 'term-review', component: () => import('../features/review/components/TermReviewRunPage.vue'), meta: { title: 'Term review', view: 'manage' } },
       {
-        path: '/manage/terms/edit',
-        name: 'term-edit',
-        component: () => import('../features/terminology/components/HandTermsPage.vue'),
-        meta: { title: 'Add or remove terms', view: 'manage' },
-      },
-      {
         path: '/manage/terms/waiting',
         name: 'waiting-terms',
         component: () => import('../features/review/components/TermReviewPage.vue'),
@@ -209,7 +255,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         meta: { title: 'Claude models and instructions', view: 'manage' },
       },
       {
-        path: '/manage/claude-steps/:step(reading|matching|candidateMerge|candidateCheck|termReview)',
+        path: '/manage/claude-steps/:step(matching|recommendations)',
         name: 'claude-step',
         component: () => import('../features/claude-steps/components/ClaudeStepView.vue'),
         props: (to) => ({ stepId: String(to.params.step) }),
@@ -255,6 +301,8 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
     ],
     scrollBehavior: (to, from, saved) => {
       if (saved) return saved
+      // Help brings the topic at its address into view itself.
+      if (to.name === 'help-topic') return false
       // Filters, a picked company and polling change the query, not the view; only a new view starts at the top.
       return to.matched[0]?.components?.default === from.matched[0]?.components?.default ? false : { top: 0 }
     },

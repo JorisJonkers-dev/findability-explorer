@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Plan, PlanImprovement } from '../../../infrastructure/api/types.gen'
 import { details } from '../../../testing/fixtures'
 import { buttonNamed, manageApi } from '../../../testing/manageApi'
+import { recommendationRuns } from '../../../testing/recommendationRuns'
 import { type Handler, json, mountApp, problem, settle } from '../../../testing/mountApp'
 
 const item = (id: string, title: string, auto: boolean, done: boolean): PlanImprovement => ({ ...details, id, title, moves: 'citations', measure: 'citationShare', auto, done })
@@ -28,6 +29,7 @@ function server(extra: Record<string, Handler> = {}) {
   const sent: unknown[] = []
   const handle = manageApi({
     'GET /api/v1/plan': () => json(planOf(items)),
+    'GET /api/v1/admin/recommendation-runs': () => json(recommendationRuns()),
     'PUT /api/v1/admin/plan/improvements/listings': async (r) => {
       const body = (await r.json()) as { done: boolean }
       sent.push(body)
@@ -56,6 +58,57 @@ describe('Recommendations in Manage', () => {
     expect(widget(wrapper, 'Open recommendations').text()).toContain('21 done')
     expect(widget(wrapper, 'Tick off yourself').text()).toContain('1waiting')
     expect(widget(wrapper, 'Goals').get('a').attributes('href')).toBe('/manage/recommendations/goals')
+  })
+
+  it('offers a Recommendation run with what it reads, replaces, and costs, and lists the past runs', async () => {
+    const { wrapper } = await mountApp(server().handle, '/manage/recommendations')
+    const stale = widget(wrapper, 'The page text is older than the responses')
+    expect(stale.text()).toContain('tribelt.nl was last scanned before the newest Prompt run.')
+    expect(stale.get('a').attributes('href')).toBe('/manage/scans')
+    const start = widget(wrapper, 'Start a Recommendation run')
+    expect(start.text()).toContain('Reads the newest Prompt run (1 November 2026)')
+    expect(start.text()).toContain('This replaces 12 open recommendations. Those you marked as done or edited stay.')
+    expect(start.text()).toContain('40 gaps to write, about $0.07 from the Anthropic key.')
+    expect(start.find('a[href="/manage/claude-steps/recommendations"]').exists()).toBe(true)
+    const rows = widget(wrapper, 'Past runs').findAll('tbody tr').map((r) => r.findAll('td').map((td) => td.text()))
+    expect(rows[0]).toEqual(['1 November 2026, 08:00', 'Done', 'claude-haiku-5-5', '38', '10', '2', '$0.06'])
+    expect(rows[1]?.[1]).toBe('Stopped by hand')
+  })
+
+  it('starts a run, and stops the one that runs', async () => {
+    const sent: string[] = []
+    let running = false
+    const { wrapper } = await mountApp(
+      server({
+        'GET /api/v1/admin/recommendation-runs': () => json(recommendationRuns({ running, stale: false, runs: [] })),
+        'POST /api/v1/admin/recommendation-runs': () => {
+          sent.push('start')
+          running = true
+          return json(recommendationRuns({ running: true, stale: false, runs: [] }), 202)
+        },
+        'POST /api/v1/admin/recommendation-runs/stop': () => {
+          sent.push('stop')
+          return new Response(null, { status: 204 })
+        },
+      }).handle,
+      '/manage/recommendations',
+    )
+    expect(wrapper.findAll('h2').some((h) => h.text() === 'The page text is older than the responses')).toBe(false)
+    expect(widget(wrapper, 'Past runs').text()).toContain('No Recommendation run has run yet.')
+    await buttonNamed(wrapper, 'Start a Recommendation run').trigger('click')
+    await settle()
+    expect(wrapper.text()).toContain('The Recommendation run started.')
+    await buttonNamed(wrapper, 'Stop the Recommendation run').trigger('click')
+    await settle()
+    expect(sent).toEqual(['start', 'stop'])
+    expect(wrapper.text()).toContain('The run stops after the batch it writes.')
+  })
+
+  it('asks for an Anthropic key when there is none', async () => {
+    const { wrapper } = await mountApp(server({ 'GET /api/v1/admin/recommendation-runs': () => json(recommendationRuns({ noKey: true, model: undefined })) }).handle, '/manage/recommendations')
+    const start = widget(wrapper, 'Start a Recommendation run')
+    expect(start.get('a[href="/manage/keys/anthropic"]').text()).toBe('Add an Anthropic key')
+    expect(start.findAll('button').length).toBe(0)
   })
 })
 

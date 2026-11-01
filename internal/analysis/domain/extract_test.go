@@ -219,6 +219,22 @@ func TestFindKnownTerms(t *testing.T) {
 	if got[2].Text != "spiral" || got[2].Occurrences != 2 {
 		t.Errorf("third = %+v, want spiral twice", got[2])
 	}
+	// Each term records the pages in its language it is on, by their place among the pages read.
+	if !slices.Equal(got[0].Pages, []int{0}) || !slices.Equal(got[1].Pages, []int{1}) || !slices.Equal(got[2].Pages, []int{0}) {
+		t.Errorf("pages = %v, %v, %v; want [0], [1], [0]", got[0].Pages, got[1].Pages, got[2].Pages)
+	}
+}
+
+// A term on many pages records the first MaxTermPages of them.
+func TestFindKnownTermsRecordsAtMostMaxTermPages(t *testing.T) {
+	pages := []domain.Page{{Language: "en", Text: "Nothing here."}}
+	for range domain.MaxTermPages + 2 {
+		pages = append(pages, domain.Page{Language: "en", Text: "An eyelink belt."})
+	}
+	got := domain.FindKnownTerms(pages, []domain.GlossaryTerm{{Text: "eyelink belt", Language: "en"}})
+	if len(got) != 1 || len(got[0].Pages) != domain.MaxTermPages || got[0].Pages[0] != 1 || got[0].Occurrences != domain.MaxTermPages+2 {
+		t.Fatalf("found %+v, want the term on its first %d pages from the second", got, domain.MaxTermPages)
+	}
 }
 
 // A term counts only on the pages in its language: the German term on the English page, and the

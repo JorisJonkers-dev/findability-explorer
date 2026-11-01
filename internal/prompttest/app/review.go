@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 // The language model's review of the competitor candidates (ADR-0006, ADR-0009): Claude Haiku, on
@@ -75,6 +76,37 @@ type runState struct {
 	running  bool
 	stopping bool
 	problem  ReviewProblem
+	// counts and in, out are what the run did and used, for the work journal.
+	counts  work.Counts
+	in, out int64
+}
+
+// planned sets how many companies the run checks.
+func (r *runState) planned(n int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.counts.Total = n
+}
+
+// did counts n companies checked.
+func (r *runState) did(n int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.counts.Done += n
+}
+
+// used counts what a request used.
+func (r *runState) used(u domain.ReviewUsage) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.in, r.out = r.in+u.InputTokens, r.out+u.OutputTokens
+}
+
+// outcome is the run's outcome, ended as ending.
+func (r *runState) outcome(ending work.Ending) work.Outcome {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return work.Outcome{Ending: ending, Counts: r.counts, InputTokens: r.in, OutputTokens: r.out}
 }
 
 func (r *runState) state() ReviewState {
@@ -91,6 +123,7 @@ func (r *runState) begin() bool {
 		return false
 	}
 	r.running, r.stopping = true, false
+	r.counts, r.in, r.out = work.Counts{}, 0, 0
 	return true
 }
 
@@ -127,7 +160,7 @@ func (s *Service) ReviewState() ReviewState { return s.review.candidates.state()
 
 // StartReview starts a review in the background, unless one is running; it reports whether it started.
 func (s *Service) StartReview(ctx context.Context) bool {
-	return s.startIn(ctx, &s.review.candidates, s.Review)
+	return s.startIn(ctx, work.KindCandidateReview, &s.review.candidates, s.Review)
 }
 
 // StopReview stops the review of the candidates that runs: it asks nothing after the step it is
@@ -137,29 +170,43 @@ func (s *Service) StopReview(context.Context) error { return s.review.candidates
 
 // startIn runs work in the background on st, unless it runs already, within reviewTimeout; it
 // reports whether it started.
-func (s *Service) startIn(ctx context.Context, st *runState, work func(context.Context) error) bool {
+func (s *Service) startIn(ctx context.Context, kind work.Kind, st *runState, run func(context.Context) error) bool {
 	if !st.begin() {
 		return false
 	}
 	s.spawn(func() {
 		bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), reviewTimeout)
 		defer cancel()
-		err := work(bg)
+		entry := work.Start(bg, s.journal, kind, journalBy, s.now(), s.reportJournal)
+		err := run(bg)
+		problem, ending := ReviewProblemNone, work.EndingDone
 		switch {
 		case err == nil:
-			st.end(ReviewProblemNone)
 		case errors.Is(err, ErrStopped):
-			st.end(ReviewProblemStopped)
+			problem, ending = ReviewProblemStopped, work.EndingStoppedByHand
 		case errors.Is(err, ErrNoReviewer):
-			st.end(ReviewProblemNoKey)
+			problem, ending = ReviewProblemNoKey, work.EndingFailed
 		case errors.Is(err, ErrBudgetSpent):
-			st.end(ReviewProblemBudget)
+			problem, ending = ReviewProblemBudget, work.EndingStoppedByBudget
 		default:
-			st.end(ReviewProblemFails)
+			problem, ending = ReviewProblemFails, work.EndingFailed
 			s.review.onError(err)
 		}
+		entry.Finish(context.WithoutCancel(bg), st.outcome(ending), s.now(), s.reportJournal)
+		st.end(problem)
 	})
 	return true
+}
+
+// journalBy is who the work journal names as having started a review: an administrator asks for
+// it, and the language model does it.
+const journalBy = "language model"
+
+// reportJournal reports that the work journal failed, when anyone hears it.
+func (s *Service) reportJournal(err error) {
+	if s.review.onError != nil {
+		s.review.onError(err)
+	}
 }
 
 // Review has the model merge the candidates that are one company, then check each waiting company
@@ -187,6 +234,7 @@ func (s *Service) Review(ctx context.Context) error {
 		return err
 	}
 	unchecked := domain.Unchecked(all)
+	s.review.candidates.planned(len(unchecked))
 	for len(unchecked) > 0 {
 		if err := s.goOn(ctx, &s.review.candidates); err != nil {
 			return err
@@ -196,6 +244,7 @@ func (s *Service) Review(ctx context.Context) error {
 		if err := s.check(ctx, r, model, batch); err != nil {
 			return err
 		}
+		s.review.candidates.did(len(batch))
 	}
 	return nil
 }
@@ -244,6 +293,7 @@ func (s *Service) check(ctx context.Context, r Reviewer, model string, batch []d
 		return err
 	}
 	answered, usage, err := r.Check(ctx, dossiers)
+	s.review.candidates.used(usage)
 	if saveErr := s.saveUsage(ctx, usage); err != nil || saveErr != nil {
 		return errors.Join(wrap("check the candidates", err), saveErr)
 	}
@@ -384,6 +434,7 @@ func (s *Service) merge(ctx context.Context, r Reviewer, directory []domain.Dire
 		return nil
 	}
 	clusters, usage, err := r.Merge(ctx, asked, directory)
+	s.review.candidates.used(usage)
 	if saveErr := s.saveUsage(ctx, usage); err != nil || saveErr != nil {
 		return errors.Join(wrap("merge the candidates", err), saveErr)
 	}

@@ -39,14 +39,15 @@ describe('one competitor', () => {
 
   it('lists the terms it uses that tribelt.nl does not, the most used first', () => {
     const terms = [
+      term({ term: 'aa', usedBy: ['Twentebelt'] }),
       term({ term: 'a', usedBy: ['Twentebelt'] }),
       term({ term: 'b', usedBy: ['Twentebelt', 'Ashworth'] }),
       term({ term: 'c', usedBy: ['Twentebelt'], tribeltUses: true }),
       term({ term: 'd', usedBy: ['Ashworth'] }),
       { ...term({ term: 'e' }), makers: undefined },
     ]
-    expect(theirTerms(terms, 'twentebelt', 1)).toEqual({ shown: [terms[1]], total: 2 })
-    expect(theirTerms(terms, 'twentebelt').shown.map((t) => t.term)).toEqual(['b', 'a'])
+    expect(theirTerms(terms, 'twentebelt', 1)).toEqual({ shown: [terms[2]], total: 3 })
+    expect(theirTerms(terms, 'twentebelt').shown.map((t) => t.term)).toEqual(['b', 'a', 'aa'])
   })
 
   it('bars how often each model names it in the newest run', () => {

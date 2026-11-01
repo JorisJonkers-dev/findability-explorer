@@ -74,7 +74,7 @@ describe('AI readiness', () => {
     expect(compare.text()).toContain('For each check, how many of the 20 competitors pass it, and whether tribelt.nl does.')
     const rows = compare.findAll('tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
     expect(rows).toHaveLength(8)
-    expect(rows[0]).toEqual(['AI crawlers let in', 'Fails', '20 of 20'])
+    expect(rows[0]).toEqual(['AI crawlers let in', 'Partly', '20 of 20'])
     expect(rows[6]).toEqual(['llms-full.txt', 'Fails', '19 of 20'])
     expect(rows[7]).toEqual(['Markdown pages', 'Passes', '10 of 20'])
     expect(compare.findAll('[data-bar]')).toHaveLength(8)

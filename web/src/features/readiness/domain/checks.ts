@@ -95,6 +95,9 @@ function isReady(row: AiReadinessRow): row is ReadySite {
   return row.readiness !== undefined
 }
 
+/** tribelt.nl's standing on a check, in the comparison table. */
+export const COMPARE_WORDS: Record<CheckState, string> = { yes: 'Passes', partly: 'Partly', no: 'Fails', unknown: 'Not known' }
+
 /** One check, tribelt.nl's standing on it, and how many of the competitors pass it. */
 export type CompareRow = { check: ScoredCheck; name: string; tribelt: CheckState; passing: number; share: number }
 
@@ -119,7 +122,7 @@ export function compareChecks(rows: readonly AiReadinessRow[]): { competitors: n
 /** The sentences over the comparison: where tribelt.nl is ahead of most competitors, and where it is behind some. */
 export function compareIntro(c: { competitors: number; rows: readonly CompareRow[] }): string {
   const ahead = c.rows.filter((r) => r.tribelt === 'yes' && r.share < 0.5).length
-  const behind = c.rows.filter((r) => r.tribelt !== 'yes' && r.passing > 0).length
+  const behind = c.rows.filter((r) => (r.tribelt === 'no' || r.tribelt === 'partly') && r.passing > 0).length
   const checks = ahead === 0 ? 'no checks' : ahead === 1 ? '1 check' : `${String(ahead)} checks`
   return [
     `For each check, how many of the ${String(c.competitors)} competitors pass it, and whether tribelt.nl does.`,

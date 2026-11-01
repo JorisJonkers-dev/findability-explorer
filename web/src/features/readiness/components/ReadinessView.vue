@@ -12,8 +12,10 @@ import { useReadinessTable } from '../composables/useReadiness'
 import {
   CHECK_NAMES,
   CHECK_WHY,
+  type CheckState,
   checkFix,
   checkStates,
+  COMPARE_WORDS,
   compareChecks,
   compareIntro,
   everySite,
@@ -41,6 +43,8 @@ const fixes = computed(() => SCORED_CHECKS.map((c) => (tribelt.value && tribeltS
 const compared = computed(() => compareChecks(rows.value))
 
 // Every site: the filter, the search, the sort, and whether every row shows.
+/** How tribelt.nl's standing on a check looks in the comparison: passed plain, failed or partly in orange, not known in grey. */
+const TONES: Record<CheckState, string> = { yes: 'bg-white text-black', partly: 'bg-orange-pale text-orange-ink', no: 'bg-orange-pale text-orange-ink', unknown: 'bg-grey text-ink-2' }
 const LIMIT = 15
 const filter = ref<SiteFilter>('competitors')
 const query = ref('')
@@ -117,9 +121,7 @@ const CHECK_COLUMN = 'hidden lg:table-cell'
                 <tr v-for="r in compared.rows" :key="r.check" class="border-b border-grey last:border-b-0">
                   <th scope="row" class="py-2.5 pr-2 text-left font-medium">{{ r.name }}</th>
                   <td class="px-2 py-2.5">
-                    <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="r.tribelt === 'yes' ? 'bg-white text-black' : 'bg-orange-pale text-orange-ink'">{{
-                      r.tribelt === 'yes' ? 'Passes' : 'Fails'
-                    }}</span>
+                    <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="TONES[r.tribelt]">{{ COMPARE_WORDS[r.tribelt] }}</span>
                   </td>
                   <td class="py-2.5 pl-2">
                     <span class="flex items-center justify-end gap-3">

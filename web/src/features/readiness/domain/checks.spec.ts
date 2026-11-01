@@ -6,6 +6,7 @@ import {
   CHECK_WHY,
   checkFix,
   checkStates,
+  COMPARE_WORDS,
   compareChecks,
   compareIntro,
   everySite,
@@ -119,6 +120,13 @@ describe('tribelt.nl against the competitors', () => {
     expect(compareIntro({ competitors: 3, rows: [] })).toBe(
       'For each check, how many of the 3 competitors pass it, and whether tribelt.nl does. tribelt.nl passes no checks that most competitors fail. It fails none that some competitors pass.',
     )
+  })
+
+  it('names each standing in the comparison, and does not count a check it cannot tell as failed', () => {
+    expect(COMPARE_WORDS).toEqual({ yes: 'Passes', partly: 'Partly', no: 'Fails', unknown: 'Not known' })
+    const row = (tribelt: 'unknown' | 'partly') => ({ check: 'crawlers', name: 'AI crawlers let in', tribelt, passing: 2, share: 1 }) as const
+    expect(compareIntro({ competitors: 2, rows: [row('unknown')] })).toContain('It fails none that some competitors pass.')
+    expect(compareIntro({ competitors: 2, rows: [row('partly')] })).toContain('It fails 1 that some competitors pass.')
   })
 
   it('has nothing to compare before tribelt.nl is scanned', () => {

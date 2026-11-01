@@ -1,4 +1,4 @@
-import type { AnalysisSummary, Competitor, RescanRequest } from '../../../infrastructure/api/types.gen'
+import type { AnalysisSummary, Competitor, LlmBudget, RescanRequest } from '../../../infrastructure/api/types.gen'
 import { isInProgress } from './status'
 
 /** The scans in progress: those reading pages now, and those waiting for a free place, oldest first. */
@@ -53,6 +53,13 @@ export function scanStamp(iso: string): string {
   return STAMP.format(new Date(iso)).replace(' at ', ', ')
 }
 
+const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+
+/** The day a scan started: "28 October 2026". */
+export function scanDay(iso: string): string {
+  return DAY.format(new Date(iso))
+}
+
 /** The pages a scan read of the most it would: "22 of 60". */
 export function pagesRead(scan: Pick<AnalysisSummary, 'pagesCrawled' | 'maxPages'>): string {
   return `${String(scan.pagesCrawled)} of ${String(scan.maxPages)}`
@@ -63,4 +70,18 @@ export function stoppedLine(scan: Pick<AnalysisSummary, 'stoppedByHand' | 'pages
   if (scan.stoppedByHand !== true) return null
   if (scan.pagesCrawled === 0) return 'Taken off the queue by hand before it read a page.'
   return `Stopped by hand. It keeps the ${String(scan.pagesCrawled)} ${scan.pagesCrawled === 1 ? 'page' : 'pages'} it read.`
+}
+
+const NUMBER = new Intl.NumberFormat('en-GB')
+
+/**
+ * What scans cost, from the average tokens one scan's product matching used: "About 58,274
+ * tokens for 2 scans. 9,951,789 of this month's tokens are left." Reading pages costs nothing.
+ */
+export function scanEstimate(budget: Pick<LlmBudget, 'averageTokensPerScan' | 'monthlyTokens' | 'usedThisMonth'> | undefined, scans: number): string {
+  if (budget === undefined) return ''
+  const left = `${NUMBER.format(Math.max(budget.monthlyTokens - budget.usedThisMonth, 0))} of this month's tokens are left.`
+  if (budget.averageTokensPerScan === 0) return `No scan has matched products yet, so there is no estimate. ${left}`
+  const what = scans === 1 ? '' : ` for ${NUMBER.format(scans)} scans`
+  return `About ${NUMBER.format(budget.averageTokensPerScan * scans)} tokens${what}. ${left}`
 }

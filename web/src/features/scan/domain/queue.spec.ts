@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { competitor, summary } from '../../../testing/fixtures'
-import { lastScanned, newestScans, pagesRead, rescanGroups, rescanRequest, scanQueue, scanStamp, stoppedLine } from './queue'
+import { lastScanned, newestScans, pagesRead, rescanGroups, rescanRequest, scanEstimate, scanDay, scanQueue, scanStamp, stoppedLine } from './queue'
 
 const NOW = new Date('2026-10-28T12:00:00Z')
 
@@ -59,6 +59,7 @@ describe('the scans of the companies', () => {
 describe('a scan in words', () => {
   it('dates a scan to the minute, in UTC', () => {
     expect(scanStamp('2026-10-28T05:48:10Z')).toBe('28 October 2026, 05:48')
+    expect(scanDay('2026-10-28T23:48:10Z')).toBe('28 October 2026')
   })
 
   it('says how many pages it read', () => {
@@ -70,5 +71,20 @@ describe('a scan in words', () => {
     expect(stoppedLine(summary({ status: 'failed', stoppedByHand: true, pagesCrawled: 1 }))).toBe('Stopped by hand. It keeps the 1 page it read.')
     expect(stoppedLine(summary({ status: 'failed', stoppedByHand: true, pagesCrawled: 0 }))).toBe('Taken off the queue by hand before it read a page.')
     expect(stoppedLine(summary({ status: 'failed' }))).toBeNull()
+  })
+})
+
+describe('what scans cost', () => {
+  const budget = { monthlyTokens: 10_000_000, usedThisMonth: 48_211, averageTokensPerScan: 29_137 }
+
+  it('estimates the tokens from the average scan, and says what is left', () => {
+    expect(scanEstimate(budget, 1)).toBe("About 29,137 tokens. 9,951,789 of this month's tokens are left.")
+    expect(scanEstimate(budget, 2)).toBe("About 58,274 tokens for 2 scans. 9,951,789 of this month's tokens are left.")
+    expect(scanEstimate({ ...budget, usedThisMonth: 20_000_000 }, 1)).toBe("About 29,137 tokens. 0 of this month's tokens are left.")
+  })
+
+  it('says so when no scan has matched products yet, and nothing before the budget is known', () => {
+    expect(scanEstimate({ ...budget, averageTokensPerScan: 0 }, 1)).toBe("No scan has matched products yet, so there is no estimate. 9,951,789 of this month's tokens are left.")
+    expect(scanEstimate(undefined, 1)).toBe('')
   })
 })

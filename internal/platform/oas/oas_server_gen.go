@@ -248,6 +248,13 @@ type Handler interface {
 	//
 	// GET /api/v1/standings
 	GetStandings(ctx context.Context) (GetStandingsRes, error)
+	// GetTermPages implements getTermPages operation.
+	//
+	// Returns, for each company whose newest finished scan found the term, the pages of that scan that use
+	// it, at most ten each. The term matches without regard to case.
+	//
+	// GET /api/v1/term-pages
+	GetTermPages(ctx context.Context, params GetTermPagesParams) (GetTermPagesRes, error)
 	// ListAnalyses implements listAnalyses operation.
 	//
 	// Returns at most `limit` analyses, newest first, without their results.

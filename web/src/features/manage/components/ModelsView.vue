@@ -57,7 +57,7 @@ function submit(): void {
     <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the models…</p>
     <WidgetGrid v-else-if="settings">
-      <div v-if="!settings.keyWorks" role="alert" class="flex flex-col gap-1 rounded-3xl border-2 border-orange-ink bg-orange-pale p-5 min-[1100px]:col-span-12">
+      <div v-if="!settings.keyWorks" role="alert" class="flex flex-col gap-1 rounded-3xl border-2 border-orange-ink bg-orange-pale p-5 basis-full">
         <p class="m-0 font-semibold">The OpenRouter key does not work, so no Prompt run can start.</p>
         <p class="m-0">Choose a working key below, or add one in <RouterLink to="/manage/keys" class="underline underline-offset-4">Keys and spending</RouterLink>.</p>
       </div>
@@ -121,7 +121,7 @@ function submit(): void {
         </template>
       </ManageWidget>
 
-      <ManageWidget title="What runs cost">
+      <ManageWidget title="What runs cost" :span="12">
         <p class="m-0 text-ink-2">{{ basisLine(settings.prices) }}</p>
         <div class="overflow-x-auto">
           <table class="w-full border-collapse text-sm">

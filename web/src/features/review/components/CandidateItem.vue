@@ -52,7 +52,7 @@ function submit(): void {
 </script>
 
 <template>
-  <li class="flex flex-col gap-3 rounded-2xl bg-mist p-5 sm:p-6" :aria-labelledby="titleId">
+  <li class="flex flex-col gap-3 rounded-2xl bg-white p-5 sm:p-6" :aria-labelledby="titleId">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <h3 :id="titleId" class="m-0 text-xl font-semibold">{{ candidate.phrase }}</h3>
       <span class="text-sm text-ink-2">Best score {{ candidate.bestScore }} · up to {{ candidate.maxPages }} pages</span>
@@ -73,7 +73,7 @@ function submit(): void {
       {{ tierLabel(candidate.decision.term.tier) }}, {{ familyLabel(candidate.decision.term.family) }}.
     </p>
 
-    <form v-if="editing" novalidate :aria-label="`Accept ${candidate.phrase}`" class="flex flex-col gap-3 rounded-xl bg-white p-4" @submit.prevent="submit">
+    <form v-if="editing" novalidate :aria-label="`Accept ${candidate.phrase}`" class="flex flex-col gap-3 rounded-xl bg-mist p-4" @submit.prevent="submit">
       <div class="grid gap-3 sm:grid-cols-2">
         <label class="flex flex-col gap-1.5 text-sm font-medium">
           Term
@@ -103,7 +103,7 @@ function submit(): void {
           </select>
         </label>
         <label class="flex flex-col gap-1.5 text-sm font-medium">
-          Intent tier
+          Buyer intent
           <select v-model="draft.tier" class="h-11 rounded-xl border-2 border-grey bg-white px-3 text-base font-normal">
             <option v-for="t in TIERS" :key="t" :value="t">{{ tierLabel(t) }}</option>
           </select>
@@ -112,7 +112,7 @@ function submit(): void {
       <p v-if="draftError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ draftError }}</p>
       <div class="flex flex-wrap gap-3">
         <button type="submit" :disabled="busy" class="min-h-11 rounded-full border-0 bg-black px-5 font-semibold text-white hover:bg-ink-2 disabled:opacity-70">
-          Add to the map
+          Add to the list
         </button>
         <button type="button" class="min-h-11 rounded-full border-2 border-grey bg-white px-5 font-medium text-black hover:border-black" @click="editing = false">
           Cancel

@@ -41,7 +41,12 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     to: '/manage/scans',
     summary: 'Scan a website, and open the recent scans.',
     countLabel: 'running',
-    children: [],
+    countOn: '/manage/scans/queue',
+    children: [
+      { label: 'Scan queue', to: '/manage/scans/queue' },
+      { label: 'Recent scans', to: '/manage/scans/recent' },
+      { label: 'Scan settings', to: '/manage/scans/settings' },
+    ],
   },
   {
     label: 'Competitor list',
@@ -49,7 +54,11 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     summary: 'The companies the AI responses name that are not on the competitor list yet.',
     countLabel: 'waiting',
     countOn: '/manage/competitors/candidates',
-    children: [{ label: 'Candidates', to: '/manage/competitors/candidates' }],
+    children: [
+      { label: 'Companies', to: '/manage/competitors/companies' },
+      { label: 'Candidates', to: '/manage/competitors/candidates' },
+      { label: 'Check the list', to: '/manage/competitors/check' },
+    ],
   },
   {
     label: 'Search term list',
@@ -57,19 +66,30 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     summary: 'The search terms the scans found that wait for a decision.',
     countLabel: 'waiting',
     countOn: '/manage/terms/waiting',
-    children: [{ label: 'Waiting terms', to: '/manage/terms/waiting' }],
+    children: [
+      { label: 'Term review', to: '/manage/terms/review' },
+      { label: 'Waiting terms', to: '/manage/terms/waiting' },
+    ],
   },
   {
     label: 'Recommendations',
     to: '/manage/recommendations',
     summary: 'Marking recommendations as done, and the goals.',
-    children: [],
+    children: [
+      { label: 'Tick off yourself', to: '/manage/recommendations/tick-off' },
+      { label: 'Goals', to: '/manage/recommendations/goals' },
+    ],
   },
   {
     label: 'Keys and spending',
     to: '/manage/keys',
-    summary: 'The API keys, the model that matches products, the budget, and the events.',
-    children: [],
+    summary: 'The API keys, the budget, and the events.',
+    children: [
+      { label: 'OpenRouter key', to: '/manage/keys/openrouter' },
+      { label: 'Anthropic key', to: '/manage/keys/anthropic' },
+      { label: 'Budgets', to: '/manage/keys/budgets' },
+      { label: 'Events', to: '/manage/keys/events' },
+    ],
   },
 ]
 

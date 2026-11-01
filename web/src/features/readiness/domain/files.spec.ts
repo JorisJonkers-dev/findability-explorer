@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { readiness } from '../../../testing/fixtures'
 import { escapeHtml, FILE_KEYS, fileKeyOf, filesFoundLine, fileSize, fileTabs, missingSentence, searchLines } from './files'
 
-const files = { robotsTxt: 'User-agent: *\nDisallow: /admin/', robotsTruncated: false, llmsTxt: '# Tribelt', llmsTruncated: true, llmsFullTxt: '', llmsFullTruncated: false }
+const files = {
+  robotsTxt: 'User-agent: *\nDisallow: /admin/',
+  robotsTruncated: false,
+  llmsTxt: '# Tribelt',
+  llmsTruncated: true,
+  llmsFullTxt: '',
+  llmsFullTruncated: false,
+  sitemapUrl: 'https://www.tribelt.nl/sitemap_index.xml',
+  sitemapTxt: '<sitemapindex/>',
+  sitemapTruncated: true,
+}
+const noSitemap = { ...files, sitemapUrl: '', sitemapTxt: '', sitemapTruncated: false }
 
 describe('the search in a file', () => {
   it('marks the lines with a match, and counts the matches', () => {
@@ -54,21 +65,33 @@ describe('the files of a site', () => {
     expect(fileKeyOf(undefined)).toBe('robots')
   })
 
-  it('has a tab per file: the text kept, not found, not reached, or the sitemap whose text is not kept', () => {
+  it('has a tab per file: the text kept, not found, or not reached, and the sitemap with its address', () => {
     const tabs = fileTabs(files, readiness({ llmsFullTxt: false }))
     expect(tabs.map((t) => [t.key, t.name, t.state, t.text, t.truncated])).toEqual([
       ['robots', 'robots.txt', 'found', 'User-agent: *\nDisallow: /admin/', false],
-      ['sitemap', 'sitemap.xml', 'notKept', '', false],
+      ['sitemap', 'sitemap.xml', 'found', '<sitemapindex/>', true],
       ['llms', 'llms.txt', 'found', '# Tribelt', true],
       ['llmsFull', 'llms-full.txt', 'missing', '', false],
     ])
-    const unreached = fileTabs({ ...files, robotsTxt: '' }, readiness({ robots: 'unreachable', sitemap: { declared: false, files: 0, addresses: 0, languages: [] } }))
+    expect(tabs.map((t) => [t.fileName, t.source])).toEqual([
+      ['robots.txt', ''],
+      ['sitemap_index.xml', 'https://www.tribelt.nl/sitemap_index.xml'],
+      ['llms.txt', ''],
+      ['llms-full.txt', ''],
+    ])
+    const unreached = fileTabs({ ...noSitemap, robotsTxt: '' }, readiness({ robots: 'unreachable', sitemap: { declared: false, files: 0, addresses: 0, languages: [] } }))
     expect(unreached.map((t) => t.state)).toEqual(['unreachable', 'missing', 'found', 'missing'])
     expect(fileTabs(undefined, undefined).map((t) => t.state)).toEqual(['missing', 'missing', 'missing', 'missing'])
   })
 
+  it('tells a sitemap a scan found but kept no text of, as scans before this release did', () => {
+    const [, sitemap] = fileTabs(noSitemap, readiness())
+    expect([sitemap?.state, sitemap?.fileName]).toEqual(['notKept', 'sitemap.xml'])
+    expect(fileTabs({ ...files, sitemapUrl: 'https://www.tribelt.nl/' }, readiness())[1]?.fileName).toBe('sitemap.xml')
+  })
+
   it('says which files were found and which were not', () => {
-    expect(filesFoundLine(fileTabs(files, readiness({ llmsFullTxt: false })))).toBe('Found: robots.txt, sitemap.xml, and llms.txt. Not found: llms-full.txt.')
+    expect(filesFoundLine(fileTabs(noSitemap, readiness({ llmsFullTxt: false })))).toBe('Found: robots.txt, sitemap.xml, and llms.txt. Not found: llms-full.txt.')
     expect(filesFoundLine(fileTabs(undefined, undefined))).toBe('No file was found.')
     expect(filesFoundLine(fileTabs({ ...files, llmsFullTxt: 'x' }, readiness()))).toBe('Found: robots.txt, sitemap.xml, llms.txt, and llms-full.txt.')
   })
@@ -79,7 +102,9 @@ describe('the files of a site', () => {
     )
     expect(missingSentence({ key: 'robots', name: 'robots.txt', state: 'missing' }, 'example.com')).toBe('The scan found no robots.txt on example.com.')
     expect(missingSentence({ key: 'robots', name: 'robots.txt', state: 'unreachable' }, 'example.com')).toBe('The scan could not reach robots.txt on example.com.')
-    expect(missingSentence({ key: 'sitemap', name: 'sitemap.xml', state: 'notKept' }, 'example.com')).toBe("This release does not keep the sitemap's text yet.")
+    expect(missingSentence({ key: 'sitemap', name: 'sitemap.xml', state: 'notKept' }, 'example.com')).toBe(
+      "This scan was made before scans kept the sitemap's text. Scan the site again to read it.",
+    )
     expect(missingSentence({ key: 'robots', name: 'robots.txt', state: 'found' }, 'example.com')).toBe('')
   })
 })

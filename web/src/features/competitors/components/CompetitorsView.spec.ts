@@ -100,7 +100,7 @@ describe('the competitors page', () => {
     await type(wrapper, 'https://www.example-belts.de')
     await submit(wrapper)
     expect(router.currentRoute.value.fullPath).toBe(`/manage/scans/${NEW_ID}`)
-    expect(wrapper.get('h1').text()).toBe('What the scan found.')
+    expect(wrapper.get('h1').text()).toMatch(/^Scan/)
   })
 
   it('opens an added company on its own page', async () => {

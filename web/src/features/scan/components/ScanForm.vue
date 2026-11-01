@@ -6,6 +6,7 @@ import { useStartScan } from '../composables/useStartScan'
 import { usePageBudget } from '../composables/usePageBudget'
 import { checkScanUrl, describeScanUrlCheck } from '../domain/newScan'
 
+const props = withDefaults(defineProps<{ submitLabel?: string }>(), { submitLabel: 'Scan website' })
 const emit = defineEmits<{ started: [id: string] }>()
 
 const LISTBOX = 'scan-url-options'
@@ -186,9 +187,9 @@ defineExpose({
     <button
       type="submit"
       :disabled="isStarting"
-      class="min-h-12 rounded-full border-0 bg-black text-base font-semibold text-white hover:bg-ink-2 disabled:opacity-70"
+      class="mt-2 min-h-12 self-start rounded-full border-0 bg-black px-6 text-base font-semibold text-white hover:bg-ink-2 disabled:opacity-70"
     >
-      {{ isStarting ? 'Starting…' : 'Scan website' }}
+      {{ isStarting ? 'Starting…' : props.submitLabel }}
     </button>
   </form>
 </template>

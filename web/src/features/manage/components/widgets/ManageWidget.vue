@@ -1,31 +1,42 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import { computed, useId } from 'vue'
 
 /**
- * A widget of a Manage page: a flat mist block on the twelve-column grid, with its title, an action
- * beside the title, its body, and a foot for its buttons. A lone widget stretches to the full width.
+ * One widget of a Manage page: a mist block with its title, an optional action on the right, a
+ * body, and a footer for its buttons. span is its width in twelfths on a wide screen; a widget alone
+ * on its row stretches to fill it, and on a narrow screen every widget takes the whole width.
  */
-const props = withDefaults(defineProps<{ title: string; span?: 3 | 4 | 6 | 8 | 12; accent?: boolean }>(), { span: 12, accent: false })
+const props = withDefaults(defineProps<{ title: string; span?: 3 | 4 | 6 | 8 | 12; accent?: boolean; headingId?: string }>(), { span: 6, accent: false, headingId: undefined })
+const generated = useId()
+const id = computed(() => props.headingId ?? generated)
 
-// Written out in full, so Tailwind finds each class.
-const SPANS = {
-  3: 'min-[1100px]:col-span-3',
-  4: 'min-[1100px]:col-span-4',
-  6: 'min-[1100px]:col-span-6',
-  8: 'min-[1100px]:col-span-8',
-  12: 'min-[1100px]:col-span-12',
-} as const
-const id = useId()
-const span = SPANS[props.span]
+// Literal classes, so Tailwind finds them: the basis leaves room for the gaps, and growing fills the row.
+const BASIS: Record<3 | 4 | 6 | 8 | 12, string> = {
+  3: 'min-[700px]:basis-[calc(50%-0.75rem)] min-[1100px]:basis-[calc(25%-1.25rem)]',
+  4: 'min-[700px]:basis-[calc(50%-0.75rem)] min-[1100px]:basis-[calc(33.333%-1.25rem)]',
+  6: 'min-[1100px]:basis-[calc(50%-0.75rem)]',
+  8: 'min-[1100px]:basis-[calc(66.666%-1.25rem)]',
+  12: '',
+}
+const width = computed(() => BASIS[props.span])
 </script>
 
 <template>
-  <section :aria-labelledby="id" class="flex min-w-0 flex-col gap-4 rounded-3xl p-6" :class="[span, accent ? 'bg-orange-pale' : 'bg-mist']">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <h2 :id="id" class="m-0 font-display text-xl leading-tight font-semibold">{{ title }}</h2>
-      <div v-if="$slots.action" class="flex flex-wrap items-center gap-3 text-sm"><slot name="action" /></div>
+  <section
+    :aria-labelledby="id"
+    :data-span="span"
+    class="flex min-w-0 grow basis-full flex-col gap-4 rounded-3xl p-5 sm:p-6"
+    :class="[width, accent ? 'bg-orange-pale' : 'bg-mist']"
+  >
+    <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <h2 :id="id" tabindex="-1" class="m-0 font-display text-xl leading-tight font-semibold focus:outline-none">{{ title }}</h2>
+      <slot name="action" />
     </div>
-    <div v-if="$slots.default" class="flex min-w-0 flex-col gap-3"><slot /></div>
-    <div v-if="$slots.foot" class="mt-auto flex flex-wrap items-center gap-3"><slot name="foot" /></div>
+    <div class="flex min-w-0 flex-col gap-3">
+      <slot />
+    </div>
+    <div v-if="$slots.foot" data-part="foot" class="mt-auto flex flex-wrap items-center gap-3 pt-2">
+      <slot name="foot" />
+    </div>
   </section>
 </template>

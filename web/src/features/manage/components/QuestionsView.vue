@@ -55,7 +55,7 @@ const plural = (n: number) => (n === 1 ? '1 question' : `${NUMBER.format(n)} que
         <p v-if="published.note" class="m-0">{{ published.note }}</p>
         <p class="m-0 text-ink-2">Every run asks the published set, so each run compares with the ones before it. Editing the questions arrives with the next release.</p>
       </ManageWidget>
-      <ManageWidget title="Version history">
+      <ManageWidget title="Version history" :span="12">
         <p class="m-0 text-ink-2">Old versions are never deleted. The charts mark where the questions changed.</p>
         <div class="flex flex-col gap-2">
           <details v-for="v in versions" :key="v.version" class="rounded-2xl bg-white p-4">

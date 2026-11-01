@@ -180,6 +180,9 @@ type Repository interface {
 	// SaveSitemapCoverage records how many of the pages the scan read its sitemaps list, on the
 	// readiness it recorded; ErrNoReadiness when it recorded none.
 	SaveSitemapCoverage(ctx context.Context, id uuid.UUID, c SitemapCoverage) error
+	// TermPages returns the pages that use a term, in language, on each company's newest finished
+	// scan that found it (TermPageRow), each company's together.
+	TermPages(ctx context.Context, term, language string) ([]TermPageRow, error)
 	// ReadinessFiles returns the raw files of an analysis's readiness, or ErrNoReadiness.
 	ReadinessFiles(ctx context.Context, id uuid.UUID) (RawFiles, error)
 	// LatestReadiness returns, per company, its newest analysis that recorded its readiness,

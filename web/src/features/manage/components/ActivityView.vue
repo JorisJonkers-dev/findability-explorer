@@ -72,11 +72,11 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
       <template v-if="running.length > 0">
         <RunningWidget v-for="w in running" :key="w.id" :work="w" :span="runningSpan" :stopping="stopper.isStopping.value" @stop="stopper.stop(w)" />
       </template>
-      <ManageWidget v-else title="Running now">
+      <ManageWidget v-else title="Running now" :span="12">
         <p class="m-0 text-ink-2">Nothing is running.</p>
       </ManageWidget>
-      <p v-if="stopper.notice.value" aria-live="polite" class="m-0 font-medium min-[1100px]:col-span-12">{{ stopper.notice.value }}</p>
-      <p v-if="stopper.error.value" role="alert" class="m-0 font-medium text-orange-ink min-[1100px]:col-span-12">{{ stopper.error.value }}</p>
+      <p v-if="stopper.notice.value" aria-live="polite" class="m-0 font-medium basis-full">{{ stopper.notice.value }}</p>
+      <p v-if="stopper.error.value" role="alert" class="m-0 font-medium text-orange-ink basis-full">{{ stopper.error.value }}</p>
 
       <ManageWidget title="Coming up" :span="6">
         <div :class="ROW">
@@ -192,7 +192,7 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
         </div>
       </ManageWidget>
 
-      <ManageWidget title="Recent work">
+      <ManageWidget title="Recent work" :span="12">
         <template #action><span class="text-ink-2">The last 20 pieces of work</span></template>
         <p v-if="recent.length === 0" class="m-0 text-ink-2">No work has ended yet.</p>
         <div v-else class="overflow-x-auto">

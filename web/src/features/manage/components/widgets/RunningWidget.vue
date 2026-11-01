@@ -8,7 +8,7 @@ import ManageWidget from './ManageWidget.vue'
 import StopButton from './StopButton.vue'
 
 /** One piece of work that runs: its meter, its cost so far and to go, and its own Stop. */
-const props = defineProps<{ work: RunningWork; span?: 3 | 4 | 6 | 8 | 12; stopping?: boolean }>()
+const props = withDefaults(defineProps<{ work: RunningWork; span?: 3 | 4 | 6 | 8 | 12; stopping?: boolean }>(), { span: 12, stopping: false })
 defineEmits<{ stop: [] }>()
 
 const NUMBER = new Intl.NumberFormat('en-GB')
@@ -23,8 +23,10 @@ const share = computed(() => `${String(Math.floor(fraction.value * 100))}%`)
 <template>
   <ManageWidget :title="work.label" :span="span">
     <template #action>
-      <span class="rounded-full bg-orange px-2.5 py-0.5 font-semibold text-black">Running</span>
-      <RouterLink :to="work.to" class="font-medium">Open<span class="sr-only">{{ ' ' + work.label }}</span></RouterLink>
+      <span class="flex flex-wrap items-center gap-3 text-sm">
+        <span class="rounded-full bg-orange px-2.5 py-0.5 font-semibold text-black">Running</span>
+        <RouterLink :to="work.to" class="font-medium">Open<span class="sr-only">{{ ' ' + work.label }}</span></RouterLink>
+      </span>
     </template>
     <div class="flex items-baseline justify-between gap-3">
       <span>{{ counted }}</span>

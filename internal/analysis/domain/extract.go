@@ -33,6 +33,8 @@ type PageSummary struct {
 	WordCount   int
 	// Family is the Tribelt family the page is about, or empty when that is not clear.
 	Family string
+	// Text is the page's visible text, kept only by a scan of tribelt.nl (KeptPageText).
+	Text string
 }
 
 // Keyword is a phrase about metal belts that a site emphasises, scored by where and how often it
@@ -59,6 +61,9 @@ type GlossaryTerm struct {
 type KnownTerm struct {
 	GlossaryTerm
 	Occurrences int
+	// Pages are the places, among the pages the scan read, of the first MaxTermPages pages in the
+	// term's language that use it.
+	Pages []int
 }
 
 const (
@@ -66,6 +71,8 @@ const (
 	MaxKeywords = 1000
 	// MaxKnownTerms is how many known terms an analysis keeps.
 	MaxKnownTerms = 10000
+	// MaxTermPages is how many of the pages that use a known term an analysis records.
+	MaxTermPages = 10
 	// UnknownLanguage marks a page whose language could not be told.
 	UnknownLanguage = "und"
 	maxNgram        = 3
@@ -459,11 +466,24 @@ func FindKnownTerms(pages []Page, glossary []GlossaryTerm) []KnownTerm {
 		}
 	}
 	slices.SortStableFunc(out, func(a, b KnownTerm) int { return cmp.Compare(b.Occurrences, a.Occurrences) })
-	return out[:min(len(out), MaxKnownTerms)]
+	out = out[:min(len(out), MaxKnownTerms)]
+	// Which pages use each term kept, from each page's own text.
+	own := make([]string, len(pages))
+	for i, p := range pages {
+		own[i] = pageCorpus(p)
+	}
+	for i, k := range out {
+		language := lang.Primary(k.Language)
+		for j, p := range pages {
+			if len(out[i].Pages) < MaxTermPages && PageLanguage(p) == language && occurrences(own[j], k.Text) > 0 {
+				out[i].Pages = append(out[i].Pages, j)
+			}
+		}
+	}
+	return out
 }
 
-// corporaByLanguage is the folded text of the pages in each language PageLanguage tells, each
-// segment between spaces so a term matches only whole words.
+// corporaByLanguage joins the folded text of the pages of each language.
 func corporaByLanguage(pages []Page) map[string]string {
 	builders := map[string]*strings.Builder{}
 	for _, p := range pages {
@@ -473,17 +493,24 @@ func corporaByLanguage(pages []Page) map[string]string {
 			corpus = &strings.Builder{}
 			builders[language] = corpus
 		}
-		for _, part := range append([]string{p.Title, p.Description, p.Text}, p.Headings...) {
-			for _, segment := range Segments(part) {
-				corpus.WriteString(" " + fold.Fold(strings.Join(spelling.Tokens(segment), " ")) + " ")
-			}
-		}
+		corpus.WriteString(pageCorpus(p))
 	}
 	out := make(map[string]string, len(builders))
 	for language, b := range builders {
 		out[language] = b.String()
 	}
 	return out
+}
+
+// pageCorpus is a page's title, description, text and headings, folded, each segment between spaces.
+func pageCorpus(p Page) string {
+	var b strings.Builder
+	for _, part := range append([]string{p.Title, p.Description, p.Text}, p.Headings...) {
+		for _, segment := range Segments(part) {
+			b.WriteString(" " + fold.Fold(strings.Join(spelling.Tokens(segment), " ")) + " ")
+		}
+	}
+	return b.String()
 }
 
 // occurrences counts each alternative of term in corpus, singular or with a plural s.

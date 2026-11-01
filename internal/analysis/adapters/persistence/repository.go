@@ -267,6 +267,7 @@ func (r *Repository) AddPage(ctx context.Context, id uuid.UUID, p domain.PageSum
 	if err := r.store.Queries().AddAnalysisPage(ctx, queries.AddAnalysisPageParams{
 		ID: id, Url: clip(p.URL, 2000), Title: clip(p.Title, 500), Description: clip(p.Description, 1000),
 		Language: clip(p.Language, 16), WordCount: int64(p.WordCount), Family: optionalText(p.Family),
+		Body: p.Text,
 	}); err != nil {
 		return fmt.Errorf("insert page: %w", err)
 	}
@@ -289,6 +290,7 @@ func (r *Repository) SaveFindings(ctx context.Context, id uuid.UUID, kws []domai
 			if err := q.AddAnalysisKnownTerm(ctx, queries.AddAnalysisKnownTermParams{
 				AnalysisID: id, Position: int64(i), Term: clip(k.Text, 200), Language: k.Language,
 				Family: k.Family, Tier: k.Tier, Occurrences: int64(k.Occurrences), UsedByTribelt: k.UsedByTribelt,
+				Pages: positions(k.Pages),
 			}); err != nil {
 				return fmt.Errorf("insert known term: %w", err)
 			}
@@ -356,6 +358,7 @@ func (r *Repository) SaveReadiness(ctx context.Context, id uuid.UUID, rd domain.
 		if err := q.AddAnalysisReadinessFiles(ctx, queries.AddAnalysisReadinessFilesParams{
 			AnalysisID: id, RobotsTxt: raw.Robots, RobotsTruncated: raw.RobotsTruncated, LlmsTxt: raw.LLMs,
 			LlmsTruncated: raw.LLMsTruncated, LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTruncated,
+			SitemapUrl: clip(raw.SitemapURL, 2000), SitemapTxt: raw.Sitemap, SitemapTruncated: raw.SitemapTruncated,
 		}); err != nil {
 			return fmt.Errorf("insert readiness files: %w", err)
 		}
@@ -405,7 +408,36 @@ func (r *Repository) ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.R
 	return domain.RawFiles{
 		Robots: row.RobotsTxt, RobotsTruncated: row.RobotsTruncated, LLMs: row.LlmsTxt, LLMsTruncated: row.LlmsTruncated,
 		LLMsFull: row.LlmsFullTxt, LLMsFullTruncated: row.LlmsFullTruncated,
+		SitemapURL: row.SitemapUrl, Sitemap: row.SitemapTxt, SitemapTruncated: row.SitemapTruncated,
 	}, nil
+}
+
+// TermPages returns the pages that use a term, in language, on each company's newest finished
+// scan that found it, each company's together and in the scan's order.
+func (r *Repository) TermPages(ctx context.Context, term, language string) ([]domain.TermPageRow, error) {
+	rows, err := r.store.Queries().TermPages(ctx, queries.TermPagesParams{Term: term, Language: language})
+	if err != nil {
+		return nil, fmt.Errorf("select term pages: %w", err)
+	}
+	out := make([]domain.TermPageRow, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.TermPageRow{CompetitorID: row.CompetitorID, Position: int(row.PagePosition), URL: row.Url, Title: row.Title})
+	}
+	return out, nil
+}
+
+// PageTexts returns the text a scan kept of its pages, by address, in their order; only a scan of
+// tribelt.nl keeps any. The Recommendation run reads it.
+func (r *Repository) PageTexts(ctx context.Context, id uuid.UUID) ([]domain.PageSummary, error) {
+	rows, err := r.store.Queries().ListAnalysisPageBodies(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("select page texts: %w", err)
+	}
+	out := make([]domain.PageSummary, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.PageSummary{URL: row.Url, Text: row.Body})
+	}
+	return out, nil
 }
 
 // LatestReadiness returns, per company, its newest analysis that recorded its readiness.
@@ -548,9 +580,31 @@ func knownTerms(ctx context.Context, q *queries.Queries, id uuid.UUID) ([]domain
 		out = append(out, domain.KnownTerm{
 			GlossaryTerm: domain.GlossaryTerm{Text: r.Term, Language: r.Language, Family: r.Family, Tier: r.Tier, UsedByTribelt: r.UsedByTribelt},
 			Occurrences:  int(r.Occurrences),
+			Pages:        places(r.Pages),
 		})
 	}
 	return out, nil
+}
+
+// positions are a known term's pages as stored, at most domain.MaxTermPages.
+func positions(pages []int) []int64 {
+	out := make([]int64, 0, min(len(pages), domain.MaxTermPages))
+	for _, p := range pages[:min(len(pages), domain.MaxTermPages)] {
+		out = append(out, int64(p))
+	}
+	return out
+}
+
+// places are a known term's stored pages; nil for a scan from before they were recorded.
+func places(pages []int64) []int {
+	if len(pages) == 0 {
+		return nil
+	}
+	out := make([]int, 0, len(pages))
+	for _, p := range pages {
+		out = append(out, int(p))
+	}
+	return out
 }
 
 func equivalents(ctx context.Context, q *queries.Queries, id uuid.UUID) ([]domain.Equivalent, error) {

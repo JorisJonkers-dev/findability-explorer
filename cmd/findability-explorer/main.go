@@ -162,7 +162,8 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		return listedCompetitors(ctx, companies)
 	})
 	promptRepo := prompttestpersistence.New(store)
-	llm, err := newLLM(logger, getenv, store, spenders{analysisRepo, terminologyRepo, promptRepo}, secret, now)
+	insightRepo := insightpersistence.New(store)
+	llm, err := newLLM(logger, getenv, store, spenders{analysisRepo, terminologyRepo, promptRepo, insightRepo}, secret, now)
 	if err != nil {
 		return err
 	}
@@ -197,7 +198,11 @@ func run(ctx context.Context, logger *slog.Logger, getenv func(string) string) e
 		// Each review of the candidates and check of the list goes in the work journal.
 		prompttestapp.WithJournal(journal))
 	go promptTest.Loop(ctx, func(err error) { logger.WarnContext(ctx, "prompt test schedule", "error", err) })
-	insight := newInsight(insightpersistence.New(store), companies, promptTest, analysis, terminology, now)
+	insight := newInsight(insightRepo, companies, promptTest, analysis, terminology, now)
+	// The Claude step writing recommendations, on an Anthropic key, writes a Recommendation run's
+	// recommendations from tribelt.nl's newest scan, within the month's Anthropic budget.
+	insight.WithWriting(writers{llm: llm, steps: claudeSteps}, tribeltPages{repo: analysisRepo}, llm.BudgetSpent, journal,
+		func(err error) { logger.WarnContext(ctx, "recommendation run", "error", err) }, func(f func()) { go f() })
 	companies.WithBatch(candidateRecorder{prompts: promptTest}, scanner{analysis: analysis})
 
 	gate, err := newGate(ctx, logger, getenv, store, secret, now)
@@ -328,6 +333,7 @@ type spenders struct {
 	analyses   *persistence.Repository
 	terms      *terminologypersistence.Repository
 	candidates *prompttestpersistence.Repository
+	insight    *insightpersistence.Repository
 }
 
 // newLLM builds the language-model settings: the Vault key, the keys admins add, and the active model.
@@ -356,6 +362,7 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp
 func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spending, error) {
 	sources := []func(context.Context, time.Time) (int64, int64, error){
 		sp.terms.TokensSince, sp.candidates.ReviewTokensSince, sp.candidates.ReadingTokensSince,
+		sp.insight.RecommendationTokensSince,
 	}
 	var s llmapp.Spending
 	scanUse, err := sp.analyses.TokensSinceByModel(ctx, since)

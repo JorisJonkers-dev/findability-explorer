@@ -135,10 +135,11 @@ func (r *Repository) MonthUsage(ctx context.Context, since time.Time) (domain.Mo
 	}
 	return domain.MonthUsage{
 		PromptAnswers: llm.Micros(u.PromptAnswers), OpenRouterReadings: llm.Micros(u.OpenrouterReadings),
-		HaikuReadings:   llm.TokenUse{Model: llm.DefaultModel, Input: u.HaikuReadingInput, Output: u.HaikuReadingOutput},
-		Scans:           llm.TokenUse{Model: llm.DefaultModel, Input: u.ScanInput, Output: u.ScanOutput},
-		TermReview:      llm.TokenUse{Model: llm.DefaultModel, Input: u.TermReviewInput, Output: u.TermReviewOutput},
-		CandidateChecks: llm.TokenUse{Model: llm.DefaultModel, Input: u.CandidateCheckInput, Output: u.CandidateCheckOutput},
+		HaikuReadings:      llm.TokenUse{Model: llm.DefaultModel, Input: u.HaikuReadingInput, Output: u.HaikuReadingOutput},
+		Scans:              llm.TokenUse{Model: llm.DefaultModel, Input: u.ScanInput, Output: u.ScanOutput},
+		TermReview:         llm.TokenUse{Model: llm.DefaultModel, Input: u.TermReviewInput, Output: u.TermReviewOutput},
+		CandidateChecks:    llm.TokenUse{Model: llm.DefaultModel, Input: u.CandidateCheckInput, Output: u.CandidateCheckOutput},
+		RecommendationRuns: llm.TokenUse{Model: llm.DefaultModel, Input: u.RecommendationInput, Output: u.RecommendationOutput},
 	}, nil
 }
 

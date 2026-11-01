@@ -166,6 +166,10 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	// The plan: everyone signed in reads it, only administrators tick it off and set its targets.
 	oas.TickImprovementOperation: domain.NeedAdminChange,
 	oas.SetPlanTargetsOperation:  domain.NeedAdminChange,
+	// The Recommendation run.
+	oas.GetRecommendationRunsOperation:  domain.NeedAdminView,
+	oas.StartRecommendationRunOperation: domain.NeedAdminChange,
+	oas.StopRecommendationRunOperation:  domain.NeedAdminChange,
 	// Activity: what runs, what ended, and this month's spending.
 	oas.GetActivityOperation: domain.NeedAdminView,
 	// The Claude steps: their models and instructions, and the versions of both.

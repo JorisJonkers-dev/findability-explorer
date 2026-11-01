@@ -129,3 +129,16 @@ func TestARunIsEstimatedFromItsGapsAndPages(t *testing.T) {
 		t.Errorf("estimates = %s, %s", one, two)
 	}
 }
+
+func TestAnItemsKindIsItsGapsOrWhetherAScanChecksIt(t *testing.T) {
+	written := domain.Recommendation{Gap: domain.Gap{Kind: domain.GapListing}}
+	if k := (domain.PlanItem{Written: &written}).Kind(); k != "listing" {
+		t.Errorf("written = %s", k)
+	}
+	if k := (domain.PlanItem{Auto: true}).Kind(); k != "readiness" {
+		t.Errorf("scanned = %s", k)
+	}
+	if k := (domain.PlanItem{}).Kind(); k != "general" {
+		t.Errorf("by hand = %s", k)
+	}
+}

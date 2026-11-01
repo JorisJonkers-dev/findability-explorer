@@ -163,23 +163,7 @@ func termGaps(in GapInputs, competitors map[string]bool) []Gap {
 // family's terms. Benefit grows with those competitors, and when the family's AI responses name a
 // competitor more often than Tribelt; a new page is a larger piece of work.
 func pageGaps(in GapInputs, competitors map[string]bool) []Gap {
-	type key struct{ family, language string }
-	users := map[key]map[string]bool{}
-	tribelt := map[key]bool{}
-	for _, t := range in.Terms.Terms {
-		k := key{t.Family, t.Language}
-		if t.UsedByTribelt {
-			tribelt[k] = true
-		}
-		for _, id := range t.FoundBy {
-			if competitors[id] {
-				if users[k] == nil {
-					users[k] = map[string]bool{}
-				}
-				users[k][id] = true
-			}
-		}
-	}
+	users, tribelt := familyUse(in.Terms, competitors)
 	var out []Gap
 	for k, who := range users {
 		if tribelt[k] || hasPage(in.Pages, k.family, k.language) || FamilyNames[k.family] == "" || LanguageNames[k.language] == "" {
@@ -197,6 +181,30 @@ func pageGaps(in GapInputs, competitors map[string]bool) []Gap {
 		})
 	}
 	return out
+}
+
+// familyKey is a belt family in a language.
+type familyKey struct{ family, language string }
+
+// familyUse is, per family and language, the competitors whose newest scan found a term of it, and
+// whether tribelt.nl uses one.
+func familyUse(terms TermMap, competitors map[string]bool) (map[familyKey]map[string]bool, map[familyKey]bool) {
+	users := map[familyKey]map[string]bool{}
+	tribelt := map[familyKey]bool{}
+	for _, t := range terms.Terms {
+		k := familyKey{t.Family, t.Language}
+		tribelt[k] = tribelt[k] || t.UsedByTribelt
+		for _, id := range t.FoundBy {
+			if !competitors[id] {
+				continue
+			}
+			if users[k] == nil {
+				users[k] = map[string]bool{}
+			}
+			users[k][id] = true
+		}
+	}
+	return users, tribelt
 }
 
 // familyBehind is whether the run's responses about family name a competitor more often than

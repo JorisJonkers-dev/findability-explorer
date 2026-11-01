@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	rn79AllowedHeaders = map[string]string{
+	rn80AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn18AllowedHeaders = map[string]string{
@@ -29,37 +29,37 @@ var (
 	rn14AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn110AllowedHeaders = map[string]string{
+	rn112AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn106AllowedHeaders = map[string]string{
+	rn108AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn83AllowedHeaders = map[string]string{
+	rn84AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn74AllowedHeaders = map[string]string{
+	rn75AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn78AllowedHeaders = map[string]string{
+	rn79AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn51AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
-	rn90AllowedHeaders = map[string]string{
+	rn91AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn84AllowedHeaders = map[string]string{
+	rn85AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn55AllowedHeaders = map[string]string{
+	rn56AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn5AllowedHeaders = map[string]string{
@@ -354,7 +354,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										default:
 											s.notAllowed(w, r, notAllowedParams{
 												allowedMethods: "POST",
-												allowedHeaders: rn79AllowedHeaders,
+												allowedHeaders: rn80AllowedHeaders,
 												acceptPost:     "application/json",
 												acceptPatch:    "",
 											})
@@ -914,7 +914,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PATCH",
-											allowedHeaders: rn110AllowedHeaders,
+											allowedHeaders: rn112AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "application/json",
 										})
@@ -1136,7 +1136,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn106AllowedHeaders,
+											allowedHeaders: rn108AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -1161,7 +1161,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn83AllowedHeaders,
+											allowedHeaders: rn84AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -1271,7 +1271,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													default:
 														s.notAllowed(w, r, notAllowedParams{
 															allowedMethods: "POST",
-															allowedHeaders: rn74AllowedHeaders,
+															allowedHeaders: rn75AllowedHeaders,
 															acceptPost:     "application/json",
 															acceptPatch:    "",
 														})
@@ -1297,7 +1297,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													default:
 														s.notAllowed(w, r, notAllowedParams{
 															allowedMethods: "POST",
-															allowedHeaders: rn78AllowedHeaders,
+															allowedHeaders: rn79AllowedHeaders,
 															acceptPost:     "application/json",
 															acceptPatch:    "",
 														})
@@ -1464,6 +1464,59 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 							}
 
+						case 'c': // Prefix: "commendation-runs"
+
+							if l := len("commendation-runs"); len(elem) >= l && elem[0:l] == "commendation-runs" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch r.Method {
+								case "GET":
+									s.handleGetRecommendationRunsRequest([0]string{}, elemIsEscaped, w, r)
+								case "POST":
+									s.handleStartRecommendationRunRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET,POST",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/stop"
+
+								if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleStopRecommendationRunRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: nil,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							}
+
 						case 's': // Prefix: "scans"
 
 							if l := len("scans"); len(elem) >= l && elem[0:l] == "scans" {
@@ -1479,7 +1532,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn90AllowedHeaders,
+										allowedHeaders: rn91AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -1630,7 +1683,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "PUT",
-													allowedHeaders: rn84AllowedHeaders,
+													allowedHeaders: rn85AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -1840,7 +1893,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn55AllowedHeaders,
+								allowedHeaders: rn56AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -3856,6 +3909,66 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.operationID = "stopReadinessCheck"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/admin/readiness-checks/stop"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
+								}
+
+							}
+
+						case 'c': // Prefix: "commendation-runs"
+
+							if l := len("commendation-runs"); len(elem) >= l && elem[0:l] == "commendation-runs" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = GetRecommendationRunsOperation
+									r.summary = "The Recommendation run, what starting one would do, and the past runs"
+									r.operationID = "getRecommendationRuns"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/admin/recommendation-runs"
+									r.args = args
+									r.count = 0
+									return r, true
+								case "POST":
+									r.name = StartRecommendationRunOperation
+									r.summary = "Start a Recommendation run"
+									r.operationID = "startRecommendationRun"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/admin/recommendation-runs"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/stop"
+
+								if l := len("/stop"); len(elem) >= l && elem[0:l] == "/stop" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = StopRecommendationRunOperation
+										r.summary = "Stop the Recommendation run"
+										r.operationID = "stopRecommendationRun"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/admin/recommendation-runs/stop"
 										r.args = args
 										r.count = 0
 										return r, true

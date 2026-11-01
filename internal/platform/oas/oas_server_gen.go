@@ -257,6 +257,16 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses/{analysisId}/readiness-files
 	GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (GetReadinessFilesRes, error)
+	// GetRecommendationRuns implements getRecommendationRuns operation.
+	//
+	// Administrators only. Whether a Recommendation run runs; what a new one would read (the newest Prompt
+	// run, the tribelt.nl scan, the search term list), how many gaps its rules find, how many open
+	// recommendations it would replace, whether tribelt.nl was last scanned before the newest Prompt run,
+	// and its estimate on the Anthropic key; and the last 20 runs, each with what it added, replaced and
+	// kept.
+	//
+	// GET /api/v1/admin/recommendation-runs
+	GetRecommendationRuns(ctx context.Context) (GetRecommendationRunsRes, error)
 	// GetStandings implements getStandings operation.
 	//
 	// Compares Tribelt with its competitors on each measure, from the newest Prompt run and each company's
@@ -497,6 +507,17 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/readiness-checks
 	StartReadinessCheck(ctx context.Context) (StartReadinessCheckRes, error)
+	// StartRecommendationRun implements startRecommendationRun operation.
+	//
+	// Administrators only. In the background, the rules find the gaps from the newest Prompt run, each
+	// company's newest scan and the search term list, and the Claude step writing recommendations places
+	// and words them from tribelt.nl's page text, a batch at a time. A run that ends replaces the open
+	// recommendations an earlier run wrote, and keeps the done and edited ones and those written by hand;
+	// one stopped, cut short by the budget, or failed changes nothing. 409 when one runs already or no
+	// Anthropic key is set up.
+	//
+	// POST /api/v1/admin/recommendation-runs
+	StartRecommendationRun(ctx context.Context) (StartRecommendationRunRes, error)
 	// StartRescans implements startRescans operation.
 	//
 	// Administrators only. Queues one scan for each named company with a website, or with `all`, for every
@@ -557,6 +578,13 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/readiness-checks/stop
 	StopReadinessCheck(ctx context.Context) (StopReadinessCheckRes, error)
+	// StopRecommendationRun implements stopRecommendationRun operation.
+	//
+	// Administrators only. Stops the Recommendation run that runs after the batch it writes; the
+	// recommendations stay as they were, and the run is recorded as stopped by hand. 404 when none runs.
+	//
+	// POST /api/v1/admin/recommendation-runs/stop
+	StopRecommendationRun(ctx context.Context) (StopRecommendationRunRes, error)
 	// StopRescan implements stopRescan operation.
 	//
 	// Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting one is

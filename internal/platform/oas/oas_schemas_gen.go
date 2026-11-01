@@ -1745,18 +1745,21 @@ func (s *ClaudeStepChange) SetRestoredFrom(val OptInt32) {
 	s.RestoredFrom = val
 }
 
-// A Claude step - matching (matching products in scans); the other steps join as they are built.
+// A Claude step - matching (matching products in scans) or recommendations (writing recommendations);
+// the other steps join as they are built.
 // Ref: #/components/schemas/ClaudeStepId
 type ClaudeStepId string
 
 const (
-	ClaudeStepIdMatching ClaudeStepId = "matching"
+	ClaudeStepIdMatching        ClaudeStepId = "matching"
+	ClaudeStepIdRecommendations ClaudeStepId = "recommendations"
 )
 
 // AllValues returns all ClaudeStepId values.
 func (ClaudeStepId) AllValues() []ClaudeStepId {
 	return []ClaudeStepId{
 		ClaudeStepIdMatching,
+		ClaudeStepIdRecommendations,
 	}
 }
 
@@ -1764,6 +1767,8 @@ func (ClaudeStepId) AllValues() []ClaudeStepId {
 func (s ClaudeStepId) MarshalText() ([]byte, error) {
 	switch s {
 	case ClaudeStepIdMatching:
+		return []byte(s), nil
+	case ClaudeStepIdRecommendations:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1775,6 +1780,9 @@ func (s *ClaudeStepId) UnmarshalText(data []byte) error {
 	switch ClaudeStepId(data) {
 	case ClaudeStepIdMatching:
 		*s = ClaudeStepIdMatching
+		return nil
+	case ClaudeStepIdRecommendations:
+		*s = ClaudeStepIdRecommendations
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4022,6 +4030,14 @@ func (*GetReadinessFilesNotFound) getReadinessFilesRes() {}
 type GetReadinessFilesUnauthorized ProblemStatusCode
 
 func (*GetReadinessFilesUnauthorized) getReadinessFilesRes() {}
+
+type GetRecommendationRunsForbidden ProblemStatusCode
+
+func (*GetRecommendationRunsForbidden) getRecommendationRunsRes() {}
+
+type GetRecommendationRunsUnauthorized ProblemStatusCode
+
+func (*GetRecommendationRunsUnauthorized) getRecommendationRunsRes() {}
 
 type GetTermPagesBadRequest ProblemStatusCode
 
@@ -7225,6 +7241,52 @@ func (o OptPromptScope) Or(d PromptScope) PromptScope {
 	return d
 }
 
+// NewOptRecommendationRunEnding returns new OptRecommendationRunEnding with value set to v.
+func NewOptRecommendationRunEnding(v RecommendationRunEnding) OptRecommendationRunEnding {
+	return OptRecommendationRunEnding{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptRecommendationRunEnding is optional RecommendationRunEnding.
+type OptRecommendationRunEnding struct {
+	Value RecommendationRunEnding
+	Set   bool
+}
+
+// IsSet returns true if OptRecommendationRunEnding was set.
+func (o OptRecommendationRunEnding) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptRecommendationRunEnding) Reset() {
+	var v RecommendationRunEnding
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptRecommendationRunEnding) SetTo(v RecommendationRunEnding) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptRecommendationRunEnding) Get() (v RecommendationRunEnding, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptRecommendationRunEnding) Or(d RecommendationRunEnding) RecommendationRunEnding {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptSitemapCoverage returns new OptSitemapCoverage with value set to v.
 func NewOptSitemapCoverage(v SitemapCoverage) OptSitemapCoverage {
 	return OptSitemapCoverage{
@@ -8198,6 +8260,20 @@ func (*Plan) tickImprovementRes() {}
 // One improvement of the plan.
 // Ref: #/components/schemas/PlanImprovement
 type PlanImprovement struct {
+	Kind RecommendationKind `json:"kind"`
+	// True for one a Recommendation run wrote, false for one written by hand.
+	Generated bool `json:"generated"`
+	// True for an open one the newest Recommendation run wrote.
+	New bool `json:"new"`
+	// The tribelt.nl page it belongs on; absent when it applies to the whole site or the model could not
+	// place it.
+	Where OptString `json:"where"`
+	// Present instead of where when the model could not place it.
+	WhereNote OptString `json:"whereNote"`
+	// Why the model moved a score from the rules' by a point; absent when it did not.
+	ScoreReason OptString `json:"scoreReason"`
+	// The facts behind a generated one, as the rules found them.
+	Facts []string `json:"facts"`
 	// Its id.
 	ID string `json:"id"`
 	// What to do.
@@ -8229,6 +8305,41 @@ type PlanImprovement struct {
 	// Tribelt's value on the measure it moves; absent without data.
 	Tribelt OptFloat64       `json:"tribelt"`
 	Leader  OptMeasureLeader `json:"leader"`
+}
+
+// GetKind returns the value of Kind.
+func (s *PlanImprovement) GetKind() RecommendationKind {
+	return s.Kind
+}
+
+// GetGenerated returns the value of Generated.
+func (s *PlanImprovement) GetGenerated() bool {
+	return s.Generated
+}
+
+// GetNew returns the value of New.
+func (s *PlanImprovement) GetNew() bool {
+	return s.New
+}
+
+// GetWhere returns the value of Where.
+func (s *PlanImprovement) GetWhere() OptString {
+	return s.Where
+}
+
+// GetWhereNote returns the value of WhereNote.
+func (s *PlanImprovement) GetWhereNote() OptString {
+	return s.WhereNote
+}
+
+// GetScoreReason returns the value of ScoreReason.
+func (s *PlanImprovement) GetScoreReason() OptString {
+	return s.ScoreReason
+}
+
+// GetFacts returns the value of Facts.
+func (s *PlanImprovement) GetFacts() []string {
+	return s.Facts
 }
 
 // GetID returns the value of ID.
@@ -8309,6 +8420,41 @@ func (s *PlanImprovement) GetTribelt() OptFloat64 {
 // GetLeader returns the value of Leader.
 func (s *PlanImprovement) GetLeader() OptMeasureLeader {
 	return s.Leader
+}
+
+// SetKind sets the value of Kind.
+func (s *PlanImprovement) SetKind(val RecommendationKind) {
+	s.Kind = val
+}
+
+// SetGenerated sets the value of Generated.
+func (s *PlanImprovement) SetGenerated(val bool) {
+	s.Generated = val
+}
+
+// SetNew sets the value of New.
+func (s *PlanImprovement) SetNew(val bool) {
+	s.New = val
+}
+
+// SetWhere sets the value of Where.
+func (s *PlanImprovement) SetWhere(val OptString) {
+	s.Where = val
+}
+
+// SetWhereNote sets the value of WhereNote.
+func (s *PlanImprovement) SetWhereNote(val OptString) {
+	s.WhereNote = val
+}
+
+// SetScoreReason sets the value of ScoreReason.
+func (s *PlanImprovement) SetScoreReason(val OptString) {
+	s.ScoreReason = val
+}
+
+// SetFacts sets the value of Facts.
+func (s *PlanImprovement) SetFacts(val []string) {
+	s.Facts = val
 }
 
 // SetID sets the value of ID.
@@ -12643,6 +12789,417 @@ func (s *ReadinessRank) SetScore(val float64) {
 	s.Score = val
 }
 
+// What kind of change a recommendation asks for - term (a search term to add), page (a page to add),
+// listing (a site to get listed on), fact (a fact sheet correction), readiness (AI readiness), or
+// general (written by hand for the whole site).
+// Ref: #/components/schemas/RecommendationKind
+type RecommendationKind string
+
+const (
+	RecommendationKindTerm      RecommendationKind = "term"
+	RecommendationKindPage      RecommendationKind = "page"
+	RecommendationKindListing   RecommendationKind = "listing"
+	RecommendationKindFact      RecommendationKind = "fact"
+	RecommendationKindReadiness RecommendationKind = "readiness"
+	RecommendationKindGeneral   RecommendationKind = "general"
+)
+
+// AllValues returns all RecommendationKind values.
+func (RecommendationKind) AllValues() []RecommendationKind {
+	return []RecommendationKind{
+		RecommendationKindTerm,
+		RecommendationKindPage,
+		RecommendationKindListing,
+		RecommendationKindFact,
+		RecommendationKindReadiness,
+		RecommendationKindGeneral,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RecommendationKind) MarshalText() ([]byte, error) {
+	switch s {
+	case RecommendationKindTerm:
+		return []byte(s), nil
+	case RecommendationKindPage:
+		return []byte(s), nil
+	case RecommendationKindListing:
+		return []byte(s), nil
+	case RecommendationKindFact:
+		return []byte(s), nil
+	case RecommendationKindReadiness:
+		return []byte(s), nil
+	case RecommendationKindGeneral:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RecommendationKind) UnmarshalText(data []byte) error {
+	switch RecommendationKind(data) {
+	case RecommendationKindTerm:
+		*s = RecommendationKindTerm
+		return nil
+	case RecommendationKindPage:
+		*s = RecommendationKindPage
+		return nil
+	case RecommendationKindListing:
+		*s = RecommendationKindListing
+		return nil
+	case RecommendationKindFact:
+		*s = RecommendationKindFact
+		return nil
+	case RecommendationKindReadiness:
+		*s = RecommendationKindReadiness
+		return nil
+	case RecommendationKindGeneral:
+		*s = RecommendationKindGeneral
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One Recommendation run.
+// Ref: #/components/schemas/RecommendationRun
+type RecommendationRun struct {
+	// The run's id.
+	ID uuid.UUID `json:"id"`
+	// When it started.
+	StartedAt time.Time `json:"startedAt"`
+	// When it ended; absent while it runs.
+	FinishedAt OptDateTime `json:"finishedAt"`
+	// How it ended; absent while it runs.
+	Ending OptRecommendationRunEnding `json:"ending"`
+	// Who started it.
+	StartedBy string `json:"startedBy"`
+	// The model that wrote.
+	Model string `json:"model"`
+	// How many gaps it wrote recommendations for.
+	Gaps int32 `json:"gaps"`
+	// How many recommendations it added.
+	Added int32 `json:"added"`
+	// How many open recommendations it replaced.
+	Replaced int32 `json:"replaced"`
+	// How many done or edited recommendations it kept.
+	Kept    int32 `json:"kept"`
+	CostUsd Usd   `json:"costUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *RecommendationRun) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *RecommendationRun) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetFinishedAt returns the value of FinishedAt.
+func (s *RecommendationRun) GetFinishedAt() OptDateTime {
+	return s.FinishedAt
+}
+
+// GetEnding returns the value of Ending.
+func (s *RecommendationRun) GetEnding() OptRecommendationRunEnding {
+	return s.Ending
+}
+
+// GetStartedBy returns the value of StartedBy.
+func (s *RecommendationRun) GetStartedBy() string {
+	return s.StartedBy
+}
+
+// GetModel returns the value of Model.
+func (s *RecommendationRun) GetModel() string {
+	return s.Model
+}
+
+// GetGaps returns the value of Gaps.
+func (s *RecommendationRun) GetGaps() int32 {
+	return s.Gaps
+}
+
+// GetAdded returns the value of Added.
+func (s *RecommendationRun) GetAdded() int32 {
+	return s.Added
+}
+
+// GetReplaced returns the value of Replaced.
+func (s *RecommendationRun) GetReplaced() int32 {
+	return s.Replaced
+}
+
+// GetKept returns the value of Kept.
+func (s *RecommendationRun) GetKept() int32 {
+	return s.Kept
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *RecommendationRun) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// SetID sets the value of ID.
+func (s *RecommendationRun) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *RecommendationRun) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetFinishedAt sets the value of FinishedAt.
+func (s *RecommendationRun) SetFinishedAt(val OptDateTime) {
+	s.FinishedAt = val
+}
+
+// SetEnding sets the value of Ending.
+func (s *RecommendationRun) SetEnding(val OptRecommendationRunEnding) {
+	s.Ending = val
+}
+
+// SetStartedBy sets the value of StartedBy.
+func (s *RecommendationRun) SetStartedBy(val string) {
+	s.StartedBy = val
+}
+
+// SetModel sets the value of Model.
+func (s *RecommendationRun) SetModel(val string) {
+	s.Model = val
+}
+
+// SetGaps sets the value of Gaps.
+func (s *RecommendationRun) SetGaps(val int32) {
+	s.Gaps = val
+}
+
+// SetAdded sets the value of Added.
+func (s *RecommendationRun) SetAdded(val int32) {
+	s.Added = val
+}
+
+// SetReplaced sets the value of Replaced.
+func (s *RecommendationRun) SetReplaced(val int32) {
+	s.Replaced = val
+}
+
+// SetKept sets the value of Kept.
+func (s *RecommendationRun) SetKept(val int32) {
+	s.Kept = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *RecommendationRun) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// How it ended; absent while it runs.
+type RecommendationRunEnding string
+
+const (
+	RecommendationRunEndingDone             RecommendationRunEnding = "done"
+	RecommendationRunEndingDoneWithFailures RecommendationRunEnding = "doneWithFailures"
+	RecommendationRunEndingStoppedByHand    RecommendationRunEnding = "stoppedByHand"
+	RecommendationRunEndingStoppedByBudget  RecommendationRunEnding = "stoppedByBudget"
+	RecommendationRunEndingFailed           RecommendationRunEnding = "failed"
+)
+
+// AllValues returns all RecommendationRunEnding values.
+func (RecommendationRunEnding) AllValues() []RecommendationRunEnding {
+	return []RecommendationRunEnding{
+		RecommendationRunEndingDone,
+		RecommendationRunEndingDoneWithFailures,
+		RecommendationRunEndingStoppedByHand,
+		RecommendationRunEndingStoppedByBudget,
+		RecommendationRunEndingFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RecommendationRunEnding) MarshalText() ([]byte, error) {
+	switch s {
+	case RecommendationRunEndingDone:
+		return []byte(s), nil
+	case RecommendationRunEndingDoneWithFailures:
+		return []byte(s), nil
+	case RecommendationRunEndingStoppedByHand:
+		return []byte(s), nil
+	case RecommendationRunEndingStoppedByBudget:
+		return []byte(s), nil
+	case RecommendationRunEndingFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RecommendationRunEnding) UnmarshalText(data []byte) error {
+	switch RecommendationRunEnding(data) {
+	case RecommendationRunEndingDone:
+		*s = RecommendationRunEndingDone
+		return nil
+	case RecommendationRunEndingDoneWithFailures:
+		*s = RecommendationRunEndingDoneWithFailures
+		return nil
+	case RecommendationRunEndingStoppedByHand:
+		*s = RecommendationRunEndingStoppedByHand
+		return nil
+	case RecommendationRunEndingStoppedByBudget:
+		*s = RecommendationRunEndingStoppedByBudget
+		return nil
+	case RecommendationRunEndingFailed:
+		*s = RecommendationRunEndingFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The Recommendation run, what starting one would do, and the past runs.
+// Ref: #/components/schemas/RecommendationRuns
+type RecommendationRuns struct {
+	// Whether a run runs now.
+	Running bool `json:"running"`
+	// True when no Anthropic key is set up, so no run can start.
+	NoKey bool `json:"noKey"`
+	// The model the step writing recommendations uses now; absent without a key.
+	Model OptString `json:"model"`
+	// How many open recommendations an earlier run wrote that a new run replaces.
+	Replaces int32 `json:"replaces"`
+	// True when tribelt.nl was last scanned before the newest Prompt run started.
+	Stale bool `json:"stale"`
+	// When the newest Prompt run started; absent before any.
+	PromptRunAt OptDateTime `json:"promptRunAt"`
+	// When the newest scan of tribelt.nl finished; absent before any.
+	ScanAt OptDateTime `json:"scanAt"`
+	// How many terms the search term list holds.
+	Terms int32 `json:"terms"`
+	// How many gaps the rules find now, at most 40.
+	Gaps             int32 `json:"gaps"`
+	EstimatedCostUsd Usd   `json:"estimatedCostUsd"`
+	// The last runs, the newest first.
+	Runs []RecommendationRun `json:"runs"`
+}
+
+// GetRunning returns the value of Running.
+func (s *RecommendationRuns) GetRunning() bool {
+	return s.Running
+}
+
+// GetNoKey returns the value of NoKey.
+func (s *RecommendationRuns) GetNoKey() bool {
+	return s.NoKey
+}
+
+// GetModel returns the value of Model.
+func (s *RecommendationRuns) GetModel() OptString {
+	return s.Model
+}
+
+// GetReplaces returns the value of Replaces.
+func (s *RecommendationRuns) GetReplaces() int32 {
+	return s.Replaces
+}
+
+// GetStale returns the value of Stale.
+func (s *RecommendationRuns) GetStale() bool {
+	return s.Stale
+}
+
+// GetPromptRunAt returns the value of PromptRunAt.
+func (s *RecommendationRuns) GetPromptRunAt() OptDateTime {
+	return s.PromptRunAt
+}
+
+// GetScanAt returns the value of ScanAt.
+func (s *RecommendationRuns) GetScanAt() OptDateTime {
+	return s.ScanAt
+}
+
+// GetTerms returns the value of Terms.
+func (s *RecommendationRuns) GetTerms() int32 {
+	return s.Terms
+}
+
+// GetGaps returns the value of Gaps.
+func (s *RecommendationRuns) GetGaps() int32 {
+	return s.Gaps
+}
+
+// GetEstimatedCostUsd returns the value of EstimatedCostUsd.
+func (s *RecommendationRuns) GetEstimatedCostUsd() Usd {
+	return s.EstimatedCostUsd
+}
+
+// GetRuns returns the value of Runs.
+func (s *RecommendationRuns) GetRuns() []RecommendationRun {
+	return s.Runs
+}
+
+// SetRunning sets the value of Running.
+func (s *RecommendationRuns) SetRunning(val bool) {
+	s.Running = val
+}
+
+// SetNoKey sets the value of NoKey.
+func (s *RecommendationRuns) SetNoKey(val bool) {
+	s.NoKey = val
+}
+
+// SetModel sets the value of Model.
+func (s *RecommendationRuns) SetModel(val OptString) {
+	s.Model = val
+}
+
+// SetReplaces sets the value of Replaces.
+func (s *RecommendationRuns) SetReplaces(val int32) {
+	s.Replaces = val
+}
+
+// SetStale sets the value of Stale.
+func (s *RecommendationRuns) SetStale(val bool) {
+	s.Stale = val
+}
+
+// SetPromptRunAt sets the value of PromptRunAt.
+func (s *RecommendationRuns) SetPromptRunAt(val OptDateTime) {
+	s.PromptRunAt = val
+}
+
+// SetScanAt sets the value of ScanAt.
+func (s *RecommendationRuns) SetScanAt(val OptDateTime) {
+	s.ScanAt = val
+}
+
+// SetTerms sets the value of Terms.
+func (s *RecommendationRuns) SetTerms(val int32) {
+	s.Terms = val
+}
+
+// SetGaps sets the value of Gaps.
+func (s *RecommendationRuns) SetGaps(val int32) {
+	s.Gaps = val
+}
+
+// SetEstimatedCostUsd sets the value of EstimatedCostUsd.
+func (s *RecommendationRuns) SetEstimatedCostUsd(val Usd) {
+	s.EstimatedCostUsd = val
+}
+
+// SetRuns sets the value of Runs.
+func (s *RecommendationRuns) SetRuns(val []RecommendationRun) {
+	s.Runs = val
+}
+
+func (*RecommendationRuns) getRecommendationRunsRes()  {}
+func (*RecommendationRuns) startRecommendationRunRes() {}
+
 type RejectTermCandidateBadRequest ProblemStatusCode
 
 func (*RejectTermCandidateBadRequest) rejectTermCandidateRes() {}
@@ -13802,6 +14359,18 @@ type StartReadinessCheckUnauthorized ProblemStatusCode
 
 func (*StartReadinessCheckUnauthorized) startReadinessCheckRes() {}
 
+type StartRecommendationRunConflict ProblemStatusCode
+
+func (*StartRecommendationRunConflict) startRecommendationRunRes() {}
+
+type StartRecommendationRunForbidden ProblemStatusCode
+
+func (*StartRecommendationRunForbidden) startRecommendationRunRes() {}
+
+type StartRecommendationRunUnauthorized ProblemStatusCode
+
+func (*StartRecommendationRunUnauthorized) startRecommendationRunRes() {}
+
 type StartRescansBadRequest ProblemStatusCode
 
 func (*StartRescansBadRequest) startRescansRes() {}
@@ -13918,6 +14487,23 @@ func (*StopReadinessCheckNotFound) stopReadinessCheckRes() {}
 type StopReadinessCheckUnauthorized ProblemStatusCode
 
 func (*StopReadinessCheckUnauthorized) stopReadinessCheckRes() {}
+
+type StopRecommendationRunForbidden ProblemStatusCode
+
+func (*StopRecommendationRunForbidden) stopRecommendationRunRes() {}
+
+// StopRecommendationRunNoContent is response for StopRecommendationRun operation.
+type StopRecommendationRunNoContent struct{}
+
+func (*StopRecommendationRunNoContent) stopRecommendationRunRes() {}
+
+type StopRecommendationRunNotFound ProblemStatusCode
+
+func (*StopRecommendationRunNotFound) stopRecommendationRunRes() {}
+
+type StopRecommendationRunUnauthorized ProblemStatusCode
+
+func (*StopRecommendationRunUnauthorized) stopRecommendationRunRes() {}
 
 type StopRescanForbidden ProblemStatusCode
 

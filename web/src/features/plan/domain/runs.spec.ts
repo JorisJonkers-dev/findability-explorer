@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { RecommendationRun } from '../../../infrastructure/api/types.gen'
 import { recommendationRuns } from '../../../testing/recommendationRuns'
-import { endingLabel, estimateLine, readsLine, replacesLine, runProblem, runRow } from './runs'
+import { estimateLine, readsLine, replacesLine, runProblem, runRow } from './runs'
 
 const problemOf = (status: number, detail?: string) => ({ type: 'about:blank', title: 'Problem', status, ...(detail ? { detail } : {}) })
 
@@ -31,9 +31,7 @@ describe('the Recommendation run in words', () => {
     expect(runRow(done)).toEqual({ when: '1 November 2026, 08:00', ending: 'Done', model: 'claude-haiku-5-5', added: '38', replaced: '10', kept: '2', cost: '$0.06' })
     expect(runRow(stopped).ending).toBe('Stopped by hand')
     expect(runRow({ ...done, ending: undefined, finishedAt: undefined }).ending).toBe('Running')
-    expect(endingLabel('stoppedByBudget')).toBe('Stopped by the budget')
-    expect(endingLabel('failed')).toBe('Failed')
-    expect(endingLabel('doneWithFailures')).toBe('Done with failures')
+    expect(runRow({ ...done, ending: 'doneWithFailures' }).ending).toBe('Done, with failures')
   })
 
   it('says why a run could not start', () => {

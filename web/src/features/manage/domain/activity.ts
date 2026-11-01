@@ -1,10 +1,5 @@
 import type { AnalysisSummary, LlmCredential, PromptRun, SpendLine, Work, WorkKind } from '../../../infrastructure/api/types.gen'
-
-/** How a piece of work ended, in the words of the spec. */
-export type Ended = 'Done' | 'Done, with failed responses' | 'Stopped by hand' | 'Stopped by the budget' | 'Failed'
-
-/** The tone of an ending's pill. */
-export type Tone = 'good' | 'warn' | 'bad'
+import type { Ending } from '../../../shared/endings'
 
 /** The start of the failure text of a run an administrator stopped (the backend's StoppedByHand). */
 const STOPPED_BY_HAND = 'Stopped by hand'
@@ -29,49 +24,17 @@ export function timeLabel(iso: string): string {
   return TIME.format(new Date(iso))
 }
 
-/** How a Prompt run ended, or null while it runs. A stopped run says in its failure why it stopped. */
-export function endedOf(run: Pick<PromptRun, 'status' | 'failure' | 'failed'>): Ended | null {
+/** How a Prompt run ended, as the API names endings, or null while it runs. A stopped run says in its failure why it stopped. */
+export function endedOf(run: Pick<PromptRun, 'status' | 'failure' | 'failed'>): Ending | null {
   switch (run.status) {
     case 'running':
       return null
     case 'done':
-      return run.failed > 0 ? 'Done, with failed responses' : 'Done'
+      return run.failed > 0 ? 'doneWithFailures' : 'done'
     case 'stopped':
-      return run.failure?.startsWith(STOPPED_BY_HAND) ? 'Stopped by hand' : 'Stopped by the budget'
+      return run.failure?.startsWith(STOPPED_BY_HAND) ? 'stoppedByHand' : 'stoppedByBudget'
     case 'failed':
-      return 'Failed'
-  }
-}
-
-/** How a piece of work ended, from the API's ending, or null while it runs. */
-export function endingOf(work: Pick<Work, 'ending'>): Ended | null {
-  switch (work.ending) {
-    case undefined:
-      return null
-    case 'done':
-      return 'Done'
-    case 'doneWithFailures':
-      return 'Done, with failed responses'
-    case 'stoppedByHand':
-      return 'Stopped by hand'
-    case 'stoppedByBudget':
-      return 'Stopped by the budget'
-    case 'failed':
-      return 'Failed'
-  }
-}
-
-/** The pill's tone for an ending. */
-export function endedTone(ended: Ended): Tone {
-  switch (ended) {
-    case 'Done':
-      return 'good'
-    case 'Failed':
-      return 'bad'
-    case 'Done, with failed responses':
-    case 'Stopped by hand':
-    case 'Stopped by the budget':
-      return 'warn'
+      return 'failed'
   }
 }
 
@@ -135,13 +98,13 @@ export function costOf(work: Pick<Work, 'openRouterCostUsd' | 'anthropicCostUsd'
 }
 
 /** One line of Recent work. */
-export type WorkLine = { id: string; at: string; work: string; ended: Ended; did: string; costUsd: number; to: string }
+export type WorkLine = { id: string; at: string; work: string; ended: Ending; did: string; costUsd: number; to: string }
 
 /** The work that ended, as Recent work lists it; work without an ending is left out. */
 export function recentWork(recent: readonly Work[]): WorkLine[] {
   return recent.flatMap((w) => {
-    const ended = endingOf(w)
-    if (ended === null) return []
+    const ended = w.ending
+    if (ended === undefined) return []
     const kind = KINDS[w.kind]
     return [{ id: w.id, at: w.finishedAt ?? w.startedAt, work: kind.label, ended, did: didLabel(w), costUsd: costOf(w), to: kind.to(w.id) }]
   })
@@ -184,14 +147,6 @@ export function runningWork(running: readonly Work[], runEstimateUsd?: number): 
   })
 }
 
-const ENDINGS: Record<Ended, NonNullable<Work['ending']>> = {
-  Done: 'done',
-  'Done, with failed responses': 'doneWithFailures',
-  'Stopped by hand': 'stoppedByHand',
-  'Stopped by the budget': 'stoppedByBudget',
-  Failed: 'failed',
-}
-
 /** A Prompt run as a piece of work, for the Prompt test's pages, which read the runs themselves. */
 export function runAsWork(run: PromptRun): Work {
   const ended = endedOf(run)
@@ -200,7 +155,7 @@ export function runAsWork(run: PromptRun): Work {
     kind: 'promptRun',
     startedAt: run.startedAt,
     ...(run.finishedAt ? { finishedAt: run.finishedAt } : {}),
-    ...(ended === null ? {} : { ending: ENDINGS[ended] }),
+    ...(ended === null ? {} : { ending: ended }),
     done: run.answered + run.failed,
     total: run.tasks,
     failed: run.failed,

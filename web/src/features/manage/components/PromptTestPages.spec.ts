@@ -151,7 +151,7 @@ describe('Runs', () => {
     const rows = widget(wrapper, 'All runs').findAll('tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
     expect(rows).toEqual([
       ['28 October 2026, 06:00', 'Version 1', '2', '40 of 360', 'Stopped by hand', '$0.05'],
-      ['1 November 2026, 06:00', 'Version 1', '2', '358 of 360', 'Done, with failed responses', '$0.42'],
+      ['1 November 2026, 06:00', 'Version 1', '2', '358 of 360', 'Done, with failures', '$0.42'],
     ])
   })
 

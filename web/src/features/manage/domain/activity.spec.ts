@@ -6,8 +6,6 @@ import {
   dayLabel,
   didLabel,
   endedOf,
-  endedTone,
-  endingOf,
   lastEnded,
   missingKeys,
   needsFinishing,
@@ -29,39 +27,20 @@ function work(overrides: Partial<Work> = {}): Work {
 }
 
 describe('endedOf', () => {
-  it('reads a done run as Done, or Done with failed responses when some failed', () => {
-    expect(endedOf(promptRun({ status: 'done', failed: 0 }))).toBe('Done')
-    expect(endedOf(promptRun({ status: 'done', failed: 2 }))).toBe('Done, with failed responses')
+  it('reads a done run as done, or done with failures when some responses failed', () => {
+    expect(endedOf(promptRun({ status: 'done', failed: 0 }))).toBe('done')
+    expect(endedOf(promptRun({ status: 'done', failed: 2 }))).toBe('doneWithFailures')
   })
 
   it('tells a run stopped by hand from one stopped by the budget', () => {
-    expect(endedOf(promptRun({ status: 'stopped', failure: HAND }))).toBe('Stopped by hand')
-    expect(endedOf(promptRun({ status: 'stopped', failure: BUDGET }))).toBe('Stopped by the budget')
-    expect(endedOf(promptRun({ status: 'stopped', failure: undefined }))).toBe('Stopped by the budget')
+    expect(endedOf(promptRun({ status: 'stopped', failure: HAND }))).toBe('stoppedByHand')
+    expect(endedOf(promptRun({ status: 'stopped', failure: BUDGET }))).toBe('stoppedByBudget')
+    expect(endedOf(promptRun({ status: 'stopped', failure: undefined }))).toBe('stoppedByBudget')
   })
 
-  it('reads a failed run as Failed, and a running one as not ended', () => {
-    expect(endedOf(promptRun({ status: 'failed', failure: 'No key.' }))).toBe('Failed')
+  it('reads a failed run as failed, and a running one as not ended', () => {
+    expect(endedOf(promptRun({ status: 'failed', failure: 'No key.' }))).toBe('failed')
     expect(endedOf(promptRun({ status: 'running' }))).toBeNull()
-  })
-})
-
-describe('endingOf and endedTone', () => {
-  it('reads every ending the API gives in the spec’s words', () => {
-    expect(endingOf(work())).toBeNull()
-    expect(endingOf(work({ ending: 'done' }))).toBe('Done')
-    expect(endingOf(work({ ending: 'doneWithFailures' }))).toBe('Done, with failed responses')
-    expect(endingOf(work({ ending: 'stoppedByHand' }))).toBe('Stopped by hand')
-    expect(endingOf(work({ ending: 'stoppedByBudget' }))).toBe('Stopped by the budget')
-    expect(endingOf(work({ ending: 'failed' }))).toBe('Failed')
-  })
-
-  it('is good for done, bad for failed, and a warning otherwise', () => {
-    expect(endedTone('Done')).toBe('good')
-    expect(endedTone('Failed')).toBe('bad')
-    expect(endedTone('Done, with failed responses')).toBe('warn')
-    expect(endedTone('Stopped by hand')).toBe('warn')
-    expect(endedTone('Stopped by the budget')).toBe('warn')
   })
 })
 
@@ -93,8 +72,8 @@ describe('recentWork', () => {
       work({ id: 'x', kind: 'rescan' }),
     ])
     expect(lines).toEqual([
-      { id: 'r1', at: '2026-10-28T09:37:00Z', work: 'Prompt run', ended: 'Done', did: '200 of 200 responses', costUsd: 1.12, to: '/manage/prompt-test/runs' },
-      { id: 's1', at: '2026-10-28T09:00:00Z', work: 'Scan', ended: 'Stopped by hand', did: '12 of 60 pages', costUsd: 0.02, to: '/manage/scans/s1' },
+      { id: 'r1', at: '2026-10-28T09:37:00Z', work: 'Prompt run', ended: 'done', did: '200 of 200 responses', costUsd: 1.12, to: '/manage/prompt-test/runs' },
+      { id: 's1', at: '2026-10-28T09:00:00Z', work: 'Scan', ended: 'stoppedByHand', did: '12 of 60 pages', costUsd: 0.02, to: '/manage/scans/s1' },
     ])
   })
 

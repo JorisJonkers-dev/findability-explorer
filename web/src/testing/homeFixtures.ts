@@ -8,6 +8,7 @@ import { overviewFixture, planFixture, standingsFixture } from './numbersFixture
 export function promptSettingsFixture(overrides: Partial<PromptTestSettings> = {}): PromptTestSettings {
   return {
     providers: ['openai', 'google'],
+    modelList: [],
     monthlyBudgetUsd: 10,
     spentThisMonthUsd: 2.5,
     cadence: 'monthly',

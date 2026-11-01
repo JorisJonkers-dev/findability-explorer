@@ -146,16 +146,10 @@ export function platformOf(r: AiReadiness): string {
 
 /** What a row sorts by in a column; a check sorts by the points it gives. */
 function siteSortValue(row: ReadySite, column: SiteColumn): SortValue {
-  switch (column) {
-    case 'name':
-      return siteName(row)
-    case 'score':
-      return siteScore(row.readiness)
-    case 'platform':
-      return platformOf(row.readiness)
-    default:
-      return POINTS[checkStates(row.readiness)[column]]
-  }
+  if (column === 'name') return siteName(row)
+  if (column === 'score') return siteScore(row.readiness)
+  if (column === 'platform') return platformOf(row.readiness)
+  return POINTS[checkStates(row.readiness)[column]]
 }
 
 /**

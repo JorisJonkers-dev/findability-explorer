@@ -31,9 +31,9 @@ export const KIND_PLURAL: Record<Kind, string> = {
   general: 'General',
 }
 
-/** A recommendation's kind: a scan decides the AI readiness ones; the rest apply in general. */
-export function kindOf(it: Pick<PlanImprovement, 'auto'>): Kind {
-  return it.auto ? 'readiness' : 'general'
+/** A recommendation's kind, as the server says it. */
+export function kindOf(it: Pick<PlanImprovement, 'kind'>): Kind {
+  return it.kind
 }
 
 /** The kinds the recommendations have, in the filter's order. */
@@ -42,14 +42,29 @@ export function kindsIn(items: readonly PlanImprovement[]): Kind[] {
   return KINDS.filter((k) => there.has(k))
 }
 
-/** Where a recommendation applies: a hand-written one, to the whole site. */
-export function whereText(): string {
-  return 'The whole site'
+/** Where a recommendation goes, in a row: the page a run placed it on, the web agency's to place, or the whole site. */
+export function whereText(it: Pick<PlanImprovement, 'generated' | 'where'>): string {
+  if (it.where) return it.where.replace(/^https?:\/\//, '')
+  return it.generated ? 'For the web agency to place' : 'The whole site'
 }
 
-/** The list page's data line. */
-export function dataLine(catalogueVersion: number): string {
-  return `Written by hand, version ${String(catalogueVersion)} of the catalogue. No Recommendation run has written any yet.`
+/** Where a recommendation goes, on its own page. */
+export function whereLine(it: Pick<PlanImprovement, 'generated' | 'where' | 'whereNote'>): string {
+  if (it.where) return `On ${it.where}.`
+  return it.whereNote ?? 'This applies to the whole site.'
+}
+
+/** The list page's data line: the catalogue written by hand, and how many the runs wrote. */
+export function dataLine(catalogueVersion: number, items: readonly Pick<PlanImprovement, 'generated'>[]): string {
+  const generated = items.filter((i) => i.generated).length
+  const hand = `Written by hand, version ${String(catalogueVersion)} of the catalogue`
+  return generated === 0 ? `${hand}. No Recommendation run has written any yet.` : `${hand}, and by Recommendation runs: ${String(generated)} of them.`
+}
+
+/** One recommendation's data line: who wrote it. */
+export function detailLine(it: Pick<PlanImprovement, 'generated' | 'new'>): string {
+  if (!it.generated) return 'Written by hand, and applies in general.'
+  return it.new ? 'Written by the newest Recommendation run.' : 'Written by a Recommendation run.'
 }
 
 /** The recommendations not done yet, best value first, as the server sends them. */

@@ -366,4 +366,7 @@ export const details = {
   benefit: 3,
   effort: 2,
   parts: [] as { name: string; present: boolean }[],
+  kind: 'general' as const,
+  generated: false,
+  new: false,
 }

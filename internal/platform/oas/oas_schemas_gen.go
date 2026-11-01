@@ -67,6 +67,48 @@ func (s *ActiveLlm) SetModel(val string) {
 	s.Model = val
 }
 
+// The work running now, the last pieces ended, and this month's spending.
+// Ref: #/components/schemas/Activity
+type Activity struct {
+	// The work running now, or waiting to, newest first.
+	Running []Work `json:"running"`
+	// The last 20 pieces of work ended, the last ended first.
+	Recent   []Work   `json:"recent"`
+	Spending Spending `json:"spending"`
+}
+
+// GetRunning returns the value of Running.
+func (s *Activity) GetRunning() []Work {
+	return s.Running
+}
+
+// GetRecent returns the value of Recent.
+func (s *Activity) GetRecent() []Work {
+	return s.Recent
+}
+
+// GetSpending returns the value of Spending.
+func (s *Activity) GetSpending() Spending {
+	return s.Spending
+}
+
+// SetRunning sets the value of Running.
+func (s *Activity) SetRunning(val []Work) {
+	s.Running = val
+}
+
+// SetRecent sets the value of Recent.
+func (s *Activity) SetRecent(val []Work) {
+	s.Recent = val
+}
+
+// SetSpending sets the value of Spending.
+func (s *Activity) SetSpending(val Spending) {
+	s.Spending = val
+}
+
+func (*Activity) getActivityRes() {}
+
 type AddCompetitorBadRequest ProblemStatusCode
 
 func (*AddCompetitorBadRequest) addCompetitorRes() {}
@@ -1472,7 +1514,8 @@ type CandidateReviewState struct {
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-	// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+	// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+	// stopped it; what it decided is kept). Absent when it went well.
 	Problem OptCandidateReviewStateProblem `json:"problem"`
 }
 
@@ -1500,13 +1543,15 @@ func (*CandidateReviewState) startCandidateReviewRes() {}
 func (*CandidateReviewState) startCompetitorCheckRes() {}
 
 // Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+// stopped it; what it decided is kept). Absent when it went well.
 type CandidateReviewStateProblem string
 
 const (
-	CandidateReviewStateProblemNoKey  CandidateReviewStateProblem = "noKey"
-	CandidateReviewStateProblemBudget CandidateReviewStateProblem = "budget"
-	CandidateReviewStateProblemFailed CandidateReviewStateProblem = "failed"
+	CandidateReviewStateProblemNoKey   CandidateReviewStateProblem = "noKey"
+	CandidateReviewStateProblemBudget  CandidateReviewStateProblem = "budget"
+	CandidateReviewStateProblemFailed  CandidateReviewStateProblem = "failed"
+	CandidateReviewStateProblemStopped CandidateReviewStateProblem = "stopped"
 )
 
 // AllValues returns all CandidateReviewStateProblem values.
@@ -1515,6 +1560,7 @@ func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
 		CandidateReviewStateProblemNoKey,
 		CandidateReviewStateProblemBudget,
 		CandidateReviewStateProblemFailed,
+		CandidateReviewStateProblemStopped,
 	}
 }
 
@@ -1526,6 +1572,8 @@ func (s CandidateReviewStateProblem) MarshalText() ([]byte, error) {
 	case CandidateReviewStateProblemBudget:
 		return []byte(s), nil
 	case CandidateReviewStateProblemFailed:
+		return []byte(s), nil
+	case CandidateReviewStateProblemStopped:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1544,9 +1592,402 @@ func (s *CandidateReviewStateProblem) UnmarshalText(data []byte) error {
 	case CandidateReviewStateProblemFailed:
 		*s = CandidateReviewStateProblemFailed
 		return nil
+	case CandidateReviewStateProblemStopped:
+		*s = CandidateReviewStateProblemStopped
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// One Claude step: its versions, oldest first, the newest of which it uses; the instructions it came
+// with; and the models it may use, cheapest first, with the cost of one job with each. A job's cost is
+// the tool's estimate with Claude Haiku 5.5, scaled by each model's price for the step's typical mix
+// of tokens read and written.
+// Ref: #/components/schemas/ClaudeStep
+type ClaudeStep struct {
+	ID ClaudeStepId `json:"id"`
+	// The step's name.
+	Title string `json:"title"`
+	// True when the instructions are set in the code and only the model can be chosen.
+	FixedInstructions bool `json:"fixedInstructions"`
+	// The instructions the tool came with.
+	Original string            `json:"original"`
+	Current  ClaudeStepVersion `json:"current"`
+	// Every version, oldest first.
+	Versions []ClaudeStepVersion `json:"versions"`
+	// The Claude models the step may use, cheapest first.
+	Models     []ClaudeStepModel `json:"models"`
+	JobCostUsd Usd               `json:"jobCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *ClaudeStep) GetID() ClaudeStepId {
+	return s.ID
+}
+
+// GetTitle returns the value of Title.
+func (s *ClaudeStep) GetTitle() string {
+	return s.Title
+}
+
+// GetFixedInstructions returns the value of FixedInstructions.
+func (s *ClaudeStep) GetFixedInstructions() bool {
+	return s.FixedInstructions
+}
+
+// GetOriginal returns the value of Original.
+func (s *ClaudeStep) GetOriginal() string {
+	return s.Original
+}
+
+// GetCurrent returns the value of Current.
+func (s *ClaudeStep) GetCurrent() ClaudeStepVersion {
+	return s.Current
+}
+
+// GetVersions returns the value of Versions.
+func (s *ClaudeStep) GetVersions() []ClaudeStepVersion {
+	return s.Versions
+}
+
+// GetModels returns the value of Models.
+func (s *ClaudeStep) GetModels() []ClaudeStepModel {
+	return s.Models
+}
+
+// GetJobCostUsd returns the value of JobCostUsd.
+func (s *ClaudeStep) GetJobCostUsd() Usd {
+	return s.JobCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *ClaudeStep) SetID(val ClaudeStepId) {
+	s.ID = val
+}
+
+// SetTitle sets the value of Title.
+func (s *ClaudeStep) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetFixedInstructions sets the value of FixedInstructions.
+func (s *ClaudeStep) SetFixedInstructions(val bool) {
+	s.FixedInstructions = val
+}
+
+// SetOriginal sets the value of Original.
+func (s *ClaudeStep) SetOriginal(val string) {
+	s.Original = val
+}
+
+// SetCurrent sets the value of Current.
+func (s *ClaudeStep) SetCurrent(val ClaudeStepVersion) {
+	s.Current = val
+}
+
+// SetVersions sets the value of Versions.
+func (s *ClaudeStep) SetVersions(val []ClaudeStepVersion) {
+	s.Versions = val
+}
+
+// SetModels sets the value of Models.
+func (s *ClaudeStep) SetModels(val []ClaudeStepModel) {
+	s.Models = val
+}
+
+// SetJobCostUsd sets the value of JobCostUsd.
+func (s *ClaudeStep) SetJobCostUsd(val Usd) {
+	s.JobCostUsd = val
+}
+
+func (*ClaudeStep) getClaudeStepRes()         {}
+func (*ClaudeStep) saveClaudeStepVersionRes() {}
+
+// A new version of a Claude step.
+// Ref: #/components/schemas/ClaudeStepChange
+type ClaudeStepChange struct {
+	// The Claude model's id.
+	Model string `json:"model"`
+	// The system message.
+	Instructions string `json:"instructions"`
+	// The version this one restores, when it does; it is noted on the new version.
+	RestoredFrom OptInt32 `json:"restoredFrom"`
+}
+
+// GetModel returns the value of Model.
+func (s *ClaudeStepChange) GetModel() string {
+	return s.Model
+}
+
+// GetInstructions returns the value of Instructions.
+func (s *ClaudeStepChange) GetInstructions() string {
+	return s.Instructions
+}
+
+// GetRestoredFrom returns the value of RestoredFrom.
+func (s *ClaudeStepChange) GetRestoredFrom() OptInt32 {
+	return s.RestoredFrom
+}
+
+// SetModel sets the value of Model.
+func (s *ClaudeStepChange) SetModel(val string) {
+	s.Model = val
+}
+
+// SetInstructions sets the value of Instructions.
+func (s *ClaudeStepChange) SetInstructions(val string) {
+	s.Instructions = val
+}
+
+// SetRestoredFrom sets the value of RestoredFrom.
+func (s *ClaudeStepChange) SetRestoredFrom(val OptInt32) {
+	s.RestoredFrom = val
+}
+
+// A Claude step - matching (matching products in scans); the other steps join as they are built.
+// Ref: #/components/schemas/ClaudeStepId
+type ClaudeStepId string
+
+const (
+	ClaudeStepIdMatching ClaudeStepId = "matching"
+)
+
+// AllValues returns all ClaudeStepId values.
+func (ClaudeStepId) AllValues() []ClaudeStepId {
+	return []ClaudeStepId{
+		ClaudeStepIdMatching,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ClaudeStepId) MarshalText() ([]byte, error) {
+	switch s {
+	case ClaudeStepIdMatching:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ClaudeStepId) UnmarshalText(data []byte) error {
+	switch ClaudeStepId(data) {
+	case ClaudeStepIdMatching:
+		*s = ClaudeStepIdMatching
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Every Claude step.
+// Ref: #/components/schemas/ClaudeStepList
+type ClaudeStepList struct {
+	Items []ClaudeStepSummary `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *ClaudeStepList) GetItems() []ClaudeStepSummary {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *ClaudeStepList) SetItems(val []ClaudeStepSummary) {
+	s.Items = val
+}
+
+func (*ClaudeStepList) listClaudeStepsRes() {}
+
+// A Claude model a step may use, with what one job of the step costs with it.
+// Ref: #/components/schemas/ClaudeStepModel
+type ClaudeStepModel struct {
+	// The model's id on Anthropic's API.
+	ID string `json:"id"`
+	// The model's name.
+	Name       string `json:"name"`
+	JobCostUsd Usd    `json:"jobCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *ClaudeStepModel) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ClaudeStepModel) GetName() string {
+	return s.Name
+}
+
+// GetJobCostUsd returns the value of JobCostUsd.
+func (s *ClaudeStepModel) GetJobCostUsd() Usd {
+	return s.JobCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *ClaudeStepModel) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ClaudeStepModel) SetName(val string) {
+	s.Name = val
+}
+
+// SetJobCostUsd sets the value of JobCostUsd.
+func (s *ClaudeStepModel) SetJobCostUsd(val Usd) {
+	s.JobCostUsd = val
+}
+
+// A Claude step as the overview lists it.
+// Ref: #/components/schemas/ClaudeStepSummary
+type ClaudeStepSummary struct {
+	ID ClaudeStepId `json:"id"`
+	// The step's name.
+	Title string `json:"title"`
+	// True when the instructions are set in the code and only the model can be chosen.
+	FixedInstructions bool              `json:"fixedInstructions"`
+	Current           ClaudeStepVersion `json:"current"`
+	JobCostUsd        Usd               `json:"jobCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *ClaudeStepSummary) GetID() ClaudeStepId {
+	return s.ID
+}
+
+// GetTitle returns the value of Title.
+func (s *ClaudeStepSummary) GetTitle() string {
+	return s.Title
+}
+
+// GetFixedInstructions returns the value of FixedInstructions.
+func (s *ClaudeStepSummary) GetFixedInstructions() bool {
+	return s.FixedInstructions
+}
+
+// GetCurrent returns the value of Current.
+func (s *ClaudeStepSummary) GetCurrent() ClaudeStepVersion {
+	return s.Current
+}
+
+// GetJobCostUsd returns the value of JobCostUsd.
+func (s *ClaudeStepSummary) GetJobCostUsd() Usd {
+	return s.JobCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *ClaudeStepSummary) SetID(val ClaudeStepId) {
+	s.ID = val
+}
+
+// SetTitle sets the value of Title.
+func (s *ClaudeStepSummary) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetFixedInstructions sets the value of FixedInstructions.
+func (s *ClaudeStepSummary) SetFixedInstructions(val bool) {
+	s.FixedInstructions = val
+}
+
+// SetCurrent sets the value of Current.
+func (s *ClaudeStepSummary) SetCurrent(val ClaudeStepVersion) {
+	s.Current = val
+}
+
+// SetJobCostUsd sets the value of JobCostUsd.
+func (s *ClaudeStepSummary) SetJobCostUsd(val Usd) {
+	s.JobCostUsd = val
+}
+
+// One saved version of a Claude step - the model it uses and its instructions.
+// Ref: #/components/schemas/ClaudeStepVersion
+type ClaudeStepVersion struct {
+	// The version's number, from 1 for the instructions the tool came with.
+	Number int32 `json:"number"`
+	// The Claude model's id on Anthropic's API.
+	Model string `json:"model"`
+	// The model's name for people.
+	ModelName string `json:"modelName"`
+	// The system message the step sends; the data follows it in a separate message.
+	Instructions string `json:"instructions"`
+	// Where the version came from, such as "Restored from version 2.", or empty.
+	Note string `json:"note"`
+	// Who saved it; "the tool" for version 1.
+	CreatedBy string `json:"createdBy"`
+	// When it was saved.
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// GetNumber returns the value of Number.
+func (s *ClaudeStepVersion) GetNumber() int32 {
+	return s.Number
+}
+
+// GetModel returns the value of Model.
+func (s *ClaudeStepVersion) GetModel() string {
+	return s.Model
+}
+
+// GetModelName returns the value of ModelName.
+func (s *ClaudeStepVersion) GetModelName() string {
+	return s.ModelName
+}
+
+// GetInstructions returns the value of Instructions.
+func (s *ClaudeStepVersion) GetInstructions() string {
+	return s.Instructions
+}
+
+// GetNote returns the value of Note.
+func (s *ClaudeStepVersion) GetNote() string {
+	return s.Note
+}
+
+// GetCreatedBy returns the value of CreatedBy.
+func (s *ClaudeStepVersion) GetCreatedBy() string {
+	return s.CreatedBy
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ClaudeStepVersion) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetNumber sets the value of Number.
+func (s *ClaudeStepVersion) SetNumber(val int32) {
+	s.Number = val
+}
+
+// SetModel sets the value of Model.
+func (s *ClaudeStepVersion) SetModel(val string) {
+	s.Model = val
+}
+
+// SetModelName sets the value of ModelName.
+func (s *ClaudeStepVersion) SetModelName(val string) {
+	s.ModelName = val
+}
+
+// SetInstructions sets the value of Instructions.
+func (s *ClaudeStepVersion) SetInstructions(val string) {
+	s.Instructions = val
+}
+
+// SetNote sets the value of Note.
+func (s *ClaudeStepVersion) SetNote(val string) {
+	s.Note = val
+}
+
+// SetCreatedBy sets the value of CreatedBy.
+func (s *ClaudeStepVersion) SetCreatedBy(val string) {
+	s.CreatedBy = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ClaudeStepVersion) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
 }
 
 type ClearActiveLlmForbidden ProblemStatusCode
@@ -2604,155 +3045,6 @@ func (s *CompetitorCheckList) SetReview(val CandidateReviewState) {
 
 func (*CompetitorCheckList) listCompetitorChecksRes() {}
 
-// The competitor definition in use, its versions, and what checking again against it would take.
-// Ref: #/components/schemas/CompetitorDefinition
-type CompetitorDefinition struct {
-	Current CompetitorDefinitionVersion `json:"current"`
-	// Every version, the newest first.
-	Versions []CompetitorDefinitionVersion `json:"versions"`
-	// Competitors on the list the model checks whose check was made against an older version.
-	OutdatedCompetitors int32 `json:"outdatedCompetitors"`
-	// Waiting candidates whose check was made against an older version.
-	OutdatedCandidates int32 `json:"outdatedCandidates"`
-	RecheckCostUsd     Usd   `json:"recheckCostUsd"`
-}
-
-// GetCurrent returns the value of Current.
-func (s *CompetitorDefinition) GetCurrent() CompetitorDefinitionVersion {
-	return s.Current
-}
-
-// GetVersions returns the value of Versions.
-func (s *CompetitorDefinition) GetVersions() []CompetitorDefinitionVersion {
-	return s.Versions
-}
-
-// GetOutdatedCompetitors returns the value of OutdatedCompetitors.
-func (s *CompetitorDefinition) GetOutdatedCompetitors() int32 {
-	return s.OutdatedCompetitors
-}
-
-// GetOutdatedCandidates returns the value of OutdatedCandidates.
-func (s *CompetitorDefinition) GetOutdatedCandidates() int32 {
-	return s.OutdatedCandidates
-}
-
-// GetRecheckCostUsd returns the value of RecheckCostUsd.
-func (s *CompetitorDefinition) GetRecheckCostUsd() Usd {
-	return s.RecheckCostUsd
-}
-
-// SetCurrent sets the value of Current.
-func (s *CompetitorDefinition) SetCurrent(val CompetitorDefinitionVersion) {
-	s.Current = val
-}
-
-// SetVersions sets the value of Versions.
-func (s *CompetitorDefinition) SetVersions(val []CompetitorDefinitionVersion) {
-	s.Versions = val
-}
-
-// SetOutdatedCompetitors sets the value of OutdatedCompetitors.
-func (s *CompetitorDefinition) SetOutdatedCompetitors(val int32) {
-	s.OutdatedCompetitors = val
-}
-
-// SetOutdatedCandidates sets the value of OutdatedCandidates.
-func (s *CompetitorDefinition) SetOutdatedCandidates(val int32) {
-	s.OutdatedCandidates = val
-}
-
-// SetRecheckCostUsd sets the value of RecheckCostUsd.
-func (s *CompetitorDefinition) SetRecheckCostUsd(val Usd) {
-	s.RecheckCostUsd = val
-}
-
-func (*CompetitorDefinition) getCompetitorDefinitionRes()     {}
-func (*CompetitorDefinition) restoreCompetitorDefinitionRes() {}
-func (*CompetitorDefinition) saveCompetitorDefinitionRes()    {}
-
-// A new text for the competitor definition.
-// Ref: #/components/schemas/CompetitorDefinitionText
-type CompetitorDefinitionText struct {
-	// Who competes with Tribelt, and who does not.
-	Text string `json:"text"`
-}
-
-// GetText returns the value of Text.
-func (s *CompetitorDefinitionText) GetText() string {
-	return s.Text
-}
-
-// SetText sets the value of Text.
-func (s *CompetitorDefinitionText) SetText(val string) {
-	s.Text = val
-}
-
-// One version of the competitor definition.
-// Ref: #/components/schemas/CompetitorDefinitionVersion
-type CompetitorDefinitionVersion struct {
-	// The version's number; checks record it.
-	Version int32 `json:"version"`
-	// Who competes with Tribelt, and who does not.
-	Text string `json:"text"`
-	// When it was saved.
-	SavedAt time.Time `json:"savedAt"`
-	// Who saved it; import for the version the code held.
-	SavedBy string `json:"savedBy"`
-	// The version whose text it restored; absent for a new text.
-	RestoredFrom OptInt32 `json:"restoredFrom"`
-}
-
-// GetVersion returns the value of Version.
-func (s *CompetitorDefinitionVersion) GetVersion() int32 {
-	return s.Version
-}
-
-// GetText returns the value of Text.
-func (s *CompetitorDefinitionVersion) GetText() string {
-	return s.Text
-}
-
-// GetSavedAt returns the value of SavedAt.
-func (s *CompetitorDefinitionVersion) GetSavedAt() time.Time {
-	return s.SavedAt
-}
-
-// GetSavedBy returns the value of SavedBy.
-func (s *CompetitorDefinitionVersion) GetSavedBy() string {
-	return s.SavedBy
-}
-
-// GetRestoredFrom returns the value of RestoredFrom.
-func (s *CompetitorDefinitionVersion) GetRestoredFrom() OptInt32 {
-	return s.RestoredFrom
-}
-
-// SetVersion sets the value of Version.
-func (s *CompetitorDefinitionVersion) SetVersion(val int32) {
-	s.Version = val
-}
-
-// SetText sets the value of Text.
-func (s *CompetitorDefinitionVersion) SetText(val string) {
-	s.Text = val
-}
-
-// SetSavedAt sets the value of SavedAt.
-func (s *CompetitorDefinitionVersion) SetSavedAt(val time.Time) {
-	s.SavedAt = val
-}
-
-// SetSavedBy sets the value of SavedBy.
-func (s *CompetitorDefinitionVersion) SetSavedBy(val string) {
-	s.SavedBy = val
-}
-
-// SetRestoredFrom sets the value of RestoredFrom.
-func (s *CompetitorDefinitionVersion) SetRestoredFrom(val OptInt32) {
-	s.RestoredFrom = val
-}
-
 // A company with its most recent scans.
 // Ref: #/components/schemas/CompetitorDetail
 type CompetitorDetail struct {
@@ -3458,6 +3750,14 @@ func (s *FollowedCompany) SetRole(val CompanyRole) {
 	s.Role = val
 }
 
+type GetActivityForbidden ProblemStatusCode
+
+func (*GetActivityForbidden) getActivityRes() {}
+
+type GetActivityUnauthorized ProblemStatusCode
+
+func (*GetActivityUnauthorized) getActivityRes() {}
+
 type GetAnalysisBadRequest ProblemStatusCode
 
 func (*GetAnalysisBadRequest) getAnalysisRes() {}
@@ -3466,17 +3766,21 @@ type GetAnalysisNotFound ProblemStatusCode
 
 func (*GetAnalysisNotFound) getAnalysisRes() {}
 
+type GetClaudeStepForbidden ProblemStatusCode
+
+func (*GetClaudeStepForbidden) getClaudeStepRes() {}
+
+type GetClaudeStepNotFound ProblemStatusCode
+
+func (*GetClaudeStepNotFound) getClaudeStepRes() {}
+
+type GetClaudeStepUnauthorized ProblemStatusCode
+
+func (*GetClaudeStepUnauthorized) getClaudeStepRes() {}
+
 type GetCompetitorBadRequest ProblemStatusCode
 
 func (*GetCompetitorBadRequest) getCompetitorRes() {}
-
-type GetCompetitorDefinitionForbidden ProblemStatusCode
-
-func (*GetCompetitorDefinitionForbidden) getCompetitorDefinitionRes() {}
-
-type GetCompetitorDefinitionUnauthorized ProblemStatusCode
-
-func (*GetCompetitorDefinitionUnauthorized) getCompetitorDefinitionRes() {}
 
 type GetCompetitorNotFound ProblemStatusCode
 
@@ -3521,18 +3825,6 @@ func (*GetLlmSettingsForbidden) getLlmSettingsRes() {}
 type GetLlmSettingsUnauthorized ProblemStatusCode
 
 func (*GetLlmSettingsUnauthorized) getLlmSettingsRes() {}
-
-type GetPromptModelCatalogueForbidden ProblemStatusCode
-
-func (*GetPromptModelCatalogueForbidden) getPromptModelCatalogueRes() {}
-
-type GetPromptModelCatalogueUnauthorized ProblemStatusCode
-
-func (*GetPromptModelCatalogueUnauthorized) getPromptModelCatalogueRes() {}
-
-type GetPromptModelCatalogueUnprocessableEntity ProblemStatusCode
-
-func (*GetPromptModelCatalogueUnprocessableEntity) getPromptModelCatalogueRes() {}
 
 type GetPromptRetryPlanBadRequest ProblemStatusCode
 
@@ -3978,6 +4270,14 @@ func (s *Language) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+type ListClaudeStepsForbidden ProblemStatusCode
+
+func (*ListClaudeStepsForbidden) listClaudeStepsRes() {}
+
+type ListClaudeStepsUnauthorized ProblemStatusCode
+
+func (*ListClaudeStepsUnauthorized) listClaudeStepsRes() {}
 
 type ListCompetitorCandidatesBadRequest ProblemStatusCode
 
@@ -7274,6 +7574,52 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// NewOptWorkEnding returns new OptWorkEnding with value set to v.
+func NewOptWorkEnding(v WorkEnding) OptWorkEnding {
+	return OptWorkEnding{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptWorkEnding is optional WorkEnding.
+type OptWorkEnding struct {
+	Value WorkEnding
+	Set   bool
+}
+
+// IsSet returns true if OptWorkEnding was set.
+func (o OptWorkEnding) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptWorkEnding) Reset() {
+	var v WorkEnding
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptWorkEnding) SetTo(v WorkEnding) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptWorkEnding) Get() (v WorkEnding, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptWorkEnding) Or(d WorkEnding) WorkEnding {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // The figures of the home page.
 // Ref: #/components/schemas/Overview
 type Overview struct {
@@ -9117,116 +9463,6 @@ func (s *PromptCadence) UnmarshalText(data []byte) error {
 	}
 }
 
-// One text model on OpenRouter, with what one response costs.
-// Ref: #/components/schemas/PromptCatalogueModel
-type PromptCatalogueModel struct {
-	// Its OpenRouter id.
-	ID string `json:"id"`
-	// Its name on OpenRouter.
-	Name string `json:"name"`
-	// Its provider's OpenRouter id.
-	Provider string `json:"provider"`
-	// When OpenRouter listed it; absent when OpenRouter does not say.
-	ListedAt OptDateTime `json:"listedAt"`
-	// True when its tokens cost nothing.
-	Free bool `json:"free"`
-	// True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
-	Recommended  bool             `json:"recommended"`
-	Basis        PromptPriceBasis `json:"basis"`
-	KnowledgeUsd Usd              `json:"knowledgeUsd"`
-	WebUsd       Usd              `json:"webUsd"`
-}
-
-// GetID returns the value of ID.
-func (s *PromptCatalogueModel) GetID() string {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *PromptCatalogueModel) GetName() string {
-	return s.Name
-}
-
-// GetProvider returns the value of Provider.
-func (s *PromptCatalogueModel) GetProvider() string {
-	return s.Provider
-}
-
-// GetListedAt returns the value of ListedAt.
-func (s *PromptCatalogueModel) GetListedAt() OptDateTime {
-	return s.ListedAt
-}
-
-// GetFree returns the value of Free.
-func (s *PromptCatalogueModel) GetFree() bool {
-	return s.Free
-}
-
-// GetRecommended returns the value of Recommended.
-func (s *PromptCatalogueModel) GetRecommended() bool {
-	return s.Recommended
-}
-
-// GetBasis returns the value of Basis.
-func (s *PromptCatalogueModel) GetBasis() PromptPriceBasis {
-	return s.Basis
-}
-
-// GetKnowledgeUsd returns the value of KnowledgeUsd.
-func (s *PromptCatalogueModel) GetKnowledgeUsd() Usd {
-	return s.KnowledgeUsd
-}
-
-// GetWebUsd returns the value of WebUsd.
-func (s *PromptCatalogueModel) GetWebUsd() Usd {
-	return s.WebUsd
-}
-
-// SetID sets the value of ID.
-func (s *PromptCatalogueModel) SetID(val string) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *PromptCatalogueModel) SetName(val string) {
-	s.Name = val
-}
-
-// SetProvider sets the value of Provider.
-func (s *PromptCatalogueModel) SetProvider(val string) {
-	s.Provider = val
-}
-
-// SetListedAt sets the value of ListedAt.
-func (s *PromptCatalogueModel) SetListedAt(val OptDateTime) {
-	s.ListedAt = val
-}
-
-// SetFree sets the value of Free.
-func (s *PromptCatalogueModel) SetFree(val bool) {
-	s.Free = val
-}
-
-// SetRecommended sets the value of Recommended.
-func (s *PromptCatalogueModel) SetRecommended(val bool) {
-	s.Recommended = val
-}
-
-// SetBasis sets the value of Basis.
-func (s *PromptCatalogueModel) SetBasis(val PromptPriceBasis) {
-	s.Basis = val
-}
-
-// SetKnowledgeUsd sets the value of KnowledgeUsd.
-func (s *PromptCatalogueModel) SetKnowledgeUsd(val Usd) {
-	s.KnowledgeUsd = val
-}
-
-// SetWebUsd sets the value of WebUsd.
-func (s *PromptCatalogueModel) SetWebUsd(val Usd) {
-	s.WebUsd = val
-}
-
 // The answers of one provider, scope, belt family and mode that were read, and how many name and cite
 // Tribelt.
 // Ref: #/components/schemas/PromptCell
@@ -9774,49 +10010,6 @@ func (s *PromptMode) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
-
-// Every text model on OpenRouter, as Add a model lists it.
-// Ref: #/components/schemas/PromptModelCatalogue
-type PromptModelCatalogue struct {
-	// When the catalogue was read from OpenRouter.
-	ReadAt time.Time `json:"readAt"`
-	// How many questions a run asks, for the cost of a run.
-	Questions int32 `json:"questions"`
-	// The models, the recommended first, then cheapest first.
-	Models []PromptCatalogueModel `json:"models"`
-}
-
-// GetReadAt returns the value of ReadAt.
-func (s *PromptModelCatalogue) GetReadAt() time.Time {
-	return s.ReadAt
-}
-
-// GetQuestions returns the value of Questions.
-func (s *PromptModelCatalogue) GetQuestions() int32 {
-	return s.Questions
-}
-
-// GetModels returns the value of Models.
-func (s *PromptModelCatalogue) GetModels() []PromptCatalogueModel {
-	return s.Models
-}
-
-// SetReadAt sets the value of ReadAt.
-func (s *PromptModelCatalogue) SetReadAt(val time.Time) {
-	s.ReadAt = val
-}
-
-// SetQuestions sets the value of Questions.
-func (s *PromptModelCatalogue) SetQuestions(val int32) {
-	s.Questions = val
-}
-
-// SetModels sets the value of Models.
-func (s *PromptModelCatalogue) SetModels(val []PromptCatalogueModel) {
-	s.Models = val
-}
-
-func (*PromptModelCatalogue) getPromptModelCatalogueRes() {}
 
 // The model a run asks for one provider, and the paid fallback of a free one.
 // Ref: #/components/schemas/PromptModelChoice
@@ -10682,8 +10875,6 @@ func (*PromptRun) startPromptRunRes() {}
 type PromptRunFigures struct {
 	// The run's id.
 	RunId uuid.UUID `json:"runId"`
-	// The models the run asked, by OpenRouter id; the charts break where they changed.
-	Models []string `json:"models"`
 	// When it started.
 	StartedAt time.Time `json:"startedAt"`
 	// The version of the Prompt set it asked.
@@ -10715,11 +10906,6 @@ type PromptRunFigures struct {
 // GetRunId returns the value of RunId.
 func (s *PromptRunFigures) GetRunId() uuid.UUID {
 	return s.RunId
-}
-
-// GetModels returns the value of Models.
-func (s *PromptRunFigures) GetModels() []string {
-	return s.Models
 }
 
 // GetStartedAt returns the value of StartedAt.
@@ -10790,11 +10976,6 @@ func (s *PromptRunFigures) GetCitation() OptFloat64 {
 // SetRunId sets the value of RunId.
 func (s *PromptRunFigures) SetRunId(val uuid.UUID) {
 	s.RunId = val
-}
-
-// SetModels sets the value of Models.
-func (s *PromptRunFigures) SetModels(val []string) {
-	s.Models = val
 }
 
 // SetStartedAt sets the value of StartedAt.
@@ -11359,11 +11540,8 @@ func (*PromptTestResults) getPromptTestResultsRes() {}
 // Ref: #/components/schemas/PromptTestSettings
 type PromptTestSettings struct {
 	CredentialId OptLlmCredentialId `json:"credentialId"`
-	// The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
-	Providers []string `json:"providers"`
-	// The Model list, the OpenRouter models every run asks, each its own column; empty until one is saved,
-	// when runs ask the cheapest model of each provider.
-	ModelList         []string      `json:"modelList"`
+	// The providers whose cheapest model runs ask, by OpenRouter id.
+	Providers         []string      `json:"providers"`
 	MonthlyBudgetUsd  Usd           `json:"monthlyBudgetUsd"`
 	SpentThisMonthUsd Usd           `json:"spentThisMonthUsd"`
 	Cadence           PromptCadence `json:"cadence"`
@@ -11389,11 +11567,6 @@ func (s *PromptTestSettings) GetCredentialId() OptLlmCredentialId {
 // GetProviders returns the value of Providers.
 func (s *PromptTestSettings) GetProviders() []string {
 	return s.Providers
-}
-
-// GetModelList returns the value of ModelList.
-func (s *PromptTestSettings) GetModelList() []string {
-	return s.ModelList
 }
 
 // GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
@@ -11456,11 +11629,6 @@ func (s *PromptTestSettings) SetProviders(val []string) {
 	s.Providers = val
 }
 
-// SetModelList sets the value of ModelList.
-func (s *PromptTestSettings) SetModelList(val []string) {
-	s.ModelList = val
-}
-
 // SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
 func (s *PromptTestSettings) SetMonthlyBudgetUsd(val Usd) {
 	s.MonthlyBudgetUsd = val
@@ -11520,8 +11688,6 @@ type PromptTestSettingsChange struct {
 	CredentialId OptLlmCredentialId `json:"credentialId"`
 	// The providers whose cheapest model runs ask.
 	Providers []string `json:"providers"`
-	// The Model list, by OpenRouter model id.
-	Models []string `json:"models"`
 	// The month's budget in dollars.
 	MonthlyBudgetUsd OptFloat64       `json:"monthlyBudgetUsd"`
 	Cadence          OptPromptCadence `json:"cadence"`
@@ -11537,11 +11703,6 @@ func (s *PromptTestSettingsChange) GetCredentialId() OptLlmCredentialId {
 // GetProviders returns the value of Providers.
 func (s *PromptTestSettingsChange) GetProviders() []string {
 	return s.Providers
-}
-
-// GetModels returns the value of Models.
-func (s *PromptTestSettingsChange) GetModels() []string {
-	return s.Models
 }
 
 // GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
@@ -11567,11 +11728,6 @@ func (s *PromptTestSettingsChange) SetCredentialId(val OptLlmCredentialId) {
 // SetProviders sets the value of Providers.
 func (s *PromptTestSettingsChange) SetProviders(val []string) {
 	s.Providers = val
-}
-
-// SetModels sets the value of Models.
-func (s *PromptTestSettingsChange) SetModels(val []string) {
-	s.Models = val
 }
 
 // SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
@@ -12517,26 +12673,6 @@ func (s *RescanSkip) SetReason(val string) {
 	s.Reason = val
 }
 
-type RestoreCompetitorDefinitionBadRequest ProblemStatusCode
-
-func (*RestoreCompetitorDefinitionBadRequest) restoreCompetitorDefinitionRes() {}
-
-type RestoreCompetitorDefinitionConflict ProblemStatusCode
-
-func (*RestoreCompetitorDefinitionConflict) restoreCompetitorDefinitionRes() {}
-
-type RestoreCompetitorDefinitionForbidden ProblemStatusCode
-
-func (*RestoreCompetitorDefinitionForbidden) restoreCompetitorDefinitionRes() {}
-
-type RestoreCompetitorDefinitionNotFound ProblemStatusCode
-
-func (*RestoreCompetitorDefinitionNotFound) restoreCompetitorDefinitionRes() {}
-
-type RestoreCompetitorDefinitionUnauthorized ProblemStatusCode
-
-func (*RestoreCompetitorDefinitionUnauthorized) restoreCompetitorDefinitionRes() {}
-
 type RetryPromptRunBadRequest ProblemStatusCode
 
 func (*RetryPromptRunBadRequest) retryPromptRunRes() {}
@@ -12612,25 +12748,25 @@ func (s *RobotsStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-type SaveCompetitorDefinitionBadRequest ProblemStatusCode
+type SaveClaudeStepVersionBadRequest ProblemStatusCode
 
-func (*SaveCompetitorDefinitionBadRequest) saveCompetitorDefinitionRes() {}
+func (*SaveClaudeStepVersionBadRequest) saveClaudeStepVersionRes() {}
 
-type SaveCompetitorDefinitionConflict ProblemStatusCode
+type SaveClaudeStepVersionForbidden ProblemStatusCode
 
-func (*SaveCompetitorDefinitionConflict) saveCompetitorDefinitionRes() {}
+func (*SaveClaudeStepVersionForbidden) saveClaudeStepVersionRes() {}
 
-type SaveCompetitorDefinitionForbidden ProblemStatusCode
+type SaveClaudeStepVersionNotFound ProblemStatusCode
 
-func (*SaveCompetitorDefinitionForbidden) saveCompetitorDefinitionRes() {}
+func (*SaveClaudeStepVersionNotFound) saveClaudeStepVersionRes() {}
 
-type SaveCompetitorDefinitionUnauthorized ProblemStatusCode
+type SaveClaudeStepVersionUnauthorized ProblemStatusCode
 
-func (*SaveCompetitorDefinitionUnauthorized) saveCompetitorDefinitionRes() {}
+func (*SaveClaudeStepVersionUnauthorized) saveClaudeStepVersionRes() {}
 
-type SaveCompetitorDefinitionUnprocessableEntity ProblemStatusCode
+type SaveClaudeStepVersionUnprocessableEntity ProblemStatusCode
 
-func (*SaveCompetitorDefinitionUnprocessableEntity) saveCompetitorDefinitionRes() {}
+func (*SaveClaudeStepVersionUnprocessableEntity) saveClaudeStepVersionRes() {}
 
 // Two finished scans of a company compared, per group. A term moved when its score changed by at least
 // a quarter and 5 points, or its page count by at least 2.
@@ -12776,6 +12912,18 @@ func (*SetPlanTargetsUnauthorized) setPlanTargetsRes() {}
 type SetPlanTargetsUnprocessableEntity ProblemStatusCode
 
 func (*SetPlanTargetsUnprocessableEntity) setPlanTargetsRes() {}
+
+type SetTermReviewBadRequest ProblemStatusCode
+
+func (*SetTermReviewBadRequest) setTermReviewRes() {}
+
+type SetTermReviewForbidden ProblemStatusCode
+
+func (*SetTermReviewForbidden) setTermReviewRes() {}
+
+type SetTermReviewUnauthorized ProblemStatusCode
+
+func (*SetTermReviewUnauthorized) setTermReviewRes() {}
 
 // One Prompt run in the trend.
 // Ref: #/components/schemas/ShareTrendPoint
@@ -12954,6 +13102,189 @@ func (s *SitemapSummary) SetLanguages(val []string) {
 // SetCoverage sets the value of Coverage.
 func (s *SitemapSummary) SetCoverage(val OptSitemapCoverage) {
 	s.Coverage = val
+}
+
+// What one kind of work cost on one key this month.
+// Ref: #/components/schemas/SpendLine
+type SpendLine struct {
+	// The kind of work.
+	Kind SpendLineKind `json:"kind"`
+	// The key that paid.
+	Key     SpendLineKey `json:"key"`
+	CostUsd Usd          `json:"costUsd"`
+}
+
+// GetKind returns the value of Kind.
+func (s *SpendLine) GetKind() SpendLineKind {
+	return s.Kind
+}
+
+// GetKey returns the value of Key.
+func (s *SpendLine) GetKey() SpendLineKey {
+	return s.Key
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *SpendLine) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// SetKind sets the value of Kind.
+func (s *SpendLine) SetKind(val SpendLineKind) {
+	s.Kind = val
+}
+
+// SetKey sets the value of Key.
+func (s *SpendLine) SetKey(val SpendLineKey) {
+	s.Key = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *SpendLine) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// The key that paid.
+type SpendLineKey string
+
+const (
+	SpendLineKeyOpenRouter SpendLineKey = "openRouter"
+	SpendLineKeyAnthropic  SpendLineKey = "anthropic"
+)
+
+// AllValues returns all SpendLineKey values.
+func (SpendLineKey) AllValues() []SpendLineKey {
+	return []SpendLineKey{
+		SpendLineKeyOpenRouter,
+		SpendLineKeyAnthropic,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SpendLineKey) MarshalText() ([]byte, error) {
+	switch s {
+	case SpendLineKeyOpenRouter:
+		return []byte(s), nil
+	case SpendLineKeyAnthropic:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SpendLineKey) UnmarshalText(data []byte) error {
+	switch SpendLineKey(data) {
+	case SpendLineKeyOpenRouter:
+		*s = SpendLineKeyOpenRouter
+		return nil
+	case SpendLineKeyAnthropic:
+		*s = SpendLineKeyAnthropic
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The kind of work.
+type SpendLineKind string
+
+const (
+	SpendLineKindPromptRuns         SpendLineKind = "promptRuns"
+	SpendLineKindScans              SpendLineKind = "scans"
+	SpendLineKindReadingResponses   SpendLineKind = "readingResponses"
+	SpendLineKindTermReview         SpendLineKind = "termReview"
+	SpendLineKindCandidateChecks    SpendLineKind = "candidateChecks"
+	SpendLineKindRecommendationRuns SpendLineKind = "recommendationRuns"
+)
+
+// AllValues returns all SpendLineKind values.
+func (SpendLineKind) AllValues() []SpendLineKind {
+	return []SpendLineKind{
+		SpendLineKindPromptRuns,
+		SpendLineKindScans,
+		SpendLineKindReadingResponses,
+		SpendLineKindTermReview,
+		SpendLineKindCandidateChecks,
+		SpendLineKindRecommendationRuns,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SpendLineKind) MarshalText() ([]byte, error) {
+	switch s {
+	case SpendLineKindPromptRuns:
+		return []byte(s), nil
+	case SpendLineKindScans:
+		return []byte(s), nil
+	case SpendLineKindReadingResponses:
+		return []byte(s), nil
+	case SpendLineKindTermReview:
+		return []byte(s), nil
+	case SpendLineKindCandidateChecks:
+		return []byte(s), nil
+	case SpendLineKindRecommendationRuns:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SpendLineKind) UnmarshalText(data []byte) error {
+	switch SpendLineKind(data) {
+	case SpendLineKindPromptRuns:
+		*s = SpendLineKindPromptRuns
+		return nil
+	case SpendLineKindScans:
+		*s = SpendLineKindScans
+		return nil
+	case SpendLineKindReadingResponses:
+		*s = SpendLineKindReadingResponses
+		return nil
+	case SpendLineKindTermReview:
+		*s = SpendLineKindTermReview
+		return nil
+	case SpendLineKindCandidateChecks:
+		*s = SpendLineKindCandidateChecks
+		return nil
+	case SpendLineKindRecommendationRuns:
+		*s = SpendLineKindRecommendationRuns
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// This month's spending by kind of work, with the key that paid.
+// Ref: #/components/schemas/Spending
+type Spending struct {
+	// When the month began (UTC).
+	Since time.Time `json:"since"`
+	// One line per kind of work and key - Prompt runs on OpenRouter; scans, the term review, candidate
+	// checks (reviews of the candidates and checks of the list) and Recommendation runs on Anthropic;
+	// reading responses on both, as OpenRouter reads them when no Anthropic key is set up.
+	Lines []SpendLine `json:"lines"`
+}
+
+// GetSince returns the value of Since.
+func (s *Spending) GetSince() time.Time {
+	return s.Since
+}
+
+// GetLines returns the value of Lines.
+func (s *Spending) GetLines() []SpendLine {
+	return s.Lines
+}
+
+// SetSince sets the value of Since.
+func (s *Spending) SetSince(val time.Time) {
+	s.Since = val
+}
+
+// SetLines sets the value of Lines.
+func (s *Spending) SetLines(val []SpendLine) {
+	s.Lines = val
 }
 
 type SplitCompetitorCandidateBadRequest ProblemStatusCode
@@ -13319,6 +13650,40 @@ type StopAnalysisUnauthorized ProblemStatusCode
 
 func (*StopAnalysisUnauthorized) stopAnalysisRes() {}
 
+type StopCandidateReviewForbidden ProblemStatusCode
+
+func (*StopCandidateReviewForbidden) stopCandidateReviewRes() {}
+
+// StopCandidateReviewNoContent is response for StopCandidateReview operation.
+type StopCandidateReviewNoContent struct{}
+
+func (*StopCandidateReviewNoContent) stopCandidateReviewRes() {}
+
+type StopCandidateReviewNotFound ProblemStatusCode
+
+func (*StopCandidateReviewNotFound) stopCandidateReviewRes() {}
+
+type StopCandidateReviewUnauthorized ProblemStatusCode
+
+func (*StopCandidateReviewUnauthorized) stopCandidateReviewRes() {}
+
+type StopCompetitorCheckForbidden ProblemStatusCode
+
+func (*StopCompetitorCheckForbidden) stopCompetitorCheckRes() {}
+
+// StopCompetitorCheckNoContent is response for StopCompetitorCheck operation.
+type StopCompetitorCheckNoContent struct{}
+
+func (*StopCompetitorCheckNoContent) stopCompetitorCheckRes() {}
+
+type StopCompetitorCheckNotFound ProblemStatusCode
+
+func (*StopCompetitorCheckNotFound) stopCompetitorCheckRes() {}
+
+type StopCompetitorCheckUnauthorized ProblemStatusCode
+
+func (*StopCompetitorCheckUnauthorized) stopCompetitorCheckRes() {}
+
 type StopPromptRunBadRequest ProblemStatusCode
 
 func (*StopPromptRunBadRequest) stopPromptRunRes() {}
@@ -13373,6 +13738,23 @@ func (*StopRescanNotFound) stopRescanRes() {}
 type StopRescanUnauthorized ProblemStatusCode
 
 func (*StopRescanUnauthorized) stopRescanRes() {}
+
+type StopTermReviewForbidden ProblemStatusCode
+
+func (*StopTermReviewForbidden) stopTermReviewRes() {}
+
+// StopTermReviewNoContent is response for StopTermReview operation.
+type StopTermReviewNoContent struct{}
+
+func (*StopTermReviewNoContent) stopTermReviewRes() {}
+
+type StopTermReviewNotFound ProblemStatusCode
+
+func (*StopTermReviewNotFound) stopTermReviewRes() {}
+
+type StopTermReviewUnauthorized ProblemStatusCode
+
+func (*StopTermReviewUnauthorized) stopTermReviewRes() {}
 
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term
@@ -14155,16 +14537,28 @@ func (s *TermPages) SetItems(val []CompanyTermPages) {
 
 func (*TermPages) getTermPagesRes() {}
 
-// How far the language model is with the waiting candidates.
+// Whether the language model reviews the waiting candidates by itself, how far it is with them, and
+// what it used this month.
 // Ref: #/components/schemas/TermReviewState
 type TermReviewState struct {
+	// Whether it reviews by itself every ten minutes; off, only when asked.
+	On bool `json:"on"`
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// How many waiting candidates it has not reviewed yet.
 	Waiting int32 `json:"waiting"`
 	// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-	// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+	// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+	// stopped it; what it decided is kept). Absent when it went well.
 	Problem OptTermReviewStateProblem `json:"problem"`
+	// The tokens it used this month, input and output together.
+	MonthTokens  int64 `json:"monthTokens"`
+	MonthCostUsd Usd   `json:"monthCostUsd"`
+}
+
+// GetOn returns the value of On.
+func (s *TermReviewState) GetOn() bool {
+	return s.On
 }
 
 // GetRunning returns the value of Running.
@@ -14182,6 +14576,21 @@ func (s *TermReviewState) GetProblem() OptTermReviewStateProblem {
 	return s.Problem
 }
 
+// GetMonthTokens returns the value of MonthTokens.
+func (s *TermReviewState) GetMonthTokens() int64 {
+	return s.MonthTokens
+}
+
+// GetMonthCostUsd returns the value of MonthCostUsd.
+func (s *TermReviewState) GetMonthCostUsd() Usd {
+	return s.MonthCostUsd
+}
+
+// SetOn sets the value of On.
+func (s *TermReviewState) SetOn(val bool) {
+	s.On = val
+}
+
 // SetRunning sets the value of Running.
 func (s *TermReviewState) SetRunning(val bool) {
 	s.Running = val
@@ -14197,16 +14606,29 @@ func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
 	s.Problem = val
 }
 
+// SetMonthTokens sets the value of MonthTokens.
+func (s *TermReviewState) SetMonthTokens(val int64) {
+	s.MonthTokens = val
+}
+
+// SetMonthCostUsd sets the value of MonthCostUsd.
+func (s *TermReviewState) SetMonthCostUsd(val Usd) {
+	s.MonthCostUsd = val
+}
+
+func (*TermReviewState) setTermReviewRes()   {}
 func (*TermReviewState) startTermReviewRes() {}
 
 // Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-// Anthropic budget is spent) or failed (the model or its provider failed). Absent when it went well.
+// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+// stopped it; what it decided is kept). Absent when it went well.
 type TermReviewStateProblem string
 
 const (
 	TermReviewStateProblemNoModel TermReviewStateProblem = "noModel"
 	TermReviewStateProblemBudget  TermReviewStateProblem = "budget"
 	TermReviewStateProblemFailed  TermReviewStateProblem = "failed"
+	TermReviewStateProblemStopped TermReviewStateProblem = "stopped"
 )
 
 // AllValues returns all TermReviewStateProblem values.
@@ -14215,6 +14637,7 @@ func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
 		TermReviewStateProblemNoModel,
 		TermReviewStateProblemBudget,
 		TermReviewStateProblemFailed,
+		TermReviewStateProblemStopped,
 	}
 }
 
@@ -14226,6 +14649,8 @@ func (s TermReviewStateProblem) MarshalText() ([]byte, error) {
 	case TermReviewStateProblemBudget:
 		return []byte(s), nil
 	case TermReviewStateProblemFailed:
+		return []byte(s), nil
+	case TermReviewStateProblemStopped:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -14244,9 +14669,29 @@ func (s *TermReviewStateProblem) UnmarshalText(data []byte) error {
 	case TermReviewStateProblemFailed:
 		*s = TermReviewStateProblemFailed
 		return nil
+	case TermReviewStateProblemStopped:
+		*s = TermReviewStateProblemStopped
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Whether the term review runs by itself.
+// Ref: #/components/schemas/TermReviewSwitch
+type TermReviewSwitch struct {
+	// On, it reviews every ten minutes; off, only when an administrator asks.
+	On bool `json:"on"`
+}
+
+// GetOn returns the value of On.
+func (s *TermReviewSwitch) GetOn() bool {
+	return s.On
+}
+
+// SetOn sets the value of On.
+func (s *TermReviewSwitch) SetOn(val bool) {
+	s.On = val
 }
 
 // A page of matching terms.
@@ -14743,4 +15188,280 @@ func (s *WatchedNumber) SetMax(val OptFloat64) {
 // SetMet sets the value of Met.
 func (s *WatchedNumber) SetMet(val OptBool) {
 	s.Met = val
+}
+
+// One piece of background work. Running while finishedAt is absent; otherwise ended as ending says.
+// done of total is what it did - responses of a Prompt run, pages of a scan, scans of a re-scan, sites
+// of a readiness check, search terms of the term review, companies of a candidate review or list check
+// - and failed how many of those failed.
+// Ref: #/components/schemas/Work
+type Work struct {
+	// The work's id: a Prompt run's or a scan's, which their stops take; a re-scan's first scan's; or the
+	// work journal's.
+	ID   string   `json:"id"`
+	Kind WorkKind `json:"kind"`
+	// When it began, or was queued.
+	StartedAt time.Time `json:"startedAt"`
+	// When it ended; absent while it runs.
+	FinishedAt OptDateTime `json:"finishedAt"`
+	// How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand, stoppedByBudget, or
+	// failed. Absent while it runs.
+	Ending OptWorkEnding `json:"ending"`
+	// How many of its parts it did.
+	Done int32 `json:"done"`
+	// How many parts it has; 0 when that is not known yet.
+	Total int32 `json:"total"`
+	// How many of the parts it did failed.
+	Failed            int32 `json:"failed"`
+	OpenRouterCostUsd Usd   `json:"openRouterCostUsd"`
+	AnthropicCostUsd  Usd   `json:"anthropicCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *Work) GetID() string {
+	return s.ID
+}
+
+// GetKind returns the value of Kind.
+func (s *Work) GetKind() WorkKind {
+	return s.Kind
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *Work) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetFinishedAt returns the value of FinishedAt.
+func (s *Work) GetFinishedAt() OptDateTime {
+	return s.FinishedAt
+}
+
+// GetEnding returns the value of Ending.
+func (s *Work) GetEnding() OptWorkEnding {
+	return s.Ending
+}
+
+// GetDone returns the value of Done.
+func (s *Work) GetDone() int32 {
+	return s.Done
+}
+
+// GetTotal returns the value of Total.
+func (s *Work) GetTotal() int32 {
+	return s.Total
+}
+
+// GetFailed returns the value of Failed.
+func (s *Work) GetFailed() int32 {
+	return s.Failed
+}
+
+// GetOpenRouterCostUsd returns the value of OpenRouterCostUsd.
+func (s *Work) GetOpenRouterCostUsd() Usd {
+	return s.OpenRouterCostUsd
+}
+
+// GetAnthropicCostUsd returns the value of AnthropicCostUsd.
+func (s *Work) GetAnthropicCostUsd() Usd {
+	return s.AnthropicCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *Work) SetID(val string) {
+	s.ID = val
+}
+
+// SetKind sets the value of Kind.
+func (s *Work) SetKind(val WorkKind) {
+	s.Kind = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *Work) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetFinishedAt sets the value of FinishedAt.
+func (s *Work) SetFinishedAt(val OptDateTime) {
+	s.FinishedAt = val
+}
+
+// SetEnding sets the value of Ending.
+func (s *Work) SetEnding(val OptWorkEnding) {
+	s.Ending = val
+}
+
+// SetDone sets the value of Done.
+func (s *Work) SetDone(val int32) {
+	s.Done = val
+}
+
+// SetTotal sets the value of Total.
+func (s *Work) SetTotal(val int32) {
+	s.Total = val
+}
+
+// SetFailed sets the value of Failed.
+func (s *Work) SetFailed(val int32) {
+	s.Failed = val
+}
+
+// SetOpenRouterCostUsd sets the value of OpenRouterCostUsd.
+func (s *Work) SetOpenRouterCostUsd(val Usd) {
+	s.OpenRouterCostUsd = val
+}
+
+// SetAnthropicCostUsd sets the value of AnthropicCostUsd.
+func (s *Work) SetAnthropicCostUsd(val Usd) {
+	s.AnthropicCostUsd = val
+}
+
+// How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand, stoppedByBudget, or
+// failed. Absent while it runs.
+type WorkEnding string
+
+const (
+	WorkEndingDone             WorkEnding = "done"
+	WorkEndingDoneWithFailures WorkEnding = "doneWithFailures"
+	WorkEndingStoppedByHand    WorkEnding = "stoppedByHand"
+	WorkEndingStoppedByBudget  WorkEnding = "stoppedByBudget"
+	WorkEndingFailed           WorkEnding = "failed"
+)
+
+// AllValues returns all WorkEnding values.
+func (WorkEnding) AllValues() []WorkEnding {
+	return []WorkEnding{
+		WorkEndingDone,
+		WorkEndingDoneWithFailures,
+		WorkEndingStoppedByHand,
+		WorkEndingStoppedByBudget,
+		WorkEndingFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkEnding) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkEndingDone:
+		return []byte(s), nil
+	case WorkEndingDoneWithFailures:
+		return []byte(s), nil
+	case WorkEndingStoppedByHand:
+		return []byte(s), nil
+	case WorkEndingStoppedByBudget:
+		return []byte(s), nil
+	case WorkEndingFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkEnding) UnmarshalText(data []byte) error {
+	switch WorkEnding(data) {
+	case WorkEndingDone:
+		*s = WorkEndingDone
+		return nil
+	case WorkEndingDoneWithFailures:
+		*s = WorkEndingDoneWithFailures
+		return nil
+	case WorkEndingStoppedByHand:
+		*s = WorkEndingStoppedByHand
+		return nil
+	case WorkEndingStoppedByBudget:
+		*s = WorkEndingStoppedByBudget
+		return nil
+	case WorkEndingFailed:
+		*s = WorkEndingFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A kind of background work.
+// Ref: #/components/schemas/WorkKind
+type WorkKind string
+
+const (
+	WorkKindPromptRun         WorkKind = "promptRun"
+	WorkKindScan              WorkKind = "scan"
+	WorkKindRescan            WorkKind = "rescan"
+	WorkKindReadinessCheck    WorkKind = "readinessCheck"
+	WorkKindTermReview        WorkKind = "termReview"
+	WorkKindCandidateReview   WorkKind = "candidateReview"
+	WorkKindCompetitorCheck   WorkKind = "competitorCheck"
+	WorkKindRecommendationRun WorkKind = "recommendationRun"
+)
+
+// AllValues returns all WorkKind values.
+func (WorkKind) AllValues() []WorkKind {
+	return []WorkKind{
+		WorkKindPromptRun,
+		WorkKindScan,
+		WorkKindRescan,
+		WorkKindReadinessCheck,
+		WorkKindTermReview,
+		WorkKindCandidateReview,
+		WorkKindCompetitorCheck,
+		WorkKindRecommendationRun,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkKind) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkKindPromptRun:
+		return []byte(s), nil
+	case WorkKindScan:
+		return []byte(s), nil
+	case WorkKindRescan:
+		return []byte(s), nil
+	case WorkKindReadinessCheck:
+		return []byte(s), nil
+	case WorkKindTermReview:
+		return []byte(s), nil
+	case WorkKindCandidateReview:
+		return []byte(s), nil
+	case WorkKindCompetitorCheck:
+		return []byte(s), nil
+	case WorkKindRecommendationRun:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkKind) UnmarshalText(data []byte) error {
+	switch WorkKind(data) {
+	case WorkKindPromptRun:
+		*s = WorkKindPromptRun
+		return nil
+	case WorkKindScan:
+		*s = WorkKindScan
+		return nil
+	case WorkKindRescan:
+		*s = WorkKindRescan
+		return nil
+	case WorkKindReadinessCheck:
+		*s = WorkKindReadinessCheck
+		return nil
+	case WorkKindTermReview:
+		*s = WorkKindTermReview
+		return nil
+	case WorkKindCandidateReview:
+		*s = WorkKindCandidateReview
+		return nil
+	case WorkKindCompetitorCheck:
+		*s = WorkKindCompetitorCheck
+		return nil
+	case WorkKindRecommendationRun:
+		*s = WorkKindRecommendationRun
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }

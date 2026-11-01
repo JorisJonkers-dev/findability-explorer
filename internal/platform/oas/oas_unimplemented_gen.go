@@ -178,24 +178,24 @@ func (UnimplementedHandler) GetAnalysis(ctx context.Context, params GetAnalysisP
 	return r, ht.ErrNotImplemented
 }
 
+// GetClaudeStep implements getClaudeStep operation.
+//
+// Administrators only. One step: the instructions the tool came with, every saved version (model and
+// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
+// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
+// exist.
+//
+// GET /api/v1/admin/claude-steps/{stepId}
+func (UnimplementedHandler) GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (r GetClaudeStepRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetCompetitor implements getCompetitor operation.
 //
 // Returns the company and its scans, newest first, each with its number.
 //
 // GET /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) GetCompetitor(ctx context.Context, params GetCompetitorParams) (r GetCompetitorRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetCompetitorDefinition implements getCompetitorDefinition operation.
-//
-// Administrators only. The definition of who competes with Tribelt that every check of a company is
-// made against (the newest version), every version, newest first, and what checking again against it
-// would take - the competitors on the list and the waiting candidates checked against an older
-// version, and what checking them again should cost on the Anthropic key.
-//
-// GET /api/v1/admin/competitor-definition
-func (UnimplementedHandler) GetCompetitorDefinition(ctx context.Context) (r GetCompetitorDefinitionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -224,8 +224,9 @@ func (UnimplementedHandler) GetLlmKeyUsage(ctx context.Context, params GetLlmKey
 
 // GetLlmSettings implements getLlmSettings operation.
 //
-// Returns every credential (never a secret), the model product matching uses now, the token budget,
-// and the latest 50 changes and tests, newest first.
+// Returns every credential (never a secret), the model product matching uses now, the Anthropic key's
+// monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and
+// tests, newest first.
 //
 // GET /api/v1/admin/llm
 func (UnimplementedHandler) GetLlmSettings(ctx context.Context) (r GetLlmSettingsRes, _ error) {
@@ -277,19 +278,6 @@ func (UnimplementedHandler) GetPlan(ctx context.Context) (r GetPlanRes, _ error)
 //
 // GET /api/v1/products
 func (UnimplementedHandler) GetProducts(ctx context.Context) (r GetProductsRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetPromptModelCatalogue implements getPromptModelCatalogue operation.
-//
-// Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read
-// with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest
-// model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest
-// cheapest first. A model the latest run asked is priced by its responses, the others by their list
-// price for a typical response with the web search fee. 422 without a working OpenRouter key.
-//
-// GET /api/v1/admin/prompt-test/catalogue
-func (UnimplementedHandler) GetPromptModelCatalogue(ctx context.Context) (r GetPromptModelCatalogueRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -380,6 +368,16 @@ func (UnimplementedHandler) GetTermPages(ctx context.Context, params GetTermPage
 //
 // GET /api/v1/analyses
 func (UnimplementedHandler) ListAnalyses(ctx context.Context, params ListAnalysesParams) (r ListAnalysesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListClaudeSteps implements listClaudeSteps operation.
+//
+// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
+// and the version of the instructions it uses now and what one job of it costs with that model.
+//
+// GET /api/v1/admin/claude-steps
+func (UnimplementedHandler) ListClaudeSteps(ctx context.Context) (r ListClaudeStepsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -494,17 +492,6 @@ func (UnimplementedHandler) RereadPromptRun(ctx context.Context, req *PromptRetr
 	return r, ht.ErrNotImplemented
 }
 
-// RestoreCompetitorDefinition implements restoreCompetitorDefinition operation.
-//
-// Administrators only. Saves the text of an older version as a new version, recording which it
-// restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is
-// the one in use.
-//
-// POST /api/v1/admin/competitor-definition/versions/{version}/restore
-func (UnimplementedHandler) RestoreCompetitorDefinition(ctx context.Context, params RestoreCompetitorDefinitionParams) (r RestoreCompetitorDefinitionRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // RetryPromptRun implements retryPromptRun operation.
 //
 // Administrators only. Asks a finished run's failed and missing answers again, or only the one
@@ -520,16 +507,16 @@ func (UnimplementedHandler) RetryPromptRun(ctx context.Context, req *PromptRetry
 	return r, ht.ErrNotImplemented
 }
 
-// SaveCompetitorDefinition implements saveCompetitorDefinition operation.
+// SaveClaudeStepVersion implements saveClaudeStepVersion operation.
 //
-// Administrators only. Stores the text as a new version, which every check from now on is made
-// against, and records who saved it. It starts no check - what was checked against an older version is
-// checked again by the next check of the candidates or of the list (startCandidateReview,
-// startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text
-// is the one in use; 422 when it is empty or longer than 8,000 characters.
+// Administrators only. Saves the model and the instructions as the step's next version, which its next
+// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
+// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
+// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
+// that does not exist.
 //
-// PUT /api/v1/admin/competitor-definition
-func (UnimplementedHandler) SaveCompetitorDefinition(ctx context.Context, req *CompetitorDefinitionText) (r SaveCompetitorDefinitionRes, _ error) {
+// POST /api/v1/admin/claude-steps/{stepId}/versions
+func (UnimplementedHandler) SaveClaudeStepVersion(ctx context.Context, req *ClaudeStepChange, params SaveClaudeStepVersionParams) (r SaveClaudeStepVersionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -809,6 +796,17 @@ func (UnimplementedHandler) UndoTermDecision(ctx context.Context, params UndoTer
 //
 // PATCH /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (r UpdateCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateLlmBudget implements updateLlmBudget operation.
+//
+// Administrators only. Sets what every job a Claude model does may spend in a month together, in
+// dollars, from one cent to $1,000, and records the change in the events. Work already spent past a
+// lower budget stops at its next step and keeps what it did.
+//
+// PATCH /api/v1/admin/llm/budget
+func (UnimplementedHandler) UpdateLlmBudget(ctx context.Context, req *LlmBudgetChange) (r UpdateLlmBudgetRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

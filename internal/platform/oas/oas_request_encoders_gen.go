@@ -122,8 +122,8 @@ func encodeRetryPromptRunRequest(
 	return nil
 }
 
-func encodeSaveCompetitorDefinitionRequest(
-	req *CompetitorDefinitionText,
+func encodeSaveClaudeStepVersionRequest(
+	req *ClaudeStepChange,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

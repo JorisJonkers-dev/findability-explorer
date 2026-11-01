@@ -646,8 +646,8 @@ func (s *Server) decodeRetryPromptRunRequest(r *http.Request) (
 	}
 }
 
-func (s *Server) decodeSaveCompetitorDefinitionRequest(r *http.Request) (
-	req *CompetitorDefinitionText,
+func (s *Server) decodeSaveClaudeStepVersionRequest(r *http.Request) (
+	req *ClaudeStepChange,
 	rawBody []byte,
 	close func() error,
 	rerr error,
@@ -694,7 +694,7 @@ func (s *Server) decodeSaveCompetitorDefinitionRequest(r *http.Request) (
 		rawBody = append(rawBody, buf...)
 		d := jx.DecodeBytes(buf)
 
-		var request CompetitorDefinitionText
+		var request ClaudeStepChange
 		if err := func() error {
 			if err := request.Decode(d); err != nil {
 				return err

@@ -61,8 +61,8 @@ type GetAnalysisRes interface {
 	getAnalysisRes()
 }
 
-type GetCompetitorDefinitionRes interface {
-	getCompetitorDefinitionRes()
+type GetClaudeStepRes interface {
+	getClaudeStepRes()
 }
 
 type GetCompetitorProfileRes interface {
@@ -97,10 +97,6 @@ type GetProductsRes interface {
 	getProductsRes()
 }
 
-type GetPromptModelCatalogueRes interface {
-	getPromptModelCatalogueRes()
-}
-
 type GetPromptRetryPlanRes interface {
 	getPromptRetryPlanRes()
 }
@@ -131,6 +127,10 @@ type GetTermPagesRes interface {
 
 type ListAnalysesRes interface {
 	listAnalysesRes()
+}
+
+type ListClaudeStepsRes interface {
+	listClaudeStepsRes()
 }
 
 type ListCompetitorCandidatesRes interface {
@@ -173,16 +173,12 @@ type RereadPromptRunRes interface {
 	rereadPromptRunRes()
 }
 
-type RestoreCompetitorDefinitionRes interface {
-	restoreCompetitorDefinitionRes()
-}
-
 type RetryPromptRunRes interface {
 	retryPromptRunRes()
 }
 
-type SaveCompetitorDefinitionRes interface {
-	saveCompetitorDefinitionRes()
+type SaveClaudeStepVersionRes interface {
+	saveClaudeStepVersionRes()
 }
 
 type SearchTermsRes interface {
@@ -279,6 +275,10 @@ type UndoTermDecisionRes interface {
 
 type UpdateCompetitorRes interface {
 	updateCompetitorRes()
+}
+
+type UpdateLlmBudgetRes interface {
+	updateLlmBudgetRes()
 }
 
 type UpdatePromptTestSettingsRes interface {

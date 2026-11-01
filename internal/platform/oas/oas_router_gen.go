@@ -11,14 +11,14 @@ import (
 )
 
 var (
+	rn74AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
+	}
 	rn18AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn9AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
-	}
-	rn31AllowedHeaders = map[string]string{
-		"PUT": "Content-Type",
 	}
 	rn11AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
@@ -38,13 +38,13 @@ var (
 	rn78AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn70AllowedHeaders = map[string]string{
+	rn72AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn74AllowedHeaders = map[string]string{
+	rn73AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn48AllowedHeaders = map[string]string{
+	rn49AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
 	rn85AllowedHeaders = map[string]string{
@@ -56,7 +56,7 @@ var (
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn52AllowedHeaders = map[string]string{
+	rn53AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn5AllowedHeaders = map[string]string{
@@ -262,9 +262,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						}
 
-					case 'c': // Prefix: "competitor"
+					case 'c': // Prefix: "c"
 
-						if l := len("competitor"); len(elem) >= l && elem[0:l] == "competitor" {
+						if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
 							elem = elem[l:]
 						} else {
 							break
@@ -274,9 +274,99 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						switch elem[0] {
-						case '-': // Prefix: "-"
+						case 'l': // Prefix: "laude-steps"
 
-							if l := len("-"); len(elem) >= l && elem[0:l] == "-" {
+							if l := len("laude-steps"); len(elem) >= l && elem[0:l] == "laude-steps" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch r.Method {
+								case "GET":
+									s.handleListClaudeStepsRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: nil,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "stepId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "GET":
+										s.handleGetClaudeStepRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: nil,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/versions"
+
+									if l := len("/versions"); len(elem) >= l && elem[0:l] == "/versions" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "POST":
+											s.handleSaveClaudeStepVersionRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "POST",
+												allowedHeaders: rn74AllowedHeaders,
+												acceptPost:     "application/json",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								}
+
+							}
+
+						case 'o': // Prefix: "ompetitor"
+
+							if l := len("ompetitor"); len(elem) >= l && elem[0:l] == "ompetitor" {
 								elem = elem[l:]
 							} else {
 								break
@@ -286,9 +376,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								break
 							}
 							switch elem[0] {
-							case 'c': // Prefix: "c"
+							case '-': // Prefix: "-c"
 
-								if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
+								if l := len("-c"); len(elem) >= l && elem[0:l] == "-c" {
 									elem = elem[l:]
 								} else {
 									break
@@ -621,109 +711,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 								}
 
-							case 'd': // Prefix: "definition"
+							case 's': // Prefix: "s/batch"
 
-								if l := len("definition"); len(elem) >= l && elem[0:l] == "definition" {
+								if l := len("s/batch"); len(elem) >= l && elem[0:l] == "s/batch" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
+									// Leaf node.
 									switch r.Method {
-									case "GET":
-										s.handleGetCompetitorDefinitionRequest([0]string{}, elemIsEscaped, w, r)
-									case "PUT":
-										s.handleSaveCompetitorDefinitionRequest([0]string{}, elemIsEscaped, w, r)
+									case "POST":
+										s.handleAddCompetitorsRequest([0]string{}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "GET,PUT",
-											allowedHeaders: rn31AllowedHeaders,
-											acceptPost:     "",
+											allowedMethods: "POST",
+											allowedHeaders: rn11AllowedHeaders,
+											acceptPost:     "application/json",
 											acceptPatch:    "",
 										})
 									}
 
 									return
 								}
-								switch elem[0] {
-								case '/': // Prefix: "/versions/"
 
-									if l := len("/versions/"); len(elem) >= l && elem[0:l] == "/versions/" {
-										elem = elem[l:]
-									} else {
-										break
-									}
-
-									// Param: "version"
-									// Match until "/"
-									idx := strings.IndexByte(elem, '/')
-									if idx < 0 {
-										idx = len(elem)
-									}
-									args[0] = elem[:idx]
-									elem = elem[idx:]
-
-									if len(elem) == 0 {
-										break
-									}
-									switch elem[0] {
-									case '/': // Prefix: "/restore"
-
-										if l := len("/restore"); len(elem) >= l && elem[0:l] == "/restore" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch r.Method {
-											case "POST":
-												s.handleRestoreCompetitorDefinitionRequest([1]string{
-													args[0],
-												}, elemIsEscaped, w, r)
-											default:
-												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "POST",
-													allowedHeaders: nil,
-													acceptPost:     "",
-													acceptPatch:    "",
-												})
-											}
-
-											return
-										}
-
-									}
-
-								}
-
-							}
-
-						case 's': // Prefix: "s/batch"
-
-							if l := len("s/batch"); len(elem) >= l && elem[0:l] == "s/batch" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleAddCompetitorsRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn11AllowedHeaders,
-										acceptPost:     "application/json",
-										acceptPatch:    "",
-									})
-								}
-
-								return
 							}
 
 						}
@@ -1164,7 +1176,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													default:
 														s.notAllowed(w, r, notAllowedParams{
 															allowedMethods: "POST",
-															allowedHeaders: rn70AllowedHeaders,
+															allowedHeaders: rn72AllowedHeaders,
 															acceptPost:     "application/json",
 															acceptPatch:    "",
 														})
@@ -1190,7 +1202,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													default:
 														s.notAllowed(w, r, notAllowedParams{
 															allowedMethods: "POST",
-															allowedHeaders: rn74AllowedHeaders,
+															allowedHeaders: rn73AllowedHeaders,
 															acceptPost:     "application/json",
 															acceptPatch:    "",
 														})
@@ -1281,7 +1293,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET,PATCH",
-											allowedHeaders: rn48AllowedHeaders,
+											allowedHeaders: rn49AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "application/json",
 										})
@@ -1733,7 +1745,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn52AllowedHeaders,
+								allowedHeaders: rn53AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -2564,9 +2576,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 						}
 
-					case 'c': // Prefix: "competitor"
+					case 'c': // Prefix: "c"
 
-						if l := len("competitor"); len(elem) >= l && elem[0:l] == "competitor" {
+						if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
 							elem = elem[l:]
 						} else {
 							break
@@ -2576,9 +2588,95 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 						switch elem[0] {
-						case '-': // Prefix: "-"
+						case 'l': // Prefix: "laude-steps"
 
-							if l := len("-"); len(elem) >= l && elem[0:l] == "-" {
+							if l := len("laude-steps"); len(elem) >= l && elem[0:l] == "laude-steps" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ListClaudeStepsOperation
+									r.summary = "List the Claude steps"
+									r.operationID = "listClaudeSteps"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/admin/claude-steps"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "stepId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch method {
+									case "GET":
+										r.name = GetClaudeStepOperation
+										r.summary = "Get one Claude step"
+										r.operationID = "getClaudeStep"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/admin/claude-steps/{stepId}"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/versions"
+
+									if l := len("/versions"); len(elem) >= l && elem[0:l] == "/versions" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "POST":
+											r.name = SaveClaudeStepVersionOperation
+											r.summary = "Save a new version of a Claude step"
+											r.operationID = "saveClaudeStepVersion"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/admin/claude-steps/{stepId}/versions"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							}
+
+						case 'o': // Prefix: "ompetitor"
+
+							if l := len("ompetitor"); len(elem) >= l && elem[0:l] == "ompetitor" {
 								elem = elem[l:]
 							} else {
 								break
@@ -2588,9 +2686,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								break
 							}
 							switch elem[0] {
-							case 'c': // Prefix: "c"
+							case '-': // Prefix: "-c"
 
-								if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
+								if l := len("-c"); len(elem) >= l && elem[0:l] == "-c" {
 									elem = elem[l:]
 								} else {
 									break
@@ -2922,31 +3020,23 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 								}
 
-							case 'd': // Prefix: "definition"
+							case 's': // Prefix: "s/batch"
 
-								if l := len("definition"); len(elem) >= l && elem[0:l] == "definition" {
+								if l := len("s/batch"); len(elem) >= l && elem[0:l] == "s/batch" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
+									// Leaf node.
 									switch method {
-									case "GET":
-										r.name = GetCompetitorDefinitionOperation
-										r.summary = "The competitor definition and its versions"
-										r.operationID = "getCompetitorDefinition"
+									case "POST":
+										r.name = AddCompetitorsOperation
+										r.summary = "Add several competitors at once"
+										r.operationID = "addCompetitors"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/admin/competitor-definition"
-										r.args = args
-										r.count = 0
-										return r, true
-									case "PUT":
-										r.name = SaveCompetitorDefinitionOperation
-										r.summary = "Save the competitor definition as a new version"
-										r.operationID = "saveCompetitorDefinition"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/admin/competitor-definition"
+										r.pathPattern = "/api/v1/admin/competitors/batch"
 										r.args = args
 										r.count = 0
 										return r, true
@@ -2954,82 +3044,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										return
 									}
 								}
-								switch elem[0] {
-								case '/': // Prefix: "/versions/"
 
-									if l := len("/versions/"); len(elem) >= l && elem[0:l] == "/versions/" {
-										elem = elem[l:]
-									} else {
-										break
-									}
-
-									// Param: "version"
-									// Match until "/"
-									idx := strings.IndexByte(elem, '/')
-									if idx < 0 {
-										idx = len(elem)
-									}
-									args[0] = elem[:idx]
-									elem = elem[idx:]
-
-									if len(elem) == 0 {
-										break
-									}
-									switch elem[0] {
-									case '/': // Prefix: "/restore"
-
-										if l := len("/restore"); len(elem) >= l && elem[0:l] == "/restore" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "POST":
-												r.name = RestoreCompetitorDefinitionOperation
-												r.summary = "Restore a version of the competitor definition"
-												r.operationID = "restoreCompetitorDefinition"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/admin/competitor-definition/versions/{version}/restore"
-												r.args = args
-												r.count = 1
-												return r, true
-											default:
-												return
-											}
-										}
-
-									}
-
-								}
-
-							}
-
-						case 's': // Prefix: "s/batch"
-
-							if l := len("s/batch"); len(elem) >= l && elem[0:l] == "s/batch" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = AddCompetitorsOperation
-									r.summary = "Add several competitors at once"
-									r.operationID = "addCompetitors"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/admin/competitors/batch"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
 							}
 
 						}

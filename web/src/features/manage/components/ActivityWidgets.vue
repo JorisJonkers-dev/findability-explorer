@@ -163,7 +163,7 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
     </ManageWidget>
 
     <ManageWidget title="Spending by kind of work" :span="6">
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto" tabindex="0" role="region" aria-label="The spending table">
         <table class="w-full border-collapse text-left">
           <caption class="sr-only">What each kind of work spent this month, and the key that paid</caption>
           <thead>
@@ -193,7 +193,7 @@ const ROW = 'flex flex-col gap-1 border-b border-grey pb-3 last:border-b-0 last:
     <ManageWidget title="Recent work" :span="12">
       <template #action><span class="text-ink-2">The last 20 pieces of work</span></template>
       <p v-if="recent.length === 0" class="m-0 text-ink-2">No work has ended yet.</p>
-      <div v-else class="overflow-x-auto">
+      <div v-else class="overflow-x-auto" tabindex="0" role="region" aria-label="The recent work table">
         <table class="w-full border-collapse text-left">
           <caption class="sr-only">The last 20 pieces of work, newest first, and how each ended</caption>
           <thead>

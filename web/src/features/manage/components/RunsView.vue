@@ -82,7 +82,7 @@ const last = computed(() => runs.value[0])
       <ManageWidget title="All runs">
         <p class="m-0 text-ink-2">A stopped or failed run stays here until you finish it.</p>
         <p v-if="runs.length === 0" class="m-0 text-ink-2">No run yet.</p>
-        <div v-else class="overflow-x-auto">
+        <div v-else class="overflow-x-auto" tabindex="0" role="region" aria-label="The runs table">
           <table class="w-full border-collapse text-left">
             <caption class="sr-only">Every Prompt run, newest first, and how each ended</caption>
             <thead>

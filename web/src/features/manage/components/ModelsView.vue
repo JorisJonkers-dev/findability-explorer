@@ -123,7 +123,7 @@ function submit(): void {
 
       <ManageWidget title="What runs cost">
         <p class="m-0 text-ink-2">{{ basisLine(settings.prices) }}</p>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" tabindex="0" role="region" aria-label="The cost table">
           <table class="w-full border-collapse text-sm">
             <caption class="sr-only">The cost of one response per provider, with and without web search, and of a run</caption>
             <thead>

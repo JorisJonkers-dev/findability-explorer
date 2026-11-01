@@ -67,6 +67,7 @@ re-checks every waiting company, never a decided one.
 - The companies already on the competitor list are not checked yet. Checking them the same way,
   and letting an administrator archive the ones Haiku says do not compete, is a follow-up.
 
-## Amended, 28 October 2026
+## Amendment, 1 November 2026: the definition is edited in the app
 
-An oven, freezer or furnace builder that makes or sells its own metal belts, also as spare belts for its machines, is a competitor: a buyer can take its belt instead of Tribelt's. A builder that buys its belts stays a customer. `CheckVersion` is 3, so every company is checked again with this rule, and the researched map (`scripts/competitor-map/`) follows it.
+The target market is stored as version 2 of the competitor definition, which an administrator edits
+in Manage; every check is made against the newest version and records which (ADR-0022).

@@ -13,33 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const addCompetitorDefinition = `-- name: AddCompetitorDefinition :one
-INSERT INTO competitor_definitions (version, text, saved_at, saved_by, restored_from)
-SELECT coalesce(max(version), 0) + 1, $1, $2, $3, $4
-FROM competitor_definitions
-RETURNING version
-`
-
-type AddCompetitorDefinitionParams struct {
-	Text         string
-	SavedAt      time.Time
-	SavedBy      string
-	RestoredFrom pgtype.Int8
-}
-
-// The next version of the competitor definition.
-func (q *Queries) AddCompetitorDefinition(ctx context.Context, arg AddCompetitorDefinitionParams) (int64, error) {
-	row := q.db.QueryRow(ctx, addCompetitorDefinition,
-		arg.Text,
-		arg.SavedAt,
-		arg.SavedBy,
-		arg.RestoredFrom,
-	)
-	var version int64
-	err := row.Scan(&version)
-	return version, err
-}
-
 const addPromptAnswer = `-- name: AddPromptAnswer :one
 INSERT INTO prompt_answers (
     id, run_id, prompt_id, family, kind, scope, language, prompt_text, prompt_set_version, provider, model, mode, answer,
@@ -396,7 +369,7 @@ func (q *Queries) GetPromptRun(ctx context.Context, id uuid.UUID) (GetPromptRunR
 }
 
 const getPromptSettings = `-- name: GetPromptSettings :many
-SELECT coalesce(credential_id, '')::text AS credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet,
+SELECT coalesce(credential_id, '')::text AS credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet,
     fact_sheet_version, coalesce(fact_sheet_updated_by, '')::text AS fact_sheet_updated_by, fact_sheet_updated_at
 FROM prompt_settings
 WHERE singleton
@@ -405,7 +378,6 @@ WHERE singleton
 type GetPromptSettingsRow struct {
 	CredentialID        string
 	Providers           []string
-	Models              []string
 	MonthlyBudgetMicros int64
 	Cadence             string
 	NextDue             time.Time
@@ -428,7 +400,6 @@ func (q *Queries) GetPromptSettings(ctx context.Context) ([]GetPromptSettingsRow
 		if err := rows.Scan(
 			&i.CredentialID,
 			&i.Providers,
-			&i.Models,
 			&i.MonthlyBudgetMicros,
 			&i.Cadence,
 			&i.NextDue,
@@ -483,45 +454,85 @@ func (q *Queries) InsertPromptReviewUsage(ctx context.Context, arg InsertPromptR
 	return err
 }
 
-const listCompetitorDefinitions = `-- name: ListCompetitorDefinitions :many
-SELECT version, text, saved_at, saved_by, coalesce(restored_from, 0)::bigint AS restored_from
-FROM competitor_definitions
-ORDER BY version DESC
+const insertPromptScope = `-- name: InsertPromptScope :exec
+INSERT INTO prompt_scopes (id, language, region, name)
+VALUES ($1, $2, nullif($3::text, ''), $4)
 `
 
-type ListCompetitorDefinitionsRow struct {
-	Version      int64
-	Text         string
-	SavedAt      time.Time
-	SavedBy      string
-	RestoredFrom int64
+type InsertPromptScopeParams struct {
+	ID       string
+	Language string
+	Region   string
+	Name     string
 }
 
-// Every version of the competitor definition, the newest first.
-func (q *Queries) ListCompetitorDefinitions(ctx context.Context) ([]ListCompetitorDefinitionsRow, error) {
-	rows, err := q.db.Query(ctx, listCompetitorDefinitions)
+// A scope a newly published version asks in.
+func (q *Queries) InsertPromptScope(ctx context.Context, arg InsertPromptScopeParams) error {
+	_, err := q.db.Exec(ctx, insertPromptScope,
+		arg.ID,
+		arg.Language,
+		arg.Region,
+		arg.Name,
+	)
+	return err
+}
+
+const insertPromptSet = `-- name: InsertPromptSet :execrows
+INSERT INTO prompt_sets (version, published_at, published_by, note)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (version) DO NOTHING
+`
+
+type InsertPromptSetParams struct {
+	Version     int64
+	PublishedAt time.Time
+	PublishedBy string
+	Note        string
+}
+
+// A newly published version; no row when another publication took the number first.
+func (q *Queries) InsertPromptSet(ctx context.Context, arg InsertPromptSetParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertPromptSet,
+		arg.Version,
+		arg.PublishedAt,
+		arg.PublishedBy,
+		arg.Note,
+	)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	defer rows.Close()
-	items := []ListCompetitorDefinitionsRow{}
-	for rows.Next() {
-		var i ListCompetitorDefinitionsRow
-		if err := rows.Scan(
-			&i.Version,
-			&i.Text,
-			&i.SavedAt,
-			&i.SavedBy,
-			&i.RestoredFrom,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+	return result.RowsAffected(), nil
+}
+
+const insertPromptSetQuestion = `-- name: InsertPromptSetQuestion :exec
+INSERT INTO prompt_set_questions (version, position, prompt_id, family, intent, scope_id, text, english)
+VALUES ($1, $2, $3, $4, $5, $6, $7, nullif($8::text, ''))
+`
+
+type InsertPromptSetQuestionParams struct {
+	Version  int64
+	Position int64
+	PromptID string
+	Family   string
+	Intent   string
+	ScopeID  string
+	Text     string
+	English  string
+}
+
+// A question of a newly published version, at its position.
+func (q *Queries) InsertPromptSetQuestion(ctx context.Context, arg InsertPromptSetQuestionParams) error {
+	_, err := q.db.Exec(ctx, insertPromptSetQuestion,
+		arg.Version,
+		arg.Position,
+		arg.PromptID,
+		arg.Family,
+		arg.Intent,
+		arg.ScopeID,
+		arg.Text,
+		arg.English,
+	)
+	return err
 }
 
 const listPromptAnswerCompanies = `-- name: ListPromptAnswerCompanies :many
@@ -1122,27 +1133,6 @@ func (q *Queries) MovePromptSchedule(ctx context.Context, nextDue time.Time) err
 	return err
 }
 
-const promptCheckUsage = `-- name: PromptCheckUsage :one
-SELECT
-    coalesce((SELECT sum(input_tokens) FROM prompt_review_usage), 0)::bigint AS input,
-    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage), 0)::bigint AS output,
-    ((SELECT count(*) FROM prompt_candidate_checks) + (SELECT count(*) FROM prompt_company_checks))::bigint AS checked
-`
-
-type PromptCheckUsageRow struct {
-	Input   int64
-	Output  int64
-	Checked int64
-}
-
-// What every request of the reviews and checks used, and how many companies they checked.
-func (q *Queries) PromptCheckUsage(ctx context.Context) (PromptCheckUsageRow, error) {
-	row := q.db.QueryRow(ctx, promptCheckUsage)
-	var i PromptCheckUsageRow
-	err := row.Scan(&i.Input, &i.Output, &i.Checked)
-	return i, err
-}
-
 const promptNamings = `-- name: PromptNamings :many
 SELECT c.answer_id, c.name, c.url, coalesce(c.competitor_id, '')::text AS competitor_id
 FROM prompt_answer_companies AS c
@@ -1430,15 +1420,15 @@ func (q *Queries) SavePromptCompanyCheck(ctx context.Context, arg SavePromptComp
 
 const savePromptSettings = `-- name: SavePromptSettings :exec
 INSERT INTO prompt_settings (
-    singleton, credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
+    singleton, credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
     fact_sheet_updated_by, fact_sheet_updated_at, updated_by, updated_at
 )
 VALUES (
-    true, $1, $2, $3::text [], $4, $5, $6, $7, $8,
-    $9, $10, $11, $12
+    true, $1, $2, $3, $4, $5, $6, $7,
+    $8, $9, $10, $11
 )
 ON CONFLICT (singleton) DO UPDATE
-SET credential_id = excluded.credential_id, providers = excluded.providers, models = excluded.models,
+SET credential_id = excluded.credential_id, providers = excluded.providers,
     monthly_budget_micros = excluded.monthly_budget_micros, cadence = excluded.cadence, next_due = excluded.next_due,
     fact_sheet = excluded.fact_sheet, fact_sheet_version = excluded.fact_sheet_version,
     fact_sheet_updated_by = excluded.fact_sheet_updated_by, fact_sheet_updated_at = excluded.fact_sheet_updated_at,
@@ -1448,7 +1438,6 @@ SET credential_id = excluded.credential_id, providers = excluded.providers, mode
 type SavePromptSettingsParams struct {
 	CredentialID        pgtype.Text
 	Providers           []string
-	Models              []string
 	MonthlyBudgetMicros int64
 	Cadence             string
 	NextDue             time.Time
@@ -1464,7 +1453,6 @@ func (q *Queries) SavePromptSettings(ctx context.Context, arg SavePromptSettings
 	_, err := q.db.Exec(ctx, savePromptSettings,
 		arg.CredentialID,
 		arg.Providers,
-		arg.Models,
 		arg.MonthlyBudgetMicros,
 		arg.Cadence,
 		arg.NextDue,

@@ -88,6 +88,12 @@ type Querier interface {
 	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
 	InsertPromptReviewUsage(ctx context.Context, arg InsertPromptReviewUsageParams) error
+	// A scope a newly published version asks in.
+	InsertPromptScope(ctx context.Context, arg InsertPromptScopeParams) error
+	// A newly published version; no row when another publication took the number first.
+	InsertPromptSet(ctx context.Context, arg InsertPromptSetParams) (int64, error)
+	// A question of a newly published version, at its position.
+	InsertPromptSetQuestion(ctx context.Context, arg InsertPromptSetQuestionParams) error
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
 	InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error
 	InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error

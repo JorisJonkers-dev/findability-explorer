@@ -130,6 +130,22 @@ func (UnimplementedHandler) DismissCompetitorCandidate(ctx context.Context, para
 	return r, ht.ErrNotImplemented
 }
 
+// GetActivity implements getActivity operation.
+//
+// Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness
+// checks, the term review, reviews of the competitor candidates, checks of the competitor list, and
+// Recommendation runs - running now, newest first, and the last 20 ended, the last ended first, each
+// with how it ended, what it did, and what it cost on each key. A running piece is stopped by its own
+// operation - stopPromptRun and stopAnalysis take its id, stopRescan, stopReadinessCheck,
+// stopTermReview, stopCandidateReview and stopCompetitorCheck none. With this month's spending by kind
+// of work and the key that paid; the Anthropic key's is priced at the model's list price from the
+// stored tokens.
+//
+// GET /api/v1/admin/activity
+func (UnimplementedHandler) GetActivity(ctx context.Context) (r GetActivityRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAiReadiness implements getAiReadiness operation.
 //
 // Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt

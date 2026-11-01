@@ -113,7 +113,8 @@ type Repository interface {
 	SetExtraction(ctx context.Context, answerID uuid.UUID, x domain.Extraction, at time.Time) error
 	// Answers returns a run's answers, with their text only when withText is true.
 	Answers(ctx context.Context, runID uuid.UUID, withText bool) ([]domain.Answer, error)
-	// SpentSince sums the cost of every answer and extraction at or after since.
+	// SpentSince sums what the OpenRouter key paid at or after since: every answer, and every reading
+	// OpenRouter did (not Claude Haiku's, which the Anthropic key paid).
 	SpentSince(ctx context.Context, since time.Time) (domain.Micros, error)
 
 	// Sightings returns every name an answer gave that was not matched to a company.

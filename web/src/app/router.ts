@@ -227,6 +227,12 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       { path: '/manage/terms', name: 'term-list', component: () => import('../features/manage/components/TermListIndex.vue'), meta: { title: 'Search term list', view: 'manage' } },
       { path: '/manage/terms/review', name: 'term-review', component: () => import('../features/review/components/TermReviewRunPage.vue'), meta: { title: 'Term review', view: 'manage' } },
       {
+        path: '/manage/terms/edit',
+        name: 'term-edit',
+        component: () => import('../features/terminology/components/HandTermsPage.vue'),
+        meta: { title: 'Add or remove terms', view: 'manage' },
+      },
+      {
         path: '/manage/terms/waiting',
         name: 'waiting-terms',
         component: () => import('../features/review/components/TermReviewPage.vue'),

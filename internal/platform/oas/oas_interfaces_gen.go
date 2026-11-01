@@ -21,6 +21,10 @@ type AddLlmCredentialRes interface {
 	addLlmCredentialRes()
 }
 
+type AddTermRes interface {
+	addTermRes()
+}
+
 type ClearActiveLlmRes interface {
 	clearActiveLlmRes()
 }
@@ -149,6 +153,10 @@ type ListCompetitorsRes interface {
 	listCompetitorsRes()
 }
 
+type ListHandTermsRes interface {
+	listHandTermsRes()
+}
+
 type ListLlmModelsRes interface {
 	listLlmModelsRes()
 }
@@ -169,12 +177,20 @@ type PublishPromptSetRes interface {
 	publishPromptSetRes()
 }
 
+type PutBackTermRes interface {
+	putBackTermRes()
+}
+
 type RejectTermCandidateRes interface {
 	rejectTermCandidateRes()
 }
 
 type RemoveQueuedAnalysesRes interface {
 	removeQueuedAnalysesRes()
+}
+
+type RemoveTermRes interface {
+	removeTermRes()
 }
 
 type RereadPromptRunRes interface {

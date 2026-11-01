@@ -58,6 +58,8 @@ type analyses struct {
 	stopErr error
 	// promptTest stands in for the prompt-test use cases; a fresh one when nil.
 	promptTest *promptTests
+	// hand stores the terms added and removed by hand; a fresh one when nil.
+	hand *handStore
 	// insight stands in for the insight use cases; a fresh one when nil.
 	insight *insightCases
 	// activity stands in for the Activity use cases; a fresh one when nil.
@@ -161,6 +163,7 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 	terminology.WithCompetitors(func(context.Context) ([]terminologydomain.Listed, error) {
 		return []terminologydomain.Listed{{ID: "pelger", Name: "PELGER GmbH"}, {ID: "martens", Name: "Märtens Transportbänder GmbH"}}, nil
 	})
+	terminology.WithHandTerms(a.handStore())
 	companies := companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		&companyRepo{}, companyScans{}, time.Now,

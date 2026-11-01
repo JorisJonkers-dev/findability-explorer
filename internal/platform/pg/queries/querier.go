@@ -66,6 +66,7 @@ type Querier interface {
 	DeleteExpiredSessions(ctx context.Context, now time.Time) error
 	DeleteLlmCredential(ctx context.Context, id uuid.UUID) (int64, error)
 	DeletePromptCandidateDecision(ctx context.Context, id string) (int64, error)
+	DeleteRemovedTerm(ctx context.Context, arg DeleteRemovedTermParams) (int64, error)
 	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
 	DeleteTermDecision(ctx context.Context, candidateID string) (int64, error)
 	// Work the journal records runs in memory: a server that stops ends it.
@@ -89,6 +90,7 @@ type Querier interface {
 	HeartbeatPromptRun(ctx context.Context, arg HeartbeatPromptRunParams) (int64, error)
 	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
+	InsertHandTerm(ctx context.Context, arg InsertHandTermParams) (int64, error)
 	InsertPromptReviewUsage(ctx context.Context, arg InsertPromptReviewUsageParams) error
 	// A scope a newly published version asks in.
 	InsertPromptScope(ctx context.Context, arg InsertPromptScopeParams) error
@@ -96,6 +98,7 @@ type Querier interface {
 	InsertPromptSet(ctx context.Context, arg InsertPromptSetParams) (int64, error)
 	// A question of a newly published version, at its position.
 	InsertPromptSetQuestion(ctx context.Context, arg InsertPromptSetQuestionParams) error
+	InsertRemovedTerm(ctx context.Context, arg InsertRemovedTermParams) error
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
 	InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error
 	InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error
@@ -127,6 +130,7 @@ type Querier interface {
 	ListCompanyOverrides(ctx context.Context) ([]ListCompanyOverridesRow, error)
 	// Every version of the competitor definition, the newest first.
 	ListCompetitorDefinitions(ctx context.Context) ([]ListCompetitorDefinitionsRow, error)
+	ListHandTerms(ctx context.Context) ([]HandTerm, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
 	ListPlanTargets(ctx context.Context) ([]PlanTarget, error)
@@ -148,6 +152,7 @@ type Querier interface {
 	ListPromptSetQuestions(ctx context.Context) ([]ListPromptSetQuestionsRow, error)
 	// Every published Prompt set, newest first.
 	ListPromptSets(ctx context.Context) ([]PromptSet, error)
+	ListRemovedTerms(ctx context.Context) ([]RemovedTerm, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
 	ListTermVerdicts(ctx context.Context) ([]TermVerdict, error)
 	// The running work and the newest lim ended pieces.

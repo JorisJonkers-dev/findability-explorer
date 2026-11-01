@@ -393,9 +393,13 @@ export const zLlmBudgetChange = z.object({
 });
 
 /**
- * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
+ * Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator accepted from the review queue, or a term an administrator added by hand.
  */
-export const zTermOrigin = z.enum(['research', 'review']);
+export const zTermOrigin = z.enum([
+    'research',
+    'review',
+    'hand'
+]);
 
 /**
  * One name for a belt, material or specification, as a company uses it.
@@ -632,6 +636,41 @@ export const zTermCandidateCounts = z.object({
     pending: z.int().gte(0).lte(1000000),
     accepted: z.int().gte(0).lte(1000000),
     rejected: z.int().gte(0).lte(1000000)
+});
+
+/**
+ * A search term an administrator adds by hand.
+ */
+export const zNewTerm = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage,
+    family: zBeltFamily,
+    tier: zIntentTier
+});
+
+/**
+ * A search term on the list, by its text and language.
+ */
+export const zTermRef = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage
+});
+
+/**
+ * A term added or removed by hand, with who did it and when.
+ */
+export const zHandTerm = z.object({
+    term: zTerm,
+    by: z.string().max(200),
+    at: z.iso.datetime({ offset: true }).max(40)
+});
+
+/**
+ * The terms added by hand and the terms removed, oldest first.
+ */
+export const zHandTermList = z.object({
+    added: z.array(zHandTerm).max(10000),
+    removed: z.array(zHandTerm).max(10000)
 });
 
 /**
@@ -2432,6 +2471,41 @@ export const zSaveClaudeStepVersionResponse = zClaudeStep;
  * The work and this month's spending.
  */
 export const zGetActivityResponse = zActivity;
+
+/**
+ * The terms added and removed by hand.
+ */
+export const zListHandTermsResponse = zHandTermList;
+
+/**
+ * The term as it joins the list.
+ */
+export const zAddTermBody = zNewTerm;
+
+/**
+ * The term, added.
+ */
+export const zAddTermResponse = zTerm;
+
+export const zPutBackTermQuery = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage
+});
+
+/**
+ * Put back.
+ */
+export const zPutBackTermResponse = z.void();
+
+/**
+ * The term to remove.
+ */
+export const zRemoveTermBody = zTermRef;
+
+/**
+ * Removed.
+ */
+export const zRemoveTermResponse = z.void();
 
 export const zListTermCandidatesQuery = z.object({
     status: zTermCandidateStatus.optional()

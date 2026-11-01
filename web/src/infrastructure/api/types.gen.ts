@@ -873,9 +873,9 @@ export type LlmSettings = {
 };
 
 /**
- * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
+ * Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator accepted from the review queue, or a term an administrator added by hand.
  */
-export type TermOrigin = 'research' | 'review';
+export type TermOrigin = 'research' | 'review' | 'hand';
 
 /**
  * The fields of a company to change; at least one.
@@ -1490,6 +1490,53 @@ export type TermCandidateList = {
     items: Array<TermCandidate>;
     counts: TermCandidateCounts;
     review: TermReviewState;
+};
+
+/**
+ * A search term an administrator adds by hand.
+ */
+export type NewTerm = {
+    /**
+     * The term as the list shows it.
+     */
+    term: string;
+    language: Language;
+    family: BeltFamily;
+    tier: IntentTier;
+};
+
+/**
+ * A search term on the list, by its text and language.
+ */
+export type TermRef = {
+    /**
+     * The term's text; case and accents do not matter.
+     */
+    term: string;
+    language: Language;
+};
+
+/**
+ * A term added or removed by hand, with who did it and when.
+ */
+export type HandTerm = {
+    term: Term;
+    /**
+     * Who added or removed it.
+     */
+    by: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * The terms added by hand and the terms removed, oldest first.
+ */
+export type HandTermList = {
+    added: Array<HandTerm>;
+    removed: Array<HandTerm>;
 };
 
 /**
@@ -4833,6 +4880,181 @@ export type GetActivityResponses = {
 };
 
 export type GetActivityResponse = GetActivityResponses[keyof GetActivityResponses];
+
+export type ListHandTermsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/hand';
+};
+
+export type ListHandTermsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListHandTermsError = ListHandTermsErrors[keyof ListHandTermsErrors];
+
+export type ListHandTermsResponses = {
+    /**
+     * The terms added and removed by hand.
+     */
+    200: HandTermList;
+};
+
+export type ListHandTermsResponse = ListHandTermsResponses[keyof ListHandTermsResponses];
+
+export type AddTermData = {
+    /**
+     * The term as it joins the list.
+     */
+    body: NewTerm;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/hand';
+};
+
+export type AddTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddTermError = AddTermErrors[keyof AddTermErrors];
+
+export type AddTermResponses = {
+    /**
+     * The term, added.
+     */
+    201: Term;
+};
+
+export type AddTermResponse = AddTermResponses[keyof AddTermResponses];
+
+export type PutBackTermData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The removed term, as the list wrote it.
+         */
+        term: string;
+        /**
+         * The removed term's language.
+         */
+        language: Language;
+    };
+    url: '/api/v1/admin/terms/removed';
+};
+
+export type PutBackTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type PutBackTermError = PutBackTermErrors[keyof PutBackTermErrors];
+
+export type PutBackTermResponses = {
+    /**
+     * Put back.
+     */
+    204: void;
+};
+
+export type PutBackTermResponse = PutBackTermResponses[keyof PutBackTermResponses];
+
+export type RemoveTermData = {
+    /**
+     * The term to remove.
+     */
+    body: TermRef;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/removed';
+};
+
+export type RemoveTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RemoveTermError = RemoveTermErrors[keyof RemoveTermErrors];
+
+export type RemoveTermResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type RemoveTermResponse = RemoveTermResponses[keyof RemoveTermResponses];
 
 export type ListTermCandidatesData = {
     body?: never;

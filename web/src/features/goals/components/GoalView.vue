@@ -4,11 +4,11 @@ import { RouterLink } from 'vue-router'
 import BarList from '../../../shared/ui/charts/BarList.vue'
 import PageView from '../../shell/components/PageView.vue'
 import { companyPath } from '../../shell/domain/sections'
-import { useNumbers } from '../composables/useNumbers'
-import { numberDetail, targetOfSlug } from '../domain/numbers'
+import { useGoals } from '../composables/useGoals'
+import { numberDetail, targetOfSlug } from '../domain/goals'
 
 const props = defineProps<{ measure: string }>()
-const { facts, isLoading, error } = useNumbers()
+const { facts, isLoading, error } = useGoals()
 
 const target = computed(() => targetOfSlug(props.measure))
 const detail = computed(() => (facts.value && target.value ? numberDetail(facts.value, target.value) : undefined))

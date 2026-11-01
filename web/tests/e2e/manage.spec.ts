@@ -61,6 +61,7 @@ test('the other Manage pages open, each in its place in the menu', async ({ page
     ['/manage/competitors/check', 'Check the list'],
     ['/manage/terms', 'Search term list'],
     ['/manage/terms/review', 'Term review'],
+    ['/manage/terms/edit', 'Add or remove terms'],
     ['/manage/recommendations', 'Recommendations'],
     ['/manage/recommendations/tick-off', 'Tick off yourself'],
     ['/manage/recommendations/goals', 'Goals'],

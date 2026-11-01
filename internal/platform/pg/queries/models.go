@@ -149,6 +149,16 @@ type AnalysisReadinessFile struct {
 	SitemapTruncated  bool
 }
 
+type ClaudeStepVersion struct {
+	Step         string
+	Number       int64
+	Model        string
+	Instructions string
+	Note         string
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
 type Company struct {
 	ID         string
 	Name       string
@@ -175,13 +185,12 @@ type CompanyOverride struct {
 	KeptAt     pgtype.Timestamptz
 }
 
-type HandTerm struct {
-	Term     string
-	Language string
-	Family   string
-	Tier     string
-	AddedBy  string
-	AddedAt  time.Time
+type CompetitorDefinition struct {
+	Version      int64
+	Text         string
+	SavedAt      time.Time
+	SavedBy      string
+	RestoredFrom pgtype.Int8
 }
 
 type LlmActive struct {
@@ -319,7 +328,6 @@ type PromptExtraction struct {
 	ExtractedAt  time.Time
 	HaikuTokens  int64
 	LeftOut      []string
-	Model        string
 }
 
 type PromptReviewUsage struct {
@@ -395,11 +403,44 @@ type PromptSetting struct {
 	UpdatedAt           time.Time
 }
 
-type RemovedTerm struct {
-	Term      string
-	Language  string
-	RemovedBy string
-	RemovedAt time.Time
+type Recommendation struct {
+	ID          string
+	RunID       uuid.UUID
+	GapKey      string
+	Kind        string
+	Language    string
+	Family      string
+	Specifics   []string
+	RuleBenefit int16
+	RuleEffort  int16
+	Title       string
+	WhereUrl    string
+	WhereNote   string
+	Why         string
+	Steps       []string
+	DoneWhen    string
+	Benefit     int16
+	Effort      int16
+	ScoreReason string
+	CreatedAt   time.Time
+	DoneBy      pgtype.Text
+	DoneAt      pgtype.Timestamptz
+	EditedAt    pgtype.Timestamptz
+}
+
+type RecommendationRun struct {
+	ID           uuid.UUID
+	StartedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	Ending       pgtype.Text
+	StartedBy    string
+	Model        string
+	Gaps         int64
+	Added        int64
+	Replaced     int64
+	Kept         int64
+	InputTokens  int64
+	OutputTokens int64
 }
 
 type Session struct {

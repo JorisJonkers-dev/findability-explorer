@@ -28,6 +28,9 @@ type Querier interface {
 	AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams) error
 	AddAnalysisReadiness(ctx context.Context, arg AddAnalysisReadinessParams) error
 	AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error
+	AddClaudeStepVersion(ctx context.Context, arg AddClaudeStepVersionParams) error
+	// The next version of the competitor definition.
+	AddCompetitorDefinition(ctx context.Context, arg AddCompetitorDefinitionParams) (int64, error)
 	AddLlmCredential(ctx context.Context, arg AddLlmCredentialParams) error
 	AddLlmEvent(ctx context.Context, arg AddLlmEventParams) error
 	// An answer, or, for a task whose earlier answer failed, that answer replaced: what the failed try
@@ -39,15 +42,19 @@ type Querier interface {
 	// reading used stays counted. An answer read already keeps its reading, and no row is touched.
 	AddPromptExtraction(ctx context.Context, arg AddPromptExtractionParams) (int64, error)
 	AddPromptRunModel(ctx context.Context, arg AddPromptRunModelParams) error
+	AddRecommendation(ctx context.Context, arg AddRecommendationParams) error
 	// Takes over the running run whose holder was last heard of before stale_before.
 	AdoptStalePromptRun(ctx context.Context, arg AdoptStalePromptRunParams) ([]uuid.UUID, error)
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
 	AnalysisStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
+	BeginRecommendationRun(ctx context.Context, arg BeginRecommendationRunParams) error
 	BeginWork(ctx context.Context, arg BeginWorkParams) error
 	// Every phrase a finished scan of a company found. Whether the map holds it is the review's to
 	// say, in the phrase's own language: scans made before that rule stored in_map through a term in
 	// another language.
 	CandidateEvidence(ctx context.Context) ([]CandidateEvidenceRow, error)
+	// A Claude step's saved versions, oldest first.
+	ClaudeStepVersions(ctx context.Context, step string) ([]ClaudeStepVersion, error)
 	CountActiveAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) (int64, error)
 	// A company's scan takes the next number among its scans; the unique index refuses a duplicate.
 	CreateAnalysis(ctx context.Context, arg CreateAnalysisParams) (int64, error)
@@ -61,7 +68,7 @@ type Querier interface {
 	DeleteExpiredSessions(ctx context.Context, now time.Time) error
 	DeleteLlmCredential(ctx context.Context, id uuid.UUID) (int64, error)
 	DeletePromptCandidateDecision(ctx context.Context, id string) (int64, error)
-	DeleteRemovedTerm(ctx context.Context, arg DeleteRemovedTermParams) (int64, error)
+	DeleteRecommendation(ctx context.Context, id string) error
 	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
 	DeleteTermDecision(ctx context.Context, candidateID string) (int64, error)
 	// Work the journal records runs in memory: a server that stops ends it.
@@ -71,6 +78,7 @@ type Querier interface {
 	FailRunningAnalyses(ctx context.Context, arg FailRunningAnalysesParams) error
 	FinishAnalysis(ctx context.Context, arg FinishAnalysisParams) error
 	FinishPromptRun(ctx context.Context, arg FinishPromptRunParams) error
+	FinishRecommendationRun(ctx context.Context, arg FinishRecommendationRunParams) error
 	GetAnalysis(ctx context.Context, id uuid.UUID) (GetAnalysisRow, error)
 	// An analysis's readiness, or no row when it has none.
 	GetAnalysisReadiness(ctx context.Context, analysisID uuid.UUID) ([]AnalysisReadiness, error)
@@ -85,9 +93,7 @@ type Querier interface {
 	HeartbeatPromptRun(ctx context.Context, arg HeartbeatPromptRunParams) (int64, error)
 	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
-	InsertHandTerm(ctx context.Context, arg InsertHandTermParams) (int64, error)
 	InsertPromptReviewUsage(ctx context.Context, arg InsertPromptReviewUsageParams) error
-	InsertRemovedTerm(ctx context.Context, arg InsertRemovedTermParams) error
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
 	InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error
 	InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error
@@ -117,7 +123,8 @@ type Querier interface {
 	ListAnalysisPages(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPagesRow, error)
 	ListCompanies(ctx context.Context) ([]Company, error)
 	ListCompanyOverrides(ctx context.Context) ([]ListCompanyOverridesRow, error)
-	ListHandTerms(ctx context.Context) ([]HandTerm, error)
+	// Every version of the competitor definition, the newest first.
+	ListCompetitorDefinitions(ctx context.Context) ([]ListCompetitorDefinitionsRow, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
 	ListPlanTargets(ctx context.Context) ([]PlanTarget, error)
@@ -139,7 +146,10 @@ type Querier interface {
 	ListPromptSetQuestions(ctx context.Context) ([]ListPromptSetQuestionsRow, error)
 	// Every published Prompt set, newest first.
 	ListPromptSets(ctx context.Context) ([]PromptSet, error)
-	ListRemovedTerms(ctx context.Context) ([]RemovedTerm, error)
+	// The newest lim Recommendation runs, the newest first.
+	ListRecommendationRuns(ctx context.Context, lim int32) ([]ListRecommendationRunsRow, error)
+	// Every recommendation the runs wrote that is kept, the oldest first.
+	ListRecommendations(ctx context.Context) ([]ListRecommendationsRow, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
 	ListTermVerdicts(ctx context.Context) ([]TermVerdict, error)
 	// The running work and the newest lim ended pieces.
@@ -149,18 +159,15 @@ type Querier interface {
 	LockSession(ctx context.Context, arg LockSessionParams) (LockSessionRow, error)
 	MarkAnalysisRunning(ctx context.Context, id uuid.UUID) error
 	MovePromptSchedule(ctx context.Context, nextDue time.Time) error
+	// What every request of the reviews and checks used, and how many companies they checked.
+	PromptCheckUsage(ctx context.Context) (PromptCheckUsageRow, error)
 	// Every name an answer gave, matched or not, the newest answer first: what the answers say of a
 	// company on the list.
 	PromptNamings(ctx context.Context) ([]PromptNamingsRow, error)
 	// The tokens in and out Claude Haiku on an Anthropic key used reading answers since a moment: the
 	// readings whose tokens count as Haiku's.
 	PromptReadingTokensSince(ctx context.Context, since time.Time) (PromptReadingTokensSinceRow, error)
-	// The same per model that read, so each is priced at its own list price; a reading from before
-	// readings recorded their model has none.
-	PromptReadingTokensSinceByModel(ctx context.Context, since time.Time) ([]PromptReadingTokensSinceByModelRow, error)
 	PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error)
-	// The model that read most of each run's responses, for the runs whose readings recorded one.
-	PromptRunReadingModels(ctx context.Context) ([]PromptRunReadingModelsRow, error)
 	PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)
@@ -168,6 +175,8 @@ type Querier interface {
 	// readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 	PromptSpentSince(ctx context.Context, since time.Time) (int64, error)
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
+	// The tokens in and out the Recommendation runs used since a moment.
+	RecommendationTokensSince(ctx context.Context, since time.Time) (RecommendationTokensSinceRow, error)
 	// Runs a finished run again, held by owner, unless any run is running: the run lock.
 	ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error)
 	// Asks the running scans a stop picks to stop, as StopQueuedAnalyses picks them; the first request
@@ -185,6 +194,7 @@ type Querier interface {
 	SetLlmActive(ctx context.Context, arg SetLlmActiveParams) error
 	SetLlmBudget(ctx context.Context, arg SetLlmBudgetParams) error
 	SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) error
+	SetRecommendationDone(ctx context.Context, arg SetRecommendationDoneParams) (int64, error)
 	// Records how many of the pages a scan read its sitemaps list, once the crawl is done.
 	SetSitemapCoverage(ctx context.Context, arg SetSitemapCoverageParams) (int64, error)
 	// Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,
@@ -203,6 +213,8 @@ type Querier interface {
 	TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error)
 	// The language-model tokens in and out of analyses created since a moment.
 	TokensSince(ctx context.Context, createdAt time.Time) (TokensSinceRow, error)
+	// The language-model tokens in and out of analyses created since a moment, per model that matched.
+	TokensSinceByModel(ctx context.Context, createdAt time.Time) ([]TokensSinceByModelRow, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UntickPlanImprovement(ctx context.Context, improvementID string) error
 	UpdateAccountIdentity(ctx context.Context, arg UpdateAccountIdentityParams) error

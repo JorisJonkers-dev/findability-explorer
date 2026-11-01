@@ -38,11 +38,13 @@ type RunFigures struct {
 	All, Dutch, German, English, Twente, Citation *float64
 }
 
-// History gives the figures of each run with at least one response read, in the order given.
-func History(runs []RunFigureInput) []RunFigures {
+// History gives the figures of each run with at least one response read, in the order given. The
+// scopes say which language each scope asks in; a response in another language than Dutch, German or
+// English counts only towards all of them.
+func History(runs []RunFigureInput, scopes []ScopeInfo) []RunFigures {
 	out := []RunFigures{}
 	for _, r := range runs {
-		if f, ok := figuresOf(r); ok {
+		if f, ok := figuresOf(r, scopes); ok {
 			out = append(out, f)
 		}
 	}
@@ -50,12 +52,14 @@ func History(runs []RunFigureInput) []RunFigures {
 }
 
 // figuresOf is a run's figures; false when it read no response.
-func figuresOf(r RunFigureInput) (RunFigures, bool) {
+func figuresOf(r RunFigureInput, scopes []ScopeInfo) (RunFigures, bool) {
 	var all, twente, web share
 	languages := map[string]*share{"nl": {}, "de": {}, "en": {}}
 	for _, c := range r.Cells {
 		all.add(c.Answers, c.Named)
-		languages[LanguageOf(c.Scope)].add(c.Answers, c.Named)
+		if l, ok := languages[LanguageOf(scopes, c.Scope)]; ok {
+			l.add(c.Answers, c.Named)
+		}
 		if c.Scope == ScopeTwente {
 			twente.add(c.Answers, c.Named)
 		}

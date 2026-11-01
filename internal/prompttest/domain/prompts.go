@@ -51,16 +51,15 @@ func Scopes() []Scope {
 	return []Scope{ScopeTwente, ScopeNetherlands, ScopeGermany, ScopeDutch, ScopeGerman, ScopeEnglish}
 }
 
-// LanguageOf is the language a scope asks in.
-func LanguageOf(s Scope) string {
-	switch s {
-	case ScopeGermany, ScopeGerman:
-		return "de"
-	case ScopeEnglish:
-		return "en"
-	case ScopeTwente, ScopeNetherlands, ScopeDutch:
+// LanguageOf is the language a scope asks in, as the stored scopes say; "" for a scope they do not
+// know.
+func LanguageOf(scopes []ScopeInfo, s Scope) string {
+	for _, info := range scopes {
+		if info.ID == s {
+			return info.Language
+		}
 	}
-	return "nl"
+	return ""
 }
 
 // Prompt is one buyer question of the prompt set.

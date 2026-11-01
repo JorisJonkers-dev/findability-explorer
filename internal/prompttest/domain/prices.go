@@ -203,3 +203,24 @@ func (p Prices) total(questions int, cadence Cadence, budget Micros) Prices {
 	p.Month = MicrosOf(p.Run.Dollars() * p.RunsPerMonth)
 	return p
 }
+
+// AskedModels are the models of a run still on the Model list, and the listed models the run did
+// not ask.
+func AskedModels(models []ModelChoice, list []string) (kept []ModelChoice, missing []string) {
+	for _, m := range models {
+		if slices.Contains(list, m.Model) {
+			kept = append(kept, m)
+		}
+	}
+	for _, id := range list {
+		if !slices.ContainsFunc(models, func(m ModelChoice) bool { return m.Model == id }) {
+			missing = append(missing, id)
+		}
+	}
+	return kept, missing
+}
+
+// OfModels are the choices that ask one of models.
+func OfModels(choices []ModelChoice, models []string) []ModelChoice {
+	return slices.DeleteFunc(slices.Clone(choices), func(c ModelChoice) bool { return !slices.Contains(models, c.Model) })
+}

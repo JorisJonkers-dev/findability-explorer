@@ -448,6 +448,7 @@ type gateway struct {
 	mu          sync.Mutex
 	catalogue   []domain.CatalogueModel
 	modelsErr   error
+	modelCalls  int
 	limited     map[string]bool
 	empty       map[string]bool
 	askErr      error
@@ -473,6 +474,9 @@ func newGateway() *gateway {
 }
 
 func (g *gateway) Models(context.Context) ([]domain.CatalogueModel, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.modelCalls++
 	return g.catalogue, g.modelsErr
 }
 

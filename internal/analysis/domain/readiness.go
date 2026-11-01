@@ -257,8 +257,9 @@ func isMarkdownLink(target string) bool {
 // MaxRawFile is the most bytes a scan keeps of each raw readiness file.
 const MaxRawFile = 100_000
 
-// RawFiles are the readiness files a scan keeps as the site served them, for administrators to
-// check the classification against; each at most MaxRawFile bytes, empty when not served.
+// RawFiles are the readiness files a scan keeps as the site served them, to read in the app and
+// check the classification against; each at most MaxRawFile bytes, empty when not served. The
+// sitemap is the first one read (the one robots.txt lists, or /sitemap.xml), with its address.
 type RawFiles struct {
 	Robots            string
 	RobotsTruncated   bool
@@ -266,14 +267,21 @@ type RawFiles struct {
 	LLMsTruncated     bool
 	LLMsFull          string
 	LLMsFullTruncated bool
+	SitemapURL        string
+	Sitemap           string
+	SitemapTruncated  bool
 }
 
-// RawFilesOf keeps the robots.txt, llms.txt and llms-full.txt the site served.
+// RawFilesOf keeps the robots.txt, llms.txt, llms-full.txt and first sitemap the site served.
 func RawFilesOf(f ReadinessFiles) RawFiles {
 	var r RawFiles
 	r.Robots, r.RobotsTruncated = rawOf(f.Robots)
 	r.LLMs, r.LLMsTruncated = rawOf(f.LLMs)
 	r.LLMsFull, r.LLMsFullTruncated = rawOf(f.LLMsFull)
+	if len(f.Sitemaps) > 0 {
+		r.SitemapURL = f.Sitemaps[0].URL
+		r.Sitemap, r.SitemapTruncated = rawText(f.Sitemaps[0].Text)
+	}
 	return r
 }
 
@@ -281,7 +289,13 @@ func rawOf(f File) (string, bool) {
 	if !f.served() {
 		return "", false
 	}
-	body := strings.ReplaceAll(strings.ToValidUTF8(f.Body, ""), "\x00", "")
+	return rawText(f.Body)
+}
+
+// rawText is body as valid UTF-8 without NUL bytes, cut at MaxRawFile bytes on a character's start,
+// and whether it was cut.
+func rawText(body string) (string, bool) {
+	body = strings.ReplaceAll(strings.ToValidUTF8(body, ""), "\x00", "")
 	if len(body) <= MaxRawFile {
 		return body, false
 	}

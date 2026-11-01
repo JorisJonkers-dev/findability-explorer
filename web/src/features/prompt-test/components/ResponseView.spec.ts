@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PromptAnswer } from '../../../infrastructure/api/types.gen'
 import { promptAnswer, promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
-import { type Handler, json, mountApp, problem, routes } from '../../../testing/mountApp'
+import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { words } from '../../../testing/words'
 
 const OLDER = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d'
@@ -39,6 +39,14 @@ const section = (wrapper: Awaited<ReturnType<typeof mountApp>>['wrapper'], title
 }
 
 describe('One response', () => {
+  it('goes back to the page it was opened from, and to Every response when opened directly', async () => {
+    const { wrapper, router } = await mountApp(api(web()), '/ai-responses?version=2')
+    await router.push(`/ai-responses/${ID}?run=${RUN_ID}`)
+    await settle()
+    const back = wrapper.findAll('a').find((a) => a.text().startsWith('Back to'))
+    expect([back?.text(), back?.attributes('href')]).toEqual(['Back to AI responses', '/ai-responses?version=2'])
+  })
+
   it('has the frame: the model and mode, the question, Tribelt’s place, and the way back', async () => {
     const { wrapper } = await mountApp(api(web()), `/ai-responses/${ID}?run=${RUN_ID}`)
     expect(wrapper.get('h1').text()).toBe('OpenAI, gpt-oss-20b, with web search')

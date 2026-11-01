@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { backLink, setPageTitle, usePreviousPage } from '../composables/navigation'
 import { useMe } from '../composables/useMe'
 import { section as sectionById, type SectionId } from '../domain/sections'
 import FrameBody from './FrameBody.vue'
@@ -22,6 +23,16 @@ const props = defineProps<{
 }>()
 
 const { isAdmin } = useMe()
+// A detail page goes back to the page it came from, as the prototype does; opened directly, to its own way back.
+const previous = usePreviousPage()
+const backTo = computed(() => backLink(props.back, previous.value))
+watch(
+  () => props.title,
+  (title) => {
+    setPageTitle(title)
+  },
+  { immediate: true },
+)
 const eyebrow = computed(() => {
   if (!props.section) return undefined
   const s = sectionById(props.section)
@@ -37,7 +48,7 @@ const eyebrow = computed(() => {
       :title="title"
       :purpose="purpose"
       :data-line="dataLine"
-      :back="back"
+      :back="backTo"
       :link="isAdmin ? manage : undefined"
       :help-topic="helpTopic"
     >

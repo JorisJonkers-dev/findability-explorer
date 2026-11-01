@@ -1,27 +1,25 @@
 import type { AnalysisSummary, LlmCredential, PromptRun, SpendLine, Work, WorkKind } from '../../../infrastructure/api/types.gen'
+import { clock, longDate, moment } from '../../../shared/dates'
 import type { Ending } from '../../../shared/endings'
 
 /** The start of the failure text of a run an administrator stopped (the backend's StoppedByHand). */
 const STOPPED_BY_HAND = 'Stopped by hand'
 
 const NUMBER = new Intl.NumberFormat('en-GB')
-const WHEN = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
-const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-const TIME = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
 
 /** A moment in words: "28 October 2026, 09:37" (UTC). */
 export function whenLabel(iso: string): string {
-  return WHEN.format(new Date(iso)).replace(' at ', ', ')
+  return moment(iso)
 }
 
 /** A day in words: "27 October 2026" (UTC). */
 export function dayLabel(iso: string): string {
-  return DAY.format(new Date(iso))
+  return longDate(iso)
 }
 
 /** A time of day: "06:00" (UTC). */
 export function timeLabel(iso: string): string {
-  return TIME.format(new Date(iso))
+  return clock(iso)
 }
 
 /** How a Prompt run ended, as the API names endings, or null while it runs. A stopped run says in its failure why it stopped. */

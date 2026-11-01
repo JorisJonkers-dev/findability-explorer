@@ -3,6 +3,7 @@ import { type Sort, type SortValue, sortRows } from '../../../shared/sort'
 import { familyLabel, PRODUCT_FAMILIES } from '../../../shared/vocabulary'
 import { oxford } from '../../../shared/words'
 import type { Company } from './company'
+import { longDate } from '../../../shared/dates'
 
 /** One row of the Competitors table: Tribelt or a competitor, with what each column shows. */
 export type CompetitorRow = {
@@ -122,9 +123,7 @@ export function summaryLine(tribelt: CompetitorRow | undefined, best: NamedRow |
   return best === undefined ? own : `${own} The best competitor, ${best.name}, is named in ${pct(best.share)}.`
 }
 
-const DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-
 /** A scan's date as the pages write it: "20 October 2026"; "Not scanned" without one. */
 export function scanDate(iso: string | undefined): string {
-  return iso === undefined ? 'Not scanned' : DATE.format(new Date(iso))
+  return iso === undefined ? 'Not scanned' : longDate(iso)
 }

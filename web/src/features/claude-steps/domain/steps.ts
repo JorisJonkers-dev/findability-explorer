@@ -1,5 +1,6 @@
 import type { ClaudeStep, ClaudeStepId, ClaudeStepModel, ClaudeStepVersion } from '../../../infrastructure/api/types.gen'
 import { dollars } from '../../settings/domain/usage'
+import { longDate } from '../../../shared/dates'
 
 /** What one part of a step's data is, and where it comes from. */
 export type Part = { name: string; what: string; from: string }
@@ -136,11 +137,9 @@ export function stepInfo(id: ClaudeStepId): StepInfo {
 /** The default model, Claude Haiku 5.5, which the tool's own estimates assume. */
 export const DEFAULT_MODEL = 'claude-haiku-5-5'
 
-const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-
 /** The day a version was saved: "1 November 2026". */
 export function savedOn(iso: string): string {
-  return DAY.format(new Date(iso))
+  return longDate(iso)
 }
 
 /** The page's data line: which version the step uses, and who saved it when. */

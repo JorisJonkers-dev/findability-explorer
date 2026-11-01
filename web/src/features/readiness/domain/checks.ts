@@ -1,5 +1,6 @@
 import type { AiReadiness, AiReadinessRow, Plan, ReadinessCheck } from '../../../infrastructure/api/types.gen'
 import { type Sort, sortRows, type SortValue } from '../../../shared/sort'
+import { longDate } from '../../../shared/dates'
 
 /** The eight checks the readiness score counts, in the order the pages list them. */
 export const SCORED_CHECKS = ['crawlers', 'sitemap', 'sitemapLanguages', 'languages', 'organization', 'llmsTxt', 'llmsFullTxt', 'markdown'] as const
@@ -162,7 +163,7 @@ export function everySite(rows: readonly AiReadinessRow[], filter: SiteFilter, s
   return [...kept.filter((r) => r.role === 'tribelt'), ...sortRows(kept.filter((r) => r.role !== 'tribelt'), sort, siteSortValue)]
 }
 
-const day = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+const day = longDate
 
 /** Where the figures of AI readiness come from: each site's newest scan, when it was checked again, and how many sites. */
 export function readinessDataLine(rows: readonly AiReadinessRow[]): string {

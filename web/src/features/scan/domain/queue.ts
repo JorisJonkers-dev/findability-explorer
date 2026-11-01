@@ -1,6 +1,7 @@
 import { dollars } from '../../settings/domain/usage'
 import type { AnalysisSummary, Competitor, LlmBudget, RescanRequest } from '../../../infrastructure/api/types.gen'
 import { isInProgress } from './status'
+import { longDate, moment } from '../../../shared/dates'
 
 /** The scans in progress: those reading pages now, and those waiting for a free place, oldest first. */
 export function scanQueue<T extends Pick<AnalysisSummary, 'status' | 'createdAt'>>(scans: readonly T[]): { running: T[]; waiting: T[] } {
@@ -47,18 +48,14 @@ export function rescanRequest(companies: readonly Pick<Competitor, 'id'>[], maxP
   return { competitorIds: companies.map((c) => c.id), maxPages }
 }
 
-const STAMP = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
-
 /** When a scan started, to the minute: "28 October 2026, 05:48". */
 export function scanStamp(iso: string): string {
-  return STAMP.format(new Date(iso)).replace(' at ', ', ')
+  return moment(iso)
 }
-
-const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 
 /** The day a scan started: "28 October 2026". */
 export function scanDay(iso: string): string {
-  return DAY.format(new Date(iso))
+  return longDate(iso)
 }
 
 /** The pages a scan read of the most it would: "22 of 60". */

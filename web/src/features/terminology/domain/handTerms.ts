@@ -1,6 +1,7 @@
 import type { BeltFamily, IntentTier, Language, Term, TermOrigin } from '../../../infrastructure/api/types.gen'
 import { BUYER_INTENT } from '../../../shared/tiers'
 import { familyLabel, languageLabel } from '../../../shared/vocabulary'
+import { longDate } from '../../../shared/dates'
 
 /** The languages a term is added in: those Tribelt's buyers search in. */
 export const LANGUAGE_CHOICES: readonly { value: Language; label: string }[] = (['nl', 'de', 'en'] as const).map((value) => ({ value, label: languageLabel(value) }))
@@ -33,6 +34,5 @@ export function termName(t: Pick<Term, 'term' | 'language'>): string {
 
 /** "Added by Joris Jonkers on 1 November 2026." */
 export function handLine(what: 'Added' | 'Removed', h: { by: string; at: string }): string {
-  const day = new Date(h.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-  return `${what} by ${h.by} on ${day}.`
+  return `${what} by ${h.by} on ${longDate(h.at)}.`
 }

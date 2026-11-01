@@ -5,9 +5,10 @@ import { formatValue } from '../../catching-up/domain/standings'
 import { hostOf } from '../../prompt-test/domain/grid'
 import { type ScoredCheck, siteName, siteScore } from './checks'
 import { BOTS } from './readiness'
+import { longDate } from '../../../shared/dates'
 
 const int = (n: number) => n.toLocaleString('en-US')
-const day = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+const day = longDate
 const languages = (codes: readonly string[]) => oxford(codes.map(languageLabel))
 const plural = (n: number, one: string, many: string) => `${int(n)} ${n === 1 ? one : many}`
 

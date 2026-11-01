@@ -5,6 +5,7 @@ import {
   getPromptTestHistoryOptions,
   listAnalysesOptions,
   listPromptSetsOptions,
+  publishPromptSetMutation,
   removeQueuedAnalysesMutation,
   stopAnalysisMutation,
   stopPromptRunMutation,
@@ -14,7 +15,7 @@ import {
   stopRescanMutation,
   stopTermReviewMutation,
 } from '../../../infrastructure/api/@tanstack/vue-query.gen'
-import type { Activity, AnalysisList, AnalysisSummary, PromptSets, PromptTestHistory } from '../../../infrastructure/api/types.gen'
+import type { Activity, AnalysisList, AnalysisSummary, PromptSetDraft, PromptSets, PromptTestHistory, PublishedPromptSet } from '../../../infrastructure/api/types.gen'
 import { describeError } from '../../../shared/describeError'
 import { promptProblem } from '../../prompt-test/domain/settings'
 import { isInProgress, POLL_INTERVAL_MS } from '../../scan/domain/status'
@@ -58,6 +59,36 @@ export function usePromptSets() {
     sets: computed<PromptSets | undefined>(() => query.data.value),
     isLoading: query.isPending,
     error: computed(() => (query.error.value ? promptProblem(query.error.value) : null)),
+  }
+}
+
+/**
+ * Publishes a draft as the next version of the Prompt set. Everything that shows the Prompt set is
+ * read again, so the charts mark the date and the next run asks it.
+ */
+export function usePublishPromptSet() {
+  const queryClient = useQueryClient()
+  const publish = useMutation(publishPromptSetMutation())
+  const notice = ref<string | null>(null)
+  return {
+    isPublishing: publish.isPending,
+    notice,
+    error: computed(() => (publish.error.value ? promptProblem(publish.error.value) : null)),
+    publish: (body: PromptSetDraft, done?: (set: PublishedPromptSet) => void) => {
+      notice.value = null
+      publish.mutate(
+        { body },
+        {
+          onSuccess: (set) => {
+            notice.value = `Version ${String(set.version)} is published. The charts mark the date the questions changed.`
+            for (const id of ['listPromptSets', 'getPromptTestHistory', 'getPromptTestSettings', 'getPromptTestResults']) {
+              void queryClient.invalidateQueries({ queryKey: [{ _id: id }] })
+            }
+            done?.(set)
+          },
+        },
+      )
+    },
   }
 }
 

@@ -4,7 +4,7 @@ import { RUN_ID, summary } from '../../../testing/fixtures'
 import { json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
-import { ACTIVITY_POLL_MS, useActivity, usePromptHistory, usePromptSets, useStopWork, useWorkScans, WORK_SCANS } from './useManage'
+import { ACTIVITY_POLL_MS, useActivity, usePromptHistory, usePromptSets, usePublishPromptSet, useStopWork, useWorkScans, WORK_SCANS } from './useManage'
 
 const SCAN = '00000000-0000-4000-9000-000000000001'
 
@@ -144,5 +144,44 @@ describe('useStopWork', () => {
     await flushPromises()
     expect(state.notice.value).toBeNull()
     expect(state.error.value).toBe('Not Found')
+  })
+})
+
+describe('usePublishPromptSet', () => {
+  const body = { questions: [{ family: 'eyelink' as const, intent: 'application' as const, scope: 'twente', text: 'Welke band?' }] }
+
+  it('publishes a draft, says so, and hands over the new version', async () => {
+    const published = { version: 3, publishedAt: '2026-11-01T12:00:00Z', note: 'Adds 1 question.', questions: [] }
+    const sent: unknown[] = []
+    const { state } = mountComposable(
+      usePublishPromptSet,
+      routes({
+        'POST /api/v1/admin/prompt-sets': async (r) => {
+          sent.push(await r.json())
+          return json(published, 201)
+        },
+      }),
+    )
+    let got: unknown = null
+    state.publish(body, (set) => (got = set))
+    expect(state.isPublishing.value).toBe(true)
+    await flushPromises()
+    expect(sent).toEqual([body])
+    expect(got).toEqual(published)
+    expect(state.notice.value).toBe('Version 3 is published. The charts mark the date the questions changed.')
+    state.publish(body)
+    await flushPromises()
+    expect(state.error.value).toBeNull()
+  })
+
+  it('says why the draft was refused', async () => {
+    const { state } = mountComposable(
+      usePublishPromptSet,
+      routes({ 'POST /api/v1/admin/prompt-sets': () => problem(409, 'Conflict', 'The draft asks what the published Prompt set asks, so there is nothing to publish.') }),
+    )
+    state.publish(body)
+    await flushPromises()
+    expect(state.error.value).toBe('The draft asks what the published Prompt set asks, so there is nothing to publish.')
+    expect(state.notice.value).toBeNull()
   })
 })

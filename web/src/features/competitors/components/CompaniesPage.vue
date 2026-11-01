@@ -30,8 +30,8 @@ function setArchived(c: Competitor, archived: boolean): void {
 
 const COLUMNS: readonly Column<Competitor>[] = [
   { key: 'name', label: 'Name', value: (c) => c.name },
-  { key: 'website', label: 'Website', value: (c) => c.host ?? c.website },
-  { key: 'country', label: 'Country', value: (c) => c.country || 'Not known' },
+  { key: 'website', label: 'Website', value: (c) => c.host ?? c.website, wide: true },
+  { key: 'country', label: 'Country', value: (c) => c.country || 'Not known', wide: true },
   { key: 'status', label: 'Status', value: (c) => statusOf(c) },
   { key: 'actions', label: 'Change' },
 ]

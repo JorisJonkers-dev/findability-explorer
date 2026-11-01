@@ -42,8 +42,11 @@ test('an administrator opens Manage from the top bar and moves through its menu'
   await expect(page.getByRole('heading', { level: 1, name: 'Prompt test' })).toBeVisible()
   await expect(menu.getByRole('link', { name: /^Prompt test/ })).toHaveAttribute('aria-current', 'page')
 
-  // A section whose only page so far is a subpage opens on it, folded out.
+  // A section opens on its index page, folded out to its subpages.
   await menu.getByRole('link', { name: /^Competitor list/ }).click()
+  await expect(page).toHaveURL('/manage/competitors')
+  await expect(page.getByRole('heading', { level: 1, name: 'Competitor list' })).toBeVisible()
+  await menu.getByRole('link', { name: /^Candidates/ }).click()
   await expect(page).toHaveURL('/manage/competitors/candidates')
   await expect(menu.getByRole('link', { name: /^Candidates/ })).toHaveAttribute('aria-current', 'page')
   await expect(menu.getByRole('link', { name: /^Waiting terms/ })).toHaveCount(0)
@@ -81,8 +84,8 @@ test('detail pages link back, and the old addresses redirect', async ({ page }) 
     ['/buyers', '/'],
     ['/settings', '/manage/keys'],
     ['/settings/prompt-test', '/manage/prompt-test'],
-    ['/settings/terms', '/manage/terms/waiting'],
-    ['/settings/competitors', '/manage/competitors/candidates'],
+    ['/settings/terms', '/manage/terms'],
+    ['/settings/competitors', '/manage/competitors'],
     ['/how-it-works', '/help'],
   ] as const
   for (const [from, to] of moves) {

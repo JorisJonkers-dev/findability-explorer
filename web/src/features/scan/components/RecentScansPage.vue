@@ -19,7 +19,7 @@ const rows = computed<Row[]>(() => newestScans(companies.value))
 const last = computed(() => rows.value[0])
 const COLUMNS: readonly Column<Row>[] = [
   { key: 'company', label: 'Company', value: (r) => r.company.name },
-  { key: 'number', label: 'Scan number', value: (r) => r.scan.number ?? 1, num: true },
+  { key: 'number', label: 'Scan number', value: (r) => r.scan.number ?? 1, num: true, wide: true },
   { key: 'date', label: 'Date', value: (r) => r.scan.createdAt },
   { key: 'pages', label: 'Pages read', value: (r) => r.scan.pagesCrawled, num: true },
 ]

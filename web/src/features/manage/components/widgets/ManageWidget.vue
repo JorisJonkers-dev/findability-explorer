@@ -25,7 +25,7 @@ const width = computed(() => BASIS[props.span])
   <section
     :aria-labelledby="id"
     :data-span="span"
-    class="flex min-w-0 grow basis-full flex-col gap-4 rounded-3xl p-6"
+    class="flex min-w-0 grow basis-full flex-col gap-4 rounded-3xl p-5 sm:p-6"
     :class="[width, accent ? 'bg-orange-pale' : 'bg-mist']"
   >
     <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">

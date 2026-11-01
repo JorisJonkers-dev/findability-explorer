@@ -20,7 +20,7 @@ export const SECONDARY = `${BUTTON} border-2 border-solid border-silver bg-white
 /** An action that stops or removes something. */
 export const DANGER = `${BUTTON} border-2 border-solid border-orange-ink bg-white text-orange-ink hover:bg-orange-pale`
 /** A small button in a table row: it wraps in its cell rather than running past the table's edge. */
-export const ROW_BUTTON = 'inline-flex min-h-10 cursor-pointer items-center rounded-full border-2 border-solid border-silver bg-white px-3.5 text-sm font-semibold text-black no-underline hover:border-black hover:text-black disabled:cursor-not-allowed disabled:opacity-60'
+export const ROW_BUTTON = 'inline-flex min-h-10 whitespace-nowrap [overflow-wrap:normal] cursor-pointer items-center rounded-full border-2 border-solid border-silver bg-white px-3.5 text-sm font-semibold text-black no-underline hover:border-black hover:text-black disabled:cursor-not-allowed disabled:opacity-60'
 /** A toggle in a group of choices, pressed or not. */
 export const CHOICE = 'inline-flex min-h-11 cursor-pointer items-center rounded-full border-2 border-solid px-4 text-sm font-semibold'
 export const CHOICE_ON = 'border-black bg-black text-white'
@@ -29,5 +29,5 @@ export const CHOICE_OFF = 'border-silver bg-white text-black hover:border-black'
 /** A table that never runs past its box: it wraps its cells and scrolls only as a last resort. */
 export const TABLE_BOX = 'w-full min-w-0 overflow-x-auto'
 export const TABLE = 'w-full border-collapse text-left text-[15px]'
-export const TH = 'border-b-2 border-black px-2 py-2 align-bottom text-sm font-medium text-muted'
-export const TD = 'border-b border-grey px-2 py-2.5 align-top break-words'
+export const TH = 'border-b-2 border-black px-2 py-2 align-bottom text-sm font-medium text-muted [overflow-wrap:anywhere]'
+export const TD = 'border-b border-grey px-2 py-2.5 align-top [overflow-wrap:anywhere]'

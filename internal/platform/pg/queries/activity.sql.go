@@ -24,7 +24,9 @@ SELECT
     coalesce((SELECT sum(input_tokens) FROM term_review_usage WHERE used_at >= $1), 0)::bigint AS term_review_input,
     coalesce((SELECT sum(output_tokens) FROM term_review_usage WHERE used_at >= $1), 0)::bigint AS term_review_output,
     coalesce((SELECT sum(input_tokens) FROM prompt_review_usage WHERE used_at >= $1), 0)::bigint AS candidate_check_input,
-    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage WHERE used_at >= $1), 0)::bigint AS candidate_check_output
+    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage WHERE used_at >= $1), 0)::bigint AS candidate_check_output,
+    coalesce((SELECT sum(input_tokens) FROM recommendation_runs WHERE started_at >= $1), 0)::bigint AS recommendation_input,
+    coalesce((SELECT sum(output_tokens) FROM recommendation_runs WHERE started_at >= $1), 0)::bigint AS recommendation_output
 `
 
 type ActivityMonthUsageRow struct {
@@ -38,6 +40,8 @@ type ActivityMonthUsageRow struct {
 	TermReviewOutput     int64
 	CandidateCheckInput  int64
 	CandidateCheckOutput int64
+	RecommendationInput  int64
+	RecommendationOutput int64
 }
 
 // What each kind of work used since a moment.
@@ -55,6 +59,8 @@ func (q *Queries) ActivityMonthUsage(ctx context.Context, since time.Time) (Acti
 		&i.TermReviewOutput,
 		&i.CandidateCheckInput,
 		&i.CandidateCheckOutput,
+		&i.RecommendationInput,
+		&i.RecommendationOutput,
 	)
 	return i, err
 }

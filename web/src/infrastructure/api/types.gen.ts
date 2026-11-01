@@ -784,7 +784,7 @@ export type LlmChoice = 'default' | 'chosen' | 'off';
 /**
  * What an event records.
  */
-export type LlmEventAction = 'credential_added' | 'credential_deleted' | 'credential_tested' | 'active_set' | 'active_cleared';
+export type LlmEventAction = 'credential_added' | 'credential_deleted' | 'credential_tested' | 'active_set' | 'active_cleared' | 'budget_set';
 
 /**
  * One change to or test of the language-model settings.
@@ -816,25 +816,35 @@ export type LlmEvent = {
 };
 
 /**
- * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
+ * What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers - and what they spent, priced at the models' list prices from their stored token counts. Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
  */
 export type LlmBudget = {
+    monthlyBudgetUsd: Usd;
+    spentThisMonthUsd: Usd;
+    leftUsd: Usd;
     /**
-     * The tokens every job together may use in a calendar month (UTC).
+     * The tokens, in and out, every job used this month so far.
      */
-    monthlyTokens: number;
-    /**
-     * The tokens every job used this month so far.
-     */
-    usedThisMonth: number;
+    tokensThisMonth: number;
     /**
      * The tokens one scan's product matching used on average, over every scan the language model answered for; 0 before the first.
      */
     averageTokensPerScan: number;
+    averageScanUsd: Usd;
     /**
      * How many scans the average is over.
      */
     scansMatched: number;
+};
+
+/**
+ * The Anthropic key's new monthly budget.
+ */
+export type LlmBudgetChange = {
+    /**
+     * The month's budget in dollars.
+     */
+    monthlyBudgetUsd: number;
 };
 
 /**
@@ -863,9 +873,9 @@ export type LlmSettings = {
 };
 
 /**
- * Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator accepted from the review queue, or a term an administrator added by hand.
+ * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
  */
-export type TermOrigin = 'research' | 'review' | 'hand';
+export type TermOrigin = 'research' | 'review';
 
 /**
  * The fields of a company to change; at least one.
@@ -1205,9 +1215,9 @@ export type TermSuggestion = {
 };
 
 /**
- * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), or termReview (reviewing the search terms the scans found).
+ * A Claude step - matching (matching products in scans) or recommendations (writing recommendations); the other steps join as they are built.
  */
-export type ClaudeStepId = 'reading' | 'matching' | 'candidateMerge' | 'candidateCheck' | 'termReview';
+export type ClaudeStepId = 'matching' | 'recommendations';
 
 /**
  * One saved version of a Claude step - the model it uses and its instructions.
@@ -1432,7 +1442,7 @@ export type TermReviewState = {
      */
     waiting: number;
     /**
-     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's language-model tokens are spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
+     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
     problem?: 'noModel' | 'budget' | 'failed' | 'stopped';
     /**
@@ -1480,53 +1490,6 @@ export type TermCandidateList = {
     items: Array<TermCandidate>;
     counts: TermCandidateCounts;
     review: TermReviewState;
-};
-
-/**
- * A search term an administrator adds by hand.
- */
-export type NewTerm = {
-    /**
-     * The term as the list shows it.
-     */
-    term: string;
-    language: Language;
-    family: BeltFamily;
-    tier: IntentTier;
-};
-
-/**
- * A search term on the list, by its text and language.
- */
-export type TermRef = {
-    /**
-     * The term's text; case and accents do not matter.
-     */
-    term: string;
-    language: Language;
-};
-
-/**
- * A term added or removed by hand, with who did it and when.
- */
-export type HandTerm = {
-    term: Term;
-    /**
-     * Who added or removed it.
-     */
-    by: string;
-    /**
-     * When.
-     */
-    at: string;
-};
-
-/**
- * The terms added by hand and the terms removed, oldest first.
- */
-export type HandTermList = {
-    added: Array<HandTerm>;
-    removed: Array<HandTerm>;
 };
 
 /**
@@ -1876,6 +1839,31 @@ export type ReadinessCheckSummary = {
  * One improvement of the plan.
  */
 export type PlanImprovement = {
+    kind: RecommendationKind;
+    /**
+     * True for one a Recommendation run wrote, false for one written by hand.
+     */
+    generated: boolean;
+    /**
+     * True for an open one the newest Recommendation run wrote.
+     */
+    new: boolean;
+    /**
+     * The tribelt.nl page it belongs on; absent when it applies to the whole site or the model could not place it.
+     */
+    where?: string;
+    /**
+     * Present instead of where when the model could not place it.
+     */
+    whereNote?: string;
+    /**
+     * Why the model moved a score from the rules' by a point; absent when it did not.
+     */
+    scoreReason?: string;
+    /**
+     * The facts behind a generated one, as the rules found them.
+     */
+    facts?: Array<string>;
     /**
      * Its id.
      */
@@ -1934,6 +1922,105 @@ export type PlanImprovement = {
      */
     tribelt?: number;
     leader?: MeasureLeader;
+};
+
+/**
+ * What kind of change a recommendation asks for - term (a search term to add), page (a page to add), listing (a site to get listed on), fact (a fact sheet correction), readiness (AI readiness), or general (written by hand for the whole site).
+ */
+export type RecommendationKind = 'term' | 'page' | 'listing' | 'fact' | 'readiness' | 'general';
+
+/**
+ * The Recommendation run, what starting one would do, and the past runs.
+ */
+export type RecommendationRuns = {
+    /**
+     * Whether a run runs now.
+     */
+    running: boolean;
+    /**
+     * True when no Anthropic key is set up, so no run can start.
+     */
+    noKey: boolean;
+    /**
+     * The model the step writing recommendations uses now; absent without a key.
+     */
+    model?: string;
+    /**
+     * How many open recommendations an earlier run wrote that a new run replaces.
+     */
+    replaces: number;
+    /**
+     * True when tribelt.nl was last scanned before the newest Prompt run started.
+     */
+    stale: boolean;
+    /**
+     * When the newest Prompt run started; absent before any.
+     */
+    promptRunAt?: string;
+    /**
+     * When the newest scan of tribelt.nl finished; absent before any.
+     */
+    scanAt?: string;
+    /**
+     * How many terms the search term list holds.
+     */
+    terms: number;
+    /**
+     * How many gaps the rules find now, at most 40.
+     */
+    gaps: number;
+    estimatedCostUsd: Usd;
+    /**
+     * The last runs, the newest first.
+     */
+    runs: Array<RecommendationRun>;
+};
+
+/**
+ * One Recommendation run.
+ */
+export type RecommendationRun = {
+    /**
+     * The run's id.
+     */
+    id: string;
+    /**
+     * When it started.
+     */
+    startedAt: string;
+    /**
+     * When it ended; absent while it runs.
+     */
+    finishedAt?: string;
+    /**
+     * How it ended; absent while it runs.
+     */
+    ending?: 'done' | 'doneWithFailures' | 'stoppedByHand' | 'stoppedByBudget' | 'failed';
+    /**
+     * Who started it.
+     */
+    startedBy: string;
+    /**
+     * The model that wrote.
+     */
+    model: string;
+    /**
+     * How many gaps it wrote recommendations for.
+     */
+    gaps: number;
+    /**
+     * How many recommendations it added.
+     */
+    added: number;
+    /**
+     * How many open recommendations it replaced.
+     */
+    replaced: number;
+    /**
+     * How many done or edited recommendations it kept.
+     */
+    kept: number;
+    costUsd: Usd;
 };
 
 /**
@@ -2554,9 +2641,9 @@ export type PromptFamily = 'eyelink' | 'open_spiral' | 'closed_spiral' | 'tri_fl
 export type PromptKind = 'supplier' | 'application' | 'problem';
 
 /**
- * Where and in which language a prompt asks - a scope's id (PromptSetScope), such as twente, netherlands, germany, dutch, german, or english, or one a later Prompt set version added.
+ * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
  */
-export type PromptScope = string;
+export type PromptScope = 'twente' | 'netherlands' | 'germany' | 'dutch' | 'german' | 'english';
 
 /**
  * What to ask again - every failed answer of the run when empty, or the one question of one provider and mode when all three are given.
@@ -2956,45 +3043,6 @@ export type PromptSetQuestion = {
 };
 
 /**
- * An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the version it was restored from, if any.
- */
-export type PromptSetDraft = {
-    /**
-     * Its questions, in order.
-     */
-    questions: Array<PromptDraftQuestion>;
-    /**
-     * The new scopes its questions ask in, which no version asked in yet.
-     */
-    scopes?: Array<PromptSetScope>;
-    /**
-     * The version the draft was restored from, if it was.
-     */
-    restoredFrom?: number;
-};
-
-/**
- * One question of a draft.
- */
-export type PromptDraftQuestion = {
-    /**
-     * The id of the published question it keeps, changed or not; absent for a new question.
-     */
-    id?: string;
-    family: PromptFamily;
-    intent: IntentTier;
-    scope: PromptSetScopeId;
-    /**
-     * The question, as it is asked.
-     */
-    text: string;
-    /**
-     * Its English translation, when one is known.
-     */
-    english?: string;
-};
-
-/**
  * A scope's id, which the responses to its questions record as their scope.
  */
 export type PromptSetScopeId = string;
@@ -3045,17 +3093,9 @@ export type PromptSetVersionInfo = {
  */
 export type PromptRunFigures = {
     /**
-     * The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5"; absent when its readings recorded none. A change of it between runs breaks the charts, as the responses were read another way.
-     */
-    readingModel?: string;
-    /**
      * The run's id.
      */
     runId: string;
-    /**
-     * The models the run asked, by OpenRouter id; the charts break where they changed.
-     */
-    models?: Array<string>;
     /**
      * When it started.
      */
@@ -3133,10 +3173,6 @@ export type PromptNamedCompany = {
  * How the extractor read an answer; failed when it could not, after a retry.
  */
 export type PromptExtraction = {
-    /**
-     * The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a reading made before readings recorded it.
-     */
-    readBy?: string;
     /**
      * True when the extractor could not read it.
      */
@@ -3356,69 +3392,14 @@ export type PromptPrices = {
 };
 
 /**
- * Every text model on OpenRouter, as Add a model lists it.
- */
-export type PromptModelCatalogue = {
-    /**
-     * When the catalogue was read from OpenRouter.
-     */
-    readAt: string;
-    /**
-     * How many questions a run asks, for the cost of a run.
-     */
-    questions: number;
-    /**
-     * The models, the recommended first, then cheapest first.
-     */
-    models: Array<PromptCatalogueModel>;
-};
-
-/**
- * One text model on OpenRouter, with what one response costs.
- */
-export type PromptCatalogueModel = {
-    /**
-     * Its OpenRouter id.
-     */
-    id: string;
-    /**
-     * Its name on OpenRouter.
-     */
-    name: string;
-    /**
-     * Its provider's OpenRouter id.
-     */
-    provider: string;
-    /**
-     * When OpenRouter listed it; absent when OpenRouter does not say.
-     */
-    listedAt?: string;
-    /**
-     * True when its tokens cost nothing.
-     */
-    free: boolean;
-    /**
-     * True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
-     */
-    recommended: boolean;
-    basis: PromptPriceBasis;
-    knowledgeUsd: Usd;
-    webUsd: Usd;
-};
-
-/**
  * The Prompt test's settings.
  */
 export type PromptTestSettings = {
     credentialId?: LlmCredentialId;
     /**
-     * The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
+     * The providers whose cheapest model runs ask, by OpenRouter id.
      */
     providers: Array<string>;
-    /**
-     * The Model list, the OpenRouter models every run asks, each its own column; empty until one is saved, when runs ask the cheapest model of each provider.
-     */
-    modelList: Array<string>;
     monthlyBudgetUsd: Usd;
     spentThisMonthUsd: Usd;
     cadence: PromptCadence;
@@ -3452,10 +3433,6 @@ export type PromptTestSettingsChange = {
      * The providers whose cheapest model runs ask.
      */
     providers?: Array<string>;
-    /**
-     * The Model list, by OpenRouter model id.
-     */
-    models?: Array<string>;
     /**
      * The month's budget in dollars.
      */
@@ -3649,7 +3626,7 @@ export type CandidateReviewState = {
      */
     running: boolean;
     /**
-     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's language-model tokens are spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
+     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
     problem?: 'noKey' | 'budget' | 'failed' | 'stopped';
 };
@@ -3935,6 +3912,113 @@ export type TickImprovementResponses = {
 };
 
 export type TickImprovementResponse = TickImprovementResponses[keyof TickImprovementResponses];
+
+export type GetRecommendationRunsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs';
+};
+
+export type GetRecommendationRunsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetRecommendationRunsError = GetRecommendationRunsErrors[keyof GetRecommendationRunsErrors];
+
+export type GetRecommendationRunsResponses = {
+    /**
+     * The Recommendation runs.
+     */
+    200: RecommendationRuns;
+};
+
+export type GetRecommendationRunsResponse = GetRecommendationRunsResponses[keyof GetRecommendationRunsResponses];
+
+export type StartRecommendationRunData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs';
+};
+
+export type StartRecommendationRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartRecommendationRunError = StartRecommendationRunErrors[keyof StartRecommendationRunErrors];
+
+export type StartRecommendationRunResponses = {
+    /**
+     * The run is under way.
+     */
+    202: RecommendationRuns;
+};
+
+export type StartRecommendationRunResponse = StartRecommendationRunResponses[keyof StartRecommendationRunResponses];
+
+export type StopRecommendationRunData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs/stop';
+};
+
+export type StopRecommendationRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopRecommendationRunError = StopRecommendationRunErrors[keyof StopRecommendationRunErrors];
+
+export type StopRecommendationRunResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopRecommendationRunResponse = StopRecommendationRunResponses[keyof StopRecommendationRunResponses];
 
 export type SetPlanTargetsData = {
     /**
@@ -4942,181 +5026,6 @@ export type GetActivityResponses = {
 
 export type GetActivityResponse = GetActivityResponses[keyof GetActivityResponses];
 
-export type ListHandTermsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/terms/hand';
-};
-
-export type ListHandTermsErrors = {
-    /**
-     * An RFC 9457 problem.
-     */
-    401: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    403: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    default: Problem;
-};
-
-export type ListHandTermsError = ListHandTermsErrors[keyof ListHandTermsErrors];
-
-export type ListHandTermsResponses = {
-    /**
-     * The terms added and removed by hand.
-     */
-    200: HandTermList;
-};
-
-export type ListHandTermsResponse = ListHandTermsResponses[keyof ListHandTermsResponses];
-
-export type AddTermData = {
-    /**
-     * The term as it joins the list.
-     */
-    body: NewTerm;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/terms/hand';
-};
-
-export type AddTermErrors = {
-    /**
-     * An RFC 9457 problem.
-     */
-    400: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    401: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    403: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    409: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    422: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    default: Problem;
-};
-
-export type AddTermError = AddTermErrors[keyof AddTermErrors];
-
-export type AddTermResponses = {
-    /**
-     * The term, added.
-     */
-    201: Term;
-};
-
-export type AddTermResponse = AddTermResponses[keyof AddTermResponses];
-
-export type PutBackTermData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * The removed term, as the list wrote it.
-         */
-        term: string;
-        /**
-         * The removed term's language.
-         */
-        language: Language;
-    };
-    url: '/api/v1/admin/terms/removed';
-};
-
-export type PutBackTermErrors = {
-    /**
-     * An RFC 9457 problem.
-     */
-    400: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    401: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    403: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    404: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    default: Problem;
-};
-
-export type PutBackTermError = PutBackTermErrors[keyof PutBackTermErrors];
-
-export type PutBackTermResponses = {
-    /**
-     * Put back.
-     */
-    204: void;
-};
-
-export type PutBackTermResponse = PutBackTermResponses[keyof PutBackTermResponses];
-
-export type RemoveTermData = {
-    /**
-     * The term to remove.
-     */
-    body: TermRef;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/terms/removed';
-};
-
-export type RemoveTermErrors = {
-    /**
-     * An RFC 9457 problem.
-     */
-    400: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    401: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    403: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    404: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    default: Problem;
-};
-
-export type RemoveTermError = RemoveTermErrors[keyof RemoveTermErrors];
-
-export type RemoveTermResponses = {
-    /**
-     * Removed.
-     */
-    204: void;
-};
-
-export type RemoveTermResponse = RemoveTermResponses[keyof RemoveTermResponses];
-
 export type ListTermCandidatesData = {
     body?: never;
     path?: never;
@@ -5679,51 +5588,6 @@ export type ListPromptSetsResponses = {
 
 export type ListPromptSetsResponse = ListPromptSetsResponses[keyof ListPromptSetsResponses];
 
-export type PublishPromptSetData = {
-    body: PromptSetDraft;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/prompt-sets';
-};
-
-export type PublishPromptSetErrors = {
-    /**
-     * An RFC 9457 problem.
-     */
-    400: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    401: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    403: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    409: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    422: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    default: Problem;
-};
-
-export type PublishPromptSetError = PublishPromptSetErrors[keyof PublishPromptSetErrors];
-
-export type PublishPromptSetResponses = {
-    /**
-     * The published version.
-     */
-    201: PublishedPromptSet;
-};
-
-export type PublishPromptSetResponse = PublishPromptSetResponses[keyof PublishPromptSetResponses];
-
 export type ListPromptAnswersData = {
     body?: never;
     path: {
@@ -6029,43 +5893,6 @@ export type RereadPromptRunResponses = {
 };
 
 export type RereadPromptRunResponse = RereadPromptRunResponses[keyof RereadPromptRunResponses];
-
-export type GetPromptModelCatalogueData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/prompt-test/catalogue';
-};
-
-export type GetPromptModelCatalogueErrors = {
-    /**
-     * An RFC 9457 problem.
-     */
-    401: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    403: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    422: Problem;
-    /**
-     * An RFC 9457 problem.
-     */
-    default: Problem;
-};
-
-export type GetPromptModelCatalogueError = GetPromptModelCatalogueErrors[keyof GetPromptModelCatalogueErrors];
-
-export type GetPromptModelCatalogueResponses = {
-    /**
-     * The catalogue.
-     */
-    200: PromptModelCatalogue;
-};
-
-export type GetPromptModelCatalogueResponse = GetPromptModelCatalogueResponses[keyof GetPromptModelCatalogueResponses];
 
 export type GetPromptTestSettingsData = {
     body?: never;
@@ -7050,6 +6877,50 @@ export type GetLlmKeyUsageResponses = {
 };
 
 export type GetLlmKeyUsageResponse = GetLlmKeyUsageResponses[keyof GetLlmKeyUsageResponses];
+
+export type UpdateLlmBudgetData = {
+    /**
+     * The new budget.
+     */
+    body: LlmBudgetChange;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/llm/budget';
+};
+
+export type UpdateLlmBudgetErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type UpdateLlmBudgetError = UpdateLlmBudgetErrors[keyof UpdateLlmBudgetErrors];
+
+export type UpdateLlmBudgetResponses = {
+    /**
+     * The settings after the change.
+     */
+    200: LlmSettings;
+};
+
+export type UpdateLlmBudgetResponse = UpdateLlmBudgetResponses[keyof UpdateLlmBudgetResponses];
 
 export type ClearActiveLlmData = {
     body?: never;

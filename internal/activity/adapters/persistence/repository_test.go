@@ -10,6 +10,8 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/activity/domain"
 	analysispersistence "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/persistence"
 	analysisdomain "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/domain"
+	insightpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/persistence"
+	insightdomain "github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 	promptpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
@@ -185,13 +187,22 @@ func TestPromptRunsScansAndThisMonthsUsageAreReadWithTheirCost(t *testing.T) {
 	if err := prompts.SaveReviewUsage(ctx, []promptdomain.ReviewUsage{{InputTokens: 400, OutputTokens: 40, At: at}}); err != nil {
 		t.Fatal(err)
 	}
+	recs := insightpersistence.New(store)
+	recRun := insightdomain.RecRun{ID: uuid.NewString(), StartedAt: at, By: "joris", Model: "claude-haiku-5-5"}
+	if err := recs.BeginRecRun(ctx, recRun); err != nil {
+		t.Fatal(err)
+	}
+	recRun.FinishedAt, recRun.Ending, recRun.InputTokens, recRun.OutputTokens = at.Add(time.Minute), "done", 5000, 500
+	if err := recs.FinishRecRun(ctx, recRun, nil); err != nil {
+		t.Fatal(err)
+	}
 	u, err := repo.MonthUsage(ctx, at)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if u.PromptAnswers != 3000 || u.OpenRouterReadings != 50 || u.HaikuReadings.Input != 1_000_000 || u.HaikuReadings.Output != 100_000 ||
 		u.TermReview.Input != 300 || u.TermReview.Output != 30 || u.CandidateChecks.Input != 400 || u.CandidateChecks.Output != 40 ||
-		u.Scans.Input != 0 {
+		u.Scans.Input != 0 || u.RecommendationRuns.Input != 5000 || u.RecommendationRuns.Output != 500 {
 		t.Errorf("this month = %+v", u)
 	}
 }

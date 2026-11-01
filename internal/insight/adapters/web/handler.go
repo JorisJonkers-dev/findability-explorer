@@ -25,6 +25,9 @@ type UseCases interface {
 	Plan(ctx context.Context) (app.Plan, error)
 	Tick(ctx context.Context, actor, id string, done bool) error
 	SetTargets(ctx context.Context, actor string, targets map[domain.Target]float64) error
+	RecommendationRuns(ctx context.Context) (app.RecRuns, error)
+	StartRecommendationRun(ctx context.Context, user string) error
+	StopRecommendationRun(ctx context.Context) error
 }
 
 // Handler implements the insight operations. Business rules stay in the use cases.
@@ -289,6 +292,10 @@ func toImprovements(items []domain.PlanItem) []oas.PlanImprovement {
 		o := oas.PlanImprovement{
 			ID: it.ID, Title: it.Title, Moves: it.Moves, Measure: oas.StandingMeasure(it.Measure), Benefit: int32(it.Benefit), Effort: int32(it.Effort), Auto: it.Auto, Done: it.Done, //nolint:gosec // a score from one to five
 			Why: it.Why, Steps: it.Steps, DoneWhen: it.DoneWhen, Parts: make([]oas.PlanPart, 0, len(it.Parts)),
+			Kind: oas.RecommendationKind(it.Kind()), Generated: it.Written != nil, New: it.New,
+		}
+		if it.Written != nil {
+			withWritten(&o, *it.Written)
 		}
 		for _, p := range it.Parts {
 			o.Parts = append(o.Parts, oas.PlanPart{Name: p.Name, Present: p.Present})
@@ -317,4 +324,19 @@ func toSource(s domain.TermsSource) oas.OptTermsSource {
 
 func toLeader(l domain.Leader) oas.MeasureLeader {
 	return oas.MeasureLeader{CompetitorId: oas.CompetitorId(l.CompanyID), Name: l.Name, Value: l.Value}
+}
+
+// withWritten adds what a Recommendation run wrote to o: where it goes, why a score moved, and the
+// facts behind it.
+func withWritten(o *oas.PlanImprovement, w domain.Recommendation) {
+	if w.Where != "" {
+		o.Where = oas.NewOptString(w.Where)
+	}
+	if w.WhereNote != "" {
+		o.WhereNote = oas.NewOptString(w.WhereNote)
+	}
+	if w.ScoreReason != "" {
+		o.ScoreReason = oas.NewOptString(w.ScoreReason)
+	}
+	o.Facts = w.Gap.Specifics
 }

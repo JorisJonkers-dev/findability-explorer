@@ -99,36 +99,39 @@ func Place(gaps []Gap, written []Written, pages []Page, runID string, at time.Ti
 	}
 	out := make([]Recommendation, 0, len(gaps))
 	for _, g := range gaps {
-		w := byKey[g.Key]
-		r := Recommendation{
-			ID: newID(), RunID: runID, Gap: g, Title: clip(w.Title, maxTitle), Why: clip(w.Why, maxWhy), DoneWhen: clip(w.DoneWhen, maxDoneWhen),
-			Benefit: g.Benefit, Effort: g.Effort, CreatedAt: at,
-		}
-		if r.Title == "" {
-			r.Title = g.Title
-		}
-		if r.Why == "" {
-			r.Why = clip(strings.Join(g.Specifics, " "), maxWhy)
-		}
-		for _, s := range w.Steps {
-			if s = clip(s, maxStep); s != "" && len(r.Steps) < maxSteps {
-				r.Steps = append(r.Steps, s)
-			}
-		}
-		if where := strings.TrimSpace(w.Where); known[strings.TrimRight(where, "/")] {
-			r.Where = clip(where, maxWhere)
-		} else {
-			r.WhereNote = ForTheAgency
-		}
-		benefit, bMoved := within(g.Benefit, w.Benefit)
-		effort, eMoved := within(g.Effort, w.Effort)
-		r.Benefit, r.Effort = benefit, effort
-		if bMoved || eMoved {
-			r.ScoreReason = clip(w.ScoreReason, maxReason)
-		}
-		out = append(out, r)
+		out = append(out, place(g, byKey[g.Key], known, Recommendation{ID: newID(), RunID: runID, CreatedAt: at}))
 	}
 	return out
+}
+
+// place fills r from gap g and what the model wrote for it.
+func place(g Gap, w Written, known map[string]bool, r Recommendation) Recommendation {
+	r.Gap, r.Title, r.Why, r.DoneWhen = g, firstOf(clip(w.Title, maxTitle), g.Title), firstOf(clip(w.Why, maxWhy), clip(strings.Join(g.Specifics, " "), maxWhy)), clip(w.DoneWhen, maxDoneWhen)
+	for _, s := range w.Steps {
+		if s = clip(s, maxStep); s != "" && len(r.Steps) < maxSteps {
+			r.Steps = append(r.Steps, s)
+		}
+	}
+	if where := strings.TrimSpace(w.Where); known[strings.TrimRight(where, "/")] {
+		r.Where = clip(where, maxWhere)
+	} else {
+		r.WhereNote = ForTheAgency
+	}
+	benefit, bMoved := within(g.Benefit, w.Benefit)
+	effort, eMoved := within(g.Effort, w.Effort)
+	r.Benefit, r.Effort = benefit, effort
+	if bMoved || eMoved {
+		r.ScoreReason = clip(w.ScoreReason, maxReason)
+	}
+	return r
+}
+
+// firstOf is s, or else when s is empty.
+func firstOf(s, otherwise string) string {
+	if s == "" {
+		return otherwise
+	}
+	return s
 }
 
 // Replacement is what a run does to the recommendations there are: the open ones it replaces, the
@@ -260,4 +263,17 @@ func NewestDone(runs []RecRun) string {
 		}
 	}
 	return ""
+}
+
+// Kind is the item's kind: a written recommendation's gap's, or for one written by hand, AI
+// readiness when a scan checks it and general otherwise.
+func (it PlanItem) Kind() string {
+	switch {
+	case it.Written != nil:
+		return string(it.Written.Gap.Kind)
+	case it.Auto:
+		return string(GapReadiness)
+	default:
+		return "general"
+	}
 }

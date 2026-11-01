@@ -194,8 +194,7 @@ func TestARunStoppedOrCutShortChangesNothing(t *testing.T) {
 			w.recs = []domain.Recommendation{{ID: "old-open", Gap: domain.Gap{Key: "x"}}}
 			wr, j := &writer{}, &journal{}
 			var reported []error
-			var svc *app.Service
-			svc = writing(w, wr, j, c.budget, &reported)
+			svc := writing(w, wr, j, c.budget, &reported)
 			if c.setup != nil {
 				c.setup(&svc, wr)
 			}

@@ -131,6 +131,76 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/recommendation-runs:
+    get:
+      operationId: getRecommendationRuns
+      summary: The Recommendation run, what starting one would do, and the past runs
+      description: >-
+        Administrators only. Whether a Recommendation run runs; what a new one would read (the
+        newest Prompt run, the tribelt.nl scan, the search term list), how many gaps its rules find,
+        how many open recommendations it would replace, whether tribelt.nl was last scanned before
+        the newest Prompt run, and its estimate on the Anthropic key; and the last 20 runs, each
+        with what it added, replaced and kept.
+      tags: [admin]
+      responses:
+        "200":
+          description: The Recommendation runs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationRuns"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: startRecommendationRun
+      summary: Start a Recommendation run
+      description: >-
+        Administrators only. In the background, the rules find the gaps from the newest Prompt run,
+        each company's newest scan and the search term list, and the Claude step writing
+        recommendations places and words them from tribelt.nl's page text, a batch at a time. A run
+        that ends replaces the open recommendations an earlier run wrote, and keeps the done and
+        edited ones and those written by hand; one stopped, cut short by the budget, or failed
+        changes nothing. 409 when one runs already or no Anthropic key is set up.
+      tags: [admin]
+      responses:
+        "202":
+          description: The run is under way.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationRuns"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/recommendation-runs/stop:
+    post:
+      operationId: stopRecommendationRun
+      summary: Stop the Recommendation run
+      description: >-
+        Administrators only. Stops the Recommendation run that runs after the batch it writes; the
+        recommendations stay as they were, and the run is recorded as stopped by hand. 404 when none
+        runs.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/plan/targets:
     put:
       operationId: setPlanTargets
@@ -880,131 +950,6 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
-  /api/v1/admin/terms/hand:
-    get:
-      operationId: listHandTerms
-      summary: List the terms added and removed by hand
-      description: >-
-        Administrators only. Returns the terms administrators added to the list by hand, and the
-        terms they removed from it, each with who did it and when, oldest first.
-      tags: [admin]
-      responses:
-        "200":
-          description: The terms added and removed by hand.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HandTermList"
-        "401":
-          $ref: "#/components/responses/Problem"
-        "403":
-          $ref: "#/components/responses/Problem"
-        default:
-          $ref: "#/components/responses/Problem"
-    post:
-      operationId: addTerm
-      summary: Add a search term by hand
-      description: >-
-        Administrators only. Adds the term to the list, marked as added by hand; search, the
-        figures and the next scans find it. 409 when the list has the term in that language, or
-        had it and it was removed (put it back instead).
-      tags: [admin]
-      requestBody:
-        required: true
-        description: The term as it joins the list.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NewTerm"
-            example:
-              term: oven belt
-              language: en
-              family: eyelink
-              tier: application
-      responses:
-        "201":
-          description: The term, added.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Term"
-        "400":
-          $ref: "#/components/responses/Problem"
-        "401":
-          $ref: "#/components/responses/Problem"
-        "403":
-          $ref: "#/components/responses/Problem"
-        "409":
-          $ref: "#/components/responses/Problem"
-        "422":
-          $ref: "#/components/responses/Problem"
-        default:
-          $ref: "#/components/responses/Problem"
-  /api/v1/admin/terms/removed:
-    post:
-      operationId: removeTerm
-      summary: Remove a search term
-      description: >-
-        Administrators only. Takes the term off the list, whatever its origin; it is no longer
-        counted or looked for until it is put back. The text matches without regard to case or
-        accents. 404 when the list has no such term.
-      tags: [admin]
-      requestBody:
-        required: true
-        description: The term to remove.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TermRef"
-            example:
-              term: spiral belt
-              language: en
-      responses:
-        "204":
-          description: Removed.
-        "400":
-          $ref: "#/components/responses/Problem"
-        "401":
-          $ref: "#/components/responses/Problem"
-        "403":
-          $ref: "#/components/responses/Problem"
-        "404":
-          $ref: "#/components/responses/Problem"
-        default:
-          $ref: "#/components/responses/Problem"
-    delete:
-      operationId: putBackTerm
-      summary: Put a removed search term back
-      description: Administrators only. Puts a removed term back on the list. 404 when it was not removed.
-      tags: [admin]
-      parameters:
-        - name: term
-          in: query
-          required: true
-          description: The removed term, as the list wrote it.
-          schema:
-            type: string
-            minLength: 1
-            maxLength: 200
-        - name: language
-          in: query
-          required: true
-          description: The removed term's language.
-          schema:
-            $ref: "#/components/schemas/Language"
-      responses:
-        "204":
-          description: Put back.
-        "400":
-          $ref: "#/components/responses/Problem"
-        "401":
-          $ref: "#/components/responses/Problem"
-        "403":
-          $ref: "#/components/responses/Problem"
-        "404":
-          $ref: "#/components/responses/Problem"
-        default:
-          $ref: "#/components/responses/Problem"
   /api/v1/admin/term-candidates:
     get:
       operationId: listTermCandidates
@@ -1415,44 +1360,6 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
-  /api/v1/admin/prompt-sets:
-    post:
-      operationId: publishPromptSet
-      summary: Publish a draft as the next version of the Prompt set
-      description: >-
-        Administrators only. Publishes an edited draft of the Prompt set as the next version: its
-        questions in order, each keeping the id of the published question it keeps or getting a new
-        one no version has used, and the new scopes it asks in (a language with or without a
-        region). The note says what changed against the newest version, and from which version the
-        draft was restored. The next Prompt run asks it, and the charts mark the date. 409 when
-        the draft asks what the newest version asks, or another publication took the number first;
-        422 when a question or scope cannot be asked.
-      tags: [admin]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PromptSetDraft"
-      responses:
-        "201":
-          description: The published version.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PublishedPromptSet"
-        "400":
-          $ref: "#/components/responses/Problem"
-        "401":
-          $ref: "#/components/responses/Problem"
-        "403":
-          $ref: "#/components/responses/Problem"
-        "409":
-          $ref: "#/components/responses/Problem"
-        "422":
-          $ref: "#/components/responses/Problem"
-        default:
-          $ref: "#/components/responses/Problem"
   /api/v1/prompt-runs/{runId}/answers:
     get:
       operationId: listPromptAnswers
@@ -1469,8 +1376,8 @@ paths:
           description: Only this provider's answers.
           schema:
             type: string
-            maxLength: 200
-            pattern: "^[a-z0-9][a-z0-9._:/-]*$"
+            maxLength: 40
+            pattern: "^[a-z0-9][a-z0-9-]*$"
         - name: scope
           in: query
           required: false
@@ -1676,33 +1583,6 @@ paths:
         "404":
           $ref: "#/components/responses/Problem"
         "409":
-          $ref: "#/components/responses/Problem"
-        "422":
-          $ref: "#/components/responses/Problem"
-        default:
-          $ref: "#/components/responses/Problem"
-  /api/v1/admin/prompt-test/catalogue:
-    get:
-      operationId: getPromptModelCatalogue
-      summary: Every text model on OpenRouter, for the Model list
-      description: >-
-        Administrators only. Lists every text model on OpenRouter's catalogue (no routers or
-        aliases), read with the Prompt test's key at most once a day; a read that fails keeps the
-        last list. The cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is
-        recommended and listed first, the rest cheapest first. A model the latest run asked is
-        priced by its responses, the others by their list price for a typical response with the
-        web search fee. 422 without a working OpenRouter key.
-      tags: [admin]
-      responses:
-        "200":
-          description: The catalogue.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PromptModelCatalogue"
-        "401":
-          $ref: "#/components/responses/Problem"
-        "403":
           $ref: "#/components/responses/Problem"
         "422":
           $ref: "#/components/responses/Problem"
@@ -2188,7 +2068,8 @@ paths:
       summary: Get the language-model settings
       description: >-
         Returns every credential (never a secret), the model product matching uses now, the
-        token budget, and the latest 50 changes and tests, newest first.
+        Anthropic key's monthly budget in dollars with what was spent and is left of it, and the
+        latest 50 changes and tests, newest first.
       tags: [admin]
       responses:
         "200":
@@ -2358,6 +2239,41 @@ paths:
         "422":
           $ref: "#/components/responses/Problem"
         "502":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/llm/budget:
+    patch:
+      operationId: updateLlmBudget
+      summary: Set the Anthropic key's monthly budget
+      description: >-
+        Administrators only. Sets what every job a Claude model does may spend in a month together,
+        in dollars, from one cent to $1,000, and records the change in the events. Work already
+        spent past a lower budget stops at its next step and keeps what it did.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: The new budget.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LlmBudgetChange"
+            example:
+              monthlyBudgetUsd: 15
+      responses:
+        "200":
+          description: The settings after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmSettings"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -3536,7 +3452,7 @@ components:
     LlmEventAction:
       description: What an event records.
       type: string
-      enum: [credential_added, credential_deleted, credential_tested, active_set, active_cleared]
+      enum: [credential_added, credential_deleted, credential_tested, active_set, active_cleared, budget_set]
     LlmEvent:
       description: One change to or test of the language-model settings.
       type: object
@@ -3575,26 +3491,27 @@ components:
           example: Added openrouter key "Course budget key" (3a7bd3e2360a).
     LlmBudget:
       description: >-
-        What every job on the language model may spend in a month together - the scans' product
-        matching, the term review, the competitor review and Claude Haiku's reading of Prompt
-        answers. Each stops when the month's tokens are spent.
+        What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does
+        - the scans' product matching, the term review, the competitor review and Claude Haiku's
+        reading of Prompt answers - and what they spent, priced at the models' list prices from
+        their stored token counts. Each job stops once the month's spend reaches the budget, and
+        keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
       type: object
       additionalProperties: false
-      required: [monthlyTokens, usedThisMonth, averageTokensPerScan, scansMatched]
+      required: [monthlyBudgetUsd, spentThisMonthUsd, leftUsd, tokensThisMonth, averageTokensPerScan, averageScanUsd, scansMatched]
       properties:
-        monthlyTokens:
+        monthlyBudgetUsd:
+          $ref: "#/components/schemas/Usd"
+        spentThisMonthUsd:
+          $ref: "#/components/schemas/Usd"
+        leftUsd:
+          $ref: "#/components/schemas/Usd"
+        tokensThisMonth:
           type: integer
           format: int64
           minimum: 0
           maximum: 1000000000000
-          description: The tokens every job together may use in a calendar month (UTC).
-          example: 10000000
-        usedThisMonth:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 1000000000000
-          description: The tokens every job used this month so far.
+          description: The tokens, in and out, every job used this month so far.
           example: 48211
         averageTokensPerScan:
           type: integer
@@ -3605,6 +3522,8 @@ components:
             The tokens one scan's product matching used on average, over every scan the language
             model answered for; 0 before the first.
           example: 29137
+        averageScanUsd:
+          $ref: "#/components/schemas/Usd"
         scansMatched:
           type: integer
           format: int64
@@ -3612,6 +3531,19 @@ components:
           maximum: 1000000000000
           description: How many scans the average is over.
           example: 2
+    LlmBudgetChange:
+      description: The Anthropic key's new monthly budget.
+      type: object
+      additionalProperties: false
+      required: [monthlyBudgetUsd]
+      properties:
+        monthlyBudgetUsd:
+          type: number
+          format: double
+          minimum: 0.01
+          maximum: 1000
+          description: The month's budget in dollars.
+          example: 15
     LlmSettings:
       description: The language-model settings.
       type: object
@@ -3650,10 +3582,10 @@ components:
             $ref: "#/components/schemas/LlmEvent"
     TermOrigin:
       description: >-
-        Where a term comes from - the desk research of 22 October 2026, a scan's phrase an
-        administrator accepted from the review queue, or a term an administrator added by hand.
+        Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an
+        administrator accepted from the review queue.
       type: string
-      enum: [research, review, hand]
+      enum: [research, review]
     CompetitorUpdate:
       description: The fields of a company to change; at least one.
       type: object
@@ -4128,13 +4060,9 @@ components:
         tier:
           $ref: "#/components/schemas/IntentTier"
     ClaudeStepId:
-      description: >-
-        A Claude step - reading (reading a Prompt run's responses, its instructions set in the
-        code), matching (matching products in scans), candidateMerge (tidying the names of the
-        competitor candidates), candidateCheck (checking companies against the competitor
-        definition), or termReview (reviewing the search terms the scans found).
+      description: A Claude step - matching (matching products in scans) or recommendations (writing recommendations); the other steps join as they are built.
       type: string
-      enum: [reading, matching, candidateMerge, candidateCheck, termReview]
+      enum: [matching, recommendations]
     ClaudeStepVersion:
       description: One saved version of a Claude step - the model it uses and its instructions.
       type: object
@@ -4426,7 +4354,7 @@ components:
         problem:
           description: >-
             Why its last review stopped short - noModel (no Anthropic key is set up), budget (the
-            month's language-model tokens are spent), failed (the model or its provider failed) or
+            month's Anthropic budget is spent), failed (the model or its provider failed) or
             stopped (an administrator stopped it; what it decided is kept). Absent when it went
             well.
           type: string
@@ -4493,72 +4421,6 @@ components:
           $ref: "#/components/schemas/TermCandidateCounts"
         review:
           $ref: "#/components/schemas/TermReviewState"
-    NewTerm:
-      description: A search term an administrator adds by hand.
-      type: object
-      additionalProperties: false
-      required: [term, language, family, tier]
-      properties:
-        term:
-          type: string
-          minLength: 1
-          maxLength: 200
-          description: The term as the list shows it.
-          example: oven belt
-        language:
-          $ref: "#/components/schemas/Language"
-        family:
-          $ref: "#/components/schemas/BeltFamily"
-        tier:
-          $ref: "#/components/schemas/IntentTier"
-    TermRef:
-      description: A search term on the list, by its text and language.
-      type: object
-      additionalProperties: false
-      required: [term, language]
-      properties:
-        term:
-          type: string
-          minLength: 1
-          maxLength: 200
-          description: The term's text; case and accents do not matter.
-          example: spiral belt
-        language:
-          $ref: "#/components/schemas/Language"
-    HandTerm:
-      description: A term added or removed by hand, with who did it and when.
-      type: object
-      additionalProperties: false
-      required: [term, by, at]
-      properties:
-        term:
-          $ref: "#/components/schemas/Term"
-        by:
-          type: string
-          maxLength: 200
-          description: Who added or removed it.
-          example: Joris Jonkers
-        at:
-          type: string
-          format: date-time
-          maxLength: 40
-          description: When.
-    HandTermList:
-      description: The terms added by hand and the terms removed, oldest first.
-      type: object
-      additionalProperties: false
-      required: [added, removed]
-      properties:
-        added:
-          type: array
-          maxItems: 10000
-          items:
-            $ref: "#/components/schemas/HandTerm"
-        removed:
-          type: array
-          maxItems: 10000
-          items:
-            $ref: "#/components/schemas/HandTerm"
     TermAcceptance:
       description: A candidate as it joins the terminology map.
       type: object
@@ -5034,8 +4896,37 @@ components:
       description: One improvement of the plan.
       type: object
       additionalProperties: false
-      required: [id, title, moves, measure, benefit, effort, auto, done, why, steps, doneWhen, parts]
+      required: [id, title, moves, measure, benefit, effort, auto, done, why, steps, doneWhen, parts, kind, generated, new]
       properties:
+        kind:
+          $ref: "#/components/schemas/RecommendationKind"
+        generated:
+          type: boolean
+          description: True for one a Recommendation run wrote, false for one written by hand.
+        new:
+          type: boolean
+          description: True for an open one the newest Recommendation run wrote.
+        where:
+          type: string
+          maxLength: 500
+          description: The tribelt.nl page it belongs on; absent when it applies to the whole site or the model could not place it.
+          example: https://www.tribelt.nl/spiraalbanden
+        whereNote:
+          type: string
+          maxLength: 200
+          description: Present instead of where when the model could not place it.
+          example: Where to put this is for the web agency to decide.
+        scoreReason:
+          type: string
+          maxLength: 300
+          description: Why the model moved a score from the rules' by a point; absent when it did not.
+        facts:
+          type: array
+          maxItems: 10
+          description: The facts behind a generated one, as the rules found them.
+          items:
+            type: string
+            maxLength: 600
         id:
           type: string
           maxLength: 60
@@ -5121,6 +5012,131 @@ components:
           example: 2.5
         leader:
           $ref: "#/components/schemas/MeasureLeader"
+    RecommendationKind:
+      description: >-
+        What kind of change a recommendation asks for - term (a search term to add), page (a page
+        to add), listing (a site to get listed on), fact (a fact sheet correction), readiness (AI
+        readiness), or general (written by hand for the whole site).
+      type: string
+      enum: [term, page, listing, fact, readiness, general]
+    RecommendationRuns:
+      description: The Recommendation run, what starting one would do, and the past runs.
+      type: object
+      additionalProperties: false
+      required: [running, noKey, replaces, stale, terms, gaps, estimatedCostUsd, runs]
+      properties:
+        running:
+          type: boolean
+          description: Whether a run runs now.
+        noKey:
+          type: boolean
+          description: True when no Anthropic key is set up, so no run can start.
+        model:
+          type: string
+          maxLength: 200
+          description: The model the step writing recommendations uses now; absent without a key.
+          example: claude-haiku-5-5
+        replaces:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many open recommendations an earlier run wrote that a new run replaces.
+          example: 12
+        stale:
+          type: boolean
+          description: True when tribelt.nl was last scanned before the newest Prompt run started.
+        promptRunAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the newest Prompt run started; absent before any.
+        scanAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When the newest scan of tribelt.nl finished; absent before any.
+        terms:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many terms the search term list holds.
+          example: 420
+        gaps:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many gaps the rules find now, at most 40.
+          example: 40
+        estimatedCostUsd:
+          $ref: "#/components/schemas/Usd"
+        runs:
+          type: array
+          maxItems: 20
+          description: The last runs, the newest first.
+          items:
+            $ref: "#/components/schemas/RecommendationRun"
+    RecommendationRun:
+      description: One Recommendation run.
+      type: object
+      additionalProperties: false
+      required: [id, startedAt, startedBy, model, gaps, added, replaced, kept, costUsd]
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: The run's id.
+        startedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it started.
+        finishedAt:
+          type: string
+          format: date-time
+          maxLength: 64
+          description: When it ended; absent while it runs.
+        ending:
+          description: How it ended; absent while it runs.
+          type: string
+          enum: [done, doneWithFailures, stoppedByHand, stoppedByBudget, failed]
+        startedBy:
+          type: string
+          maxLength: 200
+          description: Who started it.
+        model:
+          type: string
+          maxLength: 200
+          description: The model that wrote.
+        gaps:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000
+          description: How many gaps it wrote recommendations for.
+        added:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many recommendations it added.
+        replaced:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many open recommendations it replaced.
+        kept:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+          description: How many done or edited recommendations it kept.
+        costUsd:
+          $ref: "#/components/schemas/Usd"
     PlanPart:
       description: One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
       type: object
@@ -5977,12 +5993,10 @@ components:
       enum: [supplier, application, problem]
     PromptScope:
       description: >-
-        Where and in which language a prompt asks - a scope's id (PromptSetScope), such as twente,
-        netherlands, germany, dutch, german, or english, or one a later Prompt set version added.
+        Where and in which language a prompt asks - Twente, the Netherlands or Germany in that
+        region's language, or Dutch, German or English with no region.
       type: string
-      maxLength: 40
-      pattern: "^[a-z][a-z0-9_-]*$"
-      example: twente
+      enum: [twente, netherlands, germany, dutch, german, english]
     PromptRetryRequest:
       description: >-
         What to ask again - every failed answer of the run when empty, or the one question of one
@@ -5998,8 +6012,8 @@ components:
           example: eyelink-application-twente
         provider:
           type: string
-          maxLength: 200
-          pattern: "^[a-z0-9][a-z0-9._:/-]*$"
+          maxLength: 40
+          pattern: "^[a-z0-9][a-z0-9-]*$"
           description: The provider whose model to ask.
           example: openai
         mode:
@@ -6072,8 +6086,8 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 200
-          pattern: "^[a-z0-9][a-z0-9._:/-]*$"
+          maxLength: 40
+          pattern: "^[a-z0-9][a-z0-9-]*$"
           description: The provider, by its OpenRouter id prefix.
           example: openai
         mode:
@@ -6109,7 +6123,7 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 200
+          maxLength: 40
           description: The provider's OpenRouter id.
           example: google
         model:
@@ -6133,7 +6147,7 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 200
+          maxLength: 40
           description: The provider.
           example: openai
         answered:
@@ -6170,7 +6184,7 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 200
+          maxLength: 40
           description: The provider.
           example: openai
         scope:
@@ -6378,7 +6392,7 @@ components:
           example: "2026-11-01T06:10:00Z"
         provider:
           type: string
-          maxLength: 200
+          maxLength: 40
           description: The provider.
           example: openai
         model:
@@ -6548,62 +6562,6 @@ components:
           example: >-
             We are building a tunnel oven for an industrial bakery. What kind of conveyor belt
             should we use, and which manufacturers in the Twente region can supply it?
-    PromptSetDraft:
-      description: >-
-        An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the
-        version it was restored from, if any.
-      type: object
-      additionalProperties: false
-      required: [questions]
-      properties:
-        questions:
-          type: array
-          minItems: 1
-          maxItems: 1000
-          description: Its questions, in order.
-          items:
-            $ref: "#/components/schemas/PromptDraftQuestion"
-        scopes:
-          type: array
-          maxItems: 50
-          description: The new scopes its questions ask in, which no version asked in yet.
-          items:
-            $ref: "#/components/schemas/PromptSetScope"
-        restoredFrom:
-          type: integer
-          format: int32
-          minimum: 1
-          maximum: 100000
-          description: The version the draft was restored from, if it was.
-          example: 1
-    PromptDraftQuestion:
-      description: One question of a draft.
-      type: object
-      additionalProperties: false
-      required: [family, intent, scope, text]
-      properties:
-        id:
-          type: string
-          maxLength: 80
-          pattern: "^[a-z0-9][a-z0-9_-]*$"
-          description: The id of the published question it keeps, changed or not; absent for a new question.
-          example: eyelink-application-twente
-        family:
-          $ref: "#/components/schemas/PromptFamily"
-        intent:
-          $ref: "#/components/schemas/IntentTier"
-        scope:
-          $ref: "#/components/schemas/PromptSetScopeId"
-        text:
-          type: string
-          maxLength: 1000
-          description: The question, as it is asked.
-          example: Quels fabricants proposent des bandes à œillets pour une usine alimentaire ?
-        english:
-          type: string
-          maxLength: 1000
-          description: Its English translation, when one is known.
-          example: Which manufacturers offer eyelink belts for a food factory?
     PromptSetScopeId:
       description: >-
         A scope's id, which the responses to its questions record as their scope.
@@ -6675,27 +6633,12 @@ components:
       additionalProperties: false
       required: [runId, startedAt, promptSetVersion, tasks, answered, read, partial]
       properties:
-        readingModel:
-          type: string
-          maxLength: 200
-          description: >-
-            The model that read most of the run's responses, by its name for people, such as
-            "Claude Haiku 5.5"; absent when its readings recorded none. A change of it between runs
-            breaks the charts, as the responses were read another way.
         runId:
           type: string
           format: uuid
           maxLength: 36
           description: The run's id.
           example: 5b0c1a9e-2d3f-4e5a-8b6c-7d8e9f0a1b2c
-        models:
-          type: array
-          maxItems: 20
-          description: The models the run asked, by OpenRouter id; the charts break where they changed.
-          items:
-            type: string
-            maxLength: 200
-            example: openai/gpt-oss-20b
         startedAt:
           type: string
           format: date-time
@@ -6812,12 +6755,6 @@ components:
       additionalProperties: false
       required: [failed, companies, addresses, namesTribelt, citesTribelt, wrongClaims, leftOut, costUsd]
       properties:
-        readBy:
-          type: string
-          maxLength: 200
-          description: >-
-            The model that read the response, by its name for people, such as "Claude Haiku 5.5";
-            absent for a reading made before readings recorded it.
         failed:
           type: boolean
           description: True when the extractor could not read it.
@@ -6908,7 +6845,7 @@ components:
           example: 1
         provider:
           type: string
-          maxLength: 200
+          maxLength: 40
           description: The provider.
           example: openai
         model:
@@ -7067,7 +7004,7 @@ components:
       properties:
         provider:
           type: string
-          maxLength: 200
+          maxLength: 40
           description: The provider.
           example: openai
         model:
@@ -7119,96 +7056,22 @@ components:
           type: boolean
           description: Whether a month of runs would cost more than the budget.
           example: true
-    PromptModelCatalogue:
-      description: Every text model on OpenRouter, as Add a model lists it.
-      type: object
-      additionalProperties: false
-      required: [readAt, questions, models]
-      properties:
-        readAt:
-          type: string
-          format: date-time
-          maxLength: 64
-          description: When the catalogue was read from OpenRouter.
-          example: "2026-11-01T06:00:00Z"
-        questions:
-          type: integer
-          format: int32
-          minimum: 0
-          maximum: 1000
-          description: How many questions a run asks, for the cost of a run.
-          example: 20
-        models:
-          type: array
-          maxItems: 2000
-          description: The models, the recommended first, then cheapest first.
-          items:
-            $ref: "#/components/schemas/PromptCatalogueModel"
-    PromptCatalogueModel:
-      description: One text model on OpenRouter, with what one response costs.
-      type: object
-      additionalProperties: false
-      required: [id, name, provider, free, recommended, basis, knowledgeUsd, webUsd]
-      properties:
-        id:
-          type: string
-          maxLength: 200
-          description: Its OpenRouter id.
-          example: openai/gpt-oss-20b
-        name:
-          type: string
-          maxLength: 200
-          description: Its name on OpenRouter.
-          example: "OpenAI: gpt-oss-20b"
-        provider:
-          type: string
-          maxLength: 200
-          description: Its provider's OpenRouter id.
-          example: openai
-        listedAt:
-          type: string
-          format: date-time
-          maxLength: 64
-          description: When OpenRouter listed it; absent when OpenRouter does not say.
-          example: "2025-08-05T17:17:09Z"
-        free:
-          type: boolean
-          description: True when its tokens cost nothing.
-        recommended:
-          type: boolean
-          description: True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
-        basis:
-          $ref: "#/components/schemas/PromptPriceBasis"
-        knowledgeUsd:
-          $ref: "#/components/schemas/Usd"
-        webUsd:
-          $ref: "#/components/schemas/Usd"
     PromptTestSettings:
       description: The Prompt test's settings.
       type: object
       additionalProperties: false
-      required: [providers, modelList, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel, models, keyWorks, prices]
+      required: [providers, monthlyBudgetUsd, spentThisMonthUsd, cadence, nextDueAt, factSheet, promptSet, extractorModel, models, keyWorks, prices]
       properties:
         credentialId:
           $ref: "#/components/schemas/LlmCredentialId"
         providers:
           type: array
           maxItems: 20
-          description: The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
+          description: The providers whose cheapest model runs ask, by OpenRouter id.
           items:
             type: string
             maxLength: 40
             example: openai
-        modelList:
-          type: array
-          maxItems: 20
-          description: >-
-            The Model list, the OpenRouter models every run asks, each its own column; empty
-            until one is saved, when runs ask the cheapest model of each provider.
-          items:
-            type: string
-            maxLength: 200
-            example: openai/gpt-oss-20b
         monthlyBudgetUsd:
           $ref: "#/components/schemas/Usd"
         spentThisMonthUsd:
@@ -7261,15 +7124,6 @@ components:
             type: string
             maxLength: 40
             example: openai
-        models:
-          type: array
-          minItems: 1
-          maxItems: 20
-          description: The Model list, by OpenRouter model id.
-          items:
-            type: string
-            maxLength: 200
-            example: openai/gpt-oss-20b
         monthlyBudgetUsd:
           type: number
           format: double
@@ -7345,7 +7199,7 @@ components:
           description: The providers whose models named it.
           items:
             type: string
-            maxLength: 200
+            maxLength: 40
             example: openai
         models:
           type: array
@@ -7545,7 +7399,7 @@ components:
         problem:
           description: >-
             Why its last review stopped short - noKey (no Anthropic key is set up), budget (the
-            month's language-model tokens are spent), failed (the model or its provider failed) or
+            month's Anthropic budget is spent), failed (the model or its provider failed) or
             stopped (an administrator stopped it; what it decided is kept). Absent when it went
             well.
           type: string

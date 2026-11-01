@@ -1,4 +1,5 @@
-import type { PromptTestSettings } from '../infrastructure/api/types.gen'
+import type { AiSearchSummary, PromptTestSettings } from '../infrastructure/api/types.gen'
+import { promptHistory } from './historyFixtures'
 import { me, promptResults, readinessRow, readinessTable, summary } from './fixtures'
 import { type Handler, json } from './mountApp'
 import { overviewFixture, planFixture, standingsFixture } from './numbersFixtures'
@@ -30,6 +31,28 @@ export function promptSettingsFixture(overrides: Partial<PromptTestSettings> = {
   }
 }
 
+/** The AI search summary, with how tribelt.nl does on four of the readiness checks. */
+export function aiSearchFixture(): AiSearchSummary {
+  return {
+    goal: 0.4,
+    followed: [{ competitorId: 'tribelt', name: 'Tribelt B.V.', role: 'tribelt' }],
+    trend: [],
+    crawlers: [],
+    keepingOut: [],
+    ranking: [],
+    sites: 41,
+    questions: 20,
+    providers: 2,
+    readinessChecks: 8,
+    checks: [
+      { check: 'crawlers', scored: true, passing: 30, tribelt: true },
+      { check: 'llmsTxt', scored: true, passing: 12, tribelt: false },
+      { check: 'markdown', scored: true, passing: 2 },
+      { check: 'product', scored: false, passing: 3, tribelt: false },
+    ],
+  }
+}
+
 /** Every request the Overview and the goal pages make, answered; extra replaces any of them. */
 export function overviewRoutes(extra: Record<string, Handler> = {}, admin = false): Record<string, Handler> {
   return {
@@ -46,6 +69,8 @@ export function overviewRoutes(extra: Record<string, Handler> = {}, admin = fals
         ]),
       ),
     'GET /api/v1/admin/prompt-test': () => json(promptSettingsFixture()),
+    'GET /api/v1/ai-search': () => json(aiSearchFixture()),
+    'GET /api/v1/prompt-test/history': () => json(promptHistory()),
     ...extra,
   }
 }

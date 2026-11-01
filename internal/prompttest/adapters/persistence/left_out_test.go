@@ -10,6 +10,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 func TestAReadingStoredBeforeFactsLeftOutWereToldApartLeavesNothingOut(t *testing.T) {
@@ -27,7 +28,7 @@ func TestAReadingStoredBeforeFactsLeftOutWereToldApartLeavesNothingOut(t *testin
 		t.Fatal(err)
 	}
 	a := domain.Answer{
-		ID: uuid.New(), RunID: r.ID, Prompt: domain.CurrentPromptSet().Prompts[0], PromptSetVersion: 1, Provider: "openai",
+		ID: uuid.New(), RunID: r.ID, Prompt: domaintest.Version2().PromptSet().Prompts[0], PromptSetVersion: 1, Provider: "openai",
 		Model: "openai/gpt-oss-20b", Mode: domain.ModeKnowledge, Reply: domain.Reply{Text: "Tribelt is in Hengelo."}, At: at,
 	}
 	if err := repo.AddAnswer(ctx, a); err != nil {

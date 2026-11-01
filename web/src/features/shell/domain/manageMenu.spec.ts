@@ -39,6 +39,7 @@ describe('the Manage menu', () => {
       ['Search term list', 'Waiting terms', '/manage/terms/waiting'],
       ['Search term list', 'Add or remove terms', '/manage/terms/edit'],
       ['Recommendations', 'Tick off yourself', '/manage/recommendations/tick-off'],
+      ['Recommendations', 'Edit a recommendation', '/manage/recommendations/edit'],
       ['Recommendations', 'Goals', '/manage/recommendations/goals'],
       ['Keys and spending', 'OpenRouter key', '/manage/keys/openrouter'],
       ['Keys and spending', 'Anthropic key', '/manage/keys/anthropic'],

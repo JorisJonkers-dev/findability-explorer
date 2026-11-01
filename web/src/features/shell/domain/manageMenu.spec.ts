@@ -28,6 +28,7 @@ describe('the Manage menu', () => {
       ['Competitor list', 'Companies', '/manage/competitors/companies'],
       ['Competitor list', 'Candidates', '/manage/competitors/candidates'],
       ['Competitor list', 'Check the list', '/manage/competitors/check'],
+      ['Competitor list', 'Competitor definition', '/manage/competitors/definition'],
       ['Search term list', 'Term review', '/manage/terms/review'],
       ['Search term list', 'Waiting terms', '/manage/terms/waiting'],
       ['Recommendations', 'Tick off yourself', '/manage/recommendations/tick-off'],

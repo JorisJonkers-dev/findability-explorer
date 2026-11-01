@@ -51,6 +51,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
       { label: 'Companies', to: '/manage/competitors/companies' },
       { label: 'Candidates', to: '/manage/competitors/candidates' },
       { label: 'Check the list', to: '/manage/competitors/check' },
+      { label: 'Competitor definition', to: '/manage/competitors/definition' },
     ],
   },
   {

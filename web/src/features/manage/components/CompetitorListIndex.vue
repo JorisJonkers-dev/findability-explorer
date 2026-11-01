@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useCompetitorChecks } from '../../competitors/composables/useCompetitorChecks'
+import { useCompetitorDefinition } from '../../competitors/composables/useCompetitorDefinition'
 import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import { haikuArchived } from '../../competitors/domain/checks'
 import { listCompanies } from '../../competitors/domain/companies'
 import { useCompetitorCandidates } from '../../prompt-test/composables/usePromptTest'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
+import { RouterLink } from 'vue-router'
+import { PRIMARY } from './widgets/look'
 import BigFigure from './widgets/BigFigure.vue'
 import IndexCard from './widgets/IndexCard.vue'
 import ManageWidget from './widgets/ManageWidget.vue'
@@ -15,6 +18,8 @@ import WidgetGrid from './widgets/WidgetGrid.vue'
 const { competitors } = useCompetitors()
 const { counts, review } = useCompetitorCandidates(ref('pending'))
 const checks = useCompetitorChecks(ref(true))
+const { definition } = useCompetitorDefinition(ref(true))
+const changed = computed(() => (definition.value ? definition.value.outdatedCompetitors + definition.value.outdatedCandidates > 0 : false))
 const listed = computed(() => listCompanies(competitors.value))
 const active = computed(() => listed.value.filter((c) => !c.archived).length)
 const decided = computed(() => (counts.value ? counts.value.added + counts.value.dismissed : 0))
@@ -27,6 +32,12 @@ const checking = computed(() => {
 <template>
   <ManageLayout title="Competitor list" purpose="Decide which companies count as competitors." :results="{ to: '/competitors', label: 'See the competitors' }">
     <WidgetGrid>
+      <ManageWidget v-if="changed" title="The definition changed" :span="12" accent>
+        <p class="m-0 text-ink-2">The list and the candidates were checked against an older version of the definition.</p>
+        <template #foot>
+          <RouterLink to="/manage/competitors/definition" :class="PRIMARY">Check them again</RouterLink>
+        </template>
+      </ManageWidget>
       <ManageWidget title="Competitors" :span="4">
         <BigFigure :value="String(active)" :label="`${String(listed.length - active)} archived`" />
       </ManageWidget>
@@ -55,6 +66,13 @@ const checking = computed(() => {
         to="/manage/competitors/check"
         link="Check the list"
         :figures="[{ value: String(haikuArchived(competitors).length), label: 'archived by Haiku' }]"
+      />
+      <IndexCard
+        title="Competitor definition"
+        text="The text Haiku reads to decide whether a company competes."
+        to="/manage/competitors/definition"
+        link="Change the definition"
+        :figures="definition ? [{ value: `Version ${String(definition.current.version)}`, label: 'in use' }] : []"
       />
     </WidgetGrid>
   </ManageLayout>

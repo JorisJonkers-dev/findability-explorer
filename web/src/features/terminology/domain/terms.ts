@@ -1,6 +1,7 @@
 import type { BeltFamily, IntentTier, OverviewTerms, Term } from '../../../infrastructure/api/types.gen'
 import type { SortValue } from '../../../shared/sort'
 import { familyLabel, languageLabel, tierLabel } from '../../../shared/vocabulary'
+import { termPath } from './searchTerms'
 import { chartLanguage, companyName, type TermGroup, type TermView } from './filters'
 import { fold } from './fold'
 
@@ -159,6 +160,8 @@ function familyText(family: BeltFamily): string {
 export type RankedTerm = {
   rank: number
   term: string
+  /** The term's own page. */
+  path: string
   /** "English · Tri-Flex · Twentebelt, Ashworth". */
   meta: string
   tier: IntentTier
@@ -191,6 +194,7 @@ export function rankTerms(shown: readonly (Term & { scanMakers?: readonly string
     .map(({ t, makers }, index) => ({
       rank: index + 1,
       term: t.term,
+      path: termPath(t),
       meta: [
         languageLabel(chartLanguage(t.language)),
         familyText(t.family),

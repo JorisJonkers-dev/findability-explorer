@@ -574,6 +574,27 @@ func (r *Repository) ReadingTokensSince(ctx context.Context, t time.Time) (input
 	return row.Input, row.Output, nil
 }
 
+// ModelTokens is what one model used: its name as the readings record it, and its tokens.
+type ModelTokens struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// ReadingTokensSinceByModel is ReadingTokensSince per model that read, so each is priced at its own
+// list price; readings from before they recorded their model have an empty model.
+func (r *Repository) ReadingTokensSinceByModel(ctx context.Context, t time.Time) ([]ModelTokens, error) {
+	rows, err := r.store.Queries().PromptReadingTokensSinceByModel(ctx, t)
+	if err != nil {
+		return nil, fmt.Errorf("sum reading tokens per model: %w", err)
+	}
+	out := make([]ModelTokens, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, ModelTokens{Model: row.Model, Input: row.Input, Output: row.Output})
+	}
+	return out, nil
+}
+
 // optionalText is s, or NULL when s is empty.
 func optionalText(s string) pgtype.Text { return pgtype.Text{String: s, Valid: s != ""} }
 

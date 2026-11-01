@@ -168,7 +168,7 @@ func TestTheMonthsSpendingPricesEachScanAtItsModelAndTheOtherJobsAsHaiku(t *test
 	}
 	sp := spenders{persistence.New(store), terminologypersistence.New(store), prompttestpersistence.New(store)}
 	s, err := spending(t.Context(), sp, monthStart(time.Now()))
-	if err != nil || len(s.ThisMonth) != 3 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
+	if err != nil || len(s.ThisMonth) != 2 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
 		t.Fatalf("spending of an empty month = %+v, %v", s, err)
 	}
 	for _, u := range s.ThisMonth {

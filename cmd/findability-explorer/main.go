@@ -354,12 +354,11 @@ func newLLM(logger *slog.Logger, getenv func(string) string, store *pg.Store, sp
 }
 
 // spending is what every job on a Claude model used since since, per job, and what one scan's
-// matching used on average. The scans' matching is priced at the model each scan used, as the
-// step matching products may name another; every other job runs on Claude Haiku until its step
-// chooses a model, so it is priced as Haiku.
+// matching used on average. The scans' matching and the readings of responses are priced at the
+// model each recorded; the reviews record no model, so they are priced as Claude Haiku 5.5.
 func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spending, error) {
 	sources := []func(context.Context, time.Time) (int64, int64, error){
-		sp.terms.TokensSince, sp.candidates.ReviewTokensSince, sp.candidates.ReadingTokensSince,
+		sp.terms.TokensSince, sp.candidates.ReviewTokensSince,
 	}
 	var s llmapp.Spending
 	scanUse, err := sp.analyses.TokensSinceByModel(ctx, since)
@@ -367,6 +366,13 @@ func spending(ctx context.Context, sp spenders, since time.Time) (llmapp.Spendin
 		return llmapp.Spending{}, err
 	}
 	for _, u := range scanUse {
+		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: claudeModelOf(u.Model), Input: u.Input, Output: u.Output})
+	}
+	readUse, err := sp.candidates.ReadingTokensSinceByModel(ctx, since)
+	if err != nil {
+		return llmapp.Spending{}, err
+	}
+	for _, u := range readUse {
 		s.ThisMonth = append(s.ThisMonth, llmdomain.TokenUse{Model: claudeModelOf(u.Model), Input: u.Input, Output: u.Output})
 	}
 	for _, source := range sources {

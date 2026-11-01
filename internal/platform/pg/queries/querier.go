@@ -155,6 +155,9 @@ type Querier interface {
 	// The tokens in and out Claude Haiku on an Anthropic key used reading answers since a moment: the
 	// readings whose tokens count as Haiku's.
 	PromptReadingTokensSince(ctx context.Context, since time.Time) (PromptReadingTokensSinceRow, error)
+	// The same per model that read, so each is priced at its own list price; a reading from before
+	// readings recorded their model has none.
+	PromptReadingTokensSinceByModel(ctx context.Context, since time.Time) ([]PromptReadingTokensSinceByModelRow, error)
 	PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error)
 	// The model that read most of each run's responses, for the runs whose readings recorded one.
 	PromptRunReadingModels(ctx context.Context) ([]PromptRunReadingModelsRow, error)

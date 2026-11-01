@@ -1200,6 +1200,42 @@ func (q *Queries) PromptReadingTokensSince(ctx context.Context, since time.Time)
 	return i, err
 }
 
+const promptReadingTokensSinceByModel = `-- name: PromptReadingTokensSinceByModel :many
+SELECT model, coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+FROM prompt_extractions
+WHERE extracted_at >= $1 AND haiku_tokens > 0
+GROUP BY model
+ORDER BY model
+`
+
+type PromptReadingTokensSinceByModelRow struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// The same per model that read, so each is priced at its own list price; a reading from before
+// readings recorded their model has none.
+func (q *Queries) PromptReadingTokensSinceByModel(ctx context.Context, since time.Time) ([]PromptReadingTokensSinceByModelRow, error) {
+	rows, err := q.db.Query(ctx, promptReadingTokensSinceByModel, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptReadingTokensSinceByModelRow{}
+	for rows.Next() {
+		var i PromptReadingTokensSinceByModelRow
+		if err := rows.Scan(&i.Model, &i.Input, &i.Output); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const promptReviewTokensSince = `-- name: PromptReviewTokensSince :one
 SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_review_usage

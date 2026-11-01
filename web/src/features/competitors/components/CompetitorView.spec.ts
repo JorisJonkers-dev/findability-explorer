@@ -26,6 +26,11 @@ function api(extra: Record<string, Handler> = {}) {
 const link = (wrapper: VueWrapper, text: string) => wrapper.findAll('a').find((a) => a.text() === text)
 
 describe('a competitor’s page', () => {
+  it('links its AI readiness page only once a scan has read the site', async () => {
+    const { wrapper } = await mountApp(api(), '/competitors/martens')
+    expect(wrapper.find('a[href="/ai-readiness/martens"]').exists()).toBe(false)
+  })
+
   it('is in the frame, with its sections side by side, and the ways to look closer', async () => {
     const { wrapper } = await mountApp(api(), '/competitors/twentebelt')
     expect(document.title).toBe('Competitor · Findability Explorer')
@@ -49,6 +54,7 @@ describe('a competitor’s page', () => {
     expect(visit.attributes('href')).toBe('https://www.twentebelt.com/')
     expect(visit.attributes('rel')).toBe('noopener noreferrer')
     expect(wrapper.get('a[href="/competitors/twentebelt/history"]').text()).toBe('See its scan history')
+    expect(wrapper.get('a[href="/ai-readiness/twentebelt"]').text()).toBe('Its AI readiness page')
     expect(wrapper.text()).toContain('Back to Competitors')
   })
 

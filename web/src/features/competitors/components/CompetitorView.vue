@@ -32,6 +32,7 @@ const button = 'inline-flex min-h-11 items-center rounded-full border-2 border-s
       <a v-if="company.websiteUrl" :href="company.websiteUrl" target="_blank" rel="noopener noreferrer" :class="button">
         Visit its website<span class="sr-only"> (opens in a new tab)</span>
       </a>
+      <RouterLink v-if="company.scans > 0" :to="`/ai-readiness/${encodeURIComponent(company.id)}`" :class="button">Its AI readiness page</RouterLink>
       <RouterLink :to="`${companyPath(company.id)}/history`" :class="button">See its scan history</RouterLink>
     </template>
 

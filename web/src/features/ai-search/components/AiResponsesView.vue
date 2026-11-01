@@ -144,7 +144,7 @@ const OVER_TIME_INTRO = 'How often AI responses name Tribelt in each Prompt run.
             <tbody>
               <tr v-for="r in page.families.value" :key="r.key" class="border-t border-grey">
                 <th scope="row" class="py-2 pr-3 text-left font-normal">
-                  {{ r.place }}, <span :title="r.intent.help" class="cursor-help underline decoration-dotted underline-offset-4">{{ r.intent.name }}</span>
+                  <RouterLink :to="r.family.to">{{ r.family.name }}</RouterLink>, {{ r.scope }}, <span :title="r.intent.help" class="cursor-help underline decoration-dotted underline-offset-4">{{ r.intent.name }}</span>
                   <span class="sr-only">. {{ r.intent.help }}</span>
                 </th>
                 <td v-for="(c, i) in [r.knowledge, r.web, r.all]" :key="i" class="py-2 text-right tabular-nums">

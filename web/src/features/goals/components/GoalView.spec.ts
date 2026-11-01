@@ -18,7 +18,7 @@ describe('a goal page', () => {
     expect(wrapper.get('[data-part="data-line"]').text()).toMatch(/^From the Prompt run of 1 November 2026: 90 questions to 2 models/)
     expect(wrapper.get('[data-part="summary"]').text()).toBe('Ashworth is ahead of Tribelt, with 57% against 24%. The goal is 40%.')
     expect(wrapper.findAll('a').find((a) => a.text().includes('Back to Overview'))?.attributes('href')).toBe('/')
-    expect(wrapper.findAll('a').find((a) => a.text() === 'Set the goals')?.attributes('href')).toBe('/manage/recommendations')
+    expect(wrapper.findAll('a').find((a) => a.text() === 'Set the goals')?.attributes('href')).toBe('/manage/recommendations/goals')
   })
 
   it('sets Tribelt against the competitors beside Over time, drawn from the history with the Prompt set filter', async () => {
@@ -41,6 +41,7 @@ describe('a goal page', () => {
     const { wrapper } = await mountApp(routes(overviewRoutes()), '/goals/aiShareOfVoice')
     const broken = region(wrapper, 'Broken down')
     expect(broken.findAll('h3').map((h) => h.text())).toEqual(['By model', 'By scope', 'By belt family'])
+    expect(broken.get('a[href="/ai-responses/all"]').text()).toBe('See every response')
     const improves = region(wrapper, 'What improves it')
     expect(improves.findAll('a').map((a) => [a.attributes('href'), a.text()])).toEqual([
       ['/recommendations/submit-search-engines', 'Submit tribelt.nl to Google and Bing'],

@@ -3,7 +3,7 @@ import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSumma
 import { useOverview } from '../../home/composables/useOverview'
 import { usePromptResults } from '../../prompt-test/composables/usePromptTest'
 import { latestRun } from '../../prompt-test/domain/results'
-import { type BreakdownGroup, type Bar, goalPage, historyMeasure, isPromptGoal, promptBreakdown, promptDataLine, readinessBreakdown, targetOfSlug, termsBreakdown } from '../domain/goals'
+import { everyResponse, type BreakdownGroup, type Bar, goalPage, historyMeasure, isPromptGoal, promptBreakdown, promptDataLine, readinessBreakdown, targetOfSlug, termsBreakdown } from '../domain/goals'
 import { useGoals } from './useGoals'
 
 /** What Broken down shows: per model, scope, and family; per readiness check; or per language. */
@@ -28,6 +28,8 @@ export function useGoalPage(measure: Ref<string>) {
     error: goals.error,
     missing: computed(() => !goals.isLoading.value && !goals.error.value && page.value === undefined),
     history: computed(() => (target.value ? historyMeasure(target.value) : undefined)),
+    /** Every response, on the responses the goal counts. */
+    responses: computed(() => (target.value ? everyResponse(target.value) : undefined)),
     helpTopic: computed(() => {
       const t = target.value
       if (!t) return undefined

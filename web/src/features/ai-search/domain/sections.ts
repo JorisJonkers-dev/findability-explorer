@@ -3,7 +3,7 @@ import type { Competitor, Plan, PlanTarget, PromptAnswer, PromptCell, PromptMent
 import { counts, TRIBELT_ID } from '../../prompt-test/domain/grid'
 import { tally } from '../../prompt-test/domain/results'
 import { gridOf, modelLabel, namesTribelt } from '../../prompt-test/domain/responses'
-import { companyPath } from '../../shell/domain/sections'
+import { companyPath, familyPath } from '../../shell/domain/sections'
 
 /** A share as the page writes it: "25%", or "–" when there is nothing to share. */
 export function share(part: number, whole: number): string {
@@ -56,7 +56,7 @@ export function byModel(run: Pick<PromptRun, 'models' | 'cells'>): ModelRow[] {
 export type Cell = { value: string; to: RouteLocationRaw }
 
 /** A row of By belt family and scope: one family, scope, and buyer intent. */
-export type FamilyScopeRow = { key: string; place: string; intent: { name: string; help: string }; knowledge: Cell; web: Cell; all: Cell }
+export type FamilyScopeRow = { key: string; place: string; family: { name: string; to: string }; scope: string; intent: { name: string; help: string }; knowledge: Cell; web: Cell; all: Cell }
 
 /** The share of the read responses that name Tribelt, per question, from its own knowledge, with web search, and both. */
 export function familyScopeRows(answers: readonly PromptAnswer[]): FamilyScopeRow[] {
@@ -68,7 +68,7 @@ export function familyScopeRows(answers: readonly PromptAnswer[]): FamilyScopeRo
       const query: Record<string, string> = { family: row.family, scope: row.scope, ...(mode === 'all' ? {} : { mode }) }
       return { value: share(xs.filter(namesTribelt).length, xs.length), to: { path: '/ai-responses/all', query } }
     }
-    return { key: row.promptId, place: row.place, intent: row.intent, knowledge: cell('knowledge'), web: cell('web'), all: cell('all') }
+    return { key: row.promptId, place: row.place, family: { name: row.familyName, to: familyPath(row.family) }, scope: row.scopeName, intent: row.intent, knowledge: cell('knowledge'), web: cell('web'), all: cell('all') }
   })
 }
 

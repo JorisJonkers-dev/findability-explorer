@@ -227,6 +227,8 @@ export type GridRow = {
   scope: PromptScope
   /** The belt family and scope: "Eyelink, Twente". */
   place: string
+  familyName: string
+  scopeName: string
   intent: { name: string; help: string }
   cells: (PromptAnswer | undefined)[]
 }
@@ -255,6 +257,8 @@ export function gridOf(run: Pick<PromptRun, 'models'>, list: readonly PromptAnsw
       family: q.family,
       scope: q.scope,
       place: `${FAMILIES[q.family].short}, ${scopeText(q.scope).short}`,
+      familyName: FAMILIES[q.family].short,
+      scopeName: scopeText(q.scope).short,
       intent: intentOf(q.kind),
       cells: columns.map((c) => found.get(keyOf({ promptId: q.promptId, ...c }))),
     }))

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Overview, Plan, PlanTarget, PromptCell, ReadinessCheckSummary, Standings } from '../../../infrastructure/api/types.gen'
 import { promptRun } from '../../../testing/fixtures'
 import { overviewFixture, planFixture, standingsFixture } from '../../../testing/numbersFixtures'
-import { GOAL_ORDER, goalPage, goalRows, goalTabTitle, historyMeasure, isPromptGoal, overviewSummary, pathOfTarget, promptBreakdown, promptDataLine, readinessBreakdown, targetOfSlug, termsBreakdown, valueText } from './goals'
+import { everyResponse, GOAL_ORDER, goalPage, goalRows, goalTabTitle, historyMeasure, isPromptGoal, overviewSummary, pathOfTarget, promptBreakdown, promptDataLine, readinessBreakdown, targetOfSlug, termsBreakdown, valueText } from './goals'
 
 const facts = (change: (plan: Plan, standings: Standings) => void = () => undefined) => {
   const plan = planFixture()
@@ -173,6 +173,15 @@ describe('a goal page', () => {
     expect(picks).toEqual([0.25, 0.4, 0.1])
     expect(historyMeasure('aiShareOfVoice')).toMatchObject({ label: 'Tribelt', tone: 'orange', strong: true })
     expect(historyMeasure('termsUsed')).toBeUndefined()
+  })
+})
+
+describe('the way to the responses behind a goal', () => {
+  it('opens Every response on the responses the goal counts', () => {
+    expect(everyResponse('aiShareOfVoice')).toEqual({ path: '/ai-responses/all' })
+    expect(everyResponse('twenteShareOfVoice')).toEqual({ path: '/ai-responses/all', query: { scope: 'twente' } })
+    expect(everyResponse('citationShare')).toEqual({ path: '/ai-responses/all', query: { mode: 'web' } })
+    expect(everyResponse('termsUsed')).toBeUndefined()
   })
 })
 

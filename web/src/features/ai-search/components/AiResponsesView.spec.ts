@@ -113,11 +113,13 @@ describe('AI responses', () => {
   it('shows By belt family and scope with the buyer intent explained, each figure leading to its responses', async () => {
     const { wrapper } = await mountApp(api(), '/ai-responses')
     const rows = section(wrapper, 'By belt family and scope').findAll('tbody tr')
-    expect(words(rows[0]?.get('th') ?? { element: document.body })).toContain('Eyelink, Twente, application')
+    expect(rows[0]?.get('th').text()).toContain('Eyelink, Twente, application')
     expect(rows[0]?.get('[title]').attributes('title')).toBe('Buyer intent: application. The buyer describes what the belt is for, such as a bakery oven.')
     expect(rows[0]?.findAll('td').map(words)).toEqual(['100%', '0%', '50%'])
-    expect(words(rows[1]?.get('th') ?? { element: document.body })).toContain('Open spiral, German, problem')
+    expect(rows[1]?.get('th').text()).toContain('Open spiral, German, problem')
     expect(rows[0]?.findAll('td a')[1]?.attributes('href')).toBe('/ai-responses/all?family=eyelink&scope=twente&mode=web')
+    expect(rows[1]?.get('th a').attributes('href')).toBe('/terms/families/open-spiral')
+    expect(rows[1]?.get('th a').text()).toBe('Open spiral')
   })
 
   it('links administrators to the Prompt test', async () => {

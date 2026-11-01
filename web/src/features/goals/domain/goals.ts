@@ -289,6 +289,14 @@ export function goalPage(facts: Facts, target: PlanTarget): GoalPage | undefined
   }
 }
 
+/** Every response, on the responses a Prompt test goal counts; undefined for a goal the scans measure. */
+export function everyResponse(target: PlanTarget): { path: string; query?: Record<string, string> } | undefined {
+  if (!isPromptGoal(target)) return undefined
+  if (target === 'twenteShareOfVoice') return { path: '/ai-responses/all', query: { scope: 'twente' } }
+  if (target === 'citationShare') return { path: '/ai-responses/all', query: { mode: 'web' } }
+  return { path: '/ai-responses/all' }
+}
+
 /** Where a Prompt test goal's figures come from: the newest run, its questions, models, and responses. */
 export function promptDataLine(run: PromptRun | undefined): string {
   if (!run) return 'No Prompt run has finished yet.'

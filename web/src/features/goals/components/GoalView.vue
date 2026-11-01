@@ -20,7 +20,7 @@ const MARK = { yes: '✓', no: '✕', unknown: '?' } as const
     :purpose="page?.purpose ?? 'One of the five goals Tribelt is measured against.'"
     :data-line="goal.dataLine.value"
     :back="{ to: '/', label: 'Back to Overview' }"
-    :manage="{ to: '/manage/recommendations', label: 'Set the goals' }"
+    :manage="{ to: '/manage/recommendations/goals', label: 'Set the goals' }"
     :help-topic="goal.helpTopic.value"
   >
     <p v-if="goal.error.value" role="alert" class="m-0 text-lg text-orange-ink">{{ goal.error.value }}</p>
@@ -63,6 +63,7 @@ const MARK = { yes: '✓', no: '✕', unknown: '?' } as const
               <BarList :rows="g.rows" :max="1" :label="g.title" />
             </div>
           </div>
+          <RouterLink v-if="goal.responses.value" :to="goal.responses.value" class="self-start font-medium">See every response</RouterLink>
         </template>
         <ul v-else-if="goal.breakdown.value.kind === 'checks'" class="m-0 flex list-none flex-col gap-3 rounded-3xl bg-mist p-5 sm:p-6">
           <li v-for="c in goal.breakdown.value.checks" :key="c.label" class="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-3">

@@ -25,6 +25,7 @@ describe('useGoalPage', () => {
     expect(state.dataLine.value).toMatch(/^From the Prompt run of 1 November 2026: 90 questions to 2 models/)
     expect(state.history.value?.label).toBe('Tribelt')
     expect(state.helpTopic.value).toBe('prompt-test')
+    expect(state.responses.value).toEqual({ path: '/ai-responses/all' })
     const b = state.breakdown.value
     expect(b?.kind).toBe('groups')
     if (b?.kind === 'groups') expect(b.groups.map((g) => g.title)).toEqual(['By model', 'By scope', 'By belt family'])
@@ -51,6 +52,7 @@ describe('useGoalPage', () => {
     expect(state.breakdownError.value).toBeNull()
     expect(state.helpTopic.value).toBeUndefined()
     expect(state.history.value).toBeUndefined()
+    expect(state.responses.value).toBeUndefined()
   })
 
   it('reports a failure of the goals, and of the figures a breakdown needs', async () => {

@@ -55,6 +55,10 @@ describe('by belt family and scope', () => {
       ['Open spiral, German', 'application', '–', '100%', '100%'],
     ])
     expect(rows[0]?.web.to).toEqual({ path: '/ai-responses/all', query: { family: 'eyelink', scope: 'twente', mode: 'web' } })
+    expect(rows.map((r) => [r.family.name, r.family.to, r.scope])).toEqual([
+      ['Eyelink', '/terms/families/eyelink', 'Twente'],
+      ['Open spiral', '/terms/families/open-spiral', 'German'],
+    ])
     expect(rows[0]?.all.to).toEqual({ path: '/ai-responses/all', query: { family: 'eyelink', scope: 'twente' } })
   })
 })

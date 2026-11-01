@@ -1,10 +1,11 @@
-import { createRouter, createWebHistory, type Router, type RouterHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalizedLoaded, type Router, type RouterHistory } from 'vue-router'
+import { goalTabTitle } from '../features/goals/domain/goals'
 import { trackPreviousPath } from '../features/shell/composables/navigation'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** The page's name in the browser tab. */
-    title?: string
+    /** The page's name in the browser tab, or how the page's address names it. */
+    title?: string | ((route: RouteLocationNormalizedLoaded) => string)
     /** Results is for everyone signed in; Manage is for administrators. */
     view?: 'results' | 'manage'
   }
@@ -23,7 +24,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         name: 'goal',
         component: () => import('../features/goals/components/GoalView.vue'),
         props: (to) => ({ measure: String(to.params.measure) }),
-        meta: { title: 'Goal', view: 'results' },
+        meta: { title: (route) => goalTabTitle(String(route.params.measure)), view: 'results' },
       },
       {
         path: '/ai-responses',

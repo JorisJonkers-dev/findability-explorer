@@ -1696,17 +1696,24 @@ func decodeListPromptAnswersParams(args [1]string, argsEscaped bool, r *http.Req
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
 				var paramsDotScopeVal PromptScope
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
+					var paramsDotScopeValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotScopeValVal = c
+						return nil
+					}(); err != nil {
 						return err
 					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotScopeVal = PromptScope(c)
+					paramsDotScopeVal = PromptScope(paramsDotScopeValVal)
 					return nil
 				}(); err != nil {
 					return err

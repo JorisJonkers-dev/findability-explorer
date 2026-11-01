@@ -146,6 +146,7 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.RetryPromptRunOperation:              domain.NeedAdminChange,
 	oas.RereadPromptRunOperation:             domain.NeedAdminChange,
 	oas.StopPromptRunOperation:               domain.NeedAdminChange,
+	oas.PublishPromptSetOperation:            domain.NeedAdminChange,
 	oas.GetPromptRetryPlanOperation:          domain.NeedAdminView,
 	oas.GetPromptTestSettingsOperation:       domain.NeedAdminView,
 	oas.UpdatePromptTestSettingsOperation:    domain.NeedAdminChange,

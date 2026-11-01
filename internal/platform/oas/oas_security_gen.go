@@ -79,6 +79,7 @@ var operationRolesSessionCookie = map[string][]string{
 	ListPromptAnswersOperation:           []string{},
 	ListPromptSetsOperation:              []string{},
 	ListTermCandidatesOperation:          []string{},
+	PublishPromptSetOperation:            []string{},
 	RejectTermCandidateOperation:         []string{},
 	RemoveQueuedAnalysesOperation:        []string{},
 	RereadPromptRunOperation:             []string{},

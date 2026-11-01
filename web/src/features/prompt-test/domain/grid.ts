@@ -115,7 +115,7 @@ export function columnsOf(run: Pick<PromptRun, 'models'>, mode: PromptMode | 'al
 export type Row = { promptId: string; family: PromptFamily; scope: PromptScope; question: string }
 
 /** The questions a run's answers answer, by belt family then scope; only those in scope when one is picked. */
-export function rowsOf(answers: readonly PromptAnswer[], scope: PromptScope | 'all' = 'all'): Row[] {
+export function rowsOf(answers: readonly PromptAnswer[], scope: PromptScope = 'all'): Row[] {
   const rows = new Map<string, Row>()
   for (const a of answers) {
     if (!rows.has(a.promptId) && (scope === 'all' || a.scope === scope)) {
@@ -155,7 +155,7 @@ export function byKey(answers: readonly PromptAnswer[]): Map<string, PromptAnswe
 }
 
 /** The scopes the grid can be narrowed to, as the current prompt set asks them. */
-export const SCOPE_FILTERS: readonly { value: PromptScope | 'all'; label: string }[] = [
+export const SCOPE_FILTERS: readonly { value: PromptScope; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'twente', label: 'Twente' },
   { value: 'dutch', label: 'Dutch' },

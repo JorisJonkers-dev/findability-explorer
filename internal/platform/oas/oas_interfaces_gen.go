@@ -165,6 +165,10 @@ type ListTermCandidatesRes interface {
 	listTermCandidatesRes()
 }
 
+type PublishPromptSetRes interface {
+	publishPromptSetRes()
+}
+
 type RejectTermCandidateRes interface {
 	rejectTermCandidateRes()
 }

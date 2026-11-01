@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 // promptTests is a stand-in for the prompt-test use cases, so these tests exercise the contract.
@@ -33,6 +35,7 @@ type promptTests struct {
 	stopErr    error
 	stopped    uuid.UUID
 	historyErr error
+	setsErr    error
 }
 
 func (a *analyses) prompts() *promptTests {
@@ -57,7 +60,7 @@ func promptRun() domain.Run {
 }
 
 func promptAnswers() []domain.Answer {
-	set := domain.CurrentPromptSet()
+	set := domaintest.Version2().PromptSet()
 	return []domain.Answer{
 		{
 			ID: uuid.New(), RunID: runID, Prompt: set.Prompts[0], PromptSetVersion: 1, Provider: "google", Model: "google/gemini", Mode: domain.ModeWeb,
@@ -66,7 +69,7 @@ func promptAnswers() []domain.Answer {
 				Companies:    []domain.Company{{Name: "Tribelt", CompetitorID: "tribelt", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
 				Addresses:    []string{"https://www.tribelt.nl/"},
 				NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."}, Cost: 500_000,
-				InputTokens: 300, OutputTokens: 20,
+				LeftOut: []string{"Tribelt makes eyelink belts to measure."}, InputTokens: 300, OutputTokens: 20,
 			},
 		},
 		{ID: uuid.New(), RunID: runID, Prompt: set.Prompts[1], PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeKnowledge, Failure: "Rate limited.", At: answered},
@@ -76,9 +79,10 @@ func promptAnswers() []domain.Answer {
 func (p *promptTests) Results(context.Context) (app.Results, error) {
 	answers := promptAnswers()
 	return app.Results{
-		Runs:        []app.RunResult{{Run: promptRun(), Progress: domain.Progressed(answers, promptRun().Models), Cells: domain.Cells(answers)}},
-		Mentions:    []app.NamedMention{{Mention: domain.Mentions(answers)[0], Name: "Tribelt B.V.", Role: domain.RoleTribelt, Share: 0.5}},
-		WrongClaims: domain.WrongClaims(answers),
+		PromptSetVersion: 3,
+		Runs:             []app.RunResult{{Run: promptRun(), Progress: domain.Progressed(answers, promptRun().Models), Cells: domain.Cells(answers)}},
+		Mentions:         []app.NamedMention{{Mention: domain.Mentions(answers)[0], Name: "Tribelt B.V.", Role: domain.RoleTribelt, Share: 0.5}},
+		WrongClaims:      domain.WrongClaims(answers),
 	}, p.err
 }
 
@@ -139,10 +143,22 @@ func (p *promptTests) StopRun(_ context.Context, actor string, id uuid.UUID) err
 // partialID is the run the history gives as partial.
 var partialID = uuid.MustParse("0c9d8e7f-6a5b-4c3d-9e2f-1a0b9c8d7e6f")
 
+func (p *promptTests) PromptSets(context.Context) (app.PromptSets, error) {
+	v1 := domain.PublishedSet{
+		Version: 1, PublishedAt: time.Date(2026, 10, 26, 15, 4, 51, 0, time.UTC), PublishedBy: "import", Note: "The first.",
+		Questions: []domain.Question{{
+			ID: "eyelink-supplier-germany", Family: domain.FamilyEyelink, Intent: domain.IntentProduct,
+			Scope: domaintest.Scope(domain.ScopeGermany), Text: "Welche Firmen liefern Drahtösengliederbänder?",
+		}},
+	}
+	return app.PromptSets{Sets: []domain.PublishedSet{domaintest.Version2(), v1}, Scopes: domaintest.Scopes()}, p.setsErr
+}
+
 func (p *promptTests) History(context.Context) (app.HistoryView, error) {
 	share := func(v float64) *float64 { return &v }
+	v2 := domaintest.Version2()
 	return app.HistoryView{
-		Versions: domain.Versions(),
+		Versions: domain.VersionsOf([]domain.PublishedSet{v2, {Version: 1, PublishedAt: v2.PublishedAt.Add(-time.Hour), Note: "The first.", Questions: make([]domain.Question, 90)}}),
 		Runs: []domain.RunFigures{
 			{RunID: partialID, StartedAt: answered.Add(-48 * time.Hour), Version: 1, Tasks: 1260, Answered: 62, Read: 47, Partial: true, All: share(0.4), Dutch: share(0.4)},
 			{
@@ -160,7 +176,7 @@ func view() app.View {
 	s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt = "joris", answered
 	models := []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini"}}
 	return app.View{
-		Settings: s, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000,
+		Settings: s, PromptSet: domaintest.Version2().PromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000,
 		Models: models, KeyWorks: true,
 		Prices: domain.PricesFromRun([]domain.Answer{{Provider: "google", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 1000}}}, models, 20, domain.CadenceWeekly, 10_000_000, nil),
 	}
@@ -250,7 +266,7 @@ func TestPromptTestResultsAreForEveryoneSignedIn(t *testing.T) {
 	srv := serve(t, a)
 	r := callAs(t, srv, http.MethodGet, "/api/v1/prompt-test", "", "tester")
 	runs, _ := r.body["runs"].([]any)
-	if r.code != http.StatusOK || len(runs) != 1 || r.body["promptSetVersion"].(float64) != domain.PromptSetVersion {
+	if r.code != http.StatusOK || len(runs) != 1 || r.body["promptSetVersion"].(float64) != 3 {
 		t.Fatalf("results = %d %v", r.code, r.body)
 	}
 	run := runs[0].(map[string]any)
@@ -262,8 +278,10 @@ func TestPromptTestResultsAreForEveryoneSignedIn(t *testing.T) {
 	if mention["name"] != "Tribelt B.V." || mention["role"] != "tribelt" || mention["averagePosition"].(float64) != 1 || mention["share"].(float64) != 0.5 {
 		t.Errorf("mention = %v", mention)
 	}
-	if claim := r.body["wrongClaims"].([]any)[0].(map[string]any); claim["claim"] != "Tribelt is in Hengelo." || claim["correctness"] != "wrong" {
-		t.Errorf("claim = %v", claim)
+	// Only the claims wrong about Tribelt are listed; the facts a response left out are not.
+	if claims := r.body["wrongClaims"].([]any); len(claims) != 1 || claims[0].(map[string]any)["claim"] != "Tribelt is in Hengelo." ||
+		claims[0].(map[string]any)["correctness"] != "wrong" {
+		t.Errorf("claims = %v", claims)
 	}
 	a.prompts().err = errors.New("down")
 	if r := callAs(t, srv, http.MethodGet, "/api/v1/prompt-test", "", "tester"); r.code != http.StatusInternalServerError {
@@ -287,6 +305,11 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	}
 	if second := items[1].(map[string]any); second["failure"] != "Rate limited." || second["extraction"] != nil {
 		t.Errorf("failed answer = %v", second)
+	}
+	// One response shows what it got wrong about Tribelt apart from what it left out.
+	if wrong, left := x["wrongClaims"].([]any), x["leftOut"].([]any); len(wrong) != 1 || wrong[0] != "Tribelt is in Hengelo." ||
+		len(left) != 1 || left[0] != "Tribelt makes eyelink belts to measure." {
+		t.Errorf("wrong %v, left out %v", x["wrongClaims"], x["leftOut"])
 	}
 	callAs(t, srv, http.MethodGet, "/api/v1/prompt-runs/"+runID.String()+"/answers?provider=google&scope=twente&family=eyelink&mode=knowledge", "", "tester")
 	if f := a.prompts().filter; f != (app.AnswerFilter{Provider: "google", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeKnowledge}) {
@@ -645,5 +668,52 @@ func TestEverySignedInAccountReadsThePromptTestHistory(t *testing.T) {
 	a.prompts().historyErr = errors.New("broken")
 	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/history", "", true); r.code != http.StatusInternalServerError {
 		t.Errorf("a failing history = %d", r.code)
+	}
+}
+
+func TestEverySignedInAccountReadsThePublishedPromptSets(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/prompt-sets", "", false); r.code != http.StatusUnauthorized {
+		t.Errorf("without a session = %d", r.code)
+	}
+	r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/prompt-sets", "", true)
+	versions, _ := r.body["versions"].([]any)
+	scopes, _ := r.body["scopes"].([]any)
+	if r.code != http.StatusOK || len(versions) != 2 || len(scopes) != 6 {
+		t.Fatalf("prompt sets = %d %v", r.code, r.body)
+	}
+	v2, v1 := versions[0].(map[string]any), versions[1].(map[string]any)
+	questions, _ := v2["questions"].([]any)
+	if v2["version"].(float64) != 2 || v2["publishedAt"] != "2026-10-27T06:35:33Z" || v2["note"] == "" || len(questions) != 20 {
+		t.Fatalf("version 2 = %v", v2)
+	}
+	twente := questions[0].(map[string]any)
+	if twente["id"] != "eyelink-application-twente" || twente["family"] != "eyelink" || twente["intent"] != "application" ||
+		twente["scope"] != "twente" || twente["scopeName"] != "Twente (Dutch)" || twente["language"] != "nl" || twente["region"] != "Twente" ||
+		!strings.HasPrefix(twente["text"].(string), "We bouwen") || !strings.HasPrefix(twente["english"].(string), "We are building") {
+		t.Errorf("a Twente question = %v", twente)
+	}
+	english := questions[3].(map[string]any)
+	if _, ok := english["english"]; ok || english["scope"] != "english" {
+		t.Errorf("an English question = %v, with no translation", english)
+	}
+	if _, ok := english["region"]; ok {
+		t.Errorf("a question with no region = %v", english)
+	}
+	product := v1["questions"].([]any)[0].(map[string]any)
+	if product["intent"] != "product" || product["scope"] != "germany" || product["region"] != "Germany" || product["language"] != "de" {
+		t.Errorf("a version 1 supplier question = %v", product)
+	}
+	first, dutch := scopes[0].(map[string]any), scopes[3].(map[string]any)
+	if first["id"] != "twente" || first["name"] != "Twente (Dutch)" || first["language"] != "nl" || first["region"] != "Twente" {
+		t.Errorf("the Twente scope = %v", first)
+	}
+	if _, ok := dutch["region"]; ok || dutch["id"] != "dutch" {
+		t.Errorf("the Dutch scope = %v, with no region", dutch)
+	}
+	a.prompts().setsErr = errors.New("broken")
+	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/prompt-sets", "", true); r.code != http.StatusInternalServerError {
+		t.Errorf("failing prompt sets = %d", r.code)
 	}
 }

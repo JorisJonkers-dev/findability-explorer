@@ -126,7 +126,7 @@ function submit(): void {
         <ul v-if="progress.running.length > 0" aria-label="Scanning now" class="m-0 flex list-none flex-col gap-3 p-0">
           <li v-for="scan in progress.running" :key="scan.id" class="flex flex-col gap-1.5">
             <div class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-              <RouterLink :to="{ path: `/scan/${scan.id}`, query: route.query }" class="font-medium">{{ companyOf(scan) }}</RouterLink>
+              <RouterLink :to="{ path: `/manage/scans/${scan.id}`, query: route.query }" class="font-medium">{{ companyOf(scan) }}</RouterLink>
               <span class="text-ink-2">{{ scanProgress(scan).label }}</span>
             </div>
             <ProgressBar :fraction="scanProgress(scan).fraction" :label="`Scan of ${companyOf(scan)}`" :text="scanProgress(scan).label" />

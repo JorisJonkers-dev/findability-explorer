@@ -140,7 +140,7 @@ type View struct {
 	Prices   domain.Prices
 }
 
-// Settings returns the settings, the prompt set, this month's spend, the models the latest run
+// Settings returns the settings, the newest published prompt set, this month's spend, the models the latest run
 // asked, whether the key works, and what runs cost.
 func (s *Service) Settings(ctx context.Context) (View, error) {
 	settings, err := s.settings(ctx)
@@ -155,8 +155,12 @@ func (s *Service) Settings(ctx context.Context) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
+	set, err := s.newestSet(ctx)
+	if err != nil {
+		return View{}, err
+	}
 	v := View{
-		Settings: settings, PromptSet: domain.CurrentPromptSet(), ExtractorModel: r.model, SpentThisMonth: spent,
+		Settings: settings, PromptSet: set, ExtractorModel: r.model, SpentThisMonth: spent,
 		Models: []domain.ModelChoice{}, KeyWorks: settings.CredentialID != "" && s.gateways.Check(ctx, settings.CredentialID) == nil,
 	}
 	if err := s.price(ctx, &v, r); err != nil {
@@ -400,7 +404,8 @@ func (s *Service) Start(ctx context.Context, actor string) (domain.Run, error) {
 	return run, nil
 }
 
-// prepare makes the run the settings ask for: the cheapest model of each provider now.
+// prepare makes the run the settings ask for: the newest published Prompt set, on the cheapest
+// model of each provider now.
 func (s *Service) prepare(ctx context.Context, trigger domain.Trigger, actor string) (domain.Run, error) {
 	settings, err := s.settings(ctx)
 	if err != nil {
@@ -418,7 +423,10 @@ func (s *Service) prepare(ctx context.Context, trigger domain.Trigger, actor str
 	if len(models) == 0 {
 		return domain.Run{}, domain.ErrNoModels
 	}
-	set := domain.CurrentPromptSet()
+	set, err := s.newestSet(ctx)
+	if err != nil {
+		return domain.Run{}, err
+	}
 	return domain.Run{
 		ID: uuid.New(), PromptSetVersion: set.Version, FactSheetVersion: settings.FactSheet.Version, FactSheet: settings.FactSheet.Text,
 		Trigger: trigger, StartedBy: actor, StartedAt: s.now(), Status: domain.RunRunning, Models: models,

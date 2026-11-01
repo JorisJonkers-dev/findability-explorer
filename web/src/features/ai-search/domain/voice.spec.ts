@@ -117,9 +117,9 @@ describe('the key figures', () => {
 
   it('write the share of answers naming Tribelt, the web answers citing it, and the checks it passes', () => {
     expect(figures(summary(), cells, plan(goals))).toEqual([
-      { to: '/numbers/aiShareOfVoice', big: '25%', text: 'of AI answers name Tribelt', note: 'Target 50%.' },
-      { to: '/numbers/citationShare', big: '17%', text: 'of web answers cite tribelt.nl', note: 'Target 50%.' },
-      { to: '/ai-search/readiness', big: '3½ of 8', text: 'AI readiness checks passed', note: 'See how AI readiness is checked.' },
+      { to: '/goals/aiShareOfVoice', big: '25%', text: 'of AI answers name Tribelt', note: 'Target 50%.' },
+      { to: '/goals/citationShare', big: '17%', text: 'of web answers cite tribelt.nl', note: 'Target 50%.' },
+      { to: '/ai-readiness', big: '3½ of 8', text: 'AI readiness checks passed', note: 'See how AI readiness is checked.' },
     ])
   })
 

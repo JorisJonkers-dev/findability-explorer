@@ -135,17 +135,17 @@ func (q *Queries) AddPromptCandidateDecision(ctx context.Context, arg AddPromptC
 
 const addPromptExtraction = `-- name: AddPromptExtraction :execrows
 INSERT INTO prompt_extractions (
-    answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, input_tokens, output_tokens,
-    cost_micros, haiku_tokens, extracted_at
+    answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, left_out, input_tokens,
+    output_tokens, cost_micros, haiku_tokens, extracted_at
 )
 VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8,
-    $9, $10, $11, $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9,
+    $10, $11, $12, $13
 )
 ON CONFLICT (answer_id) DO UPDATE
 SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = excluded.names_tribelt,
     cites_tribelt = excluded.cites_tribelt, correctness = excluded.correctness, wrong_claims = excluded.wrong_claims,
-    input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
+    left_out = excluded.left_out, input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
     output_tokens = prompt_extractions.output_tokens + excluded.output_tokens,
     cost_micros = prompt_extractions.cost_micros + excluded.cost_micros,
     haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at
@@ -160,6 +160,7 @@ type AddPromptExtractionParams struct {
 	CitesTribelt bool
 	Correctness  string
 	WrongClaims  []string
+	LeftOut      []string
 	InputTokens  int64
 	OutputTokens int64
 	CostMicros   int64
@@ -178,6 +179,7 @@ func (q *Queries) AddPromptExtraction(ctx context.Context, arg AddPromptExtracti
 		arg.CitesTribelt,
 		arg.Correctness,
 		arg.WrongClaims,
+		arg.LeftOut,
 		arg.InputTokens,
 		arg.OutputTokens,
 		arg.CostMicros,
@@ -533,7 +535,8 @@ SELECT a.id, a.prompt_id, a.family, a.kind, a.scope, a.language, a.prompt_text, 
     (x.answer_id IS NOT NULL)::boolean AS extracted, coalesce(x.failed, false)::boolean AS extraction_failed,
     coalesce(x.addresses, '{}')::text [] AS addresses, coalesce(x.names_tribelt, false)::boolean AS names_tribelt,
     coalesce(x.cites_tribelt, false)::boolean AS cites_tribelt, coalesce(x.correctness, '')::text AS correctness,
-    coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
+    coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.left_out, '{}')::text [] AS left_out,
+    coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
     coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros
 FROM prompt_answers AS a
 LEFT JOIN prompt_extractions AS x ON x.answer_id = a.id
@@ -572,6 +575,7 @@ type ListPromptAnswersRow struct {
 	CitesTribelt           bool
 	Correctness            string
 	WrongClaims            []string
+	LeftOut                []string
 	ExtractionInputTokens  int64
 	ExtractionOutputTokens int64
 	ExtractionCostMicros   int64
@@ -613,6 +617,7 @@ func (q *Queries) ListPromptAnswers(ctx context.Context, arg ListPromptAnswersPa
 			&i.CitesTribelt,
 			&i.Correctness,
 			&i.WrongClaims,
+			&i.LeftOut,
 			&i.ExtractionInputTokens,
 			&i.ExtractionOutputTokens,
 			&i.ExtractionCostMicros,
@@ -873,6 +878,130 @@ func (q *Queries) ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRu
 			&i.Status,
 			&i.Failure,
 			&i.Tasks,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptScopes = `-- name: ListPromptScopes :many
+SELECT id, language, coalesce(region, '')::text AS region, name
+FROM prompt_scopes
+ORDER BY name
+`
+
+type ListPromptScopesRow struct {
+	ID       string
+	Language string
+	Region   string
+	Name     string
+}
+
+// Every scope a question can be asked in, by name.
+func (q *Queries) ListPromptScopes(ctx context.Context) ([]ListPromptScopesRow, error) {
+	rows, err := q.db.Query(ctx, listPromptScopes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPromptScopesRow{}
+	for rows.Next() {
+		var i ListPromptScopesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Language,
+			&i.Region,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptSetQuestions = `-- name: ListPromptSetQuestions :many
+SELECT q.version, q.prompt_id, q.family, q.intent, q.text, coalesce(q.english, '')::text AS english,
+    s.id AS scope_id, s.language, coalesce(s.region, '')::text AS region, s.name AS scope_name
+FROM prompt_set_questions q
+JOIN prompt_scopes s ON s.id = q.scope_id
+ORDER BY q.version DESC, q.position
+`
+
+type ListPromptSetQuestionsRow struct {
+	Version   int64
+	PromptID  string
+	Family    string
+	Intent    string
+	Text      string
+	English   string
+	ScopeID   string
+	Language  string
+	Region    string
+	ScopeName string
+}
+
+// Every question of every published set with its scope, the newest set first, each set in order.
+func (q *Queries) ListPromptSetQuestions(ctx context.Context) ([]ListPromptSetQuestionsRow, error) {
+	rows, err := q.db.Query(ctx, listPromptSetQuestions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPromptSetQuestionsRow{}
+	for rows.Next() {
+		var i ListPromptSetQuestionsRow
+		if err := rows.Scan(
+			&i.Version,
+			&i.PromptID,
+			&i.Family,
+			&i.Intent,
+			&i.Text,
+			&i.English,
+			&i.ScopeID,
+			&i.Language,
+			&i.Region,
+			&i.ScopeName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptSets = `-- name: ListPromptSets :many
+SELECT version, published_at, published_by, note
+FROM prompt_sets
+ORDER BY version DESC
+`
+
+// Every published Prompt set, newest first.
+func (q *Queries) ListPromptSets(ctx context.Context) ([]PromptSet, error) {
+	rows, err := q.db.Query(ctx, listPromptSets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptSet{}
+	for rows.Next() {
+		var i PromptSet
+		if err := rows.Scan(
+			&i.Version,
+			&i.PublishedAt,
+			&i.PublishedBy,
+			&i.Note,
 		); err != nil {
 			return nil, err
 		}

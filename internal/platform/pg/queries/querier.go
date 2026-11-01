@@ -35,6 +35,7 @@ type Querier interface {
 	// Takes over the running run whose holder was last heard of before stale_before.
 	AdoptStalePromptRun(ctx context.Context, arg AdoptStalePromptRunParams) ([]uuid.UUID, error)
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
+	AnalysisStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	// Every phrase a finished scan of a company found. Whether the map holds it is the review's to
 	// say, in the phrase's own language: scans made before that rule stored in_map through a term in
 	// another language.
@@ -115,6 +116,12 @@ type Querier interface {
 	ListPromptCompanyChecks(ctx context.Context) ([]PromptCompanyCheck, error)
 	ListPromptRunModels(ctx context.Context, ids []uuid.UUID) ([]ListPromptRunModelsRow, error)
 	ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRunsRow, error)
+	// Every scope a question can be asked in, by name.
+	ListPromptScopes(ctx context.Context) ([]ListPromptScopesRow, error)
+	// Every question of every published set with its scope, the newest set first, each set in order.
+	ListPromptSetQuestions(ctx context.Context) ([]ListPromptSetQuestionsRow, error)
+	// Every published Prompt set, newest first.
+	ListPromptSets(ctx context.Context) ([]PromptSet, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
 	ListTermVerdicts(ctx context.Context) ([]TermVerdict, error)
 	// The schedule's next due time, locked until the transaction ends; no row before any was saved.
@@ -137,6 +144,9 @@ type Querier interface {
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
 	// Runs a finished run again, held by owner, unless any run is running: the run lock.
 	ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error)
+	// Asks the running scans a stop picks to stop, as StopQueuedAnalyses picks them; the first request
+	// stays.
+	RequestAnalysesStop(ctx context.Context, arg RequestAnalysesStopParams) ([]uuid.UUID, error)
 	// An administrator asks a running run to stop; the instance running it reads this at its heartbeat.
 	RequestPromptRunStop(ctx context.Context, arg RequestPromptRunStopParams) (int64, error)
 	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
@@ -151,6 +161,9 @@ type Querier interface {
 	SetPlanTarget(ctx context.Context, arg SetPlanTargetParams) error
 	// Records how many of the pages a scan read its sitemaps list, once the crawl is done.
 	SetSitemapCoverage(ctx context.Context, arg SetSitemapCoverageParams) (int64, error)
+	// Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,
+	// and only the re-scans when rescan_only is set.
+	StopQueuedAnalyses(ctx context.Context, arg StopQueuedAnalysesParams) ([]uuid.UUID, error)
 	TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error)
 	TickPlanImprovement(ctx context.Context, arg TickPlanImprovementParams) error
 	// How many scans the language model answered for, and the tokens in and out one of them used on average.

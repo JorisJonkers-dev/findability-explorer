@@ -27,10 +27,14 @@ type repo struct {
 	failedRun string
 	first     map[domain.PhraseKey]int
 	raw       map[uuid.UUID]domain.RawFiles
+	// stops are the scans a stop was asked of; with stopAt above 0, a scan that read that many
+	// pages reads as asked to stop too, as when another instance asks it.
+	stops  map[uuid.UUID]bool
+	stopAt int
 }
 
 func newRepo(failOn ...string) *repo {
-	r := &repo{analyses: map[uuid.UUID]*domain.Analysis{}, failOn: map[string]bool{}, raw: map[uuid.UUID]domain.RawFiles{}}
+	r := &repo{analyses: map[uuid.UUID]*domain.Analysis{}, failOn: map[string]bool{}, raw: map[uuid.UUID]domain.RawFiles{}, stops: map[uuid.UUID]bool{}}
 	for _, f := range failOn {
 		r.failOn[f] = true
 	}

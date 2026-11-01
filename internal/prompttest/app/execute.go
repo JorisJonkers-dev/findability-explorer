@@ -133,8 +133,12 @@ func (s *Service) resume(ctx context.Context, run domain.Run, r *redo) (*executi
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("the run's answers: %w", err)
 	}
-	// A run of an earlier prompt set asks the questions its answers kept.
-	set := domain.QuestionsOf(run, done)
+	sets, err := s.promptSets(ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// A run asks the questions of the version it started on.
+	set := domain.QuestionsOf(run, sets, done)
 	answered := map[domain.TaskKey]bool{}
 	var unread []domain.Answer
 	for _, a := range done {

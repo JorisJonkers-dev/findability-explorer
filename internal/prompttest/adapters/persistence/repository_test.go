@@ -12,6 +12,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 func repository(t *testing.T) *persistence.Repository {
@@ -154,7 +155,7 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if err := repo.CreateRun(ctx, r, "a", at); err != nil {
 		t.Fatal(err)
 	}
-	prompt := domain.CurrentPromptSet().Prompts[0]
+	prompt := domaintest.Version2().PromptSet().Prompts[0]
 	read := domain.Answer{
 		ID: uuid.New(), RunID: r.ID, Prompt: prompt, PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeWeb,
 		Reply: domain.Reply{Text: "Twentebelt and Ashworth.\x00", Citations: []string{"https://twentebelt.com"}, InputTokens: 10, OutputTokens: 20, Cost: 1500},
@@ -163,6 +164,7 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 			Companies:    []domain.Company{{Name: "Twentebelt", CompetitorID: "twentebelt", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
 			Addresses:    []string{"https://twentebelt.com"},
 			NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."},
+			LeftOut:     []string{"Tribelt makes eyelink belts to measure.", "Tribelt is in Haaksbergen."},
 			InputTokens: 5, OutputTokens: 6, Cost: 200,
 		},
 	}
@@ -184,6 +186,9 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	}
 	// A failed reading is replaced by the next, and what both used counts.
 	again := domain.Extraction{Companies: []domain.Company{{Name: "Twentebelt", CompetitorID: "twentebelt", Position: 1}}, InputTokens: 4, OutputTokens: 5, Cost: 3, HaikuTokens: 9}
+	for range 12 {
+		again.LeftOut = append(again.LeftOut, "Tribelt makes eyelink belts to measure.")
+	}
 	if err := repo.SetExtraction(ctx, unread.ID, again, at); err != nil {
 		t.Fatal(err)
 	}
@@ -207,10 +212,11 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	got := answers[0]
 	if got.Text != "Twentebelt and Ashworth." || got.Prompt != prompt || got.Cost != 1500 || !slices.Equal(got.Citations, read.Citations) ||
 		got.Extraction == nil || !slices.Equal(got.Extraction.Companies, read.Extraction.Companies) || got.Extraction.Correctness != domain.CorrectnessWrong ||
-		!slices.Equal(got.Extraction.WrongClaims, read.Extraction.WrongClaims) || got.Extraction.Cost != 200 {
+		!slices.Equal(got.Extraction.WrongClaims, read.Extraction.WrongClaims) || !slices.Equal(got.Extraction.LeftOut, read.Extraction.LeftOut) ||
+		got.Extraction.Cost != 200 {
 		t.Errorf("answer = %+v, extraction %+v", got, got.Extraction)
 	}
-	if x := answers[1].Extraction; x == nil || x.Failed || len(x.Companies) != 1 || x.InputTokens != 5 || x.OutputTokens != 5 || x.Cost != 10 ||
+	if x := answers[1].Extraction; x == nil || x.Failed || len(x.Companies) != 1 || len(x.LeftOut) != 10 || x.InputTokens != 5 || x.OutputTokens != 5 || x.Cost != 10 ||
 		answers[2].Failure != "Rate limited." || answers[2].Extraction != nil {
 		t.Errorf("read again %+v, failed %+v", answers[1].Extraction, answers[2])
 	}
@@ -270,7 +276,7 @@ func TestAFinishedRunIsAskedAgainUnderTheLock(t *testing.T) {
 	if err := repo.ReopenRun(ctx, r.ID, "a", at); !errors.Is(err, domain.ErrRunActive) {
 		t.Fatalf("reopening a running run = %v", err)
 	}
-	prompt := domain.CurrentPromptSet().Prompts[0]
+	prompt := domaintest.Version2().PromptSet().Prompts[0]
 	failed := domain.Answer{
 		ID: uuid.New(), RunID: r.ID, Prompt: prompt, PromptSetVersion: 2, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeWeb,
 		Reply: domain.Reply{InputTokens: 10, Cost: 300}, Failure: "Rate limited.", At: at,

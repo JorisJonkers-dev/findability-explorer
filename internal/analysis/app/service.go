@@ -64,6 +64,7 @@ type Service struct {
 	limits    Limits
 	queue     *queue
 	check     readinessCheck
+	runs      runs
 }
 
 // New returns a Service. matchers names the matcher each analysis uses when it runs.
@@ -396,6 +397,12 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if a.Status != domain.StatusQueued {
 		return nil
 	}
+	// run ends when an administrator stops the scan here; the site and the language model are
+	// asked under it, while the records are written under ctx, so a stop is still recorded.
+	run, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	s.runs.add(id, cancel)
+	defer s.runs.drop(id)
 	if err := s.repo.MarkRunning(ctx, id); err != nil {
 		return fmt.Errorf("mark running: %w", err)
 	}
@@ -403,28 +410,32 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return s.fail(ctx, id, err.Error())
 	}
+	return s.scan(ctx, run, id, target, a.MaxPages)
+}
+
+// scan reads the site's readiness and pages under run and records what it finds under ctx. A
+// stop is looked for after each step and between pages; the scan then ends, keeping what it
+// recorded.
+func (s *Service) scan(ctx, run context.Context, id uuid.UUID, target domain.Target, maxPages int) error {
 	// The readiness files come first, so a site that turns the page crawl away still shows its
 	// crawler policy. When ctx ends while they are read, the crawl below ends too.
-	files, readErr := s.crawler.Readiness(ctx, target)
+	files, readErr := s.crawler.Readiness(run, target)
 	if readErr == nil {
 		if err := s.repo.SaveReadiness(ctx, id, domain.AssessReadiness(files), domain.RawFilesOf(files)); err != nil {
 			return s.abort(ctx, id, fmt.Errorf("save readiness: %w", err))
 		}
 	}
+	if s.stopped(ctx, run, id) {
+		return s.fail(ctx, id, domain.StoppedByHandReason)
+	}
 	glossary := s.glossary(ctx)
 	lexicon := domain.NewLexicon(glossary)
-	var pages []domain.Page
-	var recordErr error
-	crawlErr := s.crawler.Crawl(ctx, target, a.MaxPages, domain.NewLinkScorer(lexicon), func(p domain.Page) error {
-		if err := s.repo.AddPage(ctx, id, domain.Summarise(p, lexicon)); err != nil {
-			recordErr = fmt.Errorf("add page: %w", err)
-			return recordErr
-		}
-		pages = append(pages, p)
-		return nil
-	})
+	pages, crawlErr, recordErr := s.crawl(ctx, run, id, target, maxPages, lexicon)
 	if recordErr != nil {
 		return s.abort(ctx, id, recordErr)
+	}
+	if s.stopped(ctx, run, id) {
+		return s.fail(ctx, id, domain.StoppedByHandReason)
 	}
 	if len(pages) == 0 {
 		return s.fail(ctx, id, noPages(crawlErr))
@@ -437,7 +448,10 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.SaveFindings(ctx, id, keywords, domain.FindKnownTerms(pages, glossary)); err != nil {
 		return s.abort(ctx, id, fmt.Errorf("save findings: %w", err))
 	}
-	matching, model, eqs, usage := s.match(ctx, pages)
+	matching, model, eqs, usage := s.match(run, pages)
+	if s.stopped(ctx, run, id) {
+		return s.fail(ctx, id, domain.StoppedByHandReason)
+	}
 	if err := s.repo.SaveMatching(ctx, id, matching, model, eqs, usage); err != nil {
 		return s.abort(ctx, id, fmt.Errorf("save matching: %w", err))
 	}
@@ -445,6 +459,24 @@ func (s *Service) Run(ctx context.Context, id uuid.UUID) error {
 		return s.abort(ctx, id, fmt.Errorf("finish analysis: %w", err))
 	}
 	return nil
+}
+
+// crawl reads the site's pages under run and records each under ctx, until a stop is seen. It
+// returns the pages read, why the crawl ended early, and why a page could not be recorded.
+func (s *Service) crawl(ctx, run context.Context, id uuid.UUID, target domain.Target, maxPages int, lexicon domain.Lexicon) (pages []domain.Page, crawlErr, recordErr error) {
+	crawlErr = s.crawler.Crawl(run, target, maxPages, domain.NewLinkScorer(lexicon), func(p domain.Page) error {
+		if err := s.repo.AddPage(ctx, id, domain.Summarise(p, lexicon)); err != nil {
+			recordErr = fmt.Errorf("add page: %w", err)
+			return recordErr
+		}
+		pages = append(pages, p)
+		// A stop asked on any instance is seen between pages.
+		if s.stopped(ctx, run, id) {
+			return errStopped
+		}
+		return nil
+	})
+	return pages, crawlErr, recordErr
 }
 
 // saveCoverage records how many of the pages read the sitemaps list, when the readiness was read.

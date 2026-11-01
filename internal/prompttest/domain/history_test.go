@@ -77,23 +77,6 @@ func TestHistoryLeavesOutARunWithNothingReadAndKeepsTheOrderGiven(t *testing.T) 
 	}
 }
 
-func TestTheVersionsAreListedOldestFirstWithWhatTheyAsk(t *testing.T) {
-	v := domain.Versions()
-	if len(v) != 2 || v[0].Number != 1 || v[1].Number != domain.PromptSetVersion {
-		t.Fatalf("versions = %+v", v)
-	}
-	if !v[0].PublishedAt.Equal(time.Date(2026, 10, 26, 15, 4, 51, 0, time.UTC)) || !v[1].PublishedAt.Equal(time.Date(2026, 10, 27, 6, 35, 33, 0, time.UTC)) {
-		t.Errorf("published %v and %v", v[0].PublishedAt, v[1].PublishedAt)
-	}
-	if v[0].Questions != 90 || v[1].Questions != len(domain.CurrentPromptSet().Prompts) || v[1].Questions != 20 {
-		t.Errorf("questions %d and %d", v[0].Questions, v[1].Questions)
-	}
-	if v[0].Note != "A supplier, an application, and a problem question for each belt family, in six scopes." ||
-		v[1].Note != "Kept the application question a buyer most often asks, in four scopes." {
-		t.Errorf("notes %q and %q", v[0].Note, v[1].Note)
-	}
-}
-
 func TestTheCommonestFailureIsTheReasonMostFailedResponsesGive(t *testing.T) {
 	answers := []domain.Answer{
 		{Failure: "The model is rate limited."},

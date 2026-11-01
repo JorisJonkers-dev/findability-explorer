@@ -131,7 +131,7 @@ function pick(r: AiReadinessRow): void {
 </script>
 
 <template>
-  <PageView section="ai-search" eyebrow="02 AI search, AI readiness" :title="title" :back="{ to: '/ai-search', label: 'Back to AI search' }">
+  <PageView section="ai-readiness" :title="title">
     <template #lede>
       <p class="m-0 max-w-[62ch] text-base text-ink-2 text-pretty sm:text-lg stage:max-w-[2300px] stage:text-[40px]">Each check is something a website can do to help search engines and AI assistants read it. The newest scan checked the sites of Tribelt and its competitors.</p>
     </template>

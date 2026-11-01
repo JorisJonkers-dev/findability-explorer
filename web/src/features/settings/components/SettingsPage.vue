@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
-import SettingsShell from '../../shell/components/SettingsShell.vue'
+import ManageLayout from '../../shell/components/ManageLayout.vue'
 import { useLlmSettings } from '../composables/useLlmSettings'
 import { FORBIDDEN_MESSAGE } from '../domain/problems'
 import AddCredentialForm from './AddCredentialForm.vue'
@@ -19,13 +19,11 @@ function removed(): void {
 </script>
 
 <template>
-  <SettingsShell title="Language models">
-    <template #lead>
-      <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-        The model that matches a scanned website's products to Tribelt's belt families. API keys are checked with
-        their provider, stored sealed, and never shown again.
-      </p>
-    </template>
+  <ManageLayout
+    title="Keys and spending"
+    purpose="The API keys, what they may spend, and the model that matches a scanned website's products to Tribelt's belt families."
+  >
+    <p class="m-0 max-w-[62ch] text-ink-2">API keys are checked with their provider, stored sealed, and never shown again.</p>
 
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
       <p class="m-0 text-xl font-semibold">{{ FORBIDDEN_MESSAGE }}</p>
@@ -53,5 +51,5 @@ function removed(): void {
         <EventList :events="settings.events" />
       </div>
     </template>
-  </SettingsShell>
+  </ManageLayout>
 </template>

@@ -137,12 +137,20 @@ type ListPromptAnswersRes interface {
 	listPromptAnswersRes()
 }
 
+type ListPromptSetsRes interface {
+	listPromptSetsRes()
+}
+
 type ListTermCandidatesRes interface {
 	listTermCandidatesRes()
 }
 
 type RejectTermCandidateRes interface {
 	rejectTermCandidateRes()
+}
+
+type RemoveQueuedAnalysesRes interface {
+	removeQueuedAnalysesRes()
 }
 
 type RereadPromptRunRes interface {
@@ -197,8 +205,20 @@ type StartTermReviewRes interface {
 	startTermReviewRes()
 }
 
+type StopAnalysisRes interface {
+	stopAnalysisRes()
+}
+
 type StopPromptRunRes interface {
 	stopPromptRunRes()
+}
+
+type StopReadinessCheckRes interface {
+	stopReadinessCheckRes()
+}
+
+type StopRescanRes interface {
+	stopRescanRes()
 }
 
 type TestLlmCredentialRes interface {

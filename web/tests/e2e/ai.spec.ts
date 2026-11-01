@@ -1,9 +1,9 @@
 import { expect, expectAccessible, test } from './fixtures'
 
 const VIEWS = [
-  { path: '/ai-search/readiness', title: 'AI readiness', heading: /./ },
-  { path: '/ai-search/answers', title: 'Every answer', heading: /./ },
-  { path: '/settings/prompt-test', title: 'Prompt test settings', heading: 'Prompt test' },
+  { path: '/ai-readiness', title: 'AI readiness', heading: /./ },
+  { path: '/ai-responses/all', title: 'Every response', heading: /./ },
+  { path: '/manage/prompt-test', title: 'Prompt test', heading: 'Prompt test' },
 ] as const
 
 for (const view of VIEWS) {
@@ -16,7 +16,7 @@ for (const view of VIEWS) {
 }
 
 test('the AI readiness table pins Tribelt and the mirror on top', async ({ page }) => {
-  await page.goto('/ai-search/readiness')
+  await page.goto('/ai-readiness')
   const baseline = page.getByRole('rowgroup', { name: 'Tribelt today, and the target' })
   await expect(baseline.getByRole('rowheader')).toHaveText(['Tribelt B.V.', 'Mirror of tribelt.nl'])
 })
@@ -34,14 +34,14 @@ test.describe('at phone width', () => {
   })
 })
 
-test('the AI search page shows the key figures and who the answers name, and leads on to its pages', async ({ page }) => {
-  await page.goto('/ai-search')
+test('the AI responses page shows the key figures and who the answers name, and leads on to its pages', async ({ page }) => {
+  await page.goto('/ai-responses')
   await expect(page.getByRole('region', { name: 'Key figures' }).getByRole('link')).toHaveCount(3)
   await expect(page.getByRole('region', { name: 'Who the answers name' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'How often the answers name Tribelt' })).toBeVisible()
   await expectAccessible(page)
   await page.getByRole('link', { name: /^AI readiness by site/ }).click()
-  await expect(page).toHaveURL('/ai-search/readiness')
+  await expect(page).toHaveURL('/ai-readiness')
 })
 
 const RUN = '9d8e7f6a-5b4c-4d3e-8f2a-1b0c9d8e7f6a'
@@ -64,7 +64,7 @@ const answer = (mode: 'knowledge' | 'web', id: string, failed: boolean) => ({
     : {
         extraction: {
           failed: false, companies: [{ name: 'Tribelt', competitorId: 'tribelt', position: 1 }], addresses: ['https://www.tribelt.nl/'],
-          namesTribelt: true, citesTribelt: true, wrongClaims: [], costUsd: 0.0002,
+          namesTribelt: true, citesTribelt: true, wrongClaims: [], leftOut: [], costUsd: 0.0002,
         },
       }),
 })
@@ -91,7 +91,7 @@ test('the Prompt test grid opens an answer and keeps its filters in the address'
   await page.route(`**/api/v1/prompt-runs/${RUN}/answers**`, (route) =>
     route.fulfill({ json: { run, items: [answer('web', '00000000-0000-4000-8000-000000000001', false), answer('knowledge', '00000000-0000-4000-8000-000000000002', true)] } }),
   )
-  await page.goto('/ai-search/answers')
+  await page.goto('/ai-responses/all')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tribelt is the company AI responses list most often.')
   await page.getByRole('button', { name: /OpenAI, with web search, .*: Tribelt is named first\./ }).click()
   await expect(page).toHaveURL(/answer=/)
@@ -114,7 +114,7 @@ test('the Prompt test grid opens an answer and keeps its filters in the address'
 })
 
 test("the AI readiness page shows a site's robots.txt when it is picked", async ({ page }) => {
-  await page.goto('/ai-search/readiness')
+  await page.goto('/ai-readiness')
   await expect(page.getByRole('region', { name: /^How many of the \d+ sites pass each check$/ })).toBeVisible()
   const sites = page.getByRole('region', { name: 'Every site, every column' })
   await sites.getByRole('rowgroup', { name: 'Competitors' }).getByRole('button').first().click()

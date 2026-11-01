@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/google/uuid"
@@ -49,6 +50,13 @@ func (q *queue) pop(ctx context.Context) (id uuid.UUID, ok bool) {
 		case <-q.ready:
 		}
 	}
+}
+
+// remove takes ids off the queue, wherever they wait.
+func (q *queue) remove(ids []uuid.UUID) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.ids = slices.DeleteFunc(q.ids, func(id uuid.UUID) bool { return slices.Contains(ids, id) })
 }
 
 func (q *queue) wake() {

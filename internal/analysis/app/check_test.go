@@ -12,13 +12,18 @@ import (
 )
 
 // siteCrawler reads robots.txt as found on every site but down.test, which cannot be read, and
-// waits for release first when it is set.
+// waits for release first when it is set, telling reading that it reads when there is room.
 type siteCrawler struct {
 	crawler
 	release chan struct{}
+	reading chan struct{}
 }
 
 func (c siteCrawler) Readiness(_ context.Context, t domain.Target) (domain.ReadinessFiles, error) {
+	select {
+	case c.reading <- struct{}{}:
+	default: // nobody listens, or has heard already
+	}
 	if c.release != nil {
 		<-c.release
 	}

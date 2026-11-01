@@ -13,7 +13,7 @@ export const ROUTINE: readonly Step[] = [
     when: 'Monday morning, 15 minutes',
     what: 'On a weekly schedule the Prompt test asks the buyer questions again early every Monday.',
     look: 'Did more answers name Tribelt than last week? Which questions still leave Tribelt out?',
-    link: { label: 'Open AI search', path: '/ai-search' },
+    link: { label: 'Open AI responses', path: '/ai-responses' },
   },
   {
     number: '2',

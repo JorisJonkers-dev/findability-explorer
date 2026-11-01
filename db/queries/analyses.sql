@@ -266,3 +266,27 @@ FROM analyses AS a
 JOIN analysis_readiness AS r ON r.analysis_id = a.id
 WHERE a.competitor_id IS NOT NULL
 ORDER BY a.competitor_id, a.created_at DESC, a.id;
+
+-- name: StopQueuedAnalyses :many
+-- Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,
+-- and only the re-scans when rescan_only is set.
+UPDATE analyses
+SET status = 'failed', failure = sqlc.arg(failure), finished_at = sqlc.arg(stopped_at),
+    stop_requested_at = sqlc.arg(stopped_at)
+WHERE status = 'queued'
+    AND (sqlc.arg(any_id)::boolean OR id = sqlc.arg(id)::uuid)
+    AND (NOT sqlc.arg(rescan_only)::boolean OR rescan)
+RETURNING id;
+
+-- name: RequestAnalysesStop :many
+-- Asks the running scans a stop picks to stop, as StopQueuedAnalyses picks them; the first request
+-- stays.
+UPDATE analyses
+SET stop_requested_at = coalesce(stop_requested_at, sqlc.arg(stopped_at))
+WHERE status = 'running'
+    AND (sqlc.arg(any_id)::boolean OR id = sqlc.arg(id)::uuid)
+    AND (NOT sqlc.arg(rescan_only)::boolean OR rescan)
+RETURNING id;
+
+-- name: AnalysisStopRequested :one
+SELECT EXISTS (SELECT 1 FROM analyses WHERE id = $1 AND stop_requested_at IS NOT NULL);

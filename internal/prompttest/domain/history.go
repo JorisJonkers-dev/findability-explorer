@@ -6,27 +6,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// Version is one published Prompt set: when it was published, how many questions it asks, and what
-// it changed. The Prompt sets are in code until they move to the database.
+// Version is one published Prompt set as the history shows it: when it was published, how many
+// questions it asks, and what it changed (VersionsOf).
 type Version struct {
 	Number      int
 	PublishedAt time.Time
 	Questions   int
 	Note        string
-}
-
-// Versions lists the published Prompt sets, oldest first.
-func Versions() []Version {
-	return []Version{
-		{
-			Number: 1, PublishedAt: time.Date(2026, 10, 26, 15, 4, 51, 0, time.UTC), Questions: 90,
-			Note: "A supplier, an application, and a problem question for each belt family, in six scopes.",
-		},
-		{
-			Number: PromptSetVersion, PublishedAt: time.Date(2026, 10, 27, 6, 35, 33, 0, time.UTC), Questions: len(CurrentPromptSet().Prompts),
-			Note: "Kept the application question a buyer most often asks, in four scopes.",
-		},
-	}
 }
 
 // RunFigureInput is one run with how far it got and its measures.

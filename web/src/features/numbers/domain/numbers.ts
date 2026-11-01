@@ -10,7 +10,7 @@ export function oxford(items: readonly string[]): string {
 
 /** What the page knows about each number to watch. The server decides which numbers there are and their targets. */
 type Definition = {
-  /** The address, `/numbers/:slug`: the standing measure's own name, or the target's when no standing measure matches (Twente). */
+  /** The address, `/goals/:slug`: the standing measure's own name, or the target's when no standing measure matches (Twente). */
   slug: string
   label: string
   /** What the number counts, as a sentence. */
@@ -75,7 +75,7 @@ export function targetOfSlug(slug: string): PlanTarget | undefined {
 
 /** The address of a number's page. */
 export function pathOfTarget(target: PlanTarget): string {
-  return `/numbers/${DEFINITIONS[target].slug}`
+  return `/goals/${DEFINITIONS[target].slug}`
 }
 
 /** What the page has to work with: the plan, the standings and how many readiness checks there are. */

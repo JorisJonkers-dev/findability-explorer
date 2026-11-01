@@ -757,8 +757,11 @@ type AnalysisSummary struct {
 	// True when the analysis failed because its site turned automated readers away (bot protection)
 	// although people can open it; only then is it present. The scan still records the site's AI
 	// readiness.
-	Blocked     OptBool             `json:"blocked"`
-	AiReadiness OptAiReadinessBrief `json:"aiReadiness"`
+	Blocked OptBool `json:"blocked"`
+	// True when an administrator stopped the scan, or took it off the queue; only then is it present. Its
+	// status is failed, and it keeps the pages it read.
+	StoppedByHand OptBool             `json:"stoppedByHand"`
+	AiReadiness   OptAiReadinessBrief `json:"aiReadiness"`
 	// The most pages the crawl fetches.
 	MaxPages int32 `json:"maxPages"`
 	// How many pages were fetched so far.
@@ -807,6 +810,11 @@ func (s *AnalysisSummary) GetFailure() OptString {
 // GetBlocked returns the value of Blocked.
 func (s *AnalysisSummary) GetBlocked() OptBool {
 	return s.Blocked
+}
+
+// GetStoppedByHand returns the value of StoppedByHand.
+func (s *AnalysisSummary) GetStoppedByHand() OptBool {
+	return s.StoppedByHand
 }
 
 // GetAiReadiness returns the value of AiReadiness.
@@ -872,6 +880,11 @@ func (s *AnalysisSummary) SetFailure(val OptString) {
 // SetBlocked sets the value of Blocked.
 func (s *AnalysisSummary) SetBlocked(val OptBool) {
 	s.Blocked = val
+}
+
+// SetStoppedByHand sets the value of StoppedByHand.
+func (s *AnalysisSummary) SetStoppedByHand(val OptBool) {
+	s.StoppedByHand = val
 }
 
 // SetAiReadiness sets the value of AiReadiness.
@@ -7877,6 +7890,7 @@ func (*ProblemStatusCode) getPromptTestResultsRes() {}
 func (*ProblemStatusCode) getStandingsRes()         {}
 func (*ProblemStatusCode) listAnalysesRes()         {}
 func (*ProblemStatusCode) listCompetitorsRes()      {}
+func (*ProblemStatusCode) listPromptSetsRes()       {}
 func (*ProblemStatusCode) searchTermsRes()          {}
 
 // One belt family against the field.
@@ -9026,9 +9040,13 @@ type PromptExtraction struct {
 	// True when it cites a Tribelt address.
 	CitesTribelt bool                 `json:"citesTribelt"`
 	Correctness  OptPromptCorrectness `json:"correctness"`
-	// Each claim about Tribelt the fact sheet contradicts, quoted.
+	// Each claim about Tribelt the fact sheet contradicts, quoted: what the response got wrong about
+	// Tribelt, and the only claims that become fact sheet corrections.
 	WrongClaims []string `json:"wrongClaims"`
-	CostUsd     Usd      `json:"costUsd"`
+	// Each fact from the fact sheet a response naming Tribelt does not mention; empty when it does not
+	// name Tribelt, and for a response read before wrong claims and facts left out were told apart.
+	LeftOut []string `json:"leftOut"`
+	CostUsd Usd      `json:"costUsd"`
 }
 
 // GetFailed returns the value of Failed.
@@ -9064,6 +9082,11 @@ func (s *PromptExtraction) GetCorrectness() OptPromptCorrectness {
 // GetWrongClaims returns the value of WrongClaims.
 func (s *PromptExtraction) GetWrongClaims() []string {
 	return s.WrongClaims
+}
+
+// GetLeftOut returns the value of LeftOut.
+func (s *PromptExtraction) GetLeftOut() []string {
+	return s.LeftOut
 }
 
 // GetCostUsd returns the value of CostUsd.
@@ -9104,6 +9127,11 @@ func (s *PromptExtraction) SetCorrectness(val OptPromptCorrectness) {
 // SetWrongClaims sets the value of WrongClaims.
 func (s *PromptExtraction) SetWrongClaims(val []string) {
 	s.WrongClaims = val
+}
+
+// SetLeftOut sets the value of LeftOut.
+func (s *PromptExtraction) SetLeftOut(val []string) {
+	s.LeftOut = val
 }
 
 // SetCostUsd sets the value of CostUsd.
@@ -10600,6 +10628,170 @@ func (s *PromptSet) SetPrompts(val []PromptQuestion) {
 	s.Prompts = val
 }
 
+// One question of a published Prompt set.
+// Ref: #/components/schemas/PromptSetQuestion
+type PromptSetQuestion struct {
+	// Its id, which the responses to it record.
+	ID     string           `json:"id"`
+	Family PromptFamily     `json:"family"`
+	Intent IntentTier       `json:"intent"`
+	Scope  PromptSetScopeId `json:"scope"`
+	// Its scope's name.
+	ScopeName string `json:"scopeName"`
+	// The language it is asked in, its scope's.
+	Language string `json:"language"`
+	// The region it asks about, its scope's; absent for none.
+	Region OptString `json:"region"`
+	// The question, as it is asked.
+	Text string `json:"text"`
+	// Its English translation; absent when it is in English or none is known.
+	English OptString `json:"english"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptSetQuestion) GetID() string {
+	return s.ID
+}
+
+// GetFamily returns the value of Family.
+func (s *PromptSetQuestion) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetIntent returns the value of Intent.
+func (s *PromptSetQuestion) GetIntent() IntentTier {
+	return s.Intent
+}
+
+// GetScope returns the value of Scope.
+func (s *PromptSetQuestion) GetScope() PromptSetScopeId {
+	return s.Scope
+}
+
+// GetScopeName returns the value of ScopeName.
+func (s *PromptSetQuestion) GetScopeName() string {
+	return s.ScopeName
+}
+
+// GetLanguage returns the value of Language.
+func (s *PromptSetQuestion) GetLanguage() string {
+	return s.Language
+}
+
+// GetRegion returns the value of Region.
+func (s *PromptSetQuestion) GetRegion() OptString {
+	return s.Region
+}
+
+// GetText returns the value of Text.
+func (s *PromptSetQuestion) GetText() string {
+	return s.Text
+}
+
+// GetEnglish returns the value of English.
+func (s *PromptSetQuestion) GetEnglish() OptString {
+	return s.English
+}
+
+// SetID sets the value of ID.
+func (s *PromptSetQuestion) SetID(val string) {
+	s.ID = val
+}
+
+// SetFamily sets the value of Family.
+func (s *PromptSetQuestion) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetIntent sets the value of Intent.
+func (s *PromptSetQuestion) SetIntent(val IntentTier) {
+	s.Intent = val
+}
+
+// SetScope sets the value of Scope.
+func (s *PromptSetQuestion) SetScope(val PromptSetScopeId) {
+	s.Scope = val
+}
+
+// SetScopeName sets the value of ScopeName.
+func (s *PromptSetQuestion) SetScopeName(val string) {
+	s.ScopeName = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *PromptSetQuestion) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetRegion sets the value of Region.
+func (s *PromptSetQuestion) SetRegion(val OptString) {
+	s.Region = val
+}
+
+// SetText sets the value of Text.
+func (s *PromptSetQuestion) SetText(val string) {
+	s.Text = val
+}
+
+// SetEnglish sets the value of English.
+func (s *PromptSetQuestion) SetEnglish(val OptString) {
+	s.English = val
+}
+
+// A scope - a language a question is asked in, with or without a region.
+// Ref: #/components/schemas/PromptSetScope
+type PromptSetScope struct {
+	ID PromptSetScopeId `json:"id"`
+	// Its name.
+	Name string `json:"name"`
+	// The language it asks in.
+	Language string `json:"language"`
+	// The region it asks about; absent for none.
+	Region OptString `json:"region"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptSetScope) GetID() PromptSetScopeId {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *PromptSetScope) GetName() string {
+	return s.Name
+}
+
+// GetLanguage returns the value of Language.
+func (s *PromptSetScope) GetLanguage() string {
+	return s.Language
+}
+
+// GetRegion returns the value of Region.
+func (s *PromptSetScope) GetRegion() OptString {
+	return s.Region
+}
+
+// SetID sets the value of ID.
+func (s *PromptSetScope) SetID(val PromptSetScopeId) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *PromptSetScope) SetName(val string) {
+	s.Name = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *PromptSetScope) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetRegion sets the value of Region.
+func (s *PromptSetScope) SetRegion(val OptString) {
+	s.Region = val
+}
+
+type PromptSetScopeId string
+
 // One published Prompt set.
 // Ref: #/components/schemas/PromptSetVersionInfo
 type PromptSetVersionInfo struct {
@@ -10652,6 +10844,37 @@ func (s *PromptSetVersionInfo) SetQuestions(val int32) {
 func (s *PromptSetVersionInfo) SetNote(val string) {
 	s.Note = val
 }
+
+// The published Prompt sets, newest first, and every scope.
+// Ref: #/components/schemas/PromptSets
+type PromptSets struct {
+	// Every published version, newest first.
+	Versions []PublishedPromptSet `json:"versions"`
+	// Every scope a question can be asked in, by name.
+	Scopes []PromptSetScope `json:"scopes"`
+}
+
+// GetVersions returns the value of Versions.
+func (s *PromptSets) GetVersions() []PublishedPromptSet {
+	return s.Versions
+}
+
+// GetScopes returns the value of Scopes.
+func (s *PromptSets) GetScopes() []PromptSetScope {
+	return s.Scopes
+}
+
+// SetVersions sets the value of Versions.
+func (s *PromptSets) SetVersions(val []PublishedPromptSet) {
+	s.Versions = val
+}
+
+// SetScopes sets the value of Scopes.
+func (s *PromptSets) SetScopes(val []PromptSetScope) {
+	s.Scopes = val
+}
+
+func (*PromptSets) listPromptSetsRes() {}
 
 // The Prompt test's figures per run, with the Prompt set versions they asked.
 // Ref: #/components/schemas/PromptTestHistory
@@ -11102,6 +11325,59 @@ func (s *PromptWrongClaim) SetClaim(val string) {
 	s.Claim = val
 }
 
+// One published version of the Prompt set, with its questions.
+// Ref: #/components/schemas/PublishedPromptSet
+type PublishedPromptSet struct {
+	// The version.
+	Version int32 `json:"version"`
+	// When it was published.
+	PublishedAt time.Time `json:"publishedAt"`
+	// What it asks, or what it changed.
+	Note string `json:"note"`
+	// Its questions, in order.
+	Questions []PromptSetQuestion `json:"questions"`
+}
+
+// GetVersion returns the value of Version.
+func (s *PublishedPromptSet) GetVersion() int32 {
+	return s.Version
+}
+
+// GetPublishedAt returns the value of PublishedAt.
+func (s *PublishedPromptSet) GetPublishedAt() time.Time {
+	return s.PublishedAt
+}
+
+// GetNote returns the value of Note.
+func (s *PublishedPromptSet) GetNote() string {
+	return s.Note
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PublishedPromptSet) GetQuestions() []PromptSetQuestion {
+	return s.Questions
+}
+
+// SetVersion sets the value of Version.
+func (s *PublishedPromptSet) SetVersion(val int32) {
+	s.Version = val
+}
+
+// SetPublishedAt sets the value of PublishedAt.
+func (s *PublishedPromptSet) SetPublishedAt(val time.Time) {
+	s.PublishedAt = val
+}
+
+// SetNote sets the value of Note.
+func (s *PublishedPromptSet) SetNote(val string) {
+	s.Note = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PublishedPromptSet) SetQuestions(val []PromptSetQuestion) {
+	s.Questions = val
+}
+
 // Whether a site follows one recommendation.
 // Ref: #/components/schemas/ReadinessAdvice
 type ReadinessAdvice struct {
@@ -11360,6 +11636,9 @@ type ReadinessCheckState struct {
 	Failed int32 `json:"failed"`
 	// How many sites it checks.
 	Total int32 `json:"total"`
+	// True when an administrator stopped the check; only then is it present. The sites it checked keep
+	// what it recorded, the others what their scan recorded.
+	Stopped OptBool `json:"stopped"`
 }
 
 // GetRunning returns the value of Running.
@@ -11382,6 +11661,11 @@ func (s *ReadinessCheckState) GetTotal() int32 {
 	return s.Total
 }
 
+// GetStopped returns the value of Stopped.
+func (s *ReadinessCheckState) GetStopped() OptBool {
+	return s.Stopped
+}
+
 // SetRunning sets the value of Running.
 func (s *ReadinessCheckState) SetRunning(val bool) {
 	s.Running = val
@@ -11400,6 +11684,11 @@ func (s *ReadinessCheckState) SetFailed(val int32) {
 // SetTotal sets the value of Total.
 func (s *ReadinessCheckState) SetTotal(val int32) {
 	s.Total = val
+}
+
+// SetStopped sets the value of Stopped.
+func (s *ReadinessCheckState) SetStopped(val OptBool) {
+	s.Stopped = val
 }
 
 func (*ReadinessCheckState) startReadinessCheckRes() {}
@@ -11605,6 +11894,23 @@ func (*RejectTermCandidateNotFound) rejectTermCandidateRes() {}
 type RejectTermCandidateUnauthorized ProblemStatusCode
 
 func (*RejectTermCandidateUnauthorized) rejectTermCandidateRes() {}
+
+type RemoveQueuedAnalysesForbidden ProblemStatusCode
+
+func (*RemoveQueuedAnalysesForbidden) removeQueuedAnalysesRes() {}
+
+// RemoveQueuedAnalysesNoContent is response for RemoveQueuedAnalyses operation.
+type RemoveQueuedAnalysesNoContent struct{}
+
+func (*RemoveQueuedAnalysesNoContent) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesNotFound ProblemStatusCode
+
+func (*RemoveQueuedAnalysesNotFound) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesUnauthorized ProblemStatusCode
+
+func (*RemoveQueuedAnalysesUnauthorized) removeQueuedAnalysesRes() {}
 
 type RereadPromptRunBadRequest ProblemStatusCode
 
@@ -12497,6 +12803,27 @@ type StartTermReviewUnauthorized ProblemStatusCode
 
 func (*StartTermReviewUnauthorized) startTermReviewRes() {}
 
+type StopAnalysisBadRequest ProblemStatusCode
+
+func (*StopAnalysisBadRequest) stopAnalysisRes() {}
+
+type StopAnalysisForbidden ProblemStatusCode
+
+func (*StopAnalysisForbidden) stopAnalysisRes() {}
+
+// StopAnalysisNoContent is response for StopAnalysis operation.
+type StopAnalysisNoContent struct{}
+
+func (*StopAnalysisNoContent) stopAnalysisRes() {}
+
+type StopAnalysisNotFound ProblemStatusCode
+
+func (*StopAnalysisNotFound) stopAnalysisRes() {}
+
+type StopAnalysisUnauthorized ProblemStatusCode
+
+func (*StopAnalysisUnauthorized) stopAnalysisRes() {}
+
 type StopPromptRunBadRequest ProblemStatusCode
 
 func (*StopPromptRunBadRequest) stopPromptRunRes() {}
@@ -12517,6 +12844,40 @@ func (*StopPromptRunNotFound) stopPromptRunRes() {}
 type StopPromptRunUnauthorized ProblemStatusCode
 
 func (*StopPromptRunUnauthorized) stopPromptRunRes() {}
+
+type StopReadinessCheckForbidden ProblemStatusCode
+
+func (*StopReadinessCheckForbidden) stopReadinessCheckRes() {}
+
+// StopReadinessCheckNoContent is response for StopReadinessCheck operation.
+type StopReadinessCheckNoContent struct{}
+
+func (*StopReadinessCheckNoContent) stopReadinessCheckRes() {}
+
+type StopReadinessCheckNotFound ProblemStatusCode
+
+func (*StopReadinessCheckNotFound) stopReadinessCheckRes() {}
+
+type StopReadinessCheckUnauthorized ProblemStatusCode
+
+func (*StopReadinessCheckUnauthorized) stopReadinessCheckRes() {}
+
+type StopRescanForbidden ProblemStatusCode
+
+func (*StopRescanForbidden) stopRescanRes() {}
+
+// StopRescanNoContent is response for StopRescan operation.
+type StopRescanNoContent struct{}
+
+func (*StopRescanNoContent) stopRescanRes() {}
+
+type StopRescanNotFound ProblemStatusCode
+
+func (*StopRescanNotFound) stopRescanRes() {}
+
+type StopRescanUnauthorized ProblemStatusCode
+
+func (*StopRescanUnauthorized) stopRescanRes() {}
 
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term

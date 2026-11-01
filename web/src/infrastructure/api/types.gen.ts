@@ -369,6 +369,10 @@ export type AnalysisSummary = {
      * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. The scan still records the site's AI readiness.
      */
     blocked?: boolean;
+    /**
+     * True when an administrator stopped the scan, or took it off the queue; only then is it present. Its status is failed, and it keeps the pages it read.
+     */
+    stoppedByHand?: boolean;
     aiReadiness?: AiReadinessBrief;
     /**
      * The most pages the crawl fetches.
@@ -2172,6 +2176,10 @@ export type ReadinessCheckState = {
      * How many sites it checks.
      */
     total: number;
+    /**
+     * True when an administrator stopped the check; only then is it present. The sites it checked keep what it recorded, the others what their scan recorded.
+     */
+    stopped?: boolean;
 };
 
 /**
@@ -2566,6 +2574,99 @@ export type PromptTestHistory = {
 };
 
 /**
+ * The published Prompt sets, newest first, and every scope.
+ */
+export type PromptSets = {
+    /**
+     * Every published version, newest first.
+     */
+    versions: Array<PublishedPromptSet>;
+    /**
+     * Every scope a question can be asked in, by name.
+     */
+    scopes: Array<PromptSetScope>;
+};
+
+/**
+ * One published version of the Prompt set, with its questions.
+ */
+export type PublishedPromptSet = {
+    /**
+     * The version.
+     */
+    version: number;
+    /**
+     * When it was published.
+     */
+    publishedAt: string;
+    /**
+     * What it asks, or what it changed.
+     */
+    note: string;
+    /**
+     * Its questions, in order.
+     */
+    questions: Array<PromptSetQuestion>;
+};
+
+/**
+ * One question of a published Prompt set.
+ */
+export type PromptSetQuestion = {
+    /**
+     * Its id, which the responses to it record.
+     */
+    id: string;
+    family: PromptFamily;
+    intent: IntentTier;
+    scope: PromptSetScopeId;
+    /**
+     * Its scope's name.
+     */
+    scopeName: string;
+    /**
+     * The language it is asked in, its scope's.
+     */
+    language: string;
+    /**
+     * The region it asks about, its scope's; absent for none.
+     */
+    region?: string;
+    /**
+     * The question, as it is asked.
+     */
+    text: string;
+    /**
+     * Its English translation; absent when it is in English or none is known.
+     */
+    english?: string;
+};
+
+/**
+ * A scope's id, which the responses to its questions record as their scope.
+ */
+export type PromptSetScopeId = string;
+
+/**
+ * A scope - a language a question is asked in, with or without a region.
+ */
+export type PromptSetScope = {
+    id: PromptSetScopeId;
+    /**
+     * Its name.
+     */
+    name: string;
+    /**
+     * The language it asks in.
+     */
+    language: string;
+    /**
+     * The region it asks about; absent for none.
+     */
+    region?: string;
+};
+
+/**
  * One published Prompt set.
  */
 export type PromptSetVersionInfo = {
@@ -2694,9 +2795,13 @@ export type PromptExtraction = {
     citesTribelt: boolean;
     correctness?: PromptCorrectness;
     /**
-     * Each claim about Tribelt the fact sheet contradicts, quoted.
+     * Each claim about Tribelt the fact sheet contradicts, quoted: what the response got wrong about Tribelt, and the only claims that become fact sheet corrections.
      */
     wrongClaims: Array<string>;
+    /**
+     * Each fact from the fact sheet a response naming Tribelt does not mention; empty when it does not name Tribelt, and for a response read before wrong claims and facts left out were told apart.
+     */
+    leftOut: Array<string>;
     costUsd: Usd;
 };
 
@@ -3993,6 +4098,163 @@ export type StartRescansResponses = {
 
 export type StartRescansResponse = StartRescansResponses[keyof StartRescansResponses];
 
+export type StopRescanData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/rescans/stop';
+};
+
+export type StopRescanErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopRescanError = StopRescanErrors[keyof StopRescanErrors];
+
+export type StopRescanResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopRescanResponse = StopRescanResponses[keyof StopRescanResponses];
+
+export type StopReadinessCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/readiness-checks/stop';
+};
+
+export type StopReadinessCheckErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopReadinessCheckError = StopReadinessCheckErrors[keyof StopReadinessCheckErrors];
+
+export type StopReadinessCheckResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopReadinessCheckResponse = StopReadinessCheckResponses[keyof StopReadinessCheckResponses];
+
+export type RemoveQueuedAnalysesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/analyses/queue';
+};
+
+export type RemoveQueuedAnalysesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RemoveQueuedAnalysesError = RemoveQueuedAnalysesErrors[keyof RemoveQueuedAnalysesErrors];
+
+export type RemoveQueuedAnalysesResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type RemoveQueuedAnalysesResponse = RemoveQueuedAnalysesResponses[keyof RemoveQueuedAnalysesResponses];
+
+export type StopAnalysisData = {
+    body?: never;
+    path: {
+        /**
+         * The scan's id.
+         */
+        analysisId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/analyses/{analysisId}/stop';
+};
+
+export type StopAnalysisErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopAnalysisError = StopAnalysisErrors[keyof StopAnalysisErrors];
+
+export type StopAnalysisResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopAnalysisResponse = StopAnalysisResponses[keyof StopAnalysisResponses];
+
 export type ListTermCandidatesData = {
     body?: never;
     path?: never;
@@ -4448,6 +4710,35 @@ export type GetPromptTestHistoryResponses = {
 };
 
 export type GetPromptTestHistoryResponse = GetPromptTestHistoryResponses[keyof GetPromptTestHistoryResponses];
+
+export type ListPromptSetsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/prompt-test/prompt-sets';
+};
+
+export type ListPromptSetsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListPromptSetsError = ListPromptSetsErrors[keyof ListPromptSetsErrors];
+
+export type ListPromptSetsResponses = {
+    /**
+     * The published Prompt sets and the scopes.
+     */
+    200: PromptSets;
+};
+
+export type ListPromptSetsResponse = ListPromptSetsResponses[keyof ListPromptSetsResponses];
 
 export type ListPromptAnswersData = {
     body?: never;

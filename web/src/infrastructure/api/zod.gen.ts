@@ -1095,6 +1095,7 @@ export const zAnalysisSummary = z.object({
     status: zAnalysisStatus,
     failure: z.string().max(500).optional(),
     blocked: z.boolean().optional(),
+    stoppedByHand: z.boolean().optional(),
     aiReadiness: zAiReadinessBrief.optional(),
     maxPages: z.int().gte(1).lte(100),
     pagesCrawled: z.int().gte(0).lte(100),
@@ -1200,7 +1201,8 @@ export const zReadinessCheckState = z.object({
     running: z.boolean(),
     checked: z.int().gte(0).lte(1000),
     failed: z.int().gte(0).lte(1000),
-    total: z.int().gte(0).lte(1000)
+    total: z.int().gte(0).lte(1000),
+    stopped: z.boolean().optional()
 });
 
 /**
@@ -1537,6 +1539,54 @@ export const zPromptTestResults = z.object({
 });
 
 /**
+ * A scope's id, which the responses to its questions record as their scope.
+ */
+export const zPromptSetScopeId = z.string().max(40).regex(/^[a-z][a-z0-9_-]*$/);
+
+/**
+ * One question of a published Prompt set.
+ */
+export const zPromptSetQuestion = z.object({
+    id: z.string().max(80),
+    family: zPromptFamily,
+    intent: zIntentTier,
+    scope: zPromptSetScopeId,
+    scopeName: z.string().max(100),
+    language: z.string().max(2).regex(/^[a-z]{2}$/),
+    region: z.string().max(100).optional(),
+    text: z.string().max(1000),
+    english: z.string().max(1000).optional()
+});
+
+/**
+ * One published version of the Prompt set, with its questions.
+ */
+export const zPublishedPromptSet = z.object({
+    version: z.int().gte(1).lte(100000),
+    publishedAt: z.iso.datetime({ offset: true }).max(64),
+    note: z.string().max(300),
+    questions: z.array(zPromptSetQuestion).max(1000)
+});
+
+/**
+ * A scope - a language a question is asked in, with or without a region.
+ */
+export const zPromptSetScope = z.object({
+    id: zPromptSetScopeId,
+    name: z.string().max(100),
+    language: z.string().max(2).regex(/^[a-z]{2}$/),
+    region: z.string().max(100).optional()
+});
+
+/**
+ * The published Prompt sets, newest first, and every scope.
+ */
+export const zPromptSets = z.object({
+    versions: z.array(zPublishedPromptSet).max(1000),
+    scopes: z.array(zPromptSetScope).max(200)
+});
+
+/**
  * One published Prompt set.
  */
 export const zPromptSetVersionInfo = z.object({
@@ -1595,6 +1645,7 @@ export const zPromptExtraction = z.object({
     citesTribelt: z.boolean(),
     correctness: zPromptCorrectness.optional(),
     wrongClaims: z.array(z.string().max(500)).max(10),
+    leftOut: z.array(z.string().max(500)).max(10),
     costUsd: zUsd
 });
 
@@ -2090,6 +2141,30 @@ export const zStartRescansBody = zRescanRequest;
  */
 export const zStartRescansResponse = zRescanBatch;
 
+/**
+ * Stopped.
+ */
+export const zStopRescanResponse = z.void();
+
+/**
+ * Stopped.
+ */
+export const zStopReadinessCheckResponse = z.void();
+
+/**
+ * Removed.
+ */
+export const zRemoveQueuedAnalysesResponse = z.void();
+
+export const zStopAnalysisPath = z.object({
+    analysisId: z.uuid().max(36)
+});
+
+/**
+ * Stopped.
+ */
+export const zStopAnalysisResponse = z.void();
+
 export const zListTermCandidatesQuery = z.object({
     status: zTermCandidateStatus.optional()
 });
@@ -2182,6 +2257,11 @@ export const zGetPromptTestResultsResponse = zPromptTestResults;
  * The figures per run.
  */
 export const zGetPromptTestHistoryResponse = zPromptTestHistory;
+
+/**
+ * The published Prompt sets and the scopes.
+ */
+export const zListPromptSetsResponse = zPromptSets;
 
 export const zListPromptAnswersPath = z.object({
     runId: z.uuid().max(36)

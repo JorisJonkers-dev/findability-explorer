@@ -49,6 +49,7 @@ type Analysis struct {
 	MatchingModel   pgtype.Text
 	ScanNumber      pgtype.Int8
 	Rescan          bool
+	StopRequestedAt pgtype.Timestamptz
 }
 
 type AnalysisBotRule struct {
@@ -303,6 +304,7 @@ type PromptExtraction struct {
 	CostMicros   int64
 	ExtractedAt  time.Time
 	HaikuTokens  int64
+	LeftOut      []string
 }
 
 type PromptReviewUsage struct {
@@ -336,6 +338,31 @@ type PromptRunModel struct {
 	Model    string
 	Free     bool
 	Fallback string
+}
+
+type PromptScope struct {
+	ID       string
+	Language string
+	Region   pgtype.Text
+	Name     string
+}
+
+type PromptSet struct {
+	Version     int64
+	PublishedAt time.Time
+	PublishedBy string
+	Note        string
+}
+
+type PromptSetQuestion struct {
+	Version  int64
+	Position int64
+	PromptID string
+	Family   string
+	Intent   string
+	ScopeID  string
+	Text     string
+	English  pgtype.Text
 }
 
 type PromptSetting struct {

@@ -66,8 +66,8 @@ const form = (wrapper: VueWrapper, title: string) => wrapper.get(`form[aria-labe
 
 describe('the Prompt test settings', () => {
   it('shows the spend, the runs, the choices, the fact sheet and the prompt set', async () => {
-    const { wrapper } = await mountApp(server().handle, '/settings/prompt-test')
-    expect(document.title).toBe('Prompt test settings · Findability Explorer')
+    const { wrapper } = await mountApp(server().handle, '/manage/prompt-test')
+    expect(document.title).toBe('Prompt test · Findability Explorer')
     expect(wrapper.text()).toContain('$2.50 of $10.00 spent this month. The next scheduled run starts 1 Nov 2026, 06:00 UTC.')
     expect(wrapper.get('section[aria-labelledby="run-title"] table').text()).toContain('40,000 / 90,000')
     expect(wrapper.get('section[aria-labelledby="run-title"] table').text()).toContain('$0.42')
@@ -84,7 +84,7 @@ describe('the Prompt test settings', () => {
   })
 
   it('shows what a run and a month cost, per provider and against the budget', async () => {
-    const { wrapper } = await mountApp(server().handle, '/settings/prompt-test')
+    const { wrapper } = await mountApp(server().handle, '/manage/prompt-test')
     const prices = wrapper.get('section[aria-labelledby="price-title"]')
     expect(prices.text()).toContain('From what the latest run cost.')
     const rows = prices.findAll('tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
@@ -95,17 +95,17 @@ describe('the Prompt test settings', () => {
 
   it('warns when a month of runs passes the budget, and when the key does not work', async () => {
     const over = settings({ keyWorks: false, cadence: 'weekly', prices: { ...settings().prices, monthUsd: 13.7, runUsd: 3.15, runsPerMonth: 4.33, overBudget: true } })
-    const { wrapper } = await mountApp(server({ 'GET /api/v1/admin/prompt-test': () => json(over) }).handle, '/settings/prompt-test')
+    const { wrapper } = await mountApp(server({ 'GET /api/v1/admin/prompt-test': () => json(over) }).handle, '/manage/prompt-test')
     const alerts = wrapper.findAll('[role="alert"]').map((a) => a.text())
     expect(alerts[0]).toContain('The OpenRouter key does not work, so no Prompt run can start.')
-    expect(wrapper.get('[role="alert"] a').attributes('href')).toBe('/settings')
+    expect(wrapper.get('[role="alert"] a').attributes('href')).toBe('/manage/keys')
     expect(alerts[1]).toContain('A month of runs costs more than the budget')
     expect(wrapper.get('tfoot').text()).toContain('A month of weekly runs')
   })
 
   it('saves the key, providers, budget and schedule, after checking them', async () => {
     const { handle, bodies } = server()
-    const { wrapper } = await mountApp(handle, '/settings/prompt-test')
+    const { wrapper } = await mountApp(handle, '/manage/prompt-test')
     const choice = form(wrapper, 'choice-title')
     const [newProvider, budget] = choice.findAll('input')
     await budget?.setValue('nothing')
@@ -128,7 +128,7 @@ describe('the Prompt test settings', () => {
 
   it('saves the fact sheet as a new version, and says what the server refused', async () => {
     const { handle, bodies } = server()
-    const { wrapper } = await mountApp(handle, '/settings/prompt-test')
+    const { wrapper } = await mountApp(handle, '/manage/prompt-test')
     const facts = form(wrapper, 'facts-title')
     await facts.get('textarea').setValue('Tribelt B.V. makes belts in Haaksbergen, Twente.')
     await facts.trigger('submit')
@@ -136,20 +136,20 @@ describe('the Prompt test settings', () => {
     expect(bodies).toEqual([{ factSheet: 'Tribelt B.V. makes belts in Haaksbergen, Twente.' }])
     expect(wrapper.text()).toContain('The fact sheet is saved as a new version.')
     wrapper.unmount()
-    const refused = await mountApp(server({ 'PATCH /api/v1/admin/prompt-test': () => problem(422, 'Unprocessable Entity', 'A fact sheet has 20 to 4000 characters.') }).handle, '/settings/prompt-test')
+    const refused = await mountApp(server({ 'PATCH /api/v1/admin/prompt-test': () => problem(422, 'Unprocessable Entity', 'A fact sheet has 20 to 4000 characters.') }).handle, '/manage/prompt-test')
     await form(refused.wrapper, 'facts-title').trigger('submit')
     await settle()
     expect(refused.wrapper.text()).toContain('A fact sheet has 20 to 4000 characters.')
   })
 
   it('starts a run now, and says why it cannot', async () => {
-    const { wrapper } = await mountApp(server().handle, '/settings/prompt-test')
+    const { wrapper } = await mountApp(server().handle, '/manage/prompt-test')
     const run = wrapper.findAll('button').find((b) => b.text() === 'Run now')
     await run?.trigger('click')
     await settle()
     expect(wrapper.text()).toContain('A Prompt run started: 1260 answers to ask.')
     wrapper.unmount()
-    const busy = await mountApp(server({ 'POST /api/v1/admin/prompt-runs': () => problem(409, 'Conflict', 'A Prompt run is running already.') }).handle, '/settings/prompt-test')
+    const busy = await mountApp(server({ 'POST /api/v1/admin/prompt-runs': () => problem(409, 'Conflict', 'A Prompt run is running already.') }).handle, '/manage/prompt-test')
     await busy.wrapper.findAll('button').find((b) => b.text() === 'Run now')?.trigger('click')
     await settle()
     expect(busy.wrapper.get('[role="alert"]').text()).toBe('A Prompt run is running already.')
@@ -158,15 +158,15 @@ describe('the Prompt test settings', () => {
   it('asks for a key first, and tells a non-administrator', async () => {
     const keyless = await mountApp(
       server({ 'GET /api/v1/admin/llm': () => json(llmSettings({ credentials: [] })), 'GET /api/v1/admin/prompt-test': () => json(settings({ credentialId: undefined, factSheet: { text: 'Facts about Tribelt, written once.', version: 1 } })) }).handle,
-      '/settings/prompt-test',
+      '/manage/prompt-test',
     )
-    expect(keyless.wrapper.text()).toContain('Add an OpenRouter key in the language-model settings first.')
+    expect(keyless.wrapper.text()).toContain('Add an OpenRouter key in Keys and spending first.')
     expect(keyless.wrapper.text()).toContain('Version 1. Answers about Tribelt')
     keyless.wrapper.unmount()
-    const viewer = await mountApp(server({ 'GET /api/v1/me': () => json(me()), 'GET /api/v1/admin/prompt-test': () => problem(403, 'Forbidden') }).handle, '/settings/prompt-test')
+    const viewer = await mountApp(server({ 'GET /api/v1/admin/prompt-test': () => problem(403, 'Forbidden') }).handle, '/manage/prompt-test')
     expect(viewer.wrapper.get('[role="alert"]').text()).toBe('Only administrators can change these settings.')
     viewer.wrapper.unmount()
-    const broken = await mountApp(server({ 'GET /api/v1/admin/prompt-test': () => problem(500, 'Internal Server Error', 'Down.') }).handle, '/settings/prompt-test')
+    const broken = await mountApp(server({ 'GET /api/v1/admin/prompt-test': () => problem(500, 'Internal Server Error', 'Down.') }).handle, '/manage/prompt-test')
     expect(broken.wrapper.get('[role="alert"]').text()).toBe('Down.')
   })
 })

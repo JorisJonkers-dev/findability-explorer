@@ -132,7 +132,7 @@ func TestAskTellsARateLimitFromOtherFailures(t *testing.T) {
 func TestExtractReadsTheStrictFormat(t *testing.T) {
 	content := `{"companies":[{"name":" Twentebelt ","url":"https://twentebelt.com"},{"name":"","url":""},{"name":"Tribelt","url":""}],
 		"addresses":["https://twentebelt.com"],"namesTribelt":true,"citesTribelt":false,"correctness":"partly",
-		"wrongClaims":["Tribelt is in Hengelo."]}`
+		"wrongClaims":["Tribelt is in Hengelo."],"leftOut":["Tribelt is in Haaksbergen."]}`
 	srv, bodies := server(t, func(w http.ResponseWriter, _ map[string]any) {
 		raw, _ := json.Marshal(map[string]any{
 			"choices": []any{map[string]any{"message": map[string]any{"content": content}}},
@@ -151,9 +151,10 @@ func TestExtractReadsTheStrictFormat(t *testing.T) {
 		Companies:    []domain.Named{{Name: "Twentebelt", URL: "https://twentebelt.com"}, {Name: "Tribelt"}},
 		Addresses:    []string{"https://twentebelt.com"},
 		NamesTribelt: true, Correctness: domain.CorrectnessPartly, WrongClaims: []string{"Tribelt is in Hengelo."},
+		LeftOut: []string{"Tribelt is in Haaksbergen."},
 	}
 	if !slices.Equal(x.Companies, want.Companies) || !slices.Equal(x.Addresses, want.Addresses) || x.NamesTribelt != want.NamesTribelt ||
-		x.Correctness != want.Correctness || !slices.Equal(x.WrongClaims, want.WrongClaims) {
+		x.Correctness != want.Correctness || !slices.Equal(x.WrongClaims, want.WrongClaims) || !slices.Equal(x.LeftOut, want.LeftOut) {
 		t.Errorf("extracted = %+v", x)
 	}
 	if usage.InputTokens != 300 || usage.Cost != 50 {

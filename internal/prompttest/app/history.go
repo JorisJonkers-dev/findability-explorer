@@ -18,8 +18,13 @@ type HistoryView struct {
 	FailureOf map[uuid.UUID]string
 }
 
-// History gives the Prompt test's figures per run, from the runs Results reads.
+// History gives the published Prompt sets and the Prompt test's figures per run, from the runs
+// Results reads.
 func (s *Service) History(ctx context.Context) (HistoryView, error) {
+	sets, err := s.promptSets(ctx)
+	if err != nil {
+		return HistoryView{}, err
+	}
 	res, err := s.Results(ctx)
 	if err != nil {
 		return HistoryView{}, err
@@ -31,7 +36,7 @@ func (s *Service) History(ctx context.Context) (HistoryView, error) {
 		in = append(in, domain.RunFigureInput{Run: r.Run, Progress: r.Progress, Cells: r.Cells})
 		failure[r.Run.ID] = r.CommonFailure
 	}
-	out := HistoryView{Versions: domain.Versions(), Runs: domain.History(in), FailureOf: map[uuid.UUID]string{}}
+	out := HistoryView{Versions: domain.VersionsOf(sets), Runs: domain.History(in), FailureOf: map[uuid.UUID]string{}}
 	for _, f := range out.Runs {
 		if f.Partial && failure[f.RunID] != "" {
 			out.FailureOf[f.RunID] = failure[f.RunID]

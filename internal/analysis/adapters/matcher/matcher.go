@@ -61,7 +61,7 @@ func (m *Matcher) Match(ctx context.Context, siteText string, truncated bool, fa
 	}
 	var a answer
 	if err := json.Unmarshal([]byte(unfence(resp.Text)), &a); err != nil {
-		return nil, usage, fmt.Errorf("read the model's answer: %w", err)
+		return nil, usage, fmt.Errorf("read the model's response: %w", err)
 	}
 	out := make([]domain.Equivalent, 0, len(a.Equivalents))
 	for _, e := range a.Equivalents {

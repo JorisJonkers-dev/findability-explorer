@@ -22,7 +22,7 @@ import {
 } from './activity'
 
 const HAND = 'Stopped by hand. The responses so far are kept, and a retry finishes the run.'
-const BUDGET = "The month's budget for Prompt runs was reached; the answers so far are kept."
+const BUDGET = "The month's budget for Prompt runs was reached; the responses so far are kept."
 
 function work(overrides: Partial<Work> = {}): Work {
   return { id: 'w1', kind: 'promptRun', startedAt: '2026-10-28T09:00:00Z', done: 0, total: 0, failed: 0, openRouterCostUsd: 0, anthropicCostUsd: 0, ...overrides }

@@ -45,8 +45,8 @@ func TestTheModelMergesNamesOfOneCompany(t *testing.T) {
 	for _, want := range []string{
 		`- id ashworth: "Ashworth Bros", ashworth.com`,
 		`- id esfo: "ESFO"` + "\n",
-		`- id 00000000000000aa: "Taiwan Metiz Alliance", also "Metiz"; websites metiz.tw; named in 8 answers`,
-		`- id 00000000000000bb: "Metiz Alliance Co"; named in 1 answers`,
+		`- id 00000000000000aa: "Taiwan Metiz Alliance", also "Metiz"; websites metiz.tw; named in 8 responses`,
+		`- id 00000000000000bb: "Metiz Alliance Co"; named in 1 responses`,
 	} {
 		if !strings.Contains(c.prompt.User, want) {
 			t.Errorf("the prompt lacks %q:\n%s", want, c.prompt.User)
@@ -86,11 +86,11 @@ func TestTheModelChecksEachCompany(t *testing.T) {
 		t.Errorf("prompt = %+v", c.prompt)
 	}
 	for _, want := range []string{
-		`<company id="1">` + "\nNames: \"Taiwan Metiz Alliance\", \"Metiz\"\nWebsite: https://metiz.tw/\nNamed in 8 answers.\n",
-		"What the answers say:\n- …Taiwan Metiz Alliance makes wire mesh belts for ovens…\n",
+		`<company id="1">` + "\nNames: \"Taiwan Metiz Alliance\", \"Metiz\"\nWebsite: https://metiz.tw/\nNamed in 8 responses.\n",
+		"What the responses say:\n- …Taiwan Metiz Alliance makes wire mesh belts for ovens…\n",
 		"Home page:\n  Title: Metiz\n  Description: Wire mesh conveyor belts\n  Headings: Belts | Ovens\n  Text: Since 1983.\n</company>",
-		`<company id="2">` + "\nNames: \"Metiz Alliance Co\"\nNo website.\nNamed in 1 answers.\n</company>",
-		"Names: \"Gone Co\"\nWebsite: https://gone.example/\nNot named in the answers.\nHome page: could not be read (the website did not answer).\n",
+		`<company id="2">` + "\nNames: \"Metiz Alliance Co\"\nNo website.\nNamed in 1 responses.\n</company>",
+		"Names: \"Gone Co\"\nWebsite: https://gone.example/\nNot named in the responses.\nHome page: could not be read (the website did not answer).\n",
 	} {
 		if !strings.Contains(c.prompt.User, want) {
 			t.Errorf("the prompt lacks %q:\n%s", want, c.prompt.User)

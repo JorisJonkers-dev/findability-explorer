@@ -60,6 +60,8 @@ const BUTTON = 'inline-flex min-h-11 cursor-pointer items-center rounded-full bo
       </div>
     </div>
     <p v-if="status" class="m-0 text-sm font-medium" aria-live="polite">{{ status }}</p>
+    <!-- searchLines escapes the text before it marks the matches, so v-html sets no markup from the file. -->
+    <!-- eslint-disable vue/no-v-html -->
     <pre
       tabindex="0"
       :aria-label="`The text of ${tab.name}`"
@@ -70,6 +72,7 @@ const BUTTON = 'inline-flex min-h-11 cursor-pointer items-center rounded-full bo
       data-line
       class="grid grid-cols-[3.5rem_minmax(0,1fr)]"
       :class="line.hit ? 'bg-orange-pale' : ''"
-    ><span data-n class="pr-4 text-right text-muted select-none">{{ line.n }}</span><!-- The text is escaped before it is marked, in searchLines. --><!-- eslint-disable-next-line vue/no-v-html --><span class="pr-4 break-words whitespace-pre-wrap" v-html="line.html || ' '"></span></span></pre>
+    ><span data-n class="pr-4 text-right text-muted select-none">{{ line.n }}</span><span class="pr-4 break-words whitespace-pre-wrap" v-html="line.html || ' '"></span></span></pre>
+    <!-- eslint-enable vue/no-v-html -->
   </div>
 </template>

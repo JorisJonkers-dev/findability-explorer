@@ -10,13 +10,14 @@ const twentebelt = competitor('Twentebelt', { scans: 2 })
 const martens = competitor('Martens', { country: 'DE', websiteUrl: 'https://www.martens-belts.com/', host: 'martens-belts.com', website: 'https://www.martens-belts.com' })
 const ashworth = competitor('Ashworth', { country: 'US', websiteUrl: undefined, host: undefined, website: '', beltNames: [] })
 const tribelt = competitor('Tribelt', { role: 'tribelt', groupCompany: true, websiteUrl: 'https://www.tribelt.nl/', host: 'tribelt.nl', website: 'https://www.tribelt.nl' })
+const old = competitor('Old Belts', { country: 'BE', archived: true, websiteUrl: 'https://old.example/', host: 'old.example', website: 'https://old.example' })
 const sister = competitor('Tribelt Group', { role: 'group', groupCompany: true, websiteUrl: 'https://group.example/', host: 'group.example', website: 'https://group.example' })
 
 /** The server, signed in as an administrator; the scan started answers with each status in line, the last one for good. */
 function api(extra: Record<string, Handler> = {}, statuses: AnalysisStatus[] = ['queued', 'done']) {
   return routes({
     'GET /api/v1/me': () => json(me({ isAdmin: true })),
-    'GET /api/v1/competitors': () => json({ items: [twentebelt, martens, ashworth, tribelt, sister] }),
+    'GET /api/v1/competitors': () => json({ items: [twentebelt, martens, ashworth, tribelt, sister, old] }),
     'GET /api/v1/terms': () => json(termSearch([term({ term: 'TwenteFlex', tier: 'product', usedBy: ['Twentebelt (TwenteFlex)'] })], { tribeltFrom: 'scan' })),
     'GET /api/v1/overview': () => json(overview({ competitors: { makers: 3, families: [{ family: 'eyelink', makers: 2 }, { family: 'open_spiral', makers: 1 }] } })),
     'GET /api/v1/prompt-test': () => json(promptResults()),
@@ -35,6 +36,7 @@ function api(extra: Record<string, Handler> = {}, statuses: AnalysisStatus[] = [
 
 const combobox = (wrapper: VueWrapper) => wrapper.get('input[role="combobox"]')
 const list = (wrapper: VueWrapper) => wrapper.get('section[aria-labelledby="list-title"]')
+const names = (wrapper: VueWrapper) => list(wrapper).findAll('tbody tr').map((r) => r.get('th').text())
 
 async function type(wrapper: VueWrapper, text: string) {
   await combobox(wrapper).setValue(text)
@@ -51,16 +53,51 @@ afterEach(() => {
 })
 
 describe('the competitors page', () => {
-  it('says how many competitors sell the belts, with the key figures and the list', async () => {
+  it('is in the frame, with one table, Tribelt pinned on top, and the best competitor named', async () => {
     const { wrapper } = await mountApp(api({ 'GET /api/v1/me': () => json(me()) }), '/competitors')
-    expect(wrapper.get('h1').text()).toBe('3 competitors sell metal belts that Tribelt’s buyers could buy instead.')
-    const figures = wrapper.get('section[aria-label="Key figures"]').text()
-    expect(figures).toContain('3competitors on the list')
-    expect(figures).toContain('1is named in more AI answers than TribeltTwentebelt leads.')
-    expect(figures).toContain('1shares Tribelt’s AI readiness score of 8 of 8Among them Twentebelt.')
-    expect(list(wrapper).findAll('li a').map((a) => a.attributes('href'))).toEqual(['/competitors/twentebelt', '/competitors/ashworth', '/competitors/martens'])
+    expect(wrapper.get('h1').text()).toBe('Competitors')
+    expect(wrapper.get('[data-part="purpose"]').text()).toBe(
+      "The companies that make metal conveyor belts Tribelt's buyers could choose instead, and how each compares with Tribelt on AI responses, AI readiness, and search terms.",
+    )
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('3 competitors on the competitor list. No site has been scanned yet.')
+    expect(wrapper.get('[data-part="summary"]').text()).toBe('Tribelt is named in 25% of AI responses. The best competitor, Twentebelt, is named in 75%.')
+    expect(list(wrapper).findAll('thead th').map((h) => h.text())).toEqual([
+      'Name',
+      'Country',
+      'Belt families sold',
+      'Named in AI responses',
+      'AI readiness',
+      'Search terms used',
+      'Last scanned',
+    ])
+    const rows = list(wrapper).findAll('tbody tr').map((r) => r.findAll('th, td').map((c) => c.text()))
+    expect(rows[0]).toEqual(['TribeltFor comparison', 'NL', '1 of 5', '25%', '8 of 8', '0', 'Not scanned'])
+    expect(rows[1]).toEqual(['Twentebelt', 'NL', '1 of 5', '75%', '8 of 8', '1', 'Not scanned'])
+    expect(names(wrapper)).toEqual(['TribeltFor comparison', 'Twentebelt', 'Ashworth', 'Martens'])
+    expect(list(wrapper).findAll('tbody td span[title]').map((c) => c.attributes('title'))).toEqual(['Tri-Flex', 'Tri-Flex', 'Tri-Flex'])
+    expect(list(wrapper).findAll('tbody a').map((a) => a.attributes('href'))).toEqual(['/competitors/twentebelt', '/competitors/ashworth', '/competitors/martens'])
     expect(list(wrapper).text()).toContain('Tribelt Group is left out')
-    expect(wrapper.get('section[aria-labelledby="family-title"]').text()).toContain('Eyelink')
+    expect(wrapper.find('a[href="/help/competitors"]').exists()).toBe(true)
+  })
+
+  it('sorts by any column, filters by name, belt family, and country, and shows the archived companies on request', async () => {
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/me': () => json(me()) }), '/competitors')
+    await list(wrapper).get('button[aria-label="Name, not sorted"]').trigger('click')
+    expect(names(wrapper)).toEqual(['TribeltFor comparison', 'Ashworth', 'Martens', 'Twentebelt'])
+    await wrapper.get('input[type="search"]').setValue('mar')
+    expect(names(wrapper)).toEqual(['TribeltFor comparison', 'Martens'])
+    await wrapper.get('input[type="search"]').setValue('')
+    await wrapper.get('select[aria-label="Country"]').setValue('US')
+    expect(names(wrapper)).toEqual(['TribeltFor comparison', 'Ashworth'])
+    await wrapper.get('select[aria-label="Country"]').setValue('')
+    await wrapper.get('select[aria-label="Belt family"]').setValue('tri_flex_turn_curve')
+    expect(names(wrapper)).toEqual(['TribeltFor comparison', 'Martens', 'Twentebelt'])
+    await wrapper.get('select[aria-label="Belt family"]').setValue('')
+    const archived = wrapper.get('button[aria-pressed]')
+    expect(archived.text()).toBe('Show 1 archived company')
+    await archived.trigger('click')
+    expect(names(wrapper)).toContain('Old BeltsArchived')
+    expect(archived.text()).toBe('Hide 1 archived company')
   })
 
   it('leaves the tools to administrators', async () => {
@@ -72,11 +109,6 @@ describe('the competitors page', () => {
     expect(admin.wrapper.get('#admin-tools-title').text()).toBe('Manage the list')
     expect(admin.wrapper.find('form[aria-label="Scan a website"]').exists()).toBe(true)
     expect(admin.wrapper.find('#upkeep-title').exists()).toBe(true)
-  })
-
-  it('leaves out the chart when the server counts no families', async () => {
-    const { wrapper } = await mountApp(api({ 'GET /api/v1/overview': () => json(overview({ competitors: { makers: 3, families: [] } })) }), '/competitors')
-    expect(wrapper.find('section[aria-labelledby="family-title"]').exists()).toBe(false)
   })
 
   it('says while it loads, and when the companies cannot be loaded', async () => {
@@ -92,7 +124,7 @@ describe('the competitors page', () => {
     loading.wrapper.unmount()
     const failing = await mountApp(api({ 'GET /api/v1/competitors': () => problem(500, 'Internal Server Error') }), '/competitors')
     expect(failing.wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
-    expect(failing.wrapper.find('section[aria-label="Key figures"]').exists()).toBe(false)
+    expect(failing.wrapper.find('section[aria-labelledby="list-title"]').exists()).toBe(false)
   })
 
   it('opens a started scan on its own page', async () => {

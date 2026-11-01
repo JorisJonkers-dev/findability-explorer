@@ -10,7 +10,6 @@ import {
   isTribeltCompany,
   keyOf,
   leftOutOf,
-  longDate,
   modelLabel,
   placeSentence,
   questionsOf,
@@ -81,10 +80,6 @@ describe('the words for a response', () => {
     expect(intentOf('problem').help).toBe('Buyer intent: problem. The buyer describes a problem to solve.')
   })
 
-  it('writes dates in full, in Dutch time', () => {
-    expect(longDate('2026-10-27T23:30:00Z')).toBe('28 October 2026')
-  })
-
   it('leads to a response with its run', () => {
     expect(responsePath(promptAnswer({ id: 'a1' }), 'r1')).toEqual({ path: '/ai-responses/a1', query: { run: 'r1' } })
   })
@@ -92,7 +87,7 @@ describe('the words for a response', () => {
 
 describe('a run', () => {
   it('is labelled by its date, time, version, and how it ended', () => {
-    const at = { startedAt: '2026-10-27T07:36:00Z', promptSetVersion: 2 }
+    const at = { startedAt: '2026-10-27T08:36:00Z', promptSetVersion: 2 }
     expect(runLabel(promptRun({ ...at, tasks: 200, answered: 200 }))).toBe('27 October 2026, 08:36, prompt set version 2. 200 responses')
     expect(runLabel(promptRun({ ...at, status: 'stopped', tasks: 1260, answered: 62 }))).toBe('27 October 2026, 08:36, prompt set version 2. Stopped after 62 of 1,260 responses')
     expect(runLabel(promptRun({ ...at, status: 'running', tasks: 200, answered: 3 }))).toBe('27 October 2026, 08:36, prompt set version 2. Running, 3 of 200 responses')
@@ -101,7 +96,7 @@ describe('a run', () => {
   })
 
   it('has a data line', () => {
-    const run = promptRun({ startedAt: '2026-10-27T07:36:00Z', promptSetVersion: 2, tasks: 200, answered: 200 })
+    const run = promptRun({ startedAt: '2026-10-27T08:36:00Z', promptSetVersion: 2, tasks: 200, answered: 200 })
     expect(runDataLine(run)).toBe(
       'From the Prompt run of 27 October 2026: 50 questions to 2 models, each from the model’s own knowledge and with web search, 200 responses in all. Prompt set version 2.',
     )

@@ -22,14 +22,16 @@ ORDER BY created_at DESC, id
 LIMIT $1;
 
 -- name: TokensSince :one
-SELECT coalesce(sum(llm_input_tokens + llm_output_tokens), 0)::bigint
+-- The language-model tokens in and out of analyses created since a moment.
+SELECT coalesce(sum(llm_input_tokens), 0)::bigint AS input, coalesce(sum(llm_output_tokens), 0)::bigint AS output
 FROM analyses
 WHERE created_at >= $1;
 
 -- name: TokensPerMatchedScan :one
--- How many scans the language model answered for, and the tokens one of them used on average.
+-- How many scans the language model answered for, and the tokens in and out one of them used on average.
 SELECT count(*)::bigint AS scans,
-    coalesce(round(avg(llm_input_tokens + llm_output_tokens)), 0)::bigint AS average
+    coalesce(round(avg(llm_input_tokens)), 0)::bigint AS average_input,
+    coalesce(round(avg(llm_output_tokens)), 0)::bigint AS average_output
 FROM analyses
 WHERE matching = 'done' AND llm_input_tokens + llm_output_tokens > 0;
 

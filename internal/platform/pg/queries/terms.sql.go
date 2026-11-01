@@ -237,15 +237,67 @@ func (q *Queries) ListTermVerdicts(ctx context.Context) ([]TermVerdict, error) {
 	return items, nil
 }
 
+const switchTermReview = `-- name: SwitchTermReview :exec
+INSERT INTO term_review_switch (singleton, review_on, updated_by, updated_at)
+VALUES (true, $1, $2, $3)
+ON CONFLICT (singleton) DO UPDATE
+SET review_on = excluded.review_on, updated_by = excluded.updated_by, updated_at = excluded.updated_at
+`
+
+type SwitchTermReviewParams struct {
+	ReviewOn  bool
+	UpdatedBy string
+	UpdatedAt time.Time
+}
+
+func (q *Queries) SwitchTermReview(ctx context.Context, arg SwitchTermReviewParams) error {
+	_, err := q.db.Exec(ctx, switchTermReview, arg.ReviewOn, arg.UpdatedBy, arg.UpdatedAt)
+	return err
+}
+
+const termReviewOn = `-- name: TermReviewOn :one
+SELECT coalesce((SELECT review_on FROM term_review_switch WHERE singleton), true)::boolean AS review_on
+`
+
+func (q *Queries) TermReviewOn(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, termReviewOn)
+	var review_on bool
+	err := row.Scan(&review_on)
+	return review_on, err
+}
+
 const termReviewTokensSince = `-- name: TermReviewTokensSince :one
-SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM term_review_usage
 WHERE used_at >= $1
 `
 
-func (q *Queries) TermReviewTokensSince(ctx context.Context, usedAt time.Time) (int64, error) {
+type TermReviewTokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+func (q *Queries) TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, termReviewTokensSince, usedAt)
-	var tokens int64
-	err := row.Scan(&tokens)
-	return tokens, err
+	var i TermReviewTokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
+}
+
+const termReviewUsageSince = `-- name: TermReviewUsageSince :one
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input_tokens, coalesce(sum(output_tokens), 0)::bigint AS output_tokens
+FROM term_review_usage
+WHERE used_at >= $1
+`
+
+type TermReviewUsageSinceRow struct {
+	InputTokens  int64
+	OutputTokens int64
+}
+
+func (q *Queries) TermReviewUsageSince(ctx context.Context, usedAt time.Time) (TermReviewUsageSinceRow, error) {
+	row := q.db.QueryRow(ctx, termReviewUsageSince, usedAt)
+	var i TermReviewUsageSinceRow
+	err := row.Scan(&i.InputTokens, &i.OutputTokens)
+	return i, err
 }

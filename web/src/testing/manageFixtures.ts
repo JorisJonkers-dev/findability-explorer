@@ -10,7 +10,7 @@ export function manageCounts(counts: Partial<ManageCounts> = {}): Record<string,
   const { terms = 0, candidates = 0, runs = 0, scans = 0 } = counts
   return {
     'GET /api/v1/admin/term-candidates': () =>
-      json({ items: [], counts: { pending: terms, accepted: 0, rejected: 0 }, review: { running: false, waiting: 0 } } satisfies TermCandidateList),
+      json({ items: [], counts: { pending: terms, accepted: 0, rejected: 0 }, review: { on: true, running: false, waiting: 0, monthTokens: 0, monthCostUsd: 0 } } satisfies TermCandidateList),
     'GET /api/v1/admin/competitor-candidates': () =>
       json({
         items: [],

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Plan } from '../../../infrastructure/api/types.gen'
 import { competitor, promptAnswer, promptResults, promptRun } from '../../../testing/fixtures'
-import { byModel, familyScopeRows, figuresOf, share, whoNamed } from './sections'
+import { byModel, familyScopeRows, figuresOf, goalOf, share, whoNamed } from './sections'
 
 const plan = (watched: Plan['watched']): Plan => ({ catalogueVersion: 1, improvements: [], watched, eyeOn: [], readinessChecks: 5 })
 
@@ -20,6 +20,11 @@ describe('the three figures', () => {
       { value: '50%', label: 'AI responses about the Twente region name Tribelt', goal: 'Goal 75%' },
       { value: '17%', label: 'Web responses that cite tribelt.nl', goal: 'Goal 50%' },
     ])
+  })
+
+  it('read their goals from the plan', () => {
+    expect(goalOf(plan([{ target: 'aiShareOfVoice', goal: 0.4 }]), 'aiShareOfVoice')).toBe(0.4)
+    expect(goalOf(undefined, 'citationShare')).toBeUndefined()
   })
 
   it('leave out a goal that is not set, and show a dash without responses', () => {

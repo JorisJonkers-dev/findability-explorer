@@ -22,7 +22,7 @@ function answers(): PromptAnswer[] {
 function api(extra: Record<string, Handler> = {}) {
   return routes({
     'GET /api/v1/prompt-test': () =>
-      json(promptResults({ runs: [promptRun({ startedAt: '2026-11-01T07:36:00Z' }), promptRun({ id: OLDER, startedAt: '2026-10-25T06:00:00Z', status: 'stopped', answered: 62 })] })),
+      json(promptResults({ runs: [promptRun({ startedAt: '2026-11-01T08:36:00Z' }), promptRun({ id: OLDER, startedAt: '2026-10-25T06:00:00Z', status: 'stopped', answered: 62 })] })),
     [`GET /api/v1/prompt-runs/${RUN_ID}/answers`]: () => json({ run: promptRun(), items: answers() }),
     [`GET /api/v1/prompt-runs/${OLDER}/answers`]: () => json({ run: promptRun({ id: OLDER }), items: [promptAnswer({}, ['Ashworth:ashworth'])] }),
     ...extra,
@@ -122,7 +122,7 @@ describe('Every response', () => {
   it('picks a run by date and Prompt set version, with a stopped run marked', async () => {
     const { wrapper, router, requests } = await mountApp(api(), '/ai-responses/all')
     const runs = wrapper.findAll('label')[0]?.findAll('option').map((o) => o.text())
-    expect(runs).toEqual(['1 November 2026, 08:36, prompt set version 1. 358 responses', '25 October 2026, 07:00, prompt set version 1. Stopped after 62 of 360 responses'])
+    expect(runs).toEqual(['1 November 2026, 08:36, prompt set version 1. 358 responses', '25 October 2026, 06:00, prompt set version 1. Stopped after 62 of 360 responses'])
     await wrapper.findAll('label')[0]?.get('select').setValue(OLDER)
     await settle()
     expect(router.currentRoute.value.query).toEqual({ run: OLDER })

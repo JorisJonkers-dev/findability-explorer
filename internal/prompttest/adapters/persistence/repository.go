@@ -540,22 +540,23 @@ func (r *Repository) SaveReviewUsage(ctx context.Context, usage []domain.ReviewU
 	})
 }
 
-// ReviewTokensSince is how many tokens the review of the candidates used since t.
-func (r *Repository) ReviewTokensSince(ctx context.Context, t time.Time) (int64, error) {
-	n, err := r.store.Queries().PromptReviewTokensSince(ctx, t)
+// ReviewTokensSince is how many tokens in and out the review of the candidates used since t.
+func (r *Repository) ReviewTokensSince(ctx context.Context, t time.Time) (input, output int64, err error) {
+	row, err := r.store.Queries().PromptReviewTokensSince(ctx, t)
 	if err != nil {
-		return 0, fmt.Errorf("sum review tokens: %w", err)
+		return 0, 0, fmt.Errorf("sum review tokens: %w", err)
 	}
-	return n, nil
+	return row.Input, row.Output, nil
 }
 
-// ReadingTokensSince is how many tokens Claude Haiku on an Anthropic key used reading answers since t.
-func (r *Repository) ReadingTokensSince(ctx context.Context, t time.Time) (int64, error) {
-	n, err := r.store.Queries().PromptReadingTokensSince(ctx, t)
+// ReadingTokensSince is how many tokens in and out Claude Haiku on an Anthropic key used reading
+// answers since t.
+func (r *Repository) ReadingTokensSince(ctx context.Context, t time.Time) (input, output int64, err error) {
+	row, err := r.store.Queries().PromptReadingTokensSince(ctx, t)
 	if err != nil {
-		return 0, fmt.Errorf("sum reading tokens: %w", err)
+		return 0, 0, fmt.Errorf("sum reading tokens: %w", err)
 	}
-	return n, nil
+	return row.Input, row.Output, nil
 }
 
 // optionalText is s, or NULL when s is empty.

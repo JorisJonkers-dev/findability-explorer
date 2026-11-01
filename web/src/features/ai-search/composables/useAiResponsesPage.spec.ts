@@ -29,6 +29,7 @@ describe('useAiResponsesPage', () => {
     expect(state.dataLine.value).toContain('From the Prompt run of 1 November 2026')
     expect(state.figures.value[0]).toEqual({ value: '25%', label: 'AI responses that name Tribelt', goal: 'Goal 40%' })
     expect(state.read.value).toBe(12)
+    expect(state.goal.value).toBe(0.4)
     expect(state.named.value.map((n) => n.name)).toEqual(['Twentebelt', 'Tribelt'])
     expect(state.models.value).toHaveLength(3)
     expect(state.questions.value[0]?.questions[0]?.english).toBe('We are building a tunnel oven for an industrial bakery. Which makers in the Twente region can supply the belt?')

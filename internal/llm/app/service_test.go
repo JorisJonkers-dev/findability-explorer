@@ -28,6 +28,8 @@ type repo struct {
 	tests      map[string]domain.Test
 	failOn     map[string]bool
 	unreadable map[string]bool
+	// budget is the Anthropic key's stored monthly budget, 0 before an admin sets one.
+	budget domain.Micros
 }
 
 func newRepo() *repo {
@@ -111,6 +113,16 @@ func (r *repo) SaveSetting(_ context.Context, s domain.Setting, _ string, _ time
 	return nil
 }
 
+func (r *repo) Budget(context.Context) (domain.Micros, error) { return r.budget, r.fail("Budget") }
+
+func (r *repo) SaveBudget(_ context.Context, m domain.Micros, _ string, _ time.Time) error {
+	if err := r.fail("SaveBudget"); err != nil {
+		return err
+	}
+	r.budget = m
+	return nil
+}
+
 func (r *repo) AddEvent(_ context.Context, e domain.Event) error {
 	if err := r.fail("AddEvent"); err != nil {
 		return err
@@ -159,6 +171,8 @@ type fixture struct {
 	repo     *repo
 	conn     *connector
 	reporter *reporter
+	// spending is what the jobs used, as the fixture's Spent reports it.
+	spending *app.Spending
 }
 
 // reporter reports what it is asked, or fails with err.
@@ -183,13 +197,18 @@ func setup(vault string, spentErr error) fixture {
 	conn := &connector{}
 	rep := &reporter{}
 	n := 0
-	svc := app.New(r, conn, rep, func(context.Context) (app.Spending, error) {
-		return app.Spending{ThisMonth: 1234, AveragePerScan: 617, ScansMatched: 2}, spentErr
-	},
-		app.Config{VaultKey: vault, MonthlyTokens: 2_000_000},
+	// 1,234 tokens this month, priced at Claude Haiku's list price: $0.000217.
+	spending := &app.Spending{
+		ThisMonth: []domain.TokenUse{
+			{Model: domain.DefaultModel, Input: 1000, Output: 200}, {Model: domain.DefaultModel, Output: 34},
+		},
+		AveragePerScan: domain.TokenUse{Model: domain.DefaultModel, Input: 600, Output: 17}, ScansMatched: 2,
+	}
+	svc := app.New(r, conn, rep, func(context.Context) (app.Spending, error) { return *spending, spentErr },
+		app.Config{VaultKey: vault},
 		func() time.Time { return now },
 		func() string { n++; return fmt.Sprintf("00000000-0000-4000-8000-%012d", n) })
-	return fixture{svc: svc, repo: r, conn: conn, reporter: rep}
+	return fixture{svc: svc, repo: r, conn: conn, reporter: rep, spending: spending}
 }
 
 func TestSettingsByDefault(t *testing.T) {
@@ -201,7 +220,10 @@ func TestSettingsByDefault(t *testing.T) {
 	if len(s.Credentials) != 1 || s.Credentials[0].ID != domain.VaultID || s.Choice != domain.ChoiceDefault ||
 		s.Active == nil || s.Active.Model != domain.DefaultModel || !s.MatchingEnabled ||
 		s.Haiku == nil || *s.Haiku != (domain.Active{CredentialID: domain.VaultID, Model: domain.DefaultModel}) ||
-		s.Budget != (app.Budget{MonthlyTokens: 2_000_000, UsedThisMonth: 1234, AveragePerScan: 617, ScansMatched: 2}) {
+		s.Budget != (app.Budget{
+			Monthly: domain.DefaultBudget, Spent: 217, Left: domain.DefaultBudget - 217,
+			TokensThisMonth: 1234, AveragePerScan: 617, AverageScanCost: 69, ScansMatched: 2,
+		}) {
 		t.Fatalf("settings = %+v", s)
 	}
 	f = setup("", nil)
@@ -211,7 +233,7 @@ func TestSettingsByDefault(t *testing.T) {
 }
 
 func TestSettingsFailures(t *testing.T) {
-	for _, op := range []string{"List", "LastTests", "Setting", "Events"} {
+	for _, op := range []string{"List", "LastTests", "Setting", "Events", "Budget"} {
 		f := setup("v-key-123", nil)
 		f.repo.failOn[op] = true
 		if _, err := f.svc.Settings(t.Context()); !errors.Is(err, errBoom) {
@@ -223,19 +245,83 @@ func TestSettingsFailures(t *testing.T) {
 	}
 }
 
-func TestBudgetSpentAtTheMonthlyTokens(t *testing.T) {
+func TestTheBudgetIsSpentWhenThisMonthsDollarsReachTheAnthropicBudget(t *testing.T) {
 	f := setup("", nil)
+	f.repo.budget = domain.MinBudget // one cent
 	if spent, err := f.svc.BudgetSpent(t.Context()); err != nil || spent {
-		t.Fatalf("1,234 of 2,000,000 = %v, %v", spent, err)
+		t.Fatalf("$0.000217 of $0.01 = %v, %v", spent, err)
 	}
-	full := app.New(newRepo(), &connector{}, &reporter{}, func(context.Context) (app.Spending, error) {
-		return app.Spending{ThisMonth: 2_000_000}, nil
-	}, app.Config{MonthlyTokens: 2_000_000}, func() time.Time { return now }, func() string { return "id" })
-	if spent, err := full.BudgetSpent(t.Context()); err != nil || !spent {
-		t.Fatalf("2,000,000 of 2,000,000 = %v, %v", spent, err)
+	// 100,000 input tokens at $0.10 per million cost exactly one cent.
+	*f.spending = app.Spending{ThisMonth: []domain.TokenUse{{Model: domain.DefaultModel, Input: 100_000}}}
+	if spent, err := f.svc.BudgetSpent(t.Context()); err != nil || !spent {
+		t.Fatalf("$0.01 of $0.01 = %v, %v", spent, err)
 	}
+	s, err := f.svc.Settings(t.Context())
+	if err != nil || s.Budget.Spent != domain.MinBudget || s.Budget.Left != 0 {
+		t.Fatalf("budget = %+v, %v", s.Budget, err)
+	}
+	*f.spending = app.Spending{ThisMonth: []domain.TokenUse{{Model: domain.DefaultModel, Input: 200_000}}}
+	if s, _ := f.svc.Settings(t.Context()); s.Budget.Left != 0 || s.Budget.Spent != 2*domain.MinBudget {
+		t.Fatalf("over the budget = %+v, want nothing left", s.Budget)
+	}
+}
+
+func TestTheBudgetIsFifteenDollarsUntilAnAdminSetsOne(t *testing.T) {
+	f := setup("", nil)
+	// $15 is 150,000,000 input tokens.
+	*f.spending = app.Spending{ThisMonth: []domain.TokenUse{{Model: domain.DefaultModel, Input: 149_999_000}}}
+	if spent, err := f.svc.BudgetSpent(t.Context()); err != nil || spent {
+		t.Fatalf("$14.9999 of $15 = %v, %v", spent, err)
+	}
+	*f.spending = app.Spending{ThisMonth: []domain.TokenUse{{Model: domain.DefaultModel, Input: 150_000_000}}}
+	if spent, err := f.svc.BudgetSpent(t.Context()); err != nil || !spent {
+		t.Fatalf("$15 of $15 = %v, %v", spent, err)
+	}
+}
+
+func TestTheBudgetCannotBeToldWhenItsFiguresCannotBeRead(t *testing.T) {
 	if _, err := setup("", errBoom).svc.BudgetSpent(t.Context()); !errors.Is(err, errBoom) {
 		t.Fatalf("spent failing = %v", err)
+	}
+	f := setup("", nil)
+	f.repo.failOn["Budget"] = true
+	if _, err := f.svc.BudgetSpent(t.Context()); !errors.Is(err, errBoom) {
+		t.Fatalf("budget failing = %v", err)
+	}
+}
+
+func TestAnAdminSetsTheAnthropicBudgetInDollars(t *testing.T) {
+	f := setup("", nil)
+	s, err := f.svc.SetBudget(t.Context(), "joris", domain.MicrosOf(25))
+	if err != nil || s.Budget.Monthly != 25_000_000 || s.Budget.Left != 25_000_000-217 || f.repo.budget != 25_000_000 {
+		t.Fatalf("SetBudget = %+v, %v (stored %d)", s.Budget, err, f.repo.budget)
+	}
+	e := f.repo.events[0]
+	if e.Action != domain.ActionBudgetSet || e.Actor != "joris" || e.Provider != domain.Anthropic || e.At != now ||
+		e.Message != "Anthropic budget set to $25.00." {
+		t.Fatalf("event = %+v", e)
+	}
+}
+
+func TestABudgetOutsideOneCentToAThousandDollarsIsRefused(t *testing.T) {
+	f := setup("", nil)
+	for _, m := range []domain.Micros{0, 9_999, domain.MaxBudget + 1} {
+		if _, err := f.svc.SetBudget(t.Context(), "joris", m); !errors.Is(err, domain.ErrInvalid) || !app.IsInputError(err) {
+			t.Errorf("SetBudget(%d) = %v", m, err)
+		}
+	}
+	if f.repo.budget != 0 || len(f.repo.events) != 0 {
+		t.Fatalf("a refused budget was stored: %d, %v", f.repo.budget, f.repo.events)
+	}
+}
+
+func TestSettingTheBudgetFailsWhenItCannotBeStoredOrRecorded(t *testing.T) {
+	for _, op := range []string{"SaveBudget", "AddEvent"} {
+		f := setup("", nil)
+		f.repo.failOn[op] = true
+		if _, err := f.svc.SetBudget(t.Context(), "joris", domain.DefaultBudget); !errors.Is(err, errBoom) {
+			t.Errorf("%s failing: %v", op, err)
+		}
 	}
 }
 

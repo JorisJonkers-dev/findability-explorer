@@ -4,6 +4,7 @@ import (
 	"slices"
 	"time"
 
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	focus "github.com/JorisJonkers-dev/findability-explorer/internal/shared/lang"
 )
 
@@ -37,6 +38,14 @@ type Usage struct {
 	InputTokens  int64
 	OutputTokens int64
 	At           time.Time
+}
+
+// Tokens is how many tokens u counts, input and output together.
+func (u Usage) Tokens() int64 { return u.InputTokens + u.OutputTokens }
+
+// Cost is what u cost at the list price of the model the review asks, Claude Haiku.
+func (u Usage) Cost() llm.Micros {
+	return llm.TokenUse{Model: llm.DefaultModel, Input: u.InputTokens, Output: u.OutputTokens}.Cost()
 }
 
 // Unreviewed are the waiting candidates without the model's verdict, in their order.

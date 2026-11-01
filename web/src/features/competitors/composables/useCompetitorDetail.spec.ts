@@ -1,7 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
-import { competitor, overview, promptAnswer, promptResults, readiness, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
+import { competitor, overview, promptAnswer, promptResults, promptRun, readiness, readinessRow, readinessTable, summary, term, termSearch } from '../../../testing/fixtures'
 import { type Handler, json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { useCompetitorDetail } from './useCompetitorDetail'
@@ -109,7 +109,7 @@ describe('useCompetitorDetail', () => {
   })
 
   it('dates a running run by its start, and a scan by its finish or its start', async () => {
-    const running = { ...promptResults().runs[0], finishedAt: undefined, status: 'running' as const }
+    const running = promptRun({ finishedAt: undefined, status: 'running' })
     const finished = competitor('Twentebelt', { scans: 2, lastScan: summary({ createdAt: '2026-10-19T08:00:00Z', finishedAt: '2026-10-20T09:00:00Z' }) })
     const started = competitor('Martens', { lastScan: summary({ createdAt: '2026-10-21T08:00:00Z', finishedAt: undefined }) })
     const { state } = mountComposable(

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StepCard from '../../claude-steps/components/StepCard.vue'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ManageWidget from '../../manage/components/widgets/ManageWidget.vue'
@@ -75,6 +76,7 @@ const archived = computed(() => haikuArchived(competitors.value))
 
       <p class="m-0 w-full font-medium" aria-live="polite">{{ notice }}</p>
       <p v-if="decisionError" role="alert" class="m-0 w-full font-medium text-orange-ink">{{ decisionError }}</p>
+      <StepCard step-id="candidateCheck" variant="widget" />
     </WidgetGrid>
   </ManageLayout>
 </template>

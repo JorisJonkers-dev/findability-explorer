@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StepCard from '../../claude-steps/components/StepCard.vue'
 import { ref } from 'vue'
 import { useTermCandidates } from '../../review/composables/useTermReview'
 import { reviewLine } from '../../review/domain/candidates'
@@ -40,6 +41,7 @@ const { counts, review } = useTermCandidates(ref('pending'))
         link="Review the terms"
         :span="6"
       />
+      <StepCard step-id="termReview" />
     </WidgetGrid>
   </ManageLayout>
 </template>

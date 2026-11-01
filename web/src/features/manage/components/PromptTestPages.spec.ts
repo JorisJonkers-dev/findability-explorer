@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import { originalStep } from '../../../testing/claudeStepFixtures'
 import { describe, expect, it } from 'vitest'
 import type { PromptTestSettings } from '../../../infrastructure/api/types.gen'
 import { me, promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
@@ -14,6 +15,7 @@ function server(extra: Record<string, Handler> = {}) {
   const bodies: unknown[] = []
   const sent: string[] = []
   const handle = routes({
+    'GET /api/v1/admin/claude-steps/reading': () => json(originalStep('reading', 'Reading responses', true)),
     'GET /api/v1/me': () => json(me({ isAdmin: true })),
     ...manageCounts(),
     'GET /api/v1/admin/prompt-test': () => json(promptSettings()),
@@ -68,7 +70,7 @@ describe('the Prompt test index', () => {
     expect(start.get('[data-part="estimate"]').text()).toBe('About $0.25. $7.50 of this month’s OpenRouter budget is left.')
     const titles = wrapper.findAll('section > div > h2').map((h) => h.text())
     expect(titles.indexOf('Start a Prompt run')).toBeLessThan(titles.indexOf('Questions'))
-    expect(titles.slice(-5)).toEqual(['Questions', 'Models', 'Schedule', 'Fact sheet', 'Runs'])
+    expect(titles.slice(-6)).toEqual(['Questions', 'Models', 'Schedule', 'Fact sheet', 'Runs', 'Reading responses'])
     expect(widget(wrapper, 'Runs').text()).toContain('runs1need a retry1')
     expect(widget(wrapper, 'Questions').get('a').attributes('href')).toBe('/manage/prompt-test/questions')
   })

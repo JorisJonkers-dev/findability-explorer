@@ -283,10 +283,12 @@ export function leftOutOf(a: PromptAnswer): string[] {
   return a.extraction?.leftOut ?? []
 }
 
-/** Who checked a response. The API does not yet say which model read it. */
+/** Who checked a response: the model that read it, or a model when the reading did not record which. */
 export function checkedBy(a: PromptAnswer): string {
   if (!a.extraction || a.extraction.failed) return 'No model has checked this response yet.'
-  return 'A model read this response to find the companies it names and to check it against the fact sheet.'
+  const what = 'to find the companies it names and to check it against the fact sheet.'
+  if (a.extraction.readBy) return `Checked by ${a.extraction.readBy}, which read this response ${what}`
+  return `A model read this response ${what}`
 }
 
 /** One question a run asked, in its own language, with its English translation when one is known. */

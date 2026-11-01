@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getPromptTestHistoryOptions } from '../../../infrastructure/api/@tanstack/vue-query.gen'
 import type { PromptTestHistory } from '../../../infrastructure/api/types.gen'
 import { describeError } from '../../../shared/describeError'
-import { breaksOf, chartNotes, chartSeries, forVersion, type Measure, parseVersion, tableRows, type VersionChoice, versionNote, versionOptions } from '../domain/history'
+import { allBreaks, chartNotes, chartSeries, forVersion, type Measure, parseVersion, tableRows, type VersionChoice, versionNote, versionOptions } from '../domain/history'
 
 /**
  * The Prompt test's history per run, narrowed by the Prompt set filter, whose choice is kept in the
@@ -18,7 +18,7 @@ export function useHistory(measures: readonly Measure[]) {
   const versions = computed(() => query.data.value?.versions ?? [])
   const version = computed<VersionChoice>(() => parseVersion(route.query.version, versions.value))
   const runs = computed(() => forVersion(query.data.value?.runs ?? [], version.value))
-  const breaks = computed(() => breaksOf(versions.value, runs.value))
+  const breaks = computed(() => allBreaks(versions.value, runs.value))
   const series = computed(() => chartSeries(runs.value, measures))
   return {
     history: computed<PromptTestHistory | undefined>(() => query.data.value),

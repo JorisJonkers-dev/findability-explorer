@@ -34,6 +34,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
       { label: 'Schedule', to: '/manage/prompt-test/schedule' },
       { label: 'Fact sheet', to: '/manage/prompt-test/fact-sheet' },
       { label: 'Runs', to: '/manage/prompt-test/runs' },
+      { label: 'Reading responses', to: '/manage/claude-steps/reading' },
     ],
   },
   {
@@ -60,6 +61,8 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
       { label: 'Candidates', to: '/manage/competitors/candidates' },
       { label: 'Check the list', to: '/manage/competitors/check' },
       { label: 'Competitor definition', to: '/manage/competitors/definition' },
+      { label: 'Tidying names', to: '/manage/claude-steps/candidateMerge' },
+      { label: 'Checking companies', to: '/manage/claude-steps/candidateCheck' },
     ],
   },
   {
@@ -71,6 +74,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     children: [
       { label: 'Term review', to: '/manage/terms/review' },
       { label: 'Waiting terms', to: '/manage/terms/waiting' },
+      { label: 'Reviewing terms', to: '/manage/claude-steps/termReview' },
     ],
   },
   {

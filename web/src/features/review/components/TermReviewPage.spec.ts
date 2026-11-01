@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import { originalStep } from '../../../testing/claudeStepFixtures'
 import { describe, expect, it } from 'vitest'
 import type { TermCandidate, TermCandidateList, TermReviewState } from '../../../infrastructure/api/types.gen'
 import { me, term } from '../../../testing/fixtures'
@@ -44,6 +45,7 @@ function api(sent: Sent[], extra: Record<string, Handler> = {}, review: TermRevi
     return answer()
   }
   return routes({
+    'GET /api/v1/admin/claude-steps/termReview': () => json(originalStep('termReview', 'Reviewing search terms', false)),
     'GET /api/v1/me': () => json(me({ isAdmin: true })),
     'GET /api/v1/admin/term-candidates': (request) => {
       const status = new URL(request.url).searchParams.get('status')
@@ -231,7 +233,7 @@ describe('the term review', () => {
       '/manage/terms',
     )
     expect(wrapper.get('h1').text()).toBe('Search term list')
-    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(['On the list', 'Waiting terms', 'Term review', 'Term review', 'Waiting terms'])
+    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(['On the list', 'Waiting terms', 'Term review', 'Term review', 'Waiting terms', 'Reviewing search terms'])
     expect(wrapper.text()).toContain('663search terms')
     expect(wrapper.text()).toContain('Claude Haiku has reviewed every search term.')
   })

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StepCard from '../../claude-steps/components/StepCard.vue'
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import BigFigure from '../../manage/components/widgets/BigFigure.vue'
@@ -58,6 +59,7 @@ const control = useTermReviewControl()
           <RouterLink to="/manage/terms/waiting" class="font-medium">Review the terms</RouterLink>
         </template>
       </ManageWidget>
+      <StepCard step-id="termReview" variant="widget" />
     </WidgetGrid>
   </ManageLayout>
 </template>

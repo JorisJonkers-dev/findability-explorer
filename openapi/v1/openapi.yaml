@@ -784,6 +784,62 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/review/switch:
+    put:
+      operationId: setTermReview
+      summary: Switch the term review on or off
+      description: >-
+        Administrators only. On, the language model reviews the waiting candidates by itself every
+        ten minutes; off, it reviews only when an administrator asks (startTermReview). A review
+        that runs goes on until it ends or is stopped. The review is on until it is first switched
+        off. Records who switched it. Returns the review's state.
+      tags: [admin]
+      requestBody:
+        required: true
+        description: Whether the review runs by itself.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermReviewSwitch"
+            example:
+              on: false
+      responses:
+        "200":
+          description: The review's state, switched.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermReviewState"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/term-candidates/review/stop:
+    post:
+      operationId: stopTermReview
+      summary: Stop the term review
+      description: >-
+        Administrators only. Stops the review of the waiting candidates that runs, after the batch
+        it asks about, which it keeps, as it keeps every decision made before; a review asked for
+        that has not started does not start. The review's state says it was stopped by hand
+        (problem stopped). Whether the review is on does not change. 404 when no review runs or is
+        asked for.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/term-candidates/{candidateId}/accept:
     post:
       operationId: acceptTermCandidate
@@ -1424,6 +1480,27 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-candidates/review/stop:
+    post:
+      operationId: stopCandidateReview
+      summary: Stop Claude Haiku's review of the competitor candidates
+      description: >-
+        Administrators only. Stops the review of the competitor candidates that runs, after the
+        step it is on (the merge, or a batch of checks), which it keeps, as it keeps every decision
+        made before. The review's state says it was stopped by hand (problem stopped). 404 when no
+        review runs.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/competitor-checks:
     get:
       operationId: listCompetitorChecks
@@ -1469,6 +1546,26 @@ paths:
         "401":
           $ref: "#/components/responses/Problem"
         "403":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/competitor-checks/stop:
+    post:
+      operationId: stopCompetitorCheck
+      summary: Stop Claude Haiku's check of the competitor list
+      description: >-
+        Administrators only. Stops the check of the companies on the competitor list that runs,
+        after the batch it is on, which it keeps, as it keeps every company archived before. The
+        check's state says it was stopped by hand (problem stopped). 404 when no check runs.
+      tags: [admin]
+      responses:
+        "204":
+          description: Stopped.
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -3634,11 +3731,17 @@ components:
         tier:
           $ref: "#/components/schemas/IntentTier"
     TermReviewState:
-      description: How far the language model is with the waiting candidates.
+      description: >-
+        Whether the language model reviews the waiting candidates by itself, how far it is with
+        them, and what it used this month.
       type: object
       additionalProperties: false
-      required: [running, waiting]
+      required: [on, running, waiting, monthTokens, monthCostUsd]
       properties:
+        on:
+          type: boolean
+          description: Whether it reviews by itself every ten minutes; off, only when asked.
+          example: true
         running:
           type: boolean
           description: Whether it is reviewing now.
@@ -3653,10 +3756,30 @@ components:
         problem:
           description: >-
             Why its last review stopped short - noModel (no Anthropic key is set up), budget (the
-            month's Anthropic budget is spent) or failed (the model or its provider failed).
-            Absent when it went well.
+            month's Anthropic budget is spent), failed (the model or its provider failed) or
+            stopped (an administrator stopped it; what it decided is kept). Absent when it went
+            well.
           type: string
-          enum: [noModel, budget, failed]
+          enum: [noModel, budget, failed, stopped]
+        monthTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000
+          description: The tokens it used this month, input and output together.
+          example: 240000
+        monthCostUsd:
+          $ref: "#/components/schemas/Usd"
+    TermReviewSwitch:
+      description: Whether the term review runs by itself.
+      type: object
+      additionalProperties: false
+      required: [on]
+      properties:
+        on:
+          type: boolean
+          description: On, it reviews every ten minutes; off, only when an administrator asks.
+          example: false
     TermCandidateCounts:
       description: How many candidates have each status.
       type: object
@@ -6378,10 +6501,11 @@ components:
         problem:
           description: >-
             Why its last review stopped short - noKey (no Anthropic key is set up), budget (the
-            month's Anthropic budget is spent) or failed (the model or its provider failed).
-            Absent when it went well.
+            month's Anthropic budget is spent), failed (the model or its provider failed) or
+            stopped (an administrator stopped it; what it decided is kept). Absent when it went
+            well.
           type: string
-          enum: [noKey, budget, failed]
+          enum: [noKey, budget, failed, stopped]
     CandidateDecisions:
       description: Add or dismiss several competitor candidates.
       type: object

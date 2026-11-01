@@ -1,73 +1,92 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { toRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import BarList from '../../../shared/ui/charts/BarList.vue'
-import PageView from '../../shell/components/PageView.vue'
-import { companyPath } from '../../shell/domain/sections'
-import { useGoals } from '../composables/useGoals'
-import { numberDetail, targetOfSlug } from '../domain/goals'
+import HistorySection from '../../prompt-test/components/HistorySection.vue'
+import PageFrame from '../../shell/components/PageFrame.vue'
+import { useGoalPage } from '../composables/useGoalPage'
+import GoalSection from './GoalSection.vue'
 
 const props = defineProps<{ measure: string }>()
-const { facts, isLoading, error } = useGoals()
-
-const target = computed(() => targetOfSlug(props.measure))
-const detail = computed(() => (facts.value && target.value ? numberDetail(facts.value, target.value) : undefined))
-const title = computed(() => detail.value?.headline ?? 'Number to watch')
-const missing = computed(() => !isLoading.value && !error.value && detail.value === undefined)
+const goal = useGoalPage(toRef(props, 'measure'))
+const page = goal.page
+const MARK = { yes: '✓', no: '✕', unknown: '?' } as const
 </script>
 
 <template>
-  <PageView section="overview" eyebrow="Number to watch" :back="{ to: '/', label: 'Back to Overview' }" :title="title">
-    <template v-if="detail" #lede>
-      <p class="m-0 max-w-[66ch] text-lg leading-normal text-ink-2">{{ detail.counts }}</p>
-    </template>
+  <PageFrame
+    section="overview"
+    :title="page?.name ?? 'Goal'"
+    :purpose="page?.purpose ?? 'One of the five goals Tribelt is measured against.'"
+    :data-line="goal.dataLine.value"
+    :back="{ to: '/', label: 'Back to Overview' }"
+    :manage="{ to: '/manage/recommendations', label: 'Set the goals' }"
+    :help-topic="goal.helpTopic.value"
+  >
+    <p v-if="goal.error.value" role="alert" class="m-0 text-lg text-orange-ink">{{ goal.error.value }}</p>
+    <p v-else-if="goal.isLoading.value" class="m-0 text-lg text-muted">Loading the goal…</p>
+    <p v-else-if="goal.missing.value" class="m-0 text-lg">There is no goal at this address. Pick one from the Overview.</p>
 
-    <p v-if="error" role="alert" class="m-0 text-lg">{{ error }}</p>
-    <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the number…</p>
-    <p v-else-if="missing" class="m-0 text-lg">There is no number to watch at this address. Pick one from the Overview.</p>
+    <template v-else-if="page">
+      <p data-part="summary" class="m-0 rounded-3xl bg-orange-pale px-6 py-5 font-display text-xl leading-snug font-medium text-pretty sm:px-8 sm:text-2xl">
+        {{ page.summary }}
+      </p>
 
-    <template v-else-if="detail">
-      <section aria-label="Key figures" class="grid grid-cols-1 gap-5 md:grid-cols-3">
-        <div
-          v-for="f in detail.figures"
-          :key="f.title"
-          class="flex flex-col gap-2.5 rounded-3xl px-7 py-6"
-          :class="f.tone === 'tribelt' ? 'bg-orange-pale' : 'bg-mist'"
-        >
-          <span class="font-display text-5xl leading-none font-semibold tracking-[-0.02em]" :class="f.tone === 'tribelt' ? 'text-orange-ink' : ''">{{ f.big }}</span>
-          <span class="font-semibold">{{ f.title }}</span>
-          <span class="text-muted">{{ f.note }}</span>
-        </div>
-      </section>
+      <div class="grid items-start gap-10 min-[1100px]:grid-cols-2">
+        <GoalSection id="compare" title="Tribelt against the competitors" :intro="page.comparison">
+          <div class="rounded-3xl bg-mist p-5 sm:p-6">
+            <BarList :rows="page.bars" :max="page.barsMax" :label="page.name" />
+          </div>
+        </GoalSection>
 
-      <section aria-labelledby="compare-title" class="flex flex-col gap-4 rounded-[28px] border-2 border-solid border-grey p-7">
-        <h2 id="compare-title" class="m-0 font-display text-2xl font-semibold">Tribelt against the field</h2>
-        <BarList :rows="detail.bars" :max="detail.barsMax" :label="detail.label" />
-        <p class="m-0 text-sm text-muted">{{ detail.comparison }}</p>
-      </section>
+        <HistorySection
+          v-if="goal.history.value"
+          id="over-time"
+          title="Over time"
+          intro="One point for each Prompt run. A dashed ring marks a partial run."
+          :measures="[goal.history.value]"
+          :goal="page.goal"
+        />
+        <GoalSection v-else id="over-time" title="Over time">
+          <p class="m-0 rounded-3xl bg-mist p-5 text-ink-2 sm:p-6">Only the newest scan of tribelt.nl is kept for this goal, so there is no line yet.</p>
+        </GoalSection>
+      </div>
 
-      <section aria-labelledby="improves-title" class="flex flex-col gap-3.5">
-        <h2 id="improves-title" class="m-0 font-display text-2xl font-semibold">What improves it</h2>
-        <ul v-if="detail.improvements.length > 0" class="m-0 list-none border-t-2 border-black p-0">
-          <li v-for="i in detail.improvements" :key="i.improvement.id" class="border-b border-grey">
-            <RouterLink
-              :to="`/recommendations/${i.improvement.id}`"
-              class="grid min-h-16 grid-cols-[2.5rem_minmax(0,1fr)_1.5rem] items-center gap-3 rounded-xl p-2 text-black no-underline hover:bg-mist hover:text-black"
-            >
-              <span class="font-display text-2xl font-semibold text-orange-ink">{{ i.rank }}</span>
-              <span class="flex flex-col gap-0.5">
-                <span class="text-lg font-bold">{{ i.improvement.title }}</span>
-                <span class="text-sm text-muted">{{ i.improvement.done ? 'Done. ' : '' }}{{ i.improvement.moves }}</span>
-              </span>
-              <svg aria-hidden="true" viewBox="0 0 24 24" class="size-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7" /></svg>
-            </RouterLink>
+      <GoalSection id="broken" title="Broken down">
+        <p v-if="goal.breakdownError.value" role="alert" class="m-0 text-orange-ink">{{ goal.breakdownError.value }}</p>
+        <p v-else-if="!goal.breakdown.value" class="m-0 text-muted">Loading…</p>
+        <template v-else-if="goal.breakdown.value.kind === 'groups'">
+          <p v-if="goal.breakdown.value.groups.length === 0" class="m-0 text-ink-2">No Prompt run has finished yet.</p>
+          <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div v-for="g in goal.breakdown.value.groups" :key="g.title" class="flex flex-col gap-3 rounded-3xl bg-mist p-5 sm:p-6">
+              <h3 class="m-0 text-lg font-semibold">{{ g.title }}</h3>
+              <BarList :rows="g.rows" :max="1" :label="g.title" />
+            </div>
+          </div>
+        </template>
+        <ul v-else-if="goal.breakdown.value.kind === 'checks'" class="m-0 flex list-none flex-col gap-3 rounded-3xl bg-mist p-5 sm:p-6">
+          <li v-for="c in goal.breakdown.value.checks" :key="c.label" class="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-3">
+            <span class="font-bold" :class="c.passed ? 'text-black' : 'text-orange-ink'">
+              <span aria-hidden="true">{{ c.passed === null ? MARK.unknown : c.passed ? MARK.yes : MARK.no }}</span>
+              <span class="sr-only">{{ c.passed === null ? 'Not known' : c.passed ? 'Passed' : 'Not passed' }}</span>
+            </span>
+            <span><strong>{{ c.label }}.</strong> {{ c.what }}</span>
           </li>
         </ul>
-        <p v-else class="m-0 text-ink-2">No recommendation improves this number yet.</p>
-        <RouterLink v-if="detail.leader" :to="companyPath(detail.leader.competitorId)" class="inline-flex min-h-11 items-center self-start font-bold">
-          See what {{ detail.leader.name }} does differently
-        </RouterLink>
-      </section>
+        <div v-else class="rounded-3xl bg-mist p-5 sm:p-6">
+          <BarList :rows="goal.breakdown.value.rows" :max="goal.breakdown.value.max" label="Search terms tribelt.nl uses, per language" />
+        </div>
+      </GoalSection>
+
+      <GoalSection id="improves" title="What improves it">
+        <ul v-if="page.improvements.length" class="m-0 flex list-none flex-col rounded-3xl bg-mist px-5 py-2 sm:px-6">
+          <li v-for="i in page.improvements" :key="i.id" class="flex flex-col gap-1 border-b border-grey py-3 last:border-b-0">
+            <RouterLink :to="`/recommendations/${i.id}`" class="font-semibold">{{ i.title }}</RouterLink>
+            <span class="text-sm text-muted">Benefit {{ i.benefit }}, effort {{ i.effort }}</span>
+          </li>
+        </ul>
+        <p v-else class="m-0 text-ink-2">No open recommendation aims at this goal.</p>
+      </GoalSection>
     </template>
-  </PageView>
+  </PageFrame>
 </template>

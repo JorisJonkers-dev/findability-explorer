@@ -1,50 +1,76 @@
 import { describe, expect, it } from 'vitest'
-import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
-import { planFixture, standingsFixture } from '../../../testing/numbersFixtures'
+import { overviewRoutes } from '../../../testing/homeFixtures'
+import { mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
-const ok = { 'GET /api/v1/plan': () => json(planFixture()), 'GET /api/v1/standings': () => json(standingsFixture()) }
+describe('a goal page', () => {
+  it('names the goal, says what it measures and who is ahead, with the way back', async () => {
+    const { wrapper } = await mountApp(routes(overviewRoutes({}, true)), '/goals/aiShareOfVoice')
+    expect(wrapper.get('h1').text()).toBe('AI responses that name Tribelt')
+    expect(wrapper.get('[data-part="purpose"]').text()).toBe("The share of a Prompt run's responses that name Tribelt.")
+    expect(wrapper.get('[data-part="data-line"]').text()).toMatch(/^From the Prompt run of 1 November 2026: 90 questions to 2 models/)
+    expect(wrapper.get('[data-part="summary"]').text()).toBe('Ashworth is ahead of Tribelt, with 57% against 24%. The goal is 40%.')
+    expect(wrapper.findAll('a').find((a) => a.text().includes('Back to Overview'))?.attributes('href')).toBe('/')
+    expect(wrapper.findAll('a').find((a) => a.text() === 'Set the goals')?.attributes('href')).toBe('/manage/recommendations')
+  })
 
-describe('the page of a number', () => {
-  it('shows the headline, the key figures, the comparison and what improves it', async () => {
-    const { wrapper } = await mountApp(routes(ok), '/goals/aiShareOfVoice')
-    expect(wrapper.get('h1').text()).toBe("Ashworth is ahead with 57%, against Tribelt's 24%.")
-    expect(wrapper.findAll('a').some((a) => a.text() === 'Back to Overview')).toBe(true)
-    expect(wrapper.text()).toContain("This number is the share of the newest Prompt run's answers that name Tribelt at least once.")
-    expect(wrapper.findAll('section[aria-label="Key figures"] > div').map((d) => d.text())).toEqual([
-      '24%Tribelt nowTribelt is 60% of the way there.',
-      '57%Ashworth, the leaderThe competitor with the best value now.',
-      '40%Target for the yearThe goal for this number by the end of the year.',
+  it('sets Tribelt against the competitors beside Over time, drawn from the history with the Prompt set filter', async () => {
+    const { wrapper } = await mountApp(routes(overviewRoutes()), '/goals/aiShareOfVoice')
+    const compare = wrapper.get('section[aria-labelledby="compare-title"]')
+    expect(compare.get('h2').text()).toBe('Tribelt against the competitors')
+    expect(compare.text()).toContain('The typical competitor is the middle figure across all competitors on the list.')
+    expect(compare.get('[role="img"]').attributes('aria-label')).toBe(
+      'AI responses that name Tribelt. Tribelt: 24%. The typical competitor: 10%. Ashworth, the best competitor: 57%. The goal: 40%.',
+    )
+    const time = wrapper.get('section[aria-labelledby="over-time-title"]')
+    expect(time.text()).toContain('One point for each Prompt run. A dashed ring marks a partial run.')
+    expect(time.findAll('[role="group"][aria-label="Prompt set"] button').map((b) => b.text())).toEqual(['All versions', 'Version 2, current', 'Version 1'])
+    expect(time.findAll('circle[data-part="dot"]')).toHaveLength(2)
+    expect(time.findAll('[data-part="end"] text').map((t) => t.text())).toEqual(['Tribelt 25%', 'Goal 40%'])
+    expect(time.get('[data-part="notes"]').text()).toContain('a partial run of version 1')
+  })
+
+  it('breaks the goal down by model, scope, and belt family, and lists what improves it', async () => {
+    const { wrapper } = await mountApp(routes(overviewRoutes()), '/goals/aiShareOfVoice')
+    const broken = wrapper.get('section[aria-labelledby="broken-title"]')
+    expect(broken.findAll('h3').map((h) => h.text())).toEqual(['By model', 'By scope', 'By belt family'])
+    const improves = wrapper.get('section[aria-labelledby="improves-title"]')
+    expect(improves.findAll('a').map((a) => [a.attributes('href'), a.text()])).toEqual([
+      ['/recommendations/submit-search-engines', 'Submit tribelt.nl to Google and Bing'],
+      ['/recommendations/answer-questions', 'Answer buyers questions'],
     ])
-    expect(wrapper.get('#compare-title').text()).toBe('Tribelt against the field')
-    expect(wrapper.text()).toContain('The typical competitor is the middle value over the four competitors with data.')
-    const improves = wrapper.findAll('section[aria-labelledby="improves-title"] li a')
-    expect(improves.map((a) => a.attributes('href'))).toEqual(['/recommendations/submit-search-engines', '/recommendations/answer-questions'])
-    expect(improves[0]?.text()).toContain('Submit tribelt.nl to Google and Bing')
-    expect(wrapper.get('a[href="/competitors/ashworth"]').text()).toBe('See what Ashworth does differently')
+    expect(improves.text()).toContain('Benefit 3, effort 2')
   })
 
-  it('says when nothing improves a number, and marks a done improvement', async () => {
-    const { wrapper } = await mountApp(routes(ok), '/goals/termsUsed')
-    expect(wrapper.text()).toContain('No recommendation improves this number yet.')
-    const readiness = await mountApp(routes(ok), '/goals/readinessChecks')
-    expect(readiness.wrapper.get('section[aria-labelledby="improves-title"] li').text()).toContain('Done. Improves AI readiness.')
+  it('lists the readiness checks, without a line over time yet', async () => {
+    const { wrapper } = await mountApp(routes(overviewRoutes()), '/goals/readinessChecks')
+    expect(wrapper.get('h1').text()).toBe('AI readiness checks passed')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('From the newest scan of each site.')
+    const time = wrapper.get('section[aria-labelledby="over-time-title"]')
+    expect(time.text()).toContain('Only the newest scan of tribelt.nl is kept for this goal, so there is no line yet.')
+    expect(time.find('[aria-label="Prompt set"]').exists()).toBe(false)
+    const broken = wrapper.get('section[aria-labelledby="broken-title"]')
+    expect(broken.findAll('li').map((l) => l.text())).toEqual([
+      expect.stringMatching(/^✓PassedLets every AI crawler in/),
+      expect.stringMatching(/^✕Not passedHas llms\.txt/),
+      expect.stringMatching(/^\?Not knownHas Markdown pages/),
+    ])
+    expect(wrapper.get('section[aria-labelledby="improves-title"]').text()).toContain('No open recommendation aims at this goal.')
   })
 
-  it('goes back to the Overview', async () => {
-    const { wrapper, router } = await mountApp(routes(ok), '/goals/aiShareOfVoice')
-    await wrapper.findAll('a').find((a) => a.text() === 'Back to Overview')?.trigger('click')
+  it('counts the search terms tribelt.nl uses per language', async () => {
+    const { wrapper } = await mountApp(routes(overviewRoutes()), '/goals/termsUsed')
+    expect(wrapper.get('section[aria-labelledby="broken-title"] [role="img"]').attributes('aria-label')).toBe('Search terms tribelt.nl uses, per language. English, of 200: 20.')
+  })
+
+  it('says when a breakdown cannot be loaded, when there is no such goal, and when the goals fail', async () => {
+    const runs = await mountApp(routes(overviewRoutes({ 'GET /api/v1/prompt-test': () => problem(500, 'Internal Server Error', 'Runs down.') })), '/goals/citationShare')
+    expect(runs.wrapper.get('section[aria-labelledby="broken-title"] [role="alert"]').text()).toContain('Runs down.')
+    runs.wrapper.unmount()
+    const none = await mountApp(routes(overviewRoutes()), '/goals/nothing')
+    expect(none.wrapper.text()).toContain('There is no goal at this address. Pick one from the Overview.')
+    none.wrapper.unmount()
+    const down = await mountApp(routes(overviewRoutes({ 'GET /api/v1/plan': () => problem(500, 'Internal Server Error', 'Down.') })), '/goals/aiShareOfVoice')
     await settle()
-    expect(router.currentRoute.value.fullPath).toBe('/')
-  })
-
-  it('says so at an address that is not a number', async () => {
-    const { wrapper } = await mountApp(routes(ok), '/goals/nothing')
-    expect(wrapper.get('h1').text()).toBe('Number to watch')
-    expect(wrapper.text()).toContain('There is no number to watch at this address.')
-  })
-
-  it('says when the numbers fail to load', async () => {
-    const { wrapper } = await mountApp(routes({ ...ok, 'GET /api/v1/standings': () => problem(500, 'Internal Server Error', 'Down.') }), '/goals/aiShareOfVoice')
-    expect(wrapper.get('[role="alert"]').text()).toContain('Down.')
+    expect(down.wrapper.get('[role="alert"]').text()).toContain('Down.')
   })
 })

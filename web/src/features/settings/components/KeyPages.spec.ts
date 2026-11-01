@@ -51,8 +51,8 @@ describe('Keys and spending', () => {
     expect(document.title).toBe('Keys and spending · Findability Explorer')
     expect(wrapper.get('h1').text()).toBe('Keys and spending')
     expect(wrapper.get('nav[aria-label="Account"]').text()).toContain('Signed in as Ada')
-    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(["This month's tokens", 'OpenRouter key', 'Anthropic key', 'Budgets', 'Events'])
-    expect(widget(wrapper, "This month's tokens").text()).toContain('48,211 of 10,000,000 tokens used this month (0%)')
+    expect(wrapper.findAll('section > div > h2').map((h) => h.text())).toEqual(['Anthropic this month', 'OpenRouter key', 'Anthropic key', 'Budgets', 'Events', 'Models and instructions'])
+    expect(widget(wrapper, 'Anthropic this month').text()).toContain('$0.48 of $15.00 spent this month (3%), $14.52 left')
     expect(widget(wrapper, 'OpenRouter key').text()).toContain('Not tested. It pays for the Prompt test')
     expect(widget(wrapper, 'OpenRouter key').text()).toContain('9f86d081884cfingerprint')
     expect(widget(wrapper, 'Anthropic key').text()).toContain('Works.')
@@ -113,7 +113,7 @@ describe('a key', () => {
     expect(vault.text()).toContain('Accepted on 23 Oct 2026, 09:30 UTC: The key may use 9 models.')
     expect(vault.text()).toContain('Vault delivers this key; change or remove it in Vault.')
     expect(vault.findAll('button').map((b) => b.text())).toEqual(['Test the key', 'Usage and cost', 'Save the new key'])
-    expect(widget(wrapper, 'Spent this month').text()).toContain('48,211 of 10,000,000 tokens used this month')
+    expect(widget(wrapper, 'Spent this month').text()).toContain('$0.48 of $15.00 spent this month (3%), $14.52 left')
     expect(widget(wrapper, 'Admin key for usage reports').text()).toContain('Add the Admin key')
   })
 
@@ -145,13 +145,26 @@ describe('a key', () => {
 })
 
 describe('the budget and the events', () => {
-  it('shows the month\'s tokens and what a scan uses', async () => {
-    const { wrapper } = await mountApp(server().handle, '/manage/keys/budgets')
+  it('shows the month\'s spending and what a scan costs, and saves a new budget in dollars', async () => {
+    const bodies: unknown[] = []
+    const { wrapper } = await mountApp(
+      server(llmSettings(), { 'PATCH /api/v1/admin/llm/budget': async (r) => (bodies.push(await r.json()), json(llmSettings())) }).handle,
+      '/manage/keys/budgets',
+    )
     expect(wrapper.get('h1').text()).toBe('Budgets')
     expect(wrapper.get('[data-testid="per-scan"]').text()).toBe(
-      'A company scan uses 29,137 tokens on average, over 2 scans.What is left this month covers about 341 more scans.',
+      'A company scan costs $0.0044 on average (29,137 tokens), over 2 scans.What is left this month covers about 3,300 more scans.',
     )
-    expect(widget(wrapper, 'A scan').text()).toContain('10,000,000tokens a month')
+    const form = wrapper.get('form[aria-label="Anthropic monthly budget"]')
+    expect((form.get('input').element as HTMLInputElement).value).toBe('15.00')
+    await form.get('input').setValue('none')
+    await form.trigger('submit')
+    expect(form.get('[role="alert"]').text()).toBe('Type a budget from $0.01 to $1,000.')
+    await form.get('input').setValue('20')
+    await form.trigger('submit')
+    await settle()
+    expect(bodies).toEqual([{ monthlyBudgetUsd: 20 }])
+    expect(form.text()).toContain('The budget is saved.')
   })
 
   it('lists the events newest first, with who and whether the provider accepted', async () => {

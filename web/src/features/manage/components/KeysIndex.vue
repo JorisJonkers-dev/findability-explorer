@@ -54,6 +54,13 @@ const fingerprint = (p: KeyProvider) => keysOf(credentials.value, p)[0]?.fingerp
         :figures="[{ value: String(settings.events.length), label: 'events' }]"
         :span="3"
       />
+      <IndexCard
+        title="Models and instructions"
+        text="Every step that asks a Claude model: which model it uses, its instructions, and what it costs."
+        to="/manage/claude-steps"
+        link="See the steps"
+        :span="3"
+      />
     </WidgetGrid>
   </ManageLayout>
 </template>

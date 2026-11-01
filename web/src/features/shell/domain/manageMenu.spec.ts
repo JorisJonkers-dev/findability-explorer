@@ -25,6 +25,7 @@ describe('the Manage menu', () => {
       ['Website scans', 'Scan queue', '/manage/scans/queue'],
       ['Website scans', 'Recent scans', '/manage/scans/recent'],
       ['Website scans', 'Scan settings', '/manage/scans/settings'],
+      ['Website scans', 'Matching products', '/manage/claude-steps/matching'],
       ['Competitor list', 'Companies', '/manage/competitors/companies'],
       ['Competitor list', 'Candidates', '/manage/competitors/candidates'],
       ['Competitor list', 'Check the list', '/manage/competitors/check'],
@@ -37,9 +38,11 @@ describe('the Manage menu', () => {
       ['Keys and spending', 'Anthropic key', '/manage/keys/anthropic'],
       ['Keys and spending', 'Budgets', '/manage/keys/budgets'],
       ['Keys and spending', 'Events', '/manage/keys/events'],
+      ['Keys and spending', 'Models and instructions', '/manage/claude-steps'],
     ])
+    // A Claude step is listed under the section it works for, and all of them under Keys and spending.
     for (const group of MANAGE_MENU) {
-      for (const child of group.children) expect(child.to.startsWith(`${group.to}/`)).toBe(true)
+      for (const child of group.children) expect(child.to.startsWith(`${group.to}/`) || child.to.startsWith('/manage/claude-steps')).toBe(true)
     }
   })
 
@@ -52,6 +55,8 @@ describe('the Manage menu', () => {
     expect(groupOf('/manage/prompt-test')?.label).toBe('Prompt test')
     expect(groupOf('/manage/competitors/candidates')?.label).toBe('Competitor list')
     expect(groupOf('/manage/scans/7f3c')?.label).toBe('Website scans')
+    expect(groupOf('/manage/claude-steps/matching')?.label).toBe('Website scans')
+    expect(groupOf('/manage/claude-steps')?.label).toBe('Keys and spending')
     expect(groupOf('/manage/no-such-section')?.label).toBe('Activity')
     expect(groupOf('/manageable')).toBeUndefined()
     expect(groupOf('/terms')).toBeUndefined()

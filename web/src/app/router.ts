@@ -194,6 +194,20 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       },
       { path: '/manage/recommendations/goals', name: 'goals-edit', component: () => import('../features/plan/components/GoalsPage.vue'), meta: { title: 'Goals', view: 'manage' } },
       // Keys and spending.
+      // The Claude steps: all of them, and each under the section it works for.
+      {
+        path: '/manage/claude-steps',
+        name: 'claude-steps',
+        component: () => import('../features/claude-steps/components/ClaudeStepsView.vue'),
+        meta: { title: 'Claude models and instructions', view: 'manage' },
+      },
+      {
+        path: '/manage/claude-steps/:step(matching)',
+        name: 'claude-step',
+        component: () => import('../features/claude-steps/components/ClaudeStepView.vue'),
+        props: (to) => ({ stepId: String(to.params.step) }),
+        meta: { title: 'Claude step', view: 'manage' },
+      },
       { path: '/manage/keys', name: 'keys', component: () => import('../features/manage/components/KeysIndex.vue'), meta: { title: 'Keys and spending', view: 'manage' } },
       { path: '/manage/keys/budgets', name: 'budgets', component: () => import('../features/settings/components/BudgetsPage.vue'), meta: { title: 'Budgets', view: 'manage' } },
       { path: '/manage/keys/events', name: 'events', component: () => import('../features/settings/components/EventsPage.vue'), meta: { title: 'Events', view: 'manage' } },

@@ -59,6 +59,7 @@ describe('Website scans', () => {
       'Scan queue',
       'Recent scans',
       'Scan settings',
+      'Matching products',
     ])
     expect(widget(wrapper, 'Last scan').text()).toContain('27 October 2099')
     expect(widget(wrapper, 'Language model budget').text()).toContain('48,211 of 10,000,000 tokens used this month')

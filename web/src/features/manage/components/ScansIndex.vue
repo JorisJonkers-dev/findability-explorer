@@ -5,6 +5,8 @@ import { useCompanies } from '../../competitors/composables/useCompanies'
 import { useRescan } from '../../competitors/composables/useCompanyAdmin'
 import { rescanSummary } from '../../competitors/domain/admin'
 import { useReadinessCheck, useReadinessTable } from '../../readiness/composables/useReadiness'
+import StepCard from '../../claude-steps/components/StepCard.vue'
+import { useClaudeStep } from '../../claude-steps/composables/useClaudeSteps'
 import RunningWork from '../../scan/components/RunningWork.vue'
 import ScanForm from '../../scan/components/ScanForm.vue'
 import { usePageBudget } from '../../scan/composables/usePageBudget'
@@ -35,7 +37,12 @@ const startScan = useStartScan()
 const rescan = useRescan()
 const readiness = useReadinessCheck()
 
-const budget = computed(() => settings.value?.budget)
+// A scan's estimate is the matching step's job with the model it uses now, so it scales with it.
+const { step: matching } = useClaudeStep(ref('matching'))
+const budget = computed(() => {
+  const b = settings.value?.budget
+  return b && matching.value ? { ...b, averageScanUsd: matching.value.jobCostUsd } : b
+})
 const last = computed(() => lastScanned(companies.value))
 const tribelt = computed(() => companies.value.find((c) => c.role === 'tribelt'))
 const scanned = computed(() => newestScans(companies.value).length)
@@ -170,6 +177,7 @@ const checkLine = computed(() => {
         link="Change the settings"
         :figures="[{ value: String(pages), label: 'pages' }]"
       />
+      <StepCard step-id="matching" />
     </WidgetGrid>
   </ManageLayout>
 </template>

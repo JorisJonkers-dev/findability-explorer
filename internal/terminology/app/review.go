@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
@@ -193,6 +194,25 @@ func (s *Service) reviewAll(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	waiting := domain.Unreviewed(all)
+	if len(waiting) == 0 {
+		return 0, nil
+	}
+	// A review the budget allows no batch of asks nothing: there is no work to record.
+	if err := s.affordable(ctx); err != nil {
+		return 0, err
+	}
+	entry := work.Start(ctx, s.journal, work.KindTermReview, domain.ModelReviewer, s.now(), s.report)
+	var used domain.Usage
+	reviewed, err := s.reviewBatches(ctx, judge, model, waiting, &used)
+	entry.Finish(context.WithoutCancel(ctx), work.Outcome{
+		Ending: ending(err), Counts: work.Counts{Done: reviewed, Total: len(waiting)},
+		InputTokens: used.InputTokens, OutputTokens: used.OutputTokens,
+	}, s.now(), s.report)
+	return reviewed, err
+}
+
+// reviewBatches asks the model about waiting a batch at a time, adding what asking used to used.
+func (s *Service) reviewBatches(ctx context.Context, judge Judge, model string, waiting []domain.Candidate, used *domain.Usage) (int, error) {
 	terms := s.Terms()
 	reviewed := 0
 	for len(waiting) > 0 {
@@ -206,6 +226,10 @@ func (s *Service) reviewAll(ctx context.Context) (int, error) {
 		waiting = waiting[len(batch):]
 		var usage []domain.Usage
 		verdicts, err := s.ask(ctx, judge, model, batch, terms, &usage)
+		for _, u := range usage {
+			used.InputTokens += u.InputTokens
+			used.OutputTokens += u.OutputTokens
+		}
 		if err != nil {
 			// What the failed requests consumed still counts.
 			return reviewed, errors.Join(fmt.Errorf("ask the language model: %w", err), s.review.verdicts.SaveReview(ctx, nil, nil, usage))
@@ -218,6 +242,26 @@ func (s *Service) reviewAll(ctx context.Context) (int, error) {
 		reviewed += len(batch)
 	}
 	return reviewed, nil
+}
+
+// ending is how a review that returned err ended.
+func ending(err error) work.Ending {
+	switch {
+	case err == nil:
+		return work.EndingDone
+	case errors.Is(err, ErrStopped):
+		return work.EndingStoppedByHand
+	case errors.Is(err, ErrBudgetSpent):
+		return work.EndingStoppedByBudget
+	default:
+		return work.EndingFailed
+	}
+}
+
+// WithJournal records each review that has candidates to review in j, as Activity lists it;
+// report hears that j failed, which leaves the review alone.
+func (s *Service) WithJournal(j work.Journal, report func(error)) {
+	s.journal, s.report = j, report
 }
 
 // decide is the decisions the sure verdicts on batch make, and the map with the terms they accept;

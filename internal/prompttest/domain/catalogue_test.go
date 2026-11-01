@@ -141,3 +141,14 @@ func TestCatalogueListsTheRecommendedFirstThenTheCheapest(t *testing.T) {
 		t.Errorf("free = %+v", free)
 	}
 }
+
+func TestAskedModelsSplitsTheListByTheRun(t *testing.T) {
+	run := []domain.ModelChoice{{Provider: "openai", Model: "openai/a"}, {Provider: "google", Model: "google/b"}}
+	kept, missing := domain.AskedModels(run, []string{"google/b", "mistralai/c"})
+	if !slices.Equal(kept, run[1:]) || !slices.Equal(missing, []string{"mistralai/c"}) {
+		t.Errorf("kept %v, missing %v", kept, missing)
+	}
+	if got := domain.OfModels(run, []string{"openai/a"}); !slices.Equal(got, run[:1]) {
+		t.Errorf("of models = %v", got)
+	}
+}

@@ -7,7 +7,8 @@ SET statement_timeout = '60s';
 -- own (a language with or without a region) and with any buyer intent. The answers' checks named
 -- the six imported scopes, Dutch, German and English, and three kinds; they are swapped for checks
 -- of the form a scope's id, a language code, and a kind take. Every answer stored so far passes the
--- new checks, which are added NOT VALID, so new rows are checked at once, and then validated.
+-- new checks, which are added NOT VALID, so new rows are checked at once without a scan of the
+-- answers under the lock; a later migration validates them, in a transaction of its own.
 ALTER TABLE prompt_answers DROP CONSTRAINT IF EXISTS prompt_answers_scope_check;
 ALTER TABLE prompt_answers ADD CONSTRAINT prompt_answers_scope_check
 CHECK (scope ~ '^[a-z][a-z0-9_-]{0,39}$') NOT VALID;
@@ -20,6 +21,3 @@ ALTER TABLE prompt_answers DROP CONSTRAINT IF EXISTS prompt_answers_kind_check;
 ALTER TABLE prompt_answers ADD CONSTRAINT prompt_answers_kind_check
 CHECK (kind IN ('supplier', 'application', 'problem', 'spec', 'broad')) NOT VALID;
 
-ALTER TABLE prompt_answers VALIDATE CONSTRAINT prompt_answers_scope_check;
-ALTER TABLE prompt_answers VALIDATE CONSTRAINT prompt_answers_language_check;
-ALTER TABLE prompt_answers VALIDATE CONSTRAINT prompt_answers_kind_check;

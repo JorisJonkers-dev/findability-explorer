@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.12.0...v1.12.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **deps:** pin dependencies ([#105](https://github.com/JorisJonkers-dev/findability-explorer/issues/105)) ([8fec6fa](https://github.com/JorisJonkers-dev/findability-explorer/commit/8fec6fa609d09cd28bdde3ef37e144aa0b598f72))
+
 ## [1.12.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.11.1...v1.12.0) (2026-10-28)
 
 

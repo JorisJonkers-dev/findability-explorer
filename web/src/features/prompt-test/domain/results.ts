@@ -8,6 +8,7 @@ import type {
   PromptScope,
   PromptTestResults,
 } from '../../../infrastructure/api/types.gen'
+import { dollars } from '../../../shared/numbers'
 
 const PERCENT = new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 0 })
 const NUMBER = new Intl.NumberFormat('en-GB')
@@ -121,7 +122,7 @@ export function progressLabel(run: Pick<PromptRun, 'answered' | 'failed' | 'task
 
 /** A run's cost in dollars: "$2.75". */
 export function costLabel(usd: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(usd)
+  return dollars(usd)
 }
 
 /** The run the results open on: the newest that has answers to show, else the newest. */

@@ -4,9 +4,9 @@ import { clock, longDate } from '../../../shared/dates'
 import { describeError } from '../../../shared/describeError'
 import { endingLabel } from '../../../shared/endings'
 import { dollars } from '../../settings/domain/usage'
+import { plural } from '../../../shared/numbers'
 
 const NUMBER = new Intl.NumberFormat('en-GB')
-const plural = (n: number, one: string) => `${NUMBER.format(n)} ${n === 1 ? one : `${one}s`}`
 const when = (iso: string | undefined) => (iso ? longDate(iso) : 'none yet')
 
 /** What a run reads, and that it writes in place of the open recommendations. */

@@ -6,11 +6,11 @@ import { hostOf } from '../../prompt-test/domain/grid'
 import { type ScoredCheck, siteName, siteScore } from './checks'
 import { BOTS } from './readiness'
 import { longDate } from '../../../shared/dates'
+import { plural } from '../../../shared/numbers'
 
 const int = (n: number) => n.toLocaleString('en-US')
 const day = longDate
 const languages = (codes: readonly string[]) => oxford(codes.map(languageLabel))
-const plural = (n: number, one: string, many: string) => `${int(n)} ${n === 1 ? one : many}`
 
 /** The site's page title: "Tribelt’s AI readiness". */
 export function siteTitle(row: Pick<AiReadinessRow, 'name' | 'role'>): string {

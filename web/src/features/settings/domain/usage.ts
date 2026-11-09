@@ -1,12 +1,12 @@
 import type { LlmKeyUsage } from '../../../infrastructure/api/types.gen'
+import { dollars as money } from '../../../shared/numbers'
 
-const DOLLARS = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 })
 const NUMBER = new Intl.NumberFormat('en-GB')
 const MONTH = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 
 /** Dollars as people read them: "$1.20", "$0.0042". */
 export function dollars(amount: number): string {
-  return DOLLARS.format(amount)
+  return money(amount, { decimals: 4 })
 }
 
 /** What a provider reports a key used, a line each: spend, limit, free requests, or tokens per model. */

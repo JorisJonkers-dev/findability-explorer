@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { plural } from '../../../shared/numbers'
 import { computed, ref, watch } from 'vue'
 import type { PromptFamily, PublishedPromptSet } from '../../../infrastructure/api/types.gen'
 import { usePromptSettings } from '../../prompt-test/composables/usePromptTest'
@@ -68,7 +69,6 @@ const cost = computed(() =>
     ? costSentence(settings.value.prices.runUsd, published.value.questions.length, draft.value.questions.length, settings.value.cadence)
     : '',
 )
-const plural = (n: number) => (n === 1 ? '1 question' : `${NUMBER.format(n)} questions`)
 
 function add(family: PromptFamily, choice: { scope: string } | { language: string; region: string }, text: string): void {
   let next = draft.value
@@ -91,7 +91,7 @@ function fill(scope: string): void {
   const r = fillScope(draft.value, scope)
   draft.value = r.draft
   offer.value = null
-  notice.value = `${plural(r.added)} added to the draft for ${scopeNameOf(scopes.value, scope)}. Translate each one before you publish.`
+  notice.value = `${plural(r.added, 'question')} added to the draft for ${scopeNameOf(scopes.value, scope)}. Translate each one before you publish.`
 }
 
 function discard(): void {
@@ -127,10 +127,10 @@ function publish(): void {
       <ManageWidget title="The questions" :span="8">
         <p class="m-0 text-ink-2">
           Edit the draft here, grouped by belt family. Each question belongs to a scope, a language with or without a region. Nothing changes until
-          you publish. {{ plural(draft.questions.length) }} in the draft.
+          you publish. {{ plural(draft.questions.length, 'question') }} in the draft.
         </p>
         <details class="rounded-2xl bg-white p-4">
-          <summary class="cursor-pointer font-semibold text-orange-ink">The published set, version {{ published.version }}, {{ plural(published.questions.length) }}</summary>
+          <summary class="cursor-pointer font-semibold text-orange-ink">The published set, version {{ published.version }}, {{ plural(published.questions.length, 'question') }}</summary>
           <div class="mt-3 flex flex-col gap-2 text-sm">
             <template v-for="g in publishedGroups" :key="g.family">
               <h3 class="m-0 text-base font-semibold">{{ g.label }}</h3>
@@ -148,7 +148,7 @@ function publish(): void {
 
         <section v-for="r in rows" :key="r.family" :aria-labelledby="`family-${r.family}`" class="flex min-w-0 flex-col gap-3">
           <h3 :id="`family-${r.family}`" class="m-0 flex flex-wrap items-baseline gap-x-3 border-b-2 border-black pt-2 pb-1 text-lg font-semibold">
-            {{ r.label }} <span class="text-sm font-normal text-ink-2">{{ plural(r.questions.length) }}</span>
+            {{ r.label }} <span class="text-sm font-normal text-ink-2">{{ plural(r.questions.length, 'question') }}</span>
           </h3>
           <p v-if="r.questions.length === 0" class="m-0 text-sm text-ink-2">No questions for this belt family yet.</p>
           <div v-for="q in r.questions" :key="q.key" class="flex min-w-0 flex-col gap-2 border-b border-grey pb-3" data-part="question">

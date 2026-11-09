@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { plural } from '../../../shared/numbers'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import FrameSection from '../../../shared/ui/FrameSection.vue'
@@ -21,7 +22,6 @@ const competitors = computed(() => overview.value?.competitors.makers ?? 0)
 const purpose = computed(() => (term.value ? termSentence(term.value, competitors.value) : 'One term of the search term list.'))
 const related = computed(() => (term.value ? relatedTerms(terms.value, term.value) : []))
 const recommendations = computed(() => termRecommendations(plan.value?.improvements ?? []))
-const plural = (n: number) => `${String(n)} ${n === 1 ? 'competitor' : 'competitors'}`
 </script>
 
 <template>
@@ -53,7 +53,7 @@ const plural = (n: number) => `${String(n)} ${n === 1 ? 'competitor' : 'competit
                   <span class="sr-only">{{ r.tribeltUses ? 'Used on tribelt.nl' : 'Not used on tribelt.nl' }}</span>
                 </span>
                 <RouterLink :to="termPath(r)">{{ r.term }}</RouterLink>
-                <span class="text-sm text-muted">{{ plural(r.usedBy.length) }}</span>
+                <span class="text-sm text-muted">{{ plural(r.usedBy.length, 'competitor') }}</span>
               </li>
             </ul>
           </div>

@@ -3,8 +3,8 @@ import { zProblem } from '../../../infrastructure/api/zod.gen'
 import { longDate } from '../../../shared/dates'
 import { describeError } from '../../../shared/describeError'
 import { dollars } from '../../settings/domain/usage'
+import { plural } from '../../../shared/numbers'
 
-const plural = (n: number, one: string) => `${String(n)} ${n === 1 ? one : `${one}s`}`
 
 /** "Version 3, saved 1 November 2026. Saving makes a new version and does not start a check." */
 export function definitionLine(d: CompetitorDefinitionVersion): string {

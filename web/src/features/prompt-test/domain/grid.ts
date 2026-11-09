@@ -1,6 +1,7 @@
 import type { PromptAnswer, PromptFamily, PromptMode, PromptRetryPlan, PromptRun, PromptScope } from '../../../infrastructure/api/types.gen'
 import { oxford } from '../../../shared/words'
 import { costLabel, FAMILIES, familyName, providerName, SCOPES, scopeName } from './results'
+import { dollars } from '../../../shared/numbers'
 
 /** Tribelt's id among the companies. */
 export const TRIBELT_ID = 'tribelt'
@@ -325,8 +326,7 @@ export function toCsv(answers: readonly PromptAnswer[]): string {
 
 /** A small cost in dollars, to the tenth of a cent or finer: "$0.0014", "$0.42". */
 export function answerCost(usd: number): string {
-  if (usd >= 0.1) return `$${usd.toFixed(2)}`
-  return `$${usd.toPrecision(2).replace(/0+$/, '').replace(/\.$/, '')}`
+  return usd >= 0.1 ? dollars(usd) : dollars(usd, { significant: 2 })
 }
 
 /** What asking one provider's answer again in one mode should cost, reading included, by the server's plan; 0 when it has none. */

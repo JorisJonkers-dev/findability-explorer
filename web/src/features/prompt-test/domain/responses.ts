@@ -14,10 +14,10 @@ import { clock, longDate } from '../../../shared/dates'
 import { BUYER_INTENT } from '../../../shared/tiers'
 import { isTribeltSite, TRIBELT_ID } from './grid'
 import { providerName } from './results'
+import { plural } from '../../../shared/numbers'
 
 const NUMBER = new Intl.NumberFormat('en-GB')
 
-const plural = (n: number, one: string, many = `${one}s`): string => `${NUMBER.format(n)} ${n === 1 ? one : many}`
 
 /** The belt families in their order, short in a row label and in full elsewhere. */
 const FAMILIES: Record<PromptFamily, { short: string; long: string }> = {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Standing } from '../../../infrastructure/api/types.gen'
 import { competitor, promptResults, term } from '../../../testing/fixtures'
-import { aiFigure, catchUpFigure, gapBars, languageCount, termsText, familyBars, LANGUAGES_SHOWN, languageBars, makerCount, originOf, tribeltTermCount, usedByTribelt, voiceBars } from './tiles'
+import { aiFigure, catchUpFigure, gapBars, languageCount, termsText, familyBars, languageBars, makerCount, originOf, tribeltTermCount, usedByTribelt, voiceBars } from './tiles'
 
 describe('the competitors tile', () => {
   const makers = [
@@ -49,6 +49,21 @@ describe('the search terms tile', () => {
       ['Dutch', '1', 0, 0.5],
     ])
     expect(languageBars([])).toEqual([])
+    // The server's counts cover terms that were not loaded, so a language past the limit still shows.
+    const counted = languageBars(terms, [
+      { value: 'de', count: 120 },
+      { value: 'en', count: 70 },
+      { value: 'en-US', count: 10 },
+      { value: 'nl', count: 187 },
+      { value: 'fr', count: 0 },
+    ])
+    expect(counted.map((b) => [b.label, b.value])).toEqual([
+      ['Dutch', '187'],
+      ['German', '120'],
+      ['English', '80'],
+    ])
+    expect(languageCount(terms, [{ value: 'de', count: 1 }, { value: 'nl', count: 2 }, { value: 'fr', count: 0 }])).toBe(2)
+    expect(termsText(terms, [{ value: 'nl', count: 2 }])).toMatch(/^search terms in 1 languages\./)
   })
 
   it('counts the languages, and says how many terms Tribelt uses', () => {
@@ -56,9 +71,9 @@ describe('the search terms tile', () => {
     expect(termsText(terms)).toBe("search terms in 3 languages. Tribelt's own website uses 2 of them.")
   })
 
-  it('shows the eight largest languages only', () => {
+  it('shows every language with a term, none cut off', () => {
     const many = ['de', 'en', 'nl', 'fr', 'pl', 'it', 'es', 'sv', 'da'].map((language) => term({ language: language as 'de' }))
-    expect(languageBars(many)).toHaveLength(LANGUAGES_SHOWN)
+    expect(languageBars(many)).toHaveLength(9)
   })
 })
 

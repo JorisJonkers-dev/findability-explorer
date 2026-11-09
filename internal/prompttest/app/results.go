@@ -14,7 +14,7 @@ import (
 const MaxRuns = 24
 
 // MaxWrongClaims is how many wrong claims the results list.
-const MaxWrongClaims = 200
+const MaxWrongClaims = 1000
 
 // RunResult is one run with how far it got and its measures.
 type RunResult struct {

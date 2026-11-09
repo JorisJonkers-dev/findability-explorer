@@ -190,8 +190,8 @@ func TestKeywordsKeepTypeNumbersAndMergeLanguages(t *testing.T) {
 func TestKeywordsKeepsAtMostMaxKeywords(t *testing.T) {
 	var terms []domain.GlossaryTerm
 	var words []string
-	for i := range 400 {
-		w := "belt" + string(rune('a'+i%26)) + string(rune('a'+i/26))
+	for i := range 1200 {
+		w := "belt" + string(rune('a'+i%26)) + string(rune('a'+i/26%26)) + string(rune('a'+i/676))
 		terms = append(terms, domain.GlossaryTerm{Text: w, Language: "en", Family: "other", Tier: "product"})
 		words = append(words, w)
 	}

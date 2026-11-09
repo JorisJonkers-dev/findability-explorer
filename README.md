@@ -153,7 +153,7 @@ turns the commits into the changelog and the next version. Don't edit `CHANGELOG
 | `DEV_USER`, `DEV_ROLES` | **Local only.** Every request runs as this user with these comma-separated roles (`ROLE_ADMIN` for an administrator), with no sign-in. Never set them in a deployment |
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URL` | The OpenID Connect client the app signs people in with (required unless `DEV_USER` is set) |
 | `SESSION_KEY` | 32 characters or more; seals the session cookie, refresh tokens and stored API keys (required unless `DEV_USER` is set) |
-| `ANTHROPIC_API_KEY` | Optional. Shown as a read-only key in Settings; product matching uses it with `claude-haiku-5-5` until an administrator chooses otherwise |
+| `ANTHROPIC_API_KEY` | Optional. Shown as a read-only key in Settings. While an Anthropic key works, product matching and the reading of Prompt test answers use it with `claude-haiku-5-5` (ADR-0007) |
 | `LLM_MONTHLY_TOKENS` | Product matching's token budget per calendar month, all providers together (default 10,000,000) |
 | `CRAWLER_CONTACT` | The contact address in the crawler's User-Agent |
 

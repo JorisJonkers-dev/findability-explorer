@@ -40,7 +40,18 @@ function submit(): void {
 
     <div class="flex flex-col gap-3 rounded-2xl bg-mist p-5 sm:p-6">
       <span class="text-sm font-semibold tracking-[0.06em] text-orange-ink uppercase">In use now</span>
-      <template v-if="state.kind === 'active'">
+      <template v-if="state.kind === 'haiku'">
+        <p class="m-0 text-lg">
+          <strong class="font-semibold">{{ state.model }}</strong> with {{ state.credential }}, as long as an Anthropic key works.
+        </p>
+        <p class="m-0 text-ink-2">
+          <template v-if="state.otherwise.kind === 'active'">
+            When no Anthropic key works, scans use <strong class="font-semibold text-black">{{ state.otherwise.model }}</strong> with {{ state.otherwise.credential }}.
+          </template>
+          <template v-else>When no Anthropic key works, scans run without product matching.</template>
+        </p>
+      </template>
+      <template v-else-if="state.kind === 'active'">
         <p class="m-0 text-lg">
           <strong class="font-semibold">{{ state.model }}</strong> with {{ state.credential }}<span v-if="state.isDefault">, the default</span>.
         </p>

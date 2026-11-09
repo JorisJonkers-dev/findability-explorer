@@ -687,7 +687,7 @@ func (s *AiReadinessTable) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    300,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Items)); err != nil {
 			return errors.Wrap(err, "array")
@@ -713,6 +713,17 @@ func (s *AiReadinessTable) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "items",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Check.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "check",
 			Error: err,
 		})
 	}
@@ -864,7 +875,7 @@ func (s *AiSearchSummary) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    300,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.KeepingOut)); err != nil {
 			return errors.Wrap(err, "array")
@@ -1058,7 +1069,7 @@ func (s *Analysis) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    1000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Keywords)); err != nil {
 			return errors.Wrap(err, "array")
@@ -1094,7 +1105,7 @@ func (s *Analysis) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.KnownTerms)); err != nil {
 			return errors.Wrap(err, "array")
@@ -1237,7 +1248,7 @@ func (s *AnalysisList) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    50,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Items)); err != nil {
 			return errors.Wrap(err, "array")
@@ -1834,7 +1845,7 @@ func (s *CandidateDecisionResults) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    1000,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Items)); err != nil {
 			return errors.Wrap(err, "array")
@@ -1893,7 +1904,7 @@ func (s *CandidateDecisions) Validate() error {
 		if err := (validate.Array{
 			MinLength:    1,
 			MinLengthSet: true,
-			MaxLength:    1000,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Ids)); err != nil {
 			return errors.Wrap(err, "array")
@@ -2150,7 +2161,7 @@ func (s *ComparisonGroup) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Added)); err != nil {
 			return errors.Wrap(err, "array")
@@ -2186,7 +2197,7 @@ func (s *ComparisonGroup) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Removed)); err != nil {
 			return errors.Wrap(err, "array")
@@ -2222,7 +2233,7 @@ func (s *ComparisonGroup) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Moved)); err != nil {
 			return errors.Wrap(err, "array")
@@ -3090,7 +3101,7 @@ func (s *CompetitorCandidate) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    1000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Names)); err != nil {
 			return errors.Wrap(err, "array")
@@ -3347,7 +3358,7 @@ func (s *CompetitorCandidateList) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    1000,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Items)); err != nil {
 			return errors.Wrap(err, "array")
@@ -3498,7 +3509,7 @@ func (s *CompetitorList) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Items)); err != nil {
 			return errors.Wrap(err, "array")
@@ -5863,7 +5874,7 @@ func (s *LlmKeyUsage) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    1000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Models)); err != nil {
 			return errors.Wrap(err, "array")
@@ -6213,6 +6224,24 @@ func (s *LlmSettings) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "active",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Haiku.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "haiku",
 			Error: err,
 		})
 	}
@@ -7587,7 +7616,7 @@ func (s *Product) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    500,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Sellers)); err != nil {
 			return errors.Wrap(err, "array")
@@ -8296,7 +8325,7 @@ func (s *ProfileGroupTerms) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Terms)); err != nil {
 			return errors.Wrap(err, "array")
@@ -10880,7 +10909,7 @@ func (s *PromptTestResults) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    1000,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Mentions)); err != nil {
 			return errors.Wrap(err, "array")
@@ -10916,7 +10945,7 @@ func (s *PromptTestResults) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    1000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.WrongClaims)); err != nil {
 			return errors.Wrap(err, "array")
@@ -11577,6 +11606,81 @@ func (s ReadinessCheck) Validate() error {
 	}
 }
 
+func (s *ReadinessCheckState) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           1000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.Checked)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checked",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           1000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.Failed)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "failed",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           0,
+			MaxSet:        true,
+			Max:           1000,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.Total)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "total",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *ReadinessFiles) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -11789,7 +11893,7 @@ func (s *RescanBatch) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Queued)); err != nil {
 			return errors.Wrap(err, "array")
@@ -11825,7 +11929,7 @@ func (s *RescanBatch) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Skipped)); err != nil {
 			return errors.Wrap(err, "array")
@@ -11873,7 +11977,7 @@ func (s *RescanRequest) Validate() error {
 		if err := (validate.Array{
 			MinLength:    1,
 			MinLengthSet: true,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.CompetitorIds)); err != nil {
 			return errors.Wrap(err, "array")
@@ -12935,6 +13039,22 @@ func (s *StartPromptRunUnprocessableEntity) Validate() error {
 	return nil
 }
 
+func (s *StartReadinessCheckForbidden) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *StartReadinessCheckUnauthorized) Validate() error {
+	alias := (*ProblemStatusCode)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *StartRescansBadRequest) Validate() error {
 	alias := (*ProblemStatusCode)(s)
 	if err := alias.Validate(); err != nil {
@@ -13111,7 +13231,7 @@ func (s *Term) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    500,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.FoundBy)); err != nil {
 			return errors.Wrap(err, "array")
@@ -13391,7 +13511,7 @@ func (s *TermCandidate) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Companies)); err != nil {
 			return errors.Wrap(err, "array")
@@ -13692,7 +13812,7 @@ func (s *TermCandidateList) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    1000,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Items)); err != nil {
 			return errors.Wrap(err, "array")
@@ -14111,7 +14231,7 @@ func (s *TermSearch) Validate() error {
 		if err := (validate.Array{
 			MinLength:    0,
 			MinLengthSet: false,
-			MaxLength:    200,
+			MaxLength:    10000,
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Items)); err != nil {
 			return errors.Wrap(err, "array")

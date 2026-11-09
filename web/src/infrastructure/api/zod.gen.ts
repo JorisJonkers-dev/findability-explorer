@@ -322,7 +322,7 @@ export const zLlmKeyUsage = z.object({
     limitRemainingUsd: z.number().gte(-1000000000).lte(1000000000).optional(),
     limitReset: z.string().max(20).optional(),
     freeRequests: zLlmFreeRequests.optional(),
-    models: z.array(zLlmModelTokens).max(200),
+    models: z.array(zLlmModelTokens).max(1000),
     organisationCostUsd: z.number().gte(0).lte(1000000000).optional(),
     since: z.iso.datetime({ offset: true }).max(64).optional()
 });
@@ -393,6 +393,7 @@ export const zLlmSettings = z.object({
     credentials: z.array(zLlmCredential).max(100),
     choice: zLlmChoice,
     active: zActiveLlm.optional(),
+    haiku: zActiveLlm.optional(),
     matchingEnabled: z.boolean(),
     budget: zLlmBudget,
     events: z.array(zLlmEvent).max(50)
@@ -413,7 +414,7 @@ export const zTerm = z.object({
     family: zBeltFamily,
     tier: zIntentTier,
     usedBy: z.array(z.string().max(200)).max(20),
-    foundBy: z.array(zCompetitorId).max(500).optional(),
+    foundBy: z.array(zCompetitorId).max(10000).optional(),
     source: z.string().max(500)
 });
 
@@ -421,7 +422,7 @@ export const zTerm = z.object({
  * A page of matching terms.
  */
 export const zTermSearch = z.object({
-    items: z.array(zTerm).max(200),
+    items: z.array(zTerm).max(10000),
     total: z.int().gte(0).lte(100000),
     facets: zFacets
 });
@@ -439,7 +440,7 @@ export const zCompetitorUpdate = z.object({
  * Which companies to scan - the ones named; with `all` every company that is not archived, has a website and has data; or with `unscanned` every company that is not archived and has a website no scan reached yet. Exactly one of the three.
  */
 export const zRescanRequest = z.object({
-    competitorIds: z.array(zCompetitorId).min(1).max(200).optional(),
+    competitorIds: z.array(zCompetitorId).min(1).max(10000).optional(),
     all: z.boolean().optional(),
     unscanned: z.boolean().optional(),
     maxPages: z.int().gte(1).lte(100).optional().default(60)
@@ -487,7 +488,7 @@ export const zProfileTerm = z.object({
  */
 export const zProfileGroupTerms = z.object({
     group: zProfileGroup,
-    terms: z.array(zProfileTerm).max(200)
+    terms: z.array(zProfileTerm).max(10000)
 });
 
 /**
@@ -510,9 +511,9 @@ export const zTermChange = z.object({
  */
 export const zComparisonGroup = z.object({
     group: zProfileGroup,
-    added: z.array(zTermChange).max(200),
-    removed: z.array(zTermChange).max(200),
-    moved: z.array(zTermChange).max(200)
+    added: z.array(zTermChange).max(10000),
+    removed: z.array(zTermChange).max(10000),
+    moved: z.array(zTermChange).max(10000)
 });
 
 /**
@@ -577,7 +578,7 @@ export const zTermCandidate = z.object({
     phrase: z.string().max(200),
     status: zTermCandidateStatus,
     languages: z.array(z.string().max(16)).max(20),
-    companies: z.array(zCandidateCompany).max(200),
+    companies: z.array(zCandidateCompany).max(10000),
     scans: z.int().gte(1).lte(100000),
     bestScore: z.number().gte(0).lte(1000000),
     maxPages: z.int().gte(1).lte(100),
@@ -611,7 +612,7 @@ export const zTermCandidateCounts = z.object({
  * The candidates with one status, and how far the language model is with them.
  */
 export const zTermCandidateList = z.object({
-    items: z.array(zTermCandidate).max(1000),
+    items: z.array(zTermCandidate).max(10000),
     counts: zTermCandidateCounts,
     review: zTermReviewState
 });
@@ -708,6 +709,7 @@ export const zSiteStack = z.object({
  * What a site tells search engines and AI assistants about itself, read by a scan before its page crawl, held against the report's recommendations.
  */
 export const zAiReadiness = z.object({
+    checkedAt: z.iso.datetime({ offset: true }).max(40).optional(),
     robots: zRobotsStatus,
     bots: z.array(zBotRule).max(20),
     sitemap: zSitemapSummary,
@@ -782,7 +784,7 @@ export const zAiSearchSummary = z.object({
     followed: z.array(zFollowedCompany).max(10),
     trend: z.array(zShareTrendPoint).max(50),
     crawlers: z.array(zTribeltCrawler).max(20),
-    keepingOut: z.array(zKeepingOut).max(300),
+    keepingOut: z.array(zKeepingOut).max(10000),
     ranking: z.array(zReadinessRank).max(20),
     sites: z.int().gte(0).lte(1000),
     questions: z.int().gte(0).lte(1000),
@@ -1030,14 +1032,14 @@ export const zCompetitorDetail = z.object({
  * Every known company.
  */
 export const zCompetitorList = z.object({
-    items: z.array(zCompetitor).max(200)
+    items: z.array(zCompetitor).max(10000)
 });
 
 /**
  * Recent analyses, newest first.
  */
 export const zAnalysisList = z.object({
-    items: z.array(zAnalysisSummary).max(50)
+    items: z.array(zAnalysisSummary).max(10000)
 });
 
 /**
@@ -1046,8 +1048,8 @@ export const zAnalysisList = z.object({
 export const zAnalysis = z.object({
     summary: zAnalysisSummary,
     pages: z.array(zCrawledPage).max(100),
-    keywords: z.array(zKeyword).max(200),
-    knownTerms: z.array(zKnownTerm).max(200),
+    keywords: z.array(zKeyword).max(1000),
+    knownTerms: z.array(zKnownTerm).max(10000),
     matching: zMatchingStatus,
     matchingModel: z.string().max(300).optional(),
     equivalents: z.array(zEquivalent).max(50),
@@ -1058,8 +1060,8 @@ export const zAnalysis = z.object({
  * The scans a re-scan queued, and the companies it left out.
  */
 export const zRescanBatch = z.object({
-    queued: z.array(zAnalysisSummary).max(200),
-    skipped: z.array(zRescanSkip).max(200)
+    queued: z.array(zAnalysisSummary).max(10000),
+    skipped: z.array(zRescanSkip).max(10000)
 });
 
 /**
@@ -1085,10 +1087,21 @@ export const zAiReadinessRow = z.object({
 });
 
 /**
+ * How far checking every scanned company's AI readiness again has come, or how the last check ended; all zero when none ran since the server started.
+ */
+export const zReadinessCheckState = z.object({
+    running: z.boolean(),
+    checked: z.int().gte(0).lte(1000),
+    failed: z.int().gte(0).lte(1000),
+    total: z.int().gte(0).lte(1000)
+});
+
+/**
  * Every company's AI readiness, Tribelt and the mirror first.
  */
 export const zAiReadinessTable = z.object({
-    items: z.array(zAiReadinessRow).max(300)
+    items: z.array(zAiReadinessRow).max(10000),
+    check: zReadinessCheckState
 });
 
 /**
@@ -1177,7 +1190,7 @@ export const zProductScope = z.object({
 export const zProduct = z.object({
     family: zPromptFamily,
     tribeltNames: z.array(z.string().max(300)).max(100),
-    sellers: z.array(zProductSeller).max(500),
+    sellers: z.array(zProductSeller).max(10000),
     terms: z.array(zProductTerm).max(2000),
     termsUsed: z.int().gte(0).lte(2000),
     answers: z.int().gte(0).lte(100000),
@@ -1337,8 +1350,8 @@ export const zPromptWrongClaim = z.object({
 export const zPromptTestResults = z.object({
     promptSetVersion: z.int().gte(1).lte(100000),
     runs: z.array(zPromptRun).max(24),
-    mentions: z.array(zPromptMention).max(1000),
-    wrongClaims: z.array(zPromptWrongClaim).max(200)
+    mentions: z.array(zPromptMention).max(10000),
+    wrongClaims: z.array(zPromptWrongClaim).max(1000)
 });
 
 /**
@@ -1578,7 +1591,7 @@ export const zCompetitorCandidate = z.object({
     decision: zCompetitorCandidateDecision.optional(),
     sites: z.array(z.string().max(253)).max(20).optional(),
     website: z.string().max(500).optional(),
-    names: z.array(zCandidateName).max(200).optional(),
+    names: z.array(zCandidateName).max(1000).optional(),
     check: zCandidateCheck.optional()
 });
 
@@ -1595,7 +1608,7 @@ export const zCandidateReviewState = z.object({
  */
 export const zCandidateDecisions = z.object({
     action: z.enum(['add', 'dismiss']),
-    ids: z.array(zCompetitorCandidateId).min(1).max(1000)
+    ids: z.array(zCompetitorCandidateId).min(1).max(10000)
 });
 
 /**
@@ -1612,7 +1625,7 @@ export const zCandidateDecisionResult = z.object({
  * What deciding on several candidates did to each.
  */
 export const zCandidateDecisionResults = z.object({
-    items: z.array(zCandidateDecisionResult).max(1000)
+    items: z.array(zCandidateDecisionResult).max(10000)
 });
 
 /**
@@ -1630,7 +1643,7 @@ export const zCompetitorCandidateCounts = z.object({
  */
 export const zCompetitorCandidateList = z.object({
     review: zCandidateReviewState,
-    items: z.array(zCompetitorCandidate).max(1000),
+    items: z.array(zCompetitorCandidate).max(10000),
     counts: zCompetitorCandidateCounts
 });
 
@@ -1719,7 +1732,7 @@ export const zSearchTermsQuery = z.object({
     tier: zIntentTier.optional(),
     family: zBeltFamily.optional(),
     user: z.string().max(100).optional(),
-    limit: z.int().gte(1).lte(200).optional().default(50)
+    limit: z.int().gte(1).lte(10000).optional().default(50)
 });
 
 /**
@@ -1813,6 +1826,11 @@ export const zCompareScansResponse = zScanComparison;
 export const zGetAiReadinessResponse = zAiReadinessTable;
 
 /**
+ * The check is under way.
+ */
+export const zStartReadinessCheckResponse = zReadinessCheckState;
+
+/**
  * Which companies to scan again.
  */
 export const zStartRescansBody = zRescanRequest;
@@ -1869,7 +1887,7 @@ export const zUndoTermDecisionPath = z.object({
 export const zUndoTermDecisionResponse = zTermCandidate;
 
 export const zListAnalysesQuery = z.object({
-    limit: z.int().gte(1).lte(300).optional().default(20)
+    limit: z.int().gte(1).lte(10000).optional().default(20)
 });
 
 /**

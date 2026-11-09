@@ -161,6 +161,10 @@ type StartPromptRunRes interface {
 	startPromptRunRes()
 }
 
+type StartReadinessCheckRes interface {
+	startReadinessCheckRes()
+}
+
 type StartRescansRes interface {
 	startRescansRes()
 }

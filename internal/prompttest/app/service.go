@@ -65,6 +65,8 @@ type Service struct {
 	cfg    Config
 	// review is the language model's review of the candidates; its reviewers are nil until WithReviewers.
 	review review
+	// extractors read the answers instead of OpenRouter when they hand one out; nil until WithExtractors.
+	extractors Extractors
 }
 
 // Option changes how a Service waits and runs work in the background; tests use them.
@@ -79,6 +81,12 @@ func WithSleep(sleep func(context.Context, time.Duration) error) Option {
 // review failed, which only the logs can report.
 func WithReviewers(r Reviewers, onError func(error)) Option {
 	return func(s *Service) { s.review.reviewers, s.review.onError = r, onError }
+}
+
+// WithExtractors lets Claude Haiku on an Anthropic key read the answers while one works; without
+// one, OpenRouter reads them with domain.ExtractorModel.
+func WithExtractors(e Extractors) Option {
+	return func(s *Service) { s.extractors = e }
 }
 
 // WithSpawn replaces how a run is started in the background.
@@ -134,8 +142,12 @@ func (s *Service) Settings(ctx context.Context) (View, error) {
 	if err != nil {
 		return View{}, fmt.Errorf("this month's spend: %w", err)
 	}
+	reader, err := s.extractorModel(ctx)
+	if err != nil {
+		return View{}, err
+	}
 	v := View{
-		Settings: settings, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: spent,
+		Settings: settings, PromptSet: domain.CurrentPromptSet(), ExtractorModel: reader, SpentThisMonth: spent,
 		Models: []domain.ModelChoice{}, KeyWorks: settings.CredentialID != "" && s.gateways.Check(ctx, settings.CredentialID) == nil,
 	}
 	if err := s.price(ctx, &v); err != nil {
@@ -196,6 +208,36 @@ func (s *Service) catalogue(ctx context.Context, credentialID string) []domain.C
 		return nil
 	}
 	return models
+}
+
+// extractor is what reads the answers, and its model: Claude Haiku while an Anthropic key works,
+// else OpenRouter through gw with domain.ExtractorModel.
+func (s *Service) extractor(ctx context.Context, gw Gateway) (Extractor, string, error) {
+	if s.extractors != nil {
+		x, model, err := s.extractors.Current(ctx)
+		if err != nil {
+			return nil, "", fmt.Errorf("the extractor: %w", err)
+		}
+		if x != nil {
+			return x, model, nil
+		}
+	}
+	return openRouterExtractor{gw: gw}, domain.ExtractorModel, nil
+}
+
+// extractorModel is the model that reads the answers now, as the settings show it.
+func (s *Service) extractorModel(ctx context.Context) (string, error) {
+	_, model, err := s.extractor(ctx, nil) // the gateway is not asked
+	return model, err
+}
+
+// openRouterExtractor reads the answers on OpenRouter with domain.ExtractorModel.
+type openRouterExtractor struct {
+	gw Gateway
+}
+
+func (o openRouterExtractor) Extract(ctx context.Context, in ExtractInput) (domain.Extracted, domain.Reply, error) {
+	return o.gw.Extract(ctx, domain.ExtractorModel, in)
 }
 
 func (s *Service) settings(ctx context.Context) (domain.Settings, error) {

@@ -10,13 +10,17 @@ import { hostOf } from '../../prompt-test/domain/grid'
 import SectionView from '../../shell/components/SectionView.vue'
 import { AI_SEARCH_TABS, companyPath } from '../../shell/domain/sections'
 import { useAiSearchSummary } from '../../ai-search/composables/useAiSearchSummary'
-import { useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
-import { accessMark, checkSummary, readinessHeadline, scanned, scanRange } from '../domain/overview'
+import { useMe } from '../../shell/composables/useMe'
+import { useReadinessCheck, useReadinessFiles, useReadinessTable } from '../composables/useReadiness'
+import { accessMark, checkedAgain, checkSummary, readinessCheckLine, readinessHeadline, scanned, scanRange } from '../domain/overview'
 import { BAND_LABELS, BOTS, COLUMNS, type Gap, GAPS, markedLines, policySummary, type ReadinessColumn, tableRows } from '../domain/readiness'
 
 const route = useRoute()
 const router = useRouter()
-const { rows, isLoading, error } = useReadinessTable()
+const { rows, check, isLoading, error } = useReadinessTable()
+const { isAdmin } = useMe()
+const { isStarting, error: checkError, start: startCheck } = useReadinessCheck()
+const checkLine = computed(() => readinessCheckLine(check.value))
 const { summary: aiSearch } = useAiSearchSummary()
 
 // Sorted by a column while one is picked; Tribelt and the mirror stay on top whatever the sort.
@@ -63,9 +67,23 @@ function pick(r: AiReadinessRow): void {
 <template>
   <SectionView section="ai-search" :title="isLoading || error ? 'Who lets search engines and AI assistants in.' : readinessHeadline(aiSearch?.ranking ?? [])" :tabs="AI_SEARCH_TABS">
     <template v-if="!isLoading && !error" #aside>
-      <p class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">
-        {{ sites }} sites.<template v-if="scanRange(rows)"> {{ scanRange(rows) }}.</template>
-      </p>
+      <div class="flex flex-col gap-2 stage:items-end">
+        <p class="m-0 text-sm text-muted stage:text-right stage:text-[26px]">
+          {{ sites }} sites.<template v-if="scanRange(rows)"> {{ scanRange(rows) }}.</template><template v-if="checkedAgain(rows)"> {{ checkedAgain(rows) }}.</template>
+        </p>
+        <div v-if="isAdmin" class="flex flex-wrap items-center gap-3 stage:justify-end">
+          <p v-if="checkLine" class="m-0 text-sm font-medium stage:text-[24px]" aria-live="polite">{{ checkLine }}</p>
+          <button
+            type="button"
+            class="inline-flex min-h-11 items-center rounded-full border-2 border-black bg-white px-4 text-sm font-semibold hover:bg-mist disabled:opacity-60 stage:min-h-16 stage:px-7 stage:text-[24px]"
+            :disabled="isStarting || check?.running"
+            @click="startCheck"
+          >
+            Check AI readiness again
+          </button>
+          <p v-if="checkError" role="alert" class="m-0 text-sm font-medium text-orange-ink stage:text-[24px]">{{ checkError }}</p>
+        </div>
+      </div>
     </template>
 
     <p v-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
@@ -121,7 +139,7 @@ function pick(r: AiReadinessRow): void {
             <caption class="sr-only">AI readiness per site: each crawler's access, the sitemap, llms.txt, llms-full.txt, Markdown pages, structured data and platform</caption>
             <thead>
               <tr class="border-b-2 border-black">
-                <th scope="col" class="sticky left-0 z-10 bg-white px-2 py-2 text-left font-semibold">
+                <th scope="col" class="px-2 py-2 text-left font-semibold">
                   <SortButton label="Company" :direction="directionOf(sort, 'name')" @sort="sortBy('name')">Company</SortButton>
                 </th>
                 <th v-for="b in BOTS" :key="b.token" scope="col" class="px-1 py-2 text-center align-bottom text-xs font-semibold stage:text-[18px]">
@@ -134,13 +152,13 @@ function pick(r: AiReadinessRow): void {
             </thead>
             <tbody v-for="band in bands" :key="band.band" :aria-label="BAND_LABELS[band.band]">
               <tr>
-                <th :colspan="BOTS.length + 6" scope="colgroup" class="sticky left-0 bg-mist px-2 py-1.5 text-left text-xs font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[20px]">
+                <th :colspan="BOTS.length + 6" scope="colgroup" class="bg-mist px-2 py-1.5 text-left text-xs font-semibold tracking-[0.06em] text-orange-ink uppercase stage:text-[20px]">
                   {{ BAND_LABELS[band.band] }}
                 </th>
               </tr>
               <tr v-for="r in band.rows" :key="r.competitorId" class="border-b border-grey" :class="selected?.competitorId === r.competitorId ? 'bg-orange-pale' : ''">
-                <th scope="row" class="sticky left-0 z-10 bg-inherit px-2 py-1.5 text-left font-medium">
-                  <span class="flex items-center gap-2 bg-white px-1" :class="selected?.competitorId === r.competitorId ? 'bg-orange-pale' : ''">
+                <th scope="row" class="px-2 py-1.5 text-left font-medium">
+                  <span class="flex items-center gap-2">
                     <button
                       type="button"
                       :aria-pressed="selected?.competitorId === r.competitorId"

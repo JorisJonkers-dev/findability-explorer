@@ -38,7 +38,7 @@ func Companies(companies []terminologydomain.Company) []companiesdomain.Company 
 			host = site.Host(website)
 		}
 		out = append(out, companiesdomain.Company{
-			ID: companiesdomain.ID(c.Name), Source: companiesdomain.SourceResearch, Name: c.Name,
+			ID: companiesdomain.ID(c.Name), Source: companiesdomain.SourceResearch, Name: c.Name, OtherNames: c.OtherNames,
 			Country: c.Country, Website: c.Website, URL: website, Host: host, Languages: languages,
 			GroupCompany: c.GroupCompany, BeltNames: names, HomepageTitle: c.HomepageTitle,
 		})

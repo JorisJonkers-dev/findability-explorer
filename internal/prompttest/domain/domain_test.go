@@ -118,7 +118,7 @@ func directory() []domain.DirectoryCompany {
 	return []domain.DirectoryCompany{
 		{ID: "tribelt", Name: "Tribelt B.V.", Host: "tribelt.nl", Role: domain.RoleTribelt},
 		{ID: "esfo", Name: "ESFO Transportbanden B.V. (ESFO Metal Belts, Narviflex Group)", Host: "esfo-metalbelts.com", Role: domain.RoleCompetitor},
-		{ID: "martens", Name: "Märtens Transportbänder GmbH", Host: "martens-belts.com", Role: domain.RoleCompetitor},
+		{ID: "martens", Name: "Märtens Transportbänder GmbH", OtherNames: []string{"MARTENS Belts", "GmbH"}, Host: "martens-belts.com", Role: domain.RoleCompetitor},
 		{ID: "wire-belt", Name: "Wire Belt Company Ltd", Host: "wirebelt.co.uk", Role: domain.RoleCompetitor},
 		{ID: "abc", Name: "ABC Belts", Role: domain.RoleCompetitor},
 		{ID: "de-spiraal", Name: "De Spiraal B.V.", Role: domain.RoleGroup},
@@ -141,6 +141,9 @@ func TestMatchFindsACompanyByNameAliasOrWebsite(t *testing.T) {
 	// The same registered domain: a subdomain, or an address without a scheme.
 	if got := domain.Match(domain.Named{Name: "WBC", URL: "shop.wirebelt.co.uk/belts"}, directory()); got != "wire-belt" {
 		t.Errorf("a subdomain = %q", got)
+	}
+	if got := domain.Match(domain.Named{Name: "Martens Belts Ltd"}, directory()); got != "martens" {
+		t.Errorf("another name = %q", got)
 	}
 	if got := domain.Match(domain.Named{Name: "Narviflex"}, directory()); got != "esfo" {
 		t.Errorf("an alias's first word = %q", got)

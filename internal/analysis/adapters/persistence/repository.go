@@ -329,6 +329,10 @@ func (r *Repository) SaveMatching(ctx context.Context, id uuid.UUID, m domain.Ma
 // SaveReadiness stores the AI readiness, its crawler rules and its raw files in one transaction.
 func (r *Repository) SaveReadiness(ctx context.Context, id uuid.UUID, rd domain.Readiness, raw domain.RawFiles) error {
 	return r.store.InTx(ctx, func(q *queries.Queries) error {
+		// A check again replaces what the scan, or an earlier check, recorded.
+		if err := q.DeleteAnalysisReadiness(ctx, id); err != nil {
+			return fmt.Errorf("delete readiness: %w", err)
+		}
 		if err := q.AddAnalysisReadiness(ctx, queries.AddAnalysisReadinessParams{
 			AnalysisID: id, Robots: string(rd.Robots), SitemapDeclared: rd.Sitemap.Declared,
 			SitemapFiles: int64(rd.Sitemap.Files), SitemapAddresses: int64(rd.Sitemap.Addresses),
@@ -336,7 +340,7 @@ func (r *Repository) SaveReadiness(ctx context.Context, id uuid.UUID, rd domain.
 			LlmsBytes: int64(rd.LLMs.Bytes), LlmsLinks: int64(rd.LLMs.Links), LlmsFullPresent: rd.LLMsFull,
 			Markdown: rd.Markdown, HomeRead: rd.Home, StructuredData: clipAll(rd.StructuredData, 50, 100),
 			Languages: clipAll(rd.Languages, 50, 16), Cms: clip(rd.Stack.CMS, 60), SeoPlugin: clip(rd.Stack.SEOPlugin, 60),
-			BotProtection: clip(rd.Stack.BotProtection, 60),
+			BotProtection: clip(rd.Stack.BotProtection, 60), CheckedAt: optionalTime(rd.CheckedAt),
 		}); err != nil {
 			return fmt.Errorf("insert readiness: %w", err)
 		}
@@ -400,7 +404,7 @@ func (r *Repository) LatestReadiness(ctx context.Context) (map[string]domain.Ana
 			SitemapAddresses: row.SitemapAddresses, SitemapLanguages: row.SitemapLanguages, LlmsPresent: row.LlmsPresent,
 			LlmsBytes: row.LlmsBytes, LlmsLinks: row.LlmsLinks, LlmsFullPresent: row.LlmsFullPresent, Markdown: row.Markdown,
 			HomeRead: row.HomeRead, StructuredData: row.StructuredData, Languages: row.Languages, Cms: row.Cms,
-			SeoPlugin: row.SeoPlugin, BotProtection: row.BotProtection,
+			SeoPlugin: row.SeoPlugin, BotProtection: row.BotProtection, CheckedAt: row.CheckedAt,
 		}, bots[row.ID])
 		a.Readiness = &rd
 		out[row.CompetitorID] = a
@@ -542,7 +546,13 @@ func toReadiness(r queries.AnalysisReadiness, bots []domain.BotRule) domain.Read
 		LLMs:     domain.LLMsFacts{Present: r.LlmsPresent, Bytes: int(r.LlmsBytes), Links: int(r.LlmsLinks)},
 		LLMsFull: r.LlmsFullPresent, Markdown: r.Markdown, Home: r.HomeRead, StructuredData: r.StructuredData,
 		Languages: r.Languages, Stack: domain.Stack{CMS: r.Cms, SEOPlugin: r.SeoPlugin, BotProtection: r.BotProtection},
+		CheckedAt: r.CheckedAt.Time,
 	}
+}
+
+// optionalTime is t, or null when it is zero.
+func optionalTime(t time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: t, Valid: !t.IsZero()}
 }
 
 // clipAll keeps at most n items, each at most chars characters.

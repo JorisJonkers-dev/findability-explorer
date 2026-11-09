@@ -6,7 +6,7 @@ import { useCompetitors } from '../../competitors/composables/useCompetitors'
 import { type MapTerm, withScanMakers } from '../domain/makers'
 
 /** The most terms one search returns; the contract's maximum, so the map comes whole. */
-export const SEARCH_LIMIT = 200
+export const SEARCH_LIMIT = 10_000
 
 /**
  * The whole terminology map, unfiltered: every term, how many there are, and who uses them: the
@@ -20,6 +20,8 @@ export function useTermMap() {
     // The makers include the companies the scans found a term at (withScanMakers).
     terms: computed<MapTerm[]>(() => withScanMakers(map.data.value ? map.data.value.items : [], competitors.value)),
     total: computed(() => (map.data.value ? map.data.value.total : 0)),
+    /** The term count per language over the whole map, whatever was loaded. */
+    languages: computed(() => map.data.value?.facets.languages ?? []),
     isLoading: map.isPending,
     error: computed(() => (map.error.value ? describeError(map.error.value) : null)),
   }

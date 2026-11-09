@@ -60,4 +60,22 @@ func TestReadinessRoundTrips(t *testing.T) {
 	if a := latest["example"]; a.ID != newer.ID || a.Readiness == nil || !reflect.DeepEqual(*a.Readiness, rd) {
 		t.Errorf("latest = %+v", a)
 	}
+
+	// A check again replaces the scan's readiness, its crawler rules and raw files, and is dated.
+	again := domain.AssessReadiness(domain.ReadinessFiles{Robots: domain.File{Status: 200, ContentType: "text/plain", Body: "User-agent: *\nAllow: /\n"}})
+	again.CheckedAt = created.Add(48 * time.Hour)
+	if err := repo.SaveReadiness(ctx, newer.ID, again, domain.RawFiles{Robots: "User-agent: *"}); err != nil {
+		t.Fatal(err)
+	}
+	latest, err = repo.LatestReadiness(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := latest["example"].Readiness
+	if checked == nil || !checked.CheckedAt.Equal(again.CheckedAt) || checked.LLMs.Present || len(checked.Bots) != len(again.Bots) {
+		t.Errorf("checked again = %+v", checked)
+	}
+	if back, _ := repo.ReadinessFiles(ctx, newer.ID); back.Robots != "User-agent: *" || back.LLMs != "" {
+		t.Errorf("raw files checked again = %+v", back)
+	}
 }

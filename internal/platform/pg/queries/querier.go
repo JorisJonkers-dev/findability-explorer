@@ -42,6 +42,8 @@ type Querier interface {
 	CreatePromptRun(ctx context.Context, arg CreatePromptRunParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	DeleteAnalysesOfCompetitor(ctx context.Context, competitorID pgtype.Text) error
+	// Drops an analysis's readiness, its crawler rules and raw files, so a new check can replace it.
+	DeleteAnalysisReadiness(ctx context.Context, analysisID uuid.UUID) error
 	DeleteCompany(ctx context.Context, id string) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, now time.Time) error
 	DeleteLlmCredential(ctx context.Context, id uuid.UUID) (int64, error)

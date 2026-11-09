@@ -1,8 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { AiReadiness } from '../../../infrastructure/api/types.gen'
-import { ANALYSIS_ID, bots, readiness, readinessRow } from '../../../testing/fixtures'
-import { json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
+import { ANALYSIS_ID, bots, me, readiness, readinessRow, readinessTable } from '../../../testing/fixtures'
+import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 const gappy: AiReadiness = readiness({
   bots: bots({ GPTBot: 'blocked' }),
@@ -20,9 +20,9 @@ const table = [
   readinessRow('Tribelt B.V.', { competitorId: 'tribelt', role: 'tribelt', readiness: gappy }),
 ]
 
-const api = () =>
+const api = (extra: Record<string, Handler> = {}) =>
   routes({
-    'GET /api/v1/ai-readiness': () => json({ items: table }),
+    'GET /api/v1/ai-readiness': () => json(readinessTable(table)),
     'GET /api/v1/ai-search': () =>
       json({
         goal: 0.4,
@@ -40,6 +40,7 @@ const api = () =>
       }),
     [`GET /api/v1/analyses/${ANALYSIS_ID}/readiness-files`]: () =>
       json({ robotsTxt: 'User-agent: GPTBot\nDisallow: /', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }),
+    ...extra,
   })
 
 /** Each band's company names, top to bottom. */
@@ -118,6 +119,33 @@ describe('the AI readiness view', () => {
     await unibelt?.trigger('click')
     await settle()
     expect(wrapper.get('section[aria-labelledby="sites-title"] [aria-live="polite"]').text()).toContain('No scan of it recorded its robots.txt yet.')
+  })
+
+  it('lets an administrator check every site again without a scan, and shows how far it has come', async () => {
+    let started = false
+    const { wrapper } = await mountApp(
+      api({
+        'GET /api/v1/me': () => json(me({ isAdmin: true })),
+        'GET /api/v1/ai-readiness': () =>
+          json(readinessTable(table, started ? { running: true, checked: 2, total: 5 } : {})),
+        'POST /api/v1/admin/readiness-checks': () => {
+          started = true
+          return json({ running: true, checked: 0, failed: 0, total: 5 }, 202)
+        },
+      }),
+      '/ai-search/readiness',
+    )
+    const check = wrapper.findAll('button').find((b) => b.text() === 'Check AI readiness again')
+    if (!check) throw new Error('no check button')
+    await check.trigger('click')
+    await settle()
+    expect(wrapper.text()).toContain('Checking 2 of 5 sites again.')
+    expect(check.attributes('disabled')).toBeDefined()
+  })
+
+  it('shows no check to an account that is no administrator', async () => {
+    const { wrapper } = await mountApp(api(), '/ai-search/readiness')
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Check AI readiness again')).toBe(false)
   })
 
   it('says when the table cannot load', async () => {

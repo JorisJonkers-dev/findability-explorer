@@ -80,8 +80,10 @@ const (
 type DirectoryCompany struct {
 	ID   string
 	Name string
-	Host string
-	Role Role
+	// OtherNames are the names answers may give it instead, such as "Ashworth Bros.".
+	OtherNames []string
+	Host       string
+	Role       Role
 }
 
 // legal are the words of a legal form an answer may add or leave out.
@@ -101,10 +103,15 @@ func NameKey(name string) string {
 	return strings.Join(words, " ")
 }
 
-// aliases are the keys a directory company goes by: its name, and each name in its remark in
-// brackets ("ESFO Transportbanden B.V. (ESFO Metal Belts, Narviflex Group)").
+// aliases are the keys a directory company goes by: its name, its other names, and each name in
+// a remark in brackets ("Wire Belt Company (Wire Belt, WBC)").
 func aliases(c DirectoryCompany) []string {
 	out := []string{NameKey(c.Name)}
+	for _, n := range c.OtherNames {
+		if k := NameKey(n); k != "" {
+			out = append(out, k)
+		}
+	}
 	if _, remark, ok := strings.Cut(c.Name, "("); ok {
 		for _, part := range strings.Split(strings.TrimSuffix(strings.TrimSpace(remark), ")"), ",") {
 			if k := NameKey(part); k != "" {

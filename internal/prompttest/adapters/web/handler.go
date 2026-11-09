@@ -48,9 +48,9 @@ func New(uc UseCases, actor func(context.Context) string) *Handler {
 
 // The most mentions, answers and candidates one response lists, as the contract allows.
 const (
-	maxMentions   = 1000
+	maxMentions   = 10000
 	maxAnswers    = 5000
-	maxCandidates = 1000
+	maxCandidates = 10000
 )
 
 // GetPromptTestResults implements getPromptTestResults.
@@ -432,7 +432,7 @@ func toCandidate(c domain.Candidate) oas.CompetitorCandidate {
 	if c.Website != "" {
 		out.Website = oas.NewOptString(c.Website)
 	}
-	for _, m := range c.Members[:min(len(c.Members), 200)] {
+	for _, m := range c.Members[:min(len(c.Members), 1000)] {
 		joined := oas.CandidateNameJoined(m.Joined)
 		if m.Joined == domain.JoinedAsLead {
 			joined = oas.CandidateNameJoinedLead

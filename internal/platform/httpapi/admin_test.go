@@ -53,6 +53,7 @@ func (l *llmCases) settings() llmapp.Settings {
 			},
 		},
 		Choice: llm.ChoiceChosen, Active: &llm.Active{CredentialID: llm.VaultID, Model: llm.DefaultModel}, MatchingEnabled: true,
+		Haiku:  &llm.Active{CredentialID: llm.VaultID, Model: llm.DefaultModel},
 		Budget: llmapp.Budget{MonthlyTokens: 2_000_000, UsedThisMonth: 1234, AveragePerScan: 617, ScansMatched: 2},
 		Events: []llm.Event{
 			{At: at, Actor: "Admin", Action: llm.ActionCredentialTested, CredentialID: llm.VaultID, Provider: llm.Anthropic, OK: &ok, Message: "ok"},
@@ -93,7 +94,7 @@ func (l *llmCases) SetActive(_ context.Context, actor, _, _ string) (llmapp.Sett
 func (l *llmCases) ClearActive(_ context.Context, actor string) (llmapp.Settings, error) {
 	l.actor = actor
 	s := l.settings()
-	s.Choice, s.Active, s.MatchingEnabled = llm.ChoiceOff, nil, false
+	s.Choice, s.Active, s.Haiku, s.MatchingEnabled = llm.ChoiceOff, nil, nil, false
 	return s, l.err
 }
 
@@ -158,6 +159,9 @@ func TestLlmSettings(t *testing.T) {
 		stored["createdBy"] != "Admin" || stored["lastTest"].(map[string]any)["ok"] != true {
 		t.Fatalf("credentials = %v", creds)
 	}
+	if h := r.body["haiku"].(map[string]any); h["credentialId"] != "vault-anthropic" || h["model"] != "claude-haiku-5-5" {
+		t.Fatalf("haiku = %v", h)
+	}
 	if a := r.body["active"].(map[string]any); a["credentialId"] != "vault-anthropic" || a["model"] != "claude-haiku-5-5" {
 		t.Fatalf("active = %v", a)
 	}
@@ -191,7 +195,7 @@ func TestLlmSettings(t *testing.T) {
 	if r := callAs(t, srv, http.MethodPut, "/api/v1/admin/llm/active", `{"credentialId":"vault-anthropic","model":"claude-haiku-5-5"}`, "admin"); r.code != http.StatusOK || r.body["choice"] != "chosen" {
 		t.Errorf("set active = %d %v", r.code, r.body)
 	}
-	if r := callAs(t, srv, http.MethodDelete, "/api/v1/admin/llm/active", "", "admin"); r.code != http.StatusOK || r.body["choice"] != "off" || r.body["active"] != nil {
+	if r := callAs(t, srv, http.MethodDelete, "/api/v1/admin/llm/active", "", "admin"); r.code != http.StatusOK || r.body["choice"] != "off" || r.body["active"] != nil || r.body["haiku"] != nil {
 		t.Errorf("clear active = %d %v", r.code, r.body)
 	}
 }

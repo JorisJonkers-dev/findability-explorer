@@ -23,7 +23,11 @@ const api = routes({
       ],
     }),
   'GET /api/v1/terms': () =>
-    json(termSearch([term({ language: 'en', usedBy: ['Tribelt'] }), term({ language: 'de', usedBy: ['Märtens'] }), term({ language: 'en-US' })])),
+    json(
+      termSearch([term({ language: 'en', usedBy: ['Tribelt'] }), term({ language: 'de', usedBy: ['Märtens'] }), term({ language: 'en-US' })], {
+        facets: { languages: [{ value: 'en', count: 1 }, { value: 'de', count: 1 }, { value: 'en-US', count: 1 }], tiers: [], families: [] },
+      }),
+    ),
 })
 
 const tiles = (wrapper: VueWrapper) => wrapper.findAll('nav[aria-label="Sections"] a')

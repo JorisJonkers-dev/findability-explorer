@@ -33,6 +33,7 @@ type rawBeltName struct {
 
 type rawCompany struct {
 	Name          string        `json:"name"`
+	OtherNames    []string      `json:"other_names"`
 	Country       string        `json:"country"`
 	Website       string        `json:"website"`
 	Languages     []string      `json:"languages"`
@@ -120,7 +121,7 @@ func toCompany(r rawCompany) domain.Company {
 		title = "unverified"
 	}
 	return domain.Company{
-		Name: r.Name, Country: r.Country, Website: r.Website, Languages: languageCodes(r.Languages),
+		Name: r.Name, OtherNames: r.OtherNames, Country: r.Country, Website: r.Website, Languages: languageCodes(r.Languages),
 		GroupCompany: r.GroupCompany, BeltNames: names, HomepageTitle: title,
 	}
 }

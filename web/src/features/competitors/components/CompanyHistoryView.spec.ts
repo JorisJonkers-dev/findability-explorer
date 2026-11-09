@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { CompetitorProfile, ScanComparison } from '../../../infrastructure/api/types.gen'
-import { competitor, me, readinessRow, summary } from '../../../testing/fixtures'
+import { competitor, me, readinessRow, summary, readinessTable } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { PROFILE_GROUPS } from '../domain/history'
 
@@ -182,7 +182,7 @@ describe('a company’s AI readiness over time', () => {
     const { wrapper, requests } = await mountApp(
       api({
         'GET /api/v1/me': () => json(me({ isAdmin: true })),
-        'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { scan: summary({ id: SCAN_3 }) })] }),
+        'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Twentebelt', { scan: summary({ id: SCAN_3 }) })])),
         [`GET /api/v1/analyses/${SCAN_3}/readiness-files`]: () => json(files),
       }),
       '/competitors/twentebelt/history',
@@ -196,7 +196,7 @@ describe('a company’s AI readiness over time', () => {
 
   it('says when no scan recorded the files, and shows them to every account', async () => {
     const admin = await mountApp(
-      api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })), 'GET /api/v1/ai-readiness': () => json({ items: [] }) }),
+      api({ 'GET /api/v1/me': () => json(me({ isAdmin: true })), 'GET /api/v1/ai-readiness': () => json(readinessTable([])) }),
       '/competitors/twentebelt/history',
     )
     expect(admin.wrapper.get('section[aria-labelledby="files-title"]').text()).toContain('No scan of it recorded its AI readiness yet.')
@@ -204,7 +204,7 @@ describe('a company’s AI readiness over time', () => {
     const failing = await mountApp(
       api({
         'GET /api/v1/me': () => json(me({ isAdmin: true })),
-        'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { scan: summary({ id: SCAN_3 }) })] }),
+        'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Twentebelt', { scan: summary({ id: SCAN_3 }) })])),
         [`GET /api/v1/analyses/${SCAN_3}/readiness-files`]: () => problem(500, 'Internal Server Error', 'Down.'),
       }),
       '/competitors/twentebelt/history',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ANALYSIS_ID, analysis, competitor, me, readinessRow, summary, termSearch } from '../../../testing/fixtures'
+import { ANALYSIS_ID, analysis, competitor, me, readinessRow, summary, termSearch, readinessTable } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 
 const martens = competitor('Märtens', {
@@ -19,7 +19,7 @@ function api(admin = false, extra: Record<string, Handler> = {}) {
     'GET /api/v1/competitors/martens': () => json({ competitor: martens, scans: [summary({ status: 'running', id: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d' }), summary({ competitorId: 'martens' })] }),
     [`GET /api/v1/analyses/${ANALYSIS_ID}`]: () => json(analysis()),
     'GET /api/v1/terms': () => json(termSearch([])),
-    'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Märtens', { competitorId: 'martens' })] }),
+    'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Märtens', { competitorId: 'martens' })])),
     [`GET /api/v1/analyses/${ANALYSIS_ID}/readiness-files`]: () =>
       json({ robotsTxt: 'User-agent: *', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }),
     ...extra,

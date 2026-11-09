@@ -92,6 +92,19 @@ describe('the settings page', () => {
     expect(wrapper.get('[role="alert"]').text()).toBe('Internal Server Error')
   })
 
+  it('says Haiku matches products while an Anthropic key works, and what takes over without one', async () => {
+    const haiku = { credentialId: 'vault-anthropic', model: 'claude-haiku-5-5' }
+    const chosen = llmSettings({ haiku, choice: 'chosen', active: { credentialId: STORED_ID, model: 'mistralai/mistral-small' } })
+    const { wrapper } = await mountApp(server(chosen).handle, '/settings')
+    const now = wrapper.get('section[aria-labelledby="model-title"]').text()
+    expect(now).toContain('claude-haiku-5-5 with Vault key (Anthropic (Claude)), as long as an Anthropic key works.')
+    expect(now).toContain('When no Anthropic key works, scans use mistralai/mistral-small with Course budget key (OpenRouter).')
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Turn matching off')).toBe(false)
+
+    const off = await mountApp(server(llmSettings({ haiku, choice: 'off', active: undefined })).handle, '/settings')
+    expect(off.wrapper.text()).toContain('When no Anthropic key works, scans run without product matching.')
+  })
+
   it('says when there is no key and nothing in use', async () => {
     const { wrapper } = await mountApp(server(llmSettings({ credentials: [], active: undefined, events: [] })).handle, '/settings')
     expect(wrapper.text()).toContain('No keys yet. Add one below.')

@@ -15,7 +15,7 @@ import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 import { companyProblem, rescanProgress } from '../domain/admin'
 
 /** The most scans one list returns: more than the server's queue holds, so a whole re-scan fits. */
-const RESCAN_LIST_LIMIT = 300
+const RESCAN_LIST_LIMIT = 1000
 
 /** Whether a query asks about this company: its detail, profile or scans. */
 function isAbout(competitorId: string, queryKey: readonly unknown[]): boolean {

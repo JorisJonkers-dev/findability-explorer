@@ -1,4 +1,4 @@
-import type { AiReadiness, AiReadinessRow, ReadinessRank } from '../../../infrastructure/api/types.gen'
+import type { AiReadiness, AiReadinessRow, ReadinessCheckState, ReadinessRank } from '../../../infrastructure/api/types.gen'
 import { formatValue } from '../../catching-up/domain/standings'
 
 /** The checks the summary counts, and whether a site passes each. */
@@ -52,6 +52,30 @@ export function scanRange(rows: readonly AiReadinessRow[]): string | null {
   if (first === undefined || last === undefined) return null
   const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
   return first === last ? `Scanned on ${day(first)}` : `Last scans from ${day(first)} to ${day(last)}`
+}
+
+/** The newest day an administrator checked a site's AI readiness again, as a line; null when none was. */
+export function checkedAgain(rows: readonly AiReadinessRow[]): string | null {
+  const last = rows
+    .flatMap((r) => (r.readiness?.checkedAt ? [r.readiness.checkedAt] : []))
+    .sort()
+    .at(-1)
+  if (last === undefined) return null
+  const day = new Date(last).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+  return `AI readiness checked again on ${day}`
+}
+
+/** How far checking every site's AI readiness again has come, or how it ended; empty when none ran. */
+export function readinessCheckLine(check: ReadinessCheckState | undefined): string {
+  if (!check || check.total === 0) return ''
+  const sites = (n: number) => (n === 1 ? '1 site' : `${String(n)} sites`)
+  if (check.running) return `Checking ${String(check.checked)} of ${sites(check.total)} again.`
+  const read = check.total - check.failed
+  const done = `Checked ${sites(read)} again.`
+  if (check.failed === 0) return done
+  return check.failed === 1
+    ? `${done} 1 site could not be read and keeps its scan's result.`
+    : `${done} ${String(check.failed)} sites could not be read and keep their scan's result.`
 }
 
 /** The page's headline, from the readiness ranking the AI search summary serves: who leads, and Tribelt's checks. */

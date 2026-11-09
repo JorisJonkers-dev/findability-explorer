@@ -68,9 +68,14 @@ type Config struct {
 
 // Settings is everything the admin settings show.
 type Settings struct {
-	Credentials     []domain.Credential
-	Choice          domain.Choice
-	Active          *domain.Active
+	Credentials []domain.Credential
+	Choice      domain.Choice
+	Active      *domain.Active
+	// Haiku is the Anthropic key and model product matching and the reading of Prompt test answers
+	// use instead of Active while one works; nil when no Anthropic key does.
+	Haiku *domain.Active
+	// MatchingEnabled is true when the next analysis will match products: on Haiku, or on the
+	// active model when its key is readable.
 	MatchingEnabled bool
 	Budget          Budget
 	Events          []domain.Event
@@ -117,8 +122,12 @@ func (s *Service) Settings(ctx context.Context) (Settings, error) {
 	enabled := active != nil && slices.ContainsFunc(creds, func(c domain.Credential) bool {
 		return c.ID == active.CredentialID && c.Readable
 	})
+	var haiku *domain.Active
+	if c, ok := domain.AnthropicKey(creds); ok {
+		haiku = &domain.Active{CredentialID: c.ID, Model: domain.DefaultModel}
+	}
 	return Settings{
-		Credentials: creds, Choice: choice, Active: active, MatchingEnabled: enabled, Events: events,
+		Credentials: creds, Choice: choice, Active: active, Haiku: haiku, MatchingEnabled: enabled || haiku != nil, Events: events,
 		Budget: Budget{
 			MonthlyTokens: s.cfg.MonthlyTokens, UsedThisMonth: spent.ThisMonth,
 			AveragePerScan: spent.AveragePerScan, ScansMatched: spent.ScansMatched,

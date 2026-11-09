@@ -37,24 +37,40 @@ export function choosableCredentials(credentials: readonly LlmCredential[]): Llm
   return credentials.filter((c) => c.readable && c.provider !== 'anthropic_admin')
 }
 
-export type ActiveState =
+export type ChosenState =
   | { kind: 'off' }
   | { kind: 'none' }
   | { kind: 'active'; model: string; credential: string; isDefault: boolean; working: boolean }
 
-/** What product matching uses now, from the settings. */
-export function activeState(settings: Pick<LlmSettings, 'choice' | 'active' | 'matchingEnabled' | 'credentials'>): ActiveState {
+export type ActiveState = ChosenState | { kind: 'haiku'; model: string; credential: string; otherwise: ChosenState }
+
+type ActiveSettings = Pick<LlmSettings, 'choice' | 'active' | 'haiku' | 'credentials'>
+
+/** What product matching uses now, from the settings: Haiku on an Anthropic key while one works, else the chosen model. */
+export function activeState(settings: ActiveSettings): ActiveState {
+  const otherwise = chosenState(settings)
+  const haiku = settings.haiku
+  if (!haiku) return otherwise
+  return { kind: 'haiku', model: haiku.model, credential: keyName(settings.credentials, haiku), otherwise }
+}
+
+/** The model an admin chose, or the default, which matches products when no Anthropic key works. */
+function chosenState(settings: ActiveSettings): ChosenState {
   if (settings.choice === 'off') return { kind: 'off' }
   const active: ActiveLlm | undefined = settings.active
   if (!active) return { kind: 'none' }
-  const credential = settings.credentials.find((c) => c.id === active.credentialId)
   return {
     kind: 'active',
     model: active.model,
-    credential: credential ? credentialName(credential) : 'a key that no longer exists',
+    credential: keyName(settings.credentials, active),
     isDefault: settings.choice === 'default',
-    working: settings.matchingEnabled,
+    working: settings.credentials.some((c) => c.id === active.credentialId && c.readable),
   }
+}
+
+function keyName(credentials: readonly LlmCredential[], model: ActiveLlm): string {
+  const credential = credentials.find((c) => c.id === model.credentialId)
+  return credential ? credentialName(credential) : 'a key that no longer exists'
 }
 
 /** The contract's limits on a new key. */

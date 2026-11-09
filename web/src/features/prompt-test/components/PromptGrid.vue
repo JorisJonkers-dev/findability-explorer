@@ -69,8 +69,13 @@ function cellOf(row: Row, column: Column) {
       </li>
     </ul>
     <div class="overflow-x-auto stage:min-h-0 stage:overflow-y-auto">
-      <table class="border-separate border-spacing-1 text-sm stage:border-spacing-2 stage:text-[24px]">
+      <!-- Fixed layout: every answer column is equally wide, however long a model's name. -->
+      <table class="w-full min-w-[640px] table-fixed border-separate border-spacing-1 text-sm stage:min-w-0 stage:border-spacing-2 stage:text-[24px]">
         <caption class="sr-only">Tribelt's place in each answer, by question, provider and search mode</caption>
+        <colgroup>
+          <col class="w-44 stage:w-[400px]" />
+          <col v-for="c in columns" :key="`${c.provider}-${c.mode}`" />
+        </colgroup>
         <thead>
           <tr>
             <th scope="col" class="text-left font-medium text-muted">Question</th>
@@ -80,8 +85,9 @@ function cellOf(row: Row, column: Column) {
               scope="colgroup"
               :colspan="mode === 'all' ? 2 : 1"
               class="px-1 text-center font-semibold whitespace-nowrap"
+              :title="p.model"
             >
-              {{ p.name }}<span class="block text-xs font-normal text-muted stage:text-[18px]">{{ p.model.split('/').at(-1) }}</span>
+              <span class="block truncate">{{ p.name }}</span><span class="block truncate text-xs font-normal text-muted stage:text-[18px]">{{ p.model.split('/').at(-1) }}</span>
             </th>
           </tr>
           <tr>
@@ -93,15 +99,15 @@ function cellOf(row: Row, column: Column) {
         </thead>
         <tbody>
           <tr v-for="g in grid" :key="g.row.promptId">
-            <th scope="row" class="pr-3 text-left font-medium whitespace-nowrap" :title="g.row.question">
-              {{ familyName(g.row.family) }}<span class="block text-xs font-normal text-muted stage:text-[20px]">{{ scopeName(g.row.scope) }}</span>
+            <th scope="row" class="truncate pr-3 text-left font-medium whitespace-nowrap" :title="g.row.question">
+              {{ familyName(g.row.family) }}<span class="block truncate text-xs font-normal text-muted stage:text-[20px]">{{ scopeName(g.row.scope) }}</span>
             </th>
             <td v-for="cell in g.cells" :key="cell.key" class="p-0">
               <button
                 type="button"
                 :aria-label="cell.label"
                 :aria-pressed="selected === cell.key"
-                class="flex size-9 items-center justify-center rounded border-2 font-semibold stage:size-16 stage:rounded-lg stage:text-[24px]"
+                class="mx-auto flex size-9 items-center justify-center rounded border-2 font-semibold stage:size-16 stage:rounded-lg stage:text-[24px]"
                 :class="[PLACES[cell.place].cell, selected === cell.key ? 'outline-3 outline-offset-2 outline-black' : '']"
                 @click="emit('select', cell.key)"
               >

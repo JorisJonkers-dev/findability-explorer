@@ -62,9 +62,9 @@ type KnownTerm struct {
 
 const (
 	// MaxKeywords is how many keywords an analysis keeps.
-	MaxKeywords = 200
+	MaxKeywords = 1000
 	// MaxKnownTerms is how many known terms an analysis keeps.
-	MaxKnownTerms = 200
+	MaxKnownTerms = 10000
 	// UnknownLanguage marks a page whose language could not be told.
 	UnknownLanguage = "und"
 	maxNgram        = 3

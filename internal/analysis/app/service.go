@@ -21,7 +21,7 @@ const (
 	DefaultListLimit = 20
 	// MaxListLimit is the most analyses one List returns, so a re-scan of every company can be
 	// followed in one list.
-	MaxListLimit = 300
+	MaxListLimit = 10000
 	// maxFailure is the longest failure reason stored; the contract and the database agree.
 	maxFailure = 500
 )
@@ -61,6 +61,7 @@ type Service struct {
 	now       func() time.Time
 	limits    Limits
 	queue     *queue
+	check     readinessCheck
 }
 
 // New returns a Service. matchers names the matcher each analysis uses when it runs.

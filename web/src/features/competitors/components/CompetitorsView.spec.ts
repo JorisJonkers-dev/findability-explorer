@@ -1,7 +1,7 @@
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Analysis, AnalysisStatus } from '../../../infrastructure/api/types.gen'
-import { ANALYSIS_ID, analysis, bots, competitor, me, promptResults, readiness, readinessRow, summary, term, termSearch } from '../../../testing/fixtures'
+import { ANALYSIS_ID, analysis, bots, competitor, me, promptResults, readiness, readinessRow, summary, term, termSearch, readinessTable } from '../../../testing/fixtures'
 import { type Handler, json, mountApp, problem, routes, settle } from '../../../testing/mountApp'
 import { POLL_INTERVAL_MS } from '../../scan/domain/status'
 
@@ -476,7 +476,7 @@ describe('the AI readiness on a company card', () => {
     const { wrapper } = await mountApp(
       api({
         'GET /api/v1/competitors': () => json({ items: [twentebelt, martens, mirror] }),
-        'GET /api/v1/ai-readiness': () => json({ items: [readinessRow('Twentebelt', { readiness: readiness({ bots: bots({ GPTBot: 'blocked', ClaudeBot: 'blocked' }), gaps: 2 }) })] }),
+        'GET /api/v1/ai-readiness': () => json(readinessTable([readinessRow('Twentebelt', { readiness: readiness({ bots: bots({ GPTBot: 'blocked', ClaudeBot: 'blocked' }), gaps: 2 }) })])),
       }),
       '/competitors',
     )
@@ -489,7 +489,7 @@ describe('the AI readiness on a company card', () => {
   })
 
   it('says when no scan has checked the company yet', async () => {
-    const { wrapper } = await mountApp(api({ 'GET /api/v1/ai-readiness': () => json({ items: [] }) }), '/competitors')
+    const { wrapper } = await mountApp(api({ 'GET /api/v1/ai-readiness': () => json(readinessTable([])) }), '/competitors')
     expect(wrapper.get('[data-testid="company-readiness"]').text()).toContain('Not checked yet: the next scan records it.')
   })
 })

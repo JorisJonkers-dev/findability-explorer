@@ -447,6 +447,19 @@ func (UnimplementedHandler) StartPromptRun(ctx context.Context) (r StartPromptRu
 	return r, ht.ErrNotImplemented
 }
 
+// StartReadinessCheck implements startReadinessCheck operation.
+//
+// Administrators only. In the background, reads the AI readiness files of each company's newest scan's
+// site again (robots.txt, the sitemaps, llms.txt, llms-full.txt, the home page and its Markdown twin)
+// and records what they say on that scan, dated. It crawls no pages and asks no language model, so it
+// costs nothing. A company whose scan is still queued or running is left out. Returns the check's
+// state; running already is no error.
+//
+// POST /api/v1/admin/readiness-checks
+func (UnimplementedHandler) StartReadinessCheck(ctx context.Context) (r StartReadinessCheckRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StartRescans implements startRescans operation.
 //
 // Administrators only. Queues one scan for each named company with a website, or with `all`, for every

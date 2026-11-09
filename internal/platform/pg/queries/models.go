@@ -128,6 +128,7 @@ type AnalysisReadiness struct {
 	Cms              string
 	SeoPlugin        string
 	BotProtection    string
+	CheckedAt        pgtype.Timestamptz
 }
 
 type AnalysisReadinessFile struct {

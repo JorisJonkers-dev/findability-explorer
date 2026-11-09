@@ -47,8 +47,11 @@ type Querier interface {
 	AdoptStalePromptRun(ctx context.Context, arg AdoptStalePromptRunParams) ([]uuid.UUID, error)
 	AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStatsByCompetitorRow, error)
 	AnalysisStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
+	BeatRecommendationRun(ctx context.Context, arg BeatRecommendationRunParams) (int64, error)
 	BeatWork(ctx context.Context, arg BeatWorkParams) (int64, error)
-	BeginRecommendationRun(ctx context.Context, arg BeginRecommendationRunParams) error
+	// A run begun, heard of as it begins, unless another runs: one heard of since stale_before, or one
+	// begun without a heartbeat (by a server before runs beat) since unbeaten_before.
+	BeginRecommendationRun(ctx context.Context, arg BeginRecommendationRunParams) (int64, error)
 	BeginWork(ctx context.Context, arg BeginWorkParams) error
 	// Every phrase a finished scan of a company found. Whether the map holds it is the review's to
 	// say, in the phrase's own language: scans made before that rule stored in_map through a term in
@@ -73,6 +76,9 @@ type Querier interface {
 	DeleteRemovedTerm(ctx context.Context, arg DeleteRemovedTermParams) (int64, error)
 	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
 	DeleteTermDecision(ctx context.Context, candidateID string) (int64, error)
+	// Runs left unfinished by a server that stopped: unheard of since stale_before, or begun without a
+	// heartbeat before unbeaten_before. They end as failed and change no recommendation.
+	EndAbandonedRecommendationRuns(ctx context.Context, arg EndAbandonedRecommendationRunsParams) (int64, error)
 	// Work the journal records runs in memory, and beats while it runs: work last heard of before
 	// stale_before was left by a server that stopped. Work begun before the heartbeat counts from when
 	// it began, before unbeaten_before.
@@ -194,6 +200,10 @@ type Querier interface {
 	// readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 	PromptSpentSince(ctx context.Context, since time.Time) (int64, error)
 	QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error)
+	// Whether a run runs: unfinished, and heard of since stale_before (or, without a heartbeat, begun
+	// since unbeaten_before).
+	RecommendationRunRunning(ctx context.Context, arg RecommendationRunRunningParams) (bool, error)
+	RecommendationRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	// The tokens in and out the Recommendation runs used since a moment.
 	RecommendationTokensSince(ctx context.Context, since time.Time) (RecommendationTokensSinceRow, error)
 	// Runs a finished run again, held by owner, unless any run is running: the run lock.
@@ -203,6 +213,8 @@ type Querier interface {
 	RequestAnalysesStop(ctx context.Context, arg RequestAnalysesStopParams) ([]uuid.UUID, error)
 	// An administrator asks a running run to stop; the instance running it reads this at its heartbeat.
 	RequestPromptRunStop(ctx context.Context, arg RequestPromptRunStopParams) (int64, error)
+	// An administrator asks the running run to stop; the instance running it reads this between batches.
+	RequestRecommendationRunStop(ctx context.Context, arg RequestRecommendationRunStopParams) (int64, error)
 	ResetLlmActiveFor(ctx context.Context, credentialID pgtype.Text) (int64, error)
 	SavePromptCandidateCheck(ctx context.Context, arg SavePromptCandidateCheckParams) error
 	SavePromptCandidateMerge(ctx context.Context, arg SavePromptCandidateMergeParams) error

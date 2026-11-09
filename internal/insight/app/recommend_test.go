@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -295,7 +296,8 @@ func TestARunWhoseInputsOrStoreFailIsRecordedAsFailed(t *testing.T) {
 	if _, err := svc2.RecommendationRuns(t.Context()); !errors.Is(err, errDown) {
 		t.Errorf("RecommendationRuns with the store failing = %v", err)
 	}
-	if err := svc2.StartRecommendationRun(t.Context(), "joris"); err != nil || len(reported) != 2 {
+	// The store holds the run: one it cannot begin does not start.
+	if err := svc2.StartRecommendationRun(t.Context(), "joris"); !errors.Is(err, errDown) || len(reported) != 0 {
 		t.Errorf("the store failing: %v; reported %v", err, reported)
 	}
 }
@@ -411,4 +413,92 @@ type failingUpdate struct{ *world }
 
 func (failingUpdate) UpdateRecommendation(context.Context, domain.Recommendation) error {
 	return errDown
+}
+
+// A stop asked on another instance reaches the run, through the store.
+func TestAStopAskedOnAnotherInstanceStopsTheRun(t *testing.T) {
+	w := gappy()
+	wr, j := &writer{}, &journal{}
+	var reported []error
+	running := writing(w, wr, j, nil, &reported)
+	other := service(w)
+	wr.during = func() {
+		if err := other.StopRecommendationRun(context.Background()); err != nil {
+			panic(err)
+		}
+	}
+	if err := running.StartRecommendationRun(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	if w.recRuns[0].Ending != string(work.EndingStoppedByHand) || len(reported) != 0 {
+		t.Errorf("run %+v; reported %v", w.recRuns[0], reported)
+	}
+	w.stopErr = errDown
+	if err := other.StopRecommendationRun(t.Context()); !errors.Is(err, errDown) {
+		t.Errorf("a stop the store cannot record = %v", err)
+	}
+}
+
+// A run beats while it runs; a beat the store cannot record is reported, and the run goes on.
+func TestARunBeatsWhileItRuns(t *testing.T) {
+	w := gappy()
+	w.beatErr, w.beaten = errDown, make(chan struct{})
+	// The first batch is written while two beats land.
+	wr := &writer{during: func() {
+		for range 2 {
+			<-w.beaten
+		}
+		w.beaten = nil
+	}}
+	var mu sync.Mutex
+	var reported []error
+	svc := service(w)
+	svc.WithWriting(writers{w: wr}, pages{}, nil, &journal{}, func(err error) {
+		mu.Lock()
+		defer mu.Unlock()
+		reported = append(reported, err)
+	}, func(f func()) { f() })
+	svc.SetRecBeat(time.Millisecond)
+	if err := svc.StartRecommendationRun(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if w.recRuns[0].Ending != string(work.EndingDone) || len(reported) == 0 || !errors.Is(reported[0], errDown) {
+		t.Errorf("run %+v; reported %v", w.recRuns[0], reported)
+	}
+}
+
+// Whether a run runs, and whether it was asked to stop, are read from the store; when that fails,
+// the page says so and the run ends as failed.
+func TestTheRunsStoredStateFailing(t *testing.T) {
+	w := gappy()
+	var reported []error
+	svc := writing(w, &writer{}, &journal{}, nil, &reported)
+	w.runningErr = errDown
+	if _, err := svc.RecommendationRuns(t.Context()); !errors.Is(err, errDown) {
+		t.Errorf("RecommendationRuns = %v", err)
+	}
+	w.runningErr, w.askedErr = nil, errDown
+	if err := svc.StartRecommendationRun(t.Context(), "joris"); err != nil {
+		t.Fatal(err)
+	}
+	if w.recRuns[0].Ending != string(work.EndingFailed) || len(reported) != 1 || !errors.Is(reported[0], errDown) {
+		t.Errorf("run %+v; reported %v", w.recRuns[0], reported)
+	}
+}
+
+// A sweep ends the runs a stopped server left, with the window of work.Stale, and an hour for runs
+// begun before runs beat.
+func TestASweepEndsTheRunsLeftRunning(t *testing.T) {
+	w := gappy()
+	svc := service(w)
+	if n, err := svc.EndAbandonedRecRuns(t.Context()); n != 1 || err != nil ||
+		!w.alive.HeardSince.Equal(today.Add(-work.Stale)) || !w.alive.BegunSince.Equal(today.Add(-app.Unbeaten)) {
+		t.Errorf("EndAbandonedRecRuns = %d, %v; alive %+v", n, err, w.alive)
+	}
+	w.recErr = errDown
+	if _, err := svc.EndAbandonedRecRuns(t.Context()); !errors.Is(err, errDown) {
+		t.Errorf("a sweep the store fails = %v", err)
+	}
 }

@@ -117,18 +117,82 @@ func (r *Repository) RecRuns(ctx context.Context, limit int) ([]domain.RecRun, e
 	return out, nil
 }
 
-// BeginRecRun records a run begun.
-func (r *Repository) BeginRecRun(ctx context.Context, run domain.RecRun) error {
+// BeginRecRun records a run begun, heard of as it begins, unless another is alive; false then.
+func (r *Repository) BeginRecRun(ctx context.Context, run domain.RecRun, alive domain.Alive) (bool, error) {
 	id, err := uuid.Parse(run.ID)
+	if err != nil {
+		return false, fmt.Errorf("a run's id: %w", err)
+	}
+	n, err := r.q.BeginRecommendationRun(ctx, queries.BeginRecommendationRunParams{
+		ID: id, StartedAt: run.StartedAt, StartedBy: run.By, Model: run.Model, StaleBefore: alive.HeardSince, UnbeatenBefore: alive.BegunSince,
+	})
+	if err != nil {
+		return false, fmt.Errorf("insert recommendation run: %w", err)
+	}
+	return n > 0, nil
+}
+
+// BeatRecRun records that the run still runs, at; an error when it ended.
+func (r *Repository) BeatRecRun(ctx context.Context, runID string, at time.Time) error {
+	id, err := uuid.Parse(runID)
 	if err != nil {
 		return fmt.Errorf("a run's id: %w", err)
 	}
-	if err := r.q.BeginRecommendationRun(ctx, queries.BeginRecommendationRunParams{
-		ID: id, StartedAt: run.StartedAt, StartedBy: run.By, Model: run.Model,
-	}); err != nil {
-		return fmt.Errorf("insert recommendation run: %w", err)
+	n, err := r.q.BeatRecommendationRun(ctx, queries.BeatRecommendationRunParams{ID: id, At: pgtype.Timestamptz{Time: at, Valid: true}})
+	if err != nil {
+		return fmt.Errorf("beat recommendation run: %w", err)
+	}
+	if n == 0 {
+		return errRunEnded
 	}
 	return nil
+}
+
+// errRunEnded is returned when a run that ended beats.
+var errRunEnded = errors.New("the Recommendation run ended")
+
+// RecRunRunning reports whether a run is alive.
+func (r *Repository) RecRunRunning(ctx context.Context, alive domain.Alive) (bool, error) {
+	running, err := r.q.RecommendationRunRunning(ctx, queries.RecommendationRunRunningParams{StaleBefore: alive.HeardSince, UnbeatenBefore: alive.BegunSince})
+	if err != nil {
+		return false, fmt.Errorf("whether a recommendation run runs: %w", err)
+	}
+	return running, nil
+}
+
+// RequestRecRunStop asks the run that is alive to stop, at; false when none is.
+func (r *Repository) RequestRecRunStop(ctx context.Context, at time.Time, alive domain.Alive) (bool, error) {
+	n, err := r.q.RequestRecommendationRunStop(ctx, queries.RequestRecommendationRunStopParams{
+		At: pgtype.Timestamptz{Time: at, Valid: true}, StaleBefore: alive.HeardSince, UnbeatenBefore: alive.BegunSince,
+	})
+	if err != nil {
+		return false, fmt.Errorf("ask the recommendation run to stop: %w", err)
+	}
+	return n > 0, nil
+}
+
+// RecRunStopRequested reports whether a stop of the run was asked.
+func (r *Repository) RecRunStopRequested(ctx context.Context, runID string) (bool, error) {
+	id, err := uuid.Parse(runID)
+	if err != nil {
+		return false, fmt.Errorf("a run's id: %w", err)
+	}
+	asked, err := r.q.RecommendationRunStopRequested(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("whether the recommendation run was asked to stop: %w", err)
+	}
+	return asked, nil
+}
+
+// EndAbandonedRecRuns ends, as failed at at, the unfinished runs that are not alive, and counts them.
+func (r *Repository) EndAbandonedRecRuns(ctx context.Context, at time.Time, alive domain.Alive) (int, error) {
+	n, err := r.q.EndAbandonedRecommendationRuns(ctx, queries.EndAbandonedRecommendationRunsParams{
+		FinishedAt: pgtype.Timestamptz{Time: at, Valid: true}, StaleBefore: alive.HeardSince, UnbeatenBefore: alive.BegunSince,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("end the recommendation runs left running: %w", err)
+	}
+	return int(n), nil
 }
 
 // FinishRecRun records how a run ended and, with a replacement, deletes the open recommendations

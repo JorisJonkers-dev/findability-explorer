@@ -38,9 +38,58 @@ FROM recommendation_runs
 ORDER BY started_at DESC, id
 LIMIT @lim;
 
--- name: BeginRecommendationRun :exec
-INSERT INTO recommendation_runs (id, started_at, started_by, model)
-VALUES (@id, @started_at, @started_by, @model);
+-- name: BeginRecommendationRun :execrows
+-- A run begun, heard of as it begins, unless another runs: one heard of since stale_before, or one
+-- begun without a heartbeat (by a server before runs beat) since unbeaten_before.
+INSERT INTO recommendation_runs (id, started_at, started_by, model, heartbeat_at)
+SELECT @id::uuid, @started_at::timestamptz, @started_by::text, @model::text, @started_at::timestamptz
+WHERE NOT EXISTS (
+    SELECT 1 FROM recommendation_runs
+    WHERE finished_at IS NULL AND (
+        (heartbeat_at IS NOT NULL AND heartbeat_at >= @stale_before::timestamptz)
+        OR (heartbeat_at IS NULL AND started_at >= @unbeaten_before::timestamptz)
+    )
+);
+
+-- name: BeatRecommendationRun :execrows
+UPDATE recommendation_runs
+SET heartbeat_at = @at
+WHERE id = @id AND finished_at IS NULL;
+
+-- name: RecommendationRunRunning :one
+-- Whether a run runs: unfinished, and heard of since stale_before (or, without a heartbeat, begun
+-- since unbeaten_before).
+SELECT EXISTS (
+    SELECT 1 FROM recommendation_runs
+    WHERE finished_at IS NULL AND (
+        (heartbeat_at IS NOT NULL AND heartbeat_at >= @stale_before::timestamptz)
+        OR (heartbeat_at IS NULL AND started_at >= @unbeaten_before::timestamptz)
+    )
+)::boolean AS running;
+
+-- name: RequestRecommendationRunStop :execrows
+-- An administrator asks the running run to stop; the instance running it reads this between batches.
+UPDATE recommendation_runs
+SET stop_requested_at = @at
+WHERE finished_at IS NULL AND (
+        (heartbeat_at IS NOT NULL AND heartbeat_at >= @stale_before::timestamptz)
+        OR (heartbeat_at IS NULL AND started_at >= @unbeaten_before::timestamptz)
+    );
+
+-- name: RecommendationRunStopRequested :one
+SELECT (stop_requested_at IS NOT NULL)::boolean AS requested
+FROM recommendation_runs
+WHERE id = @id;
+
+-- name: EndAbandonedRecommendationRuns :execrows
+-- Runs left unfinished by a server that stopped: unheard of since stale_before, or begun without a
+-- heartbeat before unbeaten_before. They end as failed and change no recommendation.
+UPDATE recommendation_runs
+SET finished_at = @finished_at, ending = 'failed'
+WHERE finished_at IS NULL AND NOT (
+        (heartbeat_at IS NOT NULL AND heartbeat_at >= @stale_before::timestamptz)
+        OR (heartbeat_at IS NULL AND started_at >= @unbeaten_before::timestamptz)
+    );
 
 -- name: FinishRecommendationRun :exec
 UPDATE recommendation_runs

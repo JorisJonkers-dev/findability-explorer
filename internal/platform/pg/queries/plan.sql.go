@@ -71,26 +71,61 @@ func (q *Queries) AddRecommendation(ctx context.Context, arg AddRecommendationPa
 	return err
 }
 
-const beginRecommendationRun = `-- name: BeginRecommendationRun :exec
-INSERT INTO recommendation_runs (id, started_at, started_by, model)
-VALUES ($1, $2, $3, $4)
+const beatRecommendationRun = `-- name: BeatRecommendationRun :execrows
+UPDATE recommendation_runs
+SET heartbeat_at = $1
+WHERE id = $2 AND finished_at IS NULL
+`
+
+type BeatRecommendationRunParams struct {
+	At pgtype.Timestamptz
+	ID uuid.UUID
+}
+
+func (q *Queries) BeatRecommendationRun(ctx context.Context, arg BeatRecommendationRunParams) (int64, error) {
+	result, err := q.db.Exec(ctx, beatRecommendationRun, arg.At, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const beginRecommendationRun = `-- name: BeginRecommendationRun :execrows
+INSERT INTO recommendation_runs (id, started_at, started_by, model, heartbeat_at)
+SELECT $1::uuid, $2::timestamptz, $3::text, $4::text, $2::timestamptz
+WHERE NOT EXISTS (
+    SELECT 1 FROM recommendation_runs
+    WHERE finished_at IS NULL AND (
+        (heartbeat_at IS NOT NULL AND heartbeat_at >= $5::timestamptz)
+        OR (heartbeat_at IS NULL AND started_at >= $6::timestamptz)
+    )
+)
 `
 
 type BeginRecommendationRunParams struct {
-	ID        uuid.UUID
-	StartedAt time.Time
-	StartedBy string
-	Model     string
+	ID             uuid.UUID
+	StartedAt      time.Time
+	StartedBy      string
+	Model          string
+	StaleBefore    time.Time
+	UnbeatenBefore time.Time
 }
 
-func (q *Queries) BeginRecommendationRun(ctx context.Context, arg BeginRecommendationRunParams) error {
-	_, err := q.db.Exec(ctx, beginRecommendationRun,
+// A run begun, heard of as it begins, unless another runs: one heard of since stale_before, or one
+// begun without a heartbeat (by a server before runs beat) since unbeaten_before.
+func (q *Queries) BeginRecommendationRun(ctx context.Context, arg BeginRecommendationRunParams) (int64, error) {
+	result, err := q.db.Exec(ctx, beginRecommendationRun,
 		arg.ID,
 		arg.StartedAt,
 		arg.StartedBy,
 		arg.Model,
+		arg.StaleBefore,
+		arg.UnbeatenBefore,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const deleteRecommendation = `-- name: DeleteRecommendation :exec
@@ -101,6 +136,31 @@ WHERE id = $1
 func (q *Queries) DeleteRecommendation(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, deleteRecommendation, id)
 	return err
+}
+
+const endAbandonedRecommendationRuns = `-- name: EndAbandonedRecommendationRuns :execrows
+UPDATE recommendation_runs
+SET finished_at = $1, ending = 'failed'
+WHERE finished_at IS NULL AND NOT (
+        (heartbeat_at IS NOT NULL AND heartbeat_at >= $2::timestamptz)
+        OR (heartbeat_at IS NULL AND started_at >= $3::timestamptz)
+    )
+`
+
+type EndAbandonedRecommendationRunsParams struct {
+	FinishedAt     pgtype.Timestamptz
+	StaleBefore    time.Time
+	UnbeatenBefore time.Time
+}
+
+// Runs left unfinished by a server that stopped: unheard of since stale_before, or begun without a
+// heartbeat before unbeaten_before. They end as failed and change no recommendation.
+func (q *Queries) EndAbandonedRecommendationRuns(ctx context.Context, arg EndAbandonedRecommendationRunsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, endAbandonedRecommendationRuns, arg.FinishedAt, arg.StaleBefore, arg.UnbeatenBefore)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const finishRecommendationRun = `-- name: FinishRecommendationRun :exec
@@ -332,6 +392,43 @@ func (q *Queries) ListRecommendations(ctx context.Context) ([]ListRecommendation
 	return items, nil
 }
 
+const recommendationRunRunning = `-- name: RecommendationRunRunning :one
+SELECT EXISTS (
+    SELECT 1 FROM recommendation_runs
+    WHERE finished_at IS NULL AND (
+        (heartbeat_at IS NOT NULL AND heartbeat_at >= $1::timestamptz)
+        OR (heartbeat_at IS NULL AND started_at >= $2::timestamptz)
+    )
+)::boolean AS running
+`
+
+type RecommendationRunRunningParams struct {
+	StaleBefore    time.Time
+	UnbeatenBefore time.Time
+}
+
+// Whether a run runs: unfinished, and heard of since stale_before (or, without a heartbeat, begun
+// since unbeaten_before).
+func (q *Queries) RecommendationRunRunning(ctx context.Context, arg RecommendationRunRunningParams) (bool, error) {
+	row := q.db.QueryRow(ctx, recommendationRunRunning, arg.StaleBefore, arg.UnbeatenBefore)
+	var running bool
+	err := row.Scan(&running)
+	return running, err
+}
+
+const recommendationRunStopRequested = `-- name: RecommendationRunStopRequested :one
+SELECT (stop_requested_at IS NOT NULL)::boolean AS requested
+FROM recommendation_runs
+WHERE id = $1
+`
+
+func (q *Queries) RecommendationRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, recommendationRunStopRequested, id)
+	var requested bool
+	err := row.Scan(&requested)
+	return requested, err
+}
+
 const recommendationTokensSince = `-- name: RecommendationTokensSince :one
 SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM recommendation_runs
@@ -349,6 +446,30 @@ func (q *Queries) RecommendationTokensSince(ctx context.Context, since time.Time
 	var i RecommendationTokensSinceRow
 	err := row.Scan(&i.Input, &i.Output)
 	return i, err
+}
+
+const requestRecommendationRunStop = `-- name: RequestRecommendationRunStop :execrows
+UPDATE recommendation_runs
+SET stop_requested_at = $1
+WHERE finished_at IS NULL AND (
+        (heartbeat_at IS NOT NULL AND heartbeat_at >= $2::timestamptz)
+        OR (heartbeat_at IS NULL AND started_at >= $3::timestamptz)
+    )
+`
+
+type RequestRecommendationRunStopParams struct {
+	At             pgtype.Timestamptz
+	StaleBefore    time.Time
+	UnbeatenBefore time.Time
+}
+
+// An administrator asks the running run to stop; the instance running it reads this between batches.
+func (q *Queries) RequestRecommendationRunStop(ctx context.Context, arg RequestRecommendationRunStopParams) (int64, error) {
+	result, err := q.db.Exec(ctx, requestRecommendationRunStop, arg.At, arg.StaleBefore, arg.UnbeatenBefore)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const setPlanTarget = `-- name: SetPlanTarget :exec

@@ -1,10 +1,12 @@
 package persistence_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
@@ -22,10 +24,14 @@ func TestARunReplacesTheOpenRecommendationsInOneGo(t *testing.T) {
 	ctx := t.Context()
 	repo := persistence.New(store)
 	at := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
-	first := domain.RecRun{ID: uuid.NewString(), StartedAt: at, By: "joris", Model: "claude-haiku-5-5"}
-	if err := repo.BeginRecRun(ctx, first); err != nil {
-		t.Fatal(err)
+	begin := func(run domain.RecRun) {
+		t.Helper()
+		if ok, err := repo.BeginRecRun(ctx, run, alive(run.StartedAt)); !ok || err != nil {
+			t.Fatalf("BeginRecRun = %v, %v", ok, err)
+		}
 	}
+	first := domain.RecRun{ID: uuid.NewString(), StartedAt: at, By: "joris", Model: "claude-haiku-5-5"}
+	begin(first)
 	rec := func(id, key string) domain.Recommendation {
 		return domain.Recommendation{
 			ID: id, RunID: first.ID, Gap: domain.Gap{Key: key, Kind: domain.GapTerm, Language: "nl", Family: "eyelink", Specifics: []string{"Two use it."}, Benefit: 4, Effort: 2},
@@ -75,9 +81,7 @@ func TestARunReplacesTheOpenRecommendationsInOneGo(t *testing.T) {
 	}
 	// A second run replaces b and keeps a; a stopped third changes nothing.
 	second := domain.RecRun{ID: uuid.NewString(), StartedAt: at.Add(2 * time.Hour), By: "ada", Model: "m"}
-	if err := repo.BeginRecRun(ctx, second); err != nil {
-		t.Fatal(err)
-	}
+	begin(second)
 	c := rec(uuid.NewString(), "term:nl:c")
 	c.RunID = second.ID
 	second.FinishedAt, second.Ending, second.Added, second.Replaced, second.Kept = at.Add(3*time.Hour), "done", 1, 1, 1
@@ -85,9 +89,7 @@ func TestARunReplacesTheOpenRecommendationsInOneGo(t *testing.T) {
 		t.Fatal(err)
 	}
 	third := domain.RecRun{ID: uuid.NewString(), StartedAt: at.Add(4 * time.Hour), By: "ada", Model: "m"}
-	if err := repo.BeginRecRun(ctx, third); err != nil {
-		t.Fatal(err)
-	}
+	begin(third)
 	third.FinishedAt, third.Ending = at.Add(5*time.Hour), "stoppedByHand"
 	if err := repo.FinishRecRun(ctx, third, nil); err != nil {
 		t.Fatal(err)
@@ -105,9 +107,7 @@ func TestARunReplacesTheOpenRecommendationsInOneGo(t *testing.T) {
 	}
 	// A bad recommendation rolls the whole run back.
 	fourth := domain.RecRun{ID: uuid.NewString(), StartedAt: at.Add(6 * time.Hour), By: "ada", Model: "m"}
-	if err := repo.BeginRecRun(ctx, fourth); err != nil {
-		t.Fatal(err)
-	}
+	begin(fourth)
 	bad := rec("Not An Id", "x")
 	fourth.FinishedAt, fourth.Ending = at.Add(7*time.Hour), "done"
 	if err := repo.FinishRecRun(ctx, fourth, &domain.Replacement{Replaced: []domain.Recommendation{c}, Added: []domain.Recommendation{bad}}); err == nil {
@@ -116,10 +116,107 @@ func TestARunReplacesTheOpenRecommendationsInOneGo(t *testing.T) {
 	if got, _ := repo.Recommendations(ctx); len(got) != 2 {
 		t.Errorf("after the refused run = %+v", got)
 	}
-	if err := repo.BeginRecRun(ctx, domain.RecRun{ID: "not a uuid"}); err == nil {
+	if _, err := repo.BeginRecRun(ctx, domain.RecRun{ID: "not a uuid"}, alive(at)); err == nil {
 		t.Error("a run without a uuid was begun")
 	}
 	if err := repo.FinishRecRun(ctx, domain.RecRun{ID: "not a uuid"}, nil); err == nil {
 		t.Error("a run without a uuid was finished")
+	}
+}
+
+// alive is the window a run begun at counts as live in: heard of in the last two minutes, or,
+// without a heartbeat, begun in the last hour.
+func alive(at time.Time) domain.Alive {
+	return domain.Alive{HeardSince: at.Add(-2 * time.Minute), BegunSince: at.Add(-time.Hour)}
+}
+
+// A run's running state and a stop request are stored, so every instance sees them: one runs at a
+// time, a stop reaches it wherever it was asked, and one a stopped server left is ended as failed.
+func TestARunsStateIsStoredForEveryInstance(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	url := pgtest.URL(t)
+	store, err := pg.Open(ctx, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	repo := persistence.New(store)
+	at := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
+	if running, err := repo.RecRunRunning(ctx, alive(at)); running || err != nil {
+		t.Fatalf("running before any = %v, %v", running, err)
+	}
+	if ok, err := repo.RequestRecRunStop(ctx, at, alive(at)); ok || err != nil {
+		t.Fatalf("a stop with none running = %v, %v", ok, err)
+	}
+	run := domain.RecRun{ID: uuid.NewString(), StartedAt: at, By: "joris", Model: "m"}
+	if ok, err := repo.BeginRecRun(ctx, run, alive(at)); !ok || err != nil {
+		t.Fatalf("begin = %v, %v", ok, err)
+	}
+	other := domain.RecRun{ID: uuid.NewString(), StartedAt: at.Add(time.Minute), By: "ada", Model: "m"}
+	if ok, err := repo.BeginRecRun(ctx, other, alive(at.Add(time.Minute))); ok || err != nil {
+		t.Fatalf("a second begin while one runs = %v, %v", ok, err)
+	}
+	// It beats, so a sweep ten minutes on ends nothing, and it shows as running.
+	if err := repo.BeatRecRun(ctx, run.ID, at.Add(10*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	later := at.Add(11 * time.Minute)
+	if n, err := repo.EndAbandonedRecRuns(ctx, later, alive(later)); n != 0 || err != nil {
+		t.Fatalf("a sweep of a live run = %d, %v", n, err)
+	}
+	if running, err := repo.RecRunRunning(ctx, alive(later)); !running || err != nil {
+		t.Fatalf("running = %v, %v", running, err)
+	}
+	if asked, err := repo.RecRunStopRequested(ctx, run.ID); asked || err != nil {
+		t.Fatalf("stop asked before any = %v, %v", asked, err)
+	}
+	if ok, err := repo.RequestRecRunStop(ctx, later, alive(later)); !ok || err != nil {
+		t.Fatalf("stop = %v, %v", ok, err)
+	}
+	if asked, err := repo.RecRunStopRequested(ctx, run.ID); !asked || err != nil {
+		t.Fatalf("stop asked = %v, %v", asked, err)
+	}
+	// Unheard of for long, it was left by a stopped server: ended as failed, and a new run may begin.
+	gone := at.Add(time.Hour)
+	if running, _ := repo.RecRunRunning(ctx, alive(gone)); running {
+		t.Error("a run unheard of shows as running")
+	}
+	if n, err := repo.EndAbandonedRecRuns(ctx, gone, alive(gone)); n != 1 || err != nil {
+		t.Fatalf("a sweep of a left run = %d, %v", n, err)
+	}
+	if runs, _ := repo.RecRuns(ctx, 5); len(runs) != 1 || runs[0].Ending != "failed" || !runs[0].FinishedAt.Equal(gone) {
+		t.Errorf("runs = %+v", runs)
+	}
+	if err := repo.BeatRecRun(ctx, run.ID, gone); err == nil {
+		t.Error("an ended run beat")
+	}
+	for _, bad := range []error{
+		repo.BeatRecRun(ctx, "not a uuid", gone),
+		func() error { _, err := repo.RecRunStopRequested(ctx, "not a uuid"); return err }(),
+		func() error { _, err := repo.RecRunStopRequested(ctx, uuid.NewString()); return err }(),
+	} {
+		if bad == nil {
+			t.Error("a bad or unknown run id was taken")
+		}
+	}
+	// A run begun by a server before runs beat counts as live for an hour from when it began.
+	conn, err := pgx.Connect(ctx, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close(context.Background()) }()
+	old := domain.RecRun{ID: uuid.NewString(), StartedAt: gone, By: "joris", Model: "m"}
+	if ok, err := repo.BeginRecRun(ctx, old, alive(gone)); !ok || err != nil {
+		t.Fatal(ok, err)
+	}
+	if _, err := conn.Exec(ctx, "UPDATE recommendation_runs SET heartbeat_at = NULL WHERE id = $1", old.ID); err != nil {
+		t.Fatal(err)
+	}
+	if running, _ := repo.RecRunRunning(ctx, alive(gone.Add(30*time.Minute))); !running {
+		t.Error("an unbeaten run within its hour does not run")
+	}
+	if n, _ := repo.EndAbandonedRecRuns(ctx, gone.Add(2*time.Hour), alive(gone.Add(2*time.Hour))); n != 1 {
+		t.Errorf("an unbeaten run after its hour was not ended: %d", n)
 	}
 }

@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"context"
+	"sync"
 	"errors"
 	"fmt"
 	"slices"
@@ -41,6 +42,69 @@ type world struct {
 	finishErr error
 	// runsErr2 fails RecRuns alone.
 	runsErr2 error
+	// stops are the runs asked to stop; stopErr fails asking, askedErr reading whether one was asked,
+	// runningErr whether one runs, beatErr each beat. beats counts the beats; alive is the window the
+	// last sweep was given.
+	mu         sync.Mutex
+	stops      map[string]bool
+	stopErr    error
+	askedErr   error
+	runningErr error
+	beatErr    error
+	beats      int
+	alive      domain.Alive
+	// beaten, when set, hears of each beat.
+	beaten chan struct{}
+}
+
+func (w *world) running() *domain.RecRun {
+	for i := range w.recRuns {
+		if w.recRuns[i].Ending == "" {
+			return &w.recRuns[i]
+		}
+	}
+	return nil
+}
+
+func (w *world) RecRunRunning(context.Context, domain.Alive) (bool, error) {
+	return w.running() != nil, w.runningErr
+}
+
+func (w *world) BeatRecRun(ctx context.Context, _ string, _ time.Time) error {
+	w.mu.Lock()
+	w.beats++
+	w.mu.Unlock()
+	if w.beaten != nil {
+		select {
+		case w.beaten <- struct{}{}:
+		case <-ctx.Done():
+		}
+	}
+	return w.beatErr
+}
+
+func (w *world) RequestRecRunStop(context.Context, time.Time, domain.Alive) (bool, error) {
+	if w.stopErr != nil {
+		return false, w.stopErr
+	}
+	r := w.running()
+	if r == nil {
+		return false, nil
+	}
+	if w.stops == nil {
+		w.stops = map[string]bool{}
+	}
+	w.stops[r.ID] = true
+	return true, nil
+}
+
+func (w *world) RecRunStopRequested(_ context.Context, id string) (bool, error) {
+	return w.stops[id], w.askedErr
+}
+
+func (w *world) EndAbandonedRecRuns(_ context.Context, _ time.Time, alive domain.Alive) (int, error) {
+	w.alive = alive
+	return 1, w.recErr
 }
 
 func (w *world) Recommendations(context.Context) ([]domain.Recommendation, error) {
@@ -54,12 +118,15 @@ func (w *world) RecRuns(_ context.Context, limit int) ([]domain.RecRun, error) {
 	return w.recRuns[:min(limit, len(w.recRuns))], w.recErr
 }
 
-func (w *world) BeginRecRun(_ context.Context, run domain.RecRun) error {
+func (w *world) BeginRecRun(_ context.Context, run domain.RecRun, _ domain.Alive) (bool, error) {
 	if w.recErr != nil {
-		return w.recErr
+		return false, w.recErr
+	}
+	if w.running() != nil {
+		return false, nil
 	}
 	w.recRuns = append([]domain.RecRun{run}, w.recRuns...)
-	return nil
+	return true, nil
 }
 
 func (w *world) FinishRecRun(_ context.Context, run domain.RecRun, r *domain.Replacement) error {

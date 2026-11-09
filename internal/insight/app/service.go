@@ -47,8 +47,18 @@ type Store interface {
 	Recommendations(ctx context.Context) ([]domain.Recommendation, error)
 	// RecRuns returns the newest limit Recommendation runs, newest first.
 	RecRuns(ctx context.Context, limit int) ([]domain.RecRun, error)
-	// BeginRecRun records a run begun.
-	BeginRecRun(ctx context.Context, run domain.RecRun) error
+	// BeginRecRun records a run begun unless another is alive; false then.
+	BeginRecRun(ctx context.Context, run domain.RecRun, alive domain.Alive) (bool, error)
+	// BeatRecRun records that the run still runs.
+	BeatRecRun(ctx context.Context, id string, at time.Time) error
+	// RecRunRunning reports whether a run is alive.
+	RecRunRunning(ctx context.Context, alive domain.Alive) (bool, error)
+	// RequestRecRunStop asks the run that is alive to stop; false when none is.
+	RequestRecRunStop(ctx context.Context, at time.Time, alive domain.Alive) (bool, error)
+	// RecRunStopRequested reports whether a stop of the run was asked, on any instance.
+	RecRunStopRequested(ctx context.Context, id string) (bool, error)
+	// EndAbandonedRecRuns ends, as failed, the unfinished runs that are not alive, and counts them.
+	EndAbandonedRecRuns(ctx context.Context, at time.Time, alive domain.Alive) (int, error)
 	// FinishRecRun records how a run ended and, with a replacement, replaces the open
 	// recommendations with the new ones, in one transaction.
 	FinishRecRun(ctx context.Context, run domain.RecRun, r *domain.Replacement) error
@@ -73,9 +83,8 @@ type Service struct {
 	ports Ports
 	now   func() time.Time
 	newID func() string
-	// writing is what a Recommendation run needs; rec whether one runs.
+	// writing is what a Recommendation run needs.
 	writing writing
-	rec     recState
 }
 
 // writing is what a Recommendation run needs, set by WithWriting.
@@ -86,6 +95,8 @@ type writing struct {
 	journal work.Journal
 	report  func(error)
 	spawn   func(func())
+	// beat is how often a running run tells the store it still runs.
+	beat time.Duration
 }
 
 // noWriters is the writers before WithWriting: none.
@@ -103,7 +114,7 @@ func New(ports Ports, now func() time.Time, newID func() string) *Service {
 	return &Service{
 		ports: ports, now: now, newID: newID,
 		// Without WithWriting, no model writes, so no run starts.
-		writing: writing{writers: noWriters{}, pages: noPages{}},
+		writing: writing{writers: noWriters{}, pages: noPages{}, beat: work.Heartbeat},
 	}
 }
 

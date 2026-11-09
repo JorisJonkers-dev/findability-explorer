@@ -168,6 +168,12 @@ func Replaces(existing []Recommendation) int {
 	return len(slices.DeleteFunc(slices.Clone(existing), func(r Recommendation) bool { return !r.Open() }))
 }
 
+// Alive is when running work counts as live: heard of since HeardSince, or, begun by a server
+// before work beat, begun since BegunSince. Work neither is was left by a server that stopped.
+type Alive struct {
+	HeardSince, BegunSince time.Time
+}
+
 // RecRun is one Recommendation run: when it ran, how it ended, the model, what it added, replaced
 // and kept, and the tokens it used.
 type RecRun struct {

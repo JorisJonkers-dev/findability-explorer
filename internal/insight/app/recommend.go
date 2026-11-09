@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/insight/domain"
@@ -62,18 +61,20 @@ var (
 	errBudget  = errors.New("the month's Anthropic budget is spent")
 )
 
-// recState is whether a run runs in the background, and whether it was asked to stop.
-type recState struct {
-	mu       sync.Mutex
-	running  bool
-	stopping bool
+// Unbeaten is how long a run begun by a server before runs beat counts as alive.
+const Unbeaten = time.Hour
+
+// alive is when a run counts as live now: heard of within work.Stale, or begun within Unbeaten.
+func (s *Service) alive() domain.Alive {
+	now := s.now()
+	return domain.Alive{HeardSince: now.Add(-work.Stale), BegunSince: now.Add(-Unbeaten)}
 }
 
 // WithWriting lets the Claude step writing recommendations run, on tribelt.nl's pages, within the
 // month's budget; journal records each run for Activity, report hears that it failed, and spawn
 // runs a run in the background (tests run it in place).
 func (s *Service) WithWriting(writers Writers, pages TribeltPages, budget BudgetSpent, journal work.Journal, report func(error), spawn func(func())) {
-	s.writing = writing{writers: writers, pages: pages, budget: budget, journal: journal, report: report, spawn: spawn}
+	s.writing = writing{writers: writers, pages: pages, budget: budget, journal: journal, report: report, spawn: spawn, beat: work.Heartbeat}
 }
 
 // RecRuns is the Recommendation run as Manage shows it: whether one runs, what starting one would
@@ -144,20 +145,18 @@ func (s *Service) RecommendationRuns(ctx context.Context) (RecRuns, error) {
 	if err != nil {
 		return RecRuns{}, fmt.Errorf("the language model: %w", err)
 	}
+	running, err := s.ports.Store.RecRunRunning(ctx, s.alive())
+	if err != nil {
+		return RecRuns{}, fmt.Errorf("whether a run runs: %w", err)
+	}
 	out := RecRuns{
-		Running: s.recRunning(), NoKey: writer == nil, Model: model, Replaces: domain.Replaces(domain.KeepDone(existing, in.done, s.now())), Stale: domain.Stale(in.scanAt, in.run),
+		Running: running, NoKey: writer == nil, Model: model, Replaces: domain.Replaces(domain.KeepDone(existing, in.done, s.now())), Stale: domain.Stale(in.scanAt, in.run),
 		ScanAt: in.scanAt, Terms: in.terms, Gaps: len(in.gaps), Estimate: domain.EstimateRun(in.gaps, in.pages, WriteBatch, model), Runs: runs,
 	}
 	if in.run != nil {
 		out.PromptRunAt = in.run.StartedAt
 	}
 	return out, nil
-}
-
-func (s *Service) recRunning() bool {
-	s.rec.mu.Lock()
-	defer s.rec.mu.Unlock()
-	return s.rec.running
 }
 
 // StartRecommendationRun starts a run in the background, by user. ErrNoWriter without an Anthropic
@@ -170,42 +169,50 @@ func (s *Service) StartRecommendationRun(ctx context.Context, user string) error
 	if writer == nil {
 		return ErrNoWriter
 	}
-	s.rec.mu.Lock()
-	if s.rec.running {
-		s.rec.mu.Unlock()
+	// The store holds the run, so one runs at a time across every instance.
+	run := domain.RecRun{ID: s.newID(), StartedAt: s.now(), By: user, Model: model}
+	begun, err := s.ports.Store.BeginRecRun(ctx, run, s.alive())
+	if err != nil {
+		return fmt.Errorf("record the Recommendation run: %w", err)
+	}
+	if !begun {
 		return ErrRunning
 	}
-	s.rec.running, s.rec.stopping = true, false
-	s.rec.mu.Unlock()
 	bg := context.WithoutCancel(ctx)
-	s.writing.spawn(func() {
-		defer func() {
-			s.rec.mu.Lock()
-			s.rec.running, s.rec.stopping = false, false
-			s.rec.mu.Unlock()
-		}()
-		s.recommend(bg, writer, model, user)
-	})
+	s.writing.spawn(func() { s.recommend(bg, writer, run) })
 	return nil
 }
 
-// StopRecommendationRun stops the run that runs after the batch it writes; it changes nothing.
-// ErrNothingToStop when none runs.
-func (s *Service) StopRecommendationRun(context.Context) error {
-	s.rec.mu.Lock()
-	defer s.rec.mu.Unlock()
-	if !s.rec.running {
+// StopRecommendationRun asks the run that runs, on whichever instance, to stop after the batch it
+// writes; it changes nothing. ErrNothingToStop when none runs.
+func (s *Service) StopRecommendationRun(ctx context.Context) error {
+	asked, err := s.ports.Store.RequestRecRunStop(ctx, s.now(), s.alive())
+	if err != nil {
+		return fmt.Errorf("ask the Recommendation run to stop: %w", err)
+	}
+	if !asked {
 		return ErrNothingToStop
 	}
-	s.rec.stopping = true
 	return nil
 }
 
-// goOn is errStopped once an administrator stopped the run, errBudget once the budget is spent.
-func (s *Service) goOn(ctx context.Context) error {
-	s.rec.mu.Lock()
-	stopping := s.rec.stopping
-	s.rec.mu.Unlock()
+// EndAbandonedRecRuns ends, as failed, the runs a server that stopped left running: a run beats
+// while it runs, so one unheard of for work.Stale is no live instance's. It changes no
+// recommendation. Call it at startup and now and then.
+func (s *Service) EndAbandonedRecRuns(ctx context.Context) (int, error) {
+	n, err := s.ports.Store.EndAbandonedRecRuns(ctx, s.now(), s.alive())
+	if err != nil {
+		return 0, fmt.Errorf("end the Recommendation runs left running: %w", err)
+	}
+	return n, nil
+}
+
+// goOn is errStopped once an administrator asked the run to stop, errBudget once the budget is spent.
+func (s *Service) goOn(ctx context.Context, id string) error {
+	stopping, err := s.ports.Store.RecRunStopRequested(ctx, id)
+	if err != nil {
+		return fmt.Errorf("whether the run was asked to stop: %w", err)
+	}
 	if stopping {
 		return errStopped
 	}
@@ -222,14 +229,17 @@ func (s *Service) goOn(ctx context.Context) error {
 	return nil
 }
 
-// recommend runs one Recommendation run and records it, and what it did, in the store and the journal.
-func (s *Service) recommend(ctx context.Context, writer Writer, model, user string) {
-	run := domain.RecRun{ID: s.newID(), StartedAt: s.now(), By: user, Model: model}
-	entry := work.Start(ctx, s.writing.journal, work.KindRecommendationRun, user, run.StartedAt, s.writing.report)
-	if err := s.ports.Store.BeginRecRun(ctx, run); err != nil {
-		s.writing.report(fmt.Errorf("record the Recommendation run: %w", err))
-	}
+// recommend runs one Recommendation run, begun in the store, and records what it did in the store
+// and the journal. It beats while it runs, so another instance does not end it as left behind.
+func (s *Service) recommend(ctx context.Context, writer Writer, run domain.RecRun) {
+	entry := work.Start(ctx, s.writing.journal, work.KindRecommendationRun, run.By, run.StartedAt, s.writing.report)
+	stop := work.Beating(ctx, s.writing.beat, func(ctx context.Context) {
+		if err := s.ports.Store.BeatRecRun(ctx, run.ID, s.now()); err != nil {
+			s.writing.report(fmt.Errorf("record that the Recommendation run still runs: %w", err))
+		}
+	})
 	replacement, used, done, total, err := s.write(ctx, writer, run)
+	stop()
 	run.InputTokens, run.OutputTokens, run.Gaps = used.InputTokens, used.OutputTokens, total
 	run.FinishedAt, run.Ending = s.now(), string(recEnding(err))
 	if replacement != nil {
@@ -270,7 +280,7 @@ func (s *Service) write(ctx context.Context, writer Writer, run domain.RecRun) (
 	var written []domain.Written
 	done := 0
 	for start := 0; start < len(in.gaps); start += WriteBatch {
-		if err := s.goOn(ctx); err != nil {
+		if err := s.goOn(ctx, run.ID); err != nil {
 			return nil, used, done, len(in.gaps), err
 		}
 		batch := in.gaps[start:min(start+WriteBatch, len(in.gaps))]

@@ -40,7 +40,7 @@ jobs:
           persist-credentials: false
 
       # Reads the toolchain main's "Warm caches" workflow saved under the same key (cache.yml).
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           cache: true
 
@@ -91,7 +91,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       # Only what the build needs.
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           cache: true
           install_args: go node pnpm task
@@ -152,7 +152,7 @@ jobs:
           persist-credentials: false
 
       # Only what the suite needs; the image brings the browsers.
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           cache: true
           install_args: node pnpm task

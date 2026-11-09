@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { budgetFraction, confirmLine, estimateLine, leftUsd, overBudgetLine, scheduleCosts, scheduleWarning } from './estimate'
+import { budgetFraction, confirmLine, estimateLine, leftUsd, overBudgetLine, readerOf, scheduleCosts, scheduleWarning } from './estimate'
 
 describe('leftUsd and budgetFraction', () => {
   it('is what is left of the budget, never below nothing', () => {
@@ -16,15 +16,16 @@ describe('leftUsd and budgetFraction', () => {
 
 describe('the estimate of a start', () => {
   it('says what it costs and what the budget has left', () => {
-    expect(estimateLine(0.25, 7.5)).toBe('About $0.25. $7.50 of this month’s OpenRouter budget is left.')
-    expect(estimateLine(1.12, 8.12, '200 responses')).toBe('About $1.12. 200 responses. $8.12 of this month’s OpenRouter budget is left.')
-    expect(estimateLine(0, 8)).toBe('Free. $8.00 of this month’s OpenRouter budget is left.')
+    expect(estimateLine(0.25, 7.5, 'OpenRouter')).toBe('About $0.25. $7.50 of this month’s OpenRouter budget is left.')
+    expect(estimateLine(1.12, 8.12, 'OpenRouter', '200 responses')).toBe('About $1.12. 200 responses. $8.12 of this month’s OpenRouter budget is left.')
+    expect(estimateLine(0, 8, 'Anthropic')).toBe('Free. $8.00 of this month’s Anthropic budget is left.')
   })
 
   it('warns before the click when it costs more than is left', () => {
-    expect(overBudgetLine(0.25, 7.5)).toBeNull()
-    expect(overBudgetLine(9, 7.5)).toBe('This costs more than the $7.50 left of this month’s OpenRouter budget.')
-    expect(confirmLine(9, 7.5)).toBe(
+    expect(overBudgetLine(0.25, 7.5, 'OpenRouter')).toBeNull()
+    expect(overBudgetLine(9, 7.5, 'OpenRouter')).toBe('This costs more than the $7.50 left of this month’s OpenRouter budget.')
+    expect(overBudgetLine(9, 7.5, 'Anthropic')).toBe('This costs more than the $7.50 left of this month’s Anthropic budget.')
+    expect(confirmLine(9, 7.5, 'OpenRouter')).toBe(
       'This costs about $9.00. Only $7.50 is left of this month’s OpenRouter budget. The work stops when the budget runs out, and keeps what it has done.',
     )
   })
@@ -46,5 +47,12 @@ describe('the schedule', () => {
       text: 'At this schedule the runs cost about $12.00 a month, which is more than the $10.00 monthly budget. Runs will stop when the budget is spent. Raise the budget, or take a provider off the list.',
       setMonthly: false,
     })
+  })
+})
+
+describe('readerOf', () => {
+  it('reads on the Anthropic key with a Claude model, else on OpenRouter', () => {
+    expect(readerOf('anthropic: claude-haiku-5-5')).toEqual({ budget: 'Anthropic', model: 'claude-haiku-5-5' })
+    expect(readerOf('google/gemini-2.5-flash-lite')).toEqual({ budget: 'OpenRouter', model: 'google/gemini-2.5-flash-lite' })
   })
 })

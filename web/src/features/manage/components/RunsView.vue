@@ -5,7 +5,9 @@ import { costLabel } from '../../prompt-test/domain/results'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
 import { useStopWork } from '../composables/useManage'
 import { dayLabel, endedOf, needsFinishing, runAsWork, runningWork, whenLabel } from '../domain/activity'
-import { leftUsd } from '../domain/estimate'
+import { useStepModelName } from '../../claude-steps/composables/useClaudeSteps'
+import { useLlmSettings } from '../../settings/composables/useLlmSettings'
+import { leftUsd, readerOf } from '../domain/estimate'
 import EndedPill from './widgets/EndedPill.vue'
 import ManageWidget from './widgets/ManageWidget.vue'
 import RunningWidget from './widgets/RunningWidget.vue'
@@ -26,6 +28,16 @@ const failing = computed(() => runs.value.filter(needsFinishing))
 const busy = computed(() => running.value.length > 0)
 const left = computed(() => (settings.value ? leftUsd({ budgetUsd: settings.value.monthlyBudgetUsd, spentUsd: settings.value.spentThisMonthUsd }) : 0))
 const last = computed(() => runs.value[0])
+// Reading again is paid by the key that reads: the Anthropic key with the step's model while one
+// works, else OpenRouter's reader.
+const llm = useLlmSettings()
+const readingModel = useStepModelName('reading')
+const reader = computed(() => {
+  const r = readerOf(settings.value?.extractorModel ?? '')
+  return r.budget === 'Anthropic'
+    ? { name: readingModel.value, budget: r.budget, left: llm.settings.value?.budget.leftUsd ?? 0 }
+    : { name: r.model, budget: r.budget, left: left.value }
+})
 </script>
 
 <template>
@@ -67,6 +79,7 @@ const last = computed(() => runs.value[0])
               :key="r.id"
               :run="r"
               :left="left"
+              :reader="reader"
               :busy="retrier.isRetrying.value"
               :busy-note="busy ? 'Wait for the running work to finish or stop it.' : undefined"
               @retry="retrier.retry(r.id)"

@@ -45,3 +45,12 @@ export function useClaudeStep(id: Ref<ClaudeStepId>) {
     },
   }
 }
+
+/**
+ * The name of the model a Claude step uses now, such as "Claude Haiku 5.5", for the pages that
+ * name it; "Claude" until the step is read, since an administrator can change the model.
+ */
+export function useStepModelName(id: ClaudeStepId) {
+  const query = useQuery(getClaudeStepOptions({ path: { stepId: id } }))
+  return computed(() => query.data.value?.current.modelName ?? 'Claude')
+}

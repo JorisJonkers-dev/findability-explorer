@@ -2,13 +2,13 @@ import type { PromptCadence, PromptPrices } from '../../../infrastructure/api/ty
 import { costLabel } from '../../prompt-test/domain/results'
 
 /**
- * The budget a start is checked against. Prompt runs, their retries and their readings are paid from
- * the Prompt test's monthly budget, which the OpenRouter key spends; the dollar budget per key
- * arrives with its own ticket.
+ * The budget a start is checked against: the OpenRouter key's, which is the Prompt test's monthly
+ * budget, or the Anthropic key's, which pays every job a Claude model does.
  */
 export type Budget = { budgetUsd: number; spentUsd: number }
 
-const BUDGET_NAME = 'OpenRouter'
+/** The key whose monthly budget pays for a piece of work. */
+export type BudgetName = 'OpenRouter' | 'Anthropic'
 
 /** What is left of the month's budget. */
 export function leftUsd(budget: Budget): number {
@@ -21,19 +21,19 @@ export function budgetFraction(budget: Budget): number {
 }
 
 /** The estimate beside a start button: "About $0.25. $7.50 of this month’s OpenRouter budget is left." */
-export function estimateLine(usd: number, left: number, note?: string): string {
+export function estimateLine(usd: number, left: number, budget: BudgetName, note?: string): string {
   const cost = usd > 0 ? `About ${costLabel(usd)}.` : 'Free.'
-  return `${cost}${note ? ` ${note}.` : ''} ${costLabel(left)} of this month’s ${BUDGET_NAME} budget is left.`
+  return `${cost}${note ? ` ${note}.` : ''} ${costLabel(left)} of this month’s ${budget} budget is left.`
 }
 
 /** The warning shown before the click when the start costs more than the budget has left, else null. */
-export function overBudgetLine(usd: number, left: number): string | null {
-  return usd > left ? `This costs more than the ${costLabel(left)} left of this month’s ${BUDGET_NAME} budget.` : null
+export function overBudgetLine(usd: number, left: number, budget: BudgetName): string | null {
+  return usd > left ? `This costs more than the ${costLabel(left)} left of this month’s ${budget} budget.` : null
 }
 
 /** What the first click on an over-budget start says, before Start anyway. */
-export function confirmLine(usd: number, left: number): string {
-  return `This costs about ${costLabel(usd)}. Only ${costLabel(left)} is left of this month’s ${BUDGET_NAME} budget. The work stops when the budget runs out, and keeps what it has done.`
+export function confirmLine(usd: number, left: number, budget: BudgetName): string {
+  return `This costs about ${costLabel(usd)}. Only ${costLabel(left)} is left of this month’s ${budget} budget. The work stops when the budget runs out, and keeps what it has done.`
 }
 
 const RUNS_PER_YEAR: Record<PromptCadence, number> = { monthly: 12, weekly: 52 }
@@ -60,3 +60,16 @@ export function scheduleWarning(
   }
 }
 
+
+const ANTHROPIC = 'anthropic: '
+
+/**
+ * Who reads responses again, from the model the Prompt test names as its reader: a Claude model on
+ * the Anthropic key ("anthropic: claude-haiku-5-5"), paid from the Anthropic budget, or the
+ * OpenRouter model that reads without one, paid from the OpenRouter budget.
+ */
+export function readerOf(extractorModel: string): { budget: BudgetName; model: string } {
+  return extractorModel.startsWith(ANTHROPIC)
+    ? { budget: 'Anthropic', model: extractorModel.slice(ANTHROPIC.length) }
+    : { budget: 'OpenRouter', model: extractorModel }
+}

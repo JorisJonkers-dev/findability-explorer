@@ -75,6 +75,7 @@ const disabledNote = computed(() => {
           <div class="flex flex-col gap-2">
             <StartButton
               label="Start a Prompt run"
+              budget="OpenRouter"
               :usd="settings.prices.runUsd"
               :left="left"
               :disabled-note="disabledNote"

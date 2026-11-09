@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { claudeStep } from '../../../testing/claudeStepFixtures'
 import { json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
-import { useClaudeStep, useClaudeSteps } from './useClaudeSteps'
+import { useClaudeStep, useClaudeSteps, useStepModelName } from './useClaudeSteps'
 
 describe('useClaudeSteps', () => {
   it('lists the steps, and says why it could not', async () => {
@@ -58,5 +58,15 @@ describe('useClaudeStep', () => {
     state.save({ model: 'claude-haiku-5-5', instructions: 'x' }, () => undefined)
     await flushPromises()
     expect(state.saveError.value).toBe('Nothing changed, so there is no new version.')
+  })
+})
+
+describe('useStepModelName', () => {
+  it('names the model the step uses now, and Claude until it is read', async () => {
+    const opus = claudeStep({ current: { ...claudeStep().current, model: 'claude-opus-5-5', modelName: 'Claude Opus 5.5' } })
+    const { state } = mountComposable(() => useStepModelName('termReview'), routes({ 'GET /api/v1/admin/claude-steps/termReview': () => json(opus) }))
+    expect(state.value).toBe('Claude')
+    await flushPromises()
+    expect(state.value).toBe('Claude Opus 5.5')
   })
 })

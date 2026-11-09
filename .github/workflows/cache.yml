@@ -37,6 +37,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # Routes the installs below through the estate's packages proxy.
+      - name: Set up the packages proxy
+        uses: JorisJonkers-dev/github-workflows/actions/setup-package-proxy@f8f0a5ae583913de18143bbbbe0db9ecab970435 # v0.45.0
+        with:
+          token: ${{ secrets.PACKAGES_PROXY_TOKEN }}
+          require-package-proxy: true
+
       # The same setup as CI's Check job, so the key it saves is the one Check reads.
       - uses: jdx/mise-action@v5
         with:

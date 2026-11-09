@@ -29,13 +29,13 @@ var (
 	rn16AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn121AllowedHeaders = map[string]string{
+	rn122AllowedHeaders = map[string]string{
 		"PATCH": "Content-Type",
 	}
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn117AllowedHeaders = map[string]string{
+	rn118AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
 	rn93AllowedHeaders = map[string]string{
@@ -56,7 +56,7 @@ var (
 	rn26AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
-	rn100AllowedHeaders = map[string]string{
+	rn101AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
 	rn94AllowedHeaders = map[string]string{
@@ -451,6 +451,32 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												break
 											}
 											switch elem[0] {
+											case 'c': // Prefix: "check"
+												origElem := elem
+												if l := len("check"); len(elem) >= l && elem[0:l] == "check" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch r.Method {
+													case "POST":
+														s.handleStartCandidateCheckRequest([0]string{}, elemIsEscaped, w, r)
+													default:
+														s.notAllowed(w, r, notAllowedParams{
+															allowedMethods: "POST",
+															allowedHeaders: nil,
+															acceptPost:     "",
+															acceptPatch:    "",
+														})
+													}
+
+													return
+												}
+
+												elem = origElem
 											case 'd': // Prefix: "decisions"
 												origElem := elem
 												if l := len("decisions"); len(elem) >= l && elem[0:l] == "decisions" {
@@ -661,13 +687,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													if len(elem) == 0 {
 														// Leaf node.
 														switch r.Method {
+														case "DELETE":
+															s.handleUndoCandidateSplitRequest([1]string{
+																args[0],
+															}, elemIsEscaped, w, r)
 														case "POST":
 															s.handleSplitCompetitorCandidateRequest([1]string{
 																args[0],
 															}, elemIsEscaped, w, r)
 														default:
 															s.notAllowed(w, r, notAllowedParams{
-																allowedMethods: "POST",
+																allowedMethods: "DELETE,POST",
 																allowedHeaders: nil,
 																acceptPost:     "",
 																acceptPatch:    "",
@@ -926,7 +956,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PATCH",
-											allowedHeaders: rn121AllowedHeaders,
+											allowedHeaders: rn122AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "application/json",
 										})
@@ -1148,7 +1178,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn117AllowedHeaders,
+											allowedHeaders: rn118AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -1645,7 +1675,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn100AllowedHeaders,
+										allowedHeaders: rn101AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -3089,6 +3119,32 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												break
 											}
 											switch elem[0] {
+											case 'c': // Prefix: "check"
+												origElem := elem
+												if l := len("check"); len(elem) >= l && elem[0:l] == "check" {
+													elem = elem[l:]
+												} else {
+													break
+												}
+
+												if len(elem) == 0 {
+													// Leaf node.
+													switch method {
+													case "POST":
+														r.name = StartCandidateCheckOperation
+														r.summary = "Let Claude Haiku check the waiting candidates, only to advise"
+														r.operationID = "startCandidateCheck"
+														r.operationGroup = ""
+														r.pathPattern = "/api/v1/admin/competitor-candidates/check"
+														r.args = args
+														r.count = 0
+														return r, true
+													default:
+														return
+													}
+												}
+
+												elem = origElem
 											case 'd': // Prefix: "decisions"
 												origElem := elem
 												if l := len("decisions"); len(elem) >= l && elem[0:l] == "decisions" {
@@ -3293,6 +3349,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 													if len(elem) == 0 {
 														// Leaf node.
 														switch method {
+														case "DELETE":
+															r.name = UndoCandidateSplitOperation
+															r.summary = "Undo the split of a name off its company"
+															r.operationID = "undoCandidateSplit"
+															r.operationGroup = ""
+															r.pathPattern = "/api/v1/admin/competitor-candidates/{competitorCandidateId}/split"
+															r.args = args
+															r.count = 1
+															return r, true
 														case "POST":
 															r.name = SplitCompetitorCandidateOperation
 															r.summary = "Split a merged name off its company"

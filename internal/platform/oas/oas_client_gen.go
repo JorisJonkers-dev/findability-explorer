@@ -546,17 +546,28 @@ type Invoker interface {
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, request *NewAnalysis) (StartAnalysisRes, error)
+	// StartCandidateCheck invokes startCandidateCheck operation.
+	//
+	// Administrators only. In the background, Claude Haiku on an Anthropic key reads each waiting
+	// candidate's home page and what the answers say of it, and says whether it competes. It only advises:
+	// nothing is merged or decided, and its check shows beside each company. It shares the review's state,
+	// and the review's stop stops it. Running already is no error.
+	//
+	// POST /api/v1/admin/competitor-candidates/check
+	StartCandidateCheck(ctx context.Context) (StartCandidateCheckRes, error)
 	// StartCandidateReview invokes startCandidateReview operation.
 	//
 	// Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
 	// candidates that are one company, or a company on the list, and then checks each waiting company
 	// against Tribelt's target market, from what the answers say of it and its home page. A company it is
 	// sure competes, with a website, joins the competitor list; one it is sure does not is dismissed; the
-	// rest wait for a person. Its decisions are by `language model` and can be undone. Returns the
-	// review's state; running already is no error.
+	// rest wait for a person. Its decisions are by `language model` and can be undone. With recheck, it
+	// also checks again every candidate Claude Haiku decided, and changes what it dismissed when it now
+	// thinks otherwise; what an administrator decided is never checked again. Returns the review's state;
+	// running already is no error.
 	//
 	// POST /api/v1/admin/competitor-candidates/review
-	StartCandidateReview(ctx context.Context) (StartCandidateReviewRes, error)
+	StartCandidateReview(ctx context.Context, params StartCandidateReviewParams) (StartCandidateReviewRes, error)
 	// StartCompetitorCheck invokes startCompetitorCheck operation.
 	//
 	// Administrators only. In the background, Claude Haiku on an Anthropic key checks each competitor on
@@ -699,6 +710,13 @@ type Invoker interface {
 	//
 	// PUT /api/v1/admin/plan/improvements/{improvementId}
 	TickImprovement(ctx context.Context, request *ImprovementTick, params TickImprovementParams) (TickImprovementRes, error)
+	// UndoCandidateSplit invokes undoCandidateSplit operation.
+	//
+	// Administrators only. Merges a name an administrator split off back into the candidate it was split
+	// off. 404 for a name never split off.
+	//
+	// DELETE /api/v1/admin/competitor-candidates/{competitorCandidateId}/split
+	UndoCandidateSplit(ctx context.Context, params UndoCandidateSplitParams) (UndoCandidateSplitRes, error)
 	// UndoCompetitorCandidate invokes undoCompetitorCandidate operation.
 	//
 	// Administrators only. Puts the candidate back among the pending ones; an added candidate's company is
@@ -8781,22 +8799,140 @@ func (c *Client) sendStartAnalysis(ctx context.Context, request *NewAnalysis) (r
 	return result, nil
 }
 
+// StartCandidateCheck invokes startCandidateCheck operation.
+//
+// Administrators only. In the background, Claude Haiku on an Anthropic key reads each waiting
+// candidate's home page and what the answers say of it, and says whether it competes. It only advises:
+// nothing is merged or decided, and its check shows beside each company. It shares the review's state,
+// and the review's stop stops it. Running already is no error.
+//
+// POST /api/v1/admin/competitor-candidates/check
+func (c *Client) StartCandidateCheck(ctx context.Context) (StartCandidateCheckRes, error) {
+	res, err := c.sendStartCandidateCheck(ctx)
+	return res, err
+}
+
+func (c *Client) sendStartCandidateCheck(ctx context.Context) (res StartCandidateCheckRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("startCandidateCheck"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates/check"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StartCandidateCheckOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates/check"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, StartCandidateCheckOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStartCandidateCheckResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // StartCandidateReview invokes startCandidateReview operation.
 //
 // Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
 // candidates that are one company, or a company on the list, and then checks each waiting company
 // against Tribelt's target market, from what the answers say of it and its home page. A company it is
 // sure competes, with a website, joins the competitor list; one it is sure does not is dismissed; the
-// rest wait for a person. Its decisions are by `language model` and can be undone. Returns the
-// review's state; running already is no error.
+// rest wait for a person. Its decisions are by `language model` and can be undone. With recheck, it
+// also checks again every candidate Claude Haiku decided, and changes what it dismissed when it now
+// thinks otherwise; what an administrator decided is never checked again. Returns the review's state;
+// running already is no error.
 //
 // POST /api/v1/admin/competitor-candidates/review
-func (c *Client) StartCandidateReview(ctx context.Context) (StartCandidateReviewRes, error) {
-	res, err := c.sendStartCandidateReview(ctx)
+func (c *Client) StartCandidateReview(ctx context.Context, params StartCandidateReviewParams) (StartCandidateReviewRes, error) {
+	res, err := c.sendStartCandidateReview(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendStartCandidateReview(ctx context.Context) (res StartCandidateReviewRes, err error) {
+func (c *Client) sendStartCandidateReview(ctx context.Context, params StartCandidateReviewParams) (res StartCandidateReviewRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("startCandidateReview"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -8836,6 +8972,27 @@ func (c *Client) sendStartCandidateReview(ctx context.Context) (res StartCandida
 	var pathParts [1]string
 	pathParts[0] = "/api/v1/admin/competitor-candidates/review"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "recheck" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "recheck",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Recheck.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "POST", u)
@@ -10830,6 +10987,142 @@ func (c *Client) sendTickImprovement(ctx context.Context, request *ImprovementTi
 
 	stage = "DecodeResponse"
 	result, err := decodeTickImprovementResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UndoCandidateSplit invokes undoCandidateSplit operation.
+//
+// Administrators only. Merges a name an administrator split off back into the candidate it was split
+// off. 404 for a name never split off.
+//
+// DELETE /api/v1/admin/competitor-candidates/{competitorCandidateId}/split
+func (c *Client) UndoCandidateSplit(ctx context.Context, params UndoCandidateSplitParams) (UndoCandidateSplitRes, error) {
+	res, err := c.sendUndoCandidateSplit(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendUndoCandidateSplit(ctx context.Context, params UndoCandidateSplitParams) (res UndoCandidateSplitRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("undoCandidateSplit"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/admin/competitor-candidates/{competitorCandidateId}/split"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UndoCandidateSplitOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/admin/competitor-candidates/"
+	{
+		// Encode "competitorCandidateId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "competitorCandidateId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.CompetitorCandidateId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/split"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:SessionCookie"
+			switch err := c.securitySessionCookie(ctx, UndoCandidateSplitOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"SessionCookie\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUndoCandidateSplitResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -1559,6 +1559,7 @@ func (s *CandidateReviewState) SetProblem(val OptCandidateReviewStateProblem) {
 	s.Problem = val
 }
 
+func (*CandidateReviewState) startCandidateCheckRes()  {}
 func (*CandidateReviewState) startCandidateReviewRes() {}
 func (*CandidateReviewState) startCompetitorCheckRes() {}
 
@@ -2630,7 +2631,8 @@ func (s *CompetitorBatchRequest) SetScan(val OptBool) {
 // A company the answers name that is not on the company list.
 // Ref: #/components/schemas/CompetitorCandidate
 type CompetitorCandidate struct {
-	ID CompetitorCandidateId `json:"id"`
+	SplitFrom OptCompetitorCandidateId `json:"splitFrom"`
+	ID        CompetitorCandidateId    `json:"id"`
 	// How the answers spell it most often.
 	Name   string                    `json:"name"`
 	Status CompetitorCandidateStatus `json:"status"`
@@ -2652,6 +2654,11 @@ type CompetitorCandidate struct {
 	// Every name it goes by, the one it is listed under first.
 	Names []CandidateName   `json:"names"`
 	Check OptCandidateCheck `json:"check"`
+}
+
+// GetSplitFrom returns the value of SplitFrom.
+func (s *CompetitorCandidate) GetSplitFrom() OptCompetitorCandidateId {
+	return s.SplitFrom
 }
 
 // GetID returns the value of ID.
@@ -2717,6 +2724,11 @@ func (s *CompetitorCandidate) GetNames() []CandidateName {
 // GetCheck returns the value of Check.
 func (s *CompetitorCandidate) GetCheck() OptCandidateCheck {
 	return s.Check
+}
+
+// SetSplitFrom sets the value of SplitFrom.
+func (s *CompetitorCandidate) SetSplitFrom(val OptCompetitorCandidateId) {
+	s.SplitFrom = val
 }
 
 // SetID sets the value of ID.
@@ -2790,6 +2802,8 @@ func (*CompetitorCandidate) dismissCompetitorCandidateRes() {}
 // How many candidates have each status.
 // Ref: #/components/schemas/CompetitorCandidateCounts
 type CompetitorCandidateCounts struct {
+	// Candidates an administrator decided; Claude Haiku never changes these.
+	ByPerson int32 `json:"byPerson"`
 	// Pending candidates Claude Haiku has not checked.
 	Unchecked int32 `json:"unchecked"`
 	// Pending candidates.
@@ -2798,6 +2812,11 @@ type CompetitorCandidateCounts struct {
 	Added int32 `json:"added"`
 	// Dismissed ones.
 	Dismissed int32 `json:"dismissed"`
+}
+
+// GetByPerson returns the value of ByPerson.
+func (s *CompetitorCandidateCounts) GetByPerson() int32 {
+	return s.ByPerson
 }
 
 // GetUnchecked returns the value of Unchecked.
@@ -2818,6 +2837,11 @@ func (s *CompetitorCandidateCounts) GetAdded() int32 {
 // GetDismissed returns the value of Dismissed.
 func (s *CompetitorCandidateCounts) GetDismissed() int32 {
 	return s.Dismissed
+}
+
+// SetByPerson sets the value of ByPerson.
+func (s *CompetitorCandidateCounts) SetByPerson(val int32) {
+	s.ByPerson = val
 }
 
 // SetUnchecked sets the value of Unchecked.
@@ -14957,6 +14981,14 @@ type StartAnalysisUnprocessableEntity ProblemStatusCode
 
 func (*StartAnalysisUnprocessableEntity) startAnalysisRes() {}
 
+type StartCandidateCheckForbidden ProblemStatusCode
+
+func (*StartCandidateCheckForbidden) startCandidateCheckRes() {}
+
+type StartCandidateCheckUnauthorized ProblemStatusCode
+
+func (*StartCandidateCheckUnauthorized) startCandidateCheckRes() {}
+
 type StartCandidateReviewForbidden ProblemStatusCode
 
 func (*StartCandidateReviewForbidden) startCandidateReviewRes() {}
@@ -16478,6 +16510,27 @@ func (s *TribeltCrawler) SetFeeds(val CrawlerFeeds) {
 func (s *TribeltCrawler) SetAccess(val OptCrawlerAccess) {
 	s.Access = val
 }
+
+type UndoCandidateSplitBadRequest ProblemStatusCode
+
+func (*UndoCandidateSplitBadRequest) undoCandidateSplitRes() {}
+
+type UndoCandidateSplitForbidden ProblemStatusCode
+
+func (*UndoCandidateSplitForbidden) undoCandidateSplitRes() {}
+
+// UndoCandidateSplitNoContent is response for UndoCandidateSplit operation.
+type UndoCandidateSplitNoContent struct{}
+
+func (*UndoCandidateSplitNoContent) undoCandidateSplitRes() {}
+
+type UndoCandidateSplitNotFound ProblemStatusCode
+
+func (*UndoCandidateSplitNotFound) undoCandidateSplitRes() {}
+
+type UndoCandidateSplitUnauthorized ProblemStatusCode
+
+func (*UndoCandidateSplitUnauthorized) undoCandidateSplitRes() {}
 
 type UndoCompetitorCandidateBadRequest ProblemStatusCode
 

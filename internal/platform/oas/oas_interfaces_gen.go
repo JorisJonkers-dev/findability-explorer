@@ -249,6 +249,10 @@ type StartAnalysisRes interface {
 	startAnalysisRes()
 }
 
+type StartCandidateCheckRes interface {
+	startCandidateCheckRes()
+}
+
 type StartCandidateReviewRes interface {
 	startCandidateReviewRes()
 }
@@ -315,6 +319,10 @@ type TestLlmCredentialRes interface {
 
 type TickImprovementRes interface {
 	tickImprovementRes()
+}
+
+type UndoCandidateSplitRes interface {
+	undoCandidateSplitRes()
 }
 
 type UndoCompetitorCandidateRes interface {

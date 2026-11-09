@@ -3669,6 +3669,7 @@ export type CompetitorCandidateDecision = {
  * A company the answers name that is not on the company list.
  */
 export type CompetitorCandidate = {
+    splitFrom?: CompetitorCandidateId;
     id: CompetitorCandidateId;
     /**
      * How the answers spell it most often.
@@ -3873,6 +3874,10 @@ export type CandidateDecisionResult = {
  * How many candidates have each status.
  */
 export type CompetitorCandidateCounts = {
+    /**
+     * Candidates an administrator decided; Claude Haiku never changes these.
+     */
+    byPerson: number;
     /**
      * Pending candidates Claude Haiku has not checked.
      */
@@ -6521,7 +6526,12 @@ export type ListCompetitorCandidatesResponse = ListCompetitorCandidatesResponses
 export type StartCandidateReviewData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Also recheck the candidates Claude Haiku decided.
+         */
+        recheck?: boolean;
+    };
     url: '/api/v1/admin/competitor-candidates/review';
 };
 
@@ -6550,6 +6560,39 @@ export type StartCandidateReviewResponses = {
 };
 
 export type StartCandidateReviewResponse = StartCandidateReviewResponses[keyof StartCandidateReviewResponses];
+
+export type StartCandidateCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/check';
+};
+
+export type StartCandidateCheckErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartCandidateCheckError = StartCandidateCheckErrors[keyof StartCandidateCheckErrors];
+
+export type StartCandidateCheckResponses = {
+    /**
+     * The check is under way.
+     */
+    202: CandidateReviewState;
+};
+
+export type StartCandidateCheckResponse = StartCandidateCheckResponses[keyof StartCandidateCheckResponses];
 
 export type StopCandidateReviewData = {
     body?: never;
@@ -6861,6 +6904,52 @@ export type DecideCompetitorCandidatesResponses = {
 };
 
 export type DecideCompetitorCandidatesResponse = DecideCompetitorCandidatesResponses[keyof DecideCompetitorCandidatesResponses];
+
+export type UndoCandidateSplitData = {
+    body?: never;
+    path: {
+        /**
+         * The competitor candidate's id.
+         */
+        competitorCandidateId: CompetitorCandidateId;
+    };
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/{competitorCandidateId}/split';
+};
+
+export type UndoCandidateSplitErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type UndoCandidateSplitError = UndoCandidateSplitErrors[keyof UndoCandidateSplitErrors];
+
+export type UndoCandidateSplitResponses = {
+    /**
+     * Merged back.
+     */
+    204: void;
+};
+
+export type UndoCandidateSplitResponse = UndoCandidateSplitResponses[keyof UndoCandidateSplitResponses];
 
 export type SplitCompetitorCandidateData = {
     body?: never;

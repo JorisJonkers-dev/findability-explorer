@@ -39,7 +39,10 @@ type UseCases interface {
 	UndoCandidate(ctx context.Context, actor, id string) error
 	DecideMany(ctx context.Context, actor string, status domain.CandidateStatus, ids []string) ([]app.Decided, error)
 	Split(ctx context.Context, actor, id string) error
+	UndoSplit(ctx context.Context, actor, id string) error
 	StartReview(ctx context.Context) bool
+	StartRecheck(ctx context.Context) bool
+	StartCandidateCheck(ctx context.Context) bool
 	ReviewState() app.ReviewState
 	ListChecks(ctx context.Context) ([]domain.ListCheck, int, error)
 	StartListCheck(ctx context.Context) bool
@@ -431,14 +434,38 @@ func (h *Handler) ListCompetitorCandidates(ctx context.Context, params oas.ListC
 	}
 	return &oas.CompetitorCandidateList{Items: items, Review: toReviewState(h.uc.ReviewState()), Counts: oas.CompetitorCandidateCounts{
 		Pending: int32(counts.Pending), Added: int32(counts.Added), Dismissed: int32(counts.Dismissed), Unchecked: int32(counts.Unchecked), //nolint:gosec // small counts
+		ByPerson: int32(counts.ByPerson), //nolint:gosec // small counts
 	}}, nil
 }
 
 // StartCandidateReview implements startCandidateReview.
-func (h *Handler) StartCandidateReview(ctx context.Context) (oas.StartCandidateReviewRes, error) {
-	h.uc.StartReview(ctx)
+func (h *Handler) StartCandidateReview(ctx context.Context, params oas.StartCandidateReviewParams) (oas.StartCandidateReviewRes, error) {
+	if params.Recheck.Or(false) {
+		h.uc.StartRecheck(ctx)
+	} else {
+		h.uc.StartReview(ctx)
+	}
 	out := toReviewState(h.uc.ReviewState())
 	return &out, nil
+}
+
+// StartCandidateCheck implements startCandidateCheck.
+func (h *Handler) StartCandidateCheck(ctx context.Context) (oas.StartCandidateCheckRes, error) {
+	h.uc.StartCandidateCheck(ctx)
+	out := toReviewState(h.uc.ReviewState())
+	return &out, nil
+}
+
+// UndoCandidateSplit implements undoCandidateSplit.
+func (h *Handler) UndoCandidateSplit(ctx context.Context, params oas.UndoCandidateSplitParams) (oas.UndoCandidateSplitRes, error) {
+	err := h.uc.UndoSplit(ctx, h.actor(ctx), string(params.CompetitorCandidateId))
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.UndoCandidateSplitNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "This name was never split off a company.")}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.UndoCandidateSplitNoContent{}, nil
 }
 
 // ListCompetitorChecks implements listCompetitorChecks.
@@ -705,6 +732,9 @@ func toCandidate(c domain.Candidate) oas.CompetitorCandidate {
 		Answers: int32(c.Answers), Providers: c.Providers, Models: c.Models[:min(len(c.Models), 50)], //nolint:gosec // answers
 		Addresses:  c.Addresses[:min(len(c.Addresses), 50)],
 		LastSeenAt: c.LastSeen,
+	}
+	if c.SplitFrom != "" {
+		out.SplitFrom = oas.NewOptCompetitorCandidateId(oas.CompetitorCandidateId(c.SplitFrom))
 	}
 	if d := c.Decision; d != nil {
 		dec := oas.CompetitorCandidateDecision{Status: oas.CompetitorCandidateStatus(d.Status), By: d.By, At: d.At}

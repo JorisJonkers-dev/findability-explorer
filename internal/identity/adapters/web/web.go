@@ -158,6 +158,8 @@ var needs = map[string]domain.Need{ //nolint:gochecknoglobals // a constant tabl
 	oas.DecideCompetitorCandidatesOperation:  domain.NeedAdminChange,
 	oas.SplitCompetitorCandidateOperation:    domain.NeedAdminChange,
 	oas.StartCandidateReviewOperation:        domain.NeedAdminChange,
+	oas.StartCandidateCheckOperation:         domain.NeedAdminChange,
+	oas.UndoCandidateSplitOperation:          domain.NeedAdminChange,
 	oas.ListCompetitorChecksOperation:        domain.NeedAdminView,
 	oas.StartCompetitorCheckOperation:        domain.NeedAdminChange,
 	oas.GetCompetitorDefinitionOperation:     domain.NeedAdminView,

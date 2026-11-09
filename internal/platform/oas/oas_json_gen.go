@@ -5679,6 +5679,12 @@ func (s *CompetitorCandidate) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CompetitorCandidate) encodeFields(e *jx.Encoder) {
 	{
+		if s.SplitFrom.Set {
+			e.FieldStart("splitFrom")
+			s.SplitFrom.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("id")
 		s.ID.Encode(e)
 	}
@@ -5762,20 +5768,21 @@ func (s *CompetitorCandidate) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCompetitorCandidate = [13]string{
-	0:  "id",
-	1:  "name",
-	2:  "status",
-	3:  "answers",
-	4:  "providers",
-	5:  "models",
-	6:  "addresses",
-	7:  "lastSeenAt",
-	8:  "decision",
-	9:  "sites",
-	10: "website",
-	11: "names",
-	12: "check",
+var jsonFieldsNameOfCompetitorCandidate = [14]string{
+	0:  "splitFrom",
+	1:  "id",
+	2:  "name",
+	3:  "status",
+	4:  "answers",
+	5:  "providers",
+	6:  "models",
+	7:  "addresses",
+	8:  "lastSeenAt",
+	9:  "decision",
+	10: "sites",
+	11: "website",
+	12: "names",
+	13: "check",
 }
 
 // Decode decodes CompetitorCandidate from json.
@@ -5787,8 +5794,18 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "splitFrom":
+			if err := func() error {
+				s.SplitFrom.Reset()
+				if err := s.SplitFrom.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"splitFrom\"")
+			}
 		case "id":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				if err := s.ID.Decode(d); err != nil {
 					return err
@@ -5798,7 +5815,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -5810,7 +5827,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -5820,7 +5837,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "answers":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int32()
 				s.Answers = int32(v)
@@ -5832,7 +5849,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"answers\"")
 			}
 		case "providers":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				s.Providers = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -5852,7 +5869,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"providers\"")
 			}
 		case "models":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				s.Models = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -5872,7 +5889,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"models\"")
 			}
 		case "addresses":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				s.Addresses = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -5892,7 +5909,7 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"addresses\"")
 			}
 		case "lastSeenAt":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.LastSeenAt = v
@@ -5979,8 +5996,8 @@ func (s *CompetitorCandidate) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b11111111,
-		0b00000000,
+		0b11111110,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -6036,6 +6053,10 @@ func (s *CompetitorCandidateCounts) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CompetitorCandidateCounts) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("byPerson")
+		e.Int32(s.ByPerson)
+	}
+	{
 		e.FieldStart("unchecked")
 		e.Int32(s.Unchecked)
 	}
@@ -6053,11 +6074,12 @@ func (s *CompetitorCandidateCounts) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCompetitorCandidateCounts = [4]string{
-	0: "unchecked",
-	1: "pending",
-	2: "added",
-	3: "dismissed",
+var jsonFieldsNameOfCompetitorCandidateCounts = [5]string{
+	0: "byPerson",
+	1: "unchecked",
+	2: "pending",
+	3: "added",
+	4: "dismissed",
 }
 
 // Decode decodes CompetitorCandidateCounts from json.
@@ -6069,8 +6091,20 @@ func (s *CompetitorCandidateCounts) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "unchecked":
+		case "byPerson":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int32()
+				s.ByPerson = int32(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"byPerson\"")
+			}
+		case "unchecked":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Int32()
 				s.Unchecked = int32(v)
@@ -6082,7 +6116,7 @@ func (s *CompetitorCandidateCounts) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"unchecked\"")
 			}
 		case "pending":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int32()
 				s.Pending = int32(v)
@@ -6094,7 +6128,7 @@ func (s *CompetitorCandidateCounts) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"pending\"")
 			}
 		case "added":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int32()
 				s.Added = int32(v)
@@ -6106,7 +6140,7 @@ func (s *CompetitorCandidateCounts) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"added\"")
 			}
 		case "dismissed":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int32()
 				s.Dismissed = int32(v)
@@ -6127,7 +6161,7 @@ func (s *CompetitorCandidateCounts) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

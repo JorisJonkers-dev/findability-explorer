@@ -2189,6 +2189,7 @@ export const zCandidateCheck = z.object({
  * A company the answers name that is not on the company list.
  */
 export const zCompetitorCandidate = z.object({
+    splitFrom: zCompetitorCandidateId.optional(),
     id: zCompetitorCandidateId,
     name: z.string().max(200),
     status: zCompetitorCandidateStatus,
@@ -2275,6 +2276,7 @@ export const zCandidateDecisionResults = z.object({
  * How many candidates have each status.
  */
 export const zCompetitorCandidateCounts = z.object({
+    byPerson: z.int().gte(0).lte(1000000),
     unchecked: z.int().gte(0).lte(1000000),
     pending: z.int().gte(0).lte(1000000),
     added: z.int().gte(0).lte(1000000),
@@ -2861,10 +2863,19 @@ export const zListCompetitorCandidatesQuery = z.object({
  */
 export const zListCompetitorCandidatesResponse = zCompetitorCandidateList;
 
+export const zStartCandidateReviewQuery = z.object({
+    recheck: z.boolean().optional()
+});
+
 /**
  * The review is under way.
  */
 export const zStartCandidateReviewResponse = zCandidateReviewState;
+
+/**
+ * The check is under way.
+ */
+export const zStartCandidateCheckResponse = zCandidateReviewState;
 
 /**
  * Stopped.
@@ -2919,6 +2930,15 @@ export const zDecideCompetitorCandidatesBody = zCandidateDecisions;
  * What happened to each candidate.
  */
 export const zDecideCompetitorCandidatesResponse = zCandidateDecisionResults;
+
+export const zUndoCandidateSplitPath = z.object({
+    competitorCandidateId: zCompetitorCandidateId
+});
+
+/**
+ * Merged back.
+ */
+export const zUndoCandidateSplitResponse = z.void();
 
 export const zSplitCompetitorCandidatePath = z.object({
     competitorCandidateId: zCompetitorCandidateId

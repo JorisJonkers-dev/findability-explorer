@@ -3065,6 +3065,71 @@ func decodeSplitCompetitorCandidateParams(args [1]string, argsEscaped bool, r *h
 	return params, nil
 }
 
+// StartCandidateReviewParams is parameters of startCandidateReview operation.
+type StartCandidateReviewParams struct {
+	// Also recheck the candidates Claude Haiku decided.
+	Recheck OptBool `json:",omitempty,omitzero"`
+}
+
+func unpackStartCandidateReviewParams(packed middleware.Parameters) (params StartCandidateReviewParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "recheck",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Recheck = v.(OptBool)
+		}
+	}
+	return params
+}
+
+func decodeStartCandidateReviewParams(args [0]string, argsEscaped bool, r *http.Request) (params StartCandidateReviewParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: recheck.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "recheck",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotRecheckVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotRecheckVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Recheck.SetTo(paramsDotRecheckVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "recheck",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // StopAnalysisParams is parameters of stopAnalysis operation.
 type StopAnalysisParams struct {
 	// The scan's id.
@@ -3357,6 +3422,87 @@ func decodeTickImprovementParams(args [1]string, argsEscaped bool, r *http.Reque
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "improvementId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UndoCandidateSplitParams is parameters of undoCandidateSplit operation.
+type UndoCandidateSplitParams struct {
+	// The competitor candidate's id.
+	CompetitorCandidateId CompetitorCandidateId
+}
+
+func unpackUndoCandidateSplitParams(packed middleware.Parameters) (params UndoCandidateSplitParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "competitorCandidateId",
+			In:   "path",
+		}
+		params.CompetitorCandidateId = packed[key].(CompetitorCandidateId)
+	}
+	return params
+}
+
+func decodeUndoCandidateSplitParams(args [1]string, argsEscaped bool, r *http.Request) (params UndoCandidateSplitParams, _ error) {
+	// Decode path: competitorCandidateId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "competitorCandidateId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotCompetitorCandidateIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCompetitorCandidateIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CompetitorCandidateId = CompetitorCandidateId(paramsDotCompetitorCandidateIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.CompetitorCandidateId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "competitorCandidateId",
 			In:   "path",
 			Err:  err,
 		}

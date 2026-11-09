@@ -525,17 +525,28 @@ type Handler interface {
 	//
 	// POST /api/v1/analyses
 	StartAnalysis(ctx context.Context, req *NewAnalysis) (StartAnalysisRes, error)
+	// StartCandidateCheck implements startCandidateCheck operation.
+	//
+	// Administrators only. In the background, Claude Haiku on an Anthropic key reads each waiting
+	// candidate's home page and what the answers say of it, and says whether it competes. It only advises:
+	// nothing is merged or decided, and its check shows beside each company. It shares the review's state,
+	// and the review's stop stops it. Running already is no error.
+	//
+	// POST /api/v1/admin/competitor-candidates/check
+	StartCandidateCheck(ctx context.Context) (StartCandidateCheckRes, error)
 	// StartCandidateReview implements startCandidateReview operation.
 	//
 	// Administrators only. In the background, Claude Haiku on an Anthropic key merges the waiting
 	// candidates that are one company, or a company on the list, and then checks each waiting company
 	// against Tribelt's target market, from what the answers say of it and its home page. A company it is
 	// sure competes, with a website, joins the competitor list; one it is sure does not is dismissed; the
-	// rest wait for a person. Its decisions are by `language model` and can be undone. Returns the
-	// review's state; running already is no error.
+	// rest wait for a person. Its decisions are by `language model` and can be undone. With recheck, it
+	// also checks again every candidate Claude Haiku decided, and changes what it dismissed when it now
+	// thinks otherwise; what an administrator decided is never checked again. Returns the review's state;
+	// running already is no error.
 	//
 	// POST /api/v1/admin/competitor-candidates/review
-	StartCandidateReview(ctx context.Context) (StartCandidateReviewRes, error)
+	StartCandidateReview(ctx context.Context, params StartCandidateReviewParams) (StartCandidateReviewRes, error)
 	// StartCompetitorCheck implements startCompetitorCheck operation.
 	//
 	// Administrators only. In the background, Claude Haiku on an Anthropic key checks each competitor on
@@ -678,6 +689,13 @@ type Handler interface {
 	//
 	// PUT /api/v1/admin/plan/improvements/{improvementId}
 	TickImprovement(ctx context.Context, req *ImprovementTick, params TickImprovementParams) (TickImprovementRes, error)
+	// UndoCandidateSplit implements undoCandidateSplit operation.
+	//
+	// Administrators only. Merges a name an administrator split off back into the candidate it was split
+	// off. 404 for a name never split off.
+	//
+	// DELETE /api/v1/admin/competitor-candidates/{competitorCandidateId}/split
+	UndoCandidateSplit(ctx context.Context, params UndoCandidateSplitParams) (UndoCandidateSplitRes, error)
 	// UndoCompetitorCandidate implements undoCompetitorCandidate operation.
 	//
 	// Administrators only. Puts the candidate back among the pending ones; an added candidate's company is

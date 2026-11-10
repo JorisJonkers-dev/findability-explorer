@@ -188,18 +188,31 @@ func (r *reader) walk(n *html.Node) {
 		case atom.Meta:
 			r.meta(n)
 		case atom.H1, atom.H2, atom.H3:
-			if h := clip(textOf(n), maxHeading); h != "" && len(r.page.Headings) < maxHeadings {
-				r.page.Headings = append(r.page.Headings, h)
-			}
+			r.heading(n)
 		}
 	}
-	if n.Type == html.TextNode && r.text.Len() < maxText*2 {
-		if t := collapse(n.Data); t != "" {
-			r.text.WriteString(t + " ")
-		}
+	if n.Type == html.TextNode {
+		r.words(n)
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		r.walk(c)
+	}
+}
+
+// heading keeps a heading's clipped text while there is room for more headings.
+func (r *reader) heading(n *html.Node) {
+	if h := clip(textOf(n), maxHeading); h != "" && len(r.page.Headings) < maxHeadings {
+		r.page.Headings = append(r.page.Headings, h)
+	}
+}
+
+// words keeps a text node's collapsed text while there is room for more text.
+func (r *reader) words(n *html.Node) {
+	if r.text.Len() >= maxText*2 {
+		return
+	}
+	if t := collapse(n.Data); t != "" {
+		r.text.WriteString(t + " ")
 	}
 }
 

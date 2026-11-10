@@ -23,7 +23,7 @@ The belts are for process conveying, where a product is treated while it moves. 
 
 Its customers are industrial food producers of bread and pastry, meat, fish and dairy, potatoes, fruit and vegetables, and meat substitutes. They are the builders of ovens, freezers and lines and the system integrators who build these belts into their machines. And they are industry, such as recycling, waste treatment, water filtration, automotive paint and washing lines, solar and electronics firing furnaces, and pharma and medical sterilisation. Its markets are in Europe, above all the Netherlands and Germany, and English-speaking buyers.
 
-A competitor makes metal conveyor belts (wire, wire mesh, stainless steel link, metal chain or plate belts) for those process uses and sells them to those customers, or has them made and sells them under its own name. A maker anywhere in the world that sells into Europe counts.
+A competitor makes metal conveyor belts (wire, wire mesh, stainless steel link, metal chain or plate belts) for those process uses and sells them to those customers, or has them made and sells them under its own name. A maker anywhere in the world that sells into Europe counts. A builder of ovens, freezers or furnaces that makes or sells its own metal belts, also as spare belts for its machines, is a competitor too, because a buyer can take its belt instead of Tribelt’s.
 
 These are not competitors. A maker of rubber, textile or steel-cord belting for mining, quarrying and bulk handling is not. A maker of lightweight fabric, PVC or polyurethane belts for packaging, logistics and light conveying is not. A maker of conveyor systems, ovens or freezers that buys its belts rather than making them is a customer or partner, not a competitor. A distributor or trader that does not make belts is not. A maker of wire mesh for fencing, screening, sieving or architecture rather than conveyor belts is not. A directory, marketplace or publisher is not.
 
@@ -31,8 +31,9 @@ A maker of plastic modular belts used in the same food lines, such as in spiral 
 
 // CheckVersion is the version of the check: of TargetMarket and of the evidence the model reads.
 // A waiting company whose check has an older version is checked again. Version 1 was the check of
-// ADR-0006, by name and website alone.
-const CheckVersion = 2
+// ADR-0006, by name and website alone; version 2 that of ADR-0009. Version 3 counts an oven,
+// freezer or furnace builder that makes or sells its own belts as a competitor.
+const CheckVersion = 3
 
 // ModelDecider is who a decision by the language model names, as for its merges.
 const ModelDecider = ModelMerger

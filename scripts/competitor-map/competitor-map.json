@@ -1,12 +1,12 @@
 {
   "date": "2026-10-27",
   "source": "The production competitor review queue, To review (381 companies; the page said 383), copied by the owner on 2026-10-27. The 9 added and 79 dismissed companies were not in the copy and are not in this map.",
-  "definition": "A competitor of Tribelt makes metal conveyor belts (wire mesh, eyelink, spiral, chain, ladder, plate link, solid steel and similar) for process conveying in heat, cold, wet and hygienic steps, or heavy loads in recycling, waste and filtration, or has them made and sells them under its own name, and sells into Europe. Dealers, installers, machine and system builders that buy their belts, rubber, fabric, PVC, PU and plastic modular belting, fence and sieve mesh, unrelated businesses and invented names are not. See README.md.",
+  "definition": "A competitor of Tribelt makes metal conveyor belts (wire mesh, eyelink, spiral, chain, ladder, plate link, solid steel and similar) for process conveying in heat, cold, wet and hygienic steps, or heavy loads in recycling, waste and filtration, or has them made and sells them under its own name, and sells into Europe. An oven, freezer or furnace builder that makes or sells its own metal belts, also as spare belts, competes too. Dealers, installers, machine and system builders that buy their belts, rubber, fabric, PVC, PU and plastic modular belting, fence and sieve mesh, unrelated businesses and invented names are not. See README.md.",
   "counts": {
     "companies": 381,
-    "competitor": 15,
-    "not": 364,
-    "unclear": 2,
+    "competitor": 25,
+    "not": 353,
+    "unclear": 3,
     "nonexistent": 218,
     "duplicateOfListed": 4
   },
@@ -128,13 +128,14 @@
         "magaldi.com"
       ],
       "answers": 5,
-      "verdict": "not",
-      "confidence": "medium",
+      "verdict": "competitor",
+      "confidence": "low",
       "makes": "Complete heavy-duty steel belt conveyors (Superbelt, Ecobelt) for hot bottom ash, clinker and bulk material in power, cement and mining plants.",
-      "reason": "Builds whole conveyor systems for severe bulk handling with its own steel pan belts; it does not sell process belts to food or oven makers. Borderline only for waste-to-energy ash, judged not a competitor.",
+      "reason": "Makes its own steel belts for hot, heavy and abrasive bulk material, a use Tribelt’s belts also serve, though it sells them as complete conveyors.",
       "evidence": [
         "https://www.magaldi.com/it : 'leader mondiale nella progettazione e realizzazione di macchine ed impianti per il trasporto di materiali in condizioni severe'"
-      ]
+      ],
+      "website": "https://magaldi.com/"
     },
     {
       "name": "Rexnord",
@@ -146,7 +147,7 @@
       "verdict": "competitor",
       "confidence": "high",
       "makes": "Regal Rexnord sells the Cambridge metal conveyor belts (since the 2016 acquisition) on rexnord.com, besides chains, plastic modular belts and power transmission products.",
-      "reason": "Its metal belts are the Cambridge belts, and Cambridge Engineered Solutions is already on the competitor list. It is the same competitor, so it should not be added a second time; merge it into Cambridge or leave it.",
+      "reason": "Its metal belts are the Cambridge belts, and Cambridge Engineered Solutions is already on the competitor list. It is the same competitor, so it should not be added a second time; merge it into Cambridge or leave it. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "https://www.rexnord.com/products-services/process-motion-control/conveying-solutions/metal-conveyor-belts/straight-line-positive-drive : Regal Rexnord metal conveyor belts",
         "https://biztimes.com/rexnord-acquires-metal-conveyor-manufacturer/ : Rexnord acquired Cambridge"
@@ -268,10 +269,10 @@
       ],
       "websites": [],
       "answers": 3,
-      "verdict": "not",
-      "confidence": "medium",
+      "verdict": "competitor",
+      "confidence": "low",
       "makes": "Chinese wire mesh maker, mainly fences (chain link, 3D, anti-climb), welded mesh and gabions; conveyor belt mesh is a side line on marketplaces.",
-      "reason": "Mainly a fence and welded-mesh maker. It does list spiral and chain oven belts on Made-in-China and Alibaba, so it is close to the line, but its own site is about fencing and it is not a belt specialist.",
+      "reason": "Mainly a fence and mesh maker, but it sells spiral and chain oven belts on Made-in-China and Alibaba. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "https://www.sgkwiremesh.com/ : product menu of fences; 'wedge wire screen, woven wire mesh ... conveyor belt wire mesh etc.'",
         "https://sgkwiremesh.en.made-in-china.com/product-group/cbPayEBCnzRv/Conveyor-Belt-Mesh-catalog-1.html : '304 316 310S Ss Spiral Wire Mesh Conveyor Belt for Food Industry'"
@@ -645,10 +646,10 @@
         "gasbarre.com"
       ],
       "answers": 2,
-      "verdict": "not",
-      "confidence": "medium",
+      "verdict": "unclear",
+      "confidence": "low",
       "makes": "US builder of thermal processing furnaces, powder compaction presses and tooling.",
-      "reason": "A furnace builder; it may supply replacement belts for its furnaces but sells no belt range of its own.",
+      "reason": "A furnace builder that may supply replacement belts for its furnaces; no belt range of its own was found.",
       "evidence": [
         "https://www.gasbarre.com/ : 'Thermal Processing Systems | Powder Compaction Solutions | Manufacturing Technologies'"
       ]
@@ -697,10 +698,10 @@
       "otherNames": [],
       "websites": [],
       "answers": 2,
-      "verdict": "not",
-      "confidence": "high",
+      "verdict": "competitor",
+      "confidence": "medium",
       "makes": "US builder of industrial ovens and parts washers, with a spare parts catalogue.",
-      "reason": "An oven and washer builder that buys its belts.",
+      "reason": "Supplies wire belts for industrial ovens and washers from its spare parts catalogue. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "https://horizonpfm.com/ : 'Horizon Performance Technologies builds custom-engineered industrial ovens and industrial washers'"
       ]
@@ -723,10 +724,10 @@
       "otherNames": [],
       "websites": [],
       "answers": 2,
-      "verdict": "not",
-      "confidence": "high",
+      "verdict": "competitor",
+      "confidence": "medium",
       "makes": "UK builder and maintainer of spiral freezer and cooler systems (formerly Eurotek Engineering), with spare parts.",
-      "reason": "A freezer builder and service company that supplies spare belts but does not make them: a customer of belt makers.",
+      "reason": "Supplies spare spiral freezer and cooler belts for the freezers it builds and maintains. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "https://korutek.com/ : 'Korutek design, build and maintain advanced industrial freezing and cooling systems'; spare parts include 'spiral belt path'"
       ]
@@ -736,10 +737,10 @@
       "otherNames": [],
       "websites": [],
       "answers": 2,
-      "verdict": "not",
+      "verdict": "competitor",
       "confidence": "medium",
       "makes": "LEWCO Inc. (Sandusky, Ohio) builds conveyors and industrial ovens.",
-      "reason": "A conveyor and oven builder; it builds belts into its own machines rather than selling a belt range.",
+      "reason": "Builds the metal belts for its own ovens and conveyors, so its oven buyers get its belts instead of a belt maker’s. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "No website given; LEWCO is a US builder of conveyors and industrial ovens"
       ]
@@ -1068,10 +1069,10 @@
       "otherNames": [],
       "websites": [],
       "answers": 1,
-      "verdict": "not",
+      "verdict": "competitor",
       "confidence": "medium",
       "makes": "US builder of heat-treating furnaces, including mesh belt and cast link belt furnaces.",
-      "reason": "A furnace builder that buys or builds belts into its own furnaces; no belt range.",
+      "reason": "Builds mesh belt and cast link belt furnaces with its own belts, which it also supplies as replacements. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "No website given; AFC-Holcroft is a US furnace builder"
       ]
@@ -2515,10 +2516,10 @@
       "otherNames": [],
       "websites": [],
       "answers": 1,
-      "verdict": "not",
+      "verdict": "competitor",
       "confidence": "medium",
       "makes": "Spiral and tunnel freezers, now a JBT brand; its self-stacking belts are part of its own freezers.",
-      "reason": "A freezer builder; its belts are not sold as a separate range.",
+      "reason": "Sells its own self-stacking spiral freezer belts, also as replacement belts for its freezers, so a freezer buyer can take its belt instead of Tribelt’s. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "No website given; Frigoscandia is JBT's freezer brand"
       ]
@@ -2839,7 +2840,7 @@
       "verdict": "competitor",
       "confidence": "medium",
       "makes": "A garbled Dutch rendering of Hebei General Metal Netting, the Chinese wire mesh belt maker already on the competitor list.",
-      "reason": "Same company as Hebei General Metal Netting, which is on the list; it should not be added again.",
+      "reason": "Same company as Hebei General Metal Netting, which is on the list; it should not be added again. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "No website given; 'Algemene Metalen Gaas' is Dutch for 'General Metal Netting'"
       ],
@@ -2900,13 +2901,14 @@
         "horizonpfm.com"
       ],
       "answers": 1,
-      "verdict": "not",
-      "confidence": "high",
+      "verdict": "competitor",
+      "confidence": "medium",
       "makes": "Same company as Horizon Performance Technologies: industrial ovens and washers.",
-      "reason": "An oven and washer builder that buys its belts.",
+      "reason": "Same company as Horizon Performance Technologies: supplies wire belts for ovens and washers.",
       "evidence": [
         "https://horizonpfm.com/ : 'builds custom-engineered industrial ovens and industrial washers'"
-      ]
+      ],
+      "website": "https://horizonpfm.com/"
     },
     {
       "name": "Hosokawa Micron",
@@ -3067,10 +3069,10 @@
       "otherNames": [],
       "websites": [],
       "answers": 1,
-      "verdict": "not",
+      "verdict": "competitor",
       "confidence": "medium",
       "makes": "JBT (now JBT Marel): food processing machinery, including Frigoscandia spiral freezers.",
-      "reason": "A machine builder; its freezer belts are part of its own freezers.",
+      "reason": "Sells Frigoscandia spiral freezer belts, also as replacements, through JBT. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "No website given; JBT Marel Corporation"
       ]
@@ -3080,10 +3082,10 @@
       "otherNames": [],
       "websites": [],
       "answers": 1,
-      "verdict": "not",
+      "verdict": "competitor",
       "confidence": "medium",
       "makes": "Same as JBT: food processing machinery and spiral freezers.",
-      "reason": "A machine builder.",
+      "reason": "Same as JBT: sells Frigoscandia spiral freezer belts, also as replacements. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "No website given; JBT Marel Corporation"
       ]
@@ -4568,7 +4570,7 @@
       "verdict": "competitor",
       "confidence": "high",
       "makes": "SIEBTECHNIK TEMA (screening, centrifuges, sampling) sells the wire conveyor belts of its group company HEIN, LEHMANN.",
-      "reason": "Its conveyor belts are HEIN, LEHMANN belts, and HEIN, LEHMANN is already on the competitor list; it should not be added again.",
+      "reason": "Its conveyor belts are HEIN, LEHMANN belts, and HEIN, LEHMANN is already on the competitor list; it should not be added again. The answers gave no website for it, so it has to be added by hand.",
       "evidence": [
         "https://www.siebtechnik-tema.com/unit_operation/hl-conveyor-belts/ : 'Conveyor belts from HEIN, LEHMANN ... wire conveyor belts ... oven belts ... metal belts'"
       ],

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.1](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.12.0...v1.12.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* an oven, freezer or furnace builder that makes or sells its own belts is a competitor ([#121](https://github.com/JorisJonkers-dev/findability-explorer/issues/121)) ([1747bf3](https://github.com/JorisJonkers-dev/findability-explorer/commit/1747bf34fa38c52686ab694ad6f41aa81b59120d))
+* **deps:** pin dependencies ([#105](https://github.com/JorisJonkers-dev/findability-explorer/issues/105)) ([8fec6fa](https://github.com/JorisJonkers-dev/findability-explorer/commit/8fec6fa609d09cd28bdde3ef37e144aa0b598f72))
+
 ## [1.12.0](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.11.1...v1.12.0) (2026-10-28)
 
 

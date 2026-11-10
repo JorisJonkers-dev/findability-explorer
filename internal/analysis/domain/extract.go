@@ -165,18 +165,23 @@ func phrases(tokens []string) []string {
 	var out []string
 	for i := range tokens {
 		for n := 1; n <= maxNgram && i+n <= len(tokens); n++ {
-			first, last := tokens[i], tokens[i+n-1]
-			typeNumber := n > 1 && isTypeWord(tokens[i+n-2]) && isNumber(last)
-			if isNoise(first) || (isNoise(last) && !typeNumber) || (n == 1 && len([]rune(first)) < 3) {
-				continue
-			}
-			if n == maxNgram && isStopword(tokens[i+1]) && !isConjunction(tokens[i+1]) {
+			if skipPhrase(tokens, i, n) {
 				continue
 			}
 			out = append(out, strings.Join(tokens[i:i+n], " "))
 		}
 	}
 	return out
+}
+
+// skipPhrase reports whether the n tokens from i do not make a phrase, by the rules of phrases.
+func skipPhrase(tokens []string, i, n int) bool {
+	first, last := tokens[i], tokens[i+n-1]
+	typeNumber := n > 1 && isTypeWord(tokens[i+n-2]) && isNumber(last)
+	if isNoise(first) || (isNoise(last) && !typeNumber) || (n == 1 && len([]rune(first)) < 3) {
+		return true
+	}
+	return n == maxNgram && isStopword(tokens[i+1]) && !isConjunction(tokens[i+1])
 }
 
 // isTypeWord reports whether tok introduces a maker's type number: "Typ 400", "Group 800".

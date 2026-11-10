@@ -98,9 +98,7 @@ func Search(terms []Term, q Query) Result {
 			continue
 		}
 		facetPool = append(facetPool, scored{term: t, score: score})
-		if (q.Language == "" || t.Language == q.Language) &&
-			(q.Tier == "" || t.Tier == q.Tier) &&
-			(q.Family == "" || t.Family == q.Family) {
+		if keep(t.Language, q.Language) && keep(t.Tier, q.Tier) && keep(t.Family, q.Family) {
 			matched = append(matched, scored{term: t, score: score})
 		}
 	}

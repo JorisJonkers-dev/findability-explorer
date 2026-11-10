@@ -45,7 +45,7 @@ jobs:
           require-package-proxy: true
 
       # The same setup as CI's Check job, so the key it saves is the one Check reads.
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           cache: true
 

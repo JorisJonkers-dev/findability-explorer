@@ -67,13 +67,57 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Write packages proxy secrets for the image build
+        id: proxy
+        env:
+          PACKAGES_PROXY_TOKEN: ${{ secrets.PACKAGES_PROXY_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PACKAGES_PROXY_TOKEN" ]; then
+            echo "::warning::PACKAGES_PROXY_TOKEN is not set; the image builds without the proxy."
+            exit 0
+          fi
+          printf '::add-mask::%s\n' "$PACKAGES_PROXY_TOKEN"
+          umask 077
+          netrc="$RUNNER_TEMP/packages-netrc"
+          {
+            printf 'machine packages.jorisjonkers.dev\n'
+            printf 'login packages\n'
+            printf 'password %s\n' "$PACKAGES_PROXY_TOKEN"
+          } > "$netrc"
+          npmrc="$RUNNER_TEMP/packages-npmrc"
+          {
+            printf 'registry=https://packages.jorisjonkers.dev/npm/\n'
+            printf '//packages.jorisjonkers.dev/npm/:_authToken=%s\n' "$PACKAGES_PROXY_TOKEN"
+            printf '@jorisjonkers-dev:registry=https://npm.pkg.github.com\n'
+          } > "$npmrc"
+          {
+            printf 'netrc=%s\n' "$netrc"
+            printf 'npmrc=%s\n' "$npmrc"
+            printf 'enabled=true\n'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push the image, and write the images lock share
         env:
+          PROXY_ENABLED: ${{ steps.proxy.outputs.enabled }}
+          PROXY_NETRC: ${{ steps.proxy.outputs.netrc }}
+          PROXY_NPMRC: ${{ steps.proxy.outputs.npmrc }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
           IMAGE: ghcr.io/jorisjonkers-dev/findability-explorer
         run: |
           set -euo pipefail
+          proxy_args=()
+          if [ "$PROXY_ENABLED" = true ]; then
+            proxy_args=(
+              --secret "id=packages-netrc,src=$PROXY_NETRC"
+              --secret "id=packages-npmrc,src=$PROXY_NPMRC"
+              --build-arg GOPROXY=https://packages.jorisjonkers.dev/go
+              --build-arg PIP_INDEX_URL=https://packages.jorisjonkers.dev/pypi/simple/
+              --build-arg UV_DEFAULT_INDEX=https://packages.jorisjonkers.dev/pypi/simple/
+            )
+          fi
           docker buildx build . \
+            "${proxy_args[@]}" \
             --platform linux/amd64,linux/arm64 \
             --build-arg VERSION="${TAG#v}" \
             --label org.opencontainers.image.version="${TAG#v}" \
@@ -118,12 +162,14 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: JorisJonkers-dev/github-workflows/.github/workflows/publish-fragment.yml@f3bb6cabaa6ee33694f8632ce273a4e703d60780 # v0.38.0
+    uses: JorisJonkers-dev/github-workflows/.github/workflows/publish-fragment.yml@2814b76fc3f5bd4f02a6e4a0fa789f1307757daa # v0.45.4
     with:
       project-file: deploy/findability-explorer.project.yml
       version: ${{ needs.release-please.outputs.tag_name }}
       validate-with: deploy/env
       images-lock-artifact: images-lock
       compose: true
+      require-package-proxy: true
     secrets:
       ESTATE_DISPATCH_APP_PRIVATE_KEY: ${{ secrets.ESTATE_DISPATCH_APP_PRIVATE_KEY }}
+      PACKAGES_PROXY_TOKEN: ${{ secrets.PACKAGES_PROXY_TOKEN }}

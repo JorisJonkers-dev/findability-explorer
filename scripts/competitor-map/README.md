@@ -19,14 +19,16 @@ oven, freezer and line builders, and to industry, mainly in the Netherlands and 
 
 A competitor makes metal conveyor belts of these kinds for these uses, or has them made and sells
 them under its own name. A maker anywhere in the world counts if it sells into Europe. Solid steel
-process belts count too, as Berndorf and IPCO on the list do.
+process belts count too, as Berndorf and IPCO on the list do. So does an oven, freezer or furnace builder that makes or sells
+its own metal belts, also as spare belts for its machines, because a buyer can take its belt
+instead of Tribelt's.
 
 These are not competitors.
 
 - Makers of rubber, textile or steel-cord belting for mining and bulk.
 - Makers of fabric, PVC, PU or PTFE belts.
 - Makers of plastic modular belts, unless they also make metal process belts.
-- Machine and system builders that buy their belts, such as oven, furnace and freezer builders.
+- Machine and system builders that buy their belts, such as most oven, furnace and freezer builders. These are Tribelt’s customers.
 - Dealers, traders, installers and service firms, unless they make or brand metal belts.
 - Makers of fence, sieve, filter or architectural mesh.
 - Unrelated businesses, directories and publishers.

@@ -166,8 +166,6 @@ type Repository interface {
 	CountActive(ctx context.Context, competitorID string) (int, error)
 	// FirstScans returns, per phrase, the number of the company's first finished scan that found it.
 	FirstScans(ctx context.Context, competitorID string) (map[PhraseKey]int, error)
-	// TokensSince sums the language-model tokens of analyses created at or after since.
-	TokensSince(ctx context.Context, since time.Time) (int64, error)
 	// Queued returns the ids of every queued analysis, oldest first.
 	Queued(ctx context.Context) ([]uuid.UUID, error)
 	// FailRunning marks every running analysis failed with reason; a restart interrupted them.
@@ -182,6 +180,9 @@ type Repository interface {
 	// SaveSitemapCoverage records how many of the pages the scan read its sitemaps list, on the
 	// readiness it recorded; ErrNoReadiness when it recorded none.
 	SaveSitemapCoverage(ctx context.Context, id uuid.UUID, c SitemapCoverage) error
+	// TermPages returns the pages that use a term, in language, on each company's newest finished
+	// scan that found it (TermPageRow), each company's together.
+	TermPages(ctx context.Context, term, language string) ([]TermPageRow, error)
 	// ReadinessFiles returns the raw files of an analysis's readiness, or ErrNoReadiness.
 	ReadinessFiles(ctx context.Context, id uuid.UUID) (RawFiles, error)
 	// LatestReadiness returns, per company, its newest analysis that recorded its readiness,
@@ -189,6 +190,14 @@ type Repository interface {
 	LatestReadiness(ctx context.Context) (map[string]Analysis, error)
 	Finish(ctx context.Context, id uuid.UUID, at time.Time) error
 	Fail(ctx context.Context, id uuid.UUID, reason string, at time.Time) error
+	// StopQueued records the queued scans scope picks as failed with reason, at, and returns
+	// their ids; a scan that started meanwhile is not among them.
+	StopQueued(ctx context.Context, scope StopScope, reason string, at time.Time) ([]uuid.UUID, error)
+	// RequestStop records, at, that the running scans scope picks are to stop, and returns their
+	// ids. The instance running each sees the request between pages (StopRequested).
+	RequestStop(ctx context.Context, scope StopScope, at time.Time) ([]uuid.UUID, error)
+	// StopRequested reports whether a stop of the scan was asked.
+	StopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 }
 
 // Sighting is a map term a company's newest finished scan found on its site.
@@ -288,6 +297,23 @@ func (a Analysis) InFocus() Analysis {
 // Blocked reports whether the scan failed because its site turned the crawler away.
 func (a Analysis) Blocked() bool {
 	return a.Status == StatusFailed && strings.HasPrefix(a.Failure, blockedPrefix)
+}
+
+// StoppedByHandReason is the failure of a scan an administrator stopped, or took off the queue.
+// A hand stop is recorded as a failure with this reason, so a stopped scan is never taken for a
+// finished one; StoppedByHand tells it by it.
+const StoppedByHandReason = "Stopped by hand. The pages read so far are kept."
+
+// StoppedByHand reports whether an administrator stopped the scan, or took it off the queue.
+func (a Analysis) StoppedByHand() bool {
+	return a.Status == StatusFailed && a.Failure == StoppedByHandReason
+}
+
+// StopScope picks the queued or running scans a stop reaches: the one with ID, or, when ID is
+// uuid.Nil, every one, or only the re-scans when RescanOnly is set.
+type StopScope struct {
+	ID         uuid.UUID
+	RescanOnly bool
 }
 
 // ErrNotFound is returned for an analysis id that does not exist.

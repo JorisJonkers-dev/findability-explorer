@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorCandidateData, AddCompetitorCandidateErrors, AddCompetitorCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddCompetitorsData, AddCompetitorsErrors, AddCompetitorsResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DecideCompetitorCandidatesData, DecideCompetitorCandidatesErrors, DecideCompetitorCandidatesResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, DismissCompetitorCandidateData, DismissCompetitorCandidateErrors, DismissCompetitorCandidateResponses, GetAiReadinessData, GetAiReadinessErrors, GetAiReadinessResponses, GetAiSearchSummaryData, GetAiSearchSummaryErrors, GetAiSearchSummaryResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetCompetitorData, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmKeyUsageData, GetLlmKeyUsageErrors, GetLlmKeyUsageResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, GetOverviewData, GetOverviewErrors, GetOverviewResponses, GetPlanData, GetPlanErrors, GetPlanResponses, GetProductsData, GetProductsErrors, GetProductsResponses, GetPromptRetryPlanData, GetPromptRetryPlanErrors, GetPromptRetryPlanResponses, GetPromptTestResultsData, GetPromptTestResultsErrors, GetPromptTestResultsResponses, GetPromptTestSettingsData, GetPromptTestSettingsErrors, GetPromptTestSettingsResponses, GetReadinessFilesData, GetReadinessFilesErrors, GetReadinessFilesResponses, GetStandingsData, GetStandingsErrors, GetStandingsResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListCompetitorCandidatesData, ListCompetitorCandidatesErrors, ListCompetitorCandidatesResponses, ListCompetitorChecksData, ListCompetitorChecksErrors, ListCompetitorChecksResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListPromptAnswersData, ListPromptAnswersErrors, ListPromptAnswersResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, RereadPromptRunData, RereadPromptRunErrors, RereadPromptRunResponses, RetryPromptRunData, RetryPromptRunErrors, RetryPromptRunResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, SetPlanTargetsData, SetPlanTargetsErrors, SetPlanTargetsResponses, SplitCompetitorCandidateData, SplitCompetitorCandidateErrors, SplitCompetitorCandidateResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartCandidateReviewData, StartCandidateReviewErrors, StartCandidateReviewResponses, StartCompetitorCheckData, StartCompetitorCheckErrors, StartCompetitorCheckResponses, StartPromptRunData, StartPromptRunErrors, StartPromptRunResponses, StartReadinessCheckData, StartReadinessCheckErrors, StartReadinessCheckResponses, StartRescansData, StartRescansErrors, StartRescansResponses, StartTermReviewData, StartTermReviewErrors, StartTermReviewResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, TickImprovementData, TickImprovementErrors, TickImprovementResponses, UndoCompetitorCandidateData, UndoCompetitorCandidateErrors, UndoCompetitorCandidateResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses, UpdatePromptTestSettingsData, UpdatePromptTestSettingsErrors, UpdatePromptTestSettingsResponses } from './types.gen';
-import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorCandidateBody, zAddCompetitorCandidatePath, zAddCompetitorCandidateResponse, zAddCompetitorResponse, zAddCompetitorsBody, zAddCompetitorsResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDecideCompetitorCandidatesBody, zDecideCompetitorCandidatesResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zDismissCompetitorCandidatePath, zDismissCompetitorCandidateResponse, zGetAiReadinessResponse, zGetAiSearchSummaryResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmKeyUsagePath, zGetLlmKeyUsageResponse, zGetLlmSettingsResponse, zGetMeResponse, zGetOverviewResponse, zGetPlanResponse, zGetProductsResponse, zGetPromptRetryPlanPath, zGetPromptRetryPlanResponse, zGetPromptTestResultsResponse, zGetPromptTestSettingsResponse, zGetReadinessFilesPath, zGetReadinessFilesResponse, zGetStandingsResponse, zListAnalysesQuery, zListAnalysesResponse, zListCompetitorCandidatesQuery, zListCompetitorCandidatesResponse, zListCompetitorChecksResponse, zListCompetitorsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListPromptAnswersPath, zListPromptAnswersQuery, zListPromptAnswersResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zRereadPromptRunBody, zRereadPromptRunPath, zRereadPromptRunResponse, zRetryPromptRunBody, zRetryPromptRunPath, zRetryPromptRunResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zSetPlanTargetsBody, zSetPlanTargetsResponse, zSplitCompetitorCandidatePath, zSplitCompetitorCandidateResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartCandidateReviewResponse, zStartCompetitorCheckResponse, zStartPromptRunResponse, zStartReadinessCheckResponse, zStartRescansBody, zStartRescansResponse, zStartTermReviewResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zTickImprovementBody, zTickImprovementPath, zTickImprovementResponse, zUndoCompetitorCandidatePath, zUndoCompetitorCandidateResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse, zUpdatePromptTestSettingsBody, zUpdatePromptTestSettingsResponse } from './zod.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateErrors, AcceptTermCandidateResponses, AddCompetitorCandidateData, AddCompetitorCandidateErrors, AddCompetitorCandidateResponses, AddCompetitorData, AddCompetitorErrors, AddCompetitorResponses, AddCompetitorsData, AddCompetitorsErrors, AddCompetitorsResponses, AddLlmCredentialData, AddLlmCredentialErrors, AddLlmCredentialResponses, AddTermData, AddTermErrors, AddTermResponses, ClearActiveLlmData, ClearActiveLlmErrors, ClearActiveLlmResponses, CompareScansData, CompareScansErrors, CompareScansResponses, DecideCompetitorCandidatesData, DecideCompetitorCandidatesErrors, DecideCompetitorCandidatesResponses, DeleteCompetitorData, DeleteCompetitorErrors, DeleteCompetitorResponses, DeleteLlmCredentialData, DeleteLlmCredentialErrors, DeleteLlmCredentialResponses, DismissCompetitorCandidateData, DismissCompetitorCandidateErrors, DismissCompetitorCandidateResponses, EditRecommendationData, EditRecommendationErrors, EditRecommendationResponses, GetActivityData, GetActivityErrors, GetActivityResponses, GetAiReadinessData, GetAiReadinessErrors, GetAiReadinessResponses, GetAiSearchSummaryData, GetAiSearchSummaryErrors, GetAiSearchSummaryResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetClaudeStepData, GetClaudeStepErrors, GetClaudeStepResponses, GetCompetitorData, GetCompetitorDefinitionData, GetCompetitorDefinitionErrors, GetCompetitorDefinitionResponses, GetCompetitorErrors, GetCompetitorProfileData, GetCompetitorProfileErrors, GetCompetitorProfileResponses, GetCompetitorResponses, GetLlmKeyUsageData, GetLlmKeyUsageErrors, GetLlmKeyUsageResponses, GetLlmSettingsData, GetLlmSettingsErrors, GetLlmSettingsResponses, GetMeData, GetMeErrors, GetMeResponses, GetOverviewData, GetOverviewErrors, GetOverviewResponses, GetPlanData, GetPlanErrors, GetPlanResponses, GetProductsData, GetProductsErrors, GetProductsResponses, GetPromptModelCatalogueData, GetPromptModelCatalogueErrors, GetPromptModelCatalogueResponses, GetPromptRetryPlanData, GetPromptRetryPlanErrors, GetPromptRetryPlanResponses, GetPromptTestHistoryData, GetPromptTestHistoryErrors, GetPromptTestHistoryResponses, GetPromptTestResultsData, GetPromptTestResultsErrors, GetPromptTestResultsResponses, GetPromptTestSettingsData, GetPromptTestSettingsErrors, GetPromptTestSettingsResponses, GetReadinessFilesData, GetReadinessFilesErrors, GetReadinessFilesResponses, GetRecommendationRunsData, GetRecommendationRunsErrors, GetRecommendationRunsResponses, GetStandingsData, GetStandingsErrors, GetStandingsResponses, GetTermPagesData, GetTermPagesErrors, GetTermPagesResponses, ListAnalysesData, ListAnalysesErrors, ListAnalysesResponses, ListClaudeStepsData, ListClaudeStepsErrors, ListClaudeStepsResponses, ListCompetitorCandidatesData, ListCompetitorCandidatesErrors, ListCompetitorCandidatesResponses, ListCompetitorChecksData, ListCompetitorChecksErrors, ListCompetitorChecksResponses, ListCompetitorsData, ListCompetitorsErrors, ListCompetitorsResponses, ListHandTermsData, ListHandTermsErrors, ListHandTermsResponses, ListLlmModelsData, ListLlmModelsErrors, ListLlmModelsResponses, ListPromptAnswersData, ListPromptAnswersErrors, ListPromptAnswersResponses, ListPromptSetsData, ListPromptSetsErrors, ListPromptSetsResponses, ListTermCandidatesData, ListTermCandidatesErrors, ListTermCandidatesResponses, PublishPromptSetData, PublishPromptSetErrors, PublishPromptSetResponses, PutBackTermData, PutBackTermErrors, PutBackTermResponses, RejectTermCandidateData, RejectTermCandidateErrors, RejectTermCandidateResponses, RemoveQueuedAnalysesData, RemoveQueuedAnalysesErrors, RemoveQueuedAnalysesResponses, RemoveTermData, RemoveTermErrors, RemoveTermResponses, RereadPromptRunData, RereadPromptRunErrors, RereadPromptRunResponses, RestoreCompetitorDefinitionData, RestoreCompetitorDefinitionErrors, RestoreCompetitorDefinitionResponses, RetryPromptRunData, RetryPromptRunErrors, RetryPromptRunResponses, SaveClaudeStepVersionData, SaveClaudeStepVersionErrors, SaveClaudeStepVersionResponses, SaveCompetitorDefinitionData, SaveCompetitorDefinitionErrors, SaveCompetitorDefinitionResponses, SearchTermsData, SearchTermsErrors, SearchTermsResponses, SetActiveLlmData, SetActiveLlmErrors, SetActiveLlmResponses, SetPlanTargetsData, SetPlanTargetsErrors, SetPlanTargetsResponses, SetTermReviewData, SetTermReviewErrors, SetTermReviewResponses, SplitCompetitorCandidateData, SplitCompetitorCandidateErrors, SplitCompetitorCandidateResponses, StartAnalysisData, StartAnalysisErrors, StartAnalysisResponses, StartCandidateReviewData, StartCandidateReviewErrors, StartCandidateReviewResponses, StartCompetitorCheckData, StartCompetitorCheckErrors, StartCompetitorCheckResponses, StartPromptRunData, StartPromptRunErrors, StartPromptRunResponses, StartReadinessCheckData, StartReadinessCheckErrors, StartReadinessCheckResponses, StartRecommendationRunData, StartRecommendationRunErrors, StartRecommendationRunResponses, StartRescansData, StartRescansErrors, StartRescansResponses, StartTermReviewData, StartTermReviewErrors, StartTermReviewResponses, StopAnalysisData, StopAnalysisErrors, StopAnalysisResponses, StopCandidateReviewData, StopCandidateReviewErrors, StopCandidateReviewResponses, StopCompetitorCheckData, StopCompetitorCheckErrors, StopCompetitorCheckResponses, StopPromptRunData, StopPromptRunErrors, StopPromptRunResponses, StopReadinessCheckData, StopReadinessCheckErrors, StopReadinessCheckResponses, StopRecommendationRunData, StopRecommendationRunErrors, StopRecommendationRunResponses, StopRescanData, StopRescanErrors, StopRescanResponses, StopTermReviewData, StopTermReviewErrors, StopTermReviewResponses, TestLlmCredentialData, TestLlmCredentialErrors, TestLlmCredentialResponses, TickImprovementData, TickImprovementErrors, TickImprovementResponses, UndoCompetitorCandidateData, UndoCompetitorCandidateErrors, UndoCompetitorCandidateResponses, UndoTermDecisionData, UndoTermDecisionErrors, UndoTermDecisionResponses, UpdateCompetitorData, UpdateCompetitorErrors, UpdateCompetitorResponses, UpdateLlmBudgetData, UpdateLlmBudgetErrors, UpdateLlmBudgetResponses, UpdatePromptTestSettingsData, UpdatePromptTestSettingsErrors, UpdatePromptTestSettingsResponses } from './types.gen';
+import { zAcceptTermCandidateBody, zAcceptTermCandidatePath, zAcceptTermCandidateResponse, zAddCompetitorBody, zAddCompetitorCandidateBody, zAddCompetitorCandidatePath, zAddCompetitorCandidateResponse, zAddCompetitorResponse, zAddCompetitorsBody, zAddCompetitorsResponse, zAddLlmCredentialBody, zAddLlmCredentialResponse, zAddTermBody, zAddTermResponse, zClearActiveLlmResponse, zCompareScansPath, zCompareScansQuery, zCompareScansResponse, zDecideCompetitorCandidatesBody, zDecideCompetitorCandidatesResponse, zDeleteCompetitorPath, zDeleteCompetitorResponse, zDeleteLlmCredentialPath, zDeleteLlmCredentialResponse, zDismissCompetitorCandidatePath, zDismissCompetitorCandidateResponse, zEditRecommendationBody, zEditRecommendationPath, zEditRecommendationResponse, zGetActivityResponse, zGetAiReadinessResponse, zGetAiSearchSummaryResponse, zGetAnalysisPath, zGetAnalysisResponse, zGetClaudeStepPath, zGetClaudeStepResponse, zGetCompetitorDefinitionResponse, zGetCompetitorPath, zGetCompetitorProfilePath, zGetCompetitorProfileResponse, zGetCompetitorResponse, zGetLlmKeyUsagePath, zGetLlmKeyUsageResponse, zGetLlmSettingsResponse, zGetMeResponse, zGetOverviewResponse, zGetPlanResponse, zGetProductsResponse, zGetPromptModelCatalogueResponse, zGetPromptRetryPlanPath, zGetPromptRetryPlanResponse, zGetPromptTestHistoryResponse, zGetPromptTestResultsResponse, zGetPromptTestSettingsResponse, zGetReadinessFilesPath, zGetReadinessFilesResponse, zGetRecommendationRunsResponse, zGetStandingsResponse, zGetTermPagesQuery, zGetTermPagesResponse, zListAnalysesQuery, zListAnalysesResponse, zListClaudeStepsResponse, zListCompetitorCandidatesQuery, zListCompetitorCandidatesResponse, zListCompetitorChecksResponse, zListCompetitorsResponse, zListHandTermsResponse, zListLlmModelsPath, zListLlmModelsResponse, zListPromptAnswersPath, zListPromptAnswersQuery, zListPromptAnswersResponse, zListPromptSetsResponse, zListTermCandidatesQuery, zListTermCandidatesResponse, zPublishPromptSetBody, zPublishPromptSetResponse, zPutBackTermQuery, zPutBackTermResponse, zRejectTermCandidatePath, zRejectTermCandidateResponse, zRemoveQueuedAnalysesResponse, zRemoveTermBody, zRemoveTermResponse, zRereadPromptRunBody, zRereadPromptRunPath, zRereadPromptRunResponse, zRestoreCompetitorDefinitionPath, zRestoreCompetitorDefinitionResponse, zRetryPromptRunBody, zRetryPromptRunPath, zRetryPromptRunResponse, zSaveClaudeStepVersionBody, zSaveClaudeStepVersionPath, zSaveClaudeStepVersionResponse, zSaveCompetitorDefinitionBody, zSaveCompetitorDefinitionResponse, zSearchTermsQuery, zSearchTermsResponse, zSetActiveLlmBody, zSetActiveLlmResponse, zSetPlanTargetsBody, zSetPlanTargetsResponse, zSetTermReviewBody, zSetTermReviewResponse, zSplitCompetitorCandidatePath, zSplitCompetitorCandidateResponse, zStartAnalysisBody, zStartAnalysisResponse, zStartCandidateReviewResponse, zStartCompetitorCheckResponse, zStartPromptRunResponse, zStartReadinessCheckResponse, zStartRecommendationRunResponse, zStartRescansBody, zStartRescansResponse, zStartTermReviewResponse, zStopAnalysisPath, zStopAnalysisResponse, zStopCandidateReviewResponse, zStopCompetitorCheckResponse, zStopPromptRunPath, zStopPromptRunResponse, zStopReadinessCheckResponse, zStopRecommendationRunResponse, zStopRescanResponse, zStopTermReviewResponse, zTestLlmCredentialPath, zTestLlmCredentialResponse, zTickImprovementBody, zTickImprovementPath, zTickImprovementResponse, zUndoCompetitorCandidatePath, zUndoCompetitorCandidateResponse, zUndoTermDecisionPath, zUndoTermDecisionResponse, zUpdateCompetitorBody, zUpdateCompetitorPath, zUpdateCompetitorResponse, zUpdateLlmBudgetBody, zUpdateLlmBudgetResponse, zUpdatePromptTestSettingsBody, zUpdatePromptTestSettingsResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -66,7 +66,7 @@ export const getPlan = <ThrowOnError extends boolean = false>(options?: Options<
 /**
  * Tick an improvement off, or undo the tick
  *
- * Administrators only. Marks an improvement no scan can check as done, recording who and when, or as not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+ * Administrators only. Marks an improvement no scan can check as done, recording who and when, or as not done again; a recommendation a run wrote too, when no rule decides it (a fact sheet correction). 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
  */
 export const tickImprovement = <ThrowOnError extends boolean = false>(options: Options<TickImprovementData, ThrowOnError>): RequestResult<TickImprovementResponses, TickImprovementErrors, ThrowOnError> => (options.client ?? client).put<TickImprovementResponses, TickImprovementErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({
@@ -86,6 +86,94 @@ export const tickImprovement = <ThrowOnError extends boolean = false>(options: O
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Edit a recommendation a Recommendation run wrote
+ *
+ * Administrators only. Stores the wording and scores of a recommendation a Recommendation run wrote, and when it was edited; an edited one is kept when the next run replaces the others. A blank page leaves it for the web agency to place. 404 for an unknown recommendation; 422 for one written by hand, which stays in code, or for an edit out of bounds.
+ */
+export const editRecommendation = <ThrowOnError extends boolean = false>(options: Options<EditRecommendationData, ThrowOnError>): RequestResult<EditRecommendationResponses, EditRecommendationErrors, ThrowOnError> => (options.client ?? client).put<EditRecommendationResponses, EditRecommendationErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zEditRecommendationBody,
+        path: zEditRecommendationPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zEditRecommendationResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/recommendations/{recommendationId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The Recommendation run, what starting one would do, and the past runs
+ *
+ * Administrators only. Whether a Recommendation run runs; what a new one would read (the newest Prompt run, the tribelt.nl scan, the search term list), how many gaps its rules find, how many open recommendations it would replace, whether tribelt.nl was last scanned before the newest Prompt run, and its estimate on the Anthropic key; and the last 20 runs, each with what it added, replaced and kept.
+ */
+export const getRecommendationRuns = <ThrowOnError extends boolean = false>(options?: Options<GetRecommendationRunsData, ThrowOnError>): RequestResult<GetRecommendationRunsResponses, GetRecommendationRunsErrors, ThrowOnError> => (options?.client ?? client).get<GetRecommendationRunsResponses, GetRecommendationRunsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetRecommendationRunsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/recommendation-runs',
+    ...options
+});
+
+/**
+ * Start a Recommendation run
+ *
+ * Administrators only. In the background, the rules find the gaps from the newest Prompt run, each company's newest scan and the search term list, and the Claude step writing recommendations places and words them from tribelt.nl's page text, a batch at a time. A run that ends replaces the open recommendations an earlier run wrote, and keeps the done and edited ones and those written by hand; one stopped, cut short by the budget, or failed changes nothing. 409 when one runs already or no Anthropic key is set up.
+ */
+export const startRecommendationRun = <ThrowOnError extends boolean = false>(options?: Options<StartRecommendationRunData, ThrowOnError>): RequestResult<StartRecommendationRunResponses, StartRecommendationRunErrors, ThrowOnError> => (options?.client ?? client).post<StartRecommendationRunResponses, StartRecommendationRunErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStartRecommendationRunResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/recommendation-runs',
+    ...options
+});
+
+/**
+ * Stop the Recommendation run
+ *
+ * Administrators only. Stops the Recommendation run that runs after the batch it writes; the recommendations stay as they were, and the run is recorded as stopped by hand. 404 when none runs.
+ */
+export const stopRecommendationRun = <ThrowOnError extends boolean = false>(options?: Options<StopRecommendationRunData, ThrowOnError>): RequestResult<StopRecommendationRunResponses, StopRecommendationRunErrors, ThrowOnError> => (options?.client ?? client).post<StopRecommendationRunResponses, StopRecommendationRunErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStopRecommendationRunResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/recommendation-runs/stop',
+    ...options
 });
 
 /**
@@ -194,6 +282,27 @@ export const searchTerms = <ThrowOnError extends boolean = false>(options?: Opti
             type: 'apiKey'
         }],
     url: '/api/v1/terms',
+    ...options
+});
+
+/**
+ * Get the pages that use a search term
+ *
+ * Returns, for each company whose newest finished scan found the term, the pages of that scan that use it, at most ten each. The term matches without regard to case.
+ */
+export const getTermPages = <ThrowOnError extends boolean = false>(options: Options<GetTermPagesData, ThrowOnError>): RequestResult<GetTermPagesResponses, GetTermPagesErrors, ThrowOnError> => (options.client ?? client).get<GetTermPagesResponses, GetTermPagesErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: zGetTermPagesQuery
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetTermPagesResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/term-pages',
     ...options
 });
 
@@ -445,6 +554,270 @@ export const startRescans = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
+ * Stop the re-scan
+ *
+ * Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting one is taken off the queue, a running one ends after the page it reads and keeps the pages it read so far. Each is recorded as stopped by hand. A scan started on its own runs on. 404 when no scan of a re-scan waits or runs.
+ */
+export const stopRescan = <ThrowOnError extends boolean = false>(options?: Options<StopRescanData, ThrowOnError>): RequestResult<StopRescanResponses, StopRescanErrors, ThrowOnError> => (options?.client ?? client).post<StopRescanResponses, StopRescanErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStopRescanResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/rescans/stop',
+    ...options
+});
+
+/**
+ * Stop the AI readiness check
+ *
+ * Administrators only. Stops the check of every company's AI readiness that runs: it reads no further site. The sites it checked keep what it recorded, the others what their scan recorded, and the check's state says it was stopped. 404 when no check runs.
+ */
+export const stopReadinessCheck = <ThrowOnError extends boolean = false>(options?: Options<StopReadinessCheckData, ThrowOnError>): RequestResult<StopReadinessCheckResponses, StopReadinessCheckErrors, ThrowOnError> => (options?.client ?? client).post<StopReadinessCheckResponses, StopReadinessCheckErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStopReadinessCheckResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/readiness-checks/stop',
+    ...options
+});
+
+/**
+ * Remove every waiting scan
+ *
+ * Administrators only. Takes every scan that waits off the queue, each recorded as stopped by hand; the running ones run on. 404 when no scan waits.
+ */
+export const removeQueuedAnalyses = <ThrowOnError extends boolean = false>(options?: Options<RemoveQueuedAnalysesData, ThrowOnError>): RequestResult<RemoveQueuedAnalysesResponses, RemoveQueuedAnalysesErrors, ThrowOnError> => (options?.client ?? client).delete<RemoveQueuedAnalysesResponses, RemoveQueuedAnalysesErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zRemoveQueuedAnalysesResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/analyses/queue',
+    ...options
+});
+
+/**
+ * Stop a scan, or take it off the queue
+ *
+ * Administrators only. A waiting scan is taken off the queue; a running one ends after the page it reads, on whichever instance runs it, and keeps the pages it read so far. Either is recorded as stopped by hand. 404 when no waiting or running scan has this id.
+ */
+export const stopAnalysis = <ThrowOnError extends boolean = false>(options: Options<StopAnalysisData, ThrowOnError>): RequestResult<StopAnalysisResponses, StopAnalysisErrors, ThrowOnError> => (options.client ?? client).post<StopAnalysisResponses, StopAnalysisErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zStopAnalysisPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStopAnalysisResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/analyses/{analysisId}/stop',
+    ...options
+});
+
+/**
+ * List the Claude steps
+ *
+ * Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model and the version of the instructions it uses now and what one job of it costs with that model.
+ */
+export const listClaudeSteps = <ThrowOnError extends boolean = false>(options?: Options<ListClaudeStepsData, ThrowOnError>): RequestResult<ListClaudeStepsResponses, ListClaudeStepsErrors, ThrowOnError> => (options?.client ?? client).get<ListClaudeStepsResponses, ListClaudeStepsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListClaudeStepsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/claude-steps',
+    ...options
+});
+
+/**
+ * Get one Claude step
+ *
+ * Administrators only. One step: the instructions the tool came with, every saved version (model and instructions) oldest first, the newest of which the step uses, and the Claude models it may use, cheapest first, each with what one job of the step costs with it. 404 for a step that does not exist.
+ */
+export const getClaudeStep = <ThrowOnError extends boolean = false>(options: Options<GetClaudeStepData, ThrowOnError>): RequestResult<GetClaudeStepResponses, GetClaudeStepErrors, ThrowOnError> => (options.client ?? client).get<GetClaudeStepResponses, GetClaudeStepErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zGetClaudeStepPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetClaudeStepResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/claude-steps/{stepId}',
+    ...options
+});
+
+/**
+ * Save a new version of a Claude step
+ *
+ * Administrators only. Saves the model and the instructions as the step's next version, which its next job uses; the versions before it stay, to restore. A step whose instructions are set in the code takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude model listed, empty or too long instructions, or a version the same as the newest; 404 for a step that does not exist.
+ */
+export const saveClaudeStepVersion = <ThrowOnError extends boolean = false>(options: Options<SaveClaudeStepVersionData, ThrowOnError>): RequestResult<SaveClaudeStepVersionResponses, SaveClaudeStepVersionErrors, ThrowOnError> => (options.client ?? client).post<SaveClaudeStepVersionResponses, SaveClaudeStepVersionErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zSaveClaudeStepVersionBody,
+        path: zSaveClaudeStepVersionPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zSaveClaudeStepVersionResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/claude-steps/{stepId}/versions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * What runs, what ended, and this month's spending
+ *
+ * Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness checks, the term review, reviews of the competitor candidates, checks of the competitor list, and Recommendation runs - running now, newest first, and the last 20 ended, the last ended first, each with how it ended, what it did, and what it cost on each key. A running piece is stopped by its own operation - stopPromptRun and stopAnalysis take its id, stopRescan, stopReadinessCheck, stopTermReview, stopCandidateReview and stopCompetitorCheck none. With this month's spending by kind of work and the key that paid; the Anthropic key's is priced at the model's list price from the stored tokens.
+ */
+export const getActivity = <ThrowOnError extends boolean = false>(options?: Options<GetActivityData, ThrowOnError>): RequestResult<GetActivityResponses, GetActivityErrors, ThrowOnError> => (options?.client ?? client).get<GetActivityResponses, GetActivityErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetActivityResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/activity',
+    ...options
+});
+
+/**
+ * List the terms added and removed by hand
+ *
+ * Administrators only. Returns the terms administrators added to the list by hand, and the terms they removed from it, each with who did it and when, oldest first.
+ */
+export const listHandTerms = <ThrowOnError extends boolean = false>(options?: Options<ListHandTermsData, ThrowOnError>): RequestResult<ListHandTermsResponses, ListHandTermsErrors, ThrowOnError> => (options?.client ?? client).get<ListHandTermsResponses, ListHandTermsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListHandTermsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/terms/hand',
+    ...options
+});
+
+/**
+ * Add a search term by hand
+ *
+ * Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the next scans find it. 409 when the list has the term in that language, or had it and it was removed (put it back instead).
+ */
+export const addTerm = <ThrowOnError extends boolean = false>(options: Options<AddTermData, ThrowOnError>): RequestResult<AddTermResponses, AddTermErrors, ThrowOnError> => (options.client ?? client).post<AddTermResponses, AddTermErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zAddTermBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zAddTermResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/terms/hand',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Put a removed search term back
+ *
+ * Administrators only. Puts a removed term back on the list. 404 when it was not removed.
+ */
+export const putBackTerm = <ThrowOnError extends boolean = false>(options: Options<PutBackTermData, ThrowOnError>): RequestResult<PutBackTermResponses, PutBackTermErrors, ThrowOnError> => (options.client ?? client).delete<PutBackTermResponses, PutBackTermErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: zPutBackTermQuery
+    }).parseAsync(data),
+    responseValidator: async (data) => await zPutBackTermResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/terms/removed',
+    ...options
+});
+
+/**
+ * Remove a search term
+ *
+ * Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or looked for until it is put back. The text matches without regard to case or accents. 404 when the list has no such term.
+ */
+export const removeTerm = <ThrowOnError extends boolean = false>(options: Options<RemoveTermData, ThrowOnError>): RequestResult<RemoveTermResponses, RemoveTermErrors, ThrowOnError> => (options.client ?? client).post<RemoveTermResponses, RemoveTermErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zRemoveTermBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zRemoveTermResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/terms/removed',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List the search terms scans found outside the map
  *
  * Administrators only. Every phrase a finished scan found that the terminology map did not hold in its language, across companies, with its evidence and the classifier's suggestion; filtered by review status, most companies and highest score first. The same phrase in another language is another candidate.
@@ -483,6 +856,52 @@ export const startTermReview = <ThrowOnError extends boolean = false>(options?: 
             type: 'apiKey'
         }],
     url: '/api/v1/admin/term-candidates/review',
+    ...options
+});
+
+/**
+ * Switch the term review on or off
+ *
+ * Administrators only. On, the language model reviews the waiting candidates by itself every ten minutes; off, it reviews only when an administrator asks (startTermReview). A review that runs goes on until it ends or is stopped. The review is on until it is first switched off. Records who switched it. Returns the review's state.
+ */
+export const setTermReview = <ThrowOnError extends boolean = false>(options: Options<SetTermReviewData, ThrowOnError>): RequestResult<SetTermReviewResponses, SetTermReviewErrors, ThrowOnError> => (options.client ?? client).put<SetTermReviewResponses, SetTermReviewErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zSetTermReviewBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zSetTermReviewResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/term-candidates/review/switch',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Stop the term review
+ *
+ * Administrators only. Stops the review of the waiting candidates that runs, after the batch it asks about, which it keeps, as it keeps every decision made before; a review asked for that has not started does not start. The review's state says it was stopped by hand (problem stopped). Whether the review is on does not change. 404 when no review runs or is asked for.
+ */
+export const stopTermReview = <ThrowOnError extends boolean = false>(options?: Options<StopTermReviewData, ThrowOnError>): RequestResult<StopTermReviewResponses, StopTermReviewErrors, ThrowOnError> => (options?.client ?? client).post<StopTermReviewResponses, StopTermReviewErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStopTermReviewResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/term-candidates/review/stop',
     ...options
 });
 
@@ -663,6 +1082,73 @@ export const getPromptTestResults = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
+ * Get the Prompt test's figures per run
+ *
+ * Returns the published Prompt sets, oldest first, and every one of the latest runs with at least one response read, oldest first: its Prompt set version, whether it is partial (it got fewer than half its responses) and, for a partial run, the reason most of its failed responses give, and the shares of the responses read that name Tribelt, overall, per language, and for Twente, with the share of web responses that cite tribelt.nl.
+ */
+export const getPromptTestHistory = <ThrowOnError extends boolean = false>(options?: Options<GetPromptTestHistoryData, ThrowOnError>): RequestResult<GetPromptTestHistoryResponses, GetPromptTestHistoryErrors, ThrowOnError> => (options?.client ?? client).get<GetPromptTestHistoryResponses, GetPromptTestHistoryErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetPromptTestHistoryResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/prompt-test/history',
+    ...options
+});
+
+/**
+ * List the published Prompt sets
+ *
+ * Returns every published version of the Prompt set, newest first, each with when it was published, its note, and its questions in order: belt family, buyer intent, scope, and text, with an English translation when one is known. Also returns every scope a question can be asked in: a language, with or without a region.
+ */
+export const listPromptSets = <ThrowOnError extends boolean = false>(options?: Options<ListPromptSetsData, ThrowOnError>): RequestResult<ListPromptSetsResponses, ListPromptSetsErrors, ThrowOnError> => (options?.client ?? client).get<ListPromptSetsResponses, ListPromptSetsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListPromptSetsResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/prompt-test/prompt-sets',
+    ...options
+});
+
+/**
+ * Publish a draft as the next version of the Prompt set
+ *
+ * Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions in order, each keeping the id of the published question it keeps or getting a new one no version has used, and the new scopes it asks in (a language with or without a region). The note says what changed against the newest version, and from which version the draft was restored. The next Prompt run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or another publication took the number first; 422 when a question or scope cannot be asked.
+ */
+export const publishPromptSet = <ThrowOnError extends boolean = false>(options: Options<PublishPromptSetData, ThrowOnError>): RequestResult<PublishPromptSetResponses, PublishPromptSetErrors, ThrowOnError> => (options.client ?? client).post<PublishPromptSetResponses, PublishPromptSetErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zPublishPromptSetBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zPublishPromptSetResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/prompt-sets',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List a Prompt run's answers
  *
  * Returns a run's answers in full, each with how the extractor read it, optionally only one provider's, scope's, belt family's or mode's.
@@ -730,6 +1216,27 @@ export const retryPromptRun = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
+ * Stop a running Prompt run
+ *
+ * Administrators only. Asks a running run to stop. The request is stored, so the instance running the run, whichever it is, stops it at its next heartbeat, within a minute: no question is asked after it, the responses so far are kept, and the run is recorded as stopped by hand. retryPromptRun finishes it, asking only the questions it did not get. 404 when no run with this id is running.
+ */
+export const stopPromptRun = <ThrowOnError extends boolean = false>(options: Options<StopPromptRunData, ThrowOnError>): RequestResult<StopPromptRunResponses, StopPromptRunErrors, ThrowOnError> => (options.client ?? client).post<StopPromptRunResponses, StopPromptRunErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zStopPromptRunPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStopPromptRunResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/prompt-runs/{runId}/stop',
+    ...options
+});
+
+/**
  * What asking a Prompt run again would cost
  *
  * Administrators only. Says how many of a run's failed and missing answers asking again would ask, how many it cannot ask because no answer of a run of an earlier prompt set kept their question, how many answers whose reading failed could be read again, and what each should cost - each provider's answers by their own cost, a web search's fee included, and reading at the price of the model that reads the answers now. 404 for a run nobody knows.
@@ -773,6 +1280,27 @@ export const rereadPromptRun = <ThrowOnError extends boolean = false>(options: O
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Every text model on OpenRouter, for the Model list
+ *
+ * Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest cheapest first. A model the latest run asked is priced by its responses, the others by their list price for a typical response with the web search fee. 422 without a working OpenRouter key.
+ */
+export const getPromptModelCatalogue = <ThrowOnError extends boolean = false>(options?: Options<GetPromptModelCatalogueData, ThrowOnError>): RequestResult<GetPromptModelCatalogueResponses, GetPromptModelCatalogueErrors, ThrowOnError> => (options?.client ?? client).get<GetPromptModelCatalogueResponses, GetPromptModelCatalogueErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetPromptModelCatalogueResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/prompt-test/catalogue',
+    ...options
 });
 
 /**
@@ -864,6 +1392,94 @@ export const startCandidateReview = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
+ * Stop Claude Haiku's review of the competitor candidates
+ *
+ * Administrators only. Stops the review of the competitor candidates that runs, after the step it is on (the merge, or a batch of checks), which it keeps, as it keeps every decision made before. The review's state says it was stopped by hand (problem stopped). 404 when no review runs.
+ */
+export const stopCandidateReview = <ThrowOnError extends boolean = false>(options?: Options<StopCandidateReviewData, ThrowOnError>): RequestResult<StopCandidateReviewResponses, StopCandidateReviewErrors, ThrowOnError> => (options?.client ?? client).post<StopCandidateReviewResponses, StopCandidateReviewErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStopCandidateReviewResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-candidates/review/stop',
+    ...options
+});
+
+/**
+ * The competitor definition and its versions
+ *
+ * Administrators only. The definition of who competes with Tribelt that every check of a company is made against (the newest version), every version, newest first, and what checking again against it would take - the competitors on the list and the waiting candidates checked against an older version, and what checking them again should cost on the Anthropic key.
+ */
+export const getCompetitorDefinition = <ThrowOnError extends boolean = false>(options?: Options<GetCompetitorDefinitionData, ThrowOnError>): RequestResult<GetCompetitorDefinitionResponses, GetCompetitorDefinitionErrors, ThrowOnError> => (options?.client ?? client).get<GetCompetitorDefinitionResponses, GetCompetitorDefinitionErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zGetCompetitorDefinitionResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-definition',
+    ...options
+});
+
+/**
+ * Save the competitor definition as a new version
+ *
+ * Administrators only. Stores the text as a new version, which every check from now on is made against, and records who saved it. It starts no check - what was checked against an older version is checked again by the next check of the candidates or of the list (startCandidateReview, startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text is the one in use; 422 when it is empty or longer than 8,000 characters.
+ */
+export const saveCompetitorDefinition = <ThrowOnError extends boolean = false>(options: Options<SaveCompetitorDefinitionData, ThrowOnError>): RequestResult<SaveCompetitorDefinitionResponses, SaveCompetitorDefinitionErrors, ThrowOnError> => (options.client ?? client).put<SaveCompetitorDefinitionResponses, SaveCompetitorDefinitionErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zSaveCompetitorDefinitionBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zSaveCompetitorDefinitionResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-definition',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Restore a version of the competitor definition
+ *
+ * Administrators only. Saves the text of an older version as a new version, recording which it restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is the one in use.
+ */
+export const restoreCompetitorDefinition = <ThrowOnError extends boolean = false>(options: Options<RestoreCompetitorDefinitionData, ThrowOnError>): RequestResult<RestoreCompetitorDefinitionResponses, RestoreCompetitorDefinitionErrors, ThrowOnError> => (options.client ?? client).post<RestoreCompetitorDefinitionResponses, RestoreCompetitorDefinitionErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: zRestoreCompetitorDefinitionPath,
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zRestoreCompetitorDefinitionResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-definition/versions/{version}/restore',
+    ...options
+});
+
+/**
  * List Claude Haiku's checks of the companies on the competitor list
  *
  * Administrators only. Claude Haiku's check of each competitor on the list against Tribelt's target market, as for a candidate. A check made before the current version of the check is left out for a company still on the list and not kept, since the next check makes it again. With how many companies wait for a check, and whether a check runs.
@@ -902,6 +1518,27 @@ export const startCompetitorCheck = <ThrowOnError extends boolean = false>(optio
             type: 'apiKey'
         }],
     url: '/api/v1/admin/competitor-checks',
+    ...options
+});
+
+/**
+ * Stop Claude Haiku's check of the competitor list
+ *
+ * Administrators only. Stops the check of the companies on the competitor list that runs, after the batch it is on, which it keeps, as it keeps every company archived before. The check's state says it was stopped by hand (problem stopped). 404 when no check runs.
+ */
+export const stopCompetitorCheck = <ThrowOnError extends boolean = false>(options?: Options<StopCompetitorCheckData, ThrowOnError>): RequestResult<StopCompetitorCheckResponses, StopCompetitorCheckErrors, ThrowOnError> => (options?.client ?? client).post<StopCompetitorCheckResponses, StopCompetitorCheckErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zStopCompetitorCheckResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/competitor-checks/stop',
     ...options
 });
 
@@ -1042,7 +1679,7 @@ export const getMe = <ThrowOnError extends boolean = false>(options?: Options<Ge
 /**
  * Get the language-model settings
  *
- * Returns every credential (never a secret), the model product matching uses now, the token budget, and the latest 50 changes and tests, newest first.
+ * Returns every credential (never a secret), the model product matching uses now, the Anthropic key's monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and tests, newest first.
  */
 export const getLlmSettings = <ThrowOnError extends boolean = false>(options?: Options<GetLlmSettingsData, ThrowOnError>): RequestResult<GetLlmSettingsResponses, GetLlmSettingsErrors, ThrowOnError> => (options?.client ?? client).get<GetLlmSettingsResponses, GetLlmSettingsErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({
@@ -1167,6 +1804,31 @@ export const getLlmKeyUsage = <ThrowOnError extends boolean = false>(options: Op
         }],
     url: '/api/v1/admin/llm/credentials/{credentialId}/usage',
     ...options
+});
+
+/**
+ * Set the Anthropic key's monthly budget
+ *
+ * Administrators only. Sets what every job a Claude model does may spend in a month together, in dollars, from one cent to $1,000, and records the change in the events. Work already spent past a lower budget stops at its next step and keeps what it did.
+ */
+export const updateLlmBudget = <ThrowOnError extends boolean = false>(options: Options<UpdateLlmBudgetData, ThrowOnError>): RequestResult<UpdateLlmBudgetResponses, UpdateLlmBudgetErrors, ThrowOnError> => (options.client ?? client).patch<UpdateLlmBudgetResponses, UpdateLlmBudgetErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: zUpdateLlmBudgetBody,
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zUpdateLlmBudgetResponse.parseAsync(data),
+    security: [{
+            in: 'cookie',
+            name: 'fe_session',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/admin/llm/budget',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

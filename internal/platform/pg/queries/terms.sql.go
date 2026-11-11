@@ -10,6 +10,24 @@ import (
 	"time"
 )
 
+const deleteRemovedTerm = `-- name: DeleteRemovedTerm :execrows
+DELETE FROM removed_terms
+WHERE term = $1 AND language = $2
+`
+
+type DeleteRemovedTermParams struct {
+	Term     string
+	Language string
+}
+
+func (q *Queries) DeleteRemovedTerm(ctx context.Context, arg DeleteRemovedTermParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteRemovedTerm, arg.Term, arg.Language)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteTermDecision = `-- name: DeleteTermDecision :execrows
 DELETE FROM term_decisions
 WHERE candidate_id = $1
@@ -47,6 +65,59 @@ func (q *Queries) InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTerm
 		arg.Tier,
 		arg.UsedBy,
 		arg.Source,
+	)
+	return err
+}
+
+const insertHandTerm = `-- name: InsertHandTerm :execrows
+INSERT INTO hand_terms (term, language, family, tier, added_by, added_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (term, language) DO NOTHING
+`
+
+type InsertHandTermParams struct {
+	Term     string
+	Language string
+	Family   string
+	Tier     string
+	AddedBy  string
+	AddedAt  time.Time
+}
+
+func (q *Queries) InsertHandTerm(ctx context.Context, arg InsertHandTermParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertHandTerm,
+		arg.Term,
+		arg.Language,
+		arg.Family,
+		arg.Tier,
+		arg.AddedBy,
+		arg.AddedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const insertRemovedTerm = `-- name: InsertRemovedTerm :exec
+INSERT INTO removed_terms (term, language, removed_by, removed_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (term, language) DO NOTHING
+`
+
+type InsertRemovedTermParams struct {
+	Term      string
+	Language  string
+	RemovedBy string
+	RemovedAt time.Time
+}
+
+func (q *Queries) InsertRemovedTerm(ctx context.Context, arg InsertRemovedTermParams) error {
+	_, err := q.db.Exec(ctx, insertRemovedTerm,
+		arg.Term,
+		arg.Language,
+		arg.RemovedBy,
+		arg.RemovedAt,
 	)
 	return err
 }
@@ -167,6 +238,70 @@ func (q *Queries) ListAcceptedTerms(ctx context.Context) ([]AcceptedTerm, error)
 	return items, nil
 }
 
+const listHandTerms = `-- name: ListHandTerms :many
+SELECT term, language, family, tier, added_by, added_at
+FROM hand_terms
+ORDER BY added_at, term, language
+`
+
+func (q *Queries) ListHandTerms(ctx context.Context) ([]HandTerm, error) {
+	rows, err := q.db.Query(ctx, listHandTerms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []HandTerm{}
+	for rows.Next() {
+		var i HandTerm
+		if err := rows.Scan(
+			&i.Term,
+			&i.Language,
+			&i.Family,
+			&i.Tier,
+			&i.AddedBy,
+			&i.AddedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRemovedTerms = `-- name: ListRemovedTerms :many
+SELECT term, language, removed_by, removed_at
+FROM removed_terms
+ORDER BY removed_at, term, language
+`
+
+func (q *Queries) ListRemovedTerms(ctx context.Context) ([]RemovedTerm, error) {
+	rows, err := q.db.Query(ctx, listRemovedTerms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RemovedTerm{}
+	for rows.Next() {
+		var i RemovedTerm
+		if err := rows.Scan(
+			&i.Term,
+			&i.Language,
+			&i.RemovedBy,
+			&i.RemovedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTermDecisions = `-- name: ListTermDecisions :many
 SELECT candidate_id, phrase, status, decided_by, decided_at
 FROM term_decisions
@@ -237,15 +372,67 @@ func (q *Queries) ListTermVerdicts(ctx context.Context) ([]TermVerdict, error) {
 	return items, nil
 }
 
+const switchTermReview = `-- name: SwitchTermReview :exec
+INSERT INTO term_review_switch (singleton, review_on, updated_by, updated_at)
+VALUES (true, $1, $2, $3)
+ON CONFLICT (singleton) DO UPDATE
+SET review_on = excluded.review_on, updated_by = excluded.updated_by, updated_at = excluded.updated_at
+`
+
+type SwitchTermReviewParams struct {
+	ReviewOn  bool
+	UpdatedBy string
+	UpdatedAt time.Time
+}
+
+func (q *Queries) SwitchTermReview(ctx context.Context, arg SwitchTermReviewParams) error {
+	_, err := q.db.Exec(ctx, switchTermReview, arg.ReviewOn, arg.UpdatedBy, arg.UpdatedAt)
+	return err
+}
+
+const termReviewOn = `-- name: TermReviewOn :one
+SELECT coalesce((SELECT review_on FROM term_review_switch WHERE singleton), true)::boolean AS review_on
+`
+
+func (q *Queries) TermReviewOn(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, termReviewOn)
+	var review_on bool
+	err := row.Scan(&review_on)
+	return review_on, err
+}
+
 const termReviewTokensSince = `-- name: TermReviewTokensSince :one
-SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM term_review_usage
 WHERE used_at >= $1
 `
 
-func (q *Queries) TermReviewTokensSince(ctx context.Context, usedAt time.Time) (int64, error) {
+type TermReviewTokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+func (q *Queries) TermReviewTokensSince(ctx context.Context, usedAt time.Time) (TermReviewTokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, termReviewTokensSince, usedAt)
-	var tokens int64
-	err := row.Scan(&tokens)
-	return tokens, err
+	var i TermReviewTokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
+}
+
+const termReviewUsageSince = `-- name: TermReviewUsageSince :one
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input_tokens, coalesce(sum(output_tokens), 0)::bigint AS output_tokens
+FROM term_review_usage
+WHERE used_at >= $1
+`
+
+type TermReviewUsageSinceRow struct {
+	InputTokens  int64
+	OutputTokens int64
+}
+
+func (q *Queries) TermReviewUsageSince(ctx context.Context, usedAt time.Time) (TermReviewUsageSinceRow, error) {
+	row := q.db.QueryRow(ctx, termReviewUsageSince, usedAt)
+	var i TermReviewUsageSinceRow
+	err := row.Scan(&i.InputTokens, &i.OutputTokens)
+	return i, err
 }

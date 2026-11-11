@@ -13,6 +13,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addCompetitorDefinition = `-- name: AddCompetitorDefinition :one
+INSERT INTO competitor_definitions (version, text, saved_at, saved_by, restored_from)
+SELECT coalesce(max(version), 0) + 1, $1, $2, $3, $4
+FROM competitor_definitions
+RETURNING version
+`
+
+type AddCompetitorDefinitionParams struct {
+	Text         string
+	SavedAt      time.Time
+	SavedBy      string
+	RestoredFrom pgtype.Int8
+}
+
+// The next version of the competitor definition.
+func (q *Queries) AddCompetitorDefinition(ctx context.Context, arg AddCompetitorDefinitionParams) (int64, error) {
+	row := q.db.QueryRow(ctx, addCompetitorDefinition,
+		arg.Text,
+		arg.SavedAt,
+		arg.SavedBy,
+		arg.RestoredFrom,
+	)
+	var version int64
+	err := row.Scan(&version)
+	return version, err
+}
+
 const addPromptAnswer = `-- name: AddPromptAnswer :one
 INSERT INTO prompt_answers (
     id, run_id, prompt_id, family, kind, scope, language, prompt_text, prompt_set_version, provider, model, mode, answer,
@@ -135,20 +162,21 @@ func (q *Queries) AddPromptCandidateDecision(ctx context.Context, arg AddPromptC
 
 const addPromptExtraction = `-- name: AddPromptExtraction :execrows
 INSERT INTO prompt_extractions (
-    answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, input_tokens, output_tokens,
-    cost_micros, haiku_tokens, extracted_at
+    answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, left_out, input_tokens,
+    output_tokens, cost_micros, haiku_tokens, extracted_at, model
 )
 VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8,
-    $9, $10, $11, $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9,
+    $10, $11, $12, $13, $14
 )
 ON CONFLICT (answer_id) DO UPDATE
 SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = excluded.names_tribelt,
     cites_tribelt = excluded.cites_tribelt, correctness = excluded.correctness, wrong_claims = excluded.wrong_claims,
-    input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
+    left_out = excluded.left_out, input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
     output_tokens = prompt_extractions.output_tokens + excluded.output_tokens,
     cost_micros = prompt_extractions.cost_micros + excluded.cost_micros,
-    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at
+    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at,
+    model = excluded.model
 WHERE prompt_extractions.failed
 `
 
@@ -160,11 +188,13 @@ type AddPromptExtractionParams struct {
 	CitesTribelt bool
 	Correctness  string
 	WrongClaims  []string
+	LeftOut      []string
 	InputTokens  int64
 	OutputTokens int64
 	CostMicros   int64
 	HaikuTokens  int64
 	ExtractedAt  time.Time
+	Model        string
 }
 
 // An extraction, or, for an answer whose reading failed, that reading replaced: what the failed
@@ -178,11 +208,13 @@ func (q *Queries) AddPromptExtraction(ctx context.Context, arg AddPromptExtracti
 		arg.CitesTribelt,
 		arg.Correctness,
 		arg.WrongClaims,
+		arg.LeftOut,
 		arg.InputTokens,
 		arg.OutputTokens,
 		arg.CostMicros,
 		arg.HaikuTokens,
 		arg.ExtractedAt,
+		arg.Model,
 	)
 	if err != nil {
 		return 0, err
@@ -367,7 +399,7 @@ func (q *Queries) GetPromptRun(ctx context.Context, id uuid.UUID) (GetPromptRunR
 }
 
 const getPromptSettings = `-- name: GetPromptSettings :many
-SELECT coalesce(credential_id, '')::text AS credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet,
+SELECT coalesce(credential_id, '')::text AS credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet,
     fact_sheet_version, coalesce(fact_sheet_updated_by, '')::text AS fact_sheet_updated_by, fact_sheet_updated_at
 FROM prompt_settings
 WHERE singleton
@@ -376,6 +408,7 @@ WHERE singleton
 type GetPromptSettingsRow struct {
 	CredentialID        string
 	Providers           []string
+	Models              []string
 	MonthlyBudgetMicros int64
 	Cadence             string
 	NextDue             time.Time
@@ -398,6 +431,7 @@ func (q *Queries) GetPromptSettings(ctx context.Context) ([]GetPromptSettingsRow
 		if err := rows.Scan(
 			&i.CredentialID,
 			&i.Providers,
+			&i.Models,
 			&i.MonthlyBudgetMicros,
 			&i.Cadence,
 			&i.NextDue,
@@ -450,6 +484,128 @@ type InsertPromptReviewUsageParams struct {
 func (q *Queries) InsertPromptReviewUsage(ctx context.Context, arg InsertPromptReviewUsageParams) error {
 	_, err := q.db.Exec(ctx, insertPromptReviewUsage, arg.InputTokens, arg.OutputTokens, arg.UsedAt)
 	return err
+}
+
+const insertPromptScope = `-- name: InsertPromptScope :exec
+INSERT INTO prompt_scopes (id, language, region, name)
+VALUES ($1, $2, nullif($3::text, ''), $4)
+`
+
+type InsertPromptScopeParams struct {
+	ID       string
+	Language string
+	Region   string
+	Name     string
+}
+
+// A scope a newly published version asks in.
+func (q *Queries) InsertPromptScope(ctx context.Context, arg InsertPromptScopeParams) error {
+	_, err := q.db.Exec(ctx, insertPromptScope,
+		arg.ID,
+		arg.Language,
+		arg.Region,
+		arg.Name,
+	)
+	return err
+}
+
+const insertPromptSet = `-- name: InsertPromptSet :execrows
+INSERT INTO prompt_sets (version, published_at, published_by, note)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (version) DO NOTHING
+`
+
+type InsertPromptSetParams struct {
+	Version     int64
+	PublishedAt time.Time
+	PublishedBy string
+	Note        string
+}
+
+// A newly published version; no row when another publication took the number first.
+func (q *Queries) InsertPromptSet(ctx context.Context, arg InsertPromptSetParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertPromptSet,
+		arg.Version,
+		arg.PublishedAt,
+		arg.PublishedBy,
+		arg.Note,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const insertPromptSetQuestion = `-- name: InsertPromptSetQuestion :exec
+INSERT INTO prompt_set_questions (version, position, prompt_id, family, intent, scope_id, text, english)
+VALUES ($1, $2, $3, $4, $5, $6, $7, nullif($8::text, ''))
+`
+
+type InsertPromptSetQuestionParams struct {
+	Version  int64
+	Position int64
+	PromptID string
+	Family   string
+	Intent   string
+	ScopeID  string
+	Text     string
+	English  string
+}
+
+// A question of a newly published version, at its position.
+func (q *Queries) InsertPromptSetQuestion(ctx context.Context, arg InsertPromptSetQuestionParams) error {
+	_, err := q.db.Exec(ctx, insertPromptSetQuestion,
+		arg.Version,
+		arg.Position,
+		arg.PromptID,
+		arg.Family,
+		arg.Intent,
+		arg.ScopeID,
+		arg.Text,
+		arg.English,
+	)
+	return err
+}
+
+const listCompetitorDefinitions = `-- name: ListCompetitorDefinitions :many
+SELECT version, text, saved_at, saved_by, coalesce(restored_from, 0)::bigint AS restored_from
+FROM competitor_definitions
+ORDER BY version DESC
+`
+
+type ListCompetitorDefinitionsRow struct {
+	Version      int64
+	Text         string
+	SavedAt      time.Time
+	SavedBy      string
+	RestoredFrom int64
+}
+
+// Every version of the competitor definition, the newest first.
+func (q *Queries) ListCompetitorDefinitions(ctx context.Context) ([]ListCompetitorDefinitionsRow, error) {
+	rows, err := q.db.Query(ctx, listCompetitorDefinitions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCompetitorDefinitionsRow{}
+	for rows.Next() {
+		var i ListCompetitorDefinitionsRow
+		if err := rows.Scan(
+			&i.Version,
+			&i.Text,
+			&i.SavedAt,
+			&i.SavedBy,
+			&i.RestoredFrom,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPromptAnswerCompanies = `-- name: ListPromptAnswerCompanies :many
@@ -533,8 +689,10 @@ SELECT a.id, a.prompt_id, a.family, a.kind, a.scope, a.language, a.prompt_text, 
     (x.answer_id IS NOT NULL)::boolean AS extracted, coalesce(x.failed, false)::boolean AS extraction_failed,
     coalesce(x.addresses, '{}')::text [] AS addresses, coalesce(x.names_tribelt, false)::boolean AS names_tribelt,
     coalesce(x.cites_tribelt, false)::boolean AS cites_tribelt, coalesce(x.correctness, '')::text AS correctness,
-    coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
-    coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros
+    coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.left_out, '{}')::text [] AS left_out,
+    coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
+    coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros,
+    coalesce(x.model, '')::text AS reading_model
 FROM prompt_answers AS a
 LEFT JOIN prompt_extractions AS x ON x.answer_id = a.id
 WHERE a.run_id = $2
@@ -572,9 +730,11 @@ type ListPromptAnswersRow struct {
 	CitesTribelt           bool
 	Correctness            string
 	WrongClaims            []string
+	LeftOut                []string
 	ExtractionInputTokens  int64
 	ExtractionOutputTokens int64
 	ExtractionCostMicros   int64
+	ReadingModel           string
 }
 
 // A run's answers with how they were read; the answer's text only when with_text is true.
@@ -613,9 +773,11 @@ func (q *Queries) ListPromptAnswers(ctx context.Context, arg ListPromptAnswersPa
 			&i.CitesTribelt,
 			&i.Correctness,
 			&i.WrongClaims,
+			&i.LeftOut,
 			&i.ExtractionInputTokens,
 			&i.ExtractionOutputTokens,
 			&i.ExtractionCostMicros,
+			&i.ReadingModel,
 		); err != nil {
 			return nil, err
 		}
@@ -884,6 +1046,130 @@ func (q *Queries) ListPromptRuns(ctx context.Context, lim int32) ([]ListPromptRu
 	return items, nil
 }
 
+const listPromptScopes = `-- name: ListPromptScopes :many
+SELECT id, language, coalesce(region, '')::text AS region, name
+FROM prompt_scopes
+ORDER BY name
+`
+
+type ListPromptScopesRow struct {
+	ID       string
+	Language string
+	Region   string
+	Name     string
+}
+
+// Every scope a question can be asked in, by name.
+func (q *Queries) ListPromptScopes(ctx context.Context) ([]ListPromptScopesRow, error) {
+	rows, err := q.db.Query(ctx, listPromptScopes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPromptScopesRow{}
+	for rows.Next() {
+		var i ListPromptScopesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Language,
+			&i.Region,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptSetQuestions = `-- name: ListPromptSetQuestions :many
+SELECT q.version, q.prompt_id, q.family, q.intent, q.text, coalesce(q.english, '')::text AS english,
+    s.id AS scope_id, s.language, coalesce(s.region, '')::text AS region, s.name AS scope_name
+FROM prompt_set_questions q
+JOIN prompt_scopes s ON s.id = q.scope_id
+ORDER BY q.version DESC, q.position
+`
+
+type ListPromptSetQuestionsRow struct {
+	Version   int64
+	PromptID  string
+	Family    string
+	Intent    string
+	Text      string
+	English   string
+	ScopeID   string
+	Language  string
+	Region    string
+	ScopeName string
+}
+
+// Every question of every published set with its scope, the newest set first, each set in order.
+func (q *Queries) ListPromptSetQuestions(ctx context.Context) ([]ListPromptSetQuestionsRow, error) {
+	rows, err := q.db.Query(ctx, listPromptSetQuestions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPromptSetQuestionsRow{}
+	for rows.Next() {
+		var i ListPromptSetQuestionsRow
+		if err := rows.Scan(
+			&i.Version,
+			&i.PromptID,
+			&i.Family,
+			&i.Intent,
+			&i.Text,
+			&i.English,
+			&i.ScopeID,
+			&i.Language,
+			&i.Region,
+			&i.ScopeName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPromptSets = `-- name: ListPromptSets :many
+SELECT version, published_at, published_by, note
+FROM prompt_sets
+ORDER BY version DESC
+`
+
+// Every published Prompt set, newest first.
+func (q *Queries) ListPromptSets(ctx context.Context) ([]PromptSet, error) {
+	rows, err := q.db.Query(ctx, listPromptSets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptSet{}
+	for rows.Next() {
+		var i PromptSet
+		if err := rows.Scan(
+			&i.Version,
+			&i.PublishedAt,
+			&i.PublishedBy,
+			&i.Note,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockPromptSchedule = `-- name: LockPromptSchedule :many
 SELECT next_due
 FROM prompt_settings
@@ -921,6 +1207,27 @@ WHERE singleton
 func (q *Queries) MovePromptSchedule(ctx context.Context, nextDue time.Time) error {
 	_, err := q.db.Exec(ctx, movePromptSchedule, nextDue)
 	return err
+}
+
+const promptCheckUsage = `-- name: PromptCheckUsage :one
+SELECT
+    coalesce((SELECT sum(input_tokens) FROM prompt_review_usage), 0)::bigint AS input,
+    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage), 0)::bigint AS output,
+    ((SELECT count(*) FROM prompt_candidate_checks) + (SELECT count(*) FROM prompt_company_checks))::bigint AS checked
+`
+
+type PromptCheckUsageRow struct {
+	Input   int64
+	Output  int64
+	Checked int64
+}
+
+// What every request of the reviews and checks used, and how many companies they checked.
+func (q *Queries) PromptCheckUsage(ctx context.Context) (PromptCheckUsageRow, error) {
+	row := q.db.QueryRow(ctx, promptCheckUsage)
+	var i PromptCheckUsageRow
+	err := row.Scan(&i.Input, &i.Output, &i.Checked)
+	return i, err
 }
 
 const promptNamings = `-- name: PromptNamings :many
@@ -965,30 +1272,125 @@ func (q *Queries) PromptNamings(ctx context.Context) ([]PromptNamingsRow, error)
 }
 
 const promptReadingTokensSince = `-- name: PromptReadingTokensSince :one
-SELECT coalesce(sum(haiku_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_extractions
-WHERE extracted_at >= $1
+WHERE extracted_at >= $1 AND haiku_tokens > 0
 `
 
-// The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
-func (q *Queries) PromptReadingTokensSince(ctx context.Context, since time.Time) (int64, error) {
+type PromptReadingTokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+// The tokens in and out Claude Haiku on an Anthropic key used reading answers since a moment: the
+// readings whose tokens count as Haiku's.
+func (q *Queries) PromptReadingTokensSince(ctx context.Context, since time.Time) (PromptReadingTokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, promptReadingTokensSince, since)
-	var tokens int64
-	err := row.Scan(&tokens)
-	return tokens, err
+	var i PromptReadingTokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
+}
+
+const promptReadingTokensSinceByModel = `-- name: PromptReadingTokensSinceByModel :many
+SELECT model, coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+FROM prompt_extractions
+WHERE extracted_at >= $1 AND haiku_tokens > 0
+GROUP BY model
+ORDER BY model
+`
+
+type PromptReadingTokensSinceByModelRow struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// The same per model that read, so each is priced at its own list price; a reading from before
+// readings recorded their model has none.
+func (q *Queries) PromptReadingTokensSinceByModel(ctx context.Context, since time.Time) ([]PromptReadingTokensSinceByModelRow, error) {
+	rows, err := q.db.Query(ctx, promptReadingTokensSinceByModel, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptReadingTokensSinceByModelRow{}
+	for rows.Next() {
+		var i PromptReadingTokensSinceByModelRow
+		if err := rows.Scan(&i.Model, &i.Input, &i.Output); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const promptReviewTokensSince = `-- name: PromptReviewTokensSince :one
-SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_review_usage
 WHERE used_at >= $1
 `
 
-func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) (int64, error) {
+type PromptReviewTokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+func (q *Queries) PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, promptReviewTokensSince, since)
-	var tokens int64
-	err := row.Scan(&tokens)
-	return tokens, err
+	var i PromptReviewTokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
+}
+
+const promptRunReadingModels = `-- name: PromptRunReadingModels :many
+SELECT DISTINCT ON (a.run_id) a.run_id, x.model
+FROM prompt_answers AS a
+JOIN prompt_extractions AS x ON x.answer_id = a.id
+WHERE x.model <> '' AND NOT x.failed
+GROUP BY a.run_id, x.model
+ORDER BY a.run_id, count(*) DESC, x.model
+`
+
+type PromptRunReadingModelsRow struct {
+	RunID uuid.UUID
+	Model string
+}
+
+// The model that read most of each run's responses, for the runs whose readings recorded one.
+func (q *Queries) PromptRunReadingModels(ctx context.Context) ([]PromptRunReadingModelsRow, error) {
+	rows, err := q.db.Query(ctx, promptRunReadingModels)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PromptRunReadingModelsRow{}
+	for rows.Next() {
+		var i PromptRunReadingModelsRow
+		if err := rows.Scan(&i.RunID, &i.Model); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const promptRunStopRequested = `-- name: PromptRunStopRequested :one
+SELECT (stop_requested_at IS NOT NULL)::boolean AS requested
+FROM prompt_runs
+WHERE id = $1
+`
+
+func (q *Queries) PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, promptRunStopRequested, id)
+	var requested bool
+	err := row.Scan(&requested)
+	return requested, err
 }
 
 const promptSightings = `-- name: PromptSightings :many
@@ -1039,11 +1441,12 @@ func (q *Queries) PromptSightings(ctx context.Context) ([]PromptSightingsRow, er
 const promptSpentSince = `-- name: PromptSpentSince :one
 SELECT (
     coalesce((SELECT sum(cost_micros) FROM prompt_answers WHERE answered_at >= $1), 0)
-    + coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= $1), 0)
+    + coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= $1 AND haiku_tokens = 0), 0)
 )::bigint AS spent
 `
 
-// What answers and extractions cost since a moment, in millionths of a dollar.
+// What the OpenRouter key paid since a moment, in millionths of a dollar: the answers, and the
+// readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 func (q *Queries) PromptSpentSince(ctx context.Context, since time.Time) (int64, error) {
 	row := q.db.QueryRow(ctx, promptSpentSince, since)
 	var spent int64
@@ -1053,7 +1456,7 @@ func (q *Queries) PromptSpentSince(ctx context.Context, since time.Time) (int64,
 
 const reopenPromptRun = `-- name: ReopenPromptRun :execrows
 UPDATE prompt_runs AS p
-SET status = 'running', finished_at = NULL, failure = NULL, owner = $1, heartbeat_at = $2
+SET status = 'running', finished_at = NULL, failure = NULL, stop_requested_at = NULL, owner = $1, heartbeat_at = $2
 WHERE p.id = $3 AND p.status <> 'running' AND NOT EXISTS (SELECT 1 FROM prompt_runs AS r WHERE r.status = 'running')
 `
 
@@ -1066,6 +1469,26 @@ type ReopenPromptRunParams struct {
 // Runs a finished run again, held by owner, unless any run is running: the run lock.
 func (q *Queries) ReopenPromptRun(ctx context.Context, arg ReopenPromptRunParams) (int64, error) {
 	result, err := q.db.Exec(ctx, reopenPromptRun, arg.Owner, arg.At, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const requestPromptRunStop = `-- name: RequestPromptRunStop :execrows
+UPDATE prompt_runs
+SET stop_requested_at = $1
+WHERE id = $2 AND status = 'running'
+`
+
+type RequestPromptRunStopParams struct {
+	At pgtype.Timestamptz
+	ID uuid.UUID
+}
+
+// An administrator asks a running run to stop; the instance running it reads this at its heartbeat.
+func (q *Queries) RequestPromptRunStop(ctx context.Context, arg RequestPromptRunStopParams) (int64, error) {
+	result, err := q.db.Exec(ctx, requestPromptRunStop, arg.At, arg.ID)
 	if err != nil {
 		return 0, err
 	}
@@ -1165,15 +1588,15 @@ func (q *Queries) SavePromptCompanyCheck(ctx context.Context, arg SavePromptComp
 
 const savePromptSettings = `-- name: SavePromptSettings :exec
 INSERT INTO prompt_settings (
-    singleton, credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
+    singleton, credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
     fact_sheet_updated_by, fact_sheet_updated_at, updated_by, updated_at
 )
 VALUES (
-    true, $1, $2, $3, $4, $5, $6, $7,
-    $8, $9, $10, $11
+    true, $1, $2, $3::text [], $4, $5, $6, $7, $8,
+    $9, $10, $11, $12
 )
 ON CONFLICT (singleton) DO UPDATE
-SET credential_id = excluded.credential_id, providers = excluded.providers,
+SET credential_id = excluded.credential_id, providers = excluded.providers, models = excluded.models,
     monthly_budget_micros = excluded.monthly_budget_micros, cadence = excluded.cadence, next_due = excluded.next_due,
     fact_sheet = excluded.fact_sheet, fact_sheet_version = excluded.fact_sheet_version,
     fact_sheet_updated_by = excluded.fact_sheet_updated_by, fact_sheet_updated_at = excluded.fact_sheet_updated_at,
@@ -1183,6 +1606,7 @@ SET credential_id = excluded.credential_id, providers = excluded.providers,
 type SavePromptSettingsParams struct {
 	CredentialID        pgtype.Text
 	Providers           []string
+	Models              []string
 	MonthlyBudgetMicros int64
 	Cadence             string
 	NextDue             time.Time
@@ -1198,6 +1622,7 @@ func (q *Queries) SavePromptSettings(ctx context.Context, arg SavePromptSettings
 	_, err := q.db.Exec(ctx, savePromptSettings,
 		arg.CredentialID,
 		arg.Providers,
+		arg.Models,
 		arg.MonthlyBudgetMicros,
 		arg.Cadence,
 		arg.NextDue,

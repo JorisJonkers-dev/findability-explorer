@@ -194,6 +194,7 @@ describe('rankTerms', () => {
     expect(first).toEqual({
       rank: 1,
       term: 'Drahtösengliederband',
+      path: `/terms/${encodeURIComponent('de--drahtösengliederband')}`,
       meta: 'German · Eyelink · Märtens',
       tier: 'product',
       kind: 'Product',
@@ -201,9 +202,14 @@ describe('rankTerms', () => {
       share: 0.5,
       tribelt: true,
       tribeltTerm: 'Uses it',
+      hand: false,
     })
     expect(rankTerms([MAP[3] as Term], MAP)[0]?.meta).toBe('German · Any belt · Märtens, Twentebelt')
     expect(rankTerms([MAP[4] as Term], MAP)[0]?.meta).toBe('English · All belts')
+  })
+
+  it('marks a term added by hand', () => {
+    expect(rankTerms([term({ origin: 'hand' })], MAP)[0]?.hand).toBe(true)
   })
 
   it('puts terms of the same makers and kind in alphabetical order', () => {

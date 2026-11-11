@@ -23,15 +23,21 @@ type repo struct {
 	mu        sync.Mutex
 	analyses  map[uuid.UUID]*domain.Analysis
 	order     []uuid.UUID
-	tokens    int64
 	failOn    map[string]bool
 	failedRun string
 	first     map[domain.PhraseKey]int
 	raw       map[uuid.UUID]domain.RawFiles
+	// stops are the scans a stop was asked of; with stopAt above 0, a scan that read that many
+	// pages reads as asked to stop too, as when another instance asks it.
+	stops  map[uuid.UUID]bool
+	stopAt int
+	// termPages are what TermPages returns, and asked the term and language it was asked for.
+	termPages []domain.TermPageRow
+	asked     string
 }
 
 func newRepo(failOn ...string) *repo {
-	r := &repo{analyses: map[uuid.UUID]*domain.Analysis{}, failOn: map[string]bool{}, raw: map[uuid.UUID]domain.RawFiles{}}
+	r := &repo{analyses: map[uuid.UUID]*domain.Analysis{}, failOn: map[string]bool{}, raw: map[uuid.UUID]domain.RawFiles{}, stops: map[uuid.UUID]bool{}}
 	for _, f := range failOn {
 		r.failOn[f] = true
 	}
@@ -127,10 +133,6 @@ func (r *repo) CompetitorStats(context.Context) (map[string]domain.CompetitorSta
 	return out, r.err("CompetitorStats")
 }
 
-func (r *repo) TokensSince(context.Context, time.Time) (int64, error) {
-	return r.tokens, r.err("TokensSince")
-}
-
 func (r *repo) Queued(context.Context) ([]uuid.UUID, error) {
 	if err := r.err("Queued"); err != nil {
 		return nil, err
@@ -181,6 +183,11 @@ func (r *repo) SaveReadiness(_ context.Context, id uuid.UUID, rd domain.Readines
 
 func (r *repo) SaveSitemapCoverage(_ context.Context, id uuid.UUID, c domain.SitemapCoverage) error {
 	return r.update("SaveSitemapCoverage", id, func(a *domain.Analysis) { a.Readiness.Sitemap.Coverage = &c })
+}
+
+func (r *repo) TermPages(_ context.Context, term, language string) ([]domain.TermPageRow, error) {
+	r.asked = term + "/" + language
+	return r.termPages, r.err("TermPages")
 }
 
 func (r *repo) ReadinessFiles(_ context.Context, id uuid.UUID) (domain.RawFiles, error) {
@@ -265,7 +272,7 @@ func (s source) Current(context.Context) (domain.Matcher, string, error) {
 var now = time.Date(2026, 10, 22, 9, 30, 0, 0, time.UTC)
 
 func limits() app.Limits {
-	return app.Limits{MonthlyTokens: 1000, SiteTextChars: 10_000}
+	return app.Limits{SiteTextChars: 10_000}
 }
 
 func glossary(context.Context) []domain.GlossaryTerm {
@@ -403,7 +410,7 @@ func TestStartNumbersEachCompanysScans(t *testing.T) {
 // runs once workers are free.
 func TestStartNeverRefusesAScanForLoad(t *testing.T) {
 	r := newRepo()
-	svc := service(r, crawler{pages: pages()}, nil, app.Limits{MonthlyTokens: 1000, SiteTextChars: 10_000, Workers: 3})
+	svc := service(r, crawler{pages: pages()}, nil, app.Limits{SiteTextChars: 10_000, Workers: 3})
 	const scans = 300
 	for i := range scans {
 		if _, err := svc.Start(t.Context(), "admin", fmt.Sprintf("https://site%d.test/", i), 1, ""); err != nil {
@@ -480,37 +487,72 @@ func TestRunRecordsAllFindings(t *testing.T) {
 	}
 }
 
+// A scan of tribelt.nl keeps each page's text, for the Recommendation run; a competitor's does not.
+func TestRunKeepsThePageTextOfTribeltsScansOnly(t *testing.T) {
+	r := newRepo()
+	svc := service(r, crawler{pages: pages()}, nil, limits())
+	for _, site := range []string{"https://tribelt.test/", "https://x.test/"} {
+		a, err := svc.Start(t.Context(), "u", site, 5, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := svc.Run(t.Context(), a.ID); err != nil {
+			t.Fatal(err)
+		}
+		want := ""
+		if site == "https://tribelt.test/" {
+			want = "Our spiral belt for freezers."
+		}
+		if got := r.analyses[a.ID].Pages[0].Text; got != want {
+			t.Errorf("%s keeps %q, want %q", site, got, want)
+		}
+	}
+}
+
+func TestTermPagesGroupsThePagesByCompany(t *testing.T) {
+	r := newRepo()
+	r.termPages = []domain.TermPageRow{{CompetitorID: "x", Position: 0, URL: "https://x.test/", Title: "X"}}
+	d := &directory{companies: []domain.Company{{ID: "x", Name: "X", Role: domain.RoleCompetitor}}}
+	svc := app.New(r, d, crawler{}, source{}, glossary, func() time.Time { return now }, limits())
+	got, err := svc.TermPages(t.Context(), "eyelink belt", "en")
+	if err != nil || len(got) != 1 || got[0].Pages[0].URL != "https://x.test/" || r.asked != "eyelink belt/en" {
+		t.Fatalf("TermPages = %+v, %v (asked %q)", got, err, r.asked)
+	}
+	d.companiesErr = errBoom
+	if _, err := svc.TermPages(t.Context(), "eyelink belt", "en"); !errors.Is(err, errBoom) {
+		t.Errorf("a directory that fails: %v", err)
+	}
+	d.companiesErr = nil
+	r.failOn["TermPages"] = true
+	if _, err := svc.TermPages(t.Context(), "eyelink belt", "en"); !errors.Is(err, errBoom) {
+		t.Errorf("a store that fails: %v", err)
+	}
+}
+
 func TestRunMatching(t *testing.T) {
 	cases := map[string]struct {
 		source source
-		tokens int64
-		failOn string
 		pages  []domain.Page
 		want   domain.Matching
 		model  string
-		shared func(context.Context) (bool, error)
+		budget func(context.Context) (bool, error)
 	}{
-		"no model": {source{}, 0, "", pages(), domain.MatchingDisabled, "", nil},
-		// The month's tokens of every job together decide, not the analyses' own.
-		"shared budget spent":   {source{matcher: &matcher{}}, 0, "", pages(), domain.MatchingSkipped, "", func(context.Context) (bool, error) { return true, nil }},
-		"shared budget unknown": {source{matcher: &matcher{}}, 0, "", pages(), domain.MatchingSkipped, "", func(context.Context) (bool, error) { return false, errBoom }},
-		"shared budget left":    {source{matcher: &matcher{}}, 1000, "", pages(), domain.MatchingDone, model, func(context.Context) (bool, error) { return false, nil }},
-		"settings fail":         {source{err: errBoom}, 0, "", pages(), domain.MatchingFailed, "", nil},
-		"budget spent":          {source{matcher: &matcher{}}, 1000, "", pages(), domain.MatchingSkipped, "", nil},
-		"budget unknown":        {source{matcher: &matcher{}}, 0, "TokensSince", pages(), domain.MatchingSkipped, "", nil},
-		"model fails":           {source{matcher: &matcher{err: errBoom}}, 0, "", pages(), domain.MatchingFailed, model, nil},
-		"nothing to read":       {source{matcher: &matcher{}}, 0, "", []domain.Page{{}}, domain.MatchingSkipped, "", nil},
-		"nothing found":         {source{matcher: &matcher{}}, 0, "", pages(), domain.MatchingDone, model, nil},
+		"no model": {source{}, pages(), domain.MatchingDisabled, "", nil},
+		// The Anthropic budget of every job together decides, in dollars.
+		"budget spent":    {source{matcher: &matcher{}}, pages(), domain.MatchingSkipped, "", func(context.Context) (bool, error) { return true, nil }},
+		"budget unknown":  {source{matcher: &matcher{}}, pages(), domain.MatchingSkipped, "", func(context.Context) (bool, error) { return false, errBoom }},
+		"budget left":     {source{matcher: &matcher{}}, pages(), domain.MatchingDone, model, func(context.Context) (bool, error) { return false, nil }},
+		"no budget":       {source{matcher: &matcher{}}, pages(), domain.MatchingDone, model, nil},
+		"settings fail":   {source{err: errBoom}, pages(), domain.MatchingFailed, "", nil},
+		"model fails":     {source{matcher: &matcher{err: errBoom}}, pages(), domain.MatchingFailed, model, nil},
+		"nothing to read": {source{matcher: &matcher{}}, []domain.Page{{}}, domain.MatchingSkipped, "", nil},
+		"nothing found":   {source{matcher: &matcher{}}, pages(), domain.MatchingDone, model, nil},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			r := newRepo()
-			if c.failOn != "" {
-				r.failOn[c.failOn] = true
-			}
-			r.tokens = c.tokens
 			l := limits()
-			l.BudgetSpent = c.shared
+			l.BudgetSpent = c.budget
 			if name == "nothing to read" {
 				l.SiteTextChars = 0
 			}

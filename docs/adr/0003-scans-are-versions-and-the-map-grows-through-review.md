@@ -41,3 +41,8 @@ scans' classification; they carry `origin: review`.
   course's scale (a few thousand phrases); a far larger history would need it materialised.
 - Deleting an added company deletes its scans, so its numbers are gone with it; a researched
   company's scans are never deleted by the app.
+
+## Amendment, 1 November 2026: search terms added and removed by hand
+
+The review queue is no longer the only way onto the search term list: administrators add terms by
+hand and take any term off it (ADR-0023).

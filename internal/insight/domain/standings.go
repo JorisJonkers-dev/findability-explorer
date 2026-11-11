@@ -65,6 +65,10 @@ type Answer struct {
 	// company it names is not on the list.
 	First string
 	Cited []string
+	// Sources are the addresses the answer cites, as given; WrongClaims what it says about Tribelt
+	// that the fact sheet contradicts.
+	Sources     []string
+	WrongClaims []string
 }
 
 // ScopeTwente is the scope of the questions a buyer asks for Twente.

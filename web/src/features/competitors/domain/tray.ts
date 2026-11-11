@@ -81,7 +81,7 @@ export function traySuggestions(text: string, known: readonly Known[], candidate
       out.push({
         kind: 'candidate',
         name: c.name,
-        detail: `Named in ${String(c.answers)} AI ${c.answers === 1 ? 'answer' : 'answers'}`,
+        detail: `Named in ${String(c.answers)} AI ${c.answers === 1 ? 'response' : 'responses'}`,
         item: { name: c.name, website, candidateId: c.id },
       })
     }

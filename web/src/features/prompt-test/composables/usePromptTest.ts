@@ -121,7 +121,7 @@ export function useStartRun() {
         {},
         {
           onSuccess: (run) => {
-            notice.value = `A Prompt run started: ${String(run.tasks)} answers to ask.`
+            notice.value = `A Prompt run started, with ${String(run.tasks)} responses to ask for.`
             void queryClient.invalidateQueries({ queryKey: [{ _id: 'getPromptTestResults' }] })
             void queryClient.invalidateQueries({ queryKey: getPromptTestSettingsQueryKey() })
           },
@@ -147,7 +147,7 @@ export function useRetryPlan(runId: Ref<string | undefined>, enabled: Ref<boolea
 
 type Task = { promptId: string; provider: string; mode: PromptMode }
 
-/** Asks a run's failed answers again, or one, or reads the ones that could not be read again; the results, the answers and the plan follow it. */
+/** Asks a run's failed responses again, or one, or reads the ones that could not be read again; the results, the answers and the plan follow it. */
 export function useRetryRun() {
   const queryClient = useQueryClient()
   const retry = useMutation(retryPromptRunMutation())
@@ -155,7 +155,7 @@ export function useRetryRun() {
   const notice = ref<string | null>(null)
   const last = ref<'retry' | 'reread'>('retry')
   const done = (verb: string) => (r: { tasks: number; estimatedCostUsd: number }) => {
-    const answers = r.tasks === 1 ? 'one answer' : `${String(r.tasks)} answers`
+    const answers = r.tasks === 1 ? 'one response' : `${String(r.tasks)} responses`
     notice.value = `${verb} ${answers} again, for about ${costLabel(r.estimatedCostUsd)}.`
     void queryClient.invalidateQueries({ queryKey: [{ _id: 'getPromptTestResults' }] })
     void queryClient.invalidateQueries({ queryKey: [{ _id: 'listPromptAnswers' }] })

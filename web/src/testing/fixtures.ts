@@ -10,6 +10,7 @@ import type {
   Overview,
   PromptAnswer,
   PromptExtraction,
+  PromptSets,
   PromptRun,
   Product,
   PromptTestResults,
@@ -300,9 +301,38 @@ export function promptAnswer(
       namesTribelt: companies.some((c) => c.endsWith(':tribelt')),
       citesTribelt: false,
       wrongClaims: [],
+      leftOut: [],
       costUsd: 0.0002,
       ...extraction,
     },
+    ...overrides,
+  }
+}
+
+/** The published Prompt sets: version 1, with one Twente question and its translation. */
+export function promptSets(overrides: Partial<PromptSets> = {}): PromptSets {
+  return {
+    versions: [
+      {
+        version: 1,
+        publishedAt: '2026-10-26T15:04:51Z',
+        note: 'A supplier, an application, and a problem question for each belt family.',
+        questions: [
+          {
+            id: 'eyelink-application-twente',
+            family: 'eyelink',
+            intent: 'application',
+            scope: 'twente',
+            scopeName: 'Twente (Dutch)',
+            language: 'nl',
+            region: 'Twente',
+            text: 'We bouwen een doorloopoven voor een industriële bakkerij. Welke fabrikanten in de regio Twente?',
+            english: 'We are building a tunnel oven for an industrial bakery. Which makers in the Twente region can supply the belt?',
+          },
+        ],
+      },
+    ],
+    scopes: [{ id: 'twente', name: 'Twente (Dutch)', language: 'nl', region: 'Twente' }],
     ...overrides,
   }
 }
@@ -336,4 +366,7 @@ export const details = {
   benefit: 3,
   effort: 2,
   parts: [] as { name: string; present: boolean }[],
+  kind: 'general' as const,
+  generated: false,
+  new: false,
 }

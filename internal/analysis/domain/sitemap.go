@@ -10,6 +10,11 @@ import (
 // Sitemap is what one sitemap file lists: pages, with the language versions each declares, or,
 // for a sitemap index, other sitemaps.
 type Sitemap struct {
+	// URL is the sitemap's address, and Text the start of its text as served (gzip undone), at
+	// most MaxRawFile bytes and one more, so RawFilesOf can tell it was cut; the crawler sets
+	// both, ParseSitemap neither.
+	URL      string
+	Text     string
 	Pages    []string
 	Sitemaps []string
 	// Languages are the hreflang values of the language versions its pages declare.

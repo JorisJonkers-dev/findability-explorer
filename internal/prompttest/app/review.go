@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"slices"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/shared/work"
 )
 
 // The language model's review of the competitor candidates (ADR-0006, ADR-0009): Claude Haiku, on
 // an Anthropic key, first finds which candidates are one company, or a company on the list, and
 // merges them; then it checks each waiting company it has not checked with the current
-// domain.CheckVersion, a batch at a time, against Tribelt's target market, from what the answers
+// competitor definition in use, a batch at a time, against that definition, from what the answers
 // say of it and its home page. A sure verdict decides the company; an unsure one leaves it to a
 // person.
 
@@ -35,8 +35,12 @@ const (
 var (
 	// ErrNoReviewer is returned by Review when no Anthropic key is set up.
 	ErrNoReviewer = errors.New("no Anthropic key is set up")
-	// ErrBudgetSpent is returned by Review when the month's language-model tokens are spent.
+	// ErrBudgetSpent is returned by Review when the month's Anthropic budget is spent.
 	ErrBudgetSpent = errors.New("this month's language-model budget is spent")
+	// ErrStopped is returned by Review and CheckList when an administrator stopped them.
+	ErrStopped = errors.New("stopped by hand")
+	// ErrNothingToStop is returned by a stop that finds nothing running.
+	ErrNothingToStop = errors.New("there is nothing running to stop")
 )
 
 // ReviewProblem is why the last review stopped short.
@@ -47,6 +51,8 @@ const (
 	ReviewProblemNoKey  ReviewProblem = "noKey"
 	ReviewProblemBudget ReviewProblem = "budget"
 	ReviewProblemFails  ReviewProblem = "failed"
+	// ReviewProblemStopped is a review an administrator stopped; what it decided before is kept.
+	ReviewProblemStopped ReviewProblem = "stopped"
 )
 
 // ReviewState is whether the model is reviewing, and why its last review stopped short.
@@ -63,15 +69,90 @@ type review struct {
 	candidates, list runState
 }
 
-// runState is whether a review runs in the background, and why its last run stopped short.
+// runState is whether a review runs in the background, whether an administrator asked it to stop,
+// and why its last run stopped short.
 type runState struct {
-	running atomic.Bool
-	problem atomic.Value // ReviewProblem
+	mu       sync.Mutex
+	running  bool
+	stopping bool
+	problem  ReviewProblem
+	// counts and in, out are what the run did and used, for the work journal.
+	counts  work.Counts
+	in, out int64
+}
+
+// planned sets how many companies the run checks.
+func (r *runState) planned(n int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.counts.Total = n
+}
+
+// did counts n companies checked.
+func (r *runState) did(n int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.counts.Done += n
+}
+
+// used counts what a request used.
+func (r *runState) used(u domain.ReviewUsage) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.in, r.out = r.in+u.InputTokens, r.out+u.OutputTokens
+}
+
+// outcome is the run's outcome, ended as ending.
+func (r *runState) outcome(ending work.Ending) work.Outcome {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return work.Outcome{Ending: ending, Counts: r.counts, InputTokens: r.in, OutputTokens: r.out}
 }
 
 func (r *runState) state() ReviewState {
-	problem, _ := r.problem.Load().(ReviewProblem)
-	return ReviewState{Running: r.running.Load(), Problem: problem}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return ReviewState{Running: r.running, Problem: r.problem}
+}
+
+// begin marks a run started, unless one runs already; it reports whether it started.
+func (r *runState) begin() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.running {
+		return false
+	}
+	r.running, r.stopping = true, false
+	r.counts, r.in, r.out = work.Counts{}, 0, 0
+	return true
+}
+
+// end marks the run ended, with the problem it ran into.
+func (r *runState) end(problem ReviewProblem) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.running, r.stopping, r.problem = false, false, problem
+}
+
+// stop asks the run to stop before its next step; ErrNothingToStop when none runs.
+func (r *runState) stop() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.running {
+		return ErrNothingToStop
+	}
+	r.stopping = true
+	return nil
+}
+
+// goOn is ErrStopped once an administrator asked the run to stop.
+func (r *runState) goOn() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.stopping {
+		return ErrStopped
+	}
+	return nil
 }
 
 // ReviewState says whether the model is reviewing the candidates, and why its last review stopped short.
@@ -79,45 +160,70 @@ func (s *Service) ReviewState() ReviewState { return s.review.candidates.state()
 
 // StartReview starts a review in the background, unless one is running; it reports whether it started.
 func (s *Service) StartReview(ctx context.Context) bool {
-	return s.startIn(ctx, &s.review.candidates, s.Review)
+	return s.startIn(ctx, work.KindCandidateReview, &s.review.candidates, s.Review)
 }
+
+// StopReview stops the review of the candidates that runs: it asks nothing after the step it is
+// on, which it finishes and keeps, as it keeps every decision made before. The review's state says
+// it was stopped by hand. ErrNothingToStop when no review runs.
+func (s *Service) StopReview(context.Context) error { return s.review.candidates.stop() }
 
 // startIn runs work in the background on st, unless it runs already, within reviewTimeout; it
 // reports whether it started.
-func (s *Service) startIn(ctx context.Context, st *runState, work func(context.Context) error) bool {
-	if !st.running.CompareAndSwap(false, true) {
+func (s *Service) startIn(ctx context.Context, kind work.Kind, st *runState, run func(context.Context) error) bool {
+	if !st.begin() {
 		return false
 	}
 	s.spawn(func() {
-		defer st.running.Store(false)
 		bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), reviewTimeout)
 		defer cancel()
-		err := work(bg)
+		entry := work.Start(bg, s.journal, kind, journalBy, s.now(), s.reportJournal)
+		err := run(bg)
+		problem, ending := ReviewProblemNone, work.EndingDone
 		switch {
 		case err == nil:
-			st.problem.Store(ReviewProblemNone)
+		case errors.Is(err, ErrStopped):
+			problem, ending = ReviewProblemStopped, work.EndingStoppedByHand
 		case errors.Is(err, ErrNoReviewer):
-			st.problem.Store(ReviewProblemNoKey)
+			problem, ending = ReviewProblemNoKey, work.EndingFailed
 		case errors.Is(err, ErrBudgetSpent):
-			st.problem.Store(ReviewProblemBudget)
+			problem, ending = ReviewProblemBudget, work.EndingStoppedByBudget
 		default:
-			st.problem.Store(ReviewProblemFails)
+			problem, ending = ReviewProblemFails, work.EndingFailed
 			s.review.onError(err)
 		}
+		entry.Finish(context.WithoutCancel(bg), st.outcome(ending), s.now(), s.reportJournal)
+		st.end(problem)
 	})
 	return true
 }
 
+// journalBy is who the work journal names as having started a review: an administrator asks for
+// it, and the language model does it.
+const journalBy = "language model"
+
+// reportJournal reports that the work journal failed, when anyone hears it.
+func (s *Service) reportJournal(err error) {
+	if s.review.onError != nil {
+		s.review.onError(err)
+	}
+}
+
 // Review has the model merge the candidates that are one company, then check each waiting company
 // it has not checked, and records the decisions its sure verdicts make. ErrNoReviewer when no
-// Anthropic key is set up; ErrBudgetSpent when the month's language-model tokens are spent before
-// the merge or a batch, with what was checked before kept.
+// Anthropic key is set up; ErrBudgetSpent when the month's Anthropic budget is spent before
+// the merge or a batch, and ErrStopped when an administrator stopped it, with what was checked
+// before kept either way.
 func (s *Service) Review(ctx context.Context) error {
 	r, model, err := s.reviewer(ctx)
 	if err != nil {
 		return err
 	}
-	if err := s.tokensLeft(ctx); err != nil {
+	def, err := s.definition(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.goOn(ctx, &s.review.candidates); err != nil {
 		return err
 	}
 	directory, err := s.directory.Companies(ctx)
@@ -132,15 +238,17 @@ func (s *Service) Review(ctx context.Context) error {
 		return err
 	}
 	unchecked := domain.Unchecked(all)
+	s.review.candidates.planned(len(unchecked))
 	for len(unchecked) > 0 {
-		if err := s.tokensLeft(ctx); err != nil {
+		if err := s.goOn(ctx, &s.review.candidates); err != nil {
 			return err
 		}
 		batch := unchecked[:min(CheckBatch, len(unchecked))]
 		unchecked = unchecked[len(batch):]
-		if err := s.check(ctx, r, model, batch); err != nil {
+		if err := s.check(ctx, r, model, def, batch); err != nil {
 			return err
 		}
+		s.review.candidates.did(len(batch))
 	}
 	return nil
 }
@@ -160,7 +268,16 @@ func (s *Service) reviewer(ctx context.Context) (Reviewer, string, error) {
 	return r, model, nil
 }
 
-// tokensLeft is ErrBudgetSpent once the month's language-model tokens are spent.
+// goOn is ErrStopped once an administrator stopped the run on st, ErrBudgetSpent once the month's
+// Anthropic budget is spent.
+func (s *Service) goOn(ctx context.Context, st *runState) error {
+	if err := st.goOn(); err != nil {
+		return err
+	}
+	return s.tokensLeft(ctx)
+}
+
+// tokensLeft is ErrBudgetSpent once the month's Anthropic budget is spent.
 func (s *Service) tokensLeft(ctx context.Context) error {
 	spent, err := s.tokensSpent(ctx)
 	if err != nil {
@@ -174,16 +291,17 @@ func (s *Service) tokensLeft(ctx context.Context) error {
 
 // check has the model check batch, stores its verdicts and what asking used, and records the
 // decisions its sure verdicts make.
-func (s *Service) check(ctx context.Context, r Reviewer, model string, batch []domain.Candidate) error {
+func (s *Service) check(ctx context.Context, r Reviewer, model string, def domain.Definition, batch []domain.Candidate) error {
 	dossiers, err := s.dossiers(ctx, batch)
 	if err != nil {
 		return err
 	}
-	answered, usage, err := r.Check(ctx, dossiers)
+	answered, usage, err := r.Check(ctx, def.Text, dossiers)
+	s.review.candidates.used(usage)
 	if saveErr := s.saveUsage(ctx, usage); err != nil || saveErr != nil {
 		return errors.Join(wrap("check the candidates", err), saveErr)
 	}
-	verdicts := domain.CompleteVerdicts(batch, answered, model, s.now())
+	verdicts := domain.CompleteVerdicts(batch, answered, model, def.Version, s.now())
 	if err := s.repo.SaveCompanyVerdicts(ctx, verdicts); err != nil {
 		return fmt.Errorf("store the checks: %w", err)
 	}
@@ -320,6 +438,7 @@ func (s *Service) merge(ctx context.Context, r Reviewer, directory []domain.Dire
 		return nil
 	}
 	clusters, usage, err := r.Merge(ctx, asked, directory)
+	s.review.candidates.used(usage)
 	if saveErr := s.saveUsage(ctx, usage); err != nil || saveErr != nil {
 		return errors.Join(wrap("merge the candidates", err), saveErr)
 	}

@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen';
-import { acceptTermCandidate, addCompetitor, addCompetitorCandidate, addCompetitors, addLlmCredential, clearActiveLlm, compareScans, decideCompetitorCandidates, deleteCompetitor, deleteLlmCredential, dismissCompetitorCandidate, getAiReadiness, getAiSearchSummary, getAnalysis, getCompetitor, getCompetitorProfile, getLlmKeyUsage, getLlmSettings, getMe, getOverview, getPlan, getProducts, getPromptRetryPlan, getPromptTestResults, getPromptTestSettings, getReadinessFiles, getStandings, listAnalyses, listCompetitorCandidates, listCompetitorChecks, listCompetitors, listLlmModels, listPromptAnswers, listTermCandidates, type Options, rejectTermCandidate, rereadPromptRun, retryPromptRun, searchTerms, setActiveLlm, setPlanTargets, splitCompetitorCandidate, startAnalysis, startCandidateReview, startCompetitorCheck, startPromptRun, startReadinessCheck, startRescans, startTermReview, testLlmCredential, tickImprovement, undoCompetitorCandidate, undoTermDecision, updateCompetitor, updatePromptTestSettings } from '../sdk.gen';
-import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorCandidateData, AddCompetitorCandidateError, AddCompetitorCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddCompetitorsData, AddCompetitorsError, AddCompetitorsResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DecideCompetitorCandidatesData, DecideCompetitorCandidatesError, DecideCompetitorCandidatesResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, DismissCompetitorCandidateData, DismissCompetitorCandidateError, DismissCompetitorCandidateResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAiSearchSummaryData, GetAiSearchSummaryError, GetAiSearchSummaryResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetCompetitorData, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmKeyUsageData, GetLlmKeyUsageError, GetLlmKeyUsageResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetOverviewData, GetOverviewError, GetOverviewResponse, GetPlanData, GetPlanError, GetPlanResponse, GetProductsData, GetProductsError, GetProductsResponse, GetPromptRetryPlanData, GetPromptRetryPlanError, GetPromptRetryPlanResponse, GetPromptTestResultsData, GetPromptTestResultsError, GetPromptTestResultsResponse, GetPromptTestSettingsData, GetPromptTestSettingsError, GetPromptTestSettingsResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, GetStandingsData, GetStandingsError, GetStandingsResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListCompetitorCandidatesData, ListCompetitorCandidatesError, ListCompetitorCandidatesResponse, ListCompetitorChecksData, ListCompetitorChecksError, ListCompetitorChecksResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListPromptAnswersData, ListPromptAnswersError, ListPromptAnswersResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, RereadPromptRunData, RereadPromptRunError, RereadPromptRunResponse, RetryPromptRunData, RetryPromptRunError, RetryPromptRunResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, SetPlanTargetsData, SetPlanTargetsError, SetPlanTargetsResponse, SplitCompetitorCandidateData, SplitCompetitorCandidateError, SplitCompetitorCandidateResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartCandidateReviewData, StartCandidateReviewError, StartCandidateReviewResponse, StartCompetitorCheckData, StartCompetitorCheckError, StartCompetitorCheckResponse, StartPromptRunData, StartPromptRunError, StartPromptRunResponse, StartReadinessCheckData, StartReadinessCheckError, StartReadinessCheckResponse, StartRescansData, StartRescansError, StartRescansResponse, StartTermReviewData, StartTermReviewError, StartTermReviewResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, TickImprovementData, TickImprovementError, TickImprovementResponse, UndoCompetitorCandidateData, UndoCompetitorCandidateError, UndoCompetitorCandidateResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse, UpdatePromptTestSettingsData, UpdatePromptTestSettingsError, UpdatePromptTestSettingsResponse } from '../types.gen';
+import { acceptTermCandidate, addCompetitor, addCompetitorCandidate, addCompetitors, addLlmCredential, addTerm, clearActiveLlm, compareScans, decideCompetitorCandidates, deleteCompetitor, deleteLlmCredential, dismissCompetitorCandidate, editRecommendation, getActivity, getAiReadiness, getAiSearchSummary, getAnalysis, getClaudeStep, getCompetitor, getCompetitorDefinition, getCompetitorProfile, getLlmKeyUsage, getLlmSettings, getMe, getOverview, getPlan, getProducts, getPromptModelCatalogue, getPromptRetryPlan, getPromptTestHistory, getPromptTestResults, getPromptTestSettings, getReadinessFiles, getRecommendationRuns, getStandings, getTermPages, listAnalyses, listClaudeSteps, listCompetitorCandidates, listCompetitorChecks, listCompetitors, listHandTerms, listLlmModels, listPromptAnswers, listPromptSets, listTermCandidates, type Options, publishPromptSet, putBackTerm, rejectTermCandidate, removeQueuedAnalyses, removeTerm, rereadPromptRun, restoreCompetitorDefinition, retryPromptRun, saveClaudeStepVersion, saveCompetitorDefinition, searchTerms, setActiveLlm, setPlanTargets, setTermReview, splitCompetitorCandidate, startAnalysis, startCandidateReview, startCompetitorCheck, startPromptRun, startReadinessCheck, startRecommendationRun, startRescans, startTermReview, stopAnalysis, stopCandidateReview, stopCompetitorCheck, stopPromptRun, stopReadinessCheck, stopRecommendationRun, stopRescan, stopTermReview, testLlmCredential, tickImprovement, undoCompetitorCandidate, undoTermDecision, updateCompetitor, updateLlmBudget, updatePromptTestSettings } from '../sdk.gen';
+import type { AcceptTermCandidateData, AcceptTermCandidateError, AcceptTermCandidateResponse, AddCompetitorCandidateData, AddCompetitorCandidateError, AddCompetitorCandidateResponse, AddCompetitorData, AddCompetitorError, AddCompetitorResponse, AddCompetitorsData, AddCompetitorsError, AddCompetitorsResponse, AddLlmCredentialData, AddLlmCredentialError, AddLlmCredentialResponse, AddTermData, AddTermError, AddTermResponse, ClearActiveLlmData, ClearActiveLlmError, ClearActiveLlmResponse, CompareScansData, CompareScansError, CompareScansResponse, DecideCompetitorCandidatesData, DecideCompetitorCandidatesError, DecideCompetitorCandidatesResponse, DeleteCompetitorData, DeleteCompetitorError, DeleteCompetitorResponse, DeleteLlmCredentialData, DeleteLlmCredentialError, DeleteLlmCredentialResponse, DismissCompetitorCandidateData, DismissCompetitorCandidateError, DismissCompetitorCandidateResponse, EditRecommendationData, EditRecommendationError, EditRecommendationResponse, GetActivityData, GetActivityError, GetActivityResponse, GetAiReadinessData, GetAiReadinessError, GetAiReadinessResponse, GetAiSearchSummaryData, GetAiSearchSummaryError, GetAiSearchSummaryResponse, GetAnalysisData, GetAnalysisError, GetAnalysisResponse, GetClaudeStepData, GetClaudeStepError, GetClaudeStepResponse, GetCompetitorData, GetCompetitorDefinitionData, GetCompetitorDefinitionError, GetCompetitorDefinitionResponse, GetCompetitorError, GetCompetitorProfileData, GetCompetitorProfileError, GetCompetitorProfileResponse, GetCompetitorResponse, GetLlmKeyUsageData, GetLlmKeyUsageError, GetLlmKeyUsageResponse, GetLlmSettingsData, GetLlmSettingsError, GetLlmSettingsResponse, GetMeData, GetMeError, GetMeResponse, GetOverviewData, GetOverviewError, GetOverviewResponse, GetPlanData, GetPlanError, GetPlanResponse, GetProductsData, GetProductsError, GetProductsResponse, GetPromptModelCatalogueData, GetPromptModelCatalogueError, GetPromptModelCatalogueResponse, GetPromptRetryPlanData, GetPromptRetryPlanError, GetPromptRetryPlanResponse, GetPromptTestHistoryData, GetPromptTestHistoryError, GetPromptTestHistoryResponse, GetPromptTestResultsData, GetPromptTestResultsError, GetPromptTestResultsResponse, GetPromptTestSettingsData, GetPromptTestSettingsError, GetPromptTestSettingsResponse, GetReadinessFilesData, GetReadinessFilesError, GetReadinessFilesResponse, GetRecommendationRunsData, GetRecommendationRunsError, GetRecommendationRunsResponse, GetStandingsData, GetStandingsError, GetStandingsResponse, GetTermPagesData, GetTermPagesError, GetTermPagesResponse, ListAnalysesData, ListAnalysesError, ListAnalysesResponse, ListClaudeStepsData, ListClaudeStepsError, ListClaudeStepsResponse, ListCompetitorCandidatesData, ListCompetitorCandidatesError, ListCompetitorCandidatesResponse, ListCompetitorChecksData, ListCompetitorChecksError, ListCompetitorChecksResponse, ListCompetitorsData, ListCompetitorsError, ListCompetitorsResponse, ListHandTermsData, ListHandTermsError, ListHandTermsResponse, ListLlmModelsData, ListLlmModelsError, ListLlmModelsResponse, ListPromptAnswersData, ListPromptAnswersError, ListPromptAnswersResponse, ListPromptSetsData, ListPromptSetsError, ListPromptSetsResponse, ListTermCandidatesData, ListTermCandidatesError, ListTermCandidatesResponse, PublishPromptSetData, PublishPromptSetError, PublishPromptSetResponse, PutBackTermData, PutBackTermError, PutBackTermResponse, RejectTermCandidateData, RejectTermCandidateError, RejectTermCandidateResponse, RemoveQueuedAnalysesData, RemoveQueuedAnalysesError, RemoveQueuedAnalysesResponse, RemoveTermData, RemoveTermError, RemoveTermResponse, RereadPromptRunData, RereadPromptRunError, RereadPromptRunResponse, RestoreCompetitorDefinitionData, RestoreCompetitorDefinitionError, RestoreCompetitorDefinitionResponse, RetryPromptRunData, RetryPromptRunError, RetryPromptRunResponse, SaveClaudeStepVersionData, SaveClaudeStepVersionError, SaveClaudeStepVersionResponse, SaveCompetitorDefinitionData, SaveCompetitorDefinitionError, SaveCompetitorDefinitionResponse, SearchTermsData, SearchTermsError, SearchTermsResponse, SetActiveLlmData, SetActiveLlmError, SetActiveLlmResponse, SetPlanTargetsData, SetPlanTargetsError, SetPlanTargetsResponse, SetTermReviewData, SetTermReviewError, SetTermReviewResponse, SplitCompetitorCandidateData, SplitCompetitorCandidateError, SplitCompetitorCandidateResponse, StartAnalysisData, StartAnalysisError, StartAnalysisResponse, StartCandidateReviewData, StartCandidateReviewError, StartCandidateReviewResponse, StartCompetitorCheckData, StartCompetitorCheckError, StartCompetitorCheckResponse, StartPromptRunData, StartPromptRunError, StartPromptRunResponse, StartReadinessCheckData, StartReadinessCheckError, StartReadinessCheckResponse, StartRecommendationRunData, StartRecommendationRunError, StartRecommendationRunResponse, StartRescansData, StartRescansError, StartRescansResponse, StartTermReviewData, StartTermReviewError, StartTermReviewResponse, StopAnalysisData, StopAnalysisError, StopAnalysisResponse, StopCandidateReviewData, StopCandidateReviewError, StopCandidateReviewResponse, StopCompetitorCheckData, StopCompetitorCheckError, StopCompetitorCheckResponse, StopPromptRunData, StopPromptRunError, StopPromptRunResponse, StopReadinessCheckData, StopReadinessCheckError, StopReadinessCheckResponse, StopRecommendationRunData, StopRecommendationRunError, StopRecommendationRunResponse, StopRescanData, StopRescanError, StopRescanResponse, StopTermReviewData, StopTermReviewError, StopTermReviewResponse, TestLlmCredentialData, TestLlmCredentialError, TestLlmCredentialResponse, TickImprovementData, TickImprovementError, TickImprovementResponse, UndoCompetitorCandidateData, UndoCompetitorCandidateError, UndoCompetitorCandidateResponse, UndoTermDecisionData, UndoTermDecisionError, UndoTermDecisionResponse, UpdateCompetitorData, UpdateCompetitorError, UpdateCompetitorResponse, UpdateLlmBudgetData, UpdateLlmBudgetError, UpdateLlmBudgetResponse, UpdatePromptTestSettingsData, UpdatePromptTestSettingsError, UpdatePromptTestSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -82,12 +82,89 @@ export const getPlanOptions = (options?: Options<GetPlanData>) => queryOptions<G
 /**
  * Tick an improvement off, or undo the tick
  *
- * Administrators only. Marks an improvement no scan can check as done, recording who and when, or as not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+ * Administrators only. Marks an improvement no scan can check as done, recording who and when, or as not done again; a recommendation a run wrote too, when no rule decides it (a fact sheet correction). 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
  */
 export const tickImprovementMutation = (options?: Partial<Options<TickImprovementData>>): UseMutationOptions<TickImprovementResponse, TickImprovementError, Options<TickImprovementData>> => {
     const mutationOptions: UseMutationOptions<TickImprovementResponse, TickImprovementError, Options<TickImprovementData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await tickImprovement({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Edit a recommendation a Recommendation run wrote
+ *
+ * Administrators only. Stores the wording and scores of a recommendation a Recommendation run wrote, and when it was edited; an edited one is kept when the next run replaces the others. A blank page leaves it for the web agency to place. 404 for an unknown recommendation; 422 for one written by hand, which stays in code, or for an edit out of bounds.
+ */
+export const editRecommendationMutation = (options?: Partial<Options<EditRecommendationData>>): UseMutationOptions<EditRecommendationResponse, EditRecommendationError, Options<EditRecommendationData>> => {
+    const mutationOptions: UseMutationOptions<EditRecommendationResponse, EditRecommendationError, Options<EditRecommendationData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await editRecommendation({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getRecommendationRunsQueryKey = (options?: Options<GetRecommendationRunsData>) => createQueryKey('getRecommendationRuns', options);
+
+/**
+ * The Recommendation run, what starting one would do, and the past runs
+ *
+ * Administrators only. Whether a Recommendation run runs; what a new one would read (the newest Prompt run, the tribelt.nl scan, the search term list), how many gaps its rules find, how many open recommendations it would replace, whether tribelt.nl was last scanned before the newest Prompt run, and its estimate on the Anthropic key; and the last 20 runs, each with what it added, replaced and kept.
+ */
+export const getRecommendationRunsOptions = (options?: Options<GetRecommendationRunsData>) => queryOptions<GetRecommendationRunsResponse, GetRecommendationRunsError, GetRecommendationRunsResponse, ReturnType<typeof getRecommendationRunsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getRecommendationRuns({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getRecommendationRunsQueryKey(options)
+});
+
+/**
+ * Start a Recommendation run
+ *
+ * Administrators only. In the background, the rules find the gaps from the newest Prompt run, each company's newest scan and the search term list, and the Claude step writing recommendations places and words them from tribelt.nl's page text, a batch at a time. A run that ends replaces the open recommendations an earlier run wrote, and keeps the done and edited ones and those written by hand; one stopped, cut short by the budget, or failed changes nothing. 409 when one runs already or no Anthropic key is set up.
+ */
+export const startRecommendationRunMutation = (options?: Partial<Options<StartRecommendationRunData>>): UseMutationOptions<StartRecommendationRunResponse, StartRecommendationRunError, Options<StartRecommendationRunData>> => {
+    const mutationOptions: UseMutationOptions<StartRecommendationRunResponse, StartRecommendationRunError, Options<StartRecommendationRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startRecommendationRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Stop the Recommendation run
+ *
+ * Administrators only. Stops the Recommendation run that runs after the batch it writes; the recommendations stay as they were, and the run is recorded as stopped by hand. 404 when none runs.
+ */
+export const stopRecommendationRunMutation = (options?: Partial<Options<StopRecommendationRunData>>): UseMutationOptions<StopRecommendationRunResponse, StopRecommendationRunError, Options<StopRecommendationRunData>> => {
+    const mutationOptions: UseMutationOptions<StopRecommendationRunResponse, StopRecommendationRunError, Options<StopRecommendationRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopRecommendationRun({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -195,6 +272,26 @@ export const searchTermsOptions = (options?: Options<SearchTermsData>) => queryO
         return data;
     },
     queryKey: searchTermsQueryKey(options)
+});
+
+export const getTermPagesQueryKey = (options: Options<GetTermPagesData>) => createQueryKey('getTermPages', options);
+
+/**
+ * Get the pages that use a search term
+ *
+ * Returns, for each company whose newest finished scan found the term, the pages of that scan that use it, at most ten each. The term matches without regard to case.
+ */
+export const getTermPagesOptions = (options: Options<GetTermPagesData>) => queryOptions<GetTermPagesResponse, GetTermPagesError, GetTermPagesResponse, ReturnType<typeof getTermPagesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getTermPages({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getTermPagesQueryKey(options)
 });
 
 export const listCompetitorsQueryKey = (options?: Options<ListCompetitorsData>) => createQueryKey('listCompetitors', options);
@@ -411,6 +508,238 @@ export const startRescansMutation = (options?: Partial<Options<StartRescansData>
     return mutationOptions;
 };
 
+/**
+ * Stop the re-scan
+ *
+ * Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting one is taken off the queue, a running one ends after the page it reads and keeps the pages it read so far. Each is recorded as stopped by hand. A scan started on its own runs on. 404 when no scan of a re-scan waits or runs.
+ */
+export const stopRescanMutation = (options?: Partial<Options<StopRescanData>>): UseMutationOptions<StopRescanResponse, StopRescanError, Options<StopRescanData>> => {
+    const mutationOptions: UseMutationOptions<StopRescanResponse, StopRescanError, Options<StopRescanData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopRescan({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Stop the AI readiness check
+ *
+ * Administrators only. Stops the check of every company's AI readiness that runs: it reads no further site. The sites it checked keep what it recorded, the others what their scan recorded, and the check's state says it was stopped. 404 when no check runs.
+ */
+export const stopReadinessCheckMutation = (options?: Partial<Options<StopReadinessCheckData>>): UseMutationOptions<StopReadinessCheckResponse, StopReadinessCheckError, Options<StopReadinessCheckData>> => {
+    const mutationOptions: UseMutationOptions<StopReadinessCheckResponse, StopReadinessCheckError, Options<StopReadinessCheckData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopReadinessCheck({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Remove every waiting scan
+ *
+ * Administrators only. Takes every scan that waits off the queue, each recorded as stopped by hand; the running ones run on. 404 when no scan waits.
+ */
+export const removeQueuedAnalysesMutation = (options?: Partial<Options<RemoveQueuedAnalysesData>>): UseMutationOptions<RemoveQueuedAnalysesResponse, RemoveQueuedAnalysesError, Options<RemoveQueuedAnalysesData>> => {
+    const mutationOptions: UseMutationOptions<RemoveQueuedAnalysesResponse, RemoveQueuedAnalysesError, Options<RemoveQueuedAnalysesData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await removeQueuedAnalyses({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Stop a scan, or take it off the queue
+ *
+ * Administrators only. A waiting scan is taken off the queue; a running one ends after the page it reads, on whichever instance runs it, and keeps the pages it read so far. Either is recorded as stopped by hand. 404 when no waiting or running scan has this id.
+ */
+export const stopAnalysisMutation = (options?: Partial<Options<StopAnalysisData>>): UseMutationOptions<StopAnalysisResponse, StopAnalysisError, Options<StopAnalysisData>> => {
+    const mutationOptions: UseMutationOptions<StopAnalysisResponse, StopAnalysisError, Options<StopAnalysisData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopAnalysis({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listClaudeStepsQueryKey = (options?: Options<ListClaudeStepsData>) => createQueryKey('listClaudeSteps', options);
+
+/**
+ * List the Claude steps
+ *
+ * Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model and the version of the instructions it uses now and what one job of it costs with that model.
+ */
+export const listClaudeStepsOptions = (options?: Options<ListClaudeStepsData>) => queryOptions<ListClaudeStepsResponse, ListClaudeStepsError, ListClaudeStepsResponse, ReturnType<typeof listClaudeStepsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listClaudeSteps({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listClaudeStepsQueryKey(options)
+});
+
+export const getClaudeStepQueryKey = (options: Options<GetClaudeStepData>) => createQueryKey('getClaudeStep', options);
+
+/**
+ * Get one Claude step
+ *
+ * Administrators only. One step: the instructions the tool came with, every saved version (model and instructions) oldest first, the newest of which the step uses, and the Claude models it may use, cheapest first, each with what one job of the step costs with it. 404 for a step that does not exist.
+ */
+export const getClaudeStepOptions = (options: Options<GetClaudeStepData>) => queryOptions<GetClaudeStepResponse, GetClaudeStepError, GetClaudeStepResponse, ReturnType<typeof getClaudeStepQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getClaudeStep({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getClaudeStepQueryKey(options)
+});
+
+/**
+ * Save a new version of a Claude step
+ *
+ * Administrators only. Saves the model and the instructions as the step's next version, which its next job uses; the versions before it stay, to restore. A step whose instructions are set in the code takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude model listed, empty or too long instructions, or a version the same as the newest; 404 for a step that does not exist.
+ */
+export const saveClaudeStepVersionMutation = (options?: Partial<Options<SaveClaudeStepVersionData>>): UseMutationOptions<SaveClaudeStepVersionResponse, SaveClaudeStepVersionError, Options<SaveClaudeStepVersionData>> => {
+    const mutationOptions: UseMutationOptions<SaveClaudeStepVersionResponse, SaveClaudeStepVersionError, Options<SaveClaudeStepVersionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await saveClaudeStepVersion({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getActivityQueryKey = (options?: Options<GetActivityData>) => createQueryKey('getActivity', options);
+
+/**
+ * What runs, what ended, and this month's spending
+ *
+ * Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness checks, the term review, reviews of the competitor candidates, checks of the competitor list, and Recommendation runs - running now, newest first, and the last 20 ended, the last ended first, each with how it ended, what it did, and what it cost on each key. A running piece is stopped by its own operation - stopPromptRun and stopAnalysis take its id, stopRescan, stopReadinessCheck, stopTermReview, stopCandidateReview and stopCompetitorCheck none. With this month's spending by kind of work and the key that paid; the Anthropic key's is priced at the model's list price from the stored tokens.
+ */
+export const getActivityOptions = (options?: Options<GetActivityData>) => queryOptions<GetActivityResponse, GetActivityError, GetActivityResponse, ReturnType<typeof getActivityQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getActivity({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getActivityQueryKey(options)
+});
+
+export const listHandTermsQueryKey = (options?: Options<ListHandTermsData>) => createQueryKey('listHandTerms', options);
+
+/**
+ * List the terms added and removed by hand
+ *
+ * Administrators only. Returns the terms administrators added to the list by hand, and the terms they removed from it, each with who did it and when, oldest first.
+ */
+export const listHandTermsOptions = (options?: Options<ListHandTermsData>) => queryOptions<ListHandTermsResponse, ListHandTermsError, ListHandTermsResponse, ReturnType<typeof listHandTermsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listHandTerms({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listHandTermsQueryKey(options)
+});
+
+/**
+ * Add a search term by hand
+ *
+ * Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the next scans find it. 409 when the list has the term in that language, or had it and it was removed (put it back instead).
+ */
+export const addTermMutation = (options?: Partial<Options<AddTermData>>): UseMutationOptions<AddTermResponse, AddTermError, Options<AddTermData>> => {
+    const mutationOptions: UseMutationOptions<AddTermResponse, AddTermError, Options<AddTermData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await addTerm({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Put a removed search term back
+ *
+ * Administrators only. Puts a removed term back on the list. 404 when it was not removed.
+ */
+export const putBackTermMutation = (options?: Partial<Options<PutBackTermData>>): UseMutationOptions<PutBackTermResponse, PutBackTermError, Options<PutBackTermData>> => {
+    const mutationOptions: UseMutationOptions<PutBackTermResponse, PutBackTermError, Options<PutBackTermData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await putBackTerm({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Remove a search term
+ *
+ * Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or looked for until it is put back. The text matches without regard to case or accents. 404 when the list has no such term.
+ */
+export const removeTermMutation = (options?: Partial<Options<RemoveTermData>>): UseMutationOptions<RemoveTermResponse, RemoveTermError, Options<RemoveTermData>> => {
+    const mutationOptions: UseMutationOptions<RemoveTermResponse, RemoveTermError, Options<RemoveTermData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await removeTerm({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const listTermCandidatesQueryKey = (options?: Options<ListTermCandidatesData>) => createQueryKey('listTermCandidates', options);
 
 /**
@@ -440,6 +769,44 @@ export const startTermReviewMutation = (options?: Partial<Options<StartTermRevie
     const mutationOptions: UseMutationOptions<StartTermReviewResponse, StartTermReviewError, Options<StartTermReviewData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await startTermReview({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Switch the term review on or off
+ *
+ * Administrators only. On, the language model reviews the waiting candidates by itself every ten minutes; off, it reviews only when an administrator asks (startTermReview). A review that runs goes on until it ends or is stopped. The review is on until it is first switched off. Records who switched it. Returns the review's state.
+ */
+export const setTermReviewMutation = (options?: Partial<Options<SetTermReviewData>>): UseMutationOptions<SetTermReviewResponse, SetTermReviewError, Options<SetTermReviewData>> => {
+    const mutationOptions: UseMutationOptions<SetTermReviewResponse, SetTermReviewError, Options<SetTermReviewData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await setTermReview({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Stop the term review
+ *
+ * Administrators only. Stops the review of the waiting candidates that runs, after the batch it asks about, which it keeps, as it keeps every decision made before; a review asked for that has not started does not start. The review's state says it was stopped by hand (problem stopped). Whether the review is on does not change. 404 when no review runs or is asked for.
+ */
+export const stopTermReviewMutation = (options?: Partial<Options<StopTermReviewData>>): UseMutationOptions<StopTermReviewResponse, StopTermReviewError, Options<StopTermReviewData>> => {
+    const mutationOptions: UseMutationOptions<StopTermReviewResponse, StopTermReviewError, Options<StopTermReviewData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopTermReview({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -606,6 +973,65 @@ export const getPromptTestResultsOptions = (options?: Options<GetPromptTestResul
     queryKey: getPromptTestResultsQueryKey(options)
 });
 
+export const getPromptTestHistoryQueryKey = (options?: Options<GetPromptTestHistoryData>) => createQueryKey('getPromptTestHistory', options);
+
+/**
+ * Get the Prompt test's figures per run
+ *
+ * Returns the published Prompt sets, oldest first, and every one of the latest runs with at least one response read, oldest first: its Prompt set version, whether it is partial (it got fewer than half its responses) and, for a partial run, the reason most of its failed responses give, and the shares of the responses read that name Tribelt, overall, per language, and for Twente, with the share of web responses that cite tribelt.nl.
+ */
+export const getPromptTestHistoryOptions = (options?: Options<GetPromptTestHistoryData>) => queryOptions<GetPromptTestHistoryResponse, GetPromptTestHistoryError, GetPromptTestHistoryResponse, ReturnType<typeof getPromptTestHistoryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getPromptTestHistory({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getPromptTestHistoryQueryKey(options)
+});
+
+export const listPromptSetsQueryKey = (options?: Options<ListPromptSetsData>) => createQueryKey('listPromptSets', options);
+
+/**
+ * List the published Prompt sets
+ *
+ * Returns every published version of the Prompt set, newest first, each with when it was published, its note, and its questions in order: belt family, buyer intent, scope, and text, with an English translation when one is known. Also returns every scope a question can be asked in: a language, with or without a region.
+ */
+export const listPromptSetsOptions = (options?: Options<ListPromptSetsData>) => queryOptions<ListPromptSetsResponse, ListPromptSetsError, ListPromptSetsResponse, ReturnType<typeof listPromptSetsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listPromptSets({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listPromptSetsQueryKey(options)
+});
+
+/**
+ * Publish a draft as the next version of the Prompt set
+ *
+ * Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions in order, each keeping the id of the published question it keeps or getting a new one no version has used, and the new scopes it asks in (a language with or without a region). The note says what changed against the newest version, and from which version the draft was restored. The next Prompt run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or another publication took the number first; 422 when a question or scope cannot be asked.
+ */
+export const publishPromptSetMutation = (options?: Partial<Options<PublishPromptSetData>>): UseMutationOptions<PublishPromptSetResponse, PublishPromptSetError, Options<PublishPromptSetData>> => {
+    const mutationOptions: UseMutationOptions<PublishPromptSetResponse, PublishPromptSetError, Options<PublishPromptSetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await publishPromptSet({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const listPromptAnswersQueryKey = (options: Options<ListPromptAnswersData>) => createQueryKey('listPromptAnswers', options);
 
 /**
@@ -664,6 +1090,25 @@ export const retryPromptRunMutation = (options?: Partial<Options<RetryPromptRunD
     return mutationOptions;
 };
 
+/**
+ * Stop a running Prompt run
+ *
+ * Administrators only. Asks a running run to stop. The request is stored, so the instance running the run, whichever it is, stops it at its next heartbeat, within a minute: no question is asked after it, the responses so far are kept, and the run is recorded as stopped by hand. retryPromptRun finishes it, asking only the questions it did not get. 404 when no run with this id is running.
+ */
+export const stopPromptRunMutation = (options?: Partial<Options<StopPromptRunData>>): UseMutationOptions<StopPromptRunResponse, StopPromptRunError, Options<StopPromptRunData>> => {
+    const mutationOptions: UseMutationOptions<StopPromptRunResponse, StopPromptRunError, Options<StopPromptRunData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopPromptRun({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const getPromptRetryPlanQueryKey = (options: Options<GetPromptRetryPlanData>) => createQueryKey('getPromptRetryPlan', options);
 
 /**
@@ -702,6 +1147,26 @@ export const rereadPromptRunMutation = (options?: Partial<Options<RereadPromptRu
     };
     return mutationOptions;
 };
+
+export const getPromptModelCatalogueQueryKey = (options?: Options<GetPromptModelCatalogueData>) => createQueryKey('getPromptModelCatalogue', options);
+
+/**
+ * Every text model on OpenRouter, for the Model list
+ *
+ * Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest cheapest first. A model the latest run asked is priced by its responses, the others by their list price for a typical response with the web search fee. 422 without a working OpenRouter key.
+ */
+export const getPromptModelCatalogueOptions = (options?: Options<GetPromptModelCatalogueData>) => queryOptions<GetPromptModelCatalogueResponse, GetPromptModelCatalogueError, GetPromptModelCatalogueResponse, ReturnType<typeof getPromptModelCatalogueQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getPromptModelCatalogue({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getPromptModelCatalogueQueryKey(options)
+});
 
 export const getPromptTestSettingsQueryKey = (options?: Options<GetPromptTestSettingsData>) => createQueryKey('getPromptTestSettings', options);
 
@@ -781,6 +1246,83 @@ export const startCandidateReviewMutation = (options?: Partial<Options<StartCand
     return mutationOptions;
 };
 
+/**
+ * Stop Claude Haiku's review of the competitor candidates
+ *
+ * Administrators only. Stops the review of the competitor candidates that runs, after the step it is on (the merge, or a batch of checks), which it keeps, as it keeps every decision made before. The review's state says it was stopped by hand (problem stopped). 404 when no review runs.
+ */
+export const stopCandidateReviewMutation = (options?: Partial<Options<StopCandidateReviewData>>): UseMutationOptions<StopCandidateReviewResponse, StopCandidateReviewError, Options<StopCandidateReviewData>> => {
+    const mutationOptions: UseMutationOptions<StopCandidateReviewResponse, StopCandidateReviewError, Options<StopCandidateReviewData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopCandidateReview({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getCompetitorDefinitionQueryKey = (options?: Options<GetCompetitorDefinitionData>) => createQueryKey('getCompetitorDefinition', options);
+
+/**
+ * The competitor definition and its versions
+ *
+ * Administrators only. The definition of who competes with Tribelt that every check of a company is made against (the newest version), every version, newest first, and what checking again against it would take - the competitors on the list and the waiting candidates checked against an older version, and what checking them again should cost on the Anthropic key.
+ */
+export const getCompetitorDefinitionOptions = (options?: Options<GetCompetitorDefinitionData>) => queryOptions<GetCompetitorDefinitionResponse, GetCompetitorDefinitionError, GetCompetitorDefinitionResponse, ReturnType<typeof getCompetitorDefinitionQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getCompetitorDefinition({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getCompetitorDefinitionQueryKey(options)
+});
+
+/**
+ * Save the competitor definition as a new version
+ *
+ * Administrators only. Stores the text as a new version, which every check from now on is made against, and records who saved it. It starts no check - what was checked against an older version is checked again by the next check of the candidates or of the list (startCandidateReview, startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text is the one in use; 422 when it is empty or longer than 8,000 characters.
+ */
+export const saveCompetitorDefinitionMutation = (options?: Partial<Options<SaveCompetitorDefinitionData>>): UseMutationOptions<SaveCompetitorDefinitionResponse, SaveCompetitorDefinitionError, Options<SaveCompetitorDefinitionData>> => {
+    const mutationOptions: UseMutationOptions<SaveCompetitorDefinitionResponse, SaveCompetitorDefinitionError, Options<SaveCompetitorDefinitionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await saveCompetitorDefinition({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Restore a version of the competitor definition
+ *
+ * Administrators only. Saves the text of an older version as a new version, recording which it restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is the one in use.
+ */
+export const restoreCompetitorDefinitionMutation = (options?: Partial<Options<RestoreCompetitorDefinitionData>>): UseMutationOptions<RestoreCompetitorDefinitionResponse, RestoreCompetitorDefinitionError, Options<RestoreCompetitorDefinitionData>> => {
+    const mutationOptions: UseMutationOptions<RestoreCompetitorDefinitionResponse, RestoreCompetitorDefinitionError, Options<RestoreCompetitorDefinitionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await restoreCompetitorDefinition({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const listCompetitorChecksQueryKey = (options?: Options<ListCompetitorChecksData>) => createQueryKey('listCompetitorChecks', options);
 
 /**
@@ -810,6 +1352,25 @@ export const startCompetitorCheckMutation = (options?: Partial<Options<StartComp
     const mutationOptions: UseMutationOptions<StartCompetitorCheckResponse, StartCompetitorCheckError, Options<StartCompetitorCheckData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await startCompetitorCheck({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Stop Claude Haiku's check of the competitor list
+ *
+ * Administrators only. Stops the check of the companies on the competitor list that runs, after the batch it is on, which it keeps, as it keeps every company archived before. The check's state says it was stopped by hand (problem stopped). 404 when no check runs.
+ */
+export const stopCompetitorCheckMutation = (options?: Partial<Options<StopCompetitorCheckData>>): UseMutationOptions<StopCompetitorCheckResponse, StopCompetitorCheckError, Options<StopCompetitorCheckData>> => {
+    const mutationOptions: UseMutationOptions<StopCompetitorCheckResponse, StopCompetitorCheckError, Options<StopCompetitorCheckData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopCompetitorCheck({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -940,7 +1501,7 @@ export const getLlmSettingsQueryKey = (options?: Options<GetLlmSettingsData>) =>
 /**
  * Get the language-model settings
  *
- * Returns every credential (never a secret), the model product matching uses now, the token budget, and the latest 50 changes and tests, newest first.
+ * Returns every credential (never a secret), the model product matching uses now, the Anthropic key's monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and tests, newest first.
  */
 export const getLlmSettingsOptions = (options?: Options<GetLlmSettingsData>) => queryOptions<GetLlmSettingsResponse, GetLlmSettingsError, GetLlmSettingsResponse, ReturnType<typeof getLlmSettingsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1051,6 +1612,25 @@ export const getLlmKeyUsageOptions = (options: Options<GetLlmKeyUsageData>) => q
     },
     queryKey: getLlmKeyUsageQueryKey(options)
 });
+
+/**
+ * Set the Anthropic key's monthly budget
+ *
+ * Administrators only. Sets what every job a Claude model does may spend in a month together, in dollars, from one cent to $1,000, and records the change in the events. Work already spent past a lower budget stops at its next step and keeps what it did.
+ */
+export const updateLlmBudgetMutation = (options?: Partial<Options<UpdateLlmBudgetData>>): UseMutationOptions<UpdateLlmBudgetResponse, UpdateLlmBudgetError, Options<UpdateLlmBudgetData>> => {
+    const mutationOptions: UseMutationOptions<UpdateLlmBudgetResponse, UpdateLlmBudgetError, Options<UpdateLlmBudgetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateLlmBudget({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 /**
  * Turn product matching off

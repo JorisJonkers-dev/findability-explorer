@@ -120,8 +120,8 @@ func (q *Queries) AddAnalysisKeyword(ctx context.Context, arg AddAnalysisKeyword
 }
 
 const addAnalysisKnownTerm = `-- name: AddAnalysisKnownTerm :exec
-INSERT INTO analysis_known_terms (analysis_id, position, term, language, family, tier, occurrences, used_by_tribelt)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO analysis_known_terms (analysis_id, position, term, language, family, tier, occurrences, used_by_tribelt, pages)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type AddAnalysisKnownTermParams struct {
@@ -133,6 +133,7 @@ type AddAnalysisKnownTermParams struct {
 	Tier          string
 	Occurrences   int64
 	UsedByTribelt bool
+	Pages         []int64
 }
 
 func (q *Queries) AddAnalysisKnownTerm(ctx context.Context, arg AddAnalysisKnownTermParams) error {
@@ -145,14 +146,15 @@ func (q *Queries) AddAnalysisKnownTerm(ctx context.Context, arg AddAnalysisKnown
 		arg.Tier,
 		arg.Occurrences,
 		arg.UsedByTribelt,
+		arg.Pages,
 	)
 	return err
 }
 
 const addAnalysisPage = `-- name: AddAnalysisPage :exec
 WITH page AS (
-    INSERT INTO analysis_pages (analysis_id, position, url, title, description, language, word_count, family)
-    SELECT a.id, a.pages_crawled, $2, $3, $4, $5, $6, $7
+    INSERT INTO analysis_pages (analysis_id, position, url, title, description, language, word_count, family, body)
+    SELECT a.id, a.pages_crawled, $2, $3, $4, $5, $6, $7, $8
     FROM analyses AS a
     WHERE a.id = $1
 )
@@ -169,6 +171,7 @@ type AddAnalysisPageParams struct {
 	Language    string
 	WordCount   int64
 	Family      pgtype.Text
+	Body        string
 }
 
 func (q *Queries) AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams) error {
@@ -180,6 +183,7 @@ func (q *Queries) AddAnalysisPage(ctx context.Context, arg AddAnalysisPageParams
 		arg.Language,
 		arg.WordCount,
 		arg.Family,
+		arg.Body,
 	)
 	return err
 }
@@ -244,9 +248,10 @@ func (q *Queries) AddAnalysisReadiness(ctx context.Context, arg AddAnalysisReadi
 
 const addAnalysisReadinessFiles = `-- name: AddAnalysisReadinessFiles :exec
 INSERT INTO analysis_readiness_files (
-    analysis_id, robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated
+    analysis_id, robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated,
+    sitemap_url, sitemap_txt, sitemap_truncated
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
 
 type AddAnalysisReadinessFilesParams struct {
@@ -257,6 +262,9 @@ type AddAnalysisReadinessFilesParams struct {
 	LlmsTruncated     bool
 	LlmsFullTxt       string
 	LlmsFullTruncated bool
+	SitemapUrl        string
+	SitemapTxt        string
+	SitemapTruncated  bool
 }
 
 func (q *Queries) AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysisReadinessFilesParams) error {
@@ -268,6 +276,9 @@ func (q *Queries) AddAnalysisReadinessFiles(ctx context.Context, arg AddAnalysis
 		arg.LlmsTruncated,
 		arg.LlmsFullTxt,
 		arg.LlmsFullTruncated,
+		arg.SitemapUrl,
+		arg.SitemapTxt,
+		arg.SitemapTruncated,
 	)
 	return err
 }
@@ -302,6 +313,17 @@ func (q *Queries) AnalysisStatsByCompetitor(ctx context.Context) ([]AnalysisStat
 		return nil, err
 	}
 	return items, nil
+}
+
+const analysisStopRequested = `-- name: AnalysisStopRequested :one
+SELECT EXISTS (SELECT 1 FROM analyses WHERE id = $1 AND stop_requested_at IS NOT NULL)
+`
+
+func (q *Queries) AnalysisStopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, analysisStopRequested, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const candidateEvidence = `-- name: CandidateEvidence :many
@@ -578,7 +600,8 @@ func (q *Queries) GetAnalysisReadiness(ctx context.Context, analysisID uuid.UUID
 }
 
 const getAnalysisReadinessFiles = `-- name: GetAnalysisReadinessFiles :one
-SELECT robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated
+SELECT robots_txt, robots_truncated, llms_txt, llms_truncated, llms_full_txt, llms_full_truncated,
+    sitemap_url, sitemap_txt, sitemap_truncated
 FROM analysis_readiness_files
 WHERE analysis_id = $1
 `
@@ -590,6 +613,9 @@ type GetAnalysisReadinessFilesRow struct {
 	LlmsTruncated     bool
 	LlmsFullTxt       string
 	LlmsFullTruncated bool
+	SitemapUrl        string
+	SitemapTxt        string
+	SitemapTruncated  bool
 }
 
 func (q *Queries) GetAnalysisReadinessFiles(ctx context.Context, analysisID uuid.UUID) (GetAnalysisReadinessFilesRow, error) {
@@ -602,6 +628,9 @@ func (q *Queries) GetAnalysisReadinessFiles(ctx context.Context, analysisID uuid
 		&i.LlmsTruncated,
 		&i.LlmsFullTxt,
 		&i.LlmsFullTruncated,
+		&i.SitemapUrl,
+		&i.SitemapTxt,
+		&i.SitemapTruncated,
 	)
 	return i, err
 }
@@ -1174,7 +1203,7 @@ func (q *Queries) ListAnalysisKeywords(ctx context.Context, analysisID uuid.UUID
 }
 
 const listAnalysisKnownTerms = `-- name: ListAnalysisKnownTerms :many
-SELECT term, language, family, tier, occurrences, used_by_tribelt
+SELECT term, language, family, tier, occurrences, used_by_tribelt, pages
 FROM analysis_known_terms
 WHERE analysis_id = $1
 ORDER BY position
@@ -1187,6 +1216,7 @@ type ListAnalysisKnownTermsRow struct {
 	Tier          string
 	Occurrences   int64
 	UsedByTribelt bool
+	Pages         []int64
 }
 
 func (q *Queries) ListAnalysisKnownTerms(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisKnownTermsRow, error) {
@@ -1205,7 +1235,41 @@ func (q *Queries) ListAnalysisKnownTerms(ctx context.Context, analysisID uuid.UU
 			&i.Tier,
 			&i.Occurrences,
 			&i.UsedByTribelt,
+			&i.Pages,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAnalysisPageBodies = `-- name: ListAnalysisPageBodies :many
+SELECT url, body
+FROM analysis_pages
+WHERE analysis_id = $1 AND body <> ''
+ORDER BY position
+`
+
+type ListAnalysisPageBodiesRow struct {
+	Url  string
+	Body string
+}
+
+// The text a scan kept of its pages (only a scan of tribelt.nl keeps any), in their order.
+func (q *Queries) ListAnalysisPageBodies(ctx context.Context, analysisID uuid.UUID) ([]ListAnalysisPageBodiesRow, error) {
+	rows, err := q.db.Query(ctx, listAnalysisPageBodies, analysisID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAnalysisPageBodiesRow{}
+	for rows.Next() {
+		var i ListAnalysisPageBodiesRow
+		if err := rows.Scan(&i.Url, &i.Body); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1297,6 +1361,49 @@ func (q *Queries) QueuedAnalyses(ctx context.Context) ([]uuid.UUID, error) {
 	return items, nil
 }
 
+const requestAnalysesStop = `-- name: RequestAnalysesStop :many
+UPDATE analyses
+SET stop_requested_at = coalesce(stop_requested_at, $1)
+WHERE status = 'running'
+    AND ($2::boolean OR id = $3::uuid)
+    AND (NOT $4::boolean OR rescan)
+RETURNING id
+`
+
+type RequestAnalysesStopParams struct {
+	StoppedAt  pgtype.Timestamptz
+	AnyID      bool
+	ID         uuid.UUID
+	RescanOnly bool
+}
+
+// Asks the running scans a stop picks to stop, as StopQueuedAnalyses picks them; the first request
+// stays.
+func (q *Queries) RequestAnalysesStop(ctx context.Context, arg RequestAnalysesStopParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, requestAnalysesStop,
+		arg.StoppedAt,
+		arg.AnyID,
+		arg.ID,
+		arg.RescanOnly,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setAnalysisMatching = `-- name: SetAnalysisMatching :exec
 UPDATE analyses
 SET matching = $2, llm_input_tokens = $3, llm_output_tokens = $4, matching_model = $5
@@ -1343,35 +1450,184 @@ func (q *Queries) SetSitemapCoverage(ctx context.Context, arg SetSitemapCoverage
 	return result.RowsAffected(), nil
 }
 
+const stopQueuedAnalyses = `-- name: StopQueuedAnalyses :many
+UPDATE analyses
+SET status = 'failed', failure = $1, finished_at = $2,
+    stop_requested_at = $2
+WHERE status = 'queued'
+    AND ($3::boolean OR id = $4::uuid)
+    AND (NOT $5::boolean OR rescan)
+RETURNING id
+`
+
+type StopQueuedAnalysesParams struct {
+	Failure    pgtype.Text
+	StoppedAt  pgtype.Timestamptz
+	AnyID      bool
+	ID         uuid.UUID
+	RescanOnly bool
+}
+
+// Records the waiting scans a stop picks as stopped by hand: the one with id unless any_id is set,
+// and only the re-scans when rescan_only is set.
+func (q *Queries) StopQueuedAnalyses(ctx context.Context, arg StopQueuedAnalysesParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, stopQueuedAnalyses,
+		arg.Failure,
+		arg.StoppedAt,
+		arg.AnyID,
+		arg.ID,
+		arg.RescanOnly,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const termPages = `-- name: TermPages :many
+WITH latest AS (
+    SELECT DISTINCT ON (competitor_id) id, competitor_id
+    FROM analyses
+    WHERE competitor_id IS NOT NULL AND status = 'done'
+    ORDER BY competitor_id, created_at DESC, id
+)
+SELECT latest.competitor_id::text AS competitor_id,
+    coalesce(p.position, -1)::bigint AS page_position,
+    coalesce(p.url, '')::text AS url,
+    coalesce(p.title, '')::text AS title
+FROM latest
+JOIN analysis_known_terms AS k ON k.analysis_id = latest.id
+LEFT JOIN LATERAL unnest(k.pages) WITH ORDINALITY AS u (position, ord) ON true
+LEFT JOIN analysis_pages AS p ON p.analysis_id = latest.id AND p.position = u.position
+WHERE lower(k.term) = lower($1::text) AND k.language = $2::text
+ORDER BY latest.competitor_id, k.position, u.ord
+`
+
+type TermPagesParams struct {
+	Term     string
+	Language string
+}
+
+type TermPagesRow struct {
+	CompetitorID string
+	PagePosition int64
+	Url          string
+	Title        string
+}
+
+// The pages that use a term on each company's newest finished scan that found it, in the order
+// the scan recorded them; a scan that found it before scans recorded the pages gives one row
+// with page_position -1.
+func (q *Queries) TermPages(ctx context.Context, arg TermPagesParams) ([]TermPagesRow, error) {
+	rows, err := q.db.Query(ctx, termPages, arg.Term, arg.Language)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TermPagesRow{}
+	for rows.Next() {
+		var i TermPagesRow
+		if err := rows.Scan(
+			&i.CompetitorID,
+			&i.PagePosition,
+			&i.Url,
+			&i.Title,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const tokensPerMatchedScan = `-- name: TokensPerMatchedScan :one
 SELECT count(*)::bigint AS scans,
-    coalesce(round(avg(llm_input_tokens + llm_output_tokens)), 0)::bigint AS average
+    coalesce(round(avg(llm_input_tokens)), 0)::bigint AS average_input,
+    coalesce(round(avg(llm_output_tokens)), 0)::bigint AS average_output
 FROM analyses
 WHERE matching = 'done' AND llm_input_tokens + llm_output_tokens > 0
 `
 
 type TokensPerMatchedScanRow struct {
-	Scans   int64
-	Average int64
+	Scans         int64
+	AverageInput  int64
+	AverageOutput int64
 }
 
-// How many scans the language model answered for, and the tokens one of them used on average.
+// How many scans the language model answered for, and the tokens in and out one of them used on average.
 func (q *Queries) TokensPerMatchedScan(ctx context.Context) (TokensPerMatchedScanRow, error) {
 	row := q.db.QueryRow(ctx, tokensPerMatchedScan)
 	var i TokensPerMatchedScanRow
-	err := row.Scan(&i.Scans, &i.Average)
+	err := row.Scan(&i.Scans, &i.AverageInput, &i.AverageOutput)
 	return i, err
 }
 
 const tokensSince = `-- name: TokensSince :one
-SELECT coalesce(sum(llm_input_tokens + llm_output_tokens), 0)::bigint
+SELECT coalesce(sum(llm_input_tokens), 0)::bigint AS input, coalesce(sum(llm_output_tokens), 0)::bigint AS output
 FROM analyses
 WHERE created_at >= $1
 `
 
-func (q *Queries) TokensSince(ctx context.Context, createdAt time.Time) (int64, error) {
+type TokensSinceRow struct {
+	Input  int64
+	Output int64
+}
+
+// The language-model tokens in and out of analyses created since a moment.
+func (q *Queries) TokensSince(ctx context.Context, createdAt time.Time) (TokensSinceRow, error) {
 	row := q.db.QueryRow(ctx, tokensSince, createdAt)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
+	var i TokensSinceRow
+	err := row.Scan(&i.Input, &i.Output)
+	return i, err
+}
+
+const tokensSinceByModel = `-- name: TokensSinceByModel :many
+SELECT coalesce(matching_model, '')::text AS model,
+    coalesce(sum(llm_input_tokens), 0)::bigint AS input, coalesce(sum(llm_output_tokens), 0)::bigint AS output
+FROM analyses
+WHERE created_at >= $1 AND llm_input_tokens + llm_output_tokens > 0
+GROUP BY 1
+ORDER BY 1
+`
+
+type TokensSinceByModelRow struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// The language-model tokens in and out of analyses created since a moment, per model that matched.
+func (q *Queries) TokensSinceByModel(ctx context.Context, createdAt time.Time) ([]TokensSinceByModelRow, error) {
+	rows, err := q.db.Query(ctx, tokensSinceByModel, createdAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TokensSinceByModelRow{}
+	for rows.Next() {
+		var i TokensSinceByModelRow
+		if err := rows.Scan(&i.Model, &i.Input, &i.Output); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

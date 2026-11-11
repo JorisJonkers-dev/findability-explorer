@@ -3,9 +3,12 @@ import { vScrollHint } from '../../../shared/scrollHint'
 import { RouterLink } from 'vue-router'
 import type { AnalysisSummary } from '../../../infrastructure/api/types.gen'
 import SectionHeading from '../../../shared/ui/SectionHeading.vue'
+import { useMe } from '../../shell/composables/useMe'
 import { scanDate, scanModel, scanName, scanPages, scanState } from '../domain/history'
 
 defineProps<{ scans: readonly AnalysisSummary[]; companyId: string }>()
+// A scan's own page is in Manage, so only an administrator is offered it.
+const { isAdmin } = useMe()
 </script>
 
 <template>
@@ -16,9 +19,10 @@ defineProps<{ scans: readonly AnalysisSummary[]; companyId: string }>()
       <li v-for="scan in scans" :key="scan.id" class="relative flex gap-4 pb-5">
         <span aria-hidden="true" class="mt-1.5 size-3.5 flex-none rounded-full" :class="scan.status === 'done' ? 'bg-orange' : 'bg-silver'"></span>
         <div class="flex flex-col gap-0.5">
-          <RouterLink :to="{ path: `/scan/${scan.id}`, query: { company: companyId } }" class="font-semibold">
+          <RouterLink v-if="isAdmin" :to="{ path: `/manage/scans/${scan.id}`, query: { company: companyId } }" class="font-semibold">
             {{ scanName(scan) }}<span class="sr-only">, {{ scanState(scan) }}</span>
           </RouterLink>
+          <span v-else class="font-semibold">{{ scanName(scan) }}<span class="sr-only">, {{ scanState(scan) }}</span></span>
           <span class="text-sm text-ink-2">{{ scanDate(scan) }}. {{ scanState(scan) }}. {{ scanPages(scan) }}.</span>
           <span class="text-sm text-muted">{{ scanModel(scan) }}</span>
         </div>

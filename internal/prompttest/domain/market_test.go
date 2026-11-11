@@ -10,15 +10,12 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
 
-func TestTheTargetMarketSaysWhoCompetes(t *testing.T) {
-	market := domain.TargetMarket
-	for _, want := range []string{"eyelink", "1,150 °C", "spiral freezers", "A competitor makes metal conveyor belts", "plastic modular belts", "distributor"} {
-		if !strings.Contains(market, want) {
-			t.Errorf("the target market lacks %q", want)
-		}
-	}
-	if domain.CheckVersion < 2 || domain.ModelDecider != "language model" {
-		t.Errorf("version %d, decider %q", domain.CheckVersion, domain.ModelDecider)
+// checkVersion is the competitor definition in use in these tests: the first stored version.
+const checkVersion = 2
+
+func TestTheLanguageModelDecidesAsTheLanguageModel(t *testing.T) {
+	if domain.ModelDecider != "language model" {
+		t.Errorf("decider %q", domain.ModelDecider)
 	}
 }
 

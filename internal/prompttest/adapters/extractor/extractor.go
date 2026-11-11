@@ -10,20 +10,15 @@ import (
 	"fmt"
 	"strings"
 
+	claudestep "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/domain"
 	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
 )
 
-// System tells the extractor how to read an answer.
-const System = `You read an AI assistant's answer to a buyer's question about metal conveyor belts and report, in the JSON schema given, exactly what it says:
-- companies: every company the answer names as a maker or supplier, in the order it first names them, with the web address it gives for that company ("" when none).
-- addresses: every web address the answer cites or links to.
-- namesTribelt: whether it names Tribelt (Tribelt B.V.).
-- citesTribelt: whether it cites or links a Tribelt web address.
-- correctness: when it names Tribelt, whether what it says about Tribelt agrees with the fact sheet: "correct", "partly" (some of it wrong) or "wrong"; "none" when it does not name Tribelt.
-- wrongClaims: each claim about Tribelt the fact sheet contradicts, quoted from the answer; empty when there is none.
-Report only what the answer says. Do not add companies it does not name.`
+// System tells the extractor how to read a response: the instructions of the Claude step reading
+// responses, set in the code so every run is read the same way (ADR-0004, ADR-0021).
+const System = claudestep.ReadingInstructions
 
 // SchemaName names the strict format.
 const SchemaName = "answer_reading"
@@ -33,7 +28,7 @@ func Schema() map[string]any {
 	str := map[string]any{"type": "string"}
 	return map[string]any{
 		"type": "object", "additionalProperties": false,
-		"required": []string{"companies", "addresses", "namesTribelt", "citesTribelt", "correctness", "wrongClaims"},
+		"required": []string{"companies", "addresses", "namesTribelt", "citesTribelt", "correctness", "wrongClaims", "leftOut"},
 		"properties": map[string]any{
 			"companies": map[string]any{"type": "array", "items": map[string]any{
 				"type": "object", "additionalProperties": false, "required": []string{"name", "url"},
@@ -44,16 +39,17 @@ func Schema() map[string]any {
 			"citesTribelt": map[string]any{"type": "boolean"},
 			"correctness":  map[string]any{"type": "string", "enum": []string{"none", "correct", "partly", "wrong"}},
 			"wrongClaims":  map[string]any{"type": "array", "items": str},
+			"leftOut":      map[string]any{"type": "array", "items": str},
 		},
 	}
 }
 
-// User is what the extractor is given to read: the fact sheet, the question, the answer and its
+// User is what the extractor is given to read: the fact sheet, the question, the response and its
 // cited sources.
 func User(in app.ExtractInput) string {
-	user := "Fact sheet about Tribelt:\n" + in.FactSheet + "\n\nThe buyer's question:\n" + in.Prompt + "\n\nThe answer:\n" + in.Answer
+	user := "Fact sheet about Tribelt:\n" + in.FactSheet + "\n\nThe buyer's question:\n" + in.Prompt + "\n\nThe response:\n" + in.Answer
 	if len(in.Citations) > 0 {
-		user += "\n\nThe answer's cited sources:\n" + strings.Join(in.Citations, "\n")
+		user += "\n\nThe response's cited sources:\n" + strings.Join(in.Citations, "\n")
 	}
 	return user
 }
@@ -79,9 +75,12 @@ func Parse(text string) (domain.Extracted, error) {
 		CitesTribelt bool     `json:"citesTribelt"`
 		Correctness  string   `json:"correctness"`
 		WrongClaims  []string `json:"wrongClaims"`
+		// LeftOut is absent from a reply in the format before wrong claims and facts left out
+		// were told apart.
+		LeftOut []string `json:"leftOut"`
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), &raw); err != nil {
-		return domain.Extracted{}, fmt.Errorf("the extractor's answer is not the format asked: %w", err)
+		return domain.Extracted{}, fmt.Errorf("the extractor's response is not the format asked: %w", err)
 	}
 	x := domain.Extracted{NamesTribelt: raw.NamesTribelt, CitesTribelt: raw.CitesTribelt}
 	for _, co := range raw.Companies[:min(len(raw.Companies), maxCompanies)] {
@@ -99,6 +98,9 @@ func Parse(text string) (domain.Extracted, error) {
 	}
 	for _, claim := range raw.WrongClaims[:min(len(raw.WrongClaims), maxClaims)] {
 		x.WrongClaims = append(x.WrongClaims, clip(claim, maxText))
+	}
+	for _, fact := range raw.LeftOut[:min(len(raw.LeftOut), maxClaims)] {
+		x.LeftOut = append(x.LeftOut, clip(fact, maxText))
 	}
 	return x, nil
 }
@@ -119,16 +121,16 @@ func New(client llm.Client, model string) *Extractor {
 	return &Extractor{client: client, model: model}
 }
 
-// Extract has Haiku read an answer in the strict format. What it used is priced at Haiku's list
-// price (domain.HaikuPrice), also when the reading failed; an answer to read is far shorter than
-// the 100,000 tokens that price holds for.
+// Extract has the reading model read an answer in the strict format. What it used is priced at the
+// model's list price (domain.ClaudePrice), also when the reading failed; an answer to read is far
+// shorter than the 100,000 tokens that price holds for.
 func (e *Extractor) Extract(ctx context.Context, in app.ExtractInput) (domain.Extracted, domain.Reply, error) {
 	resp, err := e.client.Complete(ctx, llm.Prompt{
 		Model: e.model, System: System, User: User(in), SchemaName: SchemaName, Schema: Schema(), MaxTokens: maxTokens,
 	})
 	usage := domain.Reply{
 		InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens,
-		Cost: domain.HaikuPrice().Of(resp.InputTokens, resp.OutputTokens),
+		Cost: domain.ClaudePrice(e.model).Of(resp.InputTokens, resp.OutputTokens),
 	}
 	if err != nil {
 		return domain.Extracted{}, usage, err

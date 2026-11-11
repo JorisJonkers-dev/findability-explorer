@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,25 +14,39 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 // promptTests is a stand-in for the prompt-test use cases, so these tests exercise the contract.
 type promptTests struct {
-	err       error
-	retryErr  error
-	retried   *domain.TaskKey
-	reread    *domain.TaskKey
-	planErr   error
-	startErr  error
-	updateErr error
-	decideErr error
-	decided   domain.CandidateStatus
-	reviewing bool
-	checking  bool
-	problem   app.ReviewProblem
-	change    app.Change
-	actor     string
-	filter    app.AnswerFilter
+	err        error
+	retryErr   error
+	retried    *domain.TaskKey
+	reread     *domain.TaskKey
+	planErr    error
+	startErr   error
+	updateErr  error
+	decideErr  error
+	decided    domain.CandidateStatus
+	reviewing  bool
+	checking   bool
+	problem    app.ReviewProblem
+	change     app.Change
+	actor      string
+	filter     app.AnswerFilter
+	stopErr    error
+	stopped    uuid.UUID
+	historyErr error
+	setsErr    error
+	catalogErr error
+	// draft is the draft published; publishErr makes publishing fail.
+	draft      domain.Draft
+	publishErr error
+	// workStops are the reviews and checks stopped; workStopErr makes their stops fail.
+	workStops   []string
+	workStopErr error
+	// definitions stands in for the competitor definition's use cases; a fresh one when nil.
+	definitions *definitions
 }
 
 func (a *analyses) prompts() *promptTests {
@@ -54,7 +71,7 @@ func promptRun() domain.Run {
 }
 
 func promptAnswers() []domain.Answer {
-	set := domain.CurrentPromptSet()
+	set := domaintest.Version2().PromptSet()
 	return []domain.Answer{
 		{
 			ID: uuid.New(), RunID: runID, Prompt: set.Prompts[0], PromptSetVersion: 1, Provider: "google", Model: "google/gemini", Mode: domain.ModeWeb,
@@ -63,7 +80,8 @@ func promptAnswers() []domain.Answer {
 				Companies:    []domain.Company{{Name: "Tribelt", CompetitorID: "tribelt", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
 				Addresses:    []string{"https://www.tribelt.nl/"},
 				NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."}, Cost: 500_000,
-				InputTokens: 300, OutputTokens: 20,
+				LeftOut: []string{"Tribelt makes eyelink belts to measure."}, InputTokens: 300, OutputTokens: 20,
+				Model: "anthropic: claude-sonnet-5-5",
 			},
 		},
 		{ID: uuid.New(), RunID: runID, Prompt: set.Prompts[1], PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeKnowledge, Failure: "Rate limited.", At: answered},
@@ -73,9 +91,10 @@ func promptAnswers() []domain.Answer {
 func (p *promptTests) Results(context.Context) (app.Results, error) {
 	answers := promptAnswers()
 	return app.Results{
-		Runs:        []app.RunResult{{Run: promptRun(), Progress: domain.Progressed(answers, promptRun().Models), Cells: domain.Cells(answers)}},
-		Mentions:    []app.NamedMention{{Mention: domain.Mentions(answers)[0], Name: "Tribelt B.V.", Role: domain.RoleTribelt, Share: 0.5}},
-		WrongClaims: domain.WrongClaims(answers),
+		PromptSetVersion: 3,
+		Runs:             []app.RunResult{{Run: promptRun(), Progress: domain.Progressed(answers, promptRun().Models), Cells: domain.Cells(answers)}},
+		Mentions:         []app.NamedMention{{Mention: domain.Mentions(answers)[0], Name: "Tribelt B.V.", Role: domain.RoleTribelt, Share: 0.5}},
+		WrongClaims:      domain.WrongClaims(answers),
 	}, p.err
 }
 
@@ -125,13 +144,65 @@ func (p *promptTests) RetryPlan(_ context.Context, id uuid.UUID) (app.Plan, erro
 	}, p.planErr
 }
 
+func (p *promptTests) StopRun(_ context.Context, actor string, id uuid.UUID) error {
+	if id != runID {
+		return domain.ErrNotFound
+	}
+	p.actor, p.stopped = actor, id
+	return p.stopErr
+}
+
+// partialID is the run the history gives as partial.
+var partialID = uuid.MustParse("0c9d8e7f-6a5b-4c3d-9e2f-1a0b9c8d7e6f")
+
+func (p *promptTests) PromptSets(context.Context) (app.PromptSets, error) {
+	v1 := domain.PublishedSet{
+		Version: 1, PublishedAt: time.Date(2026, 10, 26, 15, 4, 51, 0, time.UTC), PublishedBy: "import", Note: "The first.",
+		Questions: []domain.Question{{
+			ID: "eyelink-supplier-germany", Family: domain.FamilyEyelink, Intent: domain.IntentProduct,
+			Scope: domaintest.Scope(domain.ScopeGermany), Text: "Welche Firmen liefern Drahtösengliederbänder?",
+		}},
+	}
+	return app.PromptSets{Sets: []domain.PublishedSet{domaintest.Version2(), v1}, Scopes: domaintest.Scopes()}, p.setsErr
+}
+
+func (p *promptTests) Publish(_ context.Context, actor string, d domain.Draft) (domain.PublishedSet, error) {
+	p.actor, p.draft = actor, d
+	if p.publishErr != nil {
+		return domain.PublishedSet{}, p.publishErr
+	}
+	set := domain.PublishedSet{Version: 3, PublishedAt: answered, PublishedBy: actor, Note: "Adds 1 question, changes none, and removes none."}
+	for _, q := range d.Questions {
+		scope := domain.ScopeInfo{ID: q.Scope, Language: "fr", Region: "Lyon", Name: "French, Lyon"}
+		set.Questions = append(set.Questions, domain.Question{ID: "eyelink-application-fr-lyon", Family: q.Family, Intent: q.Intent, Scope: scope, Text: q.Text})
+	}
+	return set, nil
+}
+
+func (p *promptTests) History(context.Context) (app.HistoryView, error) {
+	share := func(v float64) *float64 { return &v }
+	v2 := domaintest.Version2()
+	return app.HistoryView{
+		Versions: domain.VersionsOf([]domain.PublishedSet{v2, {Version: 1, PublishedAt: v2.PublishedAt.Add(-time.Hour), Note: "The first.", Questions: make([]domain.Question, 90)}}),
+		Runs: []domain.RunFigures{
+			{RunID: partialID, StartedAt: answered.Add(-48 * time.Hour), Version: 1, Tasks: 1260, Answered: 62, Read: 47, Partial: true, All: share(0.4), Dutch: share(0.4), ReadingModel: "google/gemini-2.5-flash-lite"},
+			{
+				RunID: runID, StartedAt: answered, Version: 2, Tasks: 200, Answered: 196, Read: 194, Models: []string{"openai/gpt-oss-20b"},
+				All: share(0.25), Dutch: share(0.3), German: share(0.2), English: share(0.1), Twente: share(0.5), Citation: share(0.35),
+			},
+		},
+		FailureOf: map[uuid.UUID]string{partialID: "OpenRouter answered 401: User not found."},
+	}, p.historyErr
+}
+
 func view() app.View {
 	s := domain.DefaultSettings(answered)
 	s.CredentialID = "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f"
 	s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt = "joris", answered
+	s.Models = []string{"google/gemma:free"}
 	models := []domain.ModelChoice{{Provider: "google", Model: "google/gemma:free", Free: true, Fallback: "google/gemini"}}
 	return app.View{
-		Settings: s, PromptSet: domain.CurrentPromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000,
+		Settings: s, PromptSet: domaintest.Version2().PromptSet(), ExtractorModel: domain.ExtractorModel, SpentThisMonth: 2_500_000,
 		Models: models, KeyWorks: true,
 		Prices: domain.PricesFromRun([]domain.Answer{{Provider: "google", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 1000}}}, models, 20, domain.CadenceWeekly, 10_000_000, nil),
 	}
@@ -142,6 +213,42 @@ func (p *promptTests) Settings(context.Context) (app.View, error) { return view(
 func (p *promptTests) Update(_ context.Context, actor string, ch app.Change) (app.View, error) {
 	p.actor, p.change = actor, ch
 	return view(), p.updateErr
+}
+
+func (p *promptTests) Catalogue(context.Context) (app.CatalogueView, error) {
+	listed := domain.CatalogueModel{ID: "openai/gpt-oss-20b", Name: "OpenAI: gpt-oss-20b", Created: answered, PromptPrice: 0.00000003, CompletionPrice: 0.00000014, InputModalities: []string{"text"}, OutputModalities: []string{"text"}}
+	unlisted := domain.CatalogueModel{ID: "qwen/qwen3:free", Name: "Qwen3 (free)", InputModalities: []string{"text"}, OutputModalities: []string{"text"}}
+	return app.CatalogueView{ReadAt: answered, Questions: 20, Entries: domain.Catalogue([]domain.CatalogueModel{unlisted, listed}, nil)}, p.catalogErr
+}
+
+func TestThePromptModelCatalogueIsForAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	const path = "/api/v1/admin/prompt-test/catalogue"
+	if r := callAs(t, srv, http.MethodGet, path, "", "tester"); r.code != http.StatusForbidden {
+		t.Errorf("a viewer read the catalogue: %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodGet, path, "", "admin")
+	if r.code != http.StatusOK || r.body["readAt"] != "2026-11-01T06:10:00Z" || r.body["questions"].(float64) != 20 {
+		t.Fatalf("catalogue = %d %v", r.code, r.body)
+	}
+	models := r.body["models"].([]any)
+	first, second := models[0].(map[string]any), models[1].(map[string]any)
+	if first["id"] != "openai/gpt-oss-20b" || first["recommended"] != true || first["provider"] != "openai" || first["listedAt"] != "2026-11-01T06:10:00Z" ||
+		first["basis"] != "catalogue" || first["free"] != false || first["knowledgeUsd"].(float64) != 0.000135 || first["webUsd"].(float64) != 0.020135 {
+		t.Errorf("first = %v", first)
+	}
+	if second["id"] != "qwen/qwen3:free" || second["recommended"] != false || second["free"] != true || second["listedAt"] != nil {
+		t.Errorf("second = %v", second)
+	}
+	a.prompts().catalogErr = domain.ErrNoKey
+	if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusUnprocessableEntity {
+		t.Errorf("no key: %d %v", r.code, r.body)
+	}
+	a.prompts().catalogErr = errors.New("down")
+	if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("failing: %d", r.code)
+	}
 }
 
 func candidate() domain.Candidate {
@@ -164,7 +271,7 @@ func (p *promptTests) DecideMany(_ context.Context, actor string, status domain.
 	p.actor, p.decided = actor, status
 	return []app.Decided{
 		{ID: ids[0], Name: "Ashworth", Outcome: app.OutcomeDone},
-		{ID: "3a7bd3e2360a9f02", Outcome: app.OutcomeSkipped, Reason: "the answers gave no website for it"},
+		{ID: "3a7bd3e2360a9f02", Outcome: app.OutcomeSkipped, Reason: "the responses gave no website for it"},
 	}, p.decideErr
 }
 
@@ -184,8 +291,8 @@ func (p *promptTests) ReviewState() app.ReviewState {
 
 func (p *promptTests) ListChecks(context.Context) ([]domain.ListCheck, int, error) {
 	return []domain.ListCheck{
-		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting for quarries.", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: answered},
-		{CompanyID: "intralox", Competitor: true, Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: answered},
+		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting for quarries.", Model: "anthropic: claude-haiku-5-5", Version: 2, At: answered},
+		{CompanyID: "intralox", Competitor: true, Model: "anthropic: claude-haiku-5-5", Version: 2, At: answered},
 	}, 3, p.err
 }
 
@@ -221,7 +328,7 @@ func TestPromptTestResultsAreForEveryoneSignedIn(t *testing.T) {
 	srv := serve(t, a)
 	r := callAs(t, srv, http.MethodGet, "/api/v1/prompt-test", "", "tester")
 	runs, _ := r.body["runs"].([]any)
-	if r.code != http.StatusOK || len(runs) != 1 || r.body["promptSetVersion"].(float64) != domain.PromptSetVersion {
+	if r.code != http.StatusOK || len(runs) != 1 || r.body["promptSetVersion"].(float64) != 3 {
 		t.Fatalf("results = %d %v", r.code, r.body)
 	}
 	run := runs[0].(map[string]any)
@@ -233,8 +340,10 @@ func TestPromptTestResultsAreForEveryoneSignedIn(t *testing.T) {
 	if mention["name"] != "Tribelt B.V." || mention["role"] != "tribelt" || mention["averagePosition"].(float64) != 1 || mention["share"].(float64) != 0.5 {
 		t.Errorf("mention = %v", mention)
 	}
-	if claim := r.body["wrongClaims"].([]any)[0].(map[string]any); claim["claim"] != "Tribelt is in Hengelo." || claim["correctness"] != "wrong" {
-		t.Errorf("claim = %v", claim)
+	// Only the claims wrong about Tribelt are listed; the facts a response left out are not.
+	if claims := r.body["wrongClaims"].([]any); len(claims) != 1 || claims[0].(map[string]any)["claim"] != "Tribelt is in Hengelo." ||
+		claims[0].(map[string]any)["correctness"] != "wrong" {
+		t.Errorf("claims = %v", claims)
 	}
 	a.prompts().err = errors.New("down")
 	if r := callAs(t, srv, http.MethodGet, "/api/v1/prompt-test", "", "tester"); r.code != http.StatusInternalServerError {
@@ -258,6 +367,15 @@ func TestPromptAnswersFilterAndRead(t *testing.T) {
 	}
 	if second := items[1].(map[string]any); second["failure"] != "Rate limited." || second["extraction"] != nil {
 		t.Errorf("failed answer = %v", second)
+	}
+	// One response says which model read it.
+	if x["readBy"] != "Claude Sonnet 5.5" {
+		t.Errorf("read by %v", x["readBy"])
+	}
+	// One response shows what it got wrong about Tribelt apart from what it left out.
+	if wrong, left := x["wrongClaims"].([]any), x["leftOut"].([]any); len(wrong) != 1 || wrong[0] != "Tribelt is in Hengelo." ||
+		len(left) != 1 || left[0] != "Tribelt makes eyelink belts to measure." {
+		t.Errorf("wrong %v, left out %v", x["wrongClaims"], x["leftOut"])
 	}
 	callAs(t, srv, http.MethodGet, "/api/v1/prompt-runs/"+runID.String()+"/answers?provider=google&scope=twente&family=eyelink&mode=knowledge", "", "tester")
 	if f := a.prompts().filter; f != (app.AnswerFilter{Provider: "google", Scope: domain.ScopeTwente, Family: domain.FamilyEyelink, Mode: domain.ModeKnowledge}) {
@@ -305,7 +423,7 @@ func TestPromptTestSettings(t *testing.T) {
 	if r.code != http.StatusOK || r.body["monthlyBudgetUsd"].(float64) != 10 || r.body["spentThisMonthUsd"].(float64) != 2.5 ||
 		len(r.body["promptSet"].(map[string]any)["prompts"].([]any)) != 20 || r.body["factSheet"].(map[string]any)["updatedBy"] != "joris" ||
 		r.body["credentialId"] != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" || r.body["keyWorks"] != true ||
-		r.body["models"].([]any)[0].(map[string]any)["fallback"] != "google/gemini" {
+		r.body["models"].([]any)[0].(map[string]any)["fallback"] != "google/gemini" || r.body["modelList"].([]any)[0] != "google/gemma:free" {
 		t.Fatalf("settings = %d %v", r.code, r.body)
 	}
 	prices := r.body["prices"].(map[string]any)
@@ -314,12 +432,13 @@ func TestPromptTestSettings(t *testing.T) {
 		provider["knowledgeUsd"].(float64) != 0.001 || provider["fallback"] != "google/gemini" {
 		t.Errorf("prices = %v", prices)
 	}
-	body := `{"credentialId":"3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f","providers":["openai"],"monthlyBudgetUsd":12.5,"cadence":"weekly","factSheet":"Tribelt makes belts in Haaksbergen."}`
+	body := `{"credentialId":"3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f","providers":["openai"],"models":["openai/gpt-oss-20b"],"monthlyBudgetUsd":12.5,"cadence":"weekly","factSheet":"Tribelt makes belts in Haaksbergen."}`
 	if r := callAs(t, srv, http.MethodPatch, "/api/v1/admin/prompt-test", body, "admin"); r.code != http.StatusOK {
 		t.Fatalf("update = %d %v", r.code, r.body)
 	}
 	ch := a.prompts().change
-	if *ch.CredentialID != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" || *ch.Budget != 12_500_000 || *ch.Cadence != "weekly" || *ch.FactSheet == "" || ch.Providers[0] != "openai" {
+	if *ch.CredentialID != "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f" || *ch.Budget != 12_500_000 || *ch.Cadence != "weekly" || *ch.FactSheet == "" || ch.Providers[0] != "openai" ||
+		!slices.Equal(ch.Models, []string{"openai/gpt-oss-20b"}) {
 		t.Errorf("change = %+v", ch)
 	}
 	a.prompts().updateErr = errors.Join(domain.ErrInvalid, errors.New("invalid: a month's budget is more than $0"))
@@ -415,7 +534,7 @@ func TestCandidatesFoldReviewAndAreDecidedTogether(t *testing.T) {
 	r = callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"add","ids":["3a7bd3e2360a9f01","3a7bd3e2360a9f02"]}`, "admin")
 	items := r.body["items"].([]any)
 	if r.code != http.StatusOK || a.prompts().decided != domain.CandidateAdded || len(items) != 2 ||
-		items[0].(map[string]any)["outcome"] != "done" || items[1].(map[string]any)["reason"] != "The answers gave no website for it." {
+		items[0].(map[string]any)["outcome"] != "done" || items[1].(map[string]any)["reason"] != "The responses gave no website for it." {
 		t.Fatalf("decide = %d %v", r.code, r.body)
 	}
 	if r := callAs(t, srv, http.MethodPost, base+"/decisions", `{"action":"dismiss","ids":["3a7bd3e2360a9f01"]}`, "admin"); r.code != http.StatusOK || a.prompts().decided != domain.CandidateDismissed {
@@ -556,5 +675,164 @@ func TestThePlanOfAskingAgainIsForAdministrators(t *testing.T) {
 	a.prompts().planErr = errors.New("broken")
 	if r := callAs(t, srv, http.MethodGet, path, "", "admin"); r.code != http.StatusInternalServerError {
 		t.Errorf("a failing plan = %d", r.code)
+	}
+}
+
+func TestAnAdministratorStopsARunningRun(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	path := "/api/v1/admin/prompt-runs/" + runID.String() + "/stop"
+	if r := callAs(t, srv, http.MethodPost, path, "", "tester"); r.code != http.StatusForbidden || a.prompts().stopped != uuid.Nil {
+		t.Errorf("a viewer stopped the run: %d", r.code)
+	}
+	if r := callAs(t, srv, http.MethodPost, path, "", "admin"); r.code != http.StatusNoContent || a.prompts().stopped != runID || a.prompts().actor == "" {
+		t.Errorf("stop = %d, stopped %v by %q", r.code, a.prompts().stopped, a.prompts().actor)
+	}
+	r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-runs/"+uuid.NewString()+"/stop", "", "admin")
+	if r.code != http.StatusNotFound || r.body["detail"] != "No Prompt run with this id is running." {
+		t.Errorf("stopping a run that is not running = %d %v", r.code, r.body)
+	}
+	a.prompts().stopErr = errors.New("broken")
+	if r := callAs(t, srv, http.MethodPost, path, "", "admin"); r.code != http.StatusInternalServerError {
+		t.Errorf("a failing stop = %d", r.code)
+	}
+}
+
+func TestEverySignedInAccountReadsThePromptTestHistory(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/history", "", false); r.code != http.StatusUnauthorized {
+		t.Errorf("without a session = %d", r.code)
+	}
+	r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/history", "", true)
+	versions, _ := r.body["versions"].([]any)
+	runs, _ := r.body["runs"].([]any)
+	if r.code != http.StatusOK || len(versions) != 2 || len(runs) != 2 {
+		t.Fatalf("history = %d %v", r.code, r.body)
+	}
+	v := versions[1].(map[string]any)
+	if v["version"].(float64) != 2 || v["publishedAt"] != "2026-10-27T06:35:33Z" || v["questions"].(float64) != 20 || v["note"] == "" {
+		t.Errorf("version 2 = %v", v)
+	}
+	partial, full := runs[0].(map[string]any), runs[1].(map[string]any)
+	if full["models"].([]any)[0] != "openai/gpt-oss-20b" || partial["models"] != nil {
+		t.Errorf("models = %v, %v", full["models"], partial["models"])
+	}
+	if partial["runId"] != partialID.String() || partial["partial"] != true || partial["promptSetVersion"].(float64) != 1 || partial["tasks"].(float64) != 1260 ||
+		partial["answered"].(float64) != 62 || partial["read"].(float64) != 47 || partial["failure"] != "OpenRouter answered 401: User not found." ||
+		partial["all"].(float64) != 0.4 || partial["dutch"].(float64) != 0.4 {
+		t.Errorf("partial run = %v", partial)
+	}
+	// Each run says which model read it, so a change of reader breaks the charts.
+	if partial["readingModel"] != "google/gemini-2.5-flash-lite" {
+		t.Errorf("read by %v", partial["readingModel"])
+	}
+	if _, ok := full["readingModel"]; ok {
+		t.Errorf("a run whose readings recorded no model names one: %v", full["readingModel"])
+	}
+	for _, k := range []string{"german", "english", "twente", "citation"} {
+		if _, ok := partial[k]; ok {
+			t.Errorf("the partial run has a %s share it had nothing to measure on", k)
+		}
+	}
+	if full["runId"] != runID.String() || full["partial"] != false || full["citation"].(float64) != 0.35 || full["twente"].(float64) != 0.5 ||
+		full["english"].(float64) != 0.1 || full["german"].(float64) != 0.2 || full["startedAt"] != "2026-11-01T06:10:00Z" {
+		t.Errorf("full run = %v", full)
+	}
+	if _, ok := full["failure"]; ok {
+		t.Errorf("a full run has a failure: %v", full)
+	}
+	a.prompts().historyErr = errors.New("broken")
+	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/history", "", true); r.code != http.StatusInternalServerError {
+		t.Errorf("a failing history = %d", r.code)
+	}
+}
+
+func TestEverySignedInAccountReadsThePublishedPromptSets(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/prompt-sets", "", false); r.code != http.StatusUnauthorized {
+		t.Errorf("without a session = %d", r.code)
+	}
+	r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/prompt-sets", "", true)
+	versions, _ := r.body["versions"].([]any)
+	scopes, _ := r.body["scopes"].([]any)
+	if r.code != http.StatusOK || len(versions) != 2 || len(scopes) != 6 {
+		t.Fatalf("prompt sets = %d %v", r.code, r.body)
+	}
+	v2, v1 := versions[0].(map[string]any), versions[1].(map[string]any)
+	questions, _ := v2["questions"].([]any)
+	if v2["version"].(float64) != 2 || v2["publishedAt"] != "2026-10-27T06:35:33Z" || v2["note"] == "" || len(questions) != 20 {
+		t.Fatalf("version 2 = %v", v2)
+	}
+	twente := questions[0].(map[string]any)
+	if twente["id"] != "eyelink-application-twente" || twente["family"] != "eyelink" || twente["intent"] != "application" ||
+		twente["scope"] != "twente" || twente["scopeName"] != "Twente (Dutch)" || twente["language"] != "nl" || twente["region"] != "Twente" ||
+		!strings.HasPrefix(twente["text"].(string), "We bouwen") || !strings.HasPrefix(twente["english"].(string), "We are building") {
+		t.Errorf("a Twente question = %v", twente)
+	}
+	english := questions[3].(map[string]any)
+	if _, ok := english["english"]; ok || english["scope"] != "english" {
+		t.Errorf("an English question = %v, with no translation", english)
+	}
+	if _, ok := english["region"]; ok {
+		t.Errorf("a question with no region = %v", english)
+	}
+	product := v1["questions"].([]any)[0].(map[string]any)
+	if product["intent"] != "product" || product["scope"] != "germany" || product["region"] != "Germany" || product["language"] != "de" {
+		t.Errorf("a version 1 supplier question = %v", product)
+	}
+	first, dutch := scopes[0].(map[string]any), scopes[3].(map[string]any)
+	if first["id"] != "twente" || first["name"] != "Twente (Dutch)" || first["language"] != "nl" || first["region"] != "Twente" {
+		t.Errorf("the Twente scope = %v", first)
+	}
+	if _, ok := dutch["region"]; ok || dutch["id"] != "dutch" {
+		t.Errorf("the Dutch scope = %v, with no region", dutch)
+	}
+	a.prompts().setsErr = errors.New("broken")
+	if r := call(t, srv, http.MethodGet, "/api/v1/prompt-test/prompt-sets", "", true); r.code != http.StatusInternalServerError {
+		t.Errorf("failing prompt sets = %d", r.code)
+	}
+}
+
+func TestPublishingAPromptSetIsForAdministrators(t *testing.T) {
+	a := &analyses{}
+	srv := serve(t, a)
+	body := `{"questions":[{"family":"eyelink","intent":"application","scope":"fr-lyon","text":"Quelle bande ?"}],` +
+		`"scopes":[{"id":"fr-lyon","language":"fr","region":"Lyon","name":"French, Lyon"}],"restoredFrom":1}`
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-sets", body, "tester"); r.code != http.StatusForbidden {
+		t.Fatalf("a non-administrator = %d", r.code)
+	}
+	r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-sets", body, "admin")
+	questions, _ := r.body["questions"].([]any)
+	if r.code != http.StatusCreated || r.body["version"].(float64) != 3 || len(questions) != 1 {
+		t.Fatalf("publish = %d %v", r.code, r.body)
+	}
+	q := questions[0].(map[string]any)
+	if q["scope"] != "fr-lyon" || q["language"] != "fr" || q["region"] != "Lyon" || q["scopeName"] != "French, Lyon" {
+		t.Errorf("the new question = %v", q)
+	}
+	d := a.prompts().draft
+	want := domain.Draft{
+		Questions:    []domain.DraftQuestion{{Family: domain.FamilyEyelink, Intent: domain.IntentApplication, Scope: "fr-lyon", Text: "Quelle bande ?"}},
+		Scopes:       []domain.ScopeInfo{{ID: "fr-lyon", Language: "fr", Region: "Lyon", Name: "French, Lyon"}},
+		RestoredFrom: 1,
+	}
+	if !reflect.DeepEqual(d, want) || a.prompts().actor == "" {
+		t.Errorf("draft = %+v by %q", d, a.prompts().actor)
+	}
+	for err, code := range map[error]int{
+		domain.DraftError{Reason: "A question has 1 to 1,000 characters."}: http.StatusUnprocessableEntity,
+		domain.ErrNothingChanged: http.StatusConflict,
+		domain.ErrVersionTaken:   http.StatusConflict,
+		errors.New("broken"):     http.StatusInternalServerError,
+	} {
+		a.prompts().publishErr = err
+		if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-sets", body, "admin"); r.code != code {
+			t.Errorf("%v = %d, want %d", err, r.code, code)
+		}
+	}
+	if r := callAs(t, srv, http.MethodPost, "/api/v1/admin/prompt-sets", `{"questions":[]}`, "admin"); r.code != http.StatusBadRequest {
+		t.Errorf("no questions = %d", r.code)
 	}
 }

@@ -1,48 +1,32 @@
 import { expect, expectAccessible, test } from './fixtures'
 
 const SECTIONS = [
-  { path: '/buyers', title: 'Buyers', heading: 'Paid search buys traffic, not buyers.' },
-  { path: '/ai-search', title: 'AI search', heading: /^(Tribelt .* AI answers name|AI assistants, and what they say about Tribelt|AI assistants have not been asked about Tribelt yet)/ },
-  { path: '/competitors', title: 'Competitors', heading: /^\d+ competitors? sells? metal belts that Tribelt’s buyers could buy instead\.$/ },
-  { path: '/terms', title: 'Search terms', heading: /^Competitors list belts using \d+ terms/ },
-  { path: '/recommendations', title: 'Recommendations', heading: 'Start with the changes that help Tribelt most.' },
+  { path: '/ai-responses', title: 'AI responses', heading: 'AI responses' },
+  { path: '/competitors', title: 'Competitors', heading: 'Competitors' },
+  { path: '/terms', title: 'Search terms', heading: 'Search terms' },
+  { path: '/recommendations', title: 'Recommendations', heading: 'Recommendations' },
 ] as const
 
-test('the overview renders its numbers and section cards, and is accessible', async ({ page }) => {
+test('the overview shows the goals, the tiles, and the latest runs and scans, and is accessible', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page).toHaveTitle('Overview · Findability Explorer')
-  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
-  await expect(page.locator('a[href^="/numbers/"]').first()).toBeVisible()
-  const cards = page.locator('section[aria-labelledby="sections-title"] li a')
-  await expect(cards).toHaveCount(4)
-  await expect(cards.filter({ hasText: 'Open Search terms' })).toBeVisible()
-  await expect(page.locator('a[href="/buyers"]')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
+  const goals = page.getByRole('region', { name: 'Goals' })
+  await expect(goals.locator('tbody a[href^="/goals/"]')).toHaveCount(5)
+  await expect(page.getByRole('navigation', { name: 'Parts of the app' }).getByRole('link')).toHaveCount(5)
+  await expect(page.getByRole('region', { name: 'Latest runs and scans' }).locator('tbody tr')).toHaveCount(4)
+  await expect(page.locator('a[href="/buyers"]')).toHaveCount(0)
   await expectAccessible(page)
 })
 
-test('the overview opens a number and goes back', async ({ page }) => {
-  await page.goto('/')
-  await page.locator('a[href="/numbers/aiShareOfVoice"]').click()
-  await expect(page).toHaveURL('/numbers/aiShareOfVoice')
-  await expect(page.getByRole('heading', { level: 2, name: 'Tribelt against the field' })).toBeVisible()
-  await expectAccessible(page)
-  await page.getByRole('link', { name: 'Back to Overview' }).click()
+test('Buyers is dropped, and its address opens the overview', async ({ page }) => {
+  await page.goto('/buyers')
   await expect(page).toHaveURL('/')
-  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
-})
-
-test('the overview opens Buyers and goes back', async ({ page }) => {
-  await page.goto('/')
-  await page.locator('a[href="/buyers"]').click()
-  await expect(page).toHaveURL('/buyers')
-  await expect(page.getByRole('heading', { level: 1, name: 'Paid search buys traffic, not buyers.' })).toBeVisible()
-  await page.getByRole('link', { name: 'Back to Overview' }).click()
-  await expect(page).toHaveURL('/')
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
 })
 
 test('the footer is on every page', async ({ page }) => {
-  for (const path of ['/', '/buyers', '/numbers/aiShareOfVoice', '/terms', '/settings']) {
+  for (const path of ['/', '/goals/aiShareOfVoice', '/terms', '/help', '/manage', '/manage/keys']) {
     await page.goto(path)
     await expect(page.locator('footer').first(), path).toBeVisible()
     await expect(page.locator('footer').first().getByRole('img', { name: 'University of Twente' }), path).toBeVisible()
@@ -62,18 +46,18 @@ test('a section opens from the top bar, and Overview links back', async ({ page 
   await page.goto('/')
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Recommendations', exact: true }).click()
   await expect(page).toHaveURL('/recommendations')
-  await expect(page.getByRole('heading', { level: 1, name: 'Start with the changes that help Tribelt most.' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Recommendations' })).toBeVisible()
 
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Overview', exact: true }).click()
   await expect(page).toHaveURL('/')
-  await expect(page.getByRole('heading', { level: 2, name: 'Numbers to watch' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
   // The browser's own back agrees with the links.
   await page.goBack()
   await expect(page).toHaveURL('/recommendations')
 })
 
-test('the company picker suggests a known company, and names an unknown one', async ({ page }) => {
-  await page.goto('/competitors')
+test('the company picker in Website scans suggests a known company, and names an unknown one', async ({ page }) => {
+  await page.goto('/manage/scans')
   const field = page.getByRole('combobox', { name: 'Website address' })
   await field.fill('twente')
   const options = page.getByRole('listbox', { name: 'Known companies' })
@@ -96,32 +80,30 @@ test('picking a competitor opens its page, which survives a reload', async ({ pa
   await page.getByRole('region', { name: 'The competitors' }).getByRole('link').first().click()
   await expect(page).toHaveURL(/\/competitors\/[^/]+$/)
   await expect(page.getByRole('link', { name: 'Back to Competitors' })).toBeVisible()
-  await expect(page.getByRole('heading', { level: 2, name: /against Tribelt$/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Against Tribelt' })).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('heading', { level: 2, name: /against Tribelt$/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Against Tribelt' })).toBeVisible()
 })
 
-test('the scan form refuses an address it cannot scan', async ({ page }) => {
-  await page.goto('/competitors')
+test('the scan form in Website scans refuses an address it cannot scan', async ({ page }) => {
+  await page.goto('/manage/scans')
   const field = page.getByRole('combobox', { name: 'Website address' })
   await field.fill('https://intranet')
-  await page.getByRole('button', { name: 'Scan website' }).click()
-  await expect(page.getByRole('alert')).toHaveText('Enter an address with a full host name, like https://www.example.com.')
+  await page.getByRole('button', { name: 'Scan this site' }).click()
+  await expect(page.getByRole('alert').filter({ hasText: 'Enter an address with a full host name' })).toHaveText('Enter an address with a full host name, like https://www.example.com.')
   await expect(field).toHaveAttribute('aria-invalid', 'true')
-  await expect(page).toHaveURL('/competitors')
+  await expect(page).toHaveURL('/manage/scans')
 })
 
-test('Search terms shows the language split, the belt families and a way to every term', async ({ page }) => {
+test('Search terms counts by language and belt family, each opening its terms', async ({ page }) => {
   await page.goto('/terms')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Competitors list belts using \d+ terms/)
-  const german = page.getByRole('button', { name: /^German: \d+ terms/ })
-  await german.click()
-  await expect(german).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Search terms')
   await expectAccessible(page)
-  await page.getByRole('link', { name: 'its own page' }).click()
-  await expect(page).toHaveURL('/terms/all')
+  await page.getByRole('region', { name: 'By language' }).getByRole('link', { name: 'German' }).click()
+  await expect(page).toHaveURL('/terms/all?language=de')
+  await expect(page.getByRole('button', { name: /^German: \d+ terms/ })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('link', { name: 'Back to Search terms' }).click()
-  await page.getByRole('list', { name: 'Belt families' }).getByRole('link').first().click()
+  await page.getByRole('region', { name: 'By belt family' }).getByRole('link').first().click()
   await expect(page).toHaveURL(/\/terms\/families\//)
 })
 
@@ -135,13 +117,17 @@ test('the page of every term filters by language and survives a reload', async (
   await expectAccessible(page)
 })
 
-test('the settings page is reachable for an administrator, and accessible', async ({ page }) => {
-  await page.goto('/')
+test('Keys and spending is reachable for an administrator through Manage, and accessible', async ({ page }) => {
   await page.goto('/recommendations')
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Settings' }).click()
-  await expect(page).toHaveURL('/settings')
-  await expect(page.getByRole('heading', { level: 1, name: 'Language models' })).toBeVisible()
-  await expect(page).toHaveTitle('Settings · Findability Explorer')
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Manage' }).click()
+  await expect(page).toHaveURL('/manage')
+  await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: 'Keys and spending' }).click()
+  await expect(page).toHaveURL('/manage/keys')
+  await expect(page.getByRole('heading', { level: 1, name: 'Keys and spending' })).toBeVisible()
+  await expect(page).toHaveTitle('Keys and spending · Findability Explorer')
+  await expectAccessible(page)
+  await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: 'OpenRouter key' }).click()
+  await expect(page).toHaveURL('/manage/keys/openrouter')
   await expect(page.getByLabel('API key', { exact: true })).toHaveAttribute('type', 'password')
   await expectAccessible(page)
 })
@@ -159,7 +145,7 @@ test.describe('at phone width', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
   test('no view scrolls sideways', async ({ page }) => {
-    for (const path of ['/', ...SECTIONS.map((s) => s.path), '/settings']) {
+    for (const path of ['/', ...SECTIONS.map((s) => s.path), '/help', '/manage', '/manage/keys', '/manage/terms/waiting']) {
       await page.goto(path)
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)

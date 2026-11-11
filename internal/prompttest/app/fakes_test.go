@@ -12,6 +12,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 var errBoom = errors.New("boom")
@@ -28,11 +29,19 @@ type repo struct {
 	verdicts  []domain.CompanyVerdict
 	checks    []domain.ListCheck
 	usage     []domain.ReviewUsage
-	failOn    map[string]bool
+	// definitions are the competitor definition's versions, newest first; version 2 to begin with.
+	definitions []domain.Definition
+	// sets are the published Prompt sets, version 2 unless a test publishes others.
+	sets []domain.PublishedSet
+	// scopes are the scopes published with a Prompt set, beyond the imported ones.
+	scopes []domain.ScopeInfo
+	failOn map[string]bool
 	// heartbeatsLeft, when not negative, is how many heartbeats succeed before the run is
 	// taken over by another instance.
 	heartbeatsLeft int
 	beats          int
+	// stops are the runs an administrator asked to stop.
+	stops map[uuid.UUID]bool
 }
 
 type storedRun struct {
@@ -42,7 +51,10 @@ type storedRun struct {
 }
 
 func newRepo(failOn ...string) *repo {
-	r := &repo{failOn: map[string]bool{}, heartbeatsLeft: -1}
+	r := &repo{
+		failOn: map[string]bool{}, heartbeatsLeft: -1, sets: []domain.PublishedSet{domaintest.Version2()},
+		definitions: []domain.Definition{domaintest.Definition()},
+	}
 	for _, f := range failOn {
 		r.failOn[f] = true
 	}
@@ -53,6 +65,29 @@ func (r *repo) err(op string) error {
 	if r.failOn[op] {
 		return errBoom
 	}
+	return nil
+}
+
+func (r *repo) PromptSets(context.Context) ([]domain.PublishedSet, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.sets), r.err("PromptSets")
+}
+
+func (r *repo) PromptScopes(context.Context) ([]domain.ScopeInfo, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append(domaintest.Scopes(), r.scopes...), r.err("PromptScopes")
+}
+
+func (r *repo) PublishPromptSet(_ context.Context, set domain.PublishedSet, scopes []domain.ScopeInfo) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("PublishPromptSet"); err != nil {
+		return err
+	}
+	r.sets = append([]domain.PublishedSet{set}, r.sets...)
+	r.scopes = append(r.scopes, scopes...)
 	return nil
 }
 
@@ -148,6 +183,30 @@ func (r *repo) Heartbeat(_ context.Context, id uuid.UUID, owner string, at time.
 	return false, nil
 }
 
+func (r *repo) RequestStop(_ context.Context, id uuid.UUID, _ time.Time) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("RequestStop"); err != nil {
+		return false, err
+	}
+	for _, s := range r.runs {
+		if s.run.ID == id && s.run.Status == domain.RunRunning {
+			if r.stops == nil {
+				r.stops = map[uuid.UUID]bool{}
+			}
+			r.stops[id] = true
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *repo) StopRequested(_ context.Context, id uuid.UUID) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.stops[id], r.err("StopRequested")
+}
+
 func (r *repo) FinishRun(_ context.Context, id uuid.UUID, status domain.RunStatus, failure string, at time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -216,6 +275,7 @@ func (r *repo) ReopenRun(_ context.Context, id uuid.UUID, owner string, at time.
 	for _, s := range r.runs {
 		if s.run.ID == id {
 			s.run.Status, s.run.FinishedAt, s.run.Failure, s.owner, s.heartbeat = domain.RunRunning, time.Time{}, "", owner, at
+			delete(r.stops, id)
 		}
 	}
 	return nil
@@ -233,6 +293,36 @@ func (r *repo) SetExtraction(_ context.Context, id uuid.UUID, x domain.Extractio
 		}
 	}
 	return nil
+}
+
+// ReadingModels returns, per run, the model that read most of its responses.
+func (r *repo) ReadingModels(context.Context) (map[uuid.UUID]string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("ReadingModels"); err != nil {
+		return nil, err
+	}
+	counts := map[uuid.UUID]map[string]int{}
+	for _, a := range r.answers {
+		if a.Extraction == nil || a.Extraction.Failed || a.Extraction.Model == "" {
+			continue
+		}
+		if counts[a.RunID] == nil {
+			counts[a.RunID] = map[string]int{}
+		}
+		counts[a.RunID][a.Extraction.Model]++
+	}
+	out := map[uuid.UUID]string{}
+	for id, byModel := range counts {
+		best := ""
+		for m, n := range byModel {
+			if best == "" || n > byModel[best] || (n == byModel[best] && m < best) {
+				best = m
+			}
+		}
+		out[id] = best
+	}
+	return out, nil
 }
 
 func (r *repo) Answers(_ context.Context, runID uuid.UUID, withText bool) ([]domain.Answer, error) {
@@ -259,7 +349,7 @@ func (r *repo) SpentSince(context.Context, time.Time) (domain.Micros, error) {
 	var total domain.Micros
 	for _, a := range r.answers {
 		total += a.Cost
-		if a.Extraction != nil {
+		if a.Extraction != nil && a.Extraction.HaikuTokens == 0 {
 			total += a.Extraction.Cost
 		}
 	}
@@ -381,6 +471,34 @@ func (r *repo) AnswerTexts(_ context.Context, ids []uuid.UUID) (map[uuid.UUID]st
 	return out, r.err("AnswerTexts")
 }
 
+func (r *repo) Definitions(context.Context) ([]domain.Definition, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.definitions), r.err("Definitions")
+}
+
+func (r *repo) AddDefinition(_ context.Context, text, by string, restoredFrom int, at time.Time) (domain.Definition, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.err("AddDefinition"); err != nil {
+		return domain.Definition{}, err
+	}
+	d := domain.Definition{Version: r.definitions[0].Version + 1, Text: text, SavedBy: by, SavedAt: at, RestoredFrom: restoredFrom}
+	r.definitions = append([]domain.Definition{d}, r.definitions...)
+	return d, nil
+}
+
+func (r *repo) CheckUsage(context.Context) (domain.ReviewUsage, int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var sum domain.ReviewUsage
+	for _, u := range r.usage {
+		sum.InputTokens += u.InputTokens
+		sum.OutputTokens += u.OutputTokens
+	}
+	return sum, len(r.verdicts) + len(r.checks), r.err("CheckUsage")
+}
+
 func (r *repo) SaveReviewUsage(_ context.Context, usage []domain.ReviewUsage) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -402,18 +520,24 @@ func (r *repo) Undecide(_ context.Context, id string) error {
 }
 
 // gateway answers every prompt: each model's answer names Twentebelt and, for Twente prompts,
-// Tribelt; a model in limited is always rate limited; extraction fails failExtract times first.
+// Tribelt; a model in limited is always rate limited; a model in empty answers with no text, as a
+// reasoning model that spent its token limit does; extraction fails failExtract times first.
 type gateway struct {
 	mu          sync.Mutex
 	catalogue   []domain.CatalogueModel
 	modelsErr   error
+	modelCalls  int
 	limited     map[string]bool
+	empty       map[string]bool
 	askErr      error
 	failExtract int
 	asked       map[string]int
 	extracted   int
 	// slow is how long each call to Ask takes.
 	slow time.Duration
+	// onAsk, when set, is called with the number of the call as each call to Ask begins.
+	onAsk func(n int)
+	calls int
 }
 
 func newGateway() *gateway {
@@ -423,15 +547,25 @@ func newGateway() *gateway {
 			{ID: "google/gemma:free", InputModalities: []string{"text"}, OutputModalities: []string{"text"}},
 			{ID: "google/gemini-flash-lite", PromptPrice: 0.0000001, CompletionPrice: 0.0000004, InputModalities: []string{"text"}, OutputModalities: []string{"text"}},
 		},
-		limited: map[string]bool{}, asked: map[string]int{},
+		limited: map[string]bool{}, empty: map[string]bool{}, asked: map[string]int{},
 	}
 }
 
 func (g *gateway) Models(context.Context) ([]domain.CatalogueModel, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.modelCalls++
 	return g.catalogue, g.modelsErr
 }
 
 func (g *gateway) Ask(_ context.Context, model, prompt string, web bool) (domain.Reply, error) {
+	g.mu.Lock()
+	g.calls++
+	n, on := g.calls, g.onAsk
+	g.mu.Unlock()
+	if on != nil {
+		on(n)
+	}
 	time.Sleep(g.slow)
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -441,6 +575,9 @@ func (g *gateway) Ask(_ context.Context, model, prompt string, web bool) (domain
 	}
 	if g.askErr != nil {
 		return domain.Reply{}, g.askErr
+	}
+	if g.empty[model] {
+		return domain.Reply{InputTokens: 20, OutputTokens: 2000, Cost: 10}, domain.ErrEmptyAnswer
 	}
 	text := "Twentebelt makes these belts."
 	if strings.Contains(prompt, "Twente") {
@@ -468,6 +605,7 @@ func (g *gateway) Extract(_ context.Context, model string, in app.ExtractInput) 
 	if strings.Contains(in.Answer, "Tribelt") {
 		x.Companies = append([]domain.Named{{Name: "Tribelt"}}, x.Companies...)
 		x.NamesTribelt, x.Correctness, x.WrongClaims = true, domain.CorrectnessPartly, []string{"Tribelt is in Hengelo."}
+		x.LeftOut = []string{"Tribelt makes eyelink belts to measure."}
 	}
 	return x, domain.Reply{InputTokens: 50, OutputTokens: 20, Cost: 2}, nil
 }

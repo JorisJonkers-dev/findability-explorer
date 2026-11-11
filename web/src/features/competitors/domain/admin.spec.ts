@@ -1,21 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  ARCHIVE_ACTION,
   canRemove,
   checkCompanyForm,
   companyProblem,
-  leftOut,
   removeAction,
-  rescanCandidates,
   rescanProgress,
   rescanSummary,
-  splitArchived,
-  unscannedCandidates,
 } from "./admin";
 
 describe("archiving or removing a company", () => {
-  it("archives any company, and deletes only an added one with its scans", () => {
-    expect(ARCHIVE_ACTION.button).toBe("Archive");
+  it("deletes only an added company, with its scans", () => {
     expect(canRemove({ source: "research" })).toBe(false);
     expect(canRemove({ source: "added" })).toBe(true);
     expect(removeAction({ scans: 1 })).toEqual({
@@ -67,64 +61,6 @@ describe("the company form", () => {
 });
 
 describe("a re-scan", () => {
-  it("takes every company with data: researched, or scanned before, with a website and not archived", () => {
-    const c = (
-      id: string,
-      source: "research" | "added",
-      scans: number,
-      websiteUrl?: string,
-      archived = false,
-    ) => ({ id, source, scans, websiteUrl, archived });
-    const companies = [
-      c("researched", "research", 0, "https://r.com"),
-      c("scanned", "added", 2, "https://s.com"),
-      c("never-scanned", "added", 0, "https://n.com"),
-      c("no-site", "research", 0),
-      c("archived", "research", 3, "https://a.com", true),
-      {
-        ...c("blocked", "research", 1, "https://b.com"),
-        lastScan: { blocked: true },
-      },
-    ];
-    expect(rescanCandidates(companies).map((x) => x.id)).toEqual([
-      "researched",
-      "scanned",
-    ]);
-  });
-
-  it("takes the companies with a website no scan reached yet, and says which ones a sweep leaves out", () => {
-    const c = (
-      id: string,
-      scans: number,
-      websiteUrl?: string,
-      archived = false,
-      blocked = false,
-    ) => ({
-      id,
-      source: "research" as const,
-      scans,
-      websiteUrl,
-      archived,
-      ...(blocked ? { lastScan: { blocked: true } } : {}),
-    });
-    const companies = [
-      c("new", 0, "https://n.com"),
-      c("done", 2, "https://d.com"),
-      c("no-site", 0),
-      c("no-site-2", 0),
-      c("gone", 0, "https://g.com", true),
-      c("wall", 1, "https://w.com", false, true),
-    ];
-    expect(unscannedCandidates(companies).map((x) => x.id)).toEqual(["new"]);
-    expect(leftOut(companies)).toBe(
-      "Left out of both: 2 companies without a website, 1 whose site blocks the crawler.",
-    );
-    expect(leftOut([c("no-site", 0)])).toBe(
-      "Left out of both: 1 company without a website.",
-    );
-    expect(leftOut([c("a", 0, "https://a.com")])).toBeNull();
-  });
-
   it("follows the queued scans until every one has finished", () => {
     const scan = (
       id: string,
@@ -196,17 +132,5 @@ describe("a re-scan", () => {
         ],
       }),
     ).toBe("Queued 1 scan. Skipped 1: B (it has no website).");
-  });
-
-  it("keeps archived companies apart", () => {
-    expect(
-      splitArchived([
-        { id: "a", archived: false },
-        { id: "b", archived: true },
-      ]),
-    ).toEqual({
-      active: [{ id: "a", archived: false }],
-      archived: [{ id: "b", archived: true }],
-    });
   });
 });

@@ -369,6 +369,10 @@ export type AnalysisSummary = {
      * True when the analysis failed because its site turned automated readers away (bot protection) although people can open it; only then is it present. The scan still records the site's AI readiness.
      */
     blocked?: boolean;
+    /**
+     * True when an administrator stopped the scan, or took it off the queue; only then is it present. Its status is failed, and it keeps the pages it read.
+     */
+    stoppedByHand?: boolean;
     aiReadiness?: AiReadinessBrief;
     /**
      * The most pages the crawl fetches.
@@ -780,7 +784,7 @@ export type LlmChoice = 'default' | 'chosen' | 'off';
 /**
  * What an event records.
  */
-export type LlmEventAction = 'credential_added' | 'credential_deleted' | 'credential_tested' | 'active_set' | 'active_cleared';
+export type LlmEventAction = 'credential_added' | 'credential_deleted' | 'credential_tested' | 'active_set' | 'active_cleared' | 'budget_set';
 
 /**
  * One change to or test of the language-model settings.
@@ -812,25 +816,35 @@ export type LlmEvent = {
 };
 
 /**
- * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
+ * What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers - and what they spent, priced at the models' list prices from their stored token counts. Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
  */
 export type LlmBudget = {
+    monthlyBudgetUsd: Usd;
+    spentThisMonthUsd: Usd;
+    leftUsd: Usd;
     /**
-     * The tokens every job together may use in a calendar month (UTC).
+     * The tokens, in and out, every job used this month so far.
      */
-    monthlyTokens: number;
-    /**
-     * The tokens every job used this month so far.
-     */
-    usedThisMonth: number;
+    tokensThisMonth: number;
     /**
      * The tokens one scan's product matching used on average, over every scan the language model answered for; 0 before the first.
      */
     averageTokensPerScan: number;
+    averageScanUsd: Usd;
     /**
      * How many scans the average is over.
      */
     scansMatched: number;
+};
+
+/**
+ * The Anthropic key's new monthly budget.
+ */
+export type LlmBudgetChange = {
+    /**
+     * The month's budget in dollars.
+     */
+    monthlyBudgetUsd: number;
 };
 
 /**
@@ -859,9 +873,9 @@ export type LlmSettings = {
 };
 
 /**
- * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
+ * Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator accepted from the review queue, or a term an administrator added by hand.
  */
-export type TermOrigin = 'research' | 'review';
+export type TermOrigin = 'research' | 'review' | 'hand';
 
 /**
  * The fields of a company to change; at least one.
@@ -1201,9 +1215,224 @@ export type TermSuggestion = {
 };
 
 /**
- * How far the language model is with the waiting candidates.
+ * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), termReview (reviewing the search terms the scans found), or recommendations (writing recommendations).
+ */
+export type ClaudeStepId = 'reading' | 'matching' | 'candidateMerge' | 'candidateCheck' | 'termReview' | 'recommendations';
+
+/**
+ * One saved version of a Claude step - the model it uses and its instructions.
+ */
+export type ClaudeStepVersion = {
+    /**
+     * The version's number, from 1 for the instructions the tool came with.
+     */
+    number: number;
+    /**
+     * The Claude model's id on Anthropic's API.
+     */
+    model: string;
+    /**
+     * The model's name for people.
+     */
+    modelName: string;
+    /**
+     * The system message the step sends; the data follows it in a separate message.
+     */
+    instructions: string;
+    /**
+     * Where the version came from, such as "Restored from version 2.", or empty.
+     */
+    note: string;
+    /**
+     * Who saved it; "the tool" for version 1.
+     */
+    createdBy: string;
+    /**
+     * When it was saved.
+     */
+    createdAt: string;
+};
+
+/**
+ * A Claude model a step may use, with what one job of the step costs with it.
+ */
+export type ClaudeStepModel = {
+    /**
+     * The model's id on Anthropic's API.
+     */
+    id: string;
+    /**
+     * The model's name.
+     */
+    name: string;
+    jobCostUsd: Usd;
+};
+
+/**
+ * A Claude step as the overview lists it.
+ */
+export type ClaudeStepSummary = {
+    id: ClaudeStepId;
+    /**
+     * The step's name.
+     */
+    title: string;
+    /**
+     * True when the instructions are set in the code and only the model can be chosen.
+     */
+    fixedInstructions: boolean;
+    current: ClaudeStepVersion;
+    jobCostUsd: Usd;
+};
+
+/**
+ * Every Claude step.
+ */
+export type ClaudeStepList = {
+    items: Array<ClaudeStepSummary>;
+};
+
+/**
+ * One Claude step: its versions, oldest first, the newest of which it uses; the instructions it came with; and the models it may use, cheapest first, with the cost of one job with each. A job's cost is the tool's estimate with Claude Haiku 5.5, scaled by each model's price for the step's typical mix of tokens read and written.
+ */
+export type ClaudeStep = {
+    id: ClaudeStepId;
+    /**
+     * The step's name.
+     */
+    title: string;
+    /**
+     * True when the instructions are set in the code and only the model can be chosen.
+     */
+    fixedInstructions: boolean;
+    /**
+     * The instructions the tool came with.
+     */
+    original: string;
+    current: ClaudeStepVersion;
+    /**
+     * Every version, oldest first.
+     */
+    versions: Array<ClaudeStepVersion>;
+    /**
+     * The Claude models the step may use, cheapest first.
+     */
+    models: Array<ClaudeStepModel>;
+    jobCostUsd: Usd;
+};
+
+/**
+ * A new version of a Claude step.
+ */
+export type ClaudeStepChange = {
+    /**
+     * The Claude model's id.
+     */
+    model: string;
+    /**
+     * The system message.
+     */
+    instructions: string;
+    /**
+     * The version this one restores, when it does; it is noted on the new version.
+     */
+    restoredFrom?: number;
+};
+
+/**
+ * The work running now, the last pieces ended, and this month's spending.
+ */
+export type Activity = {
+    /**
+     * The work running now, or waiting to, newest first.
+     */
+    running: Array<Work>;
+    /**
+     * The last 20 pieces of work ended, the last ended first.
+     */
+    recent: Array<Work>;
+    spending: Spending;
+};
+
+/**
+ * A kind of background work.
+ */
+export type WorkKind = 'promptRun' | 'scan' | 'rescan' | 'readinessCheck' | 'termReview' | 'candidateReview' | 'competitorCheck' | 'recommendationRun';
+
+/**
+ * One piece of background work. Running while finishedAt is absent; otherwise ended as ending says. done of total is what it did - responses of a Prompt run, pages of a scan, scans of a re-scan, sites of a readiness check, search terms of the term review, companies of a candidate review or list check - and failed how many of those failed.
+ */
+export type Work = {
+    /**
+     * The work's id: a Prompt run's or a scan's, which their stops take; a re-scan's first scan's; or the work journal's.
+     */
+    id: string;
+    kind: WorkKind;
+    /**
+     * When it began, or was queued.
+     */
+    startedAt: string;
+    /**
+     * When it ended; absent while it runs.
+     */
+    finishedAt?: string;
+    /**
+     * How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand, stoppedByBudget, or failed. Absent while it runs.
+     */
+    ending?: 'done' | 'doneWithFailures' | 'stoppedByHand' | 'stoppedByBudget' | 'failed';
+    /**
+     * How many of its parts it did.
+     */
+    done: number;
+    /**
+     * How many parts it has; 0 when that is not known yet.
+     */
+    total: number;
+    /**
+     * How many of the parts it did failed.
+     */
+    failed: number;
+    openRouterCostUsd: Usd;
+    anthropicCostUsd: Usd;
+};
+
+/**
+ * This month's spending by kind of work, with the key that paid.
+ */
+export type Spending = {
+    /**
+     * When the month began (UTC).
+     */
+    since: string;
+    /**
+     * One line per kind of work and key - Prompt runs on OpenRouter; scans, the term review, candidate checks (reviews of the candidates and checks of the list) and Recommendation runs on Anthropic; reading responses on both, as OpenRouter reads them when no Anthropic key is set up.
+     */
+    lines: Array<SpendLine>;
+};
+
+/**
+ * What one kind of work cost on one key this month.
+ */
+export type SpendLine = {
+    /**
+     * The kind of work.
+     */
+    kind: 'promptRuns' | 'scans' | 'readingResponses' | 'termReview' | 'candidateChecks' | 'recommendationRuns';
+    /**
+     * The key that paid.
+     */
+    key: 'openRouter' | 'anthropic';
+    costUsd: Usd;
+};
+
+/**
+ * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
  */
 export type TermReviewState = {
+    /**
+     * Whether it reviews by itself every ten minutes; off, only when asked.
+     */
+    on: boolean;
     /**
      * Whether it is reviewing now.
      */
@@ -1213,9 +1442,24 @@ export type TermReviewState = {
      */
     waiting: number;
     /**
-     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's language-model tokens are spent) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
-    problem?: 'noModel' | 'budget' | 'failed';
+    problem?: 'noModel' | 'budget' | 'failed' | 'stopped';
+    /**
+     * The tokens it used this month, input and output together.
+     */
+    monthTokens: number;
+    monthCostUsd: Usd;
+};
+
+/**
+ * Whether the term review runs by itself.
+ */
+export type TermReviewSwitch = {
+    /**
+     * On, it reviews every ten minutes; off, only when an administrator asks.
+     */
+    on: boolean;
 };
 
 /**
@@ -1246,6 +1490,53 @@ export type TermCandidateList = {
     items: Array<TermCandidate>;
     counts: TermCandidateCounts;
     review: TermReviewState;
+};
+
+/**
+ * A search term an administrator adds by hand.
+ */
+export type NewTerm = {
+    /**
+     * The term as the list shows it.
+     */
+    term: string;
+    language: Language;
+    family: BeltFamily;
+    tier: IntentTier;
+};
+
+/**
+ * A search term on the list, by its text and language.
+ */
+export type TermRef = {
+    /**
+     * The term's text; case and accents do not matter.
+     */
+    term: string;
+    language: Language;
+};
+
+/**
+ * A term added or removed by hand, with who did it and when.
+ */
+export type HandTerm = {
+    term: Term;
+    /**
+     * Who added or removed it.
+     */
+    by: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * The terms added by hand and the terms removed, oldest first.
+ */
+export type HandTermList = {
+    added: Array<HandTerm>;
+    removed: Array<HandTerm>;
 };
 
 /**
@@ -1595,6 +1886,35 @@ export type ReadinessCheckSummary = {
  * One improvement of the plan.
  */
 export type PlanImprovement = {
+    kind: RecommendationKind;
+    /**
+     * True for one a Recommendation run wrote, false for one written by hand.
+     */
+    generated: boolean;
+    /**
+     * True for an open one the newest Recommendation run wrote.
+     */
+    new: boolean;
+    /**
+     * The tribelt.nl page it belongs on; absent when it applies to the whole site or the model could not place it.
+     */
+    where?: string;
+    /**
+     * Present instead of where when the model could not place it.
+     */
+    whereNote?: string;
+    /**
+     * Why the model moved a score from the rules' by a point; absent when it did not.
+     */
+    scoreReason?: string;
+    /**
+     * When an administrator edited a generated one; absent when nobody did.
+     */
+    editedAt?: string;
+    /**
+     * The facts behind a generated one, as the rules found them.
+     */
+    facts?: Array<string>;
     /**
      * Its id.
      */
@@ -1653,6 +1973,139 @@ export type PlanImprovement = {
      */
     tribelt?: number;
     leader?: MeasureLeader;
+};
+
+/**
+ * An administrator's wording and scores of a recommendation a run wrote.
+ */
+export type RecommendationEdit = {
+    /**
+     * What to do.
+     */
+    title: string;
+    /**
+     * The tribelt.nl page it belongs on; absent or blank for the web agency to place.
+     */
+    where?: string;
+    /**
+     * Why it matters.
+     */
+    why: string;
+    /**
+     * How to do it.
+     */
+    steps: Array<string>;
+    /**
+     * When it counts as done.
+     */
+    doneWhen: string;
+    /**
+     * How much it helps.
+     */
+    benefit: number;
+    /**
+     * How much work it takes.
+     */
+    effort: number;
+};
+
+/**
+ * What kind of change a recommendation asks for - term (a search term to add), page (a page to add), listing (a site to get listed on), fact (a fact sheet correction), readiness (AI readiness), or general (written by hand for the whole site).
+ */
+export type RecommendationKind = 'term' | 'page' | 'listing' | 'fact' | 'readiness' | 'general';
+
+/**
+ * The Recommendation run, what starting one would do, and the past runs.
+ */
+export type RecommendationRuns = {
+    /**
+     * Whether a run runs now.
+     */
+    running: boolean;
+    /**
+     * True when no Anthropic key is set up, so no run can start.
+     */
+    noKey: boolean;
+    /**
+     * The model the step writing recommendations uses now; absent without a key.
+     */
+    model?: string;
+    /**
+     * How many open recommendations an earlier run wrote that a new run replaces.
+     */
+    replaces: number;
+    /**
+     * True when tribelt.nl was last scanned before the newest Prompt run started.
+     */
+    stale: boolean;
+    /**
+     * When the newest Prompt run started; absent before any.
+     */
+    promptRunAt?: string;
+    /**
+     * When the newest scan of tribelt.nl finished; absent before any.
+     */
+    scanAt?: string;
+    /**
+     * How many terms the search term list holds.
+     */
+    terms: number;
+    /**
+     * How many gaps the rules find now, at most 40.
+     */
+    gaps: number;
+    estimatedCostUsd: Usd;
+    /**
+     * The last runs, the newest first.
+     */
+    runs: Array<RecommendationRun>;
+};
+
+/**
+ * One Recommendation run.
+ */
+export type RecommendationRun = {
+    /**
+     * The run's id.
+     */
+    id: string;
+    /**
+     * When it started.
+     */
+    startedAt: string;
+    /**
+     * When it ended; absent while it runs.
+     */
+    finishedAt?: string;
+    /**
+     * How it ended; absent while it runs.
+     */
+    ending?: 'done' | 'doneWithFailures' | 'stoppedByHand' | 'stoppedByBudget' | 'failed';
+    /**
+     * Who started it.
+     */
+    startedBy: string;
+    /**
+     * The model that wrote.
+     */
+    model: string;
+    /**
+     * How many gaps it wrote recommendations for.
+     */
+    gaps: number;
+    /**
+     * How many recommendations it added.
+     */
+    added: number;
+    /**
+     * How many open recommendations it replaced.
+     */
+    replaced: number;
+    /**
+     * How many done or edited recommendations it kept.
+     */
+    kept: number;
+    costUsd: Usd;
 };
 
 /**
@@ -2162,6 +2615,10 @@ export type ReadinessCheckState = {
      * How many sites it checks.
      */
     total: number;
+    /**
+     * True when an administrator stopped the check; only then is it present. The sites it checked keep what it recorded, the others what their scan recorded.
+     */
+    stopped?: boolean;
 };
 
 /**
@@ -2210,6 +2667,52 @@ export type ReadinessFiles = {
      * True when llms-full.txt was cut at 100 KB.
      */
     llmsFullTruncated: boolean;
+    /**
+     * The address of the first sitemap the scan read (the one robots.txt lists, or /sitemap.xml); empty when it read none, or was made before scans kept the sitemap.
+     */
+    sitemapUrl: string;
+    /**
+     * That sitemap's text, as served.
+     */
+    sitemapTxt: string;
+    /**
+     * True when the sitemap was cut at 100 KB.
+     */
+    sitemapTruncated: boolean;
+};
+
+/**
+ * The pages that use one search term on each company's newest finished scan that found it, Tribelt first, then the competitors and the group by name.
+ */
+export type TermPages = {
+    items: Array<CompanyTermPages>;
+};
+
+/**
+ * One company's pages that use the term. A scan made before scans recorded the pages of a term has none; the company uses the term all the same.
+ */
+export type CompanyTermPages = {
+    competitorId: CompetitorId;
+    /**
+     * The company's name.
+     */
+    name: string;
+    role: CompanyRole;
+    pages: Array<TermPage>;
+};
+
+/**
+ * A page that uses the term.
+ */
+export type TermPage = {
+    /**
+     * The page's address.
+     */
+    url: string;
+    /**
+     * The page's title; empty when it has none.
+     */
+    title: string;
 };
 
 /**
@@ -2223,9 +2726,9 @@ export type PromptFamily = 'eyelink' | 'open_spiral' | 'closed_spiral' | 'tri_fl
 export type PromptKind = 'supplier' | 'application' | 'problem';
 
 /**
- * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
+ * Where and in which language a prompt asks - a scope's id (PromptSetScope), such as twente, netherlands, germany, dutch, german, or english, or one a later Prompt set version added.
  */
-export type PromptScope = 'twente' | 'netherlands' | 'germany' | 'dutch' | 'german' | 'english';
+export type PromptScope = string;
 
 /**
  * What to ask again - every failed answer of the run when empty, or the one question of one provider and mode when all three are given.
@@ -2542,6 +3045,244 @@ export type PromptTestResults = {
 };
 
 /**
+ * The Prompt test's figures per run, with the Prompt set versions they asked.
+ */
+export type PromptTestHistory = {
+    /**
+     * The published Prompt sets, oldest first.
+     */
+    versions: Array<PromptSetVersionInfo>;
+    /**
+     * Every run of the latest with at least one response read, oldest first.
+     */
+    runs: Array<PromptRunFigures>;
+};
+
+/**
+ * The published Prompt sets, newest first, and every scope.
+ */
+export type PromptSets = {
+    /**
+     * Every published version, newest first.
+     */
+    versions: Array<PublishedPromptSet>;
+    /**
+     * Every scope a question can be asked in, by name.
+     */
+    scopes: Array<PromptSetScope>;
+};
+
+/**
+ * One published version of the Prompt set, with its questions.
+ */
+export type PublishedPromptSet = {
+    /**
+     * The version.
+     */
+    version: number;
+    /**
+     * When it was published.
+     */
+    publishedAt: string;
+    /**
+     * What it asks, or what it changed.
+     */
+    note: string;
+    /**
+     * Its questions, in order.
+     */
+    questions: Array<PromptSetQuestion>;
+};
+
+/**
+ * One question of a published Prompt set.
+ */
+export type PromptSetQuestion = {
+    /**
+     * Its id, which the responses to it record.
+     */
+    id: string;
+    family: PromptFamily;
+    intent: IntentTier;
+    scope: PromptSetScopeId;
+    /**
+     * Its scope's name.
+     */
+    scopeName: string;
+    /**
+     * The language it is asked in, its scope's.
+     */
+    language: string;
+    /**
+     * The region it asks about, its scope's; absent for none.
+     */
+    region?: string;
+    /**
+     * The question, as it is asked.
+     */
+    text: string;
+    /**
+     * Its English translation; absent when it is in English or none is known.
+     */
+    english?: string;
+};
+
+/**
+ * An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the version it was restored from, if any.
+ */
+export type PromptSetDraft = {
+    /**
+     * Its questions, in order.
+     */
+    questions: Array<PromptDraftQuestion>;
+    /**
+     * The new scopes its questions ask in, which no version asked in yet.
+     */
+    scopes?: Array<PromptSetScope>;
+    /**
+     * The version the draft was restored from, if it was.
+     */
+    restoredFrom?: number;
+};
+
+/**
+ * One question of a draft.
+ */
+export type PromptDraftQuestion = {
+    /**
+     * The id of the published question it keeps, changed or not; absent for a new question.
+     */
+    id?: string;
+    family: PromptFamily;
+    intent: IntentTier;
+    scope: PromptSetScopeId;
+    /**
+     * The question, as it is asked.
+     */
+    text: string;
+    /**
+     * Its English translation, when one is known.
+     */
+    english?: string;
+};
+
+/**
+ * A scope's id, which the responses to its questions record as their scope.
+ */
+export type PromptSetScopeId = string;
+
+/**
+ * A scope - a language a question is asked in, with or without a region.
+ */
+export type PromptSetScope = {
+    id: PromptSetScopeId;
+    /**
+     * Its name.
+     */
+    name: string;
+    /**
+     * The language it asks in.
+     */
+    language: string;
+    /**
+     * The region it asks about; absent for none.
+     */
+    region?: string;
+};
+
+/**
+ * One published Prompt set.
+ */
+export type PromptSetVersionInfo = {
+    /**
+     * The version.
+     */
+    version: number;
+    /**
+     * When it was published.
+     */
+    publishedAt: string;
+    /**
+     * How many questions it asks.
+     */
+    questions: number;
+    /**
+     * What it asks, or what it changed.
+     */
+    note: string;
+};
+
+/**
+ * One run's figures: the share of the responses read that name Tribelt, overall, per language, and for Twente, and the share of web responses that cite tribelt.nl. A share is absent when the run read no response to measure it on.
+ */
+export type PromptRunFigures = {
+    /**
+     * The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5"; absent when its readings recorded none. A change of it between runs breaks the charts, as the responses were read another way.
+     */
+    readingModel?: string;
+    /**
+     * The run's id.
+     */
+    runId: string;
+    /**
+     * The models the run asked, by OpenRouter id; the charts break where they changed.
+     */
+    models?: Array<string>;
+    /**
+     * When it started.
+     */
+    startedAt: string;
+    /**
+     * The version of the Prompt set it asked.
+     */
+    promptSetVersion: number;
+    /**
+     * How many responses it asked for.
+     */
+    tasks: number;
+    /**
+     * How many requests got a response.
+     */
+    answered: number;
+    /**
+     * How many responses were read, which the shares count.
+     */
+    read: number;
+    /**
+     * Whether it got fewer than half its responses.
+     */
+    partial: boolean;
+    /**
+     * The reason most of a partial run's failed responses give; absent for a run that is not partial.
+     */
+    failure?: string;
+    /**
+     * The share of the responses read that name Tribelt.
+     */
+    all?: number;
+    /**
+     * The share of the Dutch responses read that name Tribelt.
+     */
+    dutch?: number;
+    /**
+     * The share of the German responses read that name Tribelt.
+     */
+    german?: number;
+    /**
+     * The share of the English responses read that name Tribelt.
+     */
+    english?: number;
+    /**
+     * The share of the responses read to the Twente questions that name Tribelt.
+     */
+    twente?: number;
+    /**
+     * The share of the web responses read that cite tribelt.nl.
+     */
+    citation?: number;
+};
+
+/**
  * A company an answer names, matched to the company list when it is on it.
  */
 export type PromptNamedCompany = {
@@ -2565,6 +3306,10 @@ export type PromptNamedCompany = {
  */
 export type PromptExtraction = {
     /**
+     * The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a reading made before readings recorded it.
+     */
+    readBy?: string;
+    /**
      * True when the extractor could not read it.
      */
     failed: boolean;
@@ -2586,9 +3331,13 @@ export type PromptExtraction = {
     citesTribelt: boolean;
     correctness?: PromptCorrectness;
     /**
-     * Each claim about Tribelt the fact sheet contradicts, quoted.
+     * Each claim about Tribelt the fact sheet contradicts, quoted: what the response got wrong about Tribelt, and the only claims that become fact sheet corrections.
      */
     wrongClaims: Array<string>;
+    /**
+     * Each fact from the fact sheet a response naming Tribelt does not mention; empty when it does not name Tribelt, and for a response read before wrong claims and facts left out were told apart.
+     */
+    leftOut: Array<string>;
     costUsd: Usd;
 };
 
@@ -2779,14 +3528,69 @@ export type PromptPrices = {
 };
 
 /**
+ * Every text model on OpenRouter, as Add a model lists it.
+ */
+export type PromptModelCatalogue = {
+    /**
+     * When the catalogue was read from OpenRouter.
+     */
+    readAt: string;
+    /**
+     * How many questions a run asks, for the cost of a run.
+     */
+    questions: number;
+    /**
+     * The models, the recommended first, then cheapest first.
+     */
+    models: Array<PromptCatalogueModel>;
+};
+
+/**
+ * One text model on OpenRouter, with what one response costs.
+ */
+export type PromptCatalogueModel = {
+    /**
+     * Its OpenRouter id.
+     */
+    id: string;
+    /**
+     * Its name on OpenRouter.
+     */
+    name: string;
+    /**
+     * Its provider's OpenRouter id.
+     */
+    provider: string;
+    /**
+     * When OpenRouter listed it; absent when OpenRouter does not say.
+     */
+    listedAt?: string;
+    /**
+     * True when its tokens cost nothing.
+     */
+    free: boolean;
+    /**
+     * True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
+     */
+    recommended: boolean;
+    basis: PromptPriceBasis;
+    knowledgeUsd: Usd;
+    webUsd: Usd;
+};
+
+/**
  * The Prompt test's settings.
  */
 export type PromptTestSettings = {
     credentialId?: LlmCredentialId;
     /**
-     * The providers whose cheapest model runs ask, by OpenRouter id.
+     * The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
      */
     providers: Array<string>;
+    /**
+     * The Model list, the OpenRouter models every run asks, each its own column; empty until one is saved, when runs ask the cheapest model of each provider.
+     */
+    modelList: Array<string>;
     monthlyBudgetUsd: Usd;
     spentThisMonthUsd: Usd;
     cadence: PromptCadence;
@@ -2820,6 +3624,10 @@ export type PromptTestSettingsChange = {
      * The providers whose cheapest model runs ask.
      */
     providers?: Array<string>;
+    /**
+     * The Model list, by OpenRouter model id.
+     */
+    models?: Array<string>;
     /**
      * The month's budget in dollars.
      */
@@ -2949,6 +3757,62 @@ export type CandidateCheck = {
 };
 
 /**
+ * The competitor definition in use, its versions, and what checking again against it would take.
+ */
+export type CompetitorDefinition = {
+    current: CompetitorDefinitionVersion;
+    /**
+     * Every version, the newest first.
+     */
+    versions: Array<CompetitorDefinitionVersion>;
+    /**
+     * Competitors on the list the model checks whose check was made against an older version.
+     */
+    outdatedCompetitors: number;
+    /**
+     * Waiting candidates whose check was made against an older version.
+     */
+    outdatedCandidates: number;
+    recheckCostUsd: Usd;
+};
+
+/**
+ * One version of the competitor definition.
+ */
+export type CompetitorDefinitionVersion = {
+    /**
+     * The version's number; checks record it.
+     */
+    version: number;
+    /**
+     * Who competes with Tribelt, and who does not.
+     */
+    text: string;
+    /**
+     * When it was saved.
+     */
+    savedAt: string;
+    /**
+     * Who saved it; import for the version the code held.
+     */
+    savedBy: string;
+    /**
+     * The version whose text it restored; absent for a new text.
+     */
+    restoredFrom?: number;
+};
+
+/**
+ * A new text for the competitor definition.
+ */
+export type CompetitorDefinitionText = {
+    /**
+     * Who competes with Tribelt, and who does not.
+     */
+    text: string;
+};
+
+/**
  * Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last run stopped short.
  */
 export type CandidateReviewState = {
@@ -2957,9 +3821,9 @@ export type CandidateReviewState = {
      */
     running: boolean;
     /**
-     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's language-model tokens are spent) or failed (the model or its provider failed). Absent when it went well.
+     * Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator stopped it; what it decided is kept). Absent when it went well.
      */
-    problem?: 'noKey' | 'budget' | 'failed';
+    problem?: 'noKey' | 'budget' | 'failed' | 'stopped';
 };
 
 /**
@@ -3104,6 +3968,11 @@ export type Problem = {
 };
 
 /**
+ * The step.
+ */
+export type ClaudeStepId2 = ClaudeStepId;
+
+/**
  * The company's id.
  */
 export type CompetitorIdPath = CompetitorId;
@@ -3238,6 +4107,166 @@ export type TickImprovementResponses = {
 };
 
 export type TickImprovementResponse = TickImprovementResponses[keyof TickImprovementResponses];
+
+export type EditRecommendationData = {
+    /**
+     * The wording and scores.
+     */
+    body: RecommendationEdit;
+    path: {
+        /**
+         * The recommendation's id.
+         */
+        recommendationId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/recommendations/{recommendationId}';
+};
+
+export type EditRecommendationErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type EditRecommendationError = EditRecommendationErrors[keyof EditRecommendationErrors];
+
+export type EditRecommendationResponses = {
+    /**
+     * The plan, with the edit.
+     */
+    200: Plan;
+};
+
+export type EditRecommendationResponse = EditRecommendationResponses[keyof EditRecommendationResponses];
+
+export type GetRecommendationRunsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs';
+};
+
+export type GetRecommendationRunsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetRecommendationRunsError = GetRecommendationRunsErrors[keyof GetRecommendationRunsErrors];
+
+export type GetRecommendationRunsResponses = {
+    /**
+     * The Recommendation runs.
+     */
+    200: RecommendationRuns;
+};
+
+export type GetRecommendationRunsResponse = GetRecommendationRunsResponses[keyof GetRecommendationRunsResponses];
+
+export type StartRecommendationRunData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs';
+};
+
+export type StartRecommendationRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StartRecommendationRunError = StartRecommendationRunErrors[keyof StartRecommendationRunErrors];
+
+export type StartRecommendationRunResponses = {
+    /**
+     * The run is under way.
+     */
+    202: RecommendationRuns;
+};
+
+export type StartRecommendationRunResponse = StartRecommendationRunResponses[keyof StartRecommendationRunResponses];
+
+export type StopRecommendationRunData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/recommendation-runs/stop';
+};
+
+export type StopRecommendationRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopRecommendationRunError = StopRecommendationRunErrors[keyof StopRecommendationRunErrors];
+
+export type StopRecommendationRunResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopRecommendationRunResponse = StopRecommendationRunResponses[keyof StopRecommendationRunResponses];
 
 export type SetPlanTargetsData = {
     /**
@@ -3423,6 +4452,48 @@ export type SearchTermsResponses = {
 };
 
 export type SearchTermsResponse = SearchTermsResponses[keyof SearchTermsResponses];
+
+export type GetTermPagesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The term, as the terminology map writes it.
+         */
+        term: string;
+        /**
+         * The term's language.
+         */
+        language: Language;
+    };
+    url: '/api/v1/term-pages';
+};
+
+export type GetTermPagesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetTermPagesError = GetTermPagesErrors[keyof GetTermPagesErrors];
+
+export type GetTermPagesResponses = {
+    /**
+     * Each company's pages that use the term.
+     */
+    200: TermPages;
+};
+
+export type GetTermPagesResponse = GetTermPagesResponses[keyof GetTermPagesResponses];
 
 export type ListCompetitorsData = {
     body?: never;
@@ -3885,6 +4956,499 @@ export type StartRescansResponses = {
 
 export type StartRescansResponse = StartRescansResponses[keyof StartRescansResponses];
 
+export type StopRescanData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/rescans/stop';
+};
+
+export type StopRescanErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopRescanError = StopRescanErrors[keyof StopRescanErrors];
+
+export type StopRescanResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopRescanResponse = StopRescanResponses[keyof StopRescanResponses];
+
+export type StopReadinessCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/readiness-checks/stop';
+};
+
+export type StopReadinessCheckErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopReadinessCheckError = StopReadinessCheckErrors[keyof StopReadinessCheckErrors];
+
+export type StopReadinessCheckResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopReadinessCheckResponse = StopReadinessCheckResponses[keyof StopReadinessCheckResponses];
+
+export type RemoveQueuedAnalysesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/analyses/queue';
+};
+
+export type RemoveQueuedAnalysesErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RemoveQueuedAnalysesError = RemoveQueuedAnalysesErrors[keyof RemoveQueuedAnalysesErrors];
+
+export type RemoveQueuedAnalysesResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type RemoveQueuedAnalysesResponse = RemoveQueuedAnalysesResponses[keyof RemoveQueuedAnalysesResponses];
+
+export type StopAnalysisData = {
+    body?: never;
+    path: {
+        /**
+         * The scan's id.
+         */
+        analysisId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/analyses/{analysisId}/stop';
+};
+
+export type StopAnalysisErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopAnalysisError = StopAnalysisErrors[keyof StopAnalysisErrors];
+
+export type StopAnalysisResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopAnalysisResponse = StopAnalysisResponses[keyof StopAnalysisResponses];
+
+export type ListClaudeStepsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/claude-steps';
+};
+
+export type ListClaudeStepsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListClaudeStepsError = ListClaudeStepsErrors[keyof ListClaudeStepsErrors];
+
+export type ListClaudeStepsResponses = {
+    /**
+     * The steps.
+     */
+    200: ClaudeStepList;
+};
+
+export type ListClaudeStepsResponse = ListClaudeStepsResponses[keyof ListClaudeStepsResponses];
+
+export type GetClaudeStepData = {
+    body?: never;
+    path: {
+        /**
+         * The step.
+         */
+        stepId: ClaudeStepId;
+    };
+    query?: never;
+    url: '/api/v1/admin/claude-steps/{stepId}';
+};
+
+export type GetClaudeStepErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetClaudeStepError = GetClaudeStepErrors[keyof GetClaudeStepErrors];
+
+export type GetClaudeStepResponses = {
+    /**
+     * The step.
+     */
+    200: ClaudeStep;
+};
+
+export type GetClaudeStepResponse = GetClaudeStepResponses[keyof GetClaudeStepResponses];
+
+export type SaveClaudeStepVersionData = {
+    /**
+     * The model and the instructions.
+     */
+    body: ClaudeStepChange;
+    path: {
+        /**
+         * The step.
+         */
+        stepId: ClaudeStepId;
+    };
+    query?: never;
+    url: '/api/v1/admin/claude-steps/{stepId}/versions';
+};
+
+export type SaveClaudeStepVersionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SaveClaudeStepVersionError = SaveClaudeStepVersionErrors[keyof SaveClaudeStepVersionErrors];
+
+export type SaveClaudeStepVersionResponses = {
+    /**
+     * The step with its new version.
+     */
+    201: ClaudeStep;
+};
+
+export type SaveClaudeStepVersionResponse = SaveClaudeStepVersionResponses[keyof SaveClaudeStepVersionResponses];
+
+export type GetActivityData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/activity';
+};
+
+export type GetActivityErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetActivityError = GetActivityErrors[keyof GetActivityErrors];
+
+export type GetActivityResponses = {
+    /**
+     * The work and this month's spending.
+     */
+    200: Activity;
+};
+
+export type GetActivityResponse = GetActivityResponses[keyof GetActivityResponses];
+
+export type ListHandTermsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/hand';
+};
+
+export type ListHandTermsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListHandTermsError = ListHandTermsErrors[keyof ListHandTermsErrors];
+
+export type ListHandTermsResponses = {
+    /**
+     * The terms added and removed by hand.
+     */
+    200: HandTermList;
+};
+
+export type ListHandTermsResponse = ListHandTermsResponses[keyof ListHandTermsResponses];
+
+export type AddTermData = {
+    /**
+     * The term as it joins the list.
+     */
+    body: NewTerm;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/hand';
+};
+
+export type AddTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddTermError = AddTermErrors[keyof AddTermErrors];
+
+export type AddTermResponses = {
+    /**
+     * The term, added.
+     */
+    201: Term;
+};
+
+export type AddTermResponse = AddTermResponses[keyof AddTermResponses];
+
+export type PutBackTermData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The removed term, as the list wrote it.
+         */
+        term: string;
+        /**
+         * The removed term's language.
+         */
+        language: Language;
+    };
+    url: '/api/v1/admin/terms/removed';
+};
+
+export type PutBackTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type PutBackTermError = PutBackTermErrors[keyof PutBackTermErrors];
+
+export type PutBackTermResponses = {
+    /**
+     * Put back.
+     */
+    204: void;
+};
+
+export type PutBackTermResponse = PutBackTermResponses[keyof PutBackTermResponses];
+
+export type RemoveTermData = {
+    /**
+     * The term to remove.
+     */
+    body: TermRef;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/removed';
+};
+
+export type RemoveTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RemoveTermError = RemoveTermErrors[keyof RemoveTermErrors];
+
+export type RemoveTermResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type RemoveTermResponse = RemoveTermResponses[keyof RemoveTermResponses];
+
 export type ListTermCandidatesData = {
     body?: never;
     path?: never;
@@ -3959,6 +5523,83 @@ export type StartTermReviewResponses = {
 };
 
 export type StartTermReviewResponse = StartTermReviewResponses[keyof StartTermReviewResponses];
+
+export type SetTermReviewData = {
+    /**
+     * Whether the review runs by itself.
+     */
+    body: TermReviewSwitch;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/term-candidates/review/switch';
+};
+
+export type SetTermReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SetTermReviewError = SetTermReviewErrors[keyof SetTermReviewErrors];
+
+export type SetTermReviewResponses = {
+    /**
+     * The review's state, switched.
+     */
+    200: TermReviewState;
+};
+
+export type SetTermReviewResponse = SetTermReviewResponses[keyof SetTermReviewResponses];
+
+export type StopTermReviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/term-candidates/review/stop';
+};
+
+export type StopTermReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopTermReviewError = StopTermReviewErrors[keyof StopTermReviewErrors];
+
+export type StopTermReviewResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopTermReviewResponse = StopTermReviewResponses[keyof StopTermReviewResponses];
 
 export type AcceptTermCandidateData = {
     /**
@@ -4312,6 +5953,109 @@ export type GetPromptTestResultsResponses = {
 
 export type GetPromptTestResultsResponse = GetPromptTestResultsResponses[keyof GetPromptTestResultsResponses];
 
+export type GetPromptTestHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/prompt-test/history';
+};
+
+export type GetPromptTestHistoryErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptTestHistoryError = GetPromptTestHistoryErrors[keyof GetPromptTestHistoryErrors];
+
+export type GetPromptTestHistoryResponses = {
+    /**
+     * The figures per run.
+     */
+    200: PromptTestHistory;
+};
+
+export type GetPromptTestHistoryResponse = GetPromptTestHistoryResponses[keyof GetPromptTestHistoryResponses];
+
+export type ListPromptSetsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/prompt-test/prompt-sets';
+};
+
+export type ListPromptSetsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListPromptSetsError = ListPromptSetsErrors[keyof ListPromptSetsErrors];
+
+export type ListPromptSetsResponses = {
+    /**
+     * The published Prompt sets and the scopes.
+     */
+    200: PromptSets;
+};
+
+export type ListPromptSetsResponse = ListPromptSetsResponses[keyof ListPromptSetsResponses];
+
+export type PublishPromptSetData = {
+    body: PromptSetDraft;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-sets';
+};
+
+export type PublishPromptSetErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type PublishPromptSetError = PublishPromptSetErrors[keyof PublishPromptSetErrors];
+
+export type PublishPromptSetResponses = {
+    /**
+     * The published version.
+     */
+    201: PublishedPromptSet;
+};
+
+export type PublishPromptSetResponse = PublishPromptSetResponses[keyof PublishPromptSetResponses];
+
 export type ListPromptAnswersData = {
     body?: never;
     path: {
@@ -4469,6 +6213,52 @@ export type RetryPromptRunResponses = {
 
 export type RetryPromptRunResponse = RetryPromptRunResponses[keyof RetryPromptRunResponses];
 
+export type StopPromptRunData = {
+    body?: never;
+    path: {
+        /**
+         * The Prompt run's id.
+         */
+        runId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/prompt-runs/{runId}/stop';
+};
+
+export type StopPromptRunErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopPromptRunError = StopPromptRunErrors[keyof StopPromptRunErrors];
+
+export type StopPromptRunResponses = {
+    /**
+     * The run was asked to stop.
+     */
+    204: void;
+};
+
+export type StopPromptRunResponse = StopPromptRunResponses[keyof StopPromptRunResponses];
+
 export type GetPromptRetryPlanData = {
     body?: never;
     path: {
@@ -4571,6 +6361,43 @@ export type RereadPromptRunResponses = {
 };
 
 export type RereadPromptRunResponse = RereadPromptRunResponses[keyof RereadPromptRunResponses];
+
+export type GetPromptModelCatalogueData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-test/catalogue';
+};
+
+export type GetPromptModelCatalogueErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptModelCatalogueError = GetPromptModelCatalogueErrors[keyof GetPromptModelCatalogueErrors];
+
+export type GetPromptModelCatalogueResponses = {
+    /**
+     * The catalogue.
+     */
+    200: PromptModelCatalogue;
+};
+
+export type GetPromptModelCatalogueResponse = GetPromptModelCatalogueResponses[keyof GetPromptModelCatalogueResponses];
 
 export type GetPromptTestSettingsData = {
     body?: never;
@@ -4724,6 +6551,174 @@ export type StartCandidateReviewResponses = {
 
 export type StartCandidateReviewResponse = StartCandidateReviewResponses[keyof StartCandidateReviewResponses];
 
+export type StopCandidateReviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-candidates/review/stop';
+};
+
+export type StopCandidateReviewErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopCandidateReviewError = StopCandidateReviewErrors[keyof StopCandidateReviewErrors];
+
+export type StopCandidateReviewResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopCandidateReviewResponse = StopCandidateReviewResponses[keyof StopCandidateReviewResponses];
+
+export type GetCompetitorDefinitionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-definition';
+};
+
+export type GetCompetitorDefinitionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetCompetitorDefinitionError = GetCompetitorDefinitionErrors[keyof GetCompetitorDefinitionErrors];
+
+export type GetCompetitorDefinitionResponses = {
+    /**
+     * The definition and its versions.
+     */
+    200: CompetitorDefinition;
+};
+
+export type GetCompetitorDefinitionResponse = GetCompetitorDefinitionResponses[keyof GetCompetitorDefinitionResponses];
+
+export type SaveCompetitorDefinitionData = {
+    /**
+     * The definition's new text.
+     */
+    body: CompetitorDefinitionText;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-definition';
+};
+
+export type SaveCompetitorDefinitionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type SaveCompetitorDefinitionError = SaveCompetitorDefinitionErrors[keyof SaveCompetitorDefinitionErrors];
+
+export type SaveCompetitorDefinitionResponses = {
+    /**
+     * The definition, saved.
+     */
+    200: CompetitorDefinition;
+};
+
+export type SaveCompetitorDefinitionResponse = SaveCompetitorDefinitionResponses[keyof SaveCompetitorDefinitionResponses];
+
+export type RestoreCompetitorDefinitionData = {
+    body?: never;
+    path: {
+        /**
+         * The version to restore.
+         */
+        version: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/competitor-definition/versions/{version}/restore';
+};
+
+export type RestoreCompetitorDefinitionErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RestoreCompetitorDefinitionError = RestoreCompetitorDefinitionErrors[keyof RestoreCompetitorDefinitionErrors];
+
+export type RestoreCompetitorDefinitionResponses = {
+    /**
+     * The definition, restored.
+     */
+    200: CompetitorDefinition;
+};
+
+export type RestoreCompetitorDefinitionResponse = RestoreCompetitorDefinitionResponses[keyof RestoreCompetitorDefinitionResponses];
+
 export type ListCompetitorChecksData = {
     body?: never;
     path?: never;
@@ -4789,6 +6784,43 @@ export type StartCompetitorCheckResponses = {
 };
 
 export type StartCompetitorCheckResponse = StartCompetitorCheckResponses[keyof StartCompetitorCheckResponses];
+
+export type StopCompetitorCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/competitor-checks/stop';
+};
+
+export type StopCompetitorCheckErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type StopCompetitorCheckError = StopCompetitorCheckErrors[keyof StopCompetitorCheckErrors];
+
+export type StopCompetitorCheckResponses = {
+    /**
+     * Stopped.
+     */
+    204: void;
+};
+
+export type StopCompetitorCheckResponse = StopCompetitorCheckResponses[keyof StopCompetitorCheckResponses];
 
 export type DecideCompetitorCandidatesData = {
     /**
@@ -5350,6 +7382,50 @@ export type GetLlmKeyUsageResponses = {
 };
 
 export type GetLlmKeyUsageResponse = GetLlmKeyUsageResponses[keyof GetLlmKeyUsageResponses];
+
+export type UpdateLlmBudgetData = {
+    /**
+     * The new budget.
+     */
+    body: LlmBudgetChange;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/llm/budget';
+};
+
+export type UpdateLlmBudgetErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type UpdateLlmBudgetError = UpdateLlmBudgetErrors[keyof UpdateLlmBudgetErrors];
+
+export type UpdateLlmBudgetResponses = {
+    /**
+     * The settings after the change.
+     */
+    200: LlmSettings;
+};
+
+export type UpdateLlmBudgetResponse = UpdateLlmBudgetResponses[keyof UpdateLlmBudgetResponses];
 
 export type ClearActiveLlmData = {
     body?: never;

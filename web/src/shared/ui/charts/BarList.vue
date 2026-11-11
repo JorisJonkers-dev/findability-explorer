@@ -4,17 +4,18 @@ import { type Tone, TONE_BG } from './tones'
 
 export type BarRow = { label: string; value: number; display: string; tone: Tone; highlight?: boolean; leader?: number }
 
-const props = defineProps<{ rows: readonly BarRow[]; max: number; target?: number; label?: string }>()
+/** wide gives the labels more room, for names such as "Ashworth, the best competitor". */
+const props = defineProps<{ rows: readonly BarRow[]; max: number; target?: number; label?: string; wide?: boolean }>()
 
 const at = (v: number): number => (props.max > 0 ? Math.min(100, Math.max(0, (v / props.max) * 100)) : 0)
 const aria = computed(
-  () => `${props.label ?? 'Bars'}. ${props.rows.map((r) => `${r.label}: ${r.display}`).join('. ')}.${props.target === undefined ? '' : ` Target ${String(props.target)}.`}`,
+  () => `${props.label ?? 'Bars'}. ${props.rows.map((r) => `${r.label}: ${r.display}`).join('. ')}.${props.target === undefined ? '' : ` Goal ${String(props.target)}.`}`,
 )
 </script>
 
 <template>
   <div role="img" :aria-label="aria" class="flex flex-col gap-3">
-    <div v-for="r in rows" :key="r.label" class="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3">
+    <div v-for="r in rows" :key="r.label" class="grid items-center gap-3" :class="wide ? 'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto]'">
       <span class="truncate text-sm" :class="r.highlight ? 'font-bold text-black' : 'text-ink-2'">{{ r.label }}</span>
       <span class="relative h-[22px]">
         <span class="absolute inset-x-0 top-1.5 h-2.5 rounded-[5px] bg-grey"></span>

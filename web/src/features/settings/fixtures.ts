@@ -38,7 +38,15 @@ export function llmSettings(overrides: Partial<LlmSettings> = {}): LlmSettings {
     choice: 'default',
     active: { credentialId: 'vault-anthropic', model: 'claude-haiku-5-5' },
     matchingEnabled: true,
-    budget: { monthlyTokens: 10_000_000, usedThisMonth: 48_211, averageTokensPerScan: 29_137, scansMatched: 2 },
+    budget: {
+      monthlyBudgetUsd: 15,
+      spentThisMonthUsd: 0.48,
+      leftUsd: 14.52,
+      tokensThisMonth: 48_211,
+      averageTokensPerScan: 29_137,
+      averageScanUsd: 0.0044,
+      scansMatched: 2,
+    },
     events: [
       { at: '2026-10-22T14:05:00Z', actor: 'joris', action: 'credential_added', ok: true, message: 'Added openrouter key "Course budget key" (9f86d081884c).' },
       { at: '2026-10-23T09:30:00Z', actor: 'joris', action: 'credential_tested', ok: true, message: 'Tested anthropic key "Vault key": accepted.' },

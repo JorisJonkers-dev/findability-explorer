@@ -21,6 +21,10 @@ type insightCases struct {
 	actor   string
 	targets map[domain.Target]float64
 	planErr error
+	// written adds a recommendation a run wrote to the plan; runs stands in for the
+	// Recommendation run's use cases.
+	written bool
+	runs    recRunCases
 }
 
 func (a *analyses) insights() *insightCases {
@@ -208,7 +212,19 @@ func plan() app.Plan {
 	}
 }
 
-func (c *insightCases) Plan(context.Context) (app.Plan, error) { return plan(), c.planErr }
+func (c *insightCases) Plan(context.Context) (app.Plan, error) {
+	p := plan()
+	if c.written {
+		w := domain.Recommendation{
+			ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", RunID: "run", Gap: domain.Gap{Kind: domain.GapListing, Specifics: []string{"Cited twice."}},
+			Title: "Get listed", WhereNote: domain.ForTheAgency, EditedAt: time.Date(2026, 11, 2, 9, 0, 0, 0, time.UTC), Why: "Because.", Steps: []string{"Ask."}, DoneWhen: "Listed.", Benefit: 3, Effort: 3, ScoreReason: "Moved.",
+		}
+		placed := w
+		placed.Where, placed.WhereNote, placed.ScoreReason, placed.EditedAt = "https://www.tribelt.nl/", "", "", time.Time{}
+		p.Items = append(p.Items, w.Item("run", nil, domain.DoneFacts{}), placed.Item("other", nil, domain.DoneFacts{}))
+	}
+	return p, c.planErr
+}
 
 func (c *insightCases) Tick(_ context.Context, actor, id string, done bool) error {
 	c.actor, c.ticked, c.done = actor, id, done

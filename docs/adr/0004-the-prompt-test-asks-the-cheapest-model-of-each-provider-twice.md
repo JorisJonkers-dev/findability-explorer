@@ -69,3 +69,9 @@ and problem questions and the Netherlands and Germany scopes. Meta and xAI leave
 providers. A run is now 20 × 5 × 2 = 200 answers. Answers to prompt set 1 keep their version and
 are never compared with set 2's; a run of set 1 still running when the release lands is failed
 rather than resumed.
+
+## Amendment, 1 November 2026: the Prompt set is data
+
+The questions are no longer fixed in code. The Prompt set is stored as published versions, versions
+1 and 2 imported, and an administrator edits a draft and publishes it as the next version
+(ADR-0018). A change to any question is still a new version, and the charts still break there.

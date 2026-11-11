@@ -8,6 +8,7 @@ import (
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 // failedRun runs one provider's run whose first prompt fails in both modes, and returns the env.
@@ -19,7 +20,7 @@ func failedRun(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	// Mark the first prompt's two answers failed, as a rate limit would leave them.
-	first := domain.CurrentPromptSet().Prompts[0].ID
+	first := domaintest.Version2().PromptSet().Prompts[0].ID
 	for i, a := range e.repo.answers {
 		if a.Prompt.ID == first {
 			a.Failure, a.Extraction, a.Text = "Rate limited.", nil, ""
@@ -65,12 +66,12 @@ func TestRetryAsksEveryFailedAnswerAgainInTheSameRun(t *testing.T) {
 func TestRetryAsksOneQuestionOfOneModel(t *testing.T) {
 	e := failedRun(t)
 	run := e.run(t)
-	key := domain.TaskKey{PromptID: domain.CurrentPromptSet().Prompts[0].ID, Provider: "openai", Mode: domain.ModeWeb}
+	key := domain.TaskKey{PromptID: domaintest.Version2().PromptSet().Prompts[0].ID, Provider: "openai", Mode: domain.ModeWeb}
 	got, err := e.svc.Retry(t.Context(), run.ID, &key)
 	if err != nil || got.Tasks != 1 || failures(e) != 1 {
 		t.Fatalf("retry = %+v, %v, %d failures left", got, err, failures(e))
 	}
-	answered := domain.TaskKey{PromptID: domain.CurrentPromptSet().Prompts[1].ID, Provider: "openai", Mode: domain.ModeWeb}
+	answered := domain.TaskKey{PromptID: domaintest.Version2().PromptSet().Prompts[1].ID, Provider: "openai", Mode: domain.ModeWeb}
 	if _, err := e.svc.Retry(t.Context(), run.ID, &answered); !errors.Is(err, app.ErrNothingFailed) || !app.IsInputError(err) {
 		t.Errorf("asking an answered question again = %v", err)
 	}
@@ -167,7 +168,7 @@ func TestRetryAsksARunOfAnEarlierSetWithTheQuestionsItKept(t *testing.T) {
 func unreadRun(t *testing.T) (*env, domain.TaskKey) {
 	t.Helper()
 	e := failedRun(t)
-	key := domain.TaskKey{PromptID: domain.CurrentPromptSet().Prompts[1].ID, Provider: "openai", Mode: domain.ModeWeb}
+	key := domain.TaskKey{PromptID: domaintest.Version2().PromptSet().Prompts[1].ID, Provider: "openai", Mode: domain.ModeWeb}
 	for i, a := range e.repo.answers {
 		if a.Key() == key {
 			e.repo.answers[i].Extraction = &domain.Extraction{Failed: true, Cost: 1}
@@ -289,5 +290,50 @@ func TestRereadRefusals(t *testing.T) {
 	e.repo.runs[0].run.Status = domain.RunRunning
 	if _, err := e.svc.Reread(t.Context(), run.ID, nil); !errors.Is(err, domain.ErrRunActive) {
 		t.Errorf("a running run = %v", err)
+	}
+}
+
+func TestAnEmptyResponseFailsUncountedAndARetryAsksItAgain(t *testing.T) {
+	e := newEnv(t, newRepo(), "a")
+	e.repo.settings.Providers = []string{"openai"}
+	const model = "openai/gpt-oss-20b"
+	e.gw.empty[model] = true
+	run, err := e.svc.Start(t.Context(), "joris")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(e.repo.answers) != 40 || e.gw.extracted != 0 {
+		t.Fatalf("%d answers, %d read: an empty response is never read", len(e.repo.answers), e.gw.extracted)
+	}
+	for _, a := range e.repo.answers {
+		if a.Failure != "The model gave no text." || a.Extraction != nil || a.Counts() || a.OutputTokens != 2000 || a.Cost != 10 {
+			t.Fatalf("an empty response must be stored failed, unread, with what it used: %+v", a)
+		}
+	}
+	res, err := e.svc.Results(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := res.Runs[0].Progress; p.Failed != 40 || p.Answered != 0 {
+		t.Errorf("progress = %+v: the run needs a retry", p)
+	}
+	for _, c := range res.Runs[0].Cells {
+		if c.Answers != 0 || c.Named != 0 || c.Cited != 0 {
+			t.Errorf("a failed response counts in a share: %+v", c)
+		}
+	}
+
+	e.gw.empty[model] = false
+	got, err := e.svc.Retry(t.Context(), run.ID, nil)
+	if err != nil || got.Tasks != 40 {
+		t.Fatalf("retry = %+v, %v", got, err)
+	}
+	if failures(e) != 0 || len(e.repo.answers) != 40 || e.gw.extracted != 40 {
+		t.Errorf("after the retry: %d failures in %d answers, %d read", failures(e), len(e.repo.answers), e.gw.extracted)
+	}
+	for _, a := range e.repo.answers {
+		if !a.Counts() {
+			t.Fatalf("the retry must ask every empty response again: %+v", a)
+		}
 	}
 }

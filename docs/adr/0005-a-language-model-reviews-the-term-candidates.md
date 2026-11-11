@@ -47,3 +47,8 @@ model: before each batch it checks the month's tokens of every job together, as 
 settings page shows them, and stops once they reach `LLM_MONTHLY_TOKENS`. What it reviewed before
 is kept, the Term review page says the budget is used up, and the review goes on in the next month.
 The competitor review (ADR-0009) and Haiku's reading of Prompt answers (ADR-0007) stop the same way.
+
+## Amendment, 1 November 2026: a budget in dollars
+
+The review stops at the Anthropic key's monthly budget in dollars, not at `LLM_MONTHLY_TOKENS`
+(ADR-0019).

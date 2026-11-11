@@ -367,7 +367,8 @@ export const zLlmEventAction = z.enum([
     'credential_deleted',
     'credential_tested',
     'active_set',
-    'active_cleared'
+    'active_cleared',
+    'budget_set'
 ]);
 
 /**
@@ -385,32 +386,20 @@ export const zLlmEvent = z.object({
 });
 
 /**
- * What every job on the language model may spend in a month together - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when the month's tokens are spent.
+ * The Anthropic key's new monthly budget.
  */
-export const zLlmBudget = z.object({
-    monthlyTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    usedThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    averageTokensPerScan: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
-    scansMatched: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
+export const zLlmBudgetChange = z.object({
+    monthlyBudgetUsd: z.number().gte(0.01).lte(1000)
 });
 
 /**
- * The language-model settings.
+ * Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator accepted from the review queue, or a term an administrator added by hand.
  */
-export const zLlmSettings = z.object({
-    credentials: z.array(zLlmCredential).max(100),
-    choice: zLlmChoice,
-    active: zActiveLlm.optional(),
-    haiku: zActiveLlm.optional(),
-    matchingEnabled: z.boolean(),
-    budget: zLlmBudget,
-    events: z.array(zLlmEvent).max(50)
-});
-
-/**
- * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
- */
-export const zTermOrigin = z.enum(['research', 'review']);
+export const zTermOrigin = z.enum([
+    'research',
+    'review',
+    'hand'
+]);
 
 /**
  * One name for a belt, material or specification, as a company uses it.
@@ -593,16 +582,58 @@ export const zTermCandidate = z.object({
 });
 
 /**
- * How far the language model is with the waiting candidates.
+ * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), termReview (reviewing the search terms the scans found), or recommendations (writing recommendations).
  */
-export const zTermReviewState = z.object({
-    running: z.boolean(),
-    waiting: z.int().gte(0).lte(1000000),
-    problem: z.enum([
-        'noModel',
-        'budget',
-        'failed'
-    ]).optional()
+export const zClaudeStepId = z.enum([
+    'reading',
+    'matching',
+    'candidateMerge',
+    'candidateCheck',
+    'termReview',
+    'recommendations'
+]);
+
+/**
+ * One saved version of a Claude step - the model it uses and its instructions.
+ */
+export const zClaudeStepVersion = z.object({
+    number: z.int().gte(1).lte(1000000),
+    model: z.string().max(100),
+    modelName: z.string().max(100),
+    instructions: z.string().max(20000),
+    note: z.string().max(300),
+    createdBy: z.string().max(200),
+    createdAt: z.iso.datetime({ offset: true }).max(40)
+});
+
+/**
+ * A new version of a Claude step.
+ */
+export const zClaudeStepChange = z.object({
+    model: z.string().min(1).max(100),
+    instructions: z.string().min(1).max(20000),
+    restoredFrom: z.int().gte(1).lte(1000000).optional()
+});
+
+/**
+ * A kind of background work.
+ */
+export const zWorkKind = z.enum([
+    'promptRun',
+    'scan',
+    'rescan',
+    'readinessCheck',
+    'termReview',
+    'candidateReview',
+    'competitorCheck',
+    'recommendationRun'
+]);
+
+/**
+ * Whether the term review runs by itself.
+ */
+export const zTermReviewSwitch = z.object({
+    on: z.boolean()
 });
 
 /**
@@ -615,12 +646,38 @@ export const zTermCandidateCounts = z.object({
 });
 
 /**
- * The candidates with one status, and how far the language model is with them.
+ * A search term an administrator adds by hand.
  */
-export const zTermCandidateList = z.object({
-    items: z.array(zTermCandidate).max(10000),
-    counts: zTermCandidateCounts,
-    review: zTermReviewState
+export const zNewTerm = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage,
+    family: zBeltFamily,
+    tier: zIntentTier
+});
+
+/**
+ * A search term on the list, by its text and language.
+ */
+export const zTermRef = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage
+});
+
+/**
+ * A term added or removed by hand, with who did it and when.
+ */
+export const zHandTerm = z.object({
+    term: zTerm,
+    by: z.string().max(200),
+    at: z.iso.datetime({ offset: true }).max(40)
+});
+
+/**
+ * The terms added by hand and the terms removed, oldest first.
+ */
+export const zHandTermList = z.object({
+    added: z.array(zHandTerm).max(10000),
+    removed: z.array(zHandTerm).max(10000)
 });
 
 /**
@@ -840,6 +897,31 @@ export const zAiSearchSummary = z.object({
 });
 
 /**
+ * An administrator's wording and scores of a recommendation a run wrote.
+ */
+export const zRecommendationEdit = z.object({
+    title: z.string().min(1).max(200),
+    where: z.string().max(500).optional(),
+    why: z.string().max(500),
+    steps: z.array(z.string().max(300)).max(6),
+    doneWhen: z.string().max(300),
+    benefit: z.int().gte(1).lte(5),
+    effort: z.int().gte(1).lte(5)
+});
+
+/**
+ * What kind of change a recommendation asks for - term (a search term to add), page (a page to add), listing (a site to get listed on), fact (a fact sheet correction), readiness (AI readiness), or general (written by hand for the whole site).
+ */
+export const zRecommendationKind = z.enum([
+    'term',
+    'page',
+    'listing',
+    'fact',
+    'readiness',
+    'general'
+]);
+
+/**
  * One thing a scan check looks for on tribelt.nl, and whether the latest scan found it.
  */
 export const zPlanPart = z.object({
@@ -964,6 +1046,14 @@ export const zMeasureLeader = z.object({
  * One improvement of the plan.
  */
 export const zPlanImprovement = z.object({
+    kind: zRecommendationKind,
+    generated: z.boolean(),
+    new: z.boolean(),
+    where: z.string().max(500).optional(),
+    whereNote: z.string().max(200).optional(),
+    scoreReason: z.string().max(300).optional(),
+    editedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    facts: z.array(z.string().max(600)).max(10).optional(),
     id: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
     title: z.string().max(200),
     moves: z.string().max(200),
@@ -1110,6 +1200,7 @@ export const zAnalysisSummary = z.object({
     status: zAnalysisStatus,
     failure: z.string().max(500).optional(),
     blocked: z.boolean().optional(),
+    stoppedByHand: z.boolean().optional(),
     aiReadiness: zAiReadinessBrief.optional(),
     maxPages: z.int().gte(1).lte(100),
     pagesCrawled: z.int().gte(0).lte(100),
@@ -1215,7 +1306,8 @@ export const zReadinessCheckState = z.object({
     running: z.boolean(),
     checked: z.int().gte(0).lte(1000),
     failed: z.int().gte(0).lte(1000),
-    total: z.int().gte(0).lte(1000)
+    total: z.int().gte(0).lte(1000),
+    stopped: z.boolean().optional()
 });
 
 /**
@@ -1254,7 +1346,35 @@ export const zReadinessFiles = z.object({
     llmsTxt: z.string().max(100000),
     llmsTruncated: z.boolean(),
     llmsFullTxt: z.string().max(100000),
-    llmsFullTruncated: z.boolean()
+    llmsFullTruncated: z.boolean(),
+    sitemapUrl: z.string().max(2000),
+    sitemapTxt: z.string().max(100000),
+    sitemapTruncated: z.boolean()
+});
+
+/**
+ * A page that uses the term.
+ */
+export const zTermPage = z.object({
+    url: z.string().max(2000),
+    title: z.string().max(500)
+});
+
+/**
+ * One company's pages that use the term. A scan made before scans recorded the pages of a term has none; the company uses the term all the same.
+ */
+export const zCompanyTermPages = z.object({
+    competitorId: zCompetitorId,
+    name: z.string().max(200),
+    role: zCompanyRole,
+    pages: z.array(zTermPage).max(10)
+});
+
+/**
+ * The pages that use one search term on each company's newest finished scan that found it, Tribelt first, then the competitors and the group by name.
+ */
+export const zTermPages = z.object({
+    items: z.array(zCompanyTermPages).max(1000)
 });
 
 /**
@@ -1311,16 +1431,9 @@ export const zPromptKind = z.enum([
 ]);
 
 /**
- * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
+ * Where and in which language a prompt asks - a scope's id (PromptSetScope), such as twente, netherlands, germany, dutch, german, or english, or one a later Prompt set version added.
  */
-export const zPromptScope = z.enum([
-    'twente',
-    'netherlands',
-    'germany',
-    'dutch',
-    'german',
-    'english'
-]);
+export const zPromptScope = z.string().max(40).regex(/^[a-z][a-z0-9_-]*$/);
 
 /**
  * How many of a family's answers in one scope name Tribelt.
@@ -1365,7 +1478,7 @@ export const zPromptMode = z.enum(['knowledge', 'web']);
  */
 export const zPromptRetryRequest = z.object({
     promptId: z.string().max(80).regex(/^[a-z0-9_-]+$/).optional(),
-    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/).optional(),
+    provider: z.string().max(200).regex(/^[a-z0-9][a-z0-9._:\/-]*$/).optional(),
     mode: zPromptMode.optional()
 });
 
@@ -1390,10 +1503,198 @@ export const zPromptTrigger = z.enum(['manual', 'schedule']);
 export const zUsd = z.number().gte(0).lte(1000000);
 
 /**
+ * What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt answers - and what they spent, priced at the models' list prices from their stored token counts. Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter key's budget is the Prompt test's (PromptTestSettings).
+ */
+export const zLlmBudget = z.object({
+    monthlyBudgetUsd: zUsd,
+    spentThisMonthUsd: zUsd,
+    leftUsd: zUsd,
+    tokensThisMonth: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    averageTokensPerScan: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    averageScanUsd: zUsd,
+    scansMatched: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000))
+});
+
+/**
+ * The language-model settings.
+ */
+export const zLlmSettings = z.object({
+    credentials: z.array(zLlmCredential).max(100),
+    choice: zLlmChoice,
+    active: zActiveLlm.optional(),
+    haiku: zActiveLlm.optional(),
+    matchingEnabled: z.boolean(),
+    budget: zLlmBudget,
+    events: z.array(zLlmEvent).max(50)
+});
+
+/**
+ * A Claude model a step may use, with what one job of the step costs with it.
+ */
+export const zClaudeStepModel = z.object({
+    id: z.string().max(100),
+    name: z.string().max(100),
+    jobCostUsd: zUsd
+});
+
+/**
+ * A Claude step as the overview lists it.
+ */
+export const zClaudeStepSummary = z.object({
+    id: zClaudeStepId,
+    title: z.string().max(100),
+    fixedInstructions: z.boolean(),
+    current: zClaudeStepVersion,
+    jobCostUsd: zUsd
+});
+
+/**
+ * Every Claude step.
+ */
+export const zClaudeStepList = z.object({
+    items: z.array(zClaudeStepSummary).max(20)
+});
+
+/**
+ * One Claude step: its versions, oldest first, the newest of which it uses; the instructions it came with; and the models it may use, cheapest first, with the cost of one job with each. A job's cost is the tool's estimate with Claude Haiku 5.5, scaled by each model's price for the step's typical mix of tokens read and written.
+ */
+export const zClaudeStep = z.object({
+    id: zClaudeStepId,
+    title: z.string().max(100),
+    fixedInstructions: z.boolean(),
+    original: z.string().max(20000),
+    current: zClaudeStepVersion,
+    versions: z.array(zClaudeStepVersion).max(10000),
+    models: z.array(zClaudeStepModel).max(50),
+    jobCostUsd: zUsd
+});
+
+/**
+ * One piece of background work. Running while finishedAt is absent; otherwise ended as ending says. done of total is what it did - responses of a Prompt run, pages of a scan, scans of a re-scan, sites of a readiness check, search terms of the term review, companies of a candidate review or list check - and failed how many of those failed.
+ */
+export const zWork = z.object({
+    id: z.string().max(64),
+    kind: zWorkKind,
+    startedAt: z.iso.datetime({ offset: true }).max(64),
+    finishedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    ending: z.enum([
+        'done',
+        'doneWithFailures',
+        'stoppedByHand',
+        'stoppedByBudget',
+        'failed'
+    ]).optional(),
+    done: z.int().gte(0).lte(1000000),
+    total: z.int().gte(0).lte(1000000),
+    failed: z.int().gte(0).lte(1000000),
+    openRouterCostUsd: zUsd,
+    anthropicCostUsd: zUsd
+});
+
+/**
+ * What one kind of work cost on one key this month.
+ */
+export const zSpendLine = z.object({
+    kind: z.enum([
+        'promptRuns',
+        'scans',
+        'readingResponses',
+        'termReview',
+        'candidateChecks',
+        'recommendationRuns'
+    ]),
+    key: z.enum(['openRouter', 'anthropic']),
+    costUsd: zUsd
+});
+
+/**
+ * This month's spending by kind of work, with the key that paid.
+ */
+export const zSpending = z.object({
+    since: z.iso.datetime({ offset: true }).max(64),
+    lines: z.array(zSpendLine).max(20)
+});
+
+/**
+ * The work running now, the last pieces ended, and this month's spending.
+ */
+export const zActivity = z.object({
+    running: z.array(zWork).max(1000),
+    recent: z.array(zWork).max(20),
+    spending: zSpending
+});
+
+/**
+ * Whether the language model reviews the waiting candidates by itself, how far it is with them, and what it used this month.
+ */
+export const zTermReviewState = z.object({
+    on: z.boolean(),
+    running: z.boolean(),
+    waiting: z.int().gte(0).lte(1000000),
+    problem: z.enum([
+        'noModel',
+        'budget',
+        'failed',
+        'stopped'
+    ]).optional(),
+    monthTokens: z.coerce.bigint().gte(BigInt(0)).lte(BigInt(1000000000000)),
+    monthCostUsd: zUsd
+});
+
+/**
+ * The candidates with one status, and how far the language model is with them.
+ */
+export const zTermCandidateList = z.object({
+    items: z.array(zTermCandidate).max(10000),
+    counts: zTermCandidateCounts,
+    review: zTermReviewState
+});
+
+/**
+ * One Recommendation run.
+ */
+export const zRecommendationRun = z.object({
+    id: z.uuid().max(36),
+    startedAt: z.iso.datetime({ offset: true }).max(64),
+    finishedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    ending: z.enum([
+        'done',
+        'doneWithFailures',
+        'stoppedByHand',
+        'stoppedByBudget',
+        'failed'
+    ]).optional(),
+    startedBy: z.string().max(200),
+    model: z.string().max(200),
+    gaps: z.int().gte(0).lte(1000),
+    added: z.int().gte(0).lte(100000),
+    replaced: z.int().gte(0).lte(100000),
+    kept: z.int().gte(0).lte(100000),
+    costUsd: zUsd
+});
+
+/**
+ * The Recommendation run, what starting one would do, and the past runs.
+ */
+export const zRecommendationRuns = z.object({
+    running: z.boolean(),
+    noKey: z.boolean(),
+    model: z.string().max(200).optional(),
+    replaces: z.int().gte(0).lte(100000),
+    stale: z.boolean(),
+    promptRunAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    scanAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    terms: z.int().gte(0).lte(100000),
+    gaps: z.int().gte(0).lte(1000),
+    estimatedCostUsd: zUsd,
+    runs: z.array(zRecommendationRun).max(20)
+});
+
+/**
  * What asking one provider's answer again in one mode should cost, reading included.
  */
 export const zPromptAnswerCost = z.object({
-    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/),
+    provider: z.string().max(200).regex(/^[a-z0-9][a-z0-9._:\/-]*$/),
     mode: zPromptMode,
     costUsd: zUsd
 });
@@ -1415,7 +1716,7 @@ export const zPromptRetryPlan = z.object({
  * The model a run asks for one provider, and the paid fallback of a free one.
  */
 export const zPromptModelChoice = z.object({
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     model: z.string().max(200),
     free: z.boolean(),
     fallback: z.string().max(200).optional()
@@ -1425,7 +1726,7 @@ export const zPromptModelChoice = z.object({
  * One provider's part of a run.
  */
 export const zPromptProviderProgress = z.object({
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     answered: z.int().gte(0).lte(100000),
     failed: z.int().gte(0).lte(100000),
     costUsd: zUsd,
@@ -1436,7 +1737,7 @@ export const zPromptProviderProgress = z.object({
  * The answers of one provider, scope, belt family and mode that were read, and how many name and cite Tribelt.
  */
 export const zPromptCell = z.object({
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     scope: zPromptScope,
     family: zPromptFamily,
     mode: zPromptMode,
@@ -1507,7 +1808,7 @@ export const zPromptWrongClaim = z.object({
     answerId: z.uuid().max(36),
     runId: z.uuid().max(36),
     at: z.iso.datetime({ offset: true }).max(64),
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     model: z.string().max(200),
     promptId: z.string().max(80),
     mode: zPromptMode,
@@ -1526,6 +1827,115 @@ export const zPromptTestResults = z.object({
 });
 
 /**
+ * A scope's id, which the responses to its questions record as their scope.
+ */
+export const zPromptSetScopeId = z.string().max(40).regex(/^[a-z][a-z0-9_-]*$/);
+
+/**
+ * One question of a published Prompt set.
+ */
+export const zPromptSetQuestion = z.object({
+    id: z.string().max(80),
+    family: zPromptFamily,
+    intent: zIntentTier,
+    scope: zPromptSetScopeId,
+    scopeName: z.string().max(100),
+    language: z.string().max(2).regex(/^[a-z]{2}$/),
+    region: z.string().max(100).optional(),
+    text: z.string().max(1000),
+    english: z.string().max(1000).optional()
+});
+
+/**
+ * One published version of the Prompt set, with its questions.
+ */
+export const zPublishedPromptSet = z.object({
+    version: z.int().gte(1).lte(100000),
+    publishedAt: z.iso.datetime({ offset: true }).max(64),
+    note: z.string().max(300),
+    questions: z.array(zPromptSetQuestion).max(1000)
+});
+
+/**
+ * One question of a draft.
+ */
+export const zPromptDraftQuestion = z.object({
+    id: z.string().max(80).regex(/^[a-z0-9][a-z0-9_-]*$/).optional(),
+    family: zPromptFamily,
+    intent: zIntentTier,
+    scope: zPromptSetScopeId,
+    text: z.string().max(1000),
+    english: z.string().max(1000).optional()
+});
+
+/**
+ * A scope - a language a question is asked in, with or without a region.
+ */
+export const zPromptSetScope = z.object({
+    id: zPromptSetScopeId,
+    name: z.string().max(100),
+    language: z.string().max(2).regex(/^[a-z]{2}$/),
+    region: z.string().max(100).optional()
+});
+
+/**
+ * The published Prompt sets, newest first, and every scope.
+ */
+export const zPromptSets = z.object({
+    versions: z.array(zPublishedPromptSet).max(1000),
+    scopes: z.array(zPromptSetScope).max(200)
+});
+
+/**
+ * An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the version it was restored from, if any.
+ */
+export const zPromptSetDraft = z.object({
+    questions: z.array(zPromptDraftQuestion).min(1).max(1000),
+    scopes: z.array(zPromptSetScope).max(50).optional(),
+    restoredFrom: z.int().gte(1).lte(100000).optional()
+});
+
+/**
+ * One published Prompt set.
+ */
+export const zPromptSetVersionInfo = z.object({
+    version: z.int().gte(1).lte(100000),
+    publishedAt: z.iso.datetime({ offset: true }).max(64),
+    questions: z.int().gte(0).lte(100000),
+    note: z.string().max(300)
+});
+
+/**
+ * One run's figures: the share of the responses read that name Tribelt, overall, per language, and for Twente, and the share of web responses that cite tribelt.nl. A share is absent when the run read no response to measure it on.
+ */
+export const zPromptRunFigures = z.object({
+    readingModel: z.string().max(200).optional(),
+    runId: z.uuid().max(36),
+    models: z.array(z.string().max(200)).max(20).optional(),
+    startedAt: z.iso.datetime({ offset: true }).max(64),
+    promptSetVersion: z.int().gte(1).lte(100000),
+    tasks: z.int().gte(0).lte(100000),
+    answered: z.int().gte(0).lte(100000),
+    read: z.int().gte(0).lte(100000),
+    partial: z.boolean(),
+    failure: z.string().max(300).optional(),
+    all: z.number().gte(0).lte(1).optional(),
+    dutch: z.number().gte(0).lte(1).optional(),
+    german: z.number().gte(0).lte(1).optional(),
+    english: z.number().gte(0).lte(1).optional(),
+    twente: z.number().gte(0).lte(1).optional(),
+    citation: z.number().gte(0).lte(1).optional()
+});
+
+/**
+ * The Prompt test's figures per run, with the Prompt set versions they asked.
+ */
+export const zPromptTestHistory = z.object({
+    versions: z.array(zPromptSetVersionInfo).max(100),
+    runs: z.array(zPromptRunFigures).max(500)
+});
+
+/**
  * A company an answer names, matched to the company list when it is on it.
  */
 export const zPromptNamedCompany = z.object({
@@ -1539,6 +1949,7 @@ export const zPromptNamedCompany = z.object({
  * How the extractor read an answer; failed when it could not, after a retry.
  */
 export const zPromptExtraction = z.object({
+    readBy: z.string().max(200).optional(),
     failed: z.boolean(),
     companies: z.array(zPromptNamedCompany).max(30),
     addresses: z.array(z.string().max(500)).max(200),
@@ -1546,6 +1957,7 @@ export const zPromptExtraction = z.object({
     citesTribelt: z.boolean(),
     correctness: zPromptCorrectness.optional(),
     wrongClaims: z.array(z.string().max(500)).max(10),
+    leftOut: z.array(z.string().max(500)).max(10),
     costUsd: zUsd
 });
 
@@ -1561,7 +1973,7 @@ export const zPromptAnswer = z.object({
     language: z.string().max(2),
     prompt: z.string().max(1000),
     promptSetVersion: z.int().gte(1).lte(100000),
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     model: z.string().max(200),
     mode: zPromptMode,
     text: z.string().max(100000),
@@ -1630,7 +2042,7 @@ export const zPromptPriceBasis = z.enum([
  * What one provider's answers cost.
  */
 export const zPromptProviderPrice = z.object({
-    provider: z.string().max(40),
+    provider: z.string().max(200),
     model: z.string().max(200),
     fallback: z.string().max(200).optional(),
     knowledgeUsd: zUsd,
@@ -1653,11 +2065,36 @@ export const zPromptPrices = z.object({
 });
 
 /**
+ * One text model on OpenRouter, with what one response costs.
+ */
+export const zPromptCatalogueModel = z.object({
+    id: z.string().max(200),
+    name: z.string().max(200),
+    provider: z.string().max(200),
+    listedAt: z.iso.datetime({ offset: true }).max(64).optional(),
+    free: z.boolean(),
+    recommended: z.boolean(),
+    basis: zPromptPriceBasis,
+    knowledgeUsd: zUsd,
+    webUsd: zUsd
+});
+
+/**
+ * Every text model on OpenRouter, as Add a model lists it.
+ */
+export const zPromptModelCatalogue = z.object({
+    readAt: z.iso.datetime({ offset: true }).max(64),
+    questions: z.int().gte(0).lte(1000),
+    models: z.array(zPromptCatalogueModel).max(2000)
+});
+
+/**
  * The Prompt test's settings.
  */
 export const zPromptTestSettings = z.object({
     credentialId: zLlmCredentialId.optional(),
     providers: z.array(z.string().max(40)).max(20),
+    modelList: z.array(z.string().max(200)).max(20),
     monthlyBudgetUsd: zUsd,
     spentThisMonthUsd: zUsd,
     cadence: zPromptCadence,
@@ -1676,6 +2113,7 @@ export const zPromptTestSettings = z.object({
 export const zPromptTestSettingsChange = z.object({
     credentialId: zLlmCredentialId.optional(),
     providers: z.array(z.string().max(40)).min(1).max(20).optional(),
+    models: z.array(z.string().max(200)).min(1).max(20).optional(),
     monthlyBudgetUsd: z.number().gte(0.01).lte(1000).optional(),
     cadence: zPromptCadence.optional(),
     factSheet: z.string().min(20).max(4000).optional()
@@ -1755,7 +2193,7 @@ export const zCompetitorCandidate = z.object({
     name: z.string().max(200),
     status: zCompetitorCandidateStatus,
     answers: z.int().gte(1).lte(1000000),
-    providers: z.array(z.string().max(40)).max(20),
+    providers: z.array(z.string().max(200)).max(20),
     models: z.array(z.string().max(200)).max(50),
     addresses: z.array(z.string().max(500)).max(50),
     lastSeenAt: z.iso.datetime({ offset: true }).max(64),
@@ -1767,6 +2205,35 @@ export const zCompetitorCandidate = z.object({
 });
 
 /**
+ * One version of the competitor definition.
+ */
+export const zCompetitorDefinitionVersion = z.object({
+    version: z.int().gte(1).lte(100000),
+    text: z.string().max(8000),
+    savedAt: z.iso.datetime({ offset: true }).max(64),
+    savedBy: z.string().max(200),
+    restoredFrom: z.int().gte(1).lte(100000).optional()
+});
+
+/**
+ * The competitor definition in use, its versions, and what checking again against it would take.
+ */
+export const zCompetitorDefinition = z.object({
+    current: zCompetitorDefinitionVersion,
+    versions: z.array(zCompetitorDefinitionVersion).max(100000),
+    outdatedCompetitors: z.int().gte(0).lte(100000),
+    outdatedCandidates: z.int().gte(0).lte(100000),
+    recheckCostUsd: zUsd
+});
+
+/**
+ * A new text for the competitor definition.
+ */
+export const zCompetitorDefinitionText = z.object({
+    text: z.string().min(1).max(8000)
+});
+
+/**
  * Whether Claude Haiku is reviewing the candidates or checking the competitor list, and why its last run stopped short.
  */
 export const zCandidateReviewState = z.object({
@@ -1774,7 +2241,8 @@ export const zCandidateReviewState = z.object({
     problem: z.enum([
         'noKey',
         'budget',
-        'failed'
+        'failed',
+        'stopped'
     ]).optional()
 });
 
@@ -1854,6 +2322,11 @@ export const zProblem = z.object({
 });
 
 /**
+ * The step.
+ */
+export const zClaudeStepId2 = zClaudeStepId;
+
+/**
  * The company's id.
  */
 export const zCompetitorIdPath = zCompetitorId;
@@ -1903,6 +2376,35 @@ export const zTickImprovementPath = z.object({
 export const zTickImprovementResponse = zPlan;
 
 /**
+ * The wording and scores.
+ */
+export const zEditRecommendationBody = zRecommendationEdit;
+
+export const zEditRecommendationPath = z.object({
+    recommendationId: z.string().max(60).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+});
+
+/**
+ * The plan, with the edit.
+ */
+export const zEditRecommendationResponse = zPlan;
+
+/**
+ * The Recommendation runs.
+ */
+export const zGetRecommendationRunsResponse = zRecommendationRuns;
+
+/**
+ * The run is under way.
+ */
+export const zStartRecommendationRunResponse = zRecommendationRuns;
+
+/**
+ * Stopped.
+ */
+export const zStopRecommendationRunResponse = z.void();
+
+/**
  * The targets to set.
  */
 export const zSetPlanTargetsBody = zPlanTargetsChange;
@@ -1940,6 +2442,16 @@ export const zSearchTermsQuery = z.object({
  * The matching terms and the facet counts.
  */
 export const zSearchTermsResponse = zTermSearch;
+
+export const zGetTermPagesQuery = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage
+});
+
+/**
+ * Each company's pages that use the term.
+ */
+export const zGetTermPagesResponse = zTermPages;
 
 /**
  * The companies: researched competitors by name, then added ones by name, then Tribelt's own group.
@@ -2041,6 +2553,98 @@ export const zStartRescansBody = zRescanRequest;
  */
 export const zStartRescansResponse = zRescanBatch;
 
+/**
+ * Stopped.
+ */
+export const zStopRescanResponse = z.void();
+
+/**
+ * Stopped.
+ */
+export const zStopReadinessCheckResponse = z.void();
+
+/**
+ * Removed.
+ */
+export const zRemoveQueuedAnalysesResponse = z.void();
+
+export const zStopAnalysisPath = z.object({
+    analysisId: z.uuid().max(36)
+});
+
+/**
+ * Stopped.
+ */
+export const zStopAnalysisResponse = z.void();
+
+/**
+ * The steps.
+ */
+export const zListClaudeStepsResponse = zClaudeStepList;
+
+export const zGetClaudeStepPath = z.object({
+    stepId: zClaudeStepId
+});
+
+/**
+ * The step.
+ */
+export const zGetClaudeStepResponse = zClaudeStep;
+
+/**
+ * The model and the instructions.
+ */
+export const zSaveClaudeStepVersionBody = zClaudeStepChange;
+
+export const zSaveClaudeStepVersionPath = z.object({
+    stepId: zClaudeStepId
+});
+
+/**
+ * The step with its new version.
+ */
+export const zSaveClaudeStepVersionResponse = zClaudeStep;
+
+/**
+ * The work and this month's spending.
+ */
+export const zGetActivityResponse = zActivity;
+
+/**
+ * The terms added and removed by hand.
+ */
+export const zListHandTermsResponse = zHandTermList;
+
+/**
+ * The term as it joins the list.
+ */
+export const zAddTermBody = zNewTerm;
+
+/**
+ * The term, added.
+ */
+export const zAddTermResponse = zTerm;
+
+export const zPutBackTermQuery = z.object({
+    term: z.string().min(1).max(200),
+    language: zLanguage
+});
+
+/**
+ * Put back.
+ */
+export const zPutBackTermResponse = z.void();
+
+/**
+ * The term to remove.
+ */
+export const zRemoveTermBody = zTermRef;
+
+/**
+ * Removed.
+ */
+export const zRemoveTermResponse = z.void();
+
 export const zListTermCandidatesQuery = z.object({
     status: zTermCandidateStatus.optional()
 });
@@ -2054,6 +2658,21 @@ export const zListTermCandidatesResponse = zTermCandidateList;
  * The review is under way.
  */
 export const zStartTermReviewResponse = zTermReviewState;
+
+/**
+ * Whether the review runs by itself.
+ */
+export const zSetTermReviewBody = zTermReviewSwitch;
+
+/**
+ * The review's state, switched.
+ */
+export const zSetTermReviewResponse = zTermReviewState;
+
+/**
+ * Stopped.
+ */
+export const zStopTermReviewResponse = z.void();
 
 /**
  * The term as it joins the map.
@@ -2129,12 +2748,29 @@ export const zGetReadinessFilesResponse = zReadinessFiles;
  */
 export const zGetPromptTestResultsResponse = zPromptTestResults;
 
+/**
+ * The figures per run.
+ */
+export const zGetPromptTestHistoryResponse = zPromptTestHistory;
+
+/**
+ * The published Prompt sets and the scopes.
+ */
+export const zListPromptSetsResponse = zPromptSets;
+
+export const zPublishPromptSetBody = zPromptSetDraft;
+
+/**
+ * The published version.
+ */
+export const zPublishPromptSetResponse = zPublishedPromptSet;
+
 export const zListPromptAnswersPath = z.object({
     runId: z.uuid().max(36)
 });
 
 export const zListPromptAnswersQuery = z.object({
-    provider: z.string().max(40).regex(/^[a-z0-9][a-z0-9-]*$/).optional(),
+    provider: z.string().max(200).regex(/^[a-z0-9][a-z0-9._:\/-]*$/).optional(),
     scope: zPromptScope.optional(),
     family: zPromptFamily.optional(),
     mode: zPromptMode.optional()
@@ -2164,6 +2800,15 @@ export const zRetryPromptRunPath = z.object({
  */
 export const zRetryPromptRunResponse = zPromptRetry;
 
+export const zStopPromptRunPath = z.object({
+    runId: z.uuid().max(36)
+});
+
+/**
+ * The run was asked to stop.
+ */
+export const zStopPromptRunResponse = z.void();
+
 export const zGetPromptRetryPlanPath = z.object({
     runId: z.uuid().max(36)
 });
@@ -2186,6 +2831,11 @@ export const zRereadPromptRunPath = z.object({
  * The run, running again, with how many answers it reads and what reading them should cost.
  */
 export const zRereadPromptRunResponse = zPromptRetry;
+
+/**
+ * The catalogue.
+ */
+export const zGetPromptModelCatalogueResponse = zPromptModelCatalogue;
 
 /**
  * The settings.
@@ -2217,6 +2867,35 @@ export const zListCompetitorCandidatesResponse = zCompetitorCandidateList;
 export const zStartCandidateReviewResponse = zCandidateReviewState;
 
 /**
+ * Stopped.
+ */
+export const zStopCandidateReviewResponse = z.void();
+
+/**
+ * The definition and its versions.
+ */
+export const zGetCompetitorDefinitionResponse = zCompetitorDefinition;
+
+/**
+ * The definition's new text.
+ */
+export const zSaveCompetitorDefinitionBody = zCompetitorDefinitionText;
+
+/**
+ * The definition, saved.
+ */
+export const zSaveCompetitorDefinitionResponse = zCompetitorDefinition;
+
+export const zRestoreCompetitorDefinitionPath = z.object({
+    version: z.int().gte(1).lte(100000)
+});
+
+/**
+ * The definition, restored.
+ */
+export const zRestoreCompetitorDefinitionResponse = zCompetitorDefinition;
+
+/**
  * The checks.
  */
 export const zListCompetitorChecksResponse = zCompetitorCheckList;
@@ -2225,6 +2904,11 @@ export const zListCompetitorChecksResponse = zCompetitorCheckList;
  * The check is under way.
  */
 export const zStartCompetitorCheckResponse = zCandidateReviewState;
+
+/**
+ * Stopped.
+ */
+export const zStopCompetitorCheckResponse = z.void();
 
 /**
  * What to do, and to which candidates.
@@ -2332,6 +3016,16 @@ export const zGetLlmKeyUsagePath = z.object({
  * The usage.
  */
 export const zGetLlmKeyUsageResponse = zLlmKeyUsage;
+
+/**
+ * The new budget.
+ */
+export const zUpdateLlmBudgetBody = zLlmBudgetChange;
+
+/**
+ * The settings after the change.
+ */
+export const zUpdateLlmBudgetResponse = zLlmSettings;
 
 /**
  * The settings after the change.

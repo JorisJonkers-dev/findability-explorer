@@ -71,15 +71,15 @@ describe("Tribelt's place in an answer", () => {
       'Tribelt is named 11th',
       'Tribelt is named, but not in a ranked list',
       'Tribelt is not named',
-      'No answer came back',
+      'No response came back',
     ])
     expect(squares.map(verdictOf)).toEqual([
-      'This answer names Tribelt first.',
-      'This answer names Tribelt second or third.',
-      'This answer names Tribelt fourth or later.',
-      'This answer names Tribelt, but not in a ranked list.',
-      'This answer does not name Tribelt.',
-      'No answer came back for this question.',
+      'This response names Tribelt first.',
+      'This response names Tribelt second or third.',
+      'This response names Tribelt fourth or later.',
+      'This response names Tribelt, but not in a ranked list.',
+      'This response does not name Tribelt.',
+      'No response came back for this question.',
     ])
     expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 30].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '30th'])
     const row = { family: 'eyelink' as const, scope: 'twente' as const }
@@ -189,12 +189,12 @@ describe('the numbers', () => {
 
   it('shows the figures of a run', () => {
     expect(runFigures(promptRun())).toEqual([
-      { big: '358', text: 'answers in the newest run' },
+      { big: '358', text: 'responses in the newest run' },
       { big: '2', text: 'providers asked: OpenAI and Google' },
       { big: '$0.42', text: 'about what one run costs' },
     ])
     expect(runFigures(promptRun({ answered: 1, models: [{ provider: 'openai', model: 'openai/x', free: false }] }))).toEqual([
-      { big: '1', text: 'answer in the newest run' },
+      { big: '1', text: 'response in the newest run' },
       { big: '1', text: 'provider asked: OpenAI' },
       { big: '$0.42', text: 'about what one run costs' },
     ])
@@ -225,10 +225,10 @@ describe('the CSV', () => {
       promptAnswer({ failure: 'Rate limited.', extraction: undefined, citations: ['https://a.example'] }),
     ]).split('\r\n')
     expect(csv[0]).toBe(
-      "question id,family,scope,language,question,provider,model,mode,Tribelt's place,companies named,cites tribelt.nl,sources,input tokens,output tokens,cost in dollars,failure,answer",
+      "question id,family,scope,language,question,provider,model,mode,Tribelt's place,companies named,cites tribelt.nl,sources,input tokens,output tokens,cost in dollars,failure,response",
     )
     expect(csv[1]).toContain(',first,Tribelt,yes,,900,300,0.0012,,"Says ""hi"", then')
-    expect(csv[2]).toContain(',no answer,,no,https://a.example,900,300,0.0012,Rate limited.,')
+    expect(csv[2]).toContain(',no response,,no,https://a.example,900,300,0.0012,Rate limited.,')
   })
 })
 
@@ -249,10 +249,10 @@ describe('asking again', () => {
     expect(modeCost(undefined, 'openai', 'web')).toBe(0)
   })
 
-  it('says when missing answers cannot be asked again', () => {
+  it('says when missing responses cannot be asked again', () => {
     expect(unknownLine(0)).toBeNull()
-    expect(unknownLine(1)).toBe('1 missing answer cannot be asked again. This run used an earlier set of questions, and no answers were saved for them.')
-    expect(unknownLine(70)).toBe('70 missing answers cannot be asked again. This run used an earlier set of questions, and no answers were saved for them.')
+    expect(unknownLine(1)).toBe('1 missing response cannot be asked again. This run used an earlier set of questions, and no responses were saved for them.')
+    expect(unknownLine(70)).toBe('70 missing responses cannot be asked again. This run used an earlier set of questions, and no responses were saved for them.')
   })
 
   it('knows an answer that was given but not read', () => {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/httpx"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/oas"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
@@ -25,8 +26,13 @@ type UseCases interface {
 	Retry(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
 	Reread(ctx context.Context, runID uuid.UUID, task *domain.TaskKey) (app.Retry, error)
 	RetryPlan(ctx context.Context, runID uuid.UUID) (app.Plan, error)
+	StopRun(ctx context.Context, actor string, runID uuid.UUID) error
+	History(ctx context.Context) (app.HistoryView, error)
+	PromptSets(ctx context.Context) (app.PromptSets, error)
+	Publish(ctx context.Context, actor string, d domain.Draft) (domain.PublishedSet, error)
 	Settings(ctx context.Context) (app.View, error)
 	Update(ctx context.Context, actor string, ch app.Change) (app.View, error)
+	Catalogue(ctx context.Context) (app.CatalogueView, error)
 	Candidates(ctx context.Context, status domain.CandidateStatus) ([]domain.Candidate, app.CandidateCounts, error)
 	AddCandidate(ctx context.Context, actor, id, name, website string) (domain.Candidate, error)
 	DismissCandidate(ctx context.Context, actor, id string) (domain.Candidate, error)
@@ -37,6 +43,11 @@ type UseCases interface {
 	ReviewState() app.ReviewState
 	ListChecks(ctx context.Context) ([]domain.ListCheck, int, error)
 	StartListCheck(ctx context.Context) bool
+	StopReview(ctx context.Context) error
+	StopListCheck(ctx context.Context) error
+	CompetitorDefinition(ctx context.Context) (app.DefinitionView, error)
+	SaveDefinition(ctx context.Context, user, text string) (app.DefinitionView, error)
+	RestoreDefinition(ctx context.Context, user string, version int) (app.DefinitionView, error)
 	ListCheckState() app.ReviewState
 }
 
@@ -65,7 +76,7 @@ func (h *Handler) GetPromptTestResults(ctx context.Context) (oas.GetPromptTestRe
 		return nil, err
 	}
 	out := &oas.PromptTestResults{
-		PromptSetVersion: domain.PromptSetVersion, Runs: make([]oas.PromptRun, 0, len(res.Runs)),
+		PromptSetVersion: int32(res.PromptSetVersion), Runs: make([]oas.PromptRun, 0, len(res.Runs)), //nolint:gosec // small versions
 		Mentions: make([]oas.PromptMention, 0, len(res.Mentions)), WrongClaims: make([]oas.PromptWrongClaim, 0, len(res.WrongClaims)),
 	}
 	for _, r := range res.Runs {
@@ -89,6 +100,113 @@ func (h *Handler) GetPromptTestResults(ctx context.Context) (oas.GetPromptTestRe
 		out.WrongClaims = append(out.WrongClaims, claim)
 	}
 	return out, nil
+}
+
+// GetPromptTestHistory implements getPromptTestHistory.
+func (h *Handler) GetPromptTestHistory(ctx context.Context) (oas.GetPromptTestHistoryRes, error) {
+	v, err := h.uc.History(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.PromptTestHistory{Versions: make([]oas.PromptSetVersionInfo, 0, len(v.Versions)), Runs: make([]oas.PromptRunFigures, 0, len(v.Runs))}
+	for _, x := range v.Versions {
+		out.Versions = append(out.Versions, oas.PromptSetVersionInfo{
+			Version: int32(x.Number), PublishedAt: x.PublishedAt, Questions: int32(x.Questions), Note: x.Note, //nolint:gosec // small numbers
+		})
+	}
+	for _, f := range v.Runs {
+		r := oas.PromptRunFigures{
+			RunId: f.RunID, StartedAt: f.StartedAt, PromptSetVersion: int32(f.Version), Partial: f.Partial, //nolint:gosec // small versions
+			Tasks: int32(f.Tasks), Answered: int32(f.Answered), Read: int32(f.Read), //nolint:gosec // at most a few thousand
+			All: optShare(f.All), Dutch: optShare(f.Dutch), German: optShare(f.German), English: optShare(f.English),
+			Twente: optShare(f.Twente), Citation: optShare(f.Citation), Models: f.Models,
+		}
+		if why := v.FailureOf[f.RunID]; why != "" {
+			r.Failure = oas.NewOptString(why)
+		}
+		if f.ReadingModel != "" {
+			r.ReadingModel = oas.NewOptString(readerName(f.ReadingModel))
+		}
+		out.Runs = append(out.Runs, r)
+	}
+	return out, nil
+}
+
+// ListPromptSets implements listPromptSets.
+func (h *Handler) ListPromptSets(ctx context.Context) (oas.ListPromptSetsRes, error) {
+	v, err := h.uc.PromptSets(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := &oas.PromptSets{Versions: make([]oas.PublishedPromptSet, 0, len(v.Sets)), Scopes: make([]oas.PromptSetScope, 0, len(v.Scopes))}
+	for _, set := range v.Sets {
+		out.Versions = append(out.Versions, toPublished(set))
+	}
+	for _, s := range v.Scopes {
+		out.Scopes = append(out.Scopes, oas.PromptSetScope{
+			ID: oas.PromptSetScopeId(s.ID), Name: s.Name, Language: s.Language, Region: optText(s.Region),
+		})
+	}
+	return out, nil
+}
+
+// toPublished is a published Prompt set as the contract has it.
+func toPublished(set domain.PublishedSet) oas.PublishedPromptSet {
+	p := oas.PublishedPromptSet{
+		Version: int32(set.Version), PublishedAt: set.PublishedAt, Note: set.Note, //nolint:gosec // small versions
+		Questions: make([]oas.PromptSetQuestion, 0, len(set.Questions)),
+	}
+	for _, q := range set.Questions {
+		p.Questions = append(p.Questions, oas.PromptSetQuestion{
+			ID: q.ID, Family: oas.PromptFamily(q.Family), Intent: oas.IntentTier(q.Intent), Scope: oas.PromptSetScopeId(q.Scope.ID),
+			ScopeName: q.Scope.Name, Language: q.Scope.Language, Region: optText(q.Scope.Region), Text: q.Text, English: optText(q.English),
+		})
+	}
+	return p
+}
+
+// PublishPromptSet implements publishPromptSet.
+func (h *Handler) PublishPromptSet(ctx context.Context, req *oas.PromptSetDraft) (oas.PublishPromptSetRes, error) {
+	d := domain.Draft{RestoredFrom: int(req.RestoredFrom.Or(0))}
+	for _, q := range req.Questions {
+		d.Questions = append(d.Questions, domain.DraftQuestion{
+			ID: q.ID.Or(""), Family: domain.Family(q.Family), Intent: domain.Intent(q.Intent), Scope: domain.Scope(q.Scope),
+			Text: q.Text, English: q.English.Or(""),
+		})
+	}
+	for _, s := range req.Scopes {
+		d.Scopes = append(d.Scopes, domain.ScopeInfo{ID: domain.Scope(s.ID), Language: s.Language, Region: s.Region.Or(""), Name: s.Name})
+	}
+	set, err := h.uc.Publish(ctx, h.actor(ctx), d)
+	var invalid domain.DraftError
+	switch {
+	case errors.As(err, &invalid):
+		return &oas.PublishPromptSetUnprocessableEntity{StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, invalid.Reason)}, nil
+	case errors.Is(err, domain.ErrNothingChanged):
+		return &oas.PublishPromptSetConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, "The draft asks what the published Prompt set asks, so there is nothing to publish.")}, nil
+	case errors.Is(err, domain.ErrVersionTaken):
+		return &oas.PublishPromptSetConflict{StatusCode: http.StatusConflict, Response: httpx.Problem(http.StatusConflict, "Another publication took this version number first. Publish again.")}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := toPublished(set)
+	return &out, nil
+}
+
+// optText is a text, absent when empty.
+func optText(s string) oas.OptString {
+	if s == "" {
+		return oas.OptString{}
+	}
+	return oas.NewOptString(s)
+}
+
+// optShare is a share, absent when there was nothing to measure.
+func optShare(v *float64) oas.OptFloat64 {
+	if v == nil {
+		return oas.OptFloat64{}
+	}
+	return oas.NewOptFloat64(*v)
 }
 
 // ListPromptAnswers implements listPromptAnswers.
@@ -174,6 +292,18 @@ func (h *Handler) RereadPromptRun(ctx context.Context, req *oas.PromptRetryReque
 	return &out, nil
 }
 
+// StopPromptRun implements stopPromptRun.
+func (h *Handler) StopPromptRun(ctx context.Context, params oas.StopPromptRunParams) (oas.StopPromptRunRes, error) {
+	err := h.uc.StopRun(ctx, h.actor(ctx), params.RunId)
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		return &oas.StopPromptRunNotFound{StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No Prompt run with this id is running.")}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.StopPromptRunNoContent{}, nil
+}
+
 // GetPromptRetryPlan implements getPromptRetryPlan.
 func (h *Handler) GetPromptRetryPlan(ctx context.Context, params oas.GetPromptRetryPlanParams) (oas.GetPromptRetryPlanRes, error) {
 	p, err := h.uc.RetryPlan(ctx, params.RunId)
@@ -231,9 +361,32 @@ func (h *Handler) GetPromptTestSettings(ctx context.Context) (oas.GetPromptTestS
 	return &out, nil
 }
 
+// GetPromptModelCatalogue implements getPromptModelCatalogue.
+func (h *Handler) GetPromptModelCatalogue(ctx context.Context) (oas.GetPromptModelCatalogueRes, error) {
+	v, err := h.uc.Catalogue(ctx)
+	switch {
+	case errors.Is(err, domain.ErrNoKey):
+		return &oas.GetPromptModelCatalogueUnprocessableEntity{StatusCode: http.StatusUnprocessableEntity, Response: httpx.Problem(http.StatusUnprocessableEntity, sentence(err))}, nil
+	case err != nil:
+		return nil, err
+	}
+	out := oas.PromptModelCatalogue{ReadAt: v.ReadAt, Questions: int32(v.Questions), Models: make([]oas.PromptCatalogueModel, 0, len(v.Entries))} //nolint:gosec // a small count
+	for _, e := range v.Entries {
+		m := oas.PromptCatalogueModel{
+			ID: e.Model.ID, Name: e.Model.Name, Provider: e.Model.Provider(), Free: e.Model.Free(), Recommended: e.Recommended,
+			Basis: oas.PromptPriceBasis(e.Basis), KnowledgeUsd: oas.Usd(e.Knowledge.Dollars()), WebUsd: oas.Usd(e.Web.Dollars()),
+		}
+		if !e.Model.Created.IsZero() {
+			m.ListedAt = oas.NewOptDateTime(e.Model.Created)
+		}
+		out.Models = append(out.Models, m)
+	}
+	return &out, nil
+}
+
 // UpdatePromptTestSettings implements updatePromptTestSettings.
 func (h *Handler) UpdatePromptTestSettings(ctx context.Context, req *oas.PromptTestSettingsChange) (oas.UpdatePromptTestSettingsRes, error) {
-	ch := app.Change{Providers: req.Providers}
+	ch := app.Change{Providers: req.Providers, Models: req.Models}
 	if v, ok := req.CredentialId.Get(); ok {
 		id := string(v)
 		ch.CredentialID = &id
@@ -311,6 +464,34 @@ func (h *Handler) StartCompetitorCheck(ctx context.Context) (oas.StartCompetitor
 	h.uc.StartListCheck(ctx)
 	out := toReviewState(h.uc.ListCheckState())
 	return &out, nil
+}
+
+// StopCandidateReview implements stopCandidateReview.
+func (h *Handler) StopCandidateReview(ctx context.Context) (oas.StopCandidateReviewRes, error) {
+	err := h.uc.StopReview(ctx)
+	switch {
+	case errors.Is(err, app.ErrNothingToStop):
+		return &oas.StopCandidateReviewNotFound{
+			StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No review of the competitor candidates runs."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.StopCandidateReviewNoContent{}, nil
+}
+
+// StopCompetitorCheck implements stopCompetitorCheck.
+func (h *Handler) StopCompetitorCheck(ctx context.Context) (oas.StopCompetitorCheckRes, error) {
+	err := h.uc.StopListCheck(ctx)
+	switch {
+	case errors.Is(err, app.ErrNothingToStop):
+		return &oas.StopCompetitorCheckNotFound{
+			StatusCode: http.StatusNotFound, Response: httpx.Problem(http.StatusNotFound, "No check of the competitor list runs."),
+		}, nil
+	case err != nil:
+		return nil, err
+	}
+	return &oas.StopCompetitorCheckNoContent{}, nil
 }
 
 func toReviewState(s app.ReviewState) oas.CandidateReviewState {
@@ -442,6 +623,15 @@ func toRun(r domain.Run, p domain.Progress, cells []domain.Cell) oas.PromptRun {
 	return out
 }
 
+// readerName is the model that read a response, for people: a Claude model on an Anthropic key by
+// its name ("Claude Haiku 5.5"), any other by its OpenRouter id.
+func readerName(model string) string {
+	if m, ok := strings.CutPrefix(model, string(llm.Anthropic)+": "); ok {
+		return llm.ClaudeName(m)
+	}
+	return model
+}
+
 func toAnswer(a domain.Answer) oas.PromptAnswer {
 	cost := a.Cost
 	out := oas.PromptAnswer{
@@ -459,7 +649,11 @@ func toAnswer(a domain.Answer) oas.PromptAnswer {
 		out.OutputTokens += x.OutputTokens
 		e := oas.PromptExtraction{
 			Failed: x.Failed, Companies: make([]oas.PromptNamedCompany, 0, len(x.Companies)), Addresses: orEmpty(x.Addresses),
-			NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, WrongClaims: orEmpty(x.WrongClaims), CostUsd: oas.Usd(x.Cost.Dollars()),
+			NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, WrongClaims: orEmpty(x.WrongClaims), LeftOut: orEmpty(x.LeftOut),
+			CostUsd: oas.Usd(x.Cost.Dollars()),
+		}
+		if x.Model != "" {
+			e.ReadBy = oas.NewOptString(readerName(x.Model))
 		}
 		if x.Correctness != domain.CorrectnessNone {
 			e.Correctness = oas.NewOptPromptCorrectness(oas.PromptCorrectness(x.Correctness))
@@ -483,7 +677,7 @@ func toAnswer(a domain.Answer) oas.PromptAnswer {
 func toSettings(v app.View) oas.PromptTestSettings {
 	s := v.Settings
 	out := oas.PromptTestSettings{
-		Providers: s.Providers, MonthlyBudgetUsd: oas.Usd(s.MonthlyBudget.Dollars()), SpentThisMonthUsd: oas.Usd(v.SpentThisMonth.Dollars()),
+		Providers: s.Providers, ModelList: append([]string{}, s.Models...), MonthlyBudgetUsd: oas.Usd(s.MonthlyBudget.Dollars()), SpentThisMonthUsd: oas.Usd(v.SpentThisMonth.Dollars()),
 		Cadence: oas.PromptCadence(s.Cadence), NextDueAt: s.NextDue, ExtractorModel: v.ExtractorModel,
 		FactSheet: oas.PromptFactSheet{Text: s.FactSheet.Text, Version: int32(s.FactSheet.Version)},                                     //nolint:gosec // small versions
 		PromptSet: oas.PromptSet{Version: int32(v.PromptSet.Version), Prompts: make([]oas.PromptQuestion, 0, len(v.PromptSet.Prompts))}, //nolint:gosec // small versions

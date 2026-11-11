@@ -1,87 +1,90 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import PageView from '../../shell/components/PageView.vue'
-import { useMe } from '../../shell/composables/useMe'
+import { toRef } from 'vue'
+import { RouterLink } from 'vue-router'
+import BarList from '../../../shared/ui/charts/BarList.vue'
+import FrameSection from '../../../shared/ui/FrameSection.vue'
+import PageFrame from '../../shell/components/PageFrame.vue'
 import { companyPath, familySlug } from '../../shell/domain/sections'
+import { languageLabel } from '../../../shared/vocabulary'
+import { familyName, termPath } from '../../terminology/domain/searchTerms'
 import { useCompetitorDetail } from '../composables/useCompetitorDetail'
-import { useRescan } from '../composables/useCompanyAdmin'
-import { rescanSummary } from '../domain/admin'
-import { detailFigures } from '../domain/compare'
-import { lastScanLabel } from '../domain/company'
-import CompanyAdmin from './CompanyAdmin.vue'
-import FigureRow from './FigureRow.vue'
 import MeasureChart from './MeasureChart.vue'
 
-/** One competitor against Tribelt: how often AI names it, how ready its site is, and which Tribelt belts it sells. */
+/** One competitor: against Tribelt, where it is ahead, what it sells, its terms tribelt.nl lacks, and how often each model names it. */
 const props = defineProps<{ companyId: string }>()
 
-const router = useRouter()
 const id = toRef(() => props.companyId)
-const { isAdmin } = useMe()
-const { company, isLoading, notFound, error, title, where, belts, latestScan, measures } = useCompetitorDetail(id)
-const { isQueuing, batch, error: rescanError, rescan } = useRescan()
-const figures = computed(() => detailFigures(measures.value))
+const { company, isLoading, notFound, error, purpose, dataLine, ahead, terms, modelBars, belts, measures } = useCompetitorDetail(id)
+const button = 'inline-flex min-h-11 items-center rounded-full border-2 border-solid border-silver px-4 font-medium text-black no-underline hover:border-black hover:text-black'
 </script>
 
 <template>
-  <PageView section="competitors" :title="title" :back="{ to: '/competitors', label: 'Back to Competitors' }">
-    <template v-if="company" #lede>
-      <p class="m-0 max-w-3xl text-lg text-ink-2">{{ where }} {{ lastScanLabel(company.lastScan) ?? 'No scan of its website has run yet' }}.</p>
+  <PageFrame
+    section="competitors"
+    :title="company?.shortName ?? 'Competitor'"
+    :purpose="purpose || 'A company on the competitor list.'"
+    :data-line="dataLine || undefined"
+    :back="{ to: '/competitors', label: 'Back to Competitors' }"
+    :manage="{ to: `/manage/competitors/companies/${encodeURIComponent(companyId)}`, label: 'Manage this company' }"
+    help-topic="competitors"
+  >
+    <template v-if="company" #aside>
+      <a v-if="company.websiteUrl" :href="company.websiteUrl" target="_blank" rel="noopener noreferrer" :class="button">
+        Visit its website<span class="sr-only"> (opens in a new tab)</span>
+      </a>
+      <RouterLink :to="`${companyPath(company.id)}/history`" :class="button">See its scan history</RouterLink>
     </template>
+
     <p v-if="notFound" role="alert" class="m-0 text-orange-ink">No company has this id.</p>
     <p v-else-if="error" role="alert" class="m-0 text-orange-ink">{{ error }}</p>
     <p v-else-if="isLoading || !company" class="m-0 text-muted">Loading the company…</p>
-    <div v-else class="flex flex-col gap-12">
-      <div class="flex flex-wrap items-center gap-3">
-        <a
-          v-if="company.websiteUrl"
-          :href="company.websiteUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-black px-5 font-medium text-black no-underline hover:bg-black hover:text-white"
-        >
-          Visit its website<span class="sr-only"> (opens in a new tab)</span>
-        </a>
-        <RouterLink
-          :to="`${companyPath(company.id)}/history`"
-          class="inline-flex min-h-11 items-center rounded-full border-2 border-silver px-5 font-medium text-black no-underline hover:border-black"
-        >
-          See its scan history
-        </RouterLink>
-        <RouterLink
-          v-if="latestScan"
-          :to="`/scan/${latestScan.id}`"
-          class="inline-flex min-h-11 items-center rounded-full border-2 border-silver px-5 font-medium text-black no-underline hover:border-black"
-        >
-          Open its latest scan
-        </RouterLink>
-        <button
-          v-if="isAdmin && company.websiteUrl"
-          type="button"
-          class="min-h-11 cursor-pointer rounded-full border-0 bg-orange px-5 font-semibold text-black hover:bg-orange-soft disabled:opacity-60"
-          :disabled="isQueuing"
-          @click="rescan({ competitorIds: [company.id] })"
-        >
-          {{ company.scans > 0 ? 'Scan again' : 'Scan this website' }}
-        </button>
-      </div>
-      <p v-if="batch" aria-live="polite" class="m-0 text-sm font-medium">{{ rescanSummary(batch) }}</p>
-      <p v-if="rescanError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ rescanError }}</p>
-      <FigureRow :figures="figures" />
-      <div class="grid gap-12 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
-        <MeasureChart :name="company.shortName" :measures="measures" />
-        <section aria-labelledby="belts-title" class="flex flex-col gap-4">
-          <h2 id="belts-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em]">Which Tribelt belts it sells</h2>
-          <ul class="m-0 flex list-none flex-col p-0">
-            <li v-for="row in belts" :key="row.family" class="flex flex-col gap-0.5 border-t border-grey py-3">
+    <template v-else>
+      <div class="grid grid-cols-1 items-start gap-10 min-[1100px]:grid-cols-2">
+        <FrameSection id="compare" title="Against Tribelt">
+          <MeasureChart :name="company.shortName" :measures="measures" />
+        </FrameSection>
+
+        <FrameSection id="ahead" title="Where it is ahead of Tribelt">
+          <div class="rounded-3xl bg-mist p-6">
+            <p v-if="ahead.length === 0" class="m-0 text-ink-2">{{ company.shortName }} is not ahead of Tribelt on any measure.</p>
+            <ul v-else class="m-0 flex list-disc flex-col gap-1.5 pl-5">
+              <li v-for="line in ahead" :key="line">{{ line }}</li>
+            </ul>
+          </div>
+        </FrameSection>
+
+        <FrameSection id="belts" title="What it sells and what it calls it">
+          <ul class="m-0 flex list-none flex-col rounded-3xl bg-mist px-6 py-3">
+            <li v-for="row in belts" :key="row.family" class="flex flex-col gap-0.5 border-b border-grey py-2.5 last:border-b-0">
               <RouterLink :to="`/terms/families/${familySlug(row.family)}`" class="font-semibold">{{ row.label }}</RouterLink>
-              <span :class="row.offered ? 'text-black' : 'text-muted'" class="">{{ row.name }}</span>
+              <span :class="row.offered ? 'text-black' : 'text-muted'">{{ row.name }}</span>
             </li>
           </ul>
-        </section>
+        </FrameSection>
+
+        <FrameSection id="their-terms" title="Search terms it uses that tribelt.nl does not">
+          <div class="flex flex-col gap-3 rounded-3xl bg-mist p-6">
+            <p v-if="terms.total === 0" class="m-0 text-ink-2">Every term this competitor uses is also on tribelt.nl.</p>
+            <ul v-else class="m-0 flex list-none flex-col gap-1.5 p-0">
+              <li v-for="t in terms.shown" :key="termPath(t)">
+                <RouterLink :to="termPath(t)">{{ t.term }}</RouterLink>
+                <span class="text-sm text-muted"> {{ languageLabel(t.language) }}, {{ familyName(t.family) }}</span>
+              </li>
+            </ul>
+            <p v-if="terms.total > terms.shown.length" class="m-0 text-sm text-muted">
+              Showing {{ terms.shown.length }} of {{ terms.total }}. <RouterLink :to="{ path: '/terms/all', query: { user: company.shortName } }" class="underline">See them all</RouterLink>.
+            </p>
+          </div>
+        </FrameSection>
+
+        <FrameSection id="models" title="In AI responses" intro="How often each model names it, in the newest Prompt run.">
+          <div class="rounded-3xl bg-mist p-6">
+            <p v-if="modelBars.length === 0" class="m-0 text-ink-2">The newest Prompt run has no read responses yet.</p>
+            <BarList v-else :rows="modelBars" :max="1" :label="`How often each model names ${company.shortName}`" />
+          </div>
+          <RouterLink to="/ai-responses/all" class="self-start font-medium">See every response</RouterLink>
+        </FrameSection>
       </div>
-      <CompanyAdmin v-if="isAdmin" :company="company" @removed="router.push('/competitors')" />
-    </div>
-  </PageView>
+    </template>
+  </PageFrame>
 </template>

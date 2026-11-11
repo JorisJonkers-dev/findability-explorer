@@ -122,11 +122,11 @@ func TestAReviewIsStoredWhole(t *testing.T) {
 	if got, _ := repo.Verdicts(ctx); got[2].Sure {
 		t.Error("a verdict was replaced")
 	}
-	if n, err := repo.TokensSince(ctx, at); n != 1050 || err != nil {
-		t.Errorf("TokensSince = %d, %v", n, err)
+	if in, out, err := repo.TokensSince(ctx, at); in != 950 || out != 100 || err != nil {
+		t.Errorf("TokensSince = %d in, %d out, %v", in, out, err)
 	}
-	if n, err := repo.TokensSince(ctx, at.Add(time.Minute)); n != 50 || err != nil {
-		t.Errorf("TokensSince later = %d, %v", n, err)
+	if in, out, err := repo.TokensSince(ctx, at.Add(time.Minute)); in != 50 || out != 0 || err != nil {
+		t.Errorf("TokensSince later = %d in, %d out, %v", in, out, err)
 	}
 	// A bad row rolls the whole review back.
 	bad := domain.Verdict{CandidateID: "not-an-id", Phrase: "x", Model: "m", At: at}
@@ -137,8 +137,8 @@ func TestAReviewIsStoredWhole(t *testing.T) {
 	if err := repo.SaveReview(ctx, nil, []domain.Decision{badTerm}, nil); err == nil {
 		t.Error("a term in an unknown language was stored")
 	}
-	if n, _ := repo.TokensSince(ctx, at); n != 1050 {
-		t.Errorf("a refused review stored its usage: %d", n)
+	if in, _, _ := repo.TokensSince(ctx, at); in != 950 {
+		t.Errorf("a refused review stored its usage: %d", in)
 	}
 	if err := repo.SaveReview(ctx, nil, nil, []domain.Usage{{InputTokens: -1, At: at}}); err == nil {
 		t.Error("negative tokens were stored")

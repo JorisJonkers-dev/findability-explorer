@@ -20,6 +20,50 @@ type store struct {
 	verdicts         []domain.Verdict
 	usage            []domain.Usage
 	listErr, saveErr error
+	// off is the switch turned off; switched records who turned it when, onReads how often it was read.
+	off                        bool
+	switched                   []string
+	onReads                    int
+	onErr, switchErr, usageErr error
+	usedSince                  time.Time
+}
+
+func (s *store) ReviewOn(context.Context) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onReads++
+	return !s.off, s.onErr
+}
+
+func (s *store) SwitchReview(_ context.Context, on bool, by string, at time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.switchErr != nil {
+		return s.switchErr
+	}
+	s.off = !on
+	s.switched = append(s.switched, fmt.Sprintf("%t by %s at %s", on, by, at.Format(time.RFC3339)))
+	return nil
+}
+
+func (s *store) UsageSince(_ context.Context, t time.Time) (domain.Usage, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.usedSince = t
+	var sum domain.Usage
+	for _, u := range s.usage {
+		if !u.At.Before(t) {
+			sum.InputTokens += u.InputTokens
+			sum.OutputTokens += u.OutputTokens
+		}
+	}
+	return sum, s.usageErr
+}
+
+func (s *store) reads() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.onReads
 }
 
 func (s *store) Verdicts(context.Context) ([]domain.Verdict, error) {
@@ -125,7 +169,11 @@ func state(t *testing.T, svc *app.Service) app.ReviewState {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return svc.ReviewState(t.Context(), counts)
+	st, err := svc.ReviewState(t.Context(), counts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return st
 }
 
 func TestTheModelDecidesWhatItIsSureOf(t *testing.T) {
@@ -164,7 +212,7 @@ func TestTheModelDecidesWhatItIsSureOf(t *testing.T) {
 	if n, err := svc.Review(t.Context()); n != 0 || err != nil || len(j.asked) != 1 {
 		t.Errorf("a second Review = %d, %v; asked %v", n, err, j.asked)
 	}
-	if st := state(t, svc); st != (app.ReviewState{}) {
+	if st := state(t, svc); st.Running || st.Waiting != 0 || st.Problem != app.ProblemNone || !st.On {
 		t.Errorf("ReviewState = %+v", st)
 	}
 }
@@ -240,8 +288,8 @@ func TestReviewWithoutAModel(t *testing.T) {
 	if _, err := plain.Review(t.Context()); !errors.Is(err, app.ErrNoModel) {
 		t.Errorf("without a reviewer = %v", err)
 	}
-	if st := plain.ReviewState(t.Context(), domain.Counts{Unreviewed: 2}); st.Problem != app.ProblemNoModel || st.Waiting != 2 {
-		t.Errorf("ReviewState without a reviewer = %+v", st)
+	if st, err := plain.ReviewState(t.Context(), domain.Counts{Unreviewed: 2}); err != nil || st.Problem != app.ProblemNoModel || st.Waiting != 2 || st.On {
+		t.Errorf("ReviewState without a reviewer = %+v, %v", st, err)
 	}
 	plain.StartReview()                                                // nothing to start
 	plain.ReviewLoop(t.Context(), time.Hour, func(error) { t.Fail() }) // returns at once
@@ -402,7 +450,7 @@ func waitFor(t *testing.T, ok func() bool) {
 	}
 }
 
-// budget is the month's tokens: spent once the judge was asked after times requests, or failing with err.
+// budget is the month's Anthropic budget: spent once the judge was asked after times requests, or failing with err.
 type budget struct {
 	mu    sync.Mutex
 	j     *judge

@@ -69,6 +69,7 @@ type Querier interface {
 	DeleteLlmCredential(ctx context.Context, id uuid.UUID) (int64, error)
 	DeletePromptCandidateDecision(ctx context.Context, id string) (int64, error)
 	DeleteRecommendation(ctx context.Context, id string) error
+	DeleteRemovedTerm(ctx context.Context, arg DeleteRemovedTermParams) (int64, error)
 	DeleteSession(ctx context.Context, id string) (DeleteSessionRow, error)
 	DeleteTermDecision(ctx context.Context, candidateID string) (int64, error)
 	// Work the journal records runs in memory: a server that stops ends it.
@@ -93,7 +94,15 @@ type Querier interface {
 	HeartbeatPromptRun(ctx context.Context, arg HeartbeatPromptRunParams) (int64, error)
 	InsertAcceptedTerm(ctx context.Context, arg InsertAcceptedTermParams) error
 	InsertCompany(ctx context.Context, arg InsertCompanyParams) error
+	InsertHandTerm(ctx context.Context, arg InsertHandTermParams) (int64, error)
 	InsertPromptReviewUsage(ctx context.Context, arg InsertPromptReviewUsageParams) error
+	// A scope a newly published version asks in.
+	InsertPromptScope(ctx context.Context, arg InsertPromptScopeParams) error
+	// A newly published version; no row when another publication took the number first.
+	InsertPromptSet(ctx context.Context, arg InsertPromptSetParams) (int64, error)
+	// A question of a newly published version, at its position.
+	InsertPromptSetQuestion(ctx context.Context, arg InsertPromptSetQuestionParams) error
+	InsertRemovedTerm(ctx context.Context, arg InsertRemovedTermParams) error
 	InsertTermDecision(ctx context.Context, arg InsertTermDecisionParams) (int64, error)
 	InsertTermReviewUsage(ctx context.Context, arg InsertTermReviewUsageParams) error
 	InsertTermVerdict(ctx context.Context, arg InsertTermVerdictParams) error
@@ -125,6 +134,7 @@ type Querier interface {
 	ListCompanyOverrides(ctx context.Context) ([]ListCompanyOverridesRow, error)
 	// Every version of the competitor definition, the newest first.
 	ListCompetitorDefinitions(ctx context.Context) ([]ListCompetitorDefinitionsRow, error)
+	ListHandTerms(ctx context.Context) ([]HandTerm, error)
 	ListLlmCredentials(ctx context.Context) ([]ListLlmCredentialsRow, error)
 	ListLlmEvents(ctx context.Context, lim int32) ([]ListLlmEventsRow, error)
 	ListPlanTargets(ctx context.Context) ([]PlanTarget, error)
@@ -150,6 +160,7 @@ type Querier interface {
 	ListRecommendationRuns(ctx context.Context, lim int32) ([]ListRecommendationRunsRow, error)
 	// Every recommendation the runs wrote that is kept, the oldest first.
 	ListRecommendations(ctx context.Context) ([]ListRecommendationsRow, error)
+	ListRemovedTerms(ctx context.Context) ([]RemovedTerm, error)
 	ListTermDecisions(ctx context.Context) ([]TermDecision, error)
 	ListTermVerdicts(ctx context.Context) ([]TermVerdict, error)
 	// The running work and the newest lim ended pieces.
@@ -167,7 +178,12 @@ type Querier interface {
 	// The tokens in and out Claude Haiku on an Anthropic key used reading answers since a moment: the
 	// readings whose tokens count as Haiku's.
 	PromptReadingTokensSince(ctx context.Context, since time.Time) (PromptReadingTokensSinceRow, error)
+	// The same per model that read, so each is priced at its own list price; a reading from before
+	// readings recorded their model has none.
+	PromptReadingTokensSinceByModel(ctx context.Context, since time.Time) ([]PromptReadingTokensSinceByModelRow, error)
 	PromptReviewTokensSince(ctx context.Context, since time.Time) (PromptReviewTokensSinceRow, error)
+	// The model that read most of each run's responses, for the runs whose readings recorded one.
+	PromptRunReadingModels(ctx context.Context) ([]PromptRunReadingModelsRow, error)
 	PromptRunStopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	// Every name an answer gave that was not matched to a company.
 	PromptSightings(ctx context.Context) ([]PromptSightingsRow, error)

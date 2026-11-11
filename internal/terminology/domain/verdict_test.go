@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/terminology/domain"
 )
 
@@ -137,12 +138,12 @@ func TestExamplesAreAFewTermsOfEachTier(t *testing.T) {
 	}
 }
 
-func TestTheReviewsUsageIsPricedAtHaikusListPrice(t *testing.T) {
+func TestTheReviewsUsageIsPricedAtTheReviewModelsListPrice(t *testing.T) {
 	u := domain.Usage{InputTokens: 2_000_000, OutputTokens: 400_000}
-	if u.Tokens() != 2_400_000 || u.CostUSD() != 0.4 {
-		t.Errorf("tokens %d, cost $%v", u.Tokens(), u.CostUSD())
+	if u.Tokens() != 2_400_000 || u.Cost() != llm.ListPrice(llm.DefaultModel).Of(2_000_000, 400_000) || u.Cost().Dollars() != 0.4 {
+		t.Errorf("tokens %d, cost %s", u.Tokens(), u.Cost())
 	}
-	if (domain.Usage{}).CostUSD() != 0 {
+	if (domain.Usage{}).Cost() != 0 {
 		t.Error("nothing used costs something")
 	}
 }

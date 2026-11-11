@@ -66,7 +66,7 @@ const disabledNote = computed(() => {
         <p class="m-0 text-ink-2" data-part="budget-left">{{ costLabel(left) }} left this month</p>
       </ManageWidget>
 
-      <ManageWidget title="Start a Prompt run">
+      <ManageWidget title="Start a Prompt run" :span="12">
         <p class="m-0 max-w-[70ch] text-ink-2">
           Asks {{ NUMBER.format(questions) }} questions of {{ NUMBER.format(models) }} models, each from its own knowledge and with web search,
           {{ NUMBER.format(questions * models * 2) }} responses in all. When a run finishes, the AI responses pages show its results.
@@ -89,8 +89,8 @@ const disabledNote = computed(() => {
       </ManageWidget>
 
       <RunningWidget v-for="w in running" :key="w.id" :work="w" :stopping="stopper.isStopping.value" @stop="stopper.stop(w)" />
-      <p v-if="stopper.notice.value" aria-live="polite" class="m-0 font-medium min-[1100px]:col-span-12">{{ stopper.notice.value }}</p>
-      <p v-if="stopper.error.value" role="alert" class="m-0 font-medium text-orange-ink min-[1100px]:col-span-12">{{ stopper.error.value }}</p>
+      <p v-if="stopper.notice.value" aria-live="polite" class="m-0 font-medium basis-full">{{ stopper.notice.value }}</p>
+      <p v-if="stopper.error.value" role="alert" class="m-0 font-medium text-orange-ink basis-full">{{ stopper.error.value }}</p>
 
       <HubWidget
         title="Questions"

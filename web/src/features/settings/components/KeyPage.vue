@@ -57,7 +57,7 @@ async function removed(): Promise<void> {
       <ManageWidget v-if="page.provider === 'anthropic'" title="Spent this month" :span="6">
         <BudgetMeter :budget="settings.budget" />
         <template #foot>
-          <RouterLink to="/manage/keys/budgets" class="font-medium">See the budget</RouterLink>
+          <RouterLink to="/manage/keys/budgets" class="font-medium">Change the budget</RouterLink>
         </template>
       </ManageWidget>
 

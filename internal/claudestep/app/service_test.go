@@ -80,7 +80,7 @@ func TestASavedVersionIsUsedNextAndTheOriginalStaysInTheHistory(t *testing.T) {
 		t.Errorf("after the restore = %+v %v", st.Current, err)
 	}
 	steps, err := svc.Steps(t.Context())
-	if err != nil || len(steps) != len(domain.Definitions()) || steps[0].Current.Number != 3 {
+	if err != nil || len(steps) != len(domain.Definitions()) || steps[1].Definition.ID != domain.Matching || steps[1].Current.Number != 3 || steps[0].Current.Number != 1 {
 		t.Errorf("steps = %+v %v", steps, err)
 	}
 }

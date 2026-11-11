@@ -48,8 +48,8 @@ func TestTheReviewStateCountsThisMonthsUsage(t *testing.T) {
 	}}
 	svc := reviewing(phrases("contact"), &reviews{}, s, judges{judge: &judge{rule: accepting}})
 	st := state(t, svc)
-	if st.Month.Tokens() != 2_400_000 || st.Month.CostUSD() != 0.4 || !s.usedSince.Equal(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)) {
-		t.Errorf("this month = %+v ($%v), since %s", st.Month, st.Month.CostUSD(), s.usedSince)
+	if st.Month.Tokens() != 2_400_000 || st.Month.Cost().Dollars() != 0.4 || !s.usedSince.Equal(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)) {
+		t.Errorf("this month = %+v (%s), since %s", st.Month, st.Month.Cost(), s.usedSince)
 	}
 	for name, fail := range map[string]func(*store){
 		"the switch": func(s *store) { s.onErr = errBoom },

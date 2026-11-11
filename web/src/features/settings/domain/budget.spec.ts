@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LlmBudget } from '../../../infrastructure/api/types.gen'
-import { budgetMeter } from './budget'
+import { budgetMeter, checkBudget } from './budget'
 
 function budget(b: Partial<LlmBudget>): LlmBudget {
   return {
@@ -48,5 +48,13 @@ describe('the budget meter', () => {
     expect(budgetMeter(budget({ monthlyBudgetUsd: 1, spentThisMonthUsd: 2.5, leftUsd: 0 })).fraction).toBe(1)
     expect(budgetMeter(budget({})).fraction).toBe(0)
     expect(budgetMeter(budget({ monthlyBudgetUsd: 0, leftUsd: 0 })).fraction).toBe(0)
+  })
+})
+
+describe('a new budget', () => {
+  it('takes dollars from one cent to $1,000, rounded to the cent', () => {
+    expect(checkBudget('15')).toEqual({ kind: 'ok', usd: 15 })
+    expect(checkBudget(' $12,505 ')).toEqual({ kind: 'ok', usd: 12.51 })
+    for (const bad of ['', 'ten', '0', '1000.5']) expect(checkBudget(bad)).toEqual({ kind: 'invalid', message: 'Type a budget from $0.01 to $1,000.' })
   })
 })

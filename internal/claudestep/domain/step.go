@@ -17,8 +17,19 @@ import (
 // ID names a Claude step.
 type ID string
 
-// Matching is matching the products on a scan's pages to Tribelt's belt families.
-const Matching ID = "matching"
+// The steps.
+const (
+	// Reading is reading a Prompt run's responses; its instructions are set in the code.
+	Reading ID = "reading"
+	// Matching is matching the products on a scan's pages to Tribelt's belt families.
+	Matching ID = "matching"
+	// TidyingNames is grouping the names in the responses that are one company.
+	TidyingNames ID = "candidateMerge"
+	// CheckingCompanies is deciding, against the competitor definition, whether a company competes.
+	CheckingCompanies ID = "candidateCheck"
+	// ReviewingTerms is deciding which search terms the scans found join the list.
+	ReviewingTerms ID = "termReview"
+)
 
 // Recommendations is writing recommendations: a Recommendation run's placing and wording of the
 // gaps its rules found.
@@ -55,10 +66,15 @@ type Definition struct {
 	Typical Tokens
 }
 
-// definitions are the steps, in the order the overview lists them. The other steps join here as
-// their call sites read their versions.
+// definitions are the steps, in the order the overview lists them. A step's typical tokens are
+// those of the job its estimate names: one scan, reading 100 responses, tidying the waiting names,
+// checking 100 companies, reviewing 100 search terms.
 var definitions = []Definition{ //nolint:gochecknoglobals // a constant table
+	{ID: Reading, Title: "Reading responses", Fixed: true, Original: ReadingInstructions, Typical: Tokens{Input: 150_000, Output: 25_000}},
 	{ID: Matching, Title: "Matching products", Original: matchingInstructions, Typical: Tokens{Input: 15_000, Output: 1_500}},
+	{ID: TidyingNames, Title: "Tidying candidate names", Original: tidyingInstructions, Typical: Tokens{Input: 6_000, Output: 1_500}},
+	{ID: CheckingCompanies, Title: "Checking companies", Original: checkingInstructions, Typical: Tokens{Input: 250_000, Output: 12_000}},
+	{ID: ReviewingTerms, Title: "Reviewing search terms", Original: reviewingInstructions, Typical: Tokens{Input: 25_000, Output: 12_000}},
 	{ID: Recommendations, Title: "Writing recommendations", Original: recommendationsInstructions, Typical: Tokens{Input: 60_000, Output: 12_000}},
 }
 

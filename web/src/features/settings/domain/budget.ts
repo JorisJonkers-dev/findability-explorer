@@ -46,3 +46,15 @@ function perScan(budget: LlmBudget): Pick<BudgetMeter, 'perScan' | 'left'> {
 function micros(usd: number): number {
   return Math.round(usd * 1e6)
 }
+
+/** The most and least a month's budget may be, in dollars, as the API takes it. */
+export const BUDGET_RANGE = { min: 0.01, max: 1000 } as const
+
+/** A typed budget in dollars, checked: the amount, or why it cannot be saved. */
+export function checkBudget(typed: string): { kind: 'ok'; usd: number } | { kind: 'invalid'; message: string } {
+  const usd = Number(typed.trim().replace(/^\$/, '').replace(',', '.'))
+  if (typed.trim() === '' || !Number.isFinite(usd) || usd < BUDGET_RANGE.min || usd > BUDGET_RANGE.max) {
+    return { kind: 'invalid', message: 'Type a budget from $0.01 to $1,000.' }
+  }
+  return { kind: 'ok', usd: Math.round(usd * 100) / 100 }
+}

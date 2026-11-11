@@ -6,7 +6,8 @@ import FrameSection from '../../../shared/ui/FrameSection.vue'
 import PageFrame from '../../shell/components/PageFrame.vue'
 import { companyPath } from '../../shell/domain/sections'
 import { useOneResponse } from '../composables/useResponses'
-import { checkedBy, companiesNamed, leftOutOf, longDate, namesTribelt, placeSentence, responseTitle, sourcesOf, stateOf, wrongClaimsOf } from '../domain/responses'
+import { longDate } from '../../../shared/dates'
+import { checkedBy, companiesNamed, leftOutOf, namesTribelt, placeSentence, responseTitle, sourcesOf, stateOf, wrongClaimsOf } from '../domain/responses'
 
 const props = defineProps<{ id: string }>()
 const route = useRoute()

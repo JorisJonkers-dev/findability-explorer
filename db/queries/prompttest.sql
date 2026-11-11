@@ -1,21 +1,21 @@
 -- name: GetPromptSettings :many
 -- The settings, or no row before an administrator saved any.
-SELECT coalesce(credential_id, '')::text AS credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet,
+SELECT coalesce(credential_id, '')::text AS credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet,
     fact_sheet_version, coalesce(fact_sheet_updated_by, '')::text AS fact_sheet_updated_by, fact_sheet_updated_at
 FROM prompt_settings
 WHERE singleton;
 
 -- name: SavePromptSettings :exec
 INSERT INTO prompt_settings (
-    singleton, credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
+    singleton, credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
     fact_sheet_updated_by, fact_sheet_updated_at, updated_by, updated_at
 )
 VALUES (
-    true, sqlc.narg(credential_id), @providers, @monthly_budget_micros, @cadence, @next_due, @fact_sheet, @fact_sheet_version,
+    true, sqlc.narg(credential_id), @providers, @models::text [], @monthly_budget_micros, @cadence, @next_due, @fact_sheet, @fact_sheet_version,
     sqlc.narg(fact_sheet_updated_by), sqlc.narg(fact_sheet_updated_at), @updated_by, @updated_at
 )
 ON CONFLICT (singleton) DO UPDATE
-SET credential_id = excluded.credential_id, providers = excluded.providers,
+SET credential_id = excluded.credential_id, providers = excluded.providers, models = excluded.models,
     monthly_budget_micros = excluded.monthly_budget_micros, cadence = excluded.cadence, next_due = excluded.next_due,
     fact_sheet = excluded.fact_sheet, fact_sheet_version = excluded.fact_sheet_version,
     fact_sheet_updated_by = excluded.fact_sheet_updated_by, fact_sheet_updated_at = excluded.fact_sheet_updated_at,
@@ -289,6 +289,22 @@ ORDER BY q.version DESC, q.position;
 SELECT id, language, coalesce(region, '')::text AS region, name
 FROM prompt_scopes
 ORDER BY name;
+
+-- name: InsertPromptScope :exec
+-- A scope a newly published version asks in.
+INSERT INTO prompt_scopes (id, language, region, name)
+VALUES (@id, @language, nullif(@region::text, ''), @name);
+
+-- name: InsertPromptSet :execrows
+-- A newly published version; no row when another publication took the number first.
+INSERT INTO prompt_sets (version, published_at, published_by, note)
+VALUES (@version, @published_at, @published_by, @note)
+ON CONFLICT (version) DO NOTHING;
+
+-- name: InsertPromptSetQuestion :exec
+-- A question of a newly published version, at its position.
+INSERT INTO prompt_set_questions (version, position, prompt_id, family, intent, scope_id, text, english)
+VALUES (@version, @position, @prompt_id, @family, @intent, @scope_id, @text, nullif(@english::text, ''));
 
 -- name: ListCompetitorDefinitions :many
 -- Every version of the competitor definition, the newest first.

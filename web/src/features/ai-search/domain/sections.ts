@@ -13,8 +13,13 @@ export function share(part: number, whole: number): string {
 /** One of the three figures at the top of AI responses. */
 export type Figure = { value: string; label: string; goal: string }
 
+/** A goal from the plan, or undefined when it is not set. */
+export function goalOf(plan: Plan | undefined, target: PlanTarget): number | undefined {
+  return plan?.watched.find((w) => w.target === target)?.goal
+}
+
 function goalLine(plan: Plan | undefined, target: PlanTarget): string {
-  const goal = plan?.watched.find((w) => w.target === target)?.goal
+  const goal = goalOf(plan, target)
   return goal === undefined ? '' : `Goal ${share(goal, 1)}`
 }
 

@@ -86,7 +86,7 @@ const checkLine = computed(() => {
         <BigFigure v-if="last" :value="scanDay(last.scan.createdAt)" :label="last.company.name" />
         <p v-else class="m-0 text-ink-2">None yet.</p>
       </ManageWidget>
-      <ManageWidget title="Language model budget" :span="4">
+      <ManageWidget title="Anthropic budget" :span="4">
         <BudgetMeter v-if="budget" :budget="budget" />
         <p v-else class="m-0 text-muted">Loading the budget…</p>
       </ManageWidget>

@@ -52,10 +52,10 @@ const last = computed(() => runs.value[0])
       </ManageWidget>
 
       <RunningWidget v-for="w in running" :key="w.id" :work="w" :stopping="stopper.isStopping.value" @stop="stopper.stop(w)" />
-      <p v-if="stopper.notice.value" aria-live="polite" class="m-0 font-medium min-[1100px]:col-span-12">{{ stopper.notice.value }}</p>
-      <p v-if="stopper.error.value" role="alert" class="m-0 font-medium text-orange-ink min-[1100px]:col-span-12">{{ stopper.error.value }}</p>
+      <p v-if="stopper.notice.value" aria-live="polite" class="m-0 font-medium basis-full">{{ stopper.notice.value }}</p>
+      <p v-if="stopper.error.value" role="alert" class="m-0 font-medium text-orange-ink basis-full">{{ stopper.error.value }}</p>
 
-      <ManageWidget title="Finish the failed runs">
+      <ManageWidget title="Finish the failed runs" :span="12">
         <template v-if="failing.length > 0">
           <p class="m-0 max-w-[80ch] text-ink-2">
             Retry asks the models again for the responses that failed, and only those. Reading again keeps the responses the models gave, and asks
@@ -79,7 +79,7 @@ const last = computed(() => runs.value[0])
         <p v-else class="m-0 text-ink-2">Every run is complete. Nothing needs a retry.</p>
       </ManageWidget>
 
-      <ManageWidget title="All runs">
+      <ManageWidget title="All runs" :span="12">
         <p class="m-0 text-ink-2">A stopped or failed run stays here until you finish it.</p>
         <p v-if="runs.length === 0" class="m-0 text-ink-2">No run yet.</p>
         <div v-else class="overflow-x-auto" tabindex="0" role="region" aria-label="The runs table">

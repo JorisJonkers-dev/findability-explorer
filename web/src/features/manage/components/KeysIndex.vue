@@ -26,7 +26,7 @@ const fingerprint = (p: KeyProvider) => keysOf(credentials.value, p)[0]?.fingerp
     <p v-else-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the settings…</p>
     <WidgetGrid v-else-if="settings">
-      <ManageWidget title="This month's tokens" :span="12">
+      <ManageWidget title="Anthropic this month" :span="12">
         <BudgetMeter :budget="settings.budget" />
       </ManageWidget>
       <IndexCard
@@ -41,9 +41,9 @@ const fingerprint = (p: KeyProvider) => keysOf(credentials.value, p)[0]?.fingerp
       />
       <IndexCard
         title="Budgets"
-        text="Every job that asks a language model counts against one monthly budget in tokens. Work stops when it runs out."
+        text="Everything Claude does here spends one monthly budget in dollars. Work stops when it runs out."
         to="/manage/keys/budgets"
-        link="See the budget"
+        link="Change the budget"
         :span="3"
       />
       <IndexCard

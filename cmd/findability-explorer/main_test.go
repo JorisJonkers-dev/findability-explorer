@@ -169,7 +169,7 @@ func TestTheMonthsSpendingPricesEachScanAtItsModelAndTheOtherJobsAsHaiku(t *test
 	}
 	sp := spenders{persistence.New(store), terminologypersistence.New(store), prompttestpersistence.New(store), insightpersistence.New(store)}
 	s, err := spending(t.Context(), sp, monthStart(time.Now()))
-	if err != nil || len(s.ThisMonth) != 4 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
+	if err != nil || len(s.ThisMonth) != 3 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
 		t.Fatalf("spending of an empty month = %+v, %v", s, err)
 	}
 	for _, u := range s.ThisMonth {
@@ -253,16 +253,56 @@ func TestMatchersPreferHaikuUnlessMatchingIsOff(t *testing.T) {
 	}
 }
 
-func TestExtractorsAreHaikuOnAnAnthropicKey(t *testing.T) {
+// stepsOn returns the Claude steps over versions in memory.
+func stepsOn(versions *stepVersions) *claudestepapp.Service {
+	return claudestepapp.New(versions, func(context.Context, claudestepdomain.ID) (llmdomain.Micros, error) { return 0, nil }, time.Now)
+}
+
+func TestTheClaudeJobsOnAnAnthropicKeyUseTheirStepsNewestVersions(t *testing.T) {
 	repo := &settings{}
-	svc := func(vault string) extractors {
-		return extractors{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
+	versions := &stepVersions{}
+	steps := stepsOn(versions)
+	llm := func(vault string) *llmapp.Service {
+		return llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)
 	}
-	if x, model, err := svc("").Current(t.Context()); x != nil || model != "" || err != nil {
-		t.Fatalf("without a key: %v %q %v", x, model, err)
+	type job func(vault string) (bool, string, error)
+	jobs := map[string]job{
+		"reading": func(v string) (bool, string, error) {
+			x, label, err := extractors{llm: llm(v), steps: steps}.Current(t.Context())
+			return x != nil, label, err
+		},
+		"reviewing terms": func(v string) (bool, string, error) {
+			j, label, err := judges{llm: llm(v), steps: steps}.Current(t.Context())
+			return j != nil, label, err
+		},
+		"checking companies": func(v string) (bool, string, error) {
+			r, label, err := reviewers{llm: llm(v), steps: steps}.Current(t.Context())
+			return r != nil, label, err
+		},
 	}
-	if x, model, err := svc("sk-ant").Current(t.Context()); x == nil || model != "anthropic: claude-haiku-5-5" || err != nil {
-		t.Fatalf("with the Vault key: %v %q %v", x, model, err)
+	for name, run := range jobs {
+		if ok, label, err := run(""); ok || label != "" || err != nil {
+			t.Errorf("%s without a key: %v %q %v", name, ok, label, err)
+		}
+		if ok, label, err := run("sk-ant"); !ok || label != "anthropic: claude-haiku-5-5" || err != nil {
+			t.Errorf("%s by default: %v %q %v", name, ok, label, err)
+		}
+	}
+	// Each step on another model: its job asks that one. The versions here are one list, so every
+	// step reads the newest of it.
+	if _, err := steps.Save(t.Context(), claudestepdomain.ReviewingTerms, "Joris", claudestepdomain.Change{Model: "claude-sonnet-5-5", Instructions: "Review."}); err != nil {
+		t.Fatal(err)
+	}
+	for name, run := range jobs {
+		if ok, label, err := run("sk-ant"); !ok || label != "anthropic: claude-sonnet-5-5" || err != nil {
+			t.Errorf("%s on Sonnet: %v %q %v", name, ok, label, err)
+		}
+	}
+	versions.err = errors.New("database down")
+	for name, run := range jobs {
+		if ok, _, err := run("sk-ant"); ok || err == nil {
+			t.Errorf("%s with steps that cannot be read: %v %v", name, ok, err)
+		}
 	}
 }
 

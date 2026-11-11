@@ -76,7 +76,7 @@ function submit(): void {
           </RouterLink>
         </template>
       </ManageWidget>
-      <ManageWidget title="Versions">
+      <ManageWidget title="Versions" :span="12">
         <p class="m-0 text-ink-2" data-part="versions">
           Version {{ sheet.version }} is in use<template v-if="sheet.updatedBy && sheet.updatedAt">, saved by {{ sheet.updatedBy }} on {{ whenLabel(sheet.updatedAt) }}</template>.
           Every run records the version its responses were checked against.

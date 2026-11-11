@@ -4,9 +4,9 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ManageWidget from '../../manage/components/widgets/ManageWidget.vue'
 import WidgetGrid from '../../manage/components/widgets/WidgetGrid.vue'
-import { PRIMARY, ROW_BUTTON } from '../../manage/components/widgets/look'
+import { DANGER, PRIMARY, ROW_BUTTON } from '../../manage/components/widgets/look'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
-import { useCompetitorChecks, useListDecision } from '../composables/useCompetitorChecks'
+import { useCompetitorChecks, useListDecision, useStopHaiku } from '../composables/useCompetitorChecks'
 import { useCompetitors } from '../composables/useCompetitors'
 import { haikuArchived, isFlagged, listCheckLine, verdictLabel, verdictReason } from '../domain/checks'
 
@@ -17,6 +17,7 @@ import { haikuArchived, isFlagged, listCheckLine, verdictLabel, verdictReason } 
 const { competitors } = useCompetitors()
 const { checks, unchecked, review, isStarting, error: checkError, start } = useCompetitorChecks(ref(true))
 const { isSaving, error: decisionError, notice, keep, archive, restore } = useListDecision()
+const haiku = useStopHaiku()
 const flagged = computed(() => competitors.value.filter((c) => !c.archived && c.role === 'competitor' && isFlagged(c, checks.value.get(c.id))))
 const archived = computed(() => haikuArchived(competitors.value))
 </script>
@@ -49,9 +50,11 @@ const archived = computed(() => haikuArchived(competitors.value))
         </p>
         <p v-if="review" class="m-0 font-medium" aria-live="polite">{{ listCheckLine(review, unchecked) }}</p>
         <p v-if="checkError" role="alert" class="m-0 font-medium text-orange-ink">{{ checkError }}</p>
+        <p v-if="haiku.error.value" role="alert" class="m-0 font-medium text-orange-ink">{{ haiku.error.value }}</p>
         <template #foot>
           <RouterLink v-if="review?.problem === 'noKey'" to="/manage/keys/anthropic">Add an Anthropic key</RouterLink>
-          <button v-else type="button" :class="PRIMARY" :disabled="review?.running || isStarting" @click="start">Check the list</button>
+          <button v-else-if="review?.running" type="button" :class="DANGER" :disabled="haiku.isStopping.value" @click="haiku.stopCheck()">Stop the check</button>
+          <button v-else type="button" :class="PRIMARY" :disabled="isStarting" @click="start">Check the list</button>
         </template>
       </ManageWidget>
 

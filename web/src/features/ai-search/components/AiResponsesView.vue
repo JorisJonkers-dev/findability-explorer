@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import FrameSection from '../../../shared/ui/FrameSection.vue'
+import HistorySection from '../../prompt-test/components/HistorySection.vue'
+import { LANGUAGE_MEASURES } from '../../prompt-test/domain/history'
 import PageFrame from '../../shell/components/PageFrame.vue'
 import { useMe } from '../../shell/composables/useMe'
 import { useAiResponsesPage } from '../composables/useAiResponsesPage'
@@ -11,6 +13,7 @@ const { isAdmin } = useMe()
 const widest = computed(() => Math.max(0.0001, ...page.named.value.map((n) => n.share)))
 const width = (share: number) => `${String(Math.min(100, (share / widest.value) * 100))}%`
 const PANEL = 'rounded-3xl bg-mist p-5 sm:p-6'
+const OVER_TIME_INTRO = 'How often AI responses name Tribelt in each Prompt run. The lines show each language the questions were asked in. Twente counts as Dutch.'
 </script>
 
 <template>
@@ -47,8 +50,7 @@ const PANEL = 'rounded-3xl bg-mist p-5 sm:p-6'
         </RouterLink>
       </p>
 
-      <!-- Over time: ticket #9 puts its section, with the Prompt set filter and the chart, here. -->
-      <div data-slot="over-time" class="contents"></div>
+      <HistorySection id="over-time" title="Over time" :intro="OVER_TIME_INTRO" :measures="LANGUAGE_MEASURES" :goal="page.goal.value" />
 
       <p v-if="page.answersError.value" role="alert" class="m-0 text-orange-ink">{{ page.answersError.value }}</p>
 

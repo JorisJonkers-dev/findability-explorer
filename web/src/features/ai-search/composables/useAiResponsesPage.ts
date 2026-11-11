@@ -5,7 +5,7 @@ import { usePromptAnswers, usePromptResults } from '../../prompt-test/composable
 import { usePromptSets } from '../../prompt-test/composables/useResponses'
 import { latestRun, tally } from '../../prompt-test/domain/results'
 import { questionsOf, runDataLine } from '../../prompt-test/domain/responses'
-import { byModel, familyScopeRows, figuresOf, whoNamed } from '../domain/sections'
+import { byModel, familyScopeRows, figuresOf, goalOf, whoNamed } from '../domain/sections'
 
 /** AI responses: the newest run with responses, its responses and questions, the goals, and the companies its responses name. */
 export function useAiResponsesPage() {
@@ -25,6 +25,8 @@ export function useAiResponsesPage() {
     answersError,
     dataLine: computed(() => (run.value ? runDataLine(run.value) : undefined)),
     figures: computed(() => figuresOf(run.value?.cells ?? [], plan.value)),
+    /** The goal Over time draws: the share of responses that name Tribelt. */
+    goal: computed(() => goalOf(plan.value, 'aiShareOfVoice')),
     read: computed(() => tally(run.value?.cells ?? []).answers),
     named: computed(() => whoNamed(results.value?.mentions ?? [], competitors.value)),
     models: computed(() => (run.value ? byModel(run.value) : [])),

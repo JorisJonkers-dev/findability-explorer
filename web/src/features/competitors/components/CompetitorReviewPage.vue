@@ -7,8 +7,9 @@ import { CANDIDATE_STATUSES, candidateTab, parseCandidateStatus } from '../../pr
 import BigFigure from '../../manage/components/widgets/BigFigure.vue'
 import ManageWidget from '../../manage/components/widgets/ManageWidget.vue'
 import WidgetGrid from '../../manage/components/widgets/WidgetGrid.vue'
-import { CHOICE, CHOICE_OFF, CHOICE_ON, FIELD, LABEL, PRIMARY } from '../../manage/components/widgets/look'
+import { CHOICE, CHOICE_OFF, CHOICE_ON, DANGER, FIELD, LABEL, PRIMARY } from '../../manage/components/widgets/look'
 import ManageLayout from '../../shell/components/ManageLayout.vue'
+import { useStopHaiku } from '../composables/useCompetitorChecks'
 import { CHECK_FILTERS, type CheckFilter, idsOf, keptBy, matchesSearch, reviewLine } from '../domain/candidates'
 import CandidateRow from './CandidateRow.vue'
 
@@ -26,6 +27,7 @@ const status = computed<CompetitorCandidateStatus>(() => parseCandidateStatus(ro
 const { candidates, counts, review, isLoading, forbidden, error } = useCompetitorCandidates(status)
 const { isDeciding, notice, results, error: decisionError, add, dismiss, undo, decideMany, split, startReview } = useCandidateDecision()
 
+const haiku = useStopHaiku()
 const search = ref('')
 const filter = ref<CheckFilter>('all')
 const shown = computed(() => candidates.value.filter((c) => matchesSearch(c, search.value) && keptBy(c, filter.value)))
@@ -127,9 +129,11 @@ function onKey(event: KeyboardEvent): void {
           process belts like Tribelt's, and dismisses the ones it is sure do not. You decide the rest, and you can undo any of its decisions.
         </p>
         <p v-if="review && counts" class="m-0 font-medium" aria-live="polite" data-part="review-line">{{ reviewLine(review, counts.unchecked) }}</p>
+        <p v-if="haiku.error.value" role="alert" class="m-0 font-medium text-orange-ink">{{ haiku.error.value }}</p>
         <template v-if="review" #foot>
           <RouterLink v-if="review.problem === 'noKey'" to="/manage/keys/anthropic" class="font-medium">Add an Anthropic key in Keys and spending</RouterLink>
-          <button v-else type="button" :class="PRIMARY" :disabled="review.running || isDeciding" @click="startReview">Classify automatically</button>
+          <button v-else-if="review.running" type="button" :class="DANGER" :disabled="haiku.isStopping.value" @click="haiku.stopReview()">Stop classifying</button>
+          <button v-else type="button" :class="PRIMARY" :disabled="isDeciding" @click="startReview">Classify automatically</button>
         </template>
       </ManageWidget>
 

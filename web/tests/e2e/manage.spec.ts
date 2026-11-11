@@ -3,28 +3,36 @@ import { expect, expectAccessible, test } from './fixtures'
 // The dev user of the default server is an administrator (playwright.config.ts).
 
 test('an administrator adds a company in Manage, opens it, and removes it again', async ({ page }) => {
+  // A name and a site of its own, so no other spec, on this branch or another, meets it in the shared database.
   const stamp = `${String(Date.now())}${String(Math.floor(Math.random() * 1000))}`
-  const name = `E2E Manage Belts ${stamp}`
-  await page.goto('/manage/competitors')
-  await expect(page.getByRole('heading', { level: 1, name: 'Competitor list' })).toBeVisible()
-  await expectAccessible(page)
-  await page.getByRole('link', { name: 'See the companies' }).click()
-  await expect(page).toHaveURL('/manage/competitors/companies')
-  const form = page.getByRole('form', { name: 'Add a company' })
-  await form.getByLabel('Name').fill(name)
-  await form.getByLabel('Website').fill(`https://e2e-manage-${stamp}.example.com`)
-  await form.getByRole('button', { name: 'Add the company' }).click()
-  await expect(form).toContainText(`${name} is added to the list.`)
-  // The list shows its first rows; the search finds the new one.
-  await page.getByRole('searchbox', { name: 'Search' }).fill(name)
-  await page.getByRole('table', { name: 'Companies' }).getByRole('link', { name, exact: true }).click()
-  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
-  await expectAccessible(page)
-  await page.getByRole('button', { name: 'Remove', exact: true }).click()
-  await page.getByRole('button', { name: 'Delete with its 0 scans' }).click()
-  await expect(page).toHaveURL('/manage/competitors/companies')
-  await page.getByRole('searchbox', { name: 'Search' }).fill(name)
-  await expect(page.getByRole('table', { name: 'Companies' }).getByRole('link', { name, exact: true })).toHaveCount(0)
+  const name = `Manage Spec Belts ${stamp}`
+  const site = `manage-spec-${stamp}.org`
+  try {
+    await page.goto('/manage/competitors')
+    await expect(page.getByRole('heading', { level: 1, name: 'Competitor list' })).toBeVisible()
+    await expectAccessible(page)
+    await page.getByRole('link', { name: 'See the companies' }).click()
+    await expect(page).toHaveURL('/manage/competitors/companies')
+    const form = page.getByRole('form', { name: 'Add a company' })
+    await form.getByLabel('Name').fill(name)
+    await form.getByLabel('Website').fill(`https://www.${site}`)
+    await form.getByRole('button', { name: 'Add the company' }).click()
+    await expect(form).toContainText(`${name} is added to the list.`)
+    // The list shows its first rows; the search finds the new one.
+    await page.getByRole('searchbox', { name: 'Search' }).fill(name)
+    await page.getByRole('table', { name: 'Companies' }).getByRole('link', { name, exact: true }).click()
+    await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+    await expectAccessible(page)
+    await page.getByRole('button', { name: 'Remove', exact: true }).click()
+    await page.getByRole('button', { name: 'Delete with its 0 scans' }).click()
+    await expect(page).toHaveURL('/manage/competitors/companies')
+    await page.getByRole('searchbox', { name: 'Search' }).fill(name)
+    await expect(page.getByRole('table', { name: 'Companies' }).getByRole('link', { name, exact: true })).toHaveCount(0)
+  } finally {
+    // Whatever happened above, the company leaves the shared database again.
+    const list = (await (await page.request.get('/api/v1/competitors')).json()) as { items: { id: string; host?: string }[] }
+    for (const c of list.items.filter((x) => x.host === site)) await page.request.delete(`/api/v1/competitors/${c.id}`)
+  }
 })
 
 test('Website scans opens on the four ways to start, and each subpage is reached from the menu', async ({ page }) => {

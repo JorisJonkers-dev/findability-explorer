@@ -4,8 +4,9 @@ import { computed, ref } from 'vue'
 import { percent } from '../../../shared/percent'
 import { tierFill } from '../../../shared/tiers'
 import PillButton from '../../../shared/ui/PillButton.vue'
-import SectionHeading from '../../../shared/ui/SectionHeading.vue'
-import PageView from '../../shell/components/PageView.vue'
+import FrameSection from '../../../shared/ui/FrameSection.vue'
+import PageFrame from '../../shell/components/PageFrame.vue'
+import { RouterLink } from 'vue-router'
 import { useTermMap } from '../composables/useTermSearch'
 import { useTermView } from '../composables/useTermView'
 import type { TermGroup } from '../domain/filters'
@@ -62,9 +63,7 @@ const HEAT_COLUMNS: readonly { key: HeatColumn; label: string; short: string }[]
   { key: 'problem', label: 'Problem', short: 'Probl.' },
 ]
 const activeChips = computed(() => chips(view.value))
-const title = computed(() =>
-  total.value > 0 ? `${String(total.value)} ways to search for a metal belt.` : 'Ways to search for a metal belt.',
-)
+const dataLine = computed(() => `${String(ranked.value.length)} of ${String(total.value)} terms shown. From the search term list and each site's newest scan.`)
 const status = computed(() => (terms.value.length === 0 ? 'Loading…' : summary(ranked.value.length, terms.value.length)))
 
 const GROUPS: readonly { value: TermGroup | null; label: string }[] = [
@@ -88,13 +87,122 @@ const heatGrid =
 </script>
 
 <template>
-  <PageView section="terms" :title="title" :back="{ to: '/terms', label: 'Back to Search terms' }" :source="['Search term list, our research of 22 October 2026', 'Competitors: also found by live scans']">
-    <div class="flex flex-col gap-12">
-      <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5">{{ error }}</p>
-
-      <div class="flex min-w-0 flex-col">
-        <section aria-labelledby="terms-charts-title" class="flex flex-col gap-6">
-          <SectionHeading id="terms-charts-title">Terms Tribelt does not use</SectionHeading>
+  <PageFrame
+    section="terms"
+    title="Every term"
+    purpose="Every term in the search term list, with the competitors that use it and whether tribelt.nl does."
+    :data-line="dataLine"
+    :back="{ to: '/terms', label: 'Back to Search terms' }"
+    :manage="{ to: '/manage/terms', label: 'Manage the search term list' }"
+    help-topic="terms"
+  >
+    <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-5">{{ error }}</p>
+    <FrameSection id="terms-ranked" title="Ranked by how many competitors use them">
+      <div class="flex flex-col gap-4">
+        <div role="group" aria-label="Language" class="flex flex-wrap gap-2">
+          <PillButton size="sm" :pressed="view.language === null" @click="clear('language')">All languages</PillButton>
+          <PillButton
+            v-for="row in languages"
+            :key="row.value"
+            size="sm"
+            :pressed="view.language === row.value"
+            @click="view.language !== row.value && toggle('language', row.value)"
+          >
+            {{ row.label }}
+          </PillButton>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div role="group" aria-label="Terms" class="flex flex-wrap gap-2">
+            <PillButton v-for="group in GROUPS" :key="group.label" size="sm" :pressed="view.group === group.value" @click="pickGroup(group.value)">
+              {{ group.label }}
+            </PillButton>
+          </div>
+          <PillButton size="sm" :pressed="view.gap" @click="toggleGap">Only terms Tribelt lacks</PillButton>
+          <label for="terms-q" class="sr-only">Search terms</label>
+          <input
+            id="terms-q"
+            v-model="draft"
+            type="search"
+            placeholder="Search terms"
+            spellcheck="false"
+            autocomplete="off"
+            class="h-11 min-w-0 flex-[1_1_12rem] rounded-full border-2 border-grey bg-white px-4 text-sm"
+          />
+        </div>
+        <div class="flex min-h-9 flex-wrap items-center gap-2">
+          <span aria-live="polite" class="text-sm text-ink-2">{{ status }}</span>
+          <button
+            v-for="chip in activeChips"
+            :key="chip.key"
+            type="button"
+            :aria-label="`Remove the filter ${chip.label}`"
+            class="inline-flex min-h-9 items-center gap-2 rounded-full bg-black px-3 text-sm text-white hover:bg-ink-2"
+            @click="clear(chip.key)"
+          >
+            {{ chip.label }}
+            <svg aria-hidden="true" viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div class="flex flex-col">
+          <div
+            role="group"
+            aria-label="Sort the terms"
+            class="flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-black pb-2 text-xs font-semibold"
+          >
+            <SortButton label="Rank" :direction="directionOf(rankSort, 'rank')" @sort="sortRank('rank', 'asc')">#</SortButton>
+            <SortButton label="Term" :direction="directionOf(rankSort, 'term')" @sort="sortRank('term', 'asc')" />
+            <SortButton label="Buyer intent" :direction="directionOf(rankSort, 'kind')" @sort="sortRank('kind', 'asc')" />
+            <SortButton label="Competitors" :direction="directionOf(rankSort, 'makers')" @sort="sortRank('makers', 'desc')" />
+            <SortButton label="Tribelt's term" :direction="directionOf(rankSort, 'tribelt')" @sort="sortRank('tribelt', 'desc')" />
+          </div>
+          <ol
+            v-scroll-hint
+            aria-label="Ranked terms"
+            tabindex="0"
+            class="scroll-hint m-0 max-h-[36rem] list-none overflow-y-auto border-t-2 border-black p-0"
+          >
+            <li
+              v-for="row in sortedRanked"
+              :key="`${row.term}-${row.meta}`"
+              class="grid grid-cols-[1.75rem_minmax(0,1fr)_4.5rem] items-center gap-x-2 gap-y-0.5 border-b border-grey py-2 text-sm"
+            >
+              <span class="col-start-1 row-span-2 row-start-1 self-start text-muted">{{ row.rank }}</span>
+              <span class="col-start-2 row-start-1 flex min-w-0 flex-col">
+                <span class="truncate font-medium">
+                  <RouterLink :to="row.path">
+                    <template v-for="(part, index) in highlight(row.term, view.q)" :key="index">
+                      <mark v-if="part.match" class="bg-orange/30 text-black">{{ part.text }}</mark>
+                      <template v-else>{{ part.text }}</template>
+                    </template>
+                  </RouterLink>
+                </span>
+                <span v-if="row.hand" class="self-start rounded-full bg-orange-pale px-2 text-xs font-semibold text-orange-ink">Added by hand</span>
+                <span class="truncate text-xs text-muted">{{ row.meta }}</span>
+              </span>
+              <span class="col-start-2 row-start-2 inline-flex items-center gap-2 text-xs">
+                <span aria-hidden="true" class="size-2.5 flex-none rounded-full" :class="tierFill(row.tier)"></span>{{ row.kind }}
+              </span>
+              <span class="col-start-3 row-start-1 flex items-center gap-2">
+                <span class="w-5 text-right font-semibold">{{ row.makers }}<span class="sr-only"> competitors</span></span>
+                <span aria-hidden="true" class="h-2 flex-1 bg-mist">
+                  <span class="block h-full bg-black" :style="{ width: percent(row.share) }"></span>
+                </span>
+              </span>
+              <span
+                class="col-span-2 col-start-2 row-start-3 truncate text-xs font-medium"
+                :class="row.tribelt ? 'text-ink-2' : row.tribeltTerm === 'Lacks it' ? 'text-orange-ink' : 'text-black'"
+                :title="row.tribelt ? undefined : row.tribeltTerm"
+              ><span class="">Tribelt: </span>{{ row.tribeltTerm }}</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </FrameSection>
+    <div class="grid grid-cols-1 items-start gap-10 min-[1100px]:grid-cols-2">
+      <FrameSection id="terms-charts" title="Terms tribelt.nl does not use">
+        <div class="flex flex-col gap-4">
           <p v-if="usedLine(overview?.terms)" class="m-0 text-base font-semibold">
             {{ usedLine(overview?.terms) }}
           </p>
@@ -103,7 +211,7 @@ const heatGrid =
             <span class="inline-flex items-center gap-2"><span aria-hidden="true" class="size-4 bg-silver"></span>Only others use it</span>
           </span>
 
-          <div v-for="chart in [{ key: 'language', title: 'By language', rows: languages }, { key: 'tier', title: 'By kind of search', rows: tiers }] as const" :key="chart.key" role="group" :aria-label="chart.title" class="flex flex-col gap-1">
+          <div v-for="chart in [{ key: 'language', title: 'By language', rows: languages }, { key: 'tier', title: 'By buyer intent', rows: tiers }] as const" :key="chart.key" role="group" :aria-label="chart.title" class="flex flex-col gap-1">
             <span class="font-semibold">{{ chart.title }}</span>
             <button
               v-for="row in chart.rows"
@@ -136,13 +244,11 @@ const heatGrid =
             <strong class="font-semibold">Recommendation 3:</strong> every Tribelt belt page names its competitor equivalents, in
             Dutch, German and English.
           </p>
-        </section>
-      </div>
-
-      <div class="flex min-w-0 flex-col">
-        <section aria-labelledby="terms-heat-title" class="flex flex-col gap-4">
+        </div>
+      </FrameSection>
+      <FrameSection id="terms-heat" title="Marketing and technical terms, per company">
+        <div class="flex flex-col gap-4">
           <div class="flex flex-col gap-2">
-            <SectionHeading id="terms-heat-title">Marketing and technical terms, per company</SectionHeading>
             <span class="text-sm text-ink-2">
               Marketing terms name a belt or its use. Technical terms are what engineers type: specifications and problems.
               Select a company to list its terms.
@@ -196,111 +302,11 @@ const heatGrid =
               </li>
             </ul>
           </div>
-        </section>
-      </div>
-
-      <div class="flex min-w-0 flex-col">
-        <section aria-labelledby="terms-ranked-title" class="flex flex-col gap-4">
-          <SectionHeading id="terms-ranked-title">Ranked by how many competitors use them</SectionHeading>
-          <div role="group" aria-label="Language" class="flex flex-wrap gap-2">
-            <PillButton size="sm" :pressed="view.language === null" @click="clear('language')">All languages</PillButton>
-            <PillButton
-              v-for="row in languages"
-              :key="row.value"
-              size="sm"
-              :pressed="view.language === row.value"
-              @click="view.language !== row.value && toggle('language', row.value)"
-            >
-              {{ row.label }}
-            </PillButton>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <div role="group" aria-label="Terms" class="flex flex-wrap gap-2">
-              <PillButton v-for="group in GROUPS" :key="group.label" size="sm" :pressed="view.group === group.value" @click="pickGroup(group.value)">
-                {{ group.label }}
-              </PillButton>
-            </div>
-            <PillButton size="sm" :pressed="view.gap" @click="toggleGap">Only terms Tribelt lacks</PillButton>
-            <label for="terms-q" class="sr-only">Search terms</label>
-            <input
-              id="terms-q"
-              v-model="draft"
-              type="search"
-              placeholder="Search terms"
-              spellcheck="false"
-              autocomplete="off"
-              class="h-11 min-w-0 flex-[1_1_12rem] rounded-full border-2 border-grey bg-white px-4 text-sm"
-            />
-          </div>
-          <div class="flex min-h-9 flex-wrap items-center gap-2">
-            <span aria-live="polite" class="text-sm text-ink-2">{{ status }}</span>
-            <button
-              v-for="chip in activeChips"
-              :key="chip.key"
-              type="button"
-              :aria-label="`Remove the filter ${chip.label}`"
-              class="inline-flex min-h-9 items-center gap-2 rounded-full bg-black px-3 text-sm text-white hover:bg-ink-2"
-              @click="clear(chip.key)"
-            >
-              {{ chip.label }}
-              <svg aria-hidden="true" viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" />
-              </svg>
-            </button>
-          </div>
-          <div class="flex flex-col">
-            <div
-              role="group"
-              aria-label="Sort the terms"
-              class="flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-black pb-2 text-xs font-semibold"
-            >
-              <SortButton label="Rank" :direction="directionOf(rankSort, 'rank')" @sort="sortRank('rank', 'asc')">#</SortButton>
-              <SortButton label="Term" :direction="directionOf(rankSort, 'term')" @sort="sortRank('term', 'asc')" />
-              <SortButton label="Kind" :direction="directionOf(rankSort, 'kind')" @sort="sortRank('kind', 'asc')" />
-              <SortButton label="Competitors" :direction="directionOf(rankSort, 'makers')" @sort="sortRank('makers', 'desc')" />
-              <SortButton label="Tribelt's term" :direction="directionOf(rankSort, 'tribelt')" @sort="sortRank('tribelt', 'desc')" />
-            </div>
-            <ol
-              v-scroll-hint
-              aria-label="Ranked terms"
-              tabindex="0"
-              class="scroll-hint m-0 max-h-[36rem] list-none overflow-y-auto border-t-2 border-black p-0"
-            >
-              <li
-                v-for="row in sortedRanked"
-                :key="`${row.term}-${row.meta}`"
-                class="grid grid-cols-[1.75rem_minmax(0,1fr)_4.5rem] items-center gap-x-2 gap-y-0.5 border-b border-grey py-2 text-sm"
-              >
-                <span class="col-start-1 row-span-2 row-start-1 self-start text-muted">{{ row.rank }}</span>
-                <span class="col-start-2 row-start-1 flex min-w-0 flex-col">
-                  <span class="truncate font-medium">
-                    <template v-for="(part, index) in highlight(row.term, view.q)" :key="index">
-                      <mark v-if="part.match" class="bg-orange/30 text-black">{{ part.text }}</mark>
-                      <template v-else>{{ part.text }}</template>
-                    </template>
-                  </span>
-                  <span v-if="row.hand" class="self-start rounded-full bg-orange-pale px-2 text-xs font-semibold text-orange-ink">Added by hand</span>
-                  <span class="truncate text-xs text-muted">{{ row.meta }}</span>
-                </span>
-                <span class="col-start-2 row-start-2 inline-flex items-center gap-2 text-xs">
-                  <span aria-hidden="true" class="size-2.5 flex-none rounded-full" :class="tierFill(row.tier)"></span>{{ row.kind }}
-                </span>
-                <span class="col-start-3 row-start-1 flex items-center gap-2">
-                  <span class="w-5 text-right font-semibold">{{ row.makers }}<span class="sr-only"> competitors</span></span>
-                  <span aria-hidden="true" class="h-2 flex-1 bg-mist">
-                    <span class="block h-full bg-black" :style="{ width: percent(row.share) }"></span>
-                  </span>
-                </span>
-                <span
-                  class="col-span-2 col-start-2 row-start-3 truncate text-xs font-medium"
-                  :class="row.tribelt ? 'text-ink-2' : row.tribeltTerm === 'Lacks it' ? 'text-orange-ink' : 'text-black'"
-                  :title="row.tribelt ? undefined : row.tribeltTerm"
-                ><span class="">Tribelt: </span>{{ row.tribeltTerm }}</span>
-              </li>
-            </ol>
-          </div>
-        </section>
-      </div>
+        </div>
+      </FrameSection>
     </div>
-  </PageView>
+    <p data-part="intent-note" class="m-0 text-sm text-muted">
+      Buyer intent is what the buyer already knows when they search. <RouterLink to="/terms" class="underline">See what each kind means</RouterLink>.
+    </p>
+  </PageFrame>
 </template>

@@ -123,7 +123,7 @@ func (h *Handler) reviewState(ctx context.Context) (oas.TermReviewState, error) 
 func toReviewState(s app.ReviewState) oas.TermReviewState {
 	out := oas.TermReviewState{
 		On: s.On, Running: s.Running, Waiting: int32(s.Waiting), //nolint:gosec // a small count
-		MonthTokens: s.Month.Tokens(), MonthCostUsd: oas.Usd(s.Month.CostUSD()),
+		MonthTokens: s.Month.Tokens(), MonthCostUsd: oas.Usd(s.Month.Cost().Dollars()),
 	}
 	if s.Problem != app.ProblemNone {
 		out.Problem = oas.NewOptTermReviewStateProblem(oas.TermReviewStateProblem(s.Problem))

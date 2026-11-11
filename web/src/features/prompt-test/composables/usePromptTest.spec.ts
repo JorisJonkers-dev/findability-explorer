@@ -4,7 +4,17 @@ import { nextTick, ref } from 'vue'
 import { promptResults, promptRun, RUN_ID } from '../../../testing/fixtures'
 import { json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
-import { RUN_POLL_MS, useCandidateDecision, useCompetitorCandidates, usePromptAnswers, usePromptResults, usePromptSettings, useRetryPlan, useRetryRun, useStartRun } from './usePromptTest'
+import {
+  RUN_POLL_MS,
+  useCandidateDecision,
+  useCompetitorCandidates,
+  usePromptAnswers,
+  usePromptResults,
+  usePromptSettings,
+  useRetryPlan,
+  useRetryRun,
+  useStartRun,
+} from './usePromptTest'
 
 describe('usePromptAnswers', () => {
   it('asks nothing without a run, then loads its answers', async () => {

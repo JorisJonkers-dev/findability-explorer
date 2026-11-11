@@ -185,6 +185,26 @@ type AddLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*AddLlmCredentialUnprocessableEntity) addLlmCredentialRes() {}
 
+type AddTermBadRequest ProblemStatusCode
+
+func (*AddTermBadRequest) addTermRes() {}
+
+type AddTermConflict ProblemStatusCode
+
+func (*AddTermConflict) addTermRes() {}
+
+type AddTermForbidden ProblemStatusCode
+
+func (*AddTermForbidden) addTermRes() {}
+
+type AddTermUnauthorized ProblemStatusCode
+
+func (*AddTermUnauthorized) addTermRes() {}
+
+type AddTermUnprocessableEntity ProblemStatusCode
+
+func (*AddTermUnprocessableEntity) addTermRes() {}
+
 // What a site tells search engines and AI assistants about itself, read by a scan before its page
 // crawl, held against the report's recommendations.
 // Ref: #/components/schemas/AiReadiness
@@ -1745,20 +1765,30 @@ func (s *ClaudeStepChange) SetRestoredFrom(val OptInt32) {
 	s.RestoredFrom = val
 }
 
-// A Claude step - matching (matching products in scans) or recommendations (writing recommendations);
-// the other steps join as they are built.
+// A Claude step - reading (reading a Prompt run's responses, its instructions set in the code),
+// matching (matching products in scans), candidateMerge (tidying the names of the competitor
+// candidates), candidateCheck (checking companies against the competitor definition), termReview
+// (reviewing the search terms the scans found), or recommendations (writing recommendations).
 // Ref: #/components/schemas/ClaudeStepId
 type ClaudeStepId string
 
 const (
+	ClaudeStepIdReading         ClaudeStepId = "reading"
 	ClaudeStepIdMatching        ClaudeStepId = "matching"
+	ClaudeStepIdCandidateMerge  ClaudeStepId = "candidateMerge"
+	ClaudeStepIdCandidateCheck  ClaudeStepId = "candidateCheck"
+	ClaudeStepIdTermReview      ClaudeStepId = "termReview"
 	ClaudeStepIdRecommendations ClaudeStepId = "recommendations"
 )
 
 // AllValues returns all ClaudeStepId values.
 func (ClaudeStepId) AllValues() []ClaudeStepId {
 	return []ClaudeStepId{
+		ClaudeStepIdReading,
 		ClaudeStepIdMatching,
+		ClaudeStepIdCandidateMerge,
+		ClaudeStepIdCandidateCheck,
+		ClaudeStepIdTermReview,
 		ClaudeStepIdRecommendations,
 	}
 }
@@ -1766,7 +1796,15 @@ func (ClaudeStepId) AllValues() []ClaudeStepId {
 // MarshalText implements encoding.TextMarshaler.
 func (s ClaudeStepId) MarshalText() ([]byte, error) {
 	switch s {
+	case ClaudeStepIdReading:
+		return []byte(s), nil
 	case ClaudeStepIdMatching:
+		return []byte(s), nil
+	case ClaudeStepIdCandidateMerge:
+		return []byte(s), nil
+	case ClaudeStepIdCandidateCheck:
+		return []byte(s), nil
+	case ClaudeStepIdTermReview:
 		return []byte(s), nil
 	case ClaudeStepIdRecommendations:
 		return []byte(s), nil
@@ -1778,8 +1816,20 @@ func (s ClaudeStepId) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *ClaudeStepId) UnmarshalText(data []byte) error {
 	switch ClaudeStepId(data) {
+	case ClaudeStepIdReading:
+		*s = ClaudeStepIdReading
+		return nil
 	case ClaudeStepIdMatching:
 		*s = ClaudeStepIdMatching
+		return nil
+	case ClaudeStepIdCandidateMerge:
+		*s = ClaudeStepIdCandidateMerge
+		return nil
+	case ClaudeStepIdCandidateCheck:
+		*s = ClaudeStepIdCandidateCheck
+		return nil
+	case ClaudeStepIdTermReview:
+		*s = ClaudeStepIdTermReview
 		return nil
 	case ClaudeStepIdRecommendations:
 		*s = ClaudeStepIdRecommendations
@@ -4011,6 +4061,18 @@ type GetLlmSettingsUnauthorized ProblemStatusCode
 
 func (*GetLlmSettingsUnauthorized) getLlmSettingsRes() {}
 
+type GetPromptModelCatalogueForbidden ProblemStatusCode
+
+func (*GetPromptModelCatalogueForbidden) getPromptModelCatalogueRes() {}
+
+type GetPromptModelCatalogueUnauthorized ProblemStatusCode
+
+func (*GetPromptModelCatalogueUnauthorized) getPromptModelCatalogueRes() {}
+
+type GetPromptModelCatalogueUnprocessableEntity ProblemStatusCode
+
+func (*GetPromptModelCatalogueUnprocessableEntity) getPromptModelCatalogueRes() {}
+
 type GetPromptRetryPlanBadRequest ProblemStatusCode
 
 func (*GetPromptRetryPlanBadRequest) getPromptRetryPlanRes() {}
@@ -4066,6 +4128,75 @@ func (*GetTermPagesBadRequest) getTermPagesRes() {}
 type GetTermPagesUnauthorized ProblemStatusCode
 
 func (*GetTermPagesUnauthorized) getTermPagesRes() {}
+
+// A term added or removed by hand, with who did it and when.
+// Ref: #/components/schemas/HandTerm
+type HandTerm struct {
+	Term Term `json:"term"`
+	// Who added or removed it.
+	By string `json:"by"`
+	// When.
+	At time.Time `json:"at"`
+}
+
+// GetTerm returns the value of Term.
+func (s *HandTerm) GetTerm() Term {
+	return s.Term
+}
+
+// GetBy returns the value of By.
+func (s *HandTerm) GetBy() string {
+	return s.By
+}
+
+// GetAt returns the value of At.
+func (s *HandTerm) GetAt() time.Time {
+	return s.At
+}
+
+// SetTerm sets the value of Term.
+func (s *HandTerm) SetTerm(val Term) {
+	s.Term = val
+}
+
+// SetBy sets the value of By.
+func (s *HandTerm) SetBy(val string) {
+	s.By = val
+}
+
+// SetAt sets the value of At.
+func (s *HandTerm) SetAt(val time.Time) {
+	s.At = val
+}
+
+// The terms added by hand and the terms removed, oldest first.
+// Ref: #/components/schemas/HandTermList
+type HandTermList struct {
+	Added   []HandTerm `json:"added"`
+	Removed []HandTerm `json:"removed"`
+}
+
+// GetAdded returns the value of Added.
+func (s *HandTermList) GetAdded() []HandTerm {
+	return s.Added
+}
+
+// GetRemoved returns the value of Removed.
+func (s *HandTermList) GetRemoved() []HandTerm {
+	return s.Removed
+}
+
+// SetAdded sets the value of Added.
+func (s *HandTermList) SetAdded(val []HandTerm) {
+	s.Added = val
+}
+
+// SetRemoved sets the value of Removed.
+func (s *HandTermList) SetRemoved(val []HandTerm) {
+	s.Removed = val
+}
+
+func (*HandTermList) listHandTermsRes() {}
 
 // Whether an improvement is done.
 // Ref: #/components/schemas/ImprovementTick
@@ -4491,6 +4622,14 @@ func (*ListCompetitorChecksForbidden) listCompetitorChecksRes() {}
 type ListCompetitorChecksUnauthorized ProblemStatusCode
 
 func (*ListCompetitorChecksUnauthorized) listCompetitorChecksRes() {}
+
+type ListHandTermsForbidden ProblemStatusCode
+
+func (*ListHandTermsForbidden) listHandTermsRes() {}
+
+type ListHandTermsUnauthorized ProblemStatusCode
+
+func (*ListHandTermsUnauthorized) listHandTermsRes() {}
 
 type ListLlmModelsBadGateway ProblemStatusCode
 
@@ -5925,6 +6064,56 @@ func (s *NewLlmCredential) SetLabel(val string) {
 // SetApiKey sets the value of ApiKey.
 func (s *NewLlmCredential) SetApiKey(val string) {
 	s.ApiKey = val
+}
+
+// A search term an administrator adds by hand.
+// Ref: #/components/schemas/NewTerm
+type NewTerm struct {
+	// The term as the list shows it.
+	Term     string     `json:"term"`
+	Language Language   `json:"language"`
+	Family   BeltFamily `json:"family"`
+	Tier     IntentTier `json:"tier"`
+}
+
+// GetTerm returns the value of Term.
+func (s *NewTerm) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *NewTerm) GetLanguage() Language {
+	return s.Language
+}
+
+// GetFamily returns the value of Family.
+func (s *NewTerm) GetFamily() BeltFamily {
+	return s.Family
+}
+
+// GetTier returns the value of Tier.
+func (s *NewTerm) GetTier() IntentTier {
+	return s.Tier
+}
+
+// SetTerm sets the value of Term.
+func (s *NewTerm) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *NewTerm) SetLanguage(val Language) {
+	s.Language = val
+}
+
+// SetFamily sets the value of Family.
+func (s *NewTerm) SetFamily(val BeltFamily) {
+	s.Family = val
+}
+
+// SetTier sets the value of Tier.
+func (s *NewTerm) SetTier(val IntentTier) {
+	s.Tier = val
 }
 
 // NewOptActiveLlm returns new OptActiveLlm with value set to v.
@@ -9799,6 +9988,116 @@ func (s *PromptCadence) UnmarshalText(data []byte) error {
 	}
 }
 
+// One text model on OpenRouter, with what one response costs.
+// Ref: #/components/schemas/PromptCatalogueModel
+type PromptCatalogueModel struct {
+	// Its OpenRouter id.
+	ID string `json:"id"`
+	// Its name on OpenRouter.
+	Name string `json:"name"`
+	// Its provider's OpenRouter id.
+	Provider string `json:"provider"`
+	// When OpenRouter listed it; absent when OpenRouter does not say.
+	ListedAt OptDateTime `json:"listedAt"`
+	// True when its tokens cost nothing.
+	Free bool `json:"free"`
+	// True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
+	Recommended  bool             `json:"recommended"`
+	Basis        PromptPriceBasis `json:"basis"`
+	KnowledgeUsd Usd              `json:"knowledgeUsd"`
+	WebUsd       Usd              `json:"webUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptCatalogueModel) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *PromptCatalogueModel) GetName() string {
+	return s.Name
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptCatalogueModel) GetProvider() string {
+	return s.Provider
+}
+
+// GetListedAt returns the value of ListedAt.
+func (s *PromptCatalogueModel) GetListedAt() OptDateTime {
+	return s.ListedAt
+}
+
+// GetFree returns the value of Free.
+func (s *PromptCatalogueModel) GetFree() bool {
+	return s.Free
+}
+
+// GetRecommended returns the value of Recommended.
+func (s *PromptCatalogueModel) GetRecommended() bool {
+	return s.Recommended
+}
+
+// GetBasis returns the value of Basis.
+func (s *PromptCatalogueModel) GetBasis() PromptPriceBasis {
+	return s.Basis
+}
+
+// GetKnowledgeUsd returns the value of KnowledgeUsd.
+func (s *PromptCatalogueModel) GetKnowledgeUsd() Usd {
+	return s.KnowledgeUsd
+}
+
+// GetWebUsd returns the value of WebUsd.
+func (s *PromptCatalogueModel) GetWebUsd() Usd {
+	return s.WebUsd
+}
+
+// SetID sets the value of ID.
+func (s *PromptCatalogueModel) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *PromptCatalogueModel) SetName(val string) {
+	s.Name = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptCatalogueModel) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetListedAt sets the value of ListedAt.
+func (s *PromptCatalogueModel) SetListedAt(val OptDateTime) {
+	s.ListedAt = val
+}
+
+// SetFree sets the value of Free.
+func (s *PromptCatalogueModel) SetFree(val bool) {
+	s.Free = val
+}
+
+// SetRecommended sets the value of Recommended.
+func (s *PromptCatalogueModel) SetRecommended(val bool) {
+	s.Recommended = val
+}
+
+// SetBasis sets the value of Basis.
+func (s *PromptCatalogueModel) SetBasis(val PromptPriceBasis) {
+	s.Basis = val
+}
+
+// SetKnowledgeUsd sets the value of KnowledgeUsd.
+func (s *PromptCatalogueModel) SetKnowledgeUsd(val Usd) {
+	s.KnowledgeUsd = val
+}
+
+// SetWebUsd sets the value of WebUsd.
+func (s *PromptCatalogueModel) SetWebUsd(val Usd) {
+	s.WebUsd = val
+}
+
 // The answers of one provider, scope, belt family and mode that were read, and how many name and cite
 // Tribelt.
 // Ref: #/components/schemas/PromptCell
@@ -9936,9 +10235,86 @@ func (s *PromptCorrectness) UnmarshalText(data []byte) error {
 	}
 }
 
+// One question of a draft.
+// Ref: #/components/schemas/PromptDraftQuestion
+type PromptDraftQuestion struct {
+	// The id of the published question it keeps, changed or not; absent for a new question.
+	ID     OptString        `json:"id"`
+	Family PromptFamily     `json:"family"`
+	Intent IntentTier       `json:"intent"`
+	Scope  PromptSetScopeId `json:"scope"`
+	// The question, as it is asked.
+	Text string `json:"text"`
+	// Its English translation, when one is known.
+	English OptString `json:"english"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptDraftQuestion) GetID() OptString {
+	return s.ID
+}
+
+// GetFamily returns the value of Family.
+func (s *PromptDraftQuestion) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetIntent returns the value of Intent.
+func (s *PromptDraftQuestion) GetIntent() IntentTier {
+	return s.Intent
+}
+
+// GetScope returns the value of Scope.
+func (s *PromptDraftQuestion) GetScope() PromptSetScopeId {
+	return s.Scope
+}
+
+// GetText returns the value of Text.
+func (s *PromptDraftQuestion) GetText() string {
+	return s.Text
+}
+
+// GetEnglish returns the value of English.
+func (s *PromptDraftQuestion) GetEnglish() OptString {
+	return s.English
+}
+
+// SetID sets the value of ID.
+func (s *PromptDraftQuestion) SetID(val OptString) {
+	s.ID = val
+}
+
+// SetFamily sets the value of Family.
+func (s *PromptDraftQuestion) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetIntent sets the value of Intent.
+func (s *PromptDraftQuestion) SetIntent(val IntentTier) {
+	s.Intent = val
+}
+
+// SetScope sets the value of Scope.
+func (s *PromptDraftQuestion) SetScope(val PromptSetScopeId) {
+	s.Scope = val
+}
+
+// SetText sets the value of Text.
+func (s *PromptDraftQuestion) SetText(val string) {
+	s.Text = val
+}
+
+// SetEnglish sets the value of English.
+func (s *PromptDraftQuestion) SetEnglish(val OptString) {
+	s.English = val
+}
+
 // How the extractor read an answer; failed when it could not, after a retry.
 // Ref: #/components/schemas/PromptExtraction
 type PromptExtraction struct {
+	// The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a
+	// reading made before readings recorded it.
+	ReadBy OptString `json:"readBy"`
 	// True when the extractor could not read it.
 	Failed bool `json:"failed"`
 	// The companies named, in order.
@@ -9957,6 +10333,11 @@ type PromptExtraction struct {
 	// name Tribelt, and for a response read before wrong claims and facts left out were told apart.
 	LeftOut []string `json:"leftOut"`
 	CostUsd Usd      `json:"costUsd"`
+}
+
+// GetReadBy returns the value of ReadBy.
+func (s *PromptExtraction) GetReadBy() OptString {
+	return s.ReadBy
 }
 
 // GetFailed returns the value of Failed.
@@ -10002,6 +10383,11 @@ func (s *PromptExtraction) GetLeftOut() []string {
 // GetCostUsd returns the value of CostUsd.
 func (s *PromptExtraction) GetCostUsd() Usd {
 	return s.CostUsd
+}
+
+// SetReadBy sets the value of ReadBy.
+func (s *PromptExtraction) SetReadBy(val OptString) {
+	s.ReadBy = val
 }
 
 // SetFailed sets the value of Failed.
@@ -10346,6 +10732,49 @@ func (s *PromptMode) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// Every text model on OpenRouter, as Add a model lists it.
+// Ref: #/components/schemas/PromptModelCatalogue
+type PromptModelCatalogue struct {
+	// When the catalogue was read from OpenRouter.
+	ReadAt time.Time `json:"readAt"`
+	// How many questions a run asks, for the cost of a run.
+	Questions int32 `json:"questions"`
+	// The models, the recommended first, then cheapest first.
+	Models []PromptCatalogueModel `json:"models"`
+}
+
+// GetReadAt returns the value of ReadAt.
+func (s *PromptModelCatalogue) GetReadAt() time.Time {
+	return s.ReadAt
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PromptModelCatalogue) GetQuestions() int32 {
+	return s.Questions
+}
+
+// GetModels returns the value of Models.
+func (s *PromptModelCatalogue) GetModels() []PromptCatalogueModel {
+	return s.Models
+}
+
+// SetReadAt sets the value of ReadAt.
+func (s *PromptModelCatalogue) SetReadAt(val time.Time) {
+	s.ReadAt = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PromptModelCatalogue) SetQuestions(val int32) {
+	s.Questions = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptModelCatalogue) SetModels(val []PromptCatalogueModel) {
+	s.Models = val
+}
+
+func (*PromptModelCatalogue) getPromptModelCatalogueRes() {}
 
 // The model a run asks for one provider, and the paid fallback of a free one.
 // Ref: #/components/schemas/PromptModelChoice
@@ -11209,8 +11638,14 @@ func (*PromptRun) startPromptRunRes() {}
 // response to measure it on.
 // Ref: #/components/schemas/PromptRunFigures
 type PromptRunFigures struct {
+	// The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5";
+	// absent when its readings recorded none. A change of it between runs breaks the charts, as the
+	// responses were read another way.
+	ReadingModel OptString `json:"readingModel"`
 	// The run's id.
 	RunId uuid.UUID `json:"runId"`
+	// The models the run asked, by OpenRouter id; the charts break where they changed.
+	Models []string `json:"models"`
 	// When it started.
 	StartedAt time.Time `json:"startedAt"`
 	// The version of the Prompt set it asked.
@@ -11239,9 +11674,19 @@ type PromptRunFigures struct {
 	Citation OptFloat64 `json:"citation"`
 }
 
+// GetReadingModel returns the value of ReadingModel.
+func (s *PromptRunFigures) GetReadingModel() OptString {
+	return s.ReadingModel
+}
+
 // GetRunId returns the value of RunId.
 func (s *PromptRunFigures) GetRunId() uuid.UUID {
 	return s.RunId
+}
+
+// GetModels returns the value of Models.
+func (s *PromptRunFigures) GetModels() []string {
+	return s.Models
 }
 
 // GetStartedAt returns the value of StartedAt.
@@ -11309,9 +11754,19 @@ func (s *PromptRunFigures) GetCitation() OptFloat64 {
 	return s.Citation
 }
 
+// SetReadingModel sets the value of ReadingModel.
+func (s *PromptRunFigures) SetReadingModel(val OptString) {
+	s.ReadingModel = val
+}
+
 // SetRunId sets the value of RunId.
 func (s *PromptRunFigures) SetRunId(val uuid.UUID) {
 	s.RunId = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptRunFigures) SetModels(val []string) {
+	s.Models = val
 }
 
 // SetStartedAt sets the value of StartedAt.
@@ -11437,77 +11892,7 @@ func (s *PromptRunStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's
-// language, or Dutch, German or English with no region.
-// Ref: #/components/schemas/PromptScope
 type PromptScope string
-
-const (
-	PromptScopeTwente      PromptScope = "twente"
-	PromptScopeNetherlands PromptScope = "netherlands"
-	PromptScopeGermany     PromptScope = "germany"
-	PromptScopeDutch       PromptScope = "dutch"
-	PromptScopeGerman      PromptScope = "german"
-	PromptScopeEnglish     PromptScope = "english"
-)
-
-// AllValues returns all PromptScope values.
-func (PromptScope) AllValues() []PromptScope {
-	return []PromptScope{
-		PromptScopeTwente,
-		PromptScopeNetherlands,
-		PromptScopeGermany,
-		PromptScopeDutch,
-		PromptScopeGerman,
-		PromptScopeEnglish,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PromptScope) MarshalText() ([]byte, error) {
-	switch s {
-	case PromptScopeTwente:
-		return []byte(s), nil
-	case PromptScopeNetherlands:
-		return []byte(s), nil
-	case PromptScopeGermany:
-		return []byte(s), nil
-	case PromptScopeDutch:
-		return []byte(s), nil
-	case PromptScopeGerman:
-		return []byte(s), nil
-	case PromptScopeEnglish:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PromptScope) UnmarshalText(data []byte) error {
-	switch PromptScope(data) {
-	case PromptScopeTwente:
-		*s = PromptScopeTwente
-		return nil
-	case PromptScopeNetherlands:
-		*s = PromptScopeNetherlands
-		return nil
-	case PromptScopeGermany:
-		*s = PromptScopeGermany
-		return nil
-	case PromptScopeDutch:
-		*s = PromptScopeDutch
-		return nil
-	case PromptScopeGerman:
-		*s = PromptScopeGerman
-		return nil
-	case PromptScopeEnglish:
-		*s = PromptScopeEnglish
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // The fixed, versioned prompt set runs ask.
 // Ref: #/components/schemas/PromptSet
@@ -11536,6 +11921,48 @@ func (s *PromptSet) SetVersion(val int32) {
 // SetPrompts sets the value of Prompts.
 func (s *PromptSet) SetPrompts(val []PromptQuestion) {
 	s.Prompts = val
+}
+
+// An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the
+// version it was restored from, if any.
+// Ref: #/components/schemas/PromptSetDraft
+type PromptSetDraft struct {
+	// Its questions, in order.
+	Questions []PromptDraftQuestion `json:"questions"`
+	// The new scopes its questions ask in, which no version asked in yet.
+	Scopes []PromptSetScope `json:"scopes"`
+	// The version the draft was restored from, if it was.
+	RestoredFrom OptInt32 `json:"restoredFrom"`
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PromptSetDraft) GetQuestions() []PromptDraftQuestion {
+	return s.Questions
+}
+
+// GetScopes returns the value of Scopes.
+func (s *PromptSetDraft) GetScopes() []PromptSetScope {
+	return s.Scopes
+}
+
+// GetRestoredFrom returns the value of RestoredFrom.
+func (s *PromptSetDraft) GetRestoredFrom() OptInt32 {
+	return s.RestoredFrom
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PromptSetDraft) SetQuestions(val []PromptDraftQuestion) {
+	s.Questions = val
+}
+
+// SetScopes sets the value of Scopes.
+func (s *PromptSetDraft) SetScopes(val []PromptSetScope) {
+	s.Scopes = val
+}
+
+// SetRestoredFrom sets the value of RestoredFrom.
+func (s *PromptSetDraft) SetRestoredFrom(val OptInt32) {
+	s.RestoredFrom = val
 }
 
 // One question of a published Prompt set.
@@ -11876,8 +12303,11 @@ func (*PromptTestResults) getPromptTestResultsRes() {}
 // Ref: #/components/schemas/PromptTestSettings
 type PromptTestSettings struct {
 	CredentialId OptLlmCredentialId `json:"credentialId"`
-	// The providers whose cheapest model runs ask, by OpenRouter id.
-	Providers         []string      `json:"providers"`
+	// The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
+	Providers []string `json:"providers"`
+	// The Model list, the OpenRouter models every run asks, each its own column; empty until one is saved,
+	// when runs ask the cheapest model of each provider.
+	ModelList         []string      `json:"modelList"`
 	MonthlyBudgetUsd  Usd           `json:"monthlyBudgetUsd"`
 	SpentThisMonthUsd Usd           `json:"spentThisMonthUsd"`
 	Cadence           PromptCadence `json:"cadence"`
@@ -11903,6 +12333,11 @@ func (s *PromptTestSettings) GetCredentialId() OptLlmCredentialId {
 // GetProviders returns the value of Providers.
 func (s *PromptTestSettings) GetProviders() []string {
 	return s.Providers
+}
+
+// GetModelList returns the value of ModelList.
+func (s *PromptTestSettings) GetModelList() []string {
+	return s.ModelList
 }
 
 // GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
@@ -11965,6 +12400,11 @@ func (s *PromptTestSettings) SetProviders(val []string) {
 	s.Providers = val
 }
 
+// SetModelList sets the value of ModelList.
+func (s *PromptTestSettings) SetModelList(val []string) {
+	s.ModelList = val
+}
+
 // SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
 func (s *PromptTestSettings) SetMonthlyBudgetUsd(val Usd) {
 	s.MonthlyBudgetUsd = val
@@ -12024,6 +12464,8 @@ type PromptTestSettingsChange struct {
 	CredentialId OptLlmCredentialId `json:"credentialId"`
 	// The providers whose cheapest model runs ask.
 	Providers []string `json:"providers"`
+	// The Model list, by OpenRouter model id.
+	Models []string `json:"models"`
 	// The month's budget in dollars.
 	MonthlyBudgetUsd OptFloat64       `json:"monthlyBudgetUsd"`
 	Cadence          OptPromptCadence `json:"cadence"`
@@ -12039,6 +12481,11 @@ func (s *PromptTestSettingsChange) GetCredentialId() OptLlmCredentialId {
 // GetProviders returns the value of Providers.
 func (s *PromptTestSettingsChange) GetProviders() []string {
 	return s.Providers
+}
+
+// GetModels returns the value of Models.
+func (s *PromptTestSettingsChange) GetModels() []string {
+	return s.Models
 }
 
 // GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
@@ -12064,6 +12511,11 @@ func (s *PromptTestSettingsChange) SetCredentialId(val OptLlmCredentialId) {
 // SetProviders sets the value of Providers.
 func (s *PromptTestSettingsChange) SetProviders(val []string) {
 	s.Providers = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptTestSettingsChange) SetModels(val []string) {
+	s.Models = val
 }
 
 // SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
@@ -12235,6 +12687,26 @@ func (s *PromptWrongClaim) SetClaim(val string) {
 	s.Claim = val
 }
 
+type PublishPromptSetBadRequest ProblemStatusCode
+
+func (*PublishPromptSetBadRequest) publishPromptSetRes() {}
+
+type PublishPromptSetConflict ProblemStatusCode
+
+func (*PublishPromptSetConflict) publishPromptSetRes() {}
+
+type PublishPromptSetForbidden ProblemStatusCode
+
+func (*PublishPromptSetForbidden) publishPromptSetRes() {}
+
+type PublishPromptSetUnauthorized ProblemStatusCode
+
+func (*PublishPromptSetUnauthorized) publishPromptSetRes() {}
+
+type PublishPromptSetUnprocessableEntity ProblemStatusCode
+
+func (*PublishPromptSetUnprocessableEntity) publishPromptSetRes() {}
+
 // One published version of the Prompt set, with its questions.
 // Ref: #/components/schemas/PublishedPromptSet
 type PublishedPromptSet struct {
@@ -12287,6 +12759,29 @@ func (s *PublishedPromptSet) SetNote(val string) {
 func (s *PublishedPromptSet) SetQuestions(val []PromptSetQuestion) {
 	s.Questions = val
 }
+
+func (*PublishedPromptSet) publishPromptSetRes() {}
+
+type PutBackTermBadRequest ProblemStatusCode
+
+func (*PutBackTermBadRequest) putBackTermRes() {}
+
+type PutBackTermForbidden ProblemStatusCode
+
+func (*PutBackTermForbidden) putBackTermRes() {}
+
+// PutBackTermNoContent is response for PutBackTerm operation.
+type PutBackTermNoContent struct{}
+
+func (*PutBackTermNoContent) putBackTermRes() {}
+
+type PutBackTermNotFound ProblemStatusCode
+
+func (*PutBackTermNotFound) putBackTermRes() {}
+
+type PutBackTermUnauthorized ProblemStatusCode
+
+func (*PutBackTermUnauthorized) putBackTermRes() {}
 
 // Whether a site follows one recommendation.
 // Ref: #/components/schemas/ReadinessAdvice
@@ -13358,6 +13853,27 @@ func (*RemoveQueuedAnalysesNotFound) removeQueuedAnalysesRes() {}
 type RemoveQueuedAnalysesUnauthorized ProblemStatusCode
 
 func (*RemoveQueuedAnalysesUnauthorized) removeQueuedAnalysesRes() {}
+
+type RemoveTermBadRequest ProblemStatusCode
+
+func (*RemoveTermBadRequest) removeTermRes() {}
+
+type RemoveTermForbidden ProblemStatusCode
+
+func (*RemoveTermForbidden) removeTermRes() {}
+
+// RemoveTermNoContent is response for RemoveTerm operation.
+type RemoveTermNoContent struct{}
+
+func (*RemoveTermNoContent) removeTermRes() {}
+
+type RemoveTermNotFound ProblemStatusCode
+
+func (*RemoveTermNotFound) removeTermRes() {}
+
+type RemoveTermUnauthorized ProblemStatusCode
+
+func (*RemoveTermUnauthorized) removeTermRes() {}
 
 type RereadPromptRunBadRequest ProblemStatusCode
 
@@ -14789,6 +15305,8 @@ func (s *Term) SetSource(val string) {
 	s.Source = val
 }
 
+func (*Term) addTermRes() {}
+
 // A candidate as it joins the terminology map.
 // Ref: #/components/schemas/TermAcceptance
 type TermAcceptance struct {
@@ -15350,14 +15868,15 @@ func (s *TermMaker) SetFromScan(val bool) {
 	s.FromScan = val
 }
 
-// Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator
-// accepted from the review queue.
+// Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator
+// accepted from the review queue, or a term an administrator added by hand.
 // Ref: #/components/schemas/TermOrigin
 type TermOrigin string
 
 const (
 	TermOriginResearch TermOrigin = "research"
 	TermOriginReview   TermOrigin = "review"
+	TermOriginHand     TermOrigin = "hand"
 )
 
 // AllValues returns all TermOrigin values.
@@ -15365,6 +15884,7 @@ func (TermOrigin) AllValues() []TermOrigin {
 	return []TermOrigin{
 		TermOriginResearch,
 		TermOriginReview,
+		TermOriginHand,
 	}
 }
 
@@ -15374,6 +15894,8 @@ func (s TermOrigin) MarshalText() ([]byte, error) {
 	case TermOriginResearch:
 		return []byte(s), nil
 	case TermOriginReview:
+		return []byte(s), nil
+	case TermOriginHand:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -15388,6 +15910,9 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 		return nil
 	case TermOriginReview:
 		*s = TermOriginReview
+		return nil
+	case TermOriginHand:
+		*s = TermOriginHand
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -15441,6 +15966,34 @@ func (s *TermPages) SetItems(val []CompanyTermPages) {
 }
 
 func (*TermPages) getTermPagesRes() {}
+
+// A search term on the list, by its text and language.
+// Ref: #/components/schemas/TermRef
+type TermRef struct {
+	// The term's text; case and accents do not matter.
+	Term     string   `json:"term"`
+	Language Language `json:"language"`
+}
+
+// GetTerm returns the value of Term.
+func (s *TermRef) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *TermRef) GetLanguage() Language {
+	return s.Language
+}
+
+// SetTerm sets the value of Term.
+func (s *TermRef) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *TermRef) SetLanguage(val Language) {
+	s.Language = val
+}
 
 // Whether the language model reviews the waiting candidates by itself, how far it is with them, and
 // what it used this month.

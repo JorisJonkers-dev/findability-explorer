@@ -109,6 +109,7 @@ export function reviewLine(state: CandidateReviewState, unchecked: number): stri
   if (state.problem === 'noKey') return 'No Anthropic key is set up, so Haiku cannot check the companies.'
   if (state.problem === 'budget') return "This month's language-model budget is used up, so Haiku checks the rest next month."
   if (state.problem === 'failed') return 'Haiku failed on its last try. Try again.'
+  if (state.problem === 'stopped') return 'An administrator stopped the review. What Haiku decided is kept.'
   if (unchecked > 0) return `Haiku has not checked ${companies(unchecked)} yet.`
   return 'Haiku has checked every company.'
 }

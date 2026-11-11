@@ -42,7 +42,7 @@ type Judges interface {
 var (
 	// ErrNoModel is returned by Review when there is no model to ask: no Anthropic key is set up.
 	ErrNoModel = errors.New("no Anthropic key is set up")
-	// ErrBudgetSpent is returned by Review when the month's language-model tokens are spent.
+	// ErrBudgetSpent is returned by Review when the month's Anthropic budget is spent.
 	ErrBudgetSpent = errors.New("this month's language-model budget is spent")
 	// ErrStopped is returned by Review when an administrator stopped it.
 	ErrStopped = errors.New("stopped by hand")
@@ -65,7 +65,7 @@ const (
 	ProblemStopped Problem = "stopped"
 )
 
-// BudgetSpent reports whether the month's language-model tokens, of every job together, are spent.
+// BudgetSpent reports whether the month's Anthropic budget, of every job together, is spent.
 type BudgetSpent func(ctx context.Context) (bool, error)
 
 // ReviewState is how far the language model is with the waiting candidates.
@@ -133,18 +133,18 @@ func (s *Service) WithReviewer(verdicts Verdicts, judges Judges) {
 	s.review.problem.Store(ProblemNone)
 }
 
-// WithBudget stops the review once the month's language-model tokens are spent; without it, the
+// WithBudget stops the review once the month's Anthropic budget is spent; without it, the
 // review does not stop.
 func (s *Service) WithBudget(spent BudgetSpent) { s.budget = spent }
 
-// affordable is ErrBudgetSpent once the month's tokens are spent.
+// affordable is ErrBudgetSpent once the month's Anthropic budget is spent.
 func (s *Service) affordable(ctx context.Context) error {
 	if s.budget == nil {
 		return nil
 	}
 	spent, err := s.budget(ctx)
 	if err != nil {
-		return fmt.Errorf("this month's tokens: %w", err)
+		return fmt.Errorf("this month's Anthropic budget: %w", err)
 	}
 	if spent {
 		return ErrBudgetSpent
@@ -166,8 +166,8 @@ func (s *Service) verdicts(ctx context.Context) ([]domain.Verdict, error) {
 
 // Review asks the language model about every waiting candidate it has not reviewed, a batch at a
 // time, and records its sure verdicts as its decisions. It returns how many it reviewed;
-// ErrNoModel when no model is set up, ErrBudgetSpent when the month's tokens are spent before a
-// batch, ErrStopped when an administrator stopped it, keeping what it decided before.
+// ErrNoModel when no model is set up, ErrBudgetSpent when the month's Anthropic budget is spent
+// before a batch, ErrStopped when an administrator stopped it, keeping what it decided before.
 func (s *Service) Review(ctx context.Context) (int, error) {
 	n, err := s.reviewAll(ctx)
 	if n > 0 { // the accepted terms join the map

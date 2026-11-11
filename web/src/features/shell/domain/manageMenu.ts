@@ -74,6 +74,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
     children: [
       { label: 'Term review', to: '/manage/terms/review' },
       { label: 'Waiting terms', to: '/manage/terms/waiting' },
+      { label: 'Add or remove terms', to: '/manage/terms/edit' },
       { label: 'Reviewing terms', to: '/manage/claude-steps/termReview' },
     ],
   },
@@ -85,6 +86,7 @@ export const MANAGE_MENU: readonly MenuGroup[] = [
       { label: 'Tick off yourself', to: '/manage/recommendations/tick-off' },
       { label: 'Edit a recommendation', to: '/manage/recommendations/edit' },
       { label: 'Goals', to: '/manage/recommendations/goals' },
+      { label: 'Writing recommendations', to: '/manage/claude-steps/recommendations' },
     ],
   },
   {

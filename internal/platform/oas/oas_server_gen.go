@@ -145,12 +145,30 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses/{analysisId}
 	GetAnalysis(ctx context.Context, params GetAnalysisParams) (GetAnalysisRes, error)
+	// GetClaudeStep implements getClaudeStep operation.
+	//
+	// Administrators only. One step: the instructions the tool came with, every saved version (model and
+	// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
+	// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
+	// exist.
+	//
+	// GET /api/v1/admin/claude-steps/{stepId}
+	GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (GetClaudeStepRes, error)
 	// GetCompetitor implements getCompetitor operation.
 	//
 	// Returns the company and its scans, newest first, each with its number.
 	//
 	// GET /api/v1/competitors/{competitorId}
 	GetCompetitor(ctx context.Context, params GetCompetitorParams) (GetCompetitorRes, error)
+	// GetCompetitorDefinition implements getCompetitorDefinition operation.
+	//
+	// Administrators only. The definition of who competes with Tribelt that every check of a company is
+	// made against (the newest version), every version, newest first, and what checking again against it
+	// would take - the competitors on the list and the waiting candidates checked against an older
+	// version, and what checking them again should cost on the Anthropic key.
+	//
+	// GET /api/v1/admin/competitor-definition
+	GetCompetitorDefinition(ctx context.Context) (GetCompetitorDefinitionRes, error)
 	// GetCompetitorProfile implements getCompetitorProfile operation.
 	//
 	// Returns the search terms of the company's latest finished scan, grouped by Tribelt belt family, with
@@ -212,6 +230,16 @@ type Handler interface {
 	//
 	// GET /api/v1/products
 	GetProducts(ctx context.Context) (GetProductsRes, error)
+	// GetPromptModelCatalogue implements getPromptModelCatalogue operation.
+	//
+	// Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read
+	// with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest
+	// model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest
+	// cheapest first. A model the latest run asked is priced by its responses, the others by their list
+	// price for a typical response with the web search fee. 422 without a working OpenRouter key.
+	//
+	// GET /api/v1/admin/prompt-test/catalogue
+	GetPromptModelCatalogue(ctx context.Context) (GetPromptModelCatalogueRes, error)
 	// GetPromptRetryPlan implements getPromptRetryPlan operation.
 	//
 	// Administrators only. Says how many of a run's failed and missing answers asking again would ask, how
@@ -288,6 +316,13 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
+	// ListClaudeSteps implements listClaudeSteps operation.
+	//
+	// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
+	// and the version of the instructions it uses now and what one job of it costs with that model.
+	//
+	// GET /api/v1/admin/claude-steps
+	ListClaudeSteps(ctx context.Context) (ListClaudeStepsRes, error)
 	// ListCompetitorCandidates implements listCompetitorCandidates operation.
 	//
 	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -351,6 +386,17 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/term-candidates
 	ListTermCandidates(ctx context.Context, params ListTermCandidatesParams) (ListTermCandidatesRes, error)
+	// PublishPromptSet implements publishPromptSet operation.
+	//
+	// Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions
+	// in order, each keeping the id of the published question it keeps or getting a new one no version has
+	// used, and the new scopes it asks in (a language with or without a region). The note says what
+	// changed against the newest version, and from which version the draft was restored. The next Prompt
+	// run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or
+	// another publication took the number first; 422 when a question or scope cannot be asked.
+	//
+	// POST /api/v1/admin/prompt-sets
+	PublishPromptSet(ctx context.Context, req *PromptSetDraft) (PublishPromptSetRes, error)
 	// PutBackTerm implements putBackTerm operation.
 	//
 	// Administrators only. Puts a removed term back on the list. 404 when it was not removed.
@@ -390,6 +436,14 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/reread
 	RereadPromptRun(ctx context.Context, req *PromptRetryRequest, params RereadPromptRunParams) (RereadPromptRunRes, error)
+	// RestoreCompetitorDefinition implements restoreCompetitorDefinition operation.
+	//
+	// Administrators only. Saves the text of an older version as a new version, recording which it
+	// restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is
+	// the one in use.
+	//
+	// POST /api/v1/admin/competitor-definition/versions/{version}/restore
+	RestoreCompetitorDefinition(ctx context.Context, params RestoreCompetitorDefinitionParams) (RestoreCompetitorDefinitionRes, error)
 	// RetryPromptRun implements retryPromptRun operation.
 	//
 	// Administrators only. Asks a finished run's failed and missing answers again, or only the one
@@ -402,6 +456,26 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/retry
 	RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error)
+	// SaveClaudeStepVersion implements saveClaudeStepVersion operation.
+	//
+	// Administrators only. Saves the model and the instructions as the step's next version, which its next
+	// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
+	// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
+	// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
+	// that does not exist.
+	//
+	// POST /api/v1/admin/claude-steps/{stepId}/versions
+	SaveClaudeStepVersion(ctx context.Context, req *ClaudeStepChange, params SaveClaudeStepVersionParams) (SaveClaudeStepVersionRes, error)
+	// SaveCompetitorDefinition implements saveCompetitorDefinition operation.
+	//
+	// Administrators only. Stores the text as a new version, which every check from now on is made
+	// against, and records who saved it. It starts no check - what was checked against an older version is
+	// checked again by the next check of the candidates or of the list (startCandidateReview,
+	// startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text
+	// is the one in use; 422 when it is empty or longer than 8,000 characters.
+	//
+	// PUT /api/v1/admin/competitor-definition
+	SaveCompetitorDefinition(ctx context.Context, req *CompetitorDefinitionText) (SaveCompetitorDefinitionRes, error)
 	// SearchTerms implements searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of

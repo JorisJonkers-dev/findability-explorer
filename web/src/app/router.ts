@@ -1,10 +1,11 @@
-import { createRouter, createWebHistory, type Router, type RouterHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalizedLoaded, type Router, type RouterHistory } from 'vue-router'
+import { goalTabTitle } from '../features/goals/domain/goals'
 import { trackPreviousPath } from '../features/shell/composables/navigation'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** The page's name in the browser tab. */
-    title?: string
+    /** The page's name in the browser tab, or how the page's address names it. */
+    title?: string | ((route: RouteLocationNormalizedLoaded) => string)
     /** Results is for everyone signed in; Manage is for administrators. */
     view?: 'results' | 'manage'
   }
@@ -23,7 +24,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         name: 'goal',
         component: () => import('../features/goals/components/GoalView.vue'),
         props: (to) => ({ measure: String(to.params.measure) }),
-        meta: { title: 'Goal', view: 'results' },
+        meta: { title: (route) => goalTabTitle(String(route.params.measure)), view: 'results' },
       },
       {
         path: '/ai-responses',
@@ -227,6 +228,12 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
       { path: '/manage/terms', name: 'term-list', component: () => import('../features/manage/components/TermListIndex.vue'), meta: { title: 'Search term list', view: 'manage' } },
       { path: '/manage/terms/review', name: 'term-review', component: () => import('../features/review/components/TermReviewRunPage.vue'), meta: { title: 'Term review', view: 'manage' } },
       {
+        path: '/manage/terms/edit',
+        name: 'term-edit',
+        component: () => import('../features/terminology/components/HandTermsPage.vue'),
+        meta: { title: 'Add or remove terms', view: 'manage' },
+      },
+      {
         path: '/manage/terms/waiting',
         name: 'waiting-terms',
         component: () => import('../features/review/components/TermReviewPage.vue'),
@@ -268,7 +275,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ro
         meta: { title: 'Claude models and instructions', view: 'manage' },
       },
       {
-        path: '/manage/claude-steps/:step(matching|recommendations)',
+        path: '/manage/claude-steps/:step(reading|matching|candidateMerge|candidateCheck|termReview|recommendations)',
         name: 'claude-step',
         component: () => import('../features/claude-steps/components/ClaudeStepView.vue'),
         props: (to) => ({ stepId: String(to.params.step) }),

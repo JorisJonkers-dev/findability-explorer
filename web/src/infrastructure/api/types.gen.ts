@@ -873,9 +873,9 @@ export type LlmSettings = {
 };
 
 /**
- * Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator accepted from the review queue.
+ * Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator accepted from the review queue, or a term an administrator added by hand.
  */
-export type TermOrigin = 'research' | 'review';
+export type TermOrigin = 'research' | 'review' | 'hand';
 
 /**
  * The fields of a company to change; at least one.
@@ -1215,9 +1215,9 @@ export type TermSuggestion = {
 };
 
 /**
- * A Claude step - matching (matching products in scans) or recommendations (writing recommendations); the other steps join as they are built.
+ * A Claude step - reading (reading a Prompt run's responses, its instructions set in the code), matching (matching products in scans), candidateMerge (tidying the names of the competitor candidates), candidateCheck (checking companies against the competitor definition), termReview (reviewing the search terms the scans found), or recommendations (writing recommendations).
  */
-export type ClaudeStepId = 'matching' | 'recommendations';
+export type ClaudeStepId = 'reading' | 'matching' | 'candidateMerge' | 'candidateCheck' | 'termReview' | 'recommendations';
 
 /**
  * One saved version of a Claude step - the model it uses and its instructions.
@@ -1490,6 +1490,53 @@ export type TermCandidateList = {
     items: Array<TermCandidate>;
     counts: TermCandidateCounts;
     review: TermReviewState;
+};
+
+/**
+ * A search term an administrator adds by hand.
+ */
+export type NewTerm = {
+    /**
+     * The term as the list shows it.
+     */
+    term: string;
+    language: Language;
+    family: BeltFamily;
+    tier: IntentTier;
+};
+
+/**
+ * A search term on the list, by its text and language.
+ */
+export type TermRef = {
+    /**
+     * The term's text; case and accents do not matter.
+     */
+    term: string;
+    language: Language;
+};
+
+/**
+ * A term added or removed by hand, with who did it and when.
+ */
+export type HandTerm = {
+    term: Term;
+    /**
+     * Who added or removed it.
+     */
+    by: string;
+    /**
+     * When.
+     */
+    at: string;
+};
+
+/**
+ * The terms added by hand and the terms removed, oldest first.
+ */
+export type HandTermList = {
+    added: Array<HandTerm>;
+    removed: Array<HandTerm>;
 };
 
 /**
@@ -2679,9 +2726,9 @@ export type PromptFamily = 'eyelink' | 'open_spiral' | 'closed_spiral' | 'tri_fl
 export type PromptKind = 'supplier' | 'application' | 'problem';
 
 /**
- * Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's language, or Dutch, German or English with no region.
+ * Where and in which language a prompt asks - a scope's id (PromptSetScope), such as twente, netherlands, germany, dutch, german, or english, or one a later Prompt set version added.
  */
-export type PromptScope = 'twente' | 'netherlands' | 'germany' | 'dutch' | 'german' | 'english';
+export type PromptScope = string;
 
 /**
  * What to ask again - every failed answer of the run when empty, or the one question of one provider and mode when all three are given.
@@ -3081,6 +3128,45 @@ export type PromptSetQuestion = {
 };
 
 /**
+ * An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the version it was restored from, if any.
+ */
+export type PromptSetDraft = {
+    /**
+     * Its questions, in order.
+     */
+    questions: Array<PromptDraftQuestion>;
+    /**
+     * The new scopes its questions ask in, which no version asked in yet.
+     */
+    scopes?: Array<PromptSetScope>;
+    /**
+     * The version the draft was restored from, if it was.
+     */
+    restoredFrom?: number;
+};
+
+/**
+ * One question of a draft.
+ */
+export type PromptDraftQuestion = {
+    /**
+     * The id of the published question it keeps, changed or not; absent for a new question.
+     */
+    id?: string;
+    family: PromptFamily;
+    intent: IntentTier;
+    scope: PromptSetScopeId;
+    /**
+     * The question, as it is asked.
+     */
+    text: string;
+    /**
+     * Its English translation, when one is known.
+     */
+    english?: string;
+};
+
+/**
  * A scope's id, which the responses to its questions record as their scope.
  */
 export type PromptSetScopeId = string;
@@ -3131,9 +3217,17 @@ export type PromptSetVersionInfo = {
  */
 export type PromptRunFigures = {
     /**
+     * The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5"; absent when its readings recorded none. A change of it between runs breaks the charts, as the responses were read another way.
+     */
+    readingModel?: string;
+    /**
      * The run's id.
      */
     runId: string;
+    /**
+     * The models the run asked, by OpenRouter id; the charts break where they changed.
+     */
+    models?: Array<string>;
     /**
      * When it started.
      */
@@ -3211,6 +3305,10 @@ export type PromptNamedCompany = {
  * How the extractor read an answer; failed when it could not, after a retry.
  */
 export type PromptExtraction = {
+    /**
+     * The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a reading made before readings recorded it.
+     */
+    readBy?: string;
     /**
      * True when the extractor could not read it.
      */
@@ -3430,14 +3528,69 @@ export type PromptPrices = {
 };
 
 /**
+ * Every text model on OpenRouter, as Add a model lists it.
+ */
+export type PromptModelCatalogue = {
+    /**
+     * When the catalogue was read from OpenRouter.
+     */
+    readAt: string;
+    /**
+     * How many questions a run asks, for the cost of a run.
+     */
+    questions: number;
+    /**
+     * The models, the recommended first, then cheapest first.
+     */
+    models: Array<PromptCatalogueModel>;
+};
+
+/**
+ * One text model on OpenRouter, with what one response costs.
+ */
+export type PromptCatalogueModel = {
+    /**
+     * Its OpenRouter id.
+     */
+    id: string;
+    /**
+     * Its name on OpenRouter.
+     */
+    name: string;
+    /**
+     * Its provider's OpenRouter id.
+     */
+    provider: string;
+    /**
+     * When OpenRouter listed it; absent when OpenRouter does not say.
+     */
+    listedAt?: string;
+    /**
+     * True when its tokens cost nothing.
+     */
+    free: boolean;
+    /**
+     * True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
+     */
+    recommended: boolean;
+    basis: PromptPriceBasis;
+    knowledgeUsd: Usd;
+    webUsd: Usd;
+};
+
+/**
  * The Prompt test's settings.
  */
 export type PromptTestSettings = {
     credentialId?: LlmCredentialId;
     /**
-     * The providers whose cheapest model runs ask, by OpenRouter id.
+     * The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
      */
     providers: Array<string>;
+    /**
+     * The Model list, the OpenRouter models every run asks, each its own column; empty until one is saved, when runs ask the cheapest model of each provider.
+     */
+    modelList: Array<string>;
     monthlyBudgetUsd: Usd;
     spentThisMonthUsd: Usd;
     cadence: PromptCadence;
@@ -3471,6 +3624,10 @@ export type PromptTestSettingsChange = {
      * The providers whose cheapest model runs ask.
      */
     providers?: Array<string>;
+    /**
+     * The Model list, by OpenRouter model id.
+     */
+    models?: Array<string>;
     /**
      * The month's budget in dollars.
      */
@@ -5117,6 +5274,181 @@ export type GetActivityResponses = {
 
 export type GetActivityResponse = GetActivityResponses[keyof GetActivityResponses];
 
+export type ListHandTermsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/hand';
+};
+
+export type ListHandTermsErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type ListHandTermsError = ListHandTermsErrors[keyof ListHandTermsErrors];
+
+export type ListHandTermsResponses = {
+    /**
+     * The terms added and removed by hand.
+     */
+    200: HandTermList;
+};
+
+export type ListHandTermsResponse = ListHandTermsResponses[keyof ListHandTermsResponses];
+
+export type AddTermData = {
+    /**
+     * The term as it joins the list.
+     */
+    body: NewTerm;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/hand';
+};
+
+export type AddTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type AddTermError = AddTermErrors[keyof AddTermErrors];
+
+export type AddTermResponses = {
+    /**
+     * The term, added.
+     */
+    201: Term;
+};
+
+export type AddTermResponse = AddTermResponses[keyof AddTermResponses];
+
+export type PutBackTermData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The removed term, as the list wrote it.
+         */
+        term: string;
+        /**
+         * The removed term's language.
+         */
+        language: Language;
+    };
+    url: '/api/v1/admin/terms/removed';
+};
+
+export type PutBackTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type PutBackTermError = PutBackTermErrors[keyof PutBackTermErrors];
+
+export type PutBackTermResponses = {
+    /**
+     * Put back.
+     */
+    204: void;
+};
+
+export type PutBackTermResponse = PutBackTermResponses[keyof PutBackTermResponses];
+
+export type RemoveTermData = {
+    /**
+     * The term to remove.
+     */
+    body: TermRef;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/terms/removed';
+};
+
+export type RemoveTermErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type RemoveTermError = RemoveTermErrors[keyof RemoveTermErrors];
+
+export type RemoveTermResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type RemoveTermResponse = RemoveTermResponses[keyof RemoveTermResponses];
+
 export type ListTermCandidatesData = {
     body?: never;
     path?: never;
@@ -5679,6 +6011,51 @@ export type ListPromptSetsResponses = {
 
 export type ListPromptSetsResponse = ListPromptSetsResponses[keyof ListPromptSetsResponses];
 
+export type PublishPromptSetData = {
+    body: PromptSetDraft;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-sets';
+};
+
+export type PublishPromptSetErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type PublishPromptSetError = PublishPromptSetErrors[keyof PublishPromptSetErrors];
+
+export type PublishPromptSetResponses = {
+    /**
+     * The published version.
+     */
+    201: PublishedPromptSet;
+};
+
+export type PublishPromptSetResponse = PublishPromptSetResponses[keyof PublishPromptSetResponses];
+
 export type ListPromptAnswersData = {
     body?: never;
     path: {
@@ -5984,6 +6361,43 @@ export type RereadPromptRunResponses = {
 };
 
 export type RereadPromptRunResponse = RereadPromptRunResponses[keyof RereadPromptRunResponses];
+
+export type GetPromptModelCatalogueData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/prompt-test/catalogue';
+};
+
+export type GetPromptModelCatalogueErrors = {
+    /**
+     * An RFC 9457 problem.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    422: Problem;
+    /**
+     * An RFC 9457 problem.
+     */
+    default: Problem;
+};
+
+export type GetPromptModelCatalogueError = GetPromptModelCatalogueErrors[keyof GetPromptModelCatalogueErrors];
+
+export type GetPromptModelCatalogueResponses = {
+    /**
+     * The catalogue.
+     */
+    200: PromptModelCatalogue;
+};
+
+export type GetPromptModelCatalogueResponse = GetPromptModelCatalogueResponses[keyof GetPromptModelCatalogueResponses];
 
 export type GetPromptTestSettingsData = {
     body?: never;

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StepCard from '../../claude-steps/components/StepCard.vue'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { usePlan } from '../../plan/composables/usePlan'
@@ -110,6 +111,7 @@ const past = computed(() => (runs.value?.runs ?? []).map((r) => ({ id: r.id, ...
         :span="6"
       />
       <IndexCard title="Goals" text="The five goals Tribelt is measured against." to="/manage/recommendations/goals" link="Change the goals" :span="6" />
+      <StepCard step-id="recommendations" />
     </WidgetGrid>
   </ManageLayout>
 </template>

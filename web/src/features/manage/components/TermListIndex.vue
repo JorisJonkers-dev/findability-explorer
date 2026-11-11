@@ -41,6 +41,13 @@ const { counts, review } = useTermCandidates(ref('pending'))
         link="Review the terms"
         :span="6"
       />
+      <IndexCard
+        title="Add or remove terms"
+        text="Add a search term by hand, or take one off the list."
+        to="/manage/terms/edit"
+        link="Change the list"
+        :span="6"
+      />
       <StepCard step-id="termReview" />
     </WidgetGrid>
   </ManageLayout>

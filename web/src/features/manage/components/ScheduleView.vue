@@ -59,7 +59,7 @@ function saveBudget(): void {
     <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>
     <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the schedule…</p>
     <WidgetGrid v-else-if="settings && costs">
-      <ManageWidget v-if="warning" title="This schedule costs more than the budget" accent>
+      <ManageWidget v-if="warning" title="This schedule costs more than the budget" :span="12" accent>
         <p class="m-0" role="alert">{{ warning.text }}</p>
         <template #foot>
           <button
@@ -128,8 +128,8 @@ function saveBudget(): void {
           </button>
         </template>
       </ManageWidget>
-      <p class="m-0 font-medium min-[1100px]:col-span-12" aria-live="polite">{{ notice }}</p>
-      <p v-if="saveError" role="alert" class="m-0 font-medium text-orange-ink min-[1100px]:col-span-12">{{ saveError }}</p>
+      <p class="m-0 font-medium basis-full" aria-live="polite">{{ notice }}</p>
+      <p v-if="saveError" role="alert" class="m-0 font-medium text-orange-ink basis-full">{{ saveError }}</p>
     </WidgetGrid>
   </ManageLayout>
 </template>

@@ -78,7 +78,7 @@ func TestTheHistoryListsTheRunsWithResponsesReadOldestFirstWithWhyAPartialRunFai
 }
 
 func TestTheHistoryFailsWhenTheRunsOrThePromptSetsCannotBeRead(t *testing.T) {
-	for _, op := range []string{"Runs", "PromptSets", "ReadingModels"} {
+	for _, op := range []string{"Runs", "PromptSets", "PromptScopes", "ReadingModels"} {
 		e := newEnv(t, newRepo(op), "a")
 		if _, err := e.svc.History(t.Context()); !errors.Is(err, errBoom) {
 			t.Errorf("%s failing: err = %v, want the repository's", op, err)

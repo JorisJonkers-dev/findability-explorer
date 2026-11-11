@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.2](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.12.1...v1.12.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* **deps:** update minor and patch dependencies ([#126](https://github.com/JorisJonkers-dev/findability-explorer/issues/126)) ([e1019fe](https://github.com/JorisJonkers-dev/findability-explorer/commit/e1019fe7705b61dd08132d5ec37c7cdb75ad89b0))
+
 ## [1.12.1](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.12.0...v1.12.1) (2026-11-10)
 
 

@@ -76,8 +76,8 @@ describe('the charts', () => {
 
   it('draws the terms per language as the server counts them', () => {
     expect(languageRows(OVERVIEW)).toEqual([
-      { value: 'en', label: 'English', count: 3, tribelt: 1, tribeltShare: 1 / 3, otherShare: 2 / 3, description: 'English: 3 terms, tribelt.nl uses 1' },
-      { value: 'de', label: 'German', count: 2, tribelt: 1, tribeltShare: 1 / 3, otherShare: 1 / 3, description: 'German: 2 terms, tribelt.nl uses 1' },
+      { value: 'en', label: 'English', count: 3, tribelt: 1, tribeltShare: 1 / 3, otherShare: 2 / 3, description: 'English 1/3: 3 terms, tribelt.nl uses 1' },
+      { value: 'de', label: 'German', count: 2, tribelt: 1, tribeltShare: 1 / 3, otherShare: 1 / 3, description: 'German 1/2: 2 terms, tribelt.nl uses 1' },
     ])
   })
 
@@ -91,8 +91,8 @@ describe('the charts', () => {
       ['problem', 1, 0],
     ])
     expect(rows[1]?.tribeltShare).toBe(1)
-    expect(rows[2]?.description).toBe('Application: 0 terms, tribelt.nl uses 0')
-    expect(rows[0]?.description).toBe('Broad: 1 term, tribelt.nl uses 0')
+    expect(rows[2]?.description).toBe('Application 0/0: 0 terms, tribelt.nl uses 0')
+    expect(rows[0]?.description).toBe('Broad 0/1: 1 term, tribelt.nl uses 0')
   })
 
   it('draws nothing before the figures load', () => {
@@ -118,7 +118,7 @@ describe('the heatmap', () => {
       ['Tribelt', 2, 0, 2],
       ['Twentebelt', 1, 1, 2],
     ])
-    expect(rows[1]?.description).toBe('Märtens: 1 marketing terms, 1 technical terms')
+    expect(rows[1]?.description).toBe('Märtens 1 1 2: 1 marketing terms, 1 technical terms')
   })
 
   it('shades each cell against the fullest cell', () => {

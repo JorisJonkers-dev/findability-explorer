@@ -44,7 +44,7 @@ test('an administrator adds a search term by hand, removes it, and puts it back'
   await expect(table).toContainText(TERM)
   await expect(table).toContainText('Added by hand')
 
-  await table.getByRole('button', { name: `Remove ${TERM} from the list` }).click()
+  await table.getByRole('button', { name: `Remove from the list: ${TERM}` }).click()
   await expect(page.getByText(`${TERM} (Dutch) is off the list. It is no longer counted or looked for.`)).toBeVisible()
   const gone = page.getByRole('list', { name: 'Removed search terms' })
   await expect(gone).toContainText(TERM)

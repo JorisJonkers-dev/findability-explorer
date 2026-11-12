@@ -32,14 +32,16 @@ const style = (value: number | undefined, scale: number) => ({ width: `${String(
         :class="picked?.id === m.id ? 'border-black bg-white' : 'border-transparent'"
         @click="id = m.id"
       >
-        <span class="font-medium">{{ m.label }}</span>
+        <span class="font-medium">{{ m.label }}</span>{{ ' ' }}
         <span aria-hidden="true" class="flex flex-col gap-1.5">
-          <span v-for="side in [{ k: 'them', tone: 'bg-blue-grey' }, { k: 'us', tone: 'bg-orange' }]" :key="side.k" class="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-3">
-            <span class="relative h-3.5 rounded-[7px] bg-grey">
-              <span class="absolute inset-y-0 left-0 rounded-[7px]" :class="side.tone" :style="style(side.k === 'them' ? m.them : m.us, m.scale)"></span>
-            </span>
-            <span class="text-right text-sm tabular-nums" :class="(side.k === 'them' ? m.them : m.us) === undefined ? 'text-muted' : 'font-bold'">{{ side.k === 'them' ? m.themText : m.usText }}</span>
-          </span>
+          <template v-for="side in [{ k: 'them', tone: 'bg-blue-grey' }, { k: 'us', tone: 'bg-orange' }]" :key="side.k">
+            <span class="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-3">
+              <span class="relative h-3.5 rounded-[7px] bg-grey">
+                <span class="absolute inset-y-0 left-0 rounded-[7px]" :class="side.tone" :style="style(side.k === 'them' ? m.them : m.us, m.scale)"></span>
+              </span>
+              <span class="text-right text-sm tabular-nums" :class="(side.k === 'them' ? m.them : m.us) === undefined ? 'text-muted' : 'font-bold'">{{ side.k === 'them' ? m.themText : m.usText }}</span>
+            </span>{{ ' ' }}
+          </template>
         </span>
       </button>
     </div>

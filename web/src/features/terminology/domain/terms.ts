@@ -53,7 +53,7 @@ function chartRows(groups: { value: string; label: string; count: number; tribel
     tribelt,
     tribeltShare: tribelt / longest,
     otherShare: (count - tribelt) / longest,
-    description: `${label}: ${String(count)} ${count === 1 ? 'term' : 'terms'}, tribelt.nl uses ${String(tribelt)}`,
+    description: `${label} ${String(tribelt)}/${String(count)}: ${String(count)} ${count === 1 ? 'term' : 'terms'}, tribelt.nl uses ${String(tribelt)}`,
   }))
 }
 
@@ -119,13 +119,17 @@ export function heatmap(terms: readonly Term[]): HeatRow[] {
       }))
       const marketing = cells.filter((c) => !c.technical).reduce((sum, c) => sum + c.count, 0)
       const technical = cells.filter((c) => c.technical).reduce((sum, c) => sum + c.count, 0)
+      const total = marketing + technical
+      // The name opens with the company and the figures the row shows, in order: the cells that have
+      // terms, then the total; the rest says what the figures count.
+      const figures = [...cells.filter((c) => c.count > 0).map((c) => String(c.count)), String(total)].join(' ')
       return {
         company,
         cells,
         marketing,
         technical,
-        total: marketing + technical,
-        description: `${company}: ${String(marketing)} marketing terms, ${String(technical)} technical terms`,
+        total,
+        description: `${company} ${figures}: ${String(marketing)} marketing terms, ${String(technical)} technical terms`,
       }
     })
     .sort((a, b) => b.total - a.total || a.company.localeCompare(b.company))

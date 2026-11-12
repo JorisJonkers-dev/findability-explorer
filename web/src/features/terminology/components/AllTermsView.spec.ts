@@ -84,7 +84,7 @@ describe('the page of every term', () => {
   it('charts the languages and kinds, with what Tribelt uses', async () => {
     const { wrapper } = await mountApp(api, '/terms/all')
     const languages = wrapper.get('[role="group"][aria-label="By language"]').findAll('button')
-    expect(languages.map((b) => b.attributes('aria-label'))).toEqual(['English: 3 terms, tribelt.nl uses 1', 'German: 2 terms, tribelt.nl uses 1'])
+    expect(languages.map((b) => b.attributes('aria-label'))).toEqual(['English 1/3: 3 terms, tribelt.nl uses 1', 'German 1/2: 2 terms, tribelt.nl uses 1'])
     expect(languages[0]?.findAll('[aria-hidden="true"] span[style]').map((s) => s.attributes('style'))).toEqual([
       'width: 33.33%;',
       'width: 66.67%;',
@@ -109,7 +109,7 @@ describe('the page of every term', () => {
     expect(router.currentRoute.value.query).toEqual({ language: 'de' })
     expect(ranked(wrapper)).toEqual(['AISI 304', 'Drahtösengliederband'])
     // The chart on the left agrees.
-    expect(button(wrapper, 'German:').attributes('aria-pressed')).toBe('true')
+    expect(button(wrapper, 'German 1/2:').attributes('aria-pressed')).toBe('true')
     const cells = wrapper.get('ol[aria-label="Ranked terms"]').findAll('li').map((li) => li.text())
     expect(cells.some((t) => t.includes('Tribelt: Lacks it'))).toBe(true)
     await pills.findAll('button')[0]?.trigger('click')
@@ -119,12 +119,12 @@ describe('the page of every term', () => {
 
   it('filters by a language and a kind, with chips to remove them', async () => {
     const { wrapper, router } = await mountApp(api, '/terms/all')
-    await button(wrapper, 'German:').trigger('click')
+    await button(wrapper, 'German 1/2:').trigger('click')
     await settle()
     expect(router.currentRoute.value.query).toEqual({ language: 'de' })
-    expect(button(wrapper, 'German:').attributes('aria-pressed')).toBe('true')
+    expect(button(wrapper, 'German 1/2:').attributes('aria-pressed')).toBe('true')
     expect(ranked(wrapper)).toEqual(['AISI 304', 'Drahtösengliederband'])
-    await button(wrapper, 'Specification:').trigger('click')
+    await button(wrapper, 'Specification 0/1:').trigger('click')
     await settle()
     expect(ranked(wrapper)).toEqual(['AISI 304'])
     expect(status(wrapper)).toBe('1 of 5 terms')
@@ -132,7 +132,7 @@ describe('the page of every term', () => {
     await settle()
     expect(router.currentRoute.value.query).toEqual({ tier: 'spec' })
     // Pressing a chart row again unsets it.
-    await button(wrapper, 'Specification:').trigger('click')
+    await button(wrapper, 'Specification 0/1:').trigger('click')
     await settle()
     expect(router.currentRoute.value.query).toEqual({})
     expect(wrapper.findAll('button[aria-label^="Remove the filter"]')).toHaveLength(0)
@@ -142,19 +142,19 @@ describe('the page of every term', () => {
     const { wrapper, router } = await mountApp(api, '/terms/all')
     const rows = wrapper.get('ul[aria-label="Terms per company and kind"]').findAll('button')
     expect(rows.map((b) => b.attributes('aria-label'))).toEqual([
-      'Ashworth: 2 marketing terms, 0 technical terms',
-      'Märtens: 1 marketing terms, 1 technical terms',
-      'Tribelt: 2 marketing terms, 0 technical terms',
-      'Twentebelt: 1 marketing terms, 1 technical terms',
+      'Ashworth 1 1 2: 2 marketing terms, 0 technical terms',
+      'Märtens 1 1 2: 1 marketing terms, 1 technical terms',
+      'Tribelt 2 2: 2 marketing terms, 0 technical terms',
+      'Twentebelt 1 1 2: 1 marketing terms, 1 technical terms',
     ])
     // A cell with terms is shaded; an empty one is grey and blank.
     const ashworth = rows[0]?.findAll('span.h-8')
     expect(ashworth?.[0]?.attributes('style')).toContain('background-color')
     expect(ashworth?.[2]?.text()).toBe('')
-    await button(wrapper, 'Tribelt:').trigger('click')
+    await button(wrapper, 'Tribelt 2 2:').trigger('click')
     await settle()
     expect(router.currentRoute.value.query).toEqual({ user: 'Tribelt' })
-    expect(button(wrapper, 'Tribelt:').attributes('aria-pressed')).toBe('true')
+    expect(button(wrapper, 'Tribelt 2 2:').attributes('aria-pressed')).toBe('true')
     expect(ranked(wrapper)).toEqual(['Eyelink belt', 'Drahtösengliederband'])
     await button(wrapper, 'Remove the filter Tribelt').trigger('click')
     await settle()
@@ -209,7 +209,7 @@ describe('the page of every term', () => {
     expect(router.currentRoute.value.query).toEqual({ q: 'AISI', user: 'Twentebelt (TwenteFlex)' })
     expect((wrapper.get('input#terms-q').element as HTMLInputElement).value).toBe('AISI')
     expect(ranked(wrapper)).toEqual(['AISI 304'])
-    expect(button(wrapper, 'Twentebelt:').attributes('aria-pressed')).toBe('true')
+    expect(button(wrapper, 'Twentebelt 1 1 2:').attributes('aria-pressed')).toBe('true')
   })
 
   it('says it is loading, and when the map cannot be loaded', async () => {

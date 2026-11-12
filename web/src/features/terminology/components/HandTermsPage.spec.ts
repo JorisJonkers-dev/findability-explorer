@@ -126,7 +126,7 @@ describe('Add or remove terms', () => {
       }),
       '/manage/terms/edit',
     )
-    await wrapper.get('table[aria-label="Search terms added by hand"]').get('button[aria-label="Remove oven belt from the list"]').trigger('click')
+    await wrapper.get('table[aria-label="Search terms added by hand"]').get('button[aria-label="Remove from the list: oven belt"]').trigger('click')
     await settle()
     expect(removed).toEqual({ term: 'oven belt', language: 'en' })
   })

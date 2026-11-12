@@ -65,7 +65,7 @@ jobs:
       - name: Compile and lint as CI does
         run: |
           set -euo pipefail
-          mise exec -- go mod download
+          proxy-retry mise exec -- go mod download
           mise exec -- golangci-lint run ./...
           mise exec -- go test -race -count=1 -covermode=atomic -coverpkg=./... -run '^$' ./... > /dev/null
           mise exec -- task build

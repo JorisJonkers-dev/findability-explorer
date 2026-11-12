@@ -8,7 +8,9 @@ const props = defineProps<{ name: string; measures: readonly Measure[] }>()
 
 const id = ref<string | null>(null)
 const picked = computed(() => props.measures.find((m) => m.id === id.value) ?? props.measures[0])
-const aria = (m: Measure) => `${m.label}: ${props.name} ${m.themText}, Tribelt ${m.usText}.`
+// The name opens with the visible text, label then both figures in order, so it contains what a sighted
+// reader sees; the rest says whose figure is whose.
+const aria = (m: Measure) => `${m.label}: ${m.themText} ${m.usText}. The first figure is ${props.name}, the second is Tribelt.`
 const style = (value: number | undefined, scale: number) => ({ width: `${String((barLength(value, scale) ?? 0) * 100)}%` })
 </script>
 
@@ -30,14 +32,16 @@ const style = (value: number | undefined, scale: number) => ({ width: `${String(
         :class="picked?.id === m.id ? 'border-black bg-white' : 'border-transparent'"
         @click="id = m.id"
       >
-        <span class="font-medium">{{ m.label }}</span>
+        <span class="font-medium">{{ m.label }}</span>{{ ' ' }}
         <span aria-hidden="true" class="flex flex-col gap-1.5">
-          <span v-for="side in [{ k: 'them', tone: 'bg-blue-grey' }, { k: 'us', tone: 'bg-orange' }]" :key="side.k" class="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-3">
-            <span class="relative h-3.5 rounded-[7px] bg-grey">
-              <span class="absolute inset-y-0 left-0 rounded-[7px]" :class="side.tone" :style="style(side.k === 'them' ? m.them : m.us, m.scale)"></span>
-            </span>
-            <span class="text-right text-sm tabular-nums" :class="(side.k === 'them' ? m.them : m.us) === undefined ? 'text-muted' : 'font-bold'">{{ side.k === 'them' ? m.themText : m.usText }}</span>
-          </span>
+          <template v-for="side in [{ k: 'them', tone: 'bg-blue-grey' }, { k: 'us', tone: 'bg-orange' }]" :key="side.k">
+            <span class="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-3">
+              <span class="relative h-3.5 rounded-[7px] bg-grey">
+                <span class="absolute inset-y-0 left-0 rounded-[7px]" :class="side.tone" :style="style(side.k === 'them' ? m.them : m.us, m.scale)"></span>
+              </span>
+              <span class="text-right text-sm tabular-nums" :class="(side.k === 'them' ? m.them : m.us) === undefined ? 'text-muted' : 'font-bold'">{{ side.k === 'them' ? m.themText : m.usText }}</span>
+            </span>{{ ' ' }}
+          </template>
         </span>
       </button>
     </div>

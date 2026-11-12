@@ -12,10 +12,10 @@ describe('the measure chart', () => {
     const wrapper = render()
     const buttons = wrapper.findAll('button')
     expect(buttons.map((b) => b.attributes('aria-label'))).toEqual([
-      'AI responses that name it: Twentebelt 40%, Tribelt 20%.',
-      'AI readiness checks passed: Twentebelt 3 of 5, Tribelt 5 of 5.',
-      'Pages its sitemap lists: Twentebelt Not known, Tribelt 85%.',
-      'Search terms from the list on its site: Twentebelt 12, Tribelt 1,200.',
+      'AI responses that name it: 40% 20%. The first figure is Twentebelt, the second is Tribelt.',
+      'AI readiness checks passed: 3 of 5 5 of 5. The first figure is Twentebelt, the second is Tribelt.',
+      'Pages its sitemap lists: Not known 85%. The first figure is Twentebelt, the second is Tribelt.',
+      'Search terms from the list on its site: 12 1,200. The first figure is Twentebelt, the second is Tribelt.',
     ])
   })
 

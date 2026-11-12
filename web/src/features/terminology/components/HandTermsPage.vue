@@ -77,7 +77,7 @@ const COLUMNS: Column<HandTerm>[] = [
               type="button"
               :class="ROW_BUTTON"
               :disabled="isChanging"
-              :aria-label="`Remove ${row.term.term} from the list`"
+              :aria-label="`Remove from the list: ${row.term.term}`"
               @click="remove({ term: row.term.term, language: row.term.language })"
             >
               Remove from the list

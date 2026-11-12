@@ -101,7 +101,7 @@ test('Search terms counts by language and belt family, each opening its terms', 
   await expectAccessible(page)
   await page.getByRole('region', { name: 'By language' }).getByRole('link', { name: 'German' }).click()
   await expect(page).toHaveURL('/terms/all?language=de')
-  await expect(page.getByRole('button', { name: /^German: \d+ terms/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: /^German \d+\/\d+: \d+ terms/ })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('link', { name: 'Back to Search terms' }).click()
   await page.getByRole('region', { name: 'By belt family' }).getByRole('link').first().click()
   await expect(page).toHaveURL(/\/terms\/families\//)
@@ -109,11 +109,11 @@ test('Search terms counts by language and belt family, each opening its terms', 
 
 test('the page of every term filters by language and survives a reload', async ({ page }) => {
   await page.goto('/terms/all')
-  await page.getByRole('button', { name: /^German: \d+ terms/ }).click()
+  await page.getByRole('button', { name: /^German \d+\/\d+: \d+ terms/ }).click()
   await expect(page).toHaveURL(/[?&]language=de(&|$)/)
   await expect(page.getByRole('button', { name: /^Remove the filter German/ })).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('button', { name: /^German: \d+ terms/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: /^German \d+\/\d+: \d+ terms/ })).toHaveAttribute('aria-pressed', 'true')
   await expectAccessible(page)
 })
 

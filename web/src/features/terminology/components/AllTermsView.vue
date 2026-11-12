@@ -223,7 +223,7 @@ const heatGrid =
               class="group relative"
               @click="toggle(chart.key, row.value)"
             >
-              <span :class="view[chart.key] === row.value ? 'font-semibold' : ''">{{ row.label }}</span>
+              <span :class="view[chart.key] === row.value ? 'font-semibold' : ''">{{ row.label }}</span>{{ ' ' }}
               <span aria-hidden="true" class="relative flex h-4">
                 <span class="h-full bg-orange" :style="{ width: percent(row.tribeltShare) }"></span>
                 <span class="h-full bg-silver" :style="{ width: percent(row.otherShare) }"></span>
@@ -234,7 +234,7 @@ const heatGrid =
                 >
                   tribelt.nl uses {{ row.tribelt }}, only others use {{ row.count - row.tribelt }}
                 </span>
-              </span>
+              </span>{{ ' ' }}
               <span class="text-right font-semibold">{{ row.tribelt }}/{{ row.count }}</span>
             </button>
           </div>
@@ -271,7 +271,7 @@ const heatGrid =
               <SortButton label="Company" :direction="directionOf(heatSort, 'company')" class="text-xs font-medium text-muted" @sort="sortHeat('company', 'asc')" />
               <template v-for="(column, index) in HEAT_COLUMNS" :key="column.key">
                 <span v-if="index === 3"></span>
-                <SortButton :label="column.label" :direction="directionOf(heatSort, column.key)" align="center" @sort="sortHeat(column.key, 'desc')">{{ column.short }}</SortButton>
+                <SortButton :label="column.label" :direction="directionOf(heatSort, column.key)" align="center" :short="column.short" @sort="sortHeat(column.key, 'desc')" />
               </template>
               <SortButton label="Total" :direction="directionOf(heatSort, 'total')" align="center" @sort="sortHeat('total', 'desc')" />
             </div>
@@ -288,15 +288,15 @@ const heatGrid =
                   <span
                     class="truncate text-sm"
                     :class="view.user === row.company || row.company === 'Tribelt' ? 'font-semibold' : ''"
-                  >{{ row.company }}</span>
+                  >{{ row.company }}</span>{{ ' ' }}
                   <template v-for="(cell, index) in row.cells" :key="cell.tier">
                     <span v-if="index === 3"></span>
                     <span
                       class="flex h-8 items-center justify-center text-xs font-semibold"
                       :class="cell.count === 0 ? 'bg-mist' : ''"
                       :style="{ backgroundColor: cellBackground(cell) }"
-                    >{{ cell.count > 0 ? cell.count : '' }}</span>
-                  </template>
+                    >{{ cell.count > 0 ? cell.count : '' }}</span>{{ ' ' }}
+                  </template>{{ ' ' }}
                   <span class="text-center text-sm font-semibold">{{ row.total }}</span>
                 </button>
               </li>

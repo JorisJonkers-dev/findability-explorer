@@ -8,6 +8,7 @@ SET statement_timeout = '60s';
 -- the names, so they are version 1, and every waiting company is checked again with version 2.
 -- 00019 validates the check.
 ALTER TABLE prompt_candidate_checks ADD COLUMN IF NOT EXISTS check_version bigint NOT NULL DEFAULT 1;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE prompt_candidate_checks DROP CONSTRAINT IF EXISTS prompt_candidate_checks_check_version_check;
 ALTER TABLE prompt_candidate_checks ADD CONSTRAINT prompt_candidate_checks_check_version_check
 CHECK (check_version >= 1) NOT VALID;

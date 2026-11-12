@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS llm_budget (
 
 -- A change to the budget is an event. The action check is swapped in place; the rows already
 -- stored all pass it, and new rows are checked at once.
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE llm_events DROP CONSTRAINT IF EXISTS llm_events_action_check;
 ALTER TABLE llm_events ADD CONSTRAINT llm_events_action_check
 CHECK (action IN (

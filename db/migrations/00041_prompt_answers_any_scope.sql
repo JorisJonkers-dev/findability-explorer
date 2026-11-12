@@ -9,14 +9,17 @@ SET statement_timeout = '60s';
 -- of the form a scope's id, a language code, and a kind take. Every answer stored so far passes the
 -- new checks, which are added NOT VALID, so new rows are checked at once without a scan of the
 -- answers under the lock; a later migration validates them, in a transaction of its own.
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE prompt_answers DROP CONSTRAINT IF EXISTS prompt_answers_scope_check;
 ALTER TABLE prompt_answers ADD CONSTRAINT prompt_answers_scope_check
 CHECK (scope ~ '^[a-z][a-z0-9_-]{0,39}$') NOT VALID;
 
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE prompt_answers DROP CONSTRAINT IF EXISTS prompt_answers_language_check;
 ALTER TABLE prompt_answers ADD CONSTRAINT prompt_answers_language_check
 CHECK (language ~ '^[a-z]{2}$') NOT VALID;
 
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE prompt_answers DROP CONSTRAINT IF EXISTS prompt_answers_kind_check;
 ALTER TABLE prompt_answers ADD CONSTRAINT prompt_answers_kind_check
 CHECK (kind IN ('supplier', 'application', 'problem', 'spec', 'broad')) NOT VALID;

@@ -17,21 +17,27 @@ ALTER TABLE company_overrides ADD COLUMN IF NOT EXISTS kept_by text;
 ALTER TABLE company_overrides ADD COLUMN IF NOT EXISTS kept_at timestamptz;
 
 -- The checks on the new columns; 00021 validates them in a transaction of its own.
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_archived_by_check;
 ALTER TABLE companies ADD CONSTRAINT companies_archived_by_check
 CHECK (char_length(archived_by) BETWEEN 1 AND 200) NOT VALID;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_archived_check;
 ALTER TABLE companies ADD CONSTRAINT companies_archived_check
 CHECK ((archived_at IS NULL) = (archived_by IS NULL)) NOT VALID;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_kept_by_check;
 ALTER TABLE companies ADD CONSTRAINT companies_kept_by_check
 CHECK (char_length(kept_by) BETWEEN 1 AND 200) NOT VALID;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_kept_check;
 ALTER TABLE companies ADD CONSTRAINT companies_kept_check
 CHECK ((kept_at IS NULL) = (kept_by IS NULL)) NOT VALID;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE company_overrides DROP CONSTRAINT IF EXISTS company_overrides_kept_by_check;
 ALTER TABLE company_overrides ADD CONSTRAINT company_overrides_kept_by_check
 CHECK (char_length(kept_by) BETWEEN 1 AND 200) NOT VALID;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE company_overrides DROP CONSTRAINT IF EXISTS company_overrides_kept_check;
 ALTER TABLE company_overrides ADD CONSTRAINT company_overrides_kept_check
 CHECK ((kept_at IS NULL) = (kept_by IS NULL)) NOT VALID;

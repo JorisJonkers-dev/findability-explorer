@@ -9,6 +9,7 @@ SET statement_timeout = '60s';
 -- this, or for a scan that read no page: its coverage was not measured. 00025 validates the check.
 ALTER TABLE analysis_readiness ADD COLUMN IF NOT EXISTS sitemap_pages_read bigint;
 ALTER TABLE analysis_readiness ADD COLUMN IF NOT EXISTS sitemap_pages_listed bigint;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE analysis_readiness DROP CONSTRAINT IF EXISTS analysis_readiness_sitemap_coverage_check;
 ALTER TABLE analysis_readiness ADD CONSTRAINT analysis_readiness_sitemap_coverage_check
 CHECK (

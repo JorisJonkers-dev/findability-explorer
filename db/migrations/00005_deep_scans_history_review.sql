@@ -6,12 +6,16 @@ SET statement_timeout = '60s';
 -- Deeper scans: a crawl fetches up to 100 pages (internal/analysis/domain.MaxPages). The tables
 -- are small and written only by this service; each check is swapped in place, and 00006 validates
 -- them in a transaction of its own.
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE analyses DROP CONSTRAINT IF EXISTS analyses_max_pages_check;
 ALTER TABLE analyses ADD CONSTRAINT analyses_max_pages_check CHECK (max_pages BETWEEN 1 AND 100) NOT VALID;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE analyses DROP CONSTRAINT IF EXISTS analyses_pages_crawled_check;
 ALTER TABLE analyses ADD CONSTRAINT analyses_pages_crawled_check CHECK (pages_crawled BETWEEN 0 AND 100) NOT VALID;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE analysis_pages DROP CONSTRAINT IF EXISTS analysis_pages_position_check;
 ALTER TABLE analysis_pages ADD CONSTRAINT analysis_pages_position_check CHECK (position BETWEEN 0 AND 99) NOT VALID;
+-- squawk-ignore ban-drop-constraint -- the constraint is re-added by the next statement, and this migration is already applied
 ALTER TABLE analysis_keywords DROP CONSTRAINT IF EXISTS analysis_keywords_pages_check;
 ALTER TABLE analysis_keywords ADD CONSTRAINT analysis_keywords_pages_check CHECK (pages BETWEEN 1 AND 100) NOT VALID;
 

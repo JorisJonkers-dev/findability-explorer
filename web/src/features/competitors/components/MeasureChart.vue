@@ -8,7 +8,9 @@ const props = defineProps<{ name: string; measures: readonly Measure[] }>()
 
 const id = ref<string | null>(null)
 const picked = computed(() => props.measures.find((m) => m.id === id.value) ?? props.measures[0])
-const aria = (m: Measure) => `${m.label}: ${props.name} ${m.themText}, Tribelt ${m.usText}.`
+// The name opens with the visible text, label then both figures in order, so it contains what a sighted
+// reader sees; the rest says whose figure is whose.
+const aria = (m: Measure) => `${m.label}: ${m.themText} ${m.usText}. The first figure is ${props.name}, the second is Tribelt.`
 const style = (value: number | undefined, scale: number) => ({ width: `${String((barLength(value, scale) ?? 0) * 100)}%` })
 </script>
 

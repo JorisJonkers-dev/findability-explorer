@@ -9,7 +9,7 @@ import { hostOf } from '../domain/company'
 import { addToTray, batchSummary, pasteIntoTray, type Suggestion, type TrayItem, traySuggestions } from '../domain/tray'
 
 /** Adding several competitors at once: picks from a type-ahead or a pasted list collect in a tray. */
-const props = defineProps<{ companies: readonly Competitor[] }>()
+const props = withDefaults(defineProps<{ companies: readonly Competitor[]; heading?: boolean }>(), { heading: true })
 
 const id = useId()
 const mode = ref<'type' | 'paste'>('type')
@@ -83,7 +83,7 @@ function send(): void {
 <template>
   <section aria-labelledby="add-title" class="flex flex-col gap-4">
     <div class="flex flex-wrap items-baseline justify-between gap-3">
-      <h2 id="add-title" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em]">Add competitors</h2>
+      <h2 id="add-title" :class="heading ? '' : 'sr-only'" class="m-0 font-display text-2xl font-semibold tracking-[-0.01em]">Add competitors</h2>
       <button
         type="button"
         class="border-0 bg-transparent p-0 font-medium text-orange-ink underline underline-offset-4"
@@ -202,13 +202,13 @@ function send(): void {
     </div>
 
     <div v-if="named.length > 0" class="flex flex-col gap-3">
-      <h3 class="m-0 text-sm font-semibold tracking-[0.04em] text-orange-ink uppercase">Named in AI answers</h3>
-      <ul aria-label="Named in AI answers" class="m-0 flex list-none flex-col gap-2 p-0">
+      <h3 class="m-0 text-sm font-semibold tracking-[0.04em] text-orange-ink uppercase">Named in AI responses</h3>
+      <ul aria-label="Named in AI responses" class="m-0 flex list-none flex-col gap-2 p-0">
         <li v-for="c in named" :key="c.id" class="flex flex-wrap items-center gap-3 border-b border-grey py-2">
           <span class="flex min-w-40 flex-1 flex-col">
             <a v-if="candidateWebsite(c)" :href="candidateWebsite(c)" target="_blank" rel="noopener" class="font-medium">{{ c.name }}</a>
             <span v-else class="font-medium">{{ c.name }}</span>
-            <span class="text-xs text-muted">Named in {{ c.answers }} AI {{ c.answers === 1 ? 'answer' : 'answers' }}{{ candidateWebsite(c) ? `. ${hostOf(candidateWebsite(c)) ?? ''}` : '' }}</span>
+            <span class="text-xs text-muted">Named in {{ c.answers }} AI {{ c.answers === 1 ? 'response' : 'responses' }}{{ candidateWebsite(c) ? `. ${hostOf(candidateWebsite(c)) ?? ''}` : '' }}</span>
           </span>
           <button
             type="button"
@@ -228,7 +228,7 @@ function send(): void {
         </li>
       </ul>
       <p v-if="decisionError" role="alert" class="m-0 text-sm font-medium text-orange-ink">{{ decisionError }}</p>
-      <RouterLink to="/settings/competitors" class="self-start text-sm font-medium">Review every company named in AI answers</RouterLink>
+      <RouterLink to="/manage/competitors/candidates" class="self-start text-sm font-medium">Review every company named in AI responses</RouterLink>
     </div>
   </section>
 </template>

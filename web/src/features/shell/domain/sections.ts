@@ -1,7 +1,7 @@
 import { PRODUCT_FAMILIES } from '../../../shared/vocabulary'
 
 /** Every section the top bar links to. */
-export type SectionId = 'overview' | 'ai-search' | 'competitors' | 'terms' | 'recommendations'
+export type SectionId = 'overview' | 'ai-responses' | 'ai-readiness' | 'terms' | 'competitors' | 'recommendations' | 'help'
 
 export type Section = {
   id: SectionId
@@ -11,26 +11,24 @@ export type Section = {
   path: string
 }
 
-/** The sections in the top bar's order. Settings sits apart, on the right. */
+/** The Results sections in the top bar's order. Manage sits apart, on the right, for administrators. */
 export const NAV_SECTIONS: readonly Section[] = [
   { id: 'overview', number: '01', label: 'Overview', path: '/' },
-  { id: 'ai-search', number: '02', label: 'AI search', path: '/ai-search' },
-  { id: 'competitors', number: '03', label: 'Competitors', path: '/competitors' },
+  { id: 'ai-responses', number: '02', label: 'AI responses', path: '/ai-responses' },
+  { id: 'ai-readiness', number: '03', label: 'AI readiness', path: '/ai-readiness' },
   { id: 'terms', number: '04', label: 'Search terms', path: '/terms' },
-  { id: 'recommendations', number: '05', label: 'Recommendations', path: '/recommendations' },
+  { id: 'competitors', number: '05', label: 'Competitors', path: '/competitors' },
+  { id: 'recommendations', number: '06', label: 'Recommendations', path: '/recommendations' },
+  { id: 'help', number: '07', label: 'Help', path: '/help' },
 ]
 
-/** The five numbered sections, in order. */
+/** The numbered sections, in order. */
 export const SECTIONS: readonly Section[] = NAV_SECTIONS
 
 /** Pages outside a section's own path that still belong to it. */
-const EXTRA_PREFIXES: readonly (readonly [string, SectionId])[] = [
-  ['/numbers', 'overview'],
-  ['/buyers', 'overview'],
-  ['/scan', 'competitors'],
-]
+const EXTRA_PREFIXES: readonly (readonly [string, SectionId])[] = [['/goals', 'overview']]
 
-/** The section a path shows, or undefined: a number, Buyers and the Overview are all in Overview. */
+/** The section a path shows, or undefined: a goal and the Overview are both in Overview, and Manage is in none. */
 export function sectionOfPath(path: string): Section | undefined {
   if (path === '/') return NAV_SECTIONS[0]
   const extra = EXTRA_PREFIXES.find(([prefix]) => path === prefix || path.startsWith(`${prefix}/`))
@@ -42,9 +40,6 @@ export function sectionOfPath(path: string): Section | undefined {
 export function section(id: SectionId): Section {
   return NAV_SECTIONS.find((s) => s.id === id) as Section
 }
-
-/** A tab inside a section: a page of it. */
-export type Tab = { label: string; path: string; /** A count beside the label, such as the terms waiting. */ count?: number }
 
 /** A competitor's latest scan page. */
 export function companyPath(id: string): string {

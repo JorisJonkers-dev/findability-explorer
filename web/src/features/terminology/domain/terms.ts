@@ -1,6 +1,7 @@
 import type { BeltFamily, IntentTier, OverviewTerms, Term } from '../../../infrastructure/api/types.gen'
 import type { SortValue } from '../../../shared/sort'
 import { familyLabel, languageLabel, tierLabel } from '../../../shared/vocabulary'
+import { termPath } from './searchTerms'
 import { chartLanguage, companyName, type TermGroup, type TermView } from './filters'
 import { fold } from './fold'
 
@@ -159,6 +160,8 @@ function familyText(family: BeltFamily): string {
 export type RankedTerm = {
   rank: number
   term: string
+  /** The term's own page. */
+  path: string
   /** "English · Tri-Flex · Twentebelt, Ashworth". */
   meta: string
   tier: IntentTier
@@ -169,6 +172,8 @@ export type RankedTerm = {
   tribelt: boolean
   /** What Tribelt's own site calls the same thing: "Uses it", its term, or "Lacks it". */
   tribeltTerm: string
+  /** Whether an administrator added it by hand. */
+  hand: boolean
 }
 
 /**
@@ -189,6 +194,7 @@ export function rankTerms(shown: readonly (Term & { scanMakers?: readonly string
     .map(({ t, makers }, index) => ({
       rank: index + 1,
       term: t.term,
+      path: termPath(t),
       meta: [
         languageLabel(chartLanguage(t.language)),
         familyText(t.family),
@@ -202,6 +208,7 @@ export function rankTerms(shown: readonly (Term & { scanMakers?: readonly string
       share: makers.length / top,
       tribelt: tribeltUses(t),
       tribeltTerm: tribeltTerm(t, all),
+      hand: t.origin === 'hand',
     }))
 }
 

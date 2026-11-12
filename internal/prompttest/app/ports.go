@@ -34,7 +34,7 @@ type Extractor interface {
 
 // Extractors hands out the extractor and the model it asks: Claude Haiku on an Anthropic key. A
 // nil Extractor without an error means no Anthropic key works, and OpenRouter reads the answers
-// with domain.ExtractorModel, as it does once the month's language-model tokens are spent.
+// with domain.ExtractorModel, as it does once the month's Anthropic budget is spent.
 type Extractors interface {
 	Current(ctx context.Context) (Extractor, string, error)
 }
@@ -69,12 +69,20 @@ type Directory interface {
 	ArchiveUnlessKept(ctx context.Context, user, id string) (bool, error)
 }
 
-// Repository stores the settings, the runs, their answers and the candidate decisions. The run
+// Repository stores the settings, the published Prompt sets, the runs, their answers and the candidate decisions. The run
 // methods are what keeps one run running at a time across app instances.
 type Repository interface {
 	// Settings returns the stored settings, or ok false when none are stored yet.
 	Settings(ctx context.Context) (s domain.Settings, ok bool, err error)
 	SaveSettings(ctx context.Context, s domain.Settings, by string, at time.Time) error
+
+	// PromptSets returns every published Prompt set with its questions in order, newest first.
+	PromptSets(ctx context.Context) ([]domain.PublishedSet, error)
+	// PromptScopes returns every scope a question can be asked in.
+	PromptScopes(ctx context.Context) ([]domain.ScopeInfo, error)
+	// PublishPromptSet stores a new version with its questions and the new scopes it asks in, in one
+	// transaction, or returns domain.ErrVersionTaken when another publication took its number first.
+	PublishPromptSet(ctx context.Context, set domain.PublishedSet, scopes []domain.ScopeInfo) error
 
 	// CreateRun stores a running run held by owner, or returns domain.ErrRunActive when one is
 	// running already.
@@ -88,6 +96,11 @@ type Repository interface {
 	AdoptStale(ctx context.Context, owner string, staleBefore, now time.Time) (*domain.Run, error)
 	// Heartbeat records that owner still runs the run; false when another instance took it.
 	Heartbeat(ctx context.Context, id uuid.UUID, owner string, at time.Time) (bool, error)
+	// RequestStop stores that an administrator asked a running run to stop, so the instance that
+	// runs it sees it at its next heartbeat; false when the run is not running.
+	RequestStop(ctx context.Context, id uuid.UUID, at time.Time) (bool, error)
+	// StopRequested reports whether a stop of the run was asked for since it last started.
+	StopRequested(ctx context.Context, id uuid.UUID) (bool, error)
 	FinishRun(ctx context.Context, id uuid.UUID, status domain.RunStatus, failure string, at time.Time) error
 	// ReopenRun runs a finished run again, held by owner, or returns domain.ErrRunActive when a run
 	// is running.
@@ -103,7 +116,10 @@ type Repository interface {
 	SetExtraction(ctx context.Context, answerID uuid.UUID, x domain.Extraction, at time.Time) error
 	// Answers returns a run's answers, with their text only when withText is true.
 	Answers(ctx context.Context, runID uuid.UUID, withText bool) ([]domain.Answer, error)
-	// SpentSince sums the cost of every answer and extraction at or after since.
+	// ReadingModels returns, per run, the model that read most of its responses.
+	ReadingModels(ctx context.Context) (map[uuid.UUID]string, error)
+	// SpentSince sums what the OpenRouter key paid at or after since: every answer, and every reading
+	// OpenRouter did (not Claude Haiku's, which the Anthropic key paid).
 	SpentSince(ctx context.Context, since time.Time) (domain.Micros, error)
 
 	// Sightings returns every name an answer gave that was not matched to a company.
@@ -130,14 +146,22 @@ type Repository interface {
 	AnswerTexts(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error)
 	// SaveReviewUsage stores what requests to the language model for the review consumed.
 	SaveReviewUsage(ctx context.Context, usage []domain.ReviewUsage) error
+	// CheckUsage sums what every request of the reviews and checks used, and counts the companies
+	// they checked: the candidates and the companies on the list.
+	CheckUsage(ctx context.Context) (domain.ReviewUsage, int, error)
+	// Definitions returns every version of the competitor definition, the newest first.
+	Definitions(ctx context.Context) ([]domain.Definition, error)
+	// AddDefinition stores text as the next version of the competitor definition, saved by whom and
+	// when, restored from a version or 0, and returns it.
+	AddDefinition(ctx context.Context, text, by string, restoredFrom int, at time.Time) (domain.Definition, error)
 }
 
 // Reviewer is a language model that reviews the candidates: which are one company, or a company
-// on the list, and which are competitors of Tribelt by domain.TargetMarket, judged from each
-// company's dossier. On an error the usage still counts what was consumed.
+// on the list, and which are competitors of Tribelt by the competitor definition given, judged
+// from each company's dossier. On an error the usage still counts what was consumed.
 type Reviewer interface {
 	Merge(ctx context.Context, candidates []domain.Candidate, directory []domain.DirectoryCompany) ([]domain.Cluster, domain.ReviewUsage, error)
-	Check(ctx context.Context, dossiers []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error)
+	Check(ctx context.Context, definition string, dossiers []domain.Dossier) ([]domain.CompanyVerdict, domain.ReviewUsage, error)
 }
 
 // HomePages fetches a company's home page, politely and once: what it says of the company, or,
@@ -146,7 +170,7 @@ type HomePages interface {
 	Fetch(ctx context.Context, website string) domain.HomePage
 }
 
-// BudgetSpent reports whether the month's language-model tokens, of every job together, are spent.
+// BudgetSpent reports whether the month's Anthropic budget, of every job together, is spent.
 type BudgetSpent func(ctx context.Context) (bool, error)
 
 // Reviewers hands out the reviewer and the model it asks: Claude Haiku on an Anthropic key. A nil

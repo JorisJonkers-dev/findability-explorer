@@ -47,6 +47,14 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/llm/credentials
 	AddLlmCredential(ctx context.Context, req *NewLlmCredential) (AddLlmCredentialRes, error)
+	// AddTerm implements addTerm operation.
+	//
+	// Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the
+	// next scans find it. 409 when the list has the term in that language, or had it and it was removed
+	// (put it back instead).
+	//
+	// POST /api/v1/admin/terms/hand
+	AddTerm(ctx context.Context, req *NewTerm) (AddTermRes, error)
 	// ClearActiveLlm implements clearActiveLlm operation.
 	//
 	// Turns product matching off until a credential and model are chosen again.
@@ -92,6 +100,28 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/competitor-candidates/{competitorCandidateId}/dismiss
 	DismissCompetitorCandidate(ctx context.Context, params DismissCompetitorCandidateParams) (DismissCompetitorCandidateRes, error)
+	// EditRecommendation implements editRecommendation operation.
+	//
+	// Administrators only. Stores the wording and scores of a recommendation a Recommendation run wrote,
+	// and when it was edited; an edited one is kept when the next run replaces the others. A blank page
+	// leaves it for the web agency to place. 404 for an unknown recommendation; 422 for one written by
+	// hand, which stays in code, or for an edit out of bounds.
+	//
+	// PUT /api/v1/admin/recommendations/{recommendationId}
+	EditRecommendation(ctx context.Context, req *RecommendationEdit, params EditRecommendationParams) (EditRecommendationRes, error)
+	// GetActivity implements getActivity operation.
+	//
+	// Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness
+	// checks, the term review, reviews of the competitor candidates, checks of the competitor list, and
+	// Recommendation runs - running now, newest first, and the last 20 ended, the last ended first, each
+	// with how it ended, what it did, and what it cost on each key. A running piece is stopped by its own
+	// operation - stopPromptRun and stopAnalysis take its id, stopRescan, stopReadinessCheck,
+	// stopTermReview, stopCandidateReview and stopCompetitorCheck none. With this month's spending by kind
+	// of work and the key that paid; the Anthropic key's is priced at the model's list price from the
+	// stored tokens.
+	//
+	// GET /api/v1/admin/activity
+	GetActivity(ctx context.Context) (GetActivityRes, error)
 	// GetAiReadiness implements getAiReadiness operation.
 	//
 	// Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt
@@ -115,12 +145,30 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses/{analysisId}
 	GetAnalysis(ctx context.Context, params GetAnalysisParams) (GetAnalysisRes, error)
+	// GetClaudeStep implements getClaudeStep operation.
+	//
+	// Administrators only. One step: the instructions the tool came with, every saved version (model and
+	// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
+	// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
+	// exist.
+	//
+	// GET /api/v1/admin/claude-steps/{stepId}
+	GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (GetClaudeStepRes, error)
 	// GetCompetitor implements getCompetitor operation.
 	//
 	// Returns the company and its scans, newest first, each with its number.
 	//
 	// GET /api/v1/competitors/{competitorId}
 	GetCompetitor(ctx context.Context, params GetCompetitorParams) (GetCompetitorRes, error)
+	// GetCompetitorDefinition implements getCompetitorDefinition operation.
+	//
+	// Administrators only. The definition of who competes with Tribelt that every check of a company is
+	// made against (the newest version), every version, newest first, and what checking again against it
+	// would take - the competitors on the list and the waiting candidates checked against an older
+	// version, and what checking them again should cost on the Anthropic key.
+	//
+	// GET /api/v1/admin/competitor-definition
+	GetCompetitorDefinition(ctx context.Context) (GetCompetitorDefinitionRes, error)
 	// GetCompetitorProfile implements getCompetitorProfile operation.
 	//
 	// Returns the search terms of the company's latest finished scan, grouped by Tribelt belt family, with
@@ -140,8 +188,9 @@ type Handler interface {
 	GetLlmKeyUsage(ctx context.Context, params GetLlmKeyUsageParams) (GetLlmKeyUsageRes, error)
 	// GetLlmSettings implements getLlmSettings operation.
 	//
-	// Returns every credential (never a secret), the model product matching uses now, the token budget,
-	// and the latest 50 changes and tests, newest first.
+	// Returns every credential (never a secret), the model product matching uses now, the Anthropic key's
+	// monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and
+	// tests, newest first.
 	//
 	// GET /api/v1/admin/llm
 	GetLlmSettings(ctx context.Context) (GetLlmSettingsRes, error)
@@ -181,6 +230,16 @@ type Handler interface {
 	//
 	// GET /api/v1/products
 	GetProducts(ctx context.Context) (GetProductsRes, error)
+	// GetPromptModelCatalogue implements getPromptModelCatalogue operation.
+	//
+	// Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read
+	// with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest
+	// model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest
+	// cheapest first. A model the latest run asked is priced by its responses, the others by their list
+	// price for a typical response with the web search fee. 422 without a working OpenRouter key.
+	//
+	// GET /api/v1/admin/prompt-test/catalogue
+	GetPromptModelCatalogue(ctx context.Context) (GetPromptModelCatalogueRes, error)
 	// GetPromptRetryPlan implements getPromptRetryPlan operation.
 	//
 	// Administrators only. Says how many of a run's failed and missing answers asking again would ask, how
@@ -191,6 +250,16 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/prompt-runs/{runId}/retry-plan
 	GetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (GetPromptRetryPlanRes, error)
+	// GetPromptTestHistory implements getPromptTestHistory operation.
+	//
+	// Returns the published Prompt sets, oldest first, and every one of the latest runs with at least one
+	// response read, oldest first: its Prompt set version, whether it is partial (it got fewer than half
+	// its responses) and, for a partial run, the reason most of its failed responses give, and the shares
+	// of the responses read that name Tribelt, overall, per language, and for Twente, with the share of
+	// web responses that cite tribelt.nl.
+	//
+	// GET /api/v1/prompt-test/history
+	GetPromptTestHistory(ctx context.Context) (GetPromptTestHistoryRes, error)
 	// GetPromptTestResults implements getPromptTestResults operation.
 	//
 	// Returns the latest Prompt runs, newest first, each with its progress and its answers counted per
@@ -215,6 +284,16 @@ type Handler interface {
 	//
 	// GET /api/v1/analyses/{analysisId}/readiness-files
 	GetReadinessFiles(ctx context.Context, params GetReadinessFilesParams) (GetReadinessFilesRes, error)
+	// GetRecommendationRuns implements getRecommendationRuns operation.
+	//
+	// Administrators only. Whether a Recommendation run runs; what a new one would read (the newest Prompt
+	// run, the tribelt.nl scan, the search term list), how many gaps its rules find, how many open
+	// recommendations it would replace, whether tribelt.nl was last scanned before the newest Prompt run,
+	// and its estimate on the Anthropic key; and the last 20 runs, each with what it added, replaced and
+	// kept.
+	//
+	// GET /api/v1/admin/recommendation-runs
+	GetRecommendationRuns(ctx context.Context) (GetRecommendationRunsRes, error)
 	// GetStandings implements getStandings operation.
 	//
 	// Compares Tribelt with its competitors on each measure, from the newest Prompt run and each company's
@@ -224,12 +303,26 @@ type Handler interface {
 	//
 	// GET /api/v1/standings
 	GetStandings(ctx context.Context) (GetStandingsRes, error)
+	// GetTermPages implements getTermPages operation.
+	//
+	// Returns, for each company whose newest finished scan found the term, the pages of that scan that use
+	// it, at most ten each. The term matches without regard to case.
+	//
+	// GET /api/v1/term-pages
+	GetTermPages(ctx context.Context, params GetTermPagesParams) (GetTermPagesRes, error)
 	// ListAnalyses implements listAnalyses operation.
 	//
 	// Returns at most `limit` analyses, newest first, without their results.
 	//
 	// GET /api/v1/analyses
 	ListAnalyses(ctx context.Context, params ListAnalysesParams) (ListAnalysesRes, error)
+	// ListClaudeSteps implements listClaudeSteps operation.
+	//
+	// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
+	// and the version of the instructions it uses now and what one job of it costs with that model.
+	//
+	// GET /api/v1/admin/claude-steps
+	ListClaudeSteps(ctx context.Context) (ListClaudeStepsRes, error)
 	// ListCompetitorCandidates implements listCompetitorCandidates operation.
 	//
 	// Administrators only. Every company the Prompt runs' answers name that is not on the company list,
@@ -254,6 +347,13 @@ type Handler interface {
 	//
 	// GET /api/v1/competitors
 	ListCompetitors(ctx context.Context) (ListCompetitorsRes, error)
+	// ListHandTerms implements listHandTerms operation.
+	//
+	// Administrators only. Returns the terms administrators added to the list by hand, and the terms they
+	// removed from it, each with who did it and when, oldest first.
+	//
+	// GET /api/v1/admin/terms/hand
+	ListHandTerms(ctx context.Context) (ListHandTermsRes, error)
 	// ListLlmModels implements listLlmModels operation.
 	//
 	// Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
@@ -268,6 +368,15 @@ type Handler interface {
 	//
 	// GET /api/v1/prompt-runs/{runId}/answers
 	ListPromptAnswers(ctx context.Context, params ListPromptAnswersParams) (ListPromptAnswersRes, error)
+	// ListPromptSets implements listPromptSets operation.
+	//
+	// Returns every published version of the Prompt set, newest first, each with when it was published,
+	// its note, and its questions in order: belt family, buyer intent, scope, and text, with an English
+	// translation when one is known. Also returns every scope a question can be asked in: a language, with
+	// or without a region.
+	//
+	// GET /api/v1/prompt-test/prompt-sets
+	ListPromptSets(ctx context.Context) (ListPromptSetsRes, error)
 	// ListTermCandidates implements listTermCandidates operation.
 	//
 	// Administrators only. Every phrase a finished scan found that the terminology map did not hold in its
@@ -277,6 +386,23 @@ type Handler interface {
 	//
 	// GET /api/v1/admin/term-candidates
 	ListTermCandidates(ctx context.Context, params ListTermCandidatesParams) (ListTermCandidatesRes, error)
+	// PublishPromptSet implements publishPromptSet operation.
+	//
+	// Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions
+	// in order, each keeping the id of the published question it keeps or getting a new one no version has
+	// used, and the new scopes it asks in (a language with or without a region). The note says what
+	// changed against the newest version, and from which version the draft was restored. The next Prompt
+	// run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or
+	// another publication took the number first; 422 when a question or scope cannot be asked.
+	//
+	// POST /api/v1/admin/prompt-sets
+	PublishPromptSet(ctx context.Context, req *PromptSetDraft) (PublishPromptSetRes, error)
+	// PutBackTerm implements putBackTerm operation.
+	//
+	// Administrators only. Puts a removed term back on the list. 404 when it was not removed.
+	//
+	// DELETE /api/v1/admin/terms/removed
+	PutBackTerm(ctx context.Context, params PutBackTermParams) (PutBackTermRes, error)
 	// RejectTermCandidate implements rejectTermCandidate operation.
 	//
 	// Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone.
@@ -284,6 +410,21 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/term-candidates/{candidateId}/reject
 	RejectTermCandidate(ctx context.Context, params RejectTermCandidateParams) (RejectTermCandidateRes, error)
+	// RemoveQueuedAnalyses implements removeQueuedAnalyses operation.
+	//
+	// Administrators only. Takes every scan that waits off the queue, each recorded as stopped by hand;
+	// the running ones run on. 404 when no scan waits.
+	//
+	// DELETE /api/v1/admin/analyses/queue
+	RemoveQueuedAnalyses(ctx context.Context) (RemoveQueuedAnalysesRes, error)
+	// RemoveTerm implements removeTerm operation.
+	//
+	// Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or
+	// looked for until it is put back. The text matches without regard to case or accents. 404 when the
+	// list has no such term.
+	//
+	// POST /api/v1/admin/terms/removed
+	RemoveTerm(ctx context.Context, req *TermRef) (RemoveTermRes, error)
 	// RereadPromptRun implements rereadPromptRun operation.
 	//
 	// Administrators only. Reads a finished run's answers whose reading failed again, or only the one
@@ -295,6 +436,14 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/reread
 	RereadPromptRun(ctx context.Context, req *PromptRetryRequest, params RereadPromptRunParams) (RereadPromptRunRes, error)
+	// RestoreCompetitorDefinition implements restoreCompetitorDefinition operation.
+	//
+	// Administrators only. Saves the text of an older version as a new version, recording which it
+	// restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is
+	// the one in use.
+	//
+	// POST /api/v1/admin/competitor-definition/versions/{version}/restore
+	RestoreCompetitorDefinition(ctx context.Context, params RestoreCompetitorDefinitionParams) (RestoreCompetitorDefinitionRes, error)
 	// RetryPromptRun implements retryPromptRun operation.
 	//
 	// Administrators only. Asks a finished run's failed and missing answers again, or only the one
@@ -307,6 +456,26 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/prompt-runs/{runId}/retry
 	RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (RetryPromptRunRes, error)
+	// SaveClaudeStepVersion implements saveClaudeStepVersion operation.
+	//
+	// Administrators only. Saves the model and the instructions as the step's next version, which its next
+	// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
+	// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
+	// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
+	// that does not exist.
+	//
+	// POST /api/v1/admin/claude-steps/{stepId}/versions
+	SaveClaudeStepVersion(ctx context.Context, req *ClaudeStepChange, params SaveClaudeStepVersionParams) (SaveClaudeStepVersionRes, error)
+	// SaveCompetitorDefinition implements saveCompetitorDefinition operation.
+	//
+	// Administrators only. Stores the text as a new version, which every check from now on is made
+	// against, and records who saved it. It starts no check - what was checked against an older version is
+	// checked again by the next check of the candidates or of the list (startCandidateReview,
+	// startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text
+	// is the one in use; 422 when it is empty or longer than 8,000 characters.
+	//
+	// PUT /api/v1/admin/competitor-definition
+	SaveCompetitorDefinition(ctx context.Context, req *CompetitorDefinitionText) (SaveCompetitorDefinitionRes, error)
 	// SearchTerms implements searchTerms operation.
 	//
 	// Returns the terms that match the query and every filter, best match first, with the count of
@@ -330,6 +499,15 @@ type Handler interface {
 	//
 	// PUT /api/v1/admin/plan/targets
 	SetPlanTargets(ctx context.Context, req *PlanTargetsChange) (SetPlanTargetsRes, error)
+	// SetTermReview implements setTermReview operation.
+	//
+	// Administrators only. On, the language model reviews the waiting candidates by itself every ten
+	// minutes; off, it reviews only when an administrator asks (startTermReview). A review that runs goes
+	// on until it ends or is stopped. The review is on until it is first switched off. Records who
+	// switched it. Returns the review's state.
+	//
+	// PUT /api/v1/admin/term-candidates/review/switch
+	SetTermReview(ctx context.Context, req *TermReviewSwitch) (SetTermReviewRes, error)
 	// SplitCompetitorCandidate implements splitCompetitorCandidate operation.
 	//
 	// Administrators only. Takes a name Claude Haiku or a person merged into a candidate out of it again;
@@ -388,6 +566,17 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/readiness-checks
 	StartReadinessCheck(ctx context.Context) (StartReadinessCheckRes, error)
+	// StartRecommendationRun implements startRecommendationRun operation.
+	//
+	// Administrators only. In the background, the rules find the gaps from the newest Prompt run, each
+	// company's newest scan and the search term list, and the Claude step writing recommendations places
+	// and words them from tribelt.nl's page text, a batch at a time. A run that ends replaces the open
+	// recommendations an earlier run wrote, and keeps the done and edited ones and those written by hand;
+	// one stopped, cut short by the budget, or failed changes nothing. 409 when one runs already or no
+	// Anthropic key is set up.
+	//
+	// POST /api/v1/admin/recommendation-runs
+	StartRecommendationRun(ctx context.Context) (StartRecommendationRunRes, error)
 	// StartRescans implements startRescans operation.
 	//
 	// Administrators only. Queues one scan for each named company with a website, or with `all`, for every
@@ -407,6 +596,72 @@ type Handler interface {
 	//
 	// POST /api/v1/admin/term-candidates/review
 	StartTermReview(ctx context.Context) (StartTermReviewRes, error)
+	// StopAnalysis implements stopAnalysis operation.
+	//
+	// Administrators only. A waiting scan is taken off the queue; a running one ends after the page it
+	// reads, on whichever instance runs it, and keeps the pages it read so far. Either is recorded as
+	// stopped by hand. 404 when no waiting or running scan has this id.
+	//
+	// POST /api/v1/admin/analyses/{analysisId}/stop
+	StopAnalysis(ctx context.Context, params StopAnalysisParams) (StopAnalysisRes, error)
+	// StopCandidateReview implements stopCandidateReview operation.
+	//
+	// Administrators only. Stops the review of the competitor candidates that runs, after the step it is
+	// on (the merge, or a batch of checks), which it keeps, as it keeps every decision made before. The
+	// review's state says it was stopped by hand (problem stopped). 404 when no review runs.
+	//
+	// POST /api/v1/admin/competitor-candidates/review/stop
+	StopCandidateReview(ctx context.Context) (StopCandidateReviewRes, error)
+	// StopCompetitorCheck implements stopCompetitorCheck operation.
+	//
+	// Administrators only. Stops the check of the companies on the competitor list that runs, after the
+	// batch it is on, which it keeps, as it keeps every company archived before. The check's state says it
+	// was stopped by hand (problem stopped). 404 when no check runs.
+	//
+	// POST /api/v1/admin/competitor-checks/stop
+	StopCompetitorCheck(ctx context.Context) (StopCompetitorCheckRes, error)
+	// StopPromptRun implements stopPromptRun operation.
+	//
+	// Administrators only. Asks a running run to stop. The request is stored, so the instance running the
+	// run, whichever it is, stops it at its next heartbeat, within a minute: no question is asked after
+	// it, the responses so far are kept, and the run is recorded as stopped by hand. retryPromptRun
+	// finishes it, asking only the questions it did not get. 404 when no run with this id is running.
+	//
+	// POST /api/v1/admin/prompt-runs/{runId}/stop
+	StopPromptRun(ctx context.Context, params StopPromptRunParams) (StopPromptRunRes, error)
+	// StopReadinessCheck implements stopReadinessCheck operation.
+	//
+	// Administrators only. Stops the check of every company's AI readiness that runs: it reads no further
+	// site. The sites it checked keep what it recorded, the others what their scan recorded, and the
+	// check's state says it was stopped. 404 when no check runs.
+	//
+	// POST /api/v1/admin/readiness-checks/stop
+	StopReadinessCheck(ctx context.Context) (StopReadinessCheckRes, error)
+	// StopRecommendationRun implements stopRecommendationRun operation.
+	//
+	// Administrators only. Stops the Recommendation run that runs after the batch it writes; the
+	// recommendations stay as they were, and the run is recorded as stopped by hand. 404 when none runs.
+	//
+	// POST /api/v1/admin/recommendation-runs/stop
+	StopRecommendationRun(ctx context.Context) (StopRecommendationRunRes, error)
+	// StopRescan implements stopRescan operation.
+	//
+	// Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting one is
+	// taken off the queue, a running one ends after the page it reads and keeps the pages it read so far.
+	// Each is recorded as stopped by hand. A scan started on its own runs on. 404 when no scan of a
+	// re-scan waits or runs.
+	//
+	// POST /api/v1/admin/rescans/stop
+	StopRescan(ctx context.Context) (StopRescanRes, error)
+	// StopTermReview implements stopTermReview operation.
+	//
+	// Administrators only. Stops the review of the waiting candidates that runs, after the batch it asks
+	// about, which it keeps, as it keeps every decision made before; a review asked for that has not
+	// started does not start. The review's state says it was stopped by hand (problem stopped). Whether
+	// the review is on does not change. 404 when no review runs or is asked for.
+	//
+	// POST /api/v1/admin/term-candidates/review/stop
+	StopTermReview(ctx context.Context) (StopTermReviewRes, error)
 	// TestLlmCredential implements testLlmCredential operation.
 	//
 	// Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
@@ -418,7 +673,8 @@ type Handler interface {
 	// TickImprovement implements tickImprovement operation.
 	//
 	// Administrators only. Marks an improvement no scan can check as done, recording who and when, or as
-	// not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+	// not done again; a recommendation a run wrote too, when no rule decides it (a fact sheet correction).
+	// 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
 	//
 	// PUT /api/v1/admin/plan/improvements/{improvementId}
 	TickImprovement(ctx context.Context, req *ImprovementTick, params TickImprovementParams) (TickImprovementRes, error)
@@ -446,6 +702,14 @@ type Handler interface {
 	//
 	// PATCH /api/v1/competitors/{competitorId}
 	UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (UpdateCompetitorRes, error)
+	// UpdateLlmBudget implements updateLlmBudget operation.
+	//
+	// Administrators only. Sets what every job a Claude model does may spend in a month together, in
+	// dollars, from one cent to $1,000, and records the change in the events. Work already spent past a
+	// lower budget stops at its next step and keeps what it did.
+	//
+	// PATCH /api/v1/admin/llm/budget
+	UpdateLlmBudget(ctx context.Context, req *LlmBudgetChange) (UpdateLlmBudgetRes, error)
 	// UpdatePromptTestSettings implements updatePromptTestSettings operation.
 	//
 	// Administrators only. Changes the key, the providers, the monthly budget, the schedule or the fact

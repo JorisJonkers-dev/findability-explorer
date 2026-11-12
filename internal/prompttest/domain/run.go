@@ -66,7 +66,7 @@ type RunStatus string
 const (
 	RunRunning RunStatus = "running"
 	RunDone    RunStatus = "done"
-	// RunStopped means the month's budget was reached; the answers so far are kept.
+	// RunStopped means the month's budget was reached; the responses so far are kept.
 	RunStopped RunStatus = "stopped"
 	RunFailed  RunStatus = "failed"
 )
@@ -154,10 +154,20 @@ func (a Answer) Key() TaskKey {
 	return TaskKey{PromptID: a.Prompt.ID, Provider: a.Provider, Mode: a.Mode}
 }
 
+// How a stopped run says why it stopped: the month's budget was reached, or an administrator
+// stopped it. Either way its responses are kept, and a retry finishes it.
+const (
+	StoppedByBudget = "The month's budget for Prompt runs was reached; the responses so far are kept."
+	StoppedByHand   = "Stopped by hand. The responses so far are kept, and a retry finishes the run."
+)
+
 // Errors the ports return.
 var (
 	// ErrRateLimited is returned when the provider asks to slow down (a 429).
 	ErrRateLimited = errors.New("the model is rate limited")
+	// ErrEmptyAnswer is a reply with no text, such as a reasoning model that spent its token limit
+	// thinking. It is a failed answer: never read, never counted, asked again by a retry.
+	ErrEmptyAnswer = errors.New("the model gave no text")
 	// ErrRunActive is returned when a run is running already.
 	ErrRunActive = errors.New("a Prompt run is running already")
 	// ErrNoKey is returned when no OpenRouter key is chosen for Prompt runs, or it cannot be read.
@@ -169,19 +179,21 @@ var (
 	// ErrAnswered is returned when storing an answer to a task the run answered already.
 	ErrAnswered = errors.New("the run answered this question already")
 	// ErrRead is returned when storing the reading of an answer read already.
-	ErrRead = errors.New("the answer was read already")
+	ErrRead = errors.New("the response was read already")
 	// ErrBudgetReached is returned when asking again while the month's budget is spent.
 	ErrBudgetReached = errors.New("the month's budget for Prompt runs is reached")
 	// ErrCompanyKnown is returned when a candidate is added with a website another company has.
 	ErrCompanyKnown = errors.New("another company has this website")
 )
 
-// QuestionsOf is the prompt set a run asked: the current one when the run asked it, else the
-// questions its answers kept, since every answer, a failed one too, keeps its question's text. A
-// question of an earlier set that no answer kept is not known any more, so it is left out.
-func QuestionsOf(run Run, answers []Answer) PromptSet {
-	if run.PromptSetVersion == PromptSetVersion {
-		return CurrentPromptSet()
+// QuestionsOf is the prompt set a run asked: its version as published, else the questions its
+// answers kept, since every answer, a failed one too, keeps its question's text. A question of a
+// set that is not published and no answer kept is not known, so it is left out.
+func QuestionsOf(run Run, sets []PublishedSet, answers []Answer) PromptSet {
+	for _, s := range sets {
+		if s.Version == run.PromptSetVersion {
+			return s.PromptSet()
+		}
 	}
 	set := PromptSet{Version: run.PromptSetVersion}
 	seen := map[string]bool{}

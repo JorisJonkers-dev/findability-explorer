@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -45,13 +46,25 @@ type analyses struct {
 	readinessRows    []domain.ReadinessRow
 	readinessErr     error
 	rawFiles         map[uuid.UUID]domain.RawFiles
+	// termPages is what TermPages returns; termAsked the term and language asked, termErr fails it.
+	termPages []domain.CompanyTermPages
+	termAsked string
+	termErr   error
 	// check is the readiness check's state; checkErr fails starting one.
 	check    analysisapp.ReadinessCheck
 	checkErr error
+	// stops are the stops asked, by name; stopErr fails each.
+	stops   []string
+	stopErr error
 	// promptTest stands in for the prompt-test use cases; a fresh one when nil.
 	promptTest *promptTests
+	// hand stores the terms added and removed by hand; a fresh one when nil.
+	hand *handStore
 	// insight stands in for the insight use cases; a fresh one when nil.
 	insight *insightCases
+	// activity stands in for the Activity use cases; a fresh one when nil.
+	activity *activityCases
+	steps    *stepCases
 }
 
 // companyRepo is an in-memory store of added companies.
@@ -146,17 +159,18 @@ func serveAll(t *testing.T, a *analyses, l *llmCases) *httptest.Server {
 	}, func(context.Context) ([]terminologydomain.Sighting, error) {
 		return []terminologydomain.Sighting{{Text: "Drahtösengliederband", Language: "de", CompanyID: "pelger"}}, nil
 	}, time.Now)
-	terminology.WithReviewer(verdictStore{}, noJudge{})
+	terminology.WithReviewer(&verdictStore{}, noJudge{})
 	terminology.WithCompetitors(func(context.Context) ([]terminologydomain.Listed, error) {
 		return []terminologydomain.Listed{{ID: "pelger", Name: "PELGER GmbH"}, {ID: "martens", Name: "Märtens Transportbänder GmbH"}}, nil
 	})
+	terminology.WithHandTerms(a.handStore())
 	companies := companiesapp.New(
 		func() []companiesdomain.Company { return research.Companies(terminology.Companies()) },
 		&companyRepo{}, companyScans{}, time.Now,
 	)
 	companies.WithBatch(batchPorts{}, batchPorts{})
 	h, err := httpapi.New(slog.New(slog.DiscardHandler), httpapi.Contexts{
-		Terminology: terminology, Analysis: a, Companies: companies, LLM: l, PromptTest: a.prompts(), Insight: a.insights(), Auth: auth{},
+		Terminology: terminology, Analysis: a, Companies: companies, LLM: l, PromptTest: a.prompts(), Insight: a.insights(), Activity: a.activities(), ClaudeSteps: a.claudeSteps(), Auth: auth{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -436,10 +450,14 @@ func TestUnknownPathsAndMethods(t *testing.T) {
 	}
 }
 
-// verdictStore holds the language model's one verdict: unsure about "belt news".
-type verdictStore struct{}
+// verdictStore holds the language model's one verdict, unsure about "belt news", the review's
+// switch, and this month's usage: 1,000,000 input and 200,000 output tokens.
+type verdictStore struct {
+	mu  sync.Mutex
+	off bool
+}
 
-func (verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, error) {
+func (*verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, error) {
 	return []terminologydomain.Verdict{{
 		CandidateID: terminologydomain.CandidateID("belt news", "en"), Phrase: "belt news", Accept: true, Reason: "Could go either way.",
 		Term:  terminologydomain.Acceptance{Text: "belt news", Language: "en", Family: "all", Tier: "broad"},
@@ -447,7 +465,24 @@ func (verdictStore) Verdicts(context.Context) ([]terminologydomain.Verdict, erro
 	}}, nil
 }
 
-func (verdictStore) SaveReview(context.Context, []terminologydomain.Verdict, []terminologydomain.Decision, []terminologydomain.Usage) error {
+func (*verdictStore) SaveReview(context.Context, []terminologydomain.Verdict, []terminologydomain.Decision, []terminologydomain.Usage) error {
+	return nil
+}
+
+func (*verdictStore) UsageSince(context.Context, time.Time) (terminologydomain.Usage, error) {
+	return terminologydomain.Usage{InputTokens: 1_000_000, OutputTokens: 200_000}, nil
+}
+
+func (v *verdictStore) ReviewOn(context.Context) (bool, error) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return !v.off, nil
+}
+
+func (v *verdictStore) SwitchReview(_ context.Context, on bool, _ string, _ time.Time) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	v.off = !on
 	return nil
 }
 

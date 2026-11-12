@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
-import { getPlanOptions, getPlanQueryKey, setPlanTargetsMutation, tickImprovementMutation } from '../../../infrastructure/api/@tanstack/vue-query.gen'
-import type { Plan, PlanTargetValue } from '../../../infrastructure/api/types.gen'
+import { editRecommendationMutation, getPlanOptions, getPlanQueryKey, setPlanTargetsMutation, tickImprovementMutation } from '../../../infrastructure/api/@tanstack/vue-query.gen'
+import type { Plan, PlanTargetValue, RecommendationEdit } from '../../../infrastructure/api/types.gen'
 import { describeError } from '../../../shared/describeError'
 
 /** Server state for the plan, and the administrator's changes to it, which answer with the plan. */
@@ -10,6 +10,7 @@ export function usePlan() {
   const query = useQuery(getPlanOptions())
   const tick = useMutation(tickImprovementMutation())
   const targets = useMutation(setPlanTargetsMutation())
+  const edit = useMutation(editRecommendationMutation())
   const changed = (plan: Plan) => {
     queryClient.setQueryData(getPlanQueryKey(), plan)
     // Catching up lists the open improvements.
@@ -19,14 +20,27 @@ export function usePlan() {
     plan: computed<Plan | undefined>(() => query.data.value),
     isLoading: query.isPending,
     error: computed(() => (query.error.value ? describeError(query.error.value) : null)),
-    isSaving: computed(() => tick.isPending.value || targets.isPending.value),
+    isSaving: computed(() => tick.isPending.value || targets.isPending.value || edit.isPending.value),
     saveError: computed(() => {
-      const e = tick.error.value ?? targets.error.value
+      const e = tick.error.value ?? targets.error.value ?? edit.error.value
       return e ? describeError(e) : null
     }),
     tick: (improvementId: string, done: boolean) => {
       targets.reset()
       tick.mutate({ path: { improvementId }, body: { done } }, { onSuccess: changed })
+    },
+    edit: (recommendationId: string, body: RecommendationEdit, saved?: () => void) => {
+      tick.reset()
+      targets.reset()
+      edit.mutate(
+        { path: { recommendationId }, body },
+        {
+          onSuccess: (plan) => {
+            changed(plan)
+            saved?.()
+          },
+        },
+      )
     },
     setTargets: (values: PlanTargetValue[]) => {
       tick.reset()

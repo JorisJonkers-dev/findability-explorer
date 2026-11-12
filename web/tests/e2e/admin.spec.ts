@@ -3,24 +3,21 @@ import { expect, expectAccessible, test } from './fixtures'
 
 // The dev user of the default server is an administrator (playwright.config.ts).
 
-test('an administrator adds a company, sees it, and deletes it again', async ({ page }) => {
-  const stamp = `${String(Date.now())}${String(Math.floor(Math.random() * 1000))}`
-  const name = `E2E Belts ${stamp}`
+test('an administrator manages the competitors in Manage, reached from the Results pages, which have no tools of their own', async ({ page }) => {
   await page.goto('/competitors')
-  await page.getByRole('button', { name: 'Add a company' }).click()
-  const form = page.getByRole('form', { name: 'Add a company' })
-  await form.getByLabel('Company name').fill(name)
-  await form.getByLabel('Company website').fill(`https://e2e-${stamp}.example.com`)
-  await form.getByRole('button', { name: 'Add company' }).click()
-  // The added company opens on its own page.
-  await expect(page).toHaveURL(new RegExp(`/competitors/e2e-belts-${stamp}$`))
-  await expect(page.getByRole('heading', { level: 2, name: `${name} against Tribelt` })).toBeVisible()
-  await expectAccessible(page)
+  await expect(page.getByRole('button', { name: 'Add a company' })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: 'Website address' })).toHaveCount(0)
+  await page.getByRole('link', { name: 'Manage the competitor list' }).click()
+  await expect(page).toHaveURL('/manage/competitors')
+  await expect(page.getByRole('heading', { level: 1, name: 'Competitor list' })).toBeVisible()
 
-  await page.getByRole('group', { name: 'Manage this company' }).getByRole('button', { name: 'Remove' }).click()
-  await page.getByRole('button', { name: 'Delete with its 0 scans' }).click()
-  await expect(page).toHaveURL('/competitors')
-  await expect(page.getByRole('region', { name: 'The competitors' }).getByRole('link', { name: new RegExp(name) })).toHaveCount(0)
+  await page.goto('/competitors/twentebelt')
+  await expect(page.getByRole('group', { name: 'Manage this company' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^(Scan again|Scan this website)$/ })).toHaveCount(0)
+  await page.getByRole('link', { name: 'Manage this company' }).click()
+  await expect(page).toHaveURL('/manage/competitors/companies/twentebelt')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expectAccessible(page)
 })
 
 const SCAN_1 = '11111111-1111-4111-8111-111111111111'
@@ -95,8 +92,8 @@ test('a company’s search terms, scan history and comparison render', async ({ 
   await page.getByRole('link', { name: 'See its scan history' }).click()
   await expect(page).toHaveURL('/competitors/twentebelt/history')
   await expect(page).toHaveTitle('Over time · Findability Explorer')
-  await expect(page.getByRole('heading', { level: 1, name: 'How Twentebelt changed, scan by scan.' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Back to the latest scan' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Twentebelt, scan history' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Back to Twentebelt' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Tri-Flex (2)' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('table', { name: 'English (1)' })).toContainText('spiral belts')
   await expect(page.getByRole('table', { name: 'Dutch (1)' })).toContainText('new in this scan')
@@ -110,7 +107,7 @@ test('a company’s search terms, scan history and comparison render', async ({ 
   await expectAccessible(page)
 })
 
-test('an administrator accepts a candidate into the terminology map', async ({ page }) => {
+test('an administrator accepts a candidate into the search term list', async ({ page }) => {
   const candidate = {
     id: '3a7bd3e2360a9f01',
     phrase: 'spiral freezer belt',
@@ -127,25 +124,105 @@ test('an administrator accepts a candidate into the terminology map', async ({ p
   }
   let accepted: unknown = null
   await page.route('**/api/v1/admin/term-candidates?**', (route) =>
-    route.fulfill({ json: { items: accepted === null ? [candidate] : [], counts: { pending: accepted === null ? 1 : 0, accepted: accepted === null ? 0 : 1, rejected: 0 }, review: { running: false, waiting: 0 } } }),
+    route.fulfill({ json: { items: accepted === null ? [candidate] : [], counts: { pending: accepted === null ? 1 : 0, accepted: accepted === null ? 0 : 1, rejected: 0 }, review: { on: true, running: false, waiting: 0, monthTokens: 0, monthCostUsd: 0 } } }),
   )
   await page.route('**/api/v1/admin/term-candidates/3a7bd3e2360a9f01/accept', async (route) => {
     accepted = route.request().postDataJSON()
     await route.fulfill({ json: { ...candidate, status: 'accepted' } })
   })
-  await page.goto('/settings')
-  await page.getByRole('navigation', { name: 'Settings' }).getByRole('link', { name: /^Term review/ }).click()
-  await expect(page).toHaveURL('/settings/terms')
-  await expect(page.getByRole('heading', { level: 1, name: 'Term review' })).toBeVisible()
+  await page.goto('/manage')
+  await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: /^Search term list/ }).click()
+  await expect(page).toHaveURL('/manage/terms')
+  await page.getByRole('link', { name: 'Review the terms' }).click()
+  await expect(page).toHaveURL('/manage/terms/waiting')
+  await expect(page.getByRole('heading', { level: 1, name: 'Waiting terms' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: /^Waiting terms/ })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByRole('heading', { level: 3, name: 'spiral freezer belt' })).toBeVisible()
-  await expect(page.getByText('The language model has reviewed every phrase.')).toBeVisible()
+  await expect(page.getByText('Claude Haiku has reviewed every search term.')).toBeVisible()
   await expectAccessible(page)
   await page.getByRole('button', { name: 'Accept…' }).click()
   const form = page.getByRole('form', { name: 'Accept spiral freezer belt' })
   await form.getByLabel('Term').fill('spiral freezer belt')
-  await form.getByLabel('Intent tier').selectOption('product')
-  await form.getByRole('button', { name: 'Add to the map' }).click()
-  await expect(page.getByText('Added “spiral freezer belt” to the terminology map.')).toBeVisible()
+  await form.getByLabel('Buyer intent').selectOption('product')
+  await form.getByRole('button', { name: 'Add to the list' }).click()
+  await expect(page.getByText('Added “spiral freezer belt” to the search term list.')).toBeVisible()
   expect(accepted).toEqual({ term: 'spiral freezer belt', language: 'en', family: 'tri_flex_turn_curve', tier: 'product', usedBy: ['Twentebelt'] })
   await expect(page.getByRole('button', { name: 'Accepted (1)' })).toBeVisible()
+})
+
+test('an administrator follows a Prompt run from Activity, stops it, and sees it stopped by hand', async ({ page }) => {
+  const RUN = '9d8e7f6a-5b4c-4d3e-8f2a-1b0c9d8e7f6b'
+  // The e2e server has no OpenRouter key, so no run can start; a running run is answered by the browser.
+  const run = {
+    id: RUN,
+    promptSetVersion: 2,
+    factSheetVersion: 1,
+    trigger: 'manual',
+    startedBy: 'e2e',
+    startedAt: '2026-11-01T08:29:00Z',
+    status: 'running',
+    models: [{ provider: 'openai', model: 'openai/gpt-oss-20b', free: false }],
+    tasks: 400,
+    answered: 90,
+    failed: 10,
+    inputTokens: 0,
+    outputTokens: 0,
+    costUsd: 0.1,
+    byProvider: [],
+    cells: [],
+  }
+  let stopped = false
+  await page.route('**/api/v1/prompt-test', (route) =>
+    route.fulfill({
+      json: {
+        promptSetVersion: 2,
+        runs: [stopped ? { ...run, status: 'stopped', finishedAt: '2026-11-01T08:40:00Z', failure: 'Stopped by hand. The responses so far are kept, and a retry finishes the run.' } : run],
+        mentions: [],
+        wrongClaims: [],
+      },
+    }),
+  )
+  const work = { id: RUN, kind: 'promptRun', startedAt: run.startedAt, done: 100, total: 400, failed: 10, openRouterCostUsd: 0.1, anthropicCostUsd: 0 }
+  await page.route('**/api/v1/admin/activity', (route) =>
+    route.fulfill({
+      json: {
+        running: stopped ? [] : [work],
+        recent: stopped ? [{ ...work, finishedAt: '2026-11-01T08:40:00Z', ending: 'stoppedByHand' }] : [],
+        spending: { since: '2026-11-01T00:00:00Z', lines: [{ kind: 'promptRuns', key: 'openRouter', costUsd: 0.1 }] },
+      },
+    }),
+  )
+  await page.route(`**/api/v1/admin/prompt-runs/${RUN}/stop`, async (route) => {
+    stopped = true
+    await route.fulfill({ status: 204 })
+  })
+  await page.route(`**/api/v1/admin/prompt-runs/${RUN}/retry-plan`, (route) =>
+    route.fulfill({ json: { askTasks: 300, askCostUsd: 0.3, unknownTasks: 0, readTasks: 0, readCostUsd: 0, readingCostUsd: 0, answerCosts: [] } }),
+  )
+
+  await page.goto('/manage')
+  await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible()
+  const running = page.getByRole('region', { name: 'Prompt run' })
+  await expect(running).toContainText('100 of 400 responses')
+  await expect(page.getByRole('region', { name: 'Recent work' })).toBeVisible()
+  await expectAccessible(page)
+
+  await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: /^Prompt test/ }).click()
+  await expect(page).toHaveURL('/manage/prompt-test')
+  await expect(page.getByRole('region', { name: 'Start a Prompt run' })).toContainText('A Prompt run is already running. Stop it or wait for it to finish.')
+  await expectAccessible(page)
+
+  await page.getByRole('link', { name: 'See the runs' }).click()
+  await expect(page).toHaveURL('/manage/prompt-test/runs')
+  const widget = page.getByRole('region', { name: 'Prompt run' })
+  await widget.getByRole('button', { name: 'Stop the Prompt run' }).click()
+  await expect(widget).toContainText('Stopping keeps the responses so far. You can finish the run later with a retry.')
+  await expectAccessible(page)
+  await widget.getByRole('button', { name: 'Stop the Prompt run' }).click()
+  await expect(page.getByText('The Prompt run stops within a minute. Its responses so far are kept.')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'All runs' }).getByRole('row').nth(1)).toContainText('Stopped by hand')
+  await expect(page.getByRole('region', { name: 'Run of 1 November 2026' }).getByRole('button', { name: 'Retry the 300 failed responses' })).toBeVisible()
+
+  await page.getByRole('navigation', { name: 'Manage' }).getByRole('link', { name: 'Activity' }).click()
+  await expect(page.getByRole('region', { name: 'Recent work' }).getByRole('row', { name: /Prompt run/ })).toContainText('Stopped by hand')
 })

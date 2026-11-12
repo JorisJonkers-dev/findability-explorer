@@ -216,23 +216,45 @@ func (r *Repository) MatchedProducts(ctx context.Context) ([]domain.MatchedProdu
 	return out, nil
 }
 
-// TokensSince sums the language-model tokens of analyses created at or after since.
-func (r *Repository) TokensSince(ctx context.Context, since time.Time) (int64, error) {
-	n, err := r.store.Queries().TokensSince(ctx, since)
+// TokensSince sums the language-model tokens in and out of analyses created at or after since.
+func (r *Repository) TokensSince(ctx context.Context, since time.Time) (input, output int64, err error) {
+	row, err := r.store.Queries().TokensSince(ctx, since)
 	if err != nil {
-		return 0, fmt.Errorf("sum tokens: %w", err)
+		return 0, 0, fmt.Errorf("sum tokens: %w", err)
 	}
-	return n, nil
+	return row.Input, row.Output, nil
 }
 
-// TokensPerScan returns how many scans the language model answered for, and the tokens one of them
-// used on average; scans with matching off or skipped used none and are left out.
-func (r *Repository) TokensPerScan(ctx context.Context) (scans int, average int64, err error) {
+// ModelTokens is what the scans one model matched for used: the model as the scan records it
+// ("anthropic: claude-haiku-5-5"), and its tokens in and out.
+type ModelTokens struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// TokensSinceByModel returns the tokens in and out of the analyses created since since, per model
+// that matched, so each is priced at its own model's list price.
+func (r *Repository) TokensSinceByModel(ctx context.Context, since time.Time) ([]ModelTokens, error) {
+	rows, err := r.store.Queries().TokensSinceByModel(ctx, since)
+	if err != nil {
+		return nil, fmt.Errorf("sum tokens per model: %w", err)
+	}
+	out := make([]ModelTokens, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, ModelTokens{Model: row.Model, Input: row.Input, Output: row.Output})
+	}
+	return out, nil
+}
+
+// TokensPerScan returns how many scans the language model answered for, and the tokens in and out
+// one of them used on average; scans with matching off or skipped used none and are left out.
+func (r *Repository) TokensPerScan(ctx context.Context) (scans int, input, output int64, err error) {
 	row, err := r.store.Queries().TokensPerMatchedScan(ctx)
 	if err != nil {
-		return 0, 0, fmt.Errorf("average tokens per scan: %w", err)
+		return 0, 0, 0, fmt.Errorf("average tokens per scan: %w", err)
 	}
-	return int(row.Scans), row.Average, nil
+	return int(row.Scans), row.AverageInput, row.AverageOutput, nil
 }
 
 // Queued returns the ids of every queued analysis, oldest first.
@@ -267,6 +289,7 @@ func (r *Repository) AddPage(ctx context.Context, id uuid.UUID, p domain.PageSum
 	if err := r.store.Queries().AddAnalysisPage(ctx, queries.AddAnalysisPageParams{
 		ID: id, Url: clip(p.URL, 2000), Title: clip(p.Title, 500), Description: clip(p.Description, 1000),
 		Language: clip(p.Language, 16), WordCount: int64(p.WordCount), Family: optionalText(p.Family),
+		Body: p.Text,
 	}); err != nil {
 		return fmt.Errorf("insert page: %w", err)
 	}
@@ -289,6 +312,7 @@ func (r *Repository) SaveFindings(ctx context.Context, id uuid.UUID, kws []domai
 			if err := q.AddAnalysisKnownTerm(ctx, queries.AddAnalysisKnownTermParams{
 				AnalysisID: id, Position: int64(i), Term: clip(k.Text, 200), Language: k.Language,
 				Family: k.Family, Tier: k.Tier, Occurrences: int64(k.Occurrences), UsedByTribelt: k.UsedByTribelt,
+				Pages: positions(k.Pages),
 			}); err != nil {
 				return fmt.Errorf("insert known term: %w", err)
 			}
@@ -356,6 +380,7 @@ func (r *Repository) SaveReadiness(ctx context.Context, id uuid.UUID, rd domain.
 		if err := q.AddAnalysisReadinessFiles(ctx, queries.AddAnalysisReadinessFilesParams{
 			AnalysisID: id, RobotsTxt: raw.Robots, RobotsTruncated: raw.RobotsTruncated, LlmsTxt: raw.LLMs,
 			LlmsTruncated: raw.LLMsTruncated, LlmsFullTxt: raw.LLMsFull, LlmsFullTruncated: raw.LLMsFullTruncated,
+			SitemapUrl: clip(raw.SitemapURL, 2000), SitemapTxt: raw.Sitemap, SitemapTruncated: raw.SitemapTruncated,
 		}); err != nil {
 			return fmt.Errorf("insert readiness files: %w", err)
 		}
@@ -405,7 +430,36 @@ func (r *Repository) ReadinessFiles(ctx context.Context, id uuid.UUID) (domain.R
 	return domain.RawFiles{
 		Robots: row.RobotsTxt, RobotsTruncated: row.RobotsTruncated, LLMs: row.LlmsTxt, LLMsTruncated: row.LlmsTruncated,
 		LLMsFull: row.LlmsFullTxt, LLMsFullTruncated: row.LlmsFullTruncated,
+		SitemapURL: row.SitemapUrl, Sitemap: row.SitemapTxt, SitemapTruncated: row.SitemapTruncated,
 	}, nil
+}
+
+// TermPages returns the pages that use a term, in language, on each company's newest finished
+// scan that found it, each company's together and in the scan's order.
+func (r *Repository) TermPages(ctx context.Context, term, language string) ([]domain.TermPageRow, error) {
+	rows, err := r.store.Queries().TermPages(ctx, queries.TermPagesParams{Term: term, Language: language})
+	if err != nil {
+		return nil, fmt.Errorf("select term pages: %w", err)
+	}
+	out := make([]domain.TermPageRow, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.TermPageRow{CompetitorID: row.CompetitorID, Position: int(row.PagePosition), URL: row.Url, Title: row.Title})
+	}
+	return out, nil
+}
+
+// PageTexts returns the text a scan kept of its pages, by address, in their order; only a scan of
+// tribelt.nl keeps any. The Recommendation run reads it.
+func (r *Repository) PageTexts(ctx context.Context, id uuid.UUID) ([]domain.PageSummary, error) {
+	rows, err := r.store.Queries().ListAnalysisPageBodies(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("select page texts: %w", err)
+	}
+	out := make([]domain.PageSummary, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.PageSummary{URL: row.Url, Text: row.Body})
+	}
+	return out, nil
 }
 
 // LatestReadiness returns, per company, its newest analysis that recorded its readiness.
@@ -463,6 +517,38 @@ func (r *Repository) Fail(ctx context.Context, id uuid.UUID, reason string, at t
 	return nil
 }
 
+// StopQueued records the queued analyses scope picks as failed with reason and returns their ids.
+func (r *Repository) StopQueued(ctx context.Context, scope domain.StopScope, reason string, at time.Time) ([]uuid.UUID, error) {
+	ids, err := r.store.Queries().StopQueuedAnalyses(ctx, queries.StopQueuedAnalysesParams{
+		Failure: text(clip(reason, 500)), StoppedAt: timestamp(at),
+		AnyID: scope.ID == uuid.Nil, ID: scope.ID, RescanOnly: scope.RescanOnly,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("stop queued analyses: %w", err)
+	}
+	return ids, nil
+}
+
+// RequestStop records that the running analyses scope picks are to stop and returns their ids.
+func (r *Repository) RequestStop(ctx context.Context, scope domain.StopScope, at time.Time) ([]uuid.UUID, error) {
+	ids, err := r.store.Queries().RequestAnalysesStop(ctx, queries.RequestAnalysesStopParams{
+		StoppedAt: timestamp(at), AnyID: scope.ID == uuid.Nil, ID: scope.ID, RescanOnly: scope.RescanOnly,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ask running analyses to stop: %w", err)
+	}
+	return ids, nil
+}
+
+// StopRequested reports whether a stop of the analysis was asked.
+func (r *Repository) StopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	asked, err := r.store.Queries().AnalysisStopRequested(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("read the analysis's stop: %w", err)
+	}
+	return asked, nil
+}
+
 func toAnalysis(row queries.ListAnalysesRow) domain.Analysis {
 	a := domain.Analysis{
 		ID: row.ID, URL: row.Url, MaxPages: int(row.MaxPages), Status: domain.Status(row.Status),
@@ -516,9 +602,31 @@ func knownTerms(ctx context.Context, q *queries.Queries, id uuid.UUID) ([]domain
 		out = append(out, domain.KnownTerm{
 			GlossaryTerm: domain.GlossaryTerm{Text: r.Term, Language: r.Language, Family: r.Family, Tier: r.Tier, UsedByTribelt: r.UsedByTribelt},
 			Occurrences:  int(r.Occurrences),
+			Pages:        places(r.Pages),
 		})
 	}
 	return out, nil
+}
+
+// positions are a known term's pages as stored, at most domain.MaxTermPages.
+func positions(pages []int) []int64 {
+	out := make([]int64, 0, min(len(pages), domain.MaxTermPages))
+	for _, p := range pages[:min(len(pages), domain.MaxTermPages)] {
+		out = append(out, int64(p))
+	}
+	return out
+}
+
+// places are a known term's stored pages; nil for a scan from before they were recorded.
+func places(pages []int64) []int {
+	if len(pages) == 0 {
+		return nil
+	}
+	out := make([]int, 0, len(pages))
+	for _, p := range pages {
+		out = append(out, int(p))
+	}
+	return out
 }
 
 func equivalents(ctx context.Context, q *queries.Queries, id uuid.UUID) ([]domain.Equivalent, error) {

@@ -49,12 +49,21 @@ afterEach(() => {
 })
 
 describe('the page of every term', () => {
-  it('ranks the whole map, titled by its size', async () => {
+  it('ranks the whole map in the frame, each term opening its page', async () => {
     const { wrapper } = await mountApp(api, '/terms/all')
-    expect(wrapper.get('h1').text()).toBe('5 ways to search for a metal belt.')
-    expect(wrapper.text()).toContain('Back to Search terms')
+    expect(wrapper.get('h1').text()).toBe('Every term')
+    expect(wrapper.get('[data-part="purpose"]').text()).toBe('Every term in the search term list, with the competitors that use it and whether tribelt.nl does.')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe("5 of 5 terms shown. From the search term list and each site's newest scan.")
+    expect(wrapper.findAll('a[href="/terms"]').map((a) => a.text())).toContain('Back to Search terms')
     expect(document.title).toBe('Every term · Findability Explorer')
-    expect(wrapper.text()).toContain('Search term list, our research')
+    expect(wrapper.findAll('h2').map((h) => h.text())).toEqual([
+      'Ranked by how many competitors use them',
+      'Terms tribelt.nl does not use',
+      'Marketing and technical terms, per company',
+    ])
+    expect(wrapper.get('ol[aria-label="Ranked terms"] li a').attributes('href')).toBe('/terms/de--aisi-304')
+    expect(wrapper.get('[data-part="intent-note"]').text()).toBe('Buyer intent is what the buyer already knows when they search. See what each kind means.')
+    expect(wrapper.get('[data-part="intent-note"] a').attributes('href')).toBe('/terms')
     expect(ranked(wrapper)).toEqual(['AISI 304', 'Eyelink belt', 'Drahtösengliederband', 'eye link belt', 'belt tracking'])
     expect(status(wrapper)).toBe('5 of 5 terms')
     const first = wrapper.get('ol[aria-label="Ranked terms"] li')
@@ -62,6 +71,14 @@ describe('the page of every term', () => {
     expect(first.text()).toContain('Lacks it')
     expect(first.attributes('tabindex')).toBeUndefined()
     expect(wrapper.get('ol[aria-label="Ranked terms"]').attributes('tabindex')).toBe('0')
+  })
+
+  it('marks a term added by hand', async () => {
+    const hand = [...MAP, term({ term: 'oven conveyor belt', language: 'en', family: 'eyelink', tier: 'application', usedBy: [], origin: 'hand' })]
+    const { wrapper } = await mountApp(routes({ 'GET /api/v1/terms': () => json(termSearch(hand, { total: hand.length, tribeltFrom: 'scan' })) }), '/terms/all')
+    const rows = wrapper.findAll('ol[aria-label="Ranked terms"] li')
+    expect(rows.find((r) => r.text().includes('oven conveyor belt'))?.text()).toContain('Added by hand')
+    expect(rows.filter((r) => r.text().includes('Added by hand'))).toHaveLength(1)
   })
 
   it('charts the languages and kinds, with what Tribelt uses', async () => {
@@ -74,7 +91,7 @@ describe('the page of every term', () => {
     ])
     // Above a bar, on hover: what Tribelt uses and what only others still have; at its end, a fraction.
     expect(languages[0]?.get('[data-testid="bar-info"]').text()).toBe('tribelt.nl uses 1, only others use 2')
-    const tiers = wrapper.get('[role="group"][aria-label="By kind of search"]').findAll('button')
+    const tiers = wrapper.get('[role="group"][aria-label="By buyer intent"]').findAll('button')
     const ends = (b: (typeof tiers)[number]) => {
       const parts = b.findAll(':scope > span')
       return `${parts[0]?.text() ?? ''} ${parts[2]?.text() ?? ''}`
@@ -197,7 +214,7 @@ describe('the page of every term', () => {
 
   it('says it is loading, and when the map cannot be loaded', async () => {
     const { wrapper } = await mountApp(routes({ 'GET /api/v1/terms': () => new Promise<Response>(() => undefined) }), '/terms/all')
-    expect(wrapper.get('h1').text()).toBe('Ways to search for a metal belt.')
+    expect(wrapper.get('h1').text()).toBe('Every term')
     expect(status(wrapper)).toBe('Loading…')
     wrapper.unmount()
     const failing = await mountApp(routes({ 'GET /api/v1/terms': () => problem(500, 'Internal Server Error', 'The map is not loaded.') }), '/terms/all')

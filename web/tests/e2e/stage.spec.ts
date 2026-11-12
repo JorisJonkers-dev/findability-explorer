@@ -1,12 +1,29 @@
 import { expect, test } from './fixtures'
 
-test.skip(({ isMobile }) => isMobile, 'the stage is for large windows; the phone project checks the stacked page')
+test.skip(({ isMobile }) => isMobile, 'these are large windows; the phone project checks the stacked page')
 
-// Every page scrolls like a page, outside the stage, except the settings, which are still drawn on it.
-const STAGE = ['/settings']
-const VIEWS = ['/', '/ai-search', '/ai-search/answers', '/ai-search/readiness', '/competitors', '/terms', '/terms/all', '/terms/families/eyelink', '/recommendations', '/buyers', '/numbers/aiShareOfVoice', ...STAGE]
+// Every page, in Results and in Manage, scrolls like a page.
+const VIEWS = [
+  '/',
+  '/goals/aiShareOfVoice',
+  '/ai-responses',
+  '/ai-responses/all',
+  '/ai-readiness',
+  '/terms',
+  '/terms/all',
+  '/terms/families/eyelink',
+  '/competitors',
+  '/recommendations',
+  '/help',
+  '/manage',
+  '/manage/prompt-test',
+  '/manage/scans',
+  '/manage/competitors/candidates',
+  '/manage/terms/waiting',
+  '/manage/recommendations',
+  '/manage/keys',
+]
 
-// The stage grows to the window's aspect, so a window that is not 16:9 has no white bands.
 for (const viewport of [
   { width: 2560, height: 1300 },
   { width: 1920, height: 1080 },
@@ -26,10 +43,6 @@ for (const viewport of [
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
         expect(overflow, path).toBe(0)
-        if (!STAGE.includes(path)) continue
-        const stage = await page.locator('.stage-focus').boundingBox()
-        expect(stage?.width ?? 0, path).toBeCloseTo(viewport.width, 0)
-        expect(stage?.height ?? 0, path).toBeCloseTo(viewport.height, 0)
       }
     })
   })

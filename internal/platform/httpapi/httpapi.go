@@ -10,7 +10,9 @@ import (
 
 	"github.com/ogen-go/ogen/ogenerrors"
 
+	activityweb "github.com/JorisJonkers-dev/findability-explorer/internal/activity/adapters/web"
 	analysisweb "github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/web"
+	claudestepweb "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/adapters/web"
 	companiesweb "github.com/JorisJonkers-dev/findability-explorer/internal/companies/adapters/web"
 	identityweb "github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/web"
 	insightweb "github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/web"
@@ -30,6 +32,8 @@ type (
 	llmHandler         = llmweb.Handler
 	promptTestHandler  = prompttestweb.Handler
 	insightHandler     = insightweb.Handler
+	activityHandler    = activityweb.Handler
+	claudeStepHandler  = claudestepweb.Handler
 )
 
 // api is the oas.Handler: one embedded web adapter per context, plus the shared error mapping.
@@ -41,6 +45,8 @@ type api struct {
 	*llmHandler
 	*promptTestHandler
 	*insightHandler
+	*activityHandler
+	*claudeStepHandler
 	logger *slog.Logger
 }
 
@@ -74,6 +80,8 @@ type Contexts struct {
 	LLM         llmweb.UseCases
 	PromptTest  prompttestweb.UseCases
 	Insight     insightweb.UseCases
+	Activity    activityweb.UseCases
+	ClaudeSteps claudestepweb.UseCases
 	// Auth resolves the session cookie to the principal a request runs as.
 	Auth identityweb.Authenticator
 }
@@ -97,6 +105,8 @@ func New(logger *slog.Logger, c Contexts) (http.Handler, error) {
 			llmHandler:         llmweb.New(c.LLM, actor),
 			promptTestHandler:  prompttestweb.New(c.PromptTest, actor),
 			insightHandler:     insightweb.New(c.Insight, actor),
+			activityHandler:    activityweb.New(c.Activity),
+			claudeStepHandler:  claudestepweb.New(c.ClaudeSteps, actor),
 			logger:             logger,
 		},
 		identityweb.NewSecurity(c.Auth),

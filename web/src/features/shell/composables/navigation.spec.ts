@@ -12,13 +12,16 @@ describe('navigation', () => {
       history: createMemoryHistory(),
       routes: [
         { path: '/', component: page },
-        { path: '/ai-search', component: page },
+        { path: '/ai-responses', component: page },
       ],
     })
     trackPreviousPath(router)
     await router.push('/')
     expect(usePreviousPath().value).toBeNull()
-    await router.push('/ai-search')
+    await router.push('/ai-responses')
+    expect(usePreviousPath().value).toBe('/')
+    // A navigation that goes nowhere, such as to the page already shown, leaves it as it was.
+    await router.push('/ai-responses')
     expect(usePreviousPath().value).toBe('/')
 
     let back: (() => void) | undefined

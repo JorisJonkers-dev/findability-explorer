@@ -21,6 +21,10 @@ type AddLlmCredentialRes interface {
 	addLlmCredentialRes()
 }
 
+type AddTermRes interface {
+	addTermRes()
+}
+
 type ClearActiveLlmRes interface {
 	clearActiveLlmRes()
 }
@@ -45,6 +49,14 @@ type DismissCompetitorCandidateRes interface {
 	dismissCompetitorCandidateRes()
 }
 
+type EditRecommendationRes interface {
+	editRecommendationRes()
+}
+
+type GetActivityRes interface {
+	getActivityRes()
+}
+
 type GetAiReadinessRes interface {
 	getAiReadinessRes()
 }
@@ -55,6 +67,14 @@ type GetAiSearchSummaryRes interface {
 
 type GetAnalysisRes interface {
 	getAnalysisRes()
+}
+
+type GetClaudeStepRes interface {
+	getClaudeStepRes()
+}
+
+type GetCompetitorDefinitionRes interface {
+	getCompetitorDefinitionRes()
 }
 
 type GetCompetitorProfileRes interface {
@@ -89,8 +109,16 @@ type GetProductsRes interface {
 	getProductsRes()
 }
 
+type GetPromptModelCatalogueRes interface {
+	getPromptModelCatalogueRes()
+}
+
 type GetPromptRetryPlanRes interface {
 	getPromptRetryPlanRes()
+}
+
+type GetPromptTestHistoryRes interface {
+	getPromptTestHistoryRes()
 }
 
 type GetPromptTestResultsRes interface {
@@ -105,12 +133,24 @@ type GetReadinessFilesRes interface {
 	getReadinessFilesRes()
 }
 
+type GetRecommendationRunsRes interface {
+	getRecommendationRunsRes()
+}
+
 type GetStandingsRes interface {
 	getStandingsRes()
 }
 
+type GetTermPagesRes interface {
+	getTermPagesRes()
+}
+
 type ListAnalysesRes interface {
 	listAnalysesRes()
+}
+
+type ListClaudeStepsRes interface {
+	listClaudeStepsRes()
 }
 
 type ListCompetitorCandidatesRes interface {
@@ -125,6 +165,10 @@ type ListCompetitorsRes interface {
 	listCompetitorsRes()
 }
 
+type ListHandTermsRes interface {
+	listHandTermsRes()
+}
+
 type ListLlmModelsRes interface {
 	listLlmModelsRes()
 }
@@ -133,20 +177,52 @@ type ListPromptAnswersRes interface {
 	listPromptAnswersRes()
 }
 
+type ListPromptSetsRes interface {
+	listPromptSetsRes()
+}
+
 type ListTermCandidatesRes interface {
 	listTermCandidatesRes()
+}
+
+type PublishPromptSetRes interface {
+	publishPromptSetRes()
+}
+
+type PutBackTermRes interface {
+	putBackTermRes()
 }
 
 type RejectTermCandidateRes interface {
 	rejectTermCandidateRes()
 }
 
+type RemoveQueuedAnalysesRes interface {
+	removeQueuedAnalysesRes()
+}
+
+type RemoveTermRes interface {
+	removeTermRes()
+}
+
 type RereadPromptRunRes interface {
 	rereadPromptRunRes()
 }
 
+type RestoreCompetitorDefinitionRes interface {
+	restoreCompetitorDefinitionRes()
+}
+
 type RetryPromptRunRes interface {
 	retryPromptRunRes()
+}
+
+type SaveClaudeStepVersionRes interface {
+	saveClaudeStepVersionRes()
+}
+
+type SaveCompetitorDefinitionRes interface {
+	saveCompetitorDefinitionRes()
 }
 
 type SearchTermsRes interface {
@@ -159,6 +235,10 @@ type SetActiveLlmRes interface {
 
 type SetPlanTargetsRes interface {
 	setPlanTargetsRes()
+}
+
+type SetTermReviewRes interface {
+	setTermReviewRes()
 }
 
 type SplitCompetitorCandidateRes interface {
@@ -185,12 +265,48 @@ type StartReadinessCheckRes interface {
 	startReadinessCheckRes()
 }
 
+type StartRecommendationRunRes interface {
+	startRecommendationRunRes()
+}
+
 type StartRescansRes interface {
 	startRescansRes()
 }
 
 type StartTermReviewRes interface {
 	startTermReviewRes()
+}
+
+type StopAnalysisRes interface {
+	stopAnalysisRes()
+}
+
+type StopCandidateReviewRes interface {
+	stopCandidateReviewRes()
+}
+
+type StopCompetitorCheckRes interface {
+	stopCompetitorCheckRes()
+}
+
+type StopPromptRunRes interface {
+	stopPromptRunRes()
+}
+
+type StopReadinessCheckRes interface {
+	stopReadinessCheckRes()
+}
+
+type StopRecommendationRunRes interface {
+	stopRecommendationRunRes()
+}
+
+type StopRescanRes interface {
+	stopRescanRes()
+}
+
+type StopTermReviewRes interface {
+	stopTermReviewRes()
 }
 
 type TestLlmCredentialRes interface {
@@ -211,6 +327,10 @@ type UndoTermDecisionRes interface {
 
 type UpdateCompetitorRes interface {
 	updateCompetitorRes()
+}
+
+type UpdateLlmBudgetRes interface {
+	updateLlmBudgetRes()
 }
 
 type UpdatePromptTestSettingsRes interface {

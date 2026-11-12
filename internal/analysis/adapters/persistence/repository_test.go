@@ -2,6 +2,7 @@ package persistence_test
 
 import (
 	"errors"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -89,15 +90,19 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 	if len(got.Pages) != 2 || len([]rune(got.Pages[0].Title)) != 500 || got.Pages[1].Title != "Förderbänder" {
 		t.Fatalf("pages = %+v", got.Pages)
 	}
-	if len(got.Keywords) != 2 || got.Keywords[0] != kws[0] || got.Keywords[1] != kws[1] || len(got.KnownTerms) != 1 || got.KnownTerms[0] != known[0] {
+	if len(got.Keywords) != 2 || got.Keywords[0] != kws[0] || got.Keywords[1] != kws[1] || !reflect.DeepEqual(got.KnownTerms, known) {
 		t.Fatalf("findings = %+v %+v", got.Keywords, got.KnownTerms)
 	}
 	if len(got.Equivalents) != 2 || len(got.Equivalents[0].SearchTerms) != 2 || got.Equivalents[0].SearchTerms[1].Term != "Spiralband" ||
 		len(got.Equivalents[1].SearchTerms) != 0 {
 		t.Fatalf("equivalents = %+v", got.Equivalents)
 	}
-	if n, err := repo.TokensSince(ctx, created); err != nil || n != 1000 {
-		t.Fatalf("TokensSince = %d, %v", n, err)
+	if in, out, err := repo.TokensSince(ctx, created); err != nil || in != 900 || out != 100 {
+		t.Fatalf("TokensSince = %d in, %d out, %v", in, out, err)
+	}
+	if m, err := repo.TokensSinceByModel(ctx, created); err != nil || len(m) != 1 ||
+		m[0] != (persistence.ModelTokens{Model: "openrouter: anthropic/claude-haiku-5-5", Input: 900, Output: 100}) {
+		t.Fatalf("TokensSinceByModel = %+v, %v", m, err)
 	}
 	// What the company's newest finished scan found: the map term, with the languages of the pages
 	// it read, and the matched products.
@@ -110,16 +115,16 @@ func TestAnAnalysisFromQueueToDone(t *testing.T) {
 		p[1].Product != "Eyelink belts" {
 		t.Fatalf("MatchedProducts = %+v, %v", p, err)
 	}
-	if n, err := repo.TokensSince(ctx, created.Add(time.Hour)); err != nil || n != 0 {
-		t.Fatalf("TokensSince later = %d, %v", n, err)
+	if in, out, err := repo.TokensSince(ctx, created.Add(time.Hour)); err != nil || in != 0 || out != 0 {
+		t.Fatalf("TokensSince later = %d in, %d out, %v", in, out, err)
 	}
 	// A scan whose matching did not run used no tokens and does not count.
 	other := queued(t, repo, "joris", created.Add(time.Second))
 	if err := repo.SaveMatching(ctx, other.ID, domain.MatchingDisabled, "", nil, domain.Usage{}); err != nil {
 		t.Fatal(err)
 	}
-	if scans, avg, err := repo.TokensPerScan(ctx); err != nil || scans != 1 || avg != 1000 {
-		t.Fatalf("TokensPerScan = %d, %d, %v", scans, avg, err)
+	if scans, in, out, err := repo.TokensPerScan(ctx); err != nil || scans != 1 || in != 900 || out != 100 {
+		t.Fatalf("TokensPerScan = %d, %d in, %d out, %v", scans, in, out, err)
 	}
 }
 

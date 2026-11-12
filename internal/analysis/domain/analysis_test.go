@@ -127,3 +127,19 @@ func TestAnalysisInFocus(t *testing.T) {
 		t.Fatal("no equivalents became an empty list")
 	}
 }
+
+// A scan stopped by hand is recorded as failed with the stop's own reason, which tells it apart.
+func TestAScanStoppedByHandIsToldByItsReason(t *testing.T) {
+	stopped := domain.Analysis{Status: domain.StatusFailed, Failure: domain.StoppedByHandReason}
+	if !stopped.StoppedByHand() || stopped.Blocked() {
+		t.Errorf("a scan stopped by hand = %+v", stopped)
+	}
+	for _, other := range []domain.Analysis{
+		{Status: domain.StatusFailed, Failure: "No page could be fetched."},
+		{Status: domain.StatusRunning},
+	} {
+		if other.StoppedByHand() {
+			t.Errorf("%+v reads as stopped by hand", other)
+		}
+	}
+}

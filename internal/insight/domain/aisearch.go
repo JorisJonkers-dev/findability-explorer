@@ -28,10 +28,10 @@ func Crawlers() []Crawler {
 	return []Crawler{
 		{"Googlebot", "Google", "Google Search, AI Overviews and Gemini", FeedsToday},
 		{"Bingbot", "Microsoft", "Bing, Copilot and part of ChatGPT search", FeedsToday},
-		{"OAI-SearchBot", "OpenAI", "Links in ChatGPT search answers", FeedsToday},
+		{"OAI-SearchBot", "OpenAI", "Links in ChatGPT search responses", FeedsToday},
 		{"ChatGPT-User", "OpenAI", "Pages ChatGPT opens while it answers", FeedsToday},
-		{"Claude-SearchBot", "Anthropic", "Links in Claude answers", FeedsToday},
-		{"PerplexityBot", "Perplexity", "Sources in Perplexity answers", FeedsToday},
+		{"Claude-SearchBot", "Anthropic", "Links in Claude responses", FeedsToday},
+		{"PerplexityBot", "Perplexity", "Sources in Perplexity responses", FeedsToday},
 		{"GPTBot", "OpenAI", "What future ChatGPT models know", FeedsFuture},
 		{"ClaudeBot", "Anthropic", "What future Claude models know", FeedsFuture},
 		{"Google-Extended", "Google", "What future Gemini models know", FeedsFuture},

@@ -1,6 +1,11 @@
 package domain
 
-import "slices"
+import (
+	"slices"
+	"strings"
+
+	llm "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
+)
 
 // PriceBasis is where a price overview comes from: the latest run's own costs, OpenRouter's
 // price list before any run, or nothing to go by.
@@ -33,7 +38,14 @@ func (p TokenPrice) Of(in, out int64) Micros {
 
 // HaikuPrice is Claude Haiku 5.5's list price on Anthropic's API, for prompts up to 100,000
 // tokens, which its readings are priced at whatever the subsidy (ADR-0007).
-func HaikuPrice() TokenPrice { return TokenPrice{Input: 0.10 / 1e6, Output: 0.50 / 1e6} }
+func HaikuPrice() TokenPrice { return ClaudePrice(llm.DefaultModel) }
+
+// ClaudePrice is a Claude model's list price on Anthropic's API, the model named by its id or as a
+// reader names it ("anthropic: claude-sonnet-5-5"); a model not listed is priced as Claude Haiku 5.5.
+func ClaudePrice(model string) TokenPrice {
+	p := llm.ListPrice(strings.TrimPrefix(model, string(llm.Anthropic)+": "))
+	return TokenPrice{Input: float64(p.InputPerMillion) / 1e12, Output: float64(p.OutputPerMillion) / 1e12}
+}
 
 // CataloguePrice is a model's price on OpenRouter's price list; false when the list does not have it.
 func CataloguePrice(catalogue []CatalogueModel, id string) (TokenPrice, bool) {
@@ -202,4 +214,25 @@ func (p Prices) total(questions int, cadence Cadence, budget Micros) Prices {
 	p.RunsPerMonth, p.Budget = RunsPerMonth(cadence), budget
 	p.Month = MicrosOf(p.Run.Dollars() * p.RunsPerMonth)
 	return p
+}
+
+// AskedModels are the models of a run still on the Model list, and the listed models the run did
+// not ask.
+func AskedModels(models []ModelChoice, list []string) (kept []ModelChoice, missing []string) {
+	for _, m := range models {
+		if slices.Contains(list, m.Model) {
+			kept = append(kept, m)
+		}
+	}
+	for _, id := range list {
+		if !slices.ContainsFunc(models, func(m ModelChoice) bool { return m.Model == id }) {
+			missing = append(missing, id)
+		}
+	}
+	return kept, missing
+}
+
+// OfModels are the choices that ask one of models.
+func OfModels(choices []ModelChoice, models []string) []ModelChoice {
+	return slices.DeleteFunc(slices.Clone(choices), func(c ModelChoice) bool { return !slices.Contains(models, c.Model) })
 }

@@ -76,6 +76,10 @@ func TestHaikuReadsTheAnswersWhileAnAnthropicKeyWorks(t *testing.T) {
 		if a.Extraction == nil || a.Extraction.Failed {
 			t.Fatalf("answer not read: %+v", a)
 		}
+		// Each reading records the model that read it.
+		if a.Extraction.Model != "anthropic: claude-haiku-5-5" {
+			t.Fatalf("read by %q", a.Extraction.Model)
+		}
 		in, out, cost = in+a.Extraction.InputTokens, out+a.Extraction.OutputTokens, cost+a.Extraction.Cost
 	}
 	if in != 80*60+7 || out != 80*25+1 || cost != 80*3+1 {
@@ -99,6 +103,11 @@ func TestOpenRouterReadsTheAnswersWithoutAnAnthropicKey(t *testing.T) {
 	}
 	if got := e.run(t); got.Status != domain.RunDone || e.gw.extracted != 80 {
 		t.Fatalf("status %s, %d read by OpenRouter", got.Status, e.gw.extracted)
+	}
+	for _, a := range e.repo.answers {
+		if a.Extraction == nil || a.Extraction.Model != domain.ExtractorModel {
+			t.Fatalf("read by %+v", a.Extraction)
+		}
 	}
 	view, err := e.svc.Settings(t.Context())
 	if err != nil || view.ExtractorModel != domain.ExtractorModel {
@@ -129,7 +138,7 @@ func (h *haiku) reads() int {
 func TestHaikuHandsTheReadingToOpenRouterOnceTheMonthsTokensAreSpent(t *testing.T) {
 	e := newEnv(t, newRepo(), "a")
 	h := &haiku{}
-	// The month's tokens are spent after Haiku's tenth reading.
+	// The month's Anthropic budget is spent after Haiku's tenth reading.
 	e.svc = e.withExtractors(extractors{x: h}, app.WithBudget(func(context.Context) (bool, error) { return h.reads() >= 10, nil }))
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)
@@ -152,6 +161,9 @@ func TestHaikuHandsTheReadingToOpenRouterOnceTheMonthsTokensAreSpent(t *testing.
 
 func TestHaikuKeepsReadingWhenTheBudgetCannotBeReadDuringARun(t *testing.T) {
 	e := newEnv(t, newRepo(), "a")
+	// One provider, so its answers are read one after another: with two, each provider's goroutine
+	// reads its own, and the two failures could fall on two answers, each then read on its retry.
+	e.repo.settings.Providers = []string{"openai"}
 	h := &haiku{fail: 2} // the first answer cannot be read: its tokens still count
 	var mu sync.Mutex
 	calls := 0
@@ -167,7 +179,7 @@ func TestHaikuKeepsReadingWhenTheBudgetCannotBeReadDuringARun(t *testing.T) {
 	if _, err := e.svc.Start(t.Context(), "joris"); err != nil {
 		t.Fatal(err)
 	}
-	if got := e.run(t); got.Status != domain.RunDone || h.read != 79 || e.gw.extracted != 0 {
+	if got := e.run(t); got.Status != domain.RunDone || h.read != 39 || e.gw.extracted != 0 {
 		t.Fatalf("status %s, %d read by Haiku, %d by OpenRouter", got.Status, h.read, e.gw.extracted)
 	}
 	failed := 0

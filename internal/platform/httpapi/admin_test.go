@@ -37,6 +37,7 @@ type llmCases struct {
 	usageErr error
 	err      error
 	actor    string
+	budget   llm.Micros
 }
 
 var at = time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
@@ -53,8 +54,11 @@ func (l *llmCases) settings() llmapp.Settings {
 			},
 		},
 		Choice: llm.ChoiceChosen, Active: &llm.Active{CredentialID: llm.VaultID, Model: llm.DefaultModel}, MatchingEnabled: true,
-		Haiku:  &llm.Active{CredentialID: llm.VaultID, Model: llm.DefaultModel},
-		Budget: llmapp.Budget{MonthlyTokens: 2_000_000, UsedThisMonth: 1234, AveragePerScan: 617, ScansMatched: 2},
+		Haiku: &llm.Active{CredentialID: llm.VaultID, Model: llm.DefaultModel},
+		Budget: llmapp.Budget{
+			Monthly: llm.DefaultBudget, Spent: 217, Left: llm.DefaultBudget - 217,
+			TokensThisMonth: 1234, AveragePerScan: 617, AverageScanCost: 69, ScansMatched: 2,
+		},
 		Events: []llm.Event{
 			{At: at, Actor: "Admin", Action: llm.ActionCredentialTested, CredentialID: llm.VaultID, Provider: llm.Anthropic, OK: &ok, Message: "ok"},
 			{At: at, Actor: "Admin", Action: llm.ActionActiveSet, CredentialID: llm.VaultID, Provider: llm.Anthropic, Model: llm.DefaultModel, Message: "set"},
@@ -89,6 +93,13 @@ func (l *llmCases) Models(context.Context, string) ([]llm.Model, error) {
 func (l *llmCases) SetActive(_ context.Context, actor, _, _ string) (llmapp.Settings, error) {
 	l.actor = actor
 	return l.settings(), l.err
+}
+
+func (l *llmCases) SetBudget(_ context.Context, actor string, m llm.Micros) (llmapp.Settings, error) {
+	l.actor, l.budget = actor, m
+	s := l.settings()
+	s.Budget.Monthly, s.Budget.Left = m, m-s.Budget.Spent
+	return s, l.err
 }
 
 func (l *llmCases) ClearActive(_ context.Context, actor string) (llmapp.Settings, error) {
@@ -129,6 +140,7 @@ func TestAdminNeedsTheAdministratorRole(t *testing.T) {
 		{http.MethodGet, "/api/v1/admin/llm/credentials/vault-anthropic/models", ""},
 		{http.MethodPut, "/api/v1/admin/llm/active", `{"credentialId":"vault-anthropic","model":"m"}`},
 		{http.MethodDelete, "/api/v1/admin/llm/active", ""},
+		{http.MethodPatch, "/api/v1/admin/llm/budget", `{"monthlyBudgetUsd":15}`},
 	}
 	for _, p := range paths {
 		r := callAs(t, srv, p.method, p.path, p.body, "tester")
@@ -165,7 +177,9 @@ func TestLlmSettings(t *testing.T) {
 	if a := r.body["active"].(map[string]any); a["credentialId"] != "vault-anthropic" || a["model"] != "claude-haiku-5-5" {
 		t.Fatalf("active = %v", a)
 	}
-	if b := r.body["budget"].(map[string]any); b["usedThisMonth"] != float64(1234) || b["averageTokensPerScan"] != float64(617) || b["scansMatched"] != float64(2) {
+	if b := r.body["budget"].(map[string]any); b["monthlyBudgetUsd"] != float64(15) || b["spentThisMonthUsd"] != 0.000217 ||
+		b["leftUsd"] != 14.999783 || b["tokensThisMonth"] != float64(1234) || b["averageTokensPerScan"] != float64(617) ||
+		b["averageScanUsd"] != 0.000069 || b["scansMatched"] != float64(2) {
 		t.Fatalf("budget = %v", b)
 	}
 	if e := events[0].(map[string]any); e["ok"] != true || e["model"] != nil || events[1].(map[string]any)["model"] != "claude-haiku-5-5" {
@@ -200,6 +214,23 @@ func TestLlmSettings(t *testing.T) {
 	}
 }
 
+func TestAnAdministratorSetsTheAnthropicBudgetInDollars(t *testing.T) {
+	l := &llmCases{}
+	srv := serveWith(t, l)
+	r := callAs(t, srv, http.MethodPatch, "/api/v1/admin/llm/budget", `{"monthlyBudgetUsd":25.5}`, "admin")
+	if r.code != http.StatusOK || l.budget != 25_500_000 || l.actor != "Admin" {
+		t.Fatalf("set budget = %d %v, stored %d by %q", r.code, r.body, l.budget, l.actor)
+	}
+	if b := r.body["budget"].(map[string]any); b["monthlyBudgetUsd"] != 25.5 || b["leftUsd"] != 25.499783 {
+		t.Fatalf("budget after = %v", b)
+	}
+	for _, body := range []string{`{"monthlyBudgetUsd":0}`, `{"monthlyBudgetUsd":1000.01}`, `{}`, `{"monthlyBudget":15}`} {
+		if r := callAs(t, srv, http.MethodPatch, "/api/v1/admin/llm/budget", body, "admin"); r.code != http.StatusBadRequest {
+			t.Errorf("budget %s: %d, want 400", body, r.code)
+		}
+	}
+}
+
 func TestLlmErrors(t *testing.T) {
 	refused := errors.Join(llm.ErrKeyRefused) // keeps the sentinel, and the message is the sentinel's
 	cases := []struct {
@@ -219,6 +250,7 @@ func TestLlmErrors(t *testing.T) {
 		{errors.Join(llm.ErrProvider), http.MethodGet, "/api/v1/admin/llm/credentials/vault-anthropic/models", "", http.StatusBadGateway, "The provider failed."},
 		{llm.ErrNotFound, http.MethodPut, "/api/v1/admin/llm/active", `{"credentialId":"vault-anthropic","model":"m"}`, http.StatusNotFound, ""},
 		{llm.ErrUnreadable, http.MethodPut, "/api/v1/admin/llm/active", `{"credentialId":"vault-anthropic","model":"m"}`, http.StatusUnprocessableEntity, ""},
+		{llm.ErrInvalidBudget, http.MethodPatch, "/api/v1/admin/llm/budget", `{"monthlyBudgetUsd":15}`, http.StatusUnprocessableEntity, "A month's budget is $0.01 to $1,000."},
 	}
 	for _, c := range cases {
 		srv := serveWith(t, &llmCases{err: c.err})
@@ -237,6 +269,7 @@ func TestLlmErrors(t *testing.T) {
 		{http.MethodGet, "/api/v1/admin/llm/credentials/vault-anthropic/models", ""},
 		{http.MethodPut, "/api/v1/admin/llm/active", `{"credentialId":"vault-anthropic","model":"m"}`},
 		{http.MethodDelete, "/api/v1/admin/llm/active", ""},
+		{http.MethodPatch, "/api/v1/admin/llm/budget", `{"monthlyBudgetUsd":15}`},
 	} {
 		if r := callAs(t, srv, p.method, p.path, p.body, "admin"); r.code != http.StatusInternalServerError || r.body["detail"] != nil {
 			t.Errorf("%s %s failing: %d %v", p.method, p.path, r.code, r.body)

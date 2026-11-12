@@ -233,7 +233,7 @@ func TestMistralComplete(t *testing.T) {
 		t.Fatalf("no choice: %+v, %v", out, err)
 	}
 	answer = `not json`
-	if _, err := client.Complete(t.Context(), prompt("m")); err == nil || !strings.Contains(err.Error(), "read Mistral's answer") {
+	if _, err := client.Complete(t.Context(), prompt("m")); err == nil || !strings.Contains(err.Error(), "read Mistral's response") {
 		t.Fatalf("not JSON: %v", err)
 	}
 }

@@ -24,7 +24,7 @@ export const PLACES: Record<Place, { label: string; cell: string }> = {
   later: { label: 'Tribelt is named fourth or later', cell: 'border-orange-soft bg-orange-pale text-ink-2' },
   unplaced: { label: 'Tribelt is named, but not in a ranked list', cell: 'border-orange-soft bg-white text-ink-2' },
   none: { label: 'Tribelt is not named', cell: 'border-grey bg-grey text-muted' },
-  missing: { label: 'No answer came back', cell: 'border-dashed border-silver bg-white text-orange-ink' },
+  missing: { label: 'No response came back', cell: 'border-dashed border-silver bg-white text-orange-ink' },
 }
 
 /** The mark of each place that has no number in it. */
@@ -92,7 +92,7 @@ export function saysOf(s: Square): string {
     case 'none':
       return 'Tribelt is not named'
     case 'missing':
-      return 'No answer came back'
+      return 'No response came back'
   }
 }
 
@@ -115,7 +115,7 @@ export function columnsOf(run: Pick<PromptRun, 'models'>, mode: PromptMode | 'al
 export type Row = { promptId: string; family: PromptFamily; scope: PromptScope; question: string }
 
 /** The questions a run's answers answer, by belt family then scope; only those in scope when one is picked. */
-export function rowsOf(answers: readonly PromptAnswer[], scope: PromptScope | 'all' = 'all'): Row[] {
+export function rowsOf(answers: readonly PromptAnswer[], scope: PromptScope = 'all'): Row[] {
   const rows = new Map<string, Row>()
   for (const a of answers) {
     if (!rows.has(a.promptId) && (scope === 'all' || a.scope === scope)) {
@@ -155,7 +155,7 @@ export function byKey(answers: readonly PromptAnswer[]): Map<string, PromptAnswe
 }
 
 /** The scopes the grid can be narrowed to, as the current prompt set asks them. */
-export const SCOPE_FILTERS: readonly { value: PromptScope | 'all'; label: string }[] = [
+export const SCOPE_FILTERS: readonly { value: PromptScope; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'twente', label: 'Twente' },
   { value: 'dutch', label: 'Dutch' },
@@ -236,17 +236,17 @@ export function answersHeadline(answers: readonly PromptAnswer[], nameOf: (id: s
 export function verdictOf(s: Square): string {
   switch (s.place) {
     case 'first':
-      return 'This answer names Tribelt first.'
+      return 'This response names Tribelt first.'
     case 'top3':
-      return 'This answer names Tribelt second or third.'
+      return 'This response names Tribelt second or third.'
     case 'later':
-      return 'This answer names Tribelt fourth or later.'
+      return 'This response names Tribelt fourth or later.'
     case 'unplaced':
-      return 'This answer names Tribelt, but not in a ranked list.'
+      return 'This response names Tribelt, but not in a ranked list.'
     case 'none':
-      return 'This answer does not name Tribelt.'
+      return 'This response does not name Tribelt.'
     case 'missing':
-      return 'No answer came back for this question.'
+      return 'No response came back for this question.'
   }
 }
 
@@ -273,7 +273,7 @@ export function isTribeltSite(address: string): boolean {
   return host === 'tribelt.nl' || host.endsWith('.tribelt.nl')
 }
 
-const PLACE_CSV: Record<Place, string> = { first: 'first', top3: 'second or third', later: 'later', unplaced: 'named, place unknown', none: 'not named', missing: 'no answer' }
+const PLACE_CSV: Record<Place, string> = { first: 'first', top3: 'second or third', later: 'later', unplaced: 'named, place unknown', none: 'not named', missing: 'no response' }
 
 function csvCell(value: string | number): string {
   const text = String(value)
@@ -299,7 +299,7 @@ export function toCsv(answers: readonly PromptAnswer[]): string {
     'output tokens',
     'cost in dollars',
     'failure',
-    'answer',
+    'response',
   ]
   const rows = answers.map((a) => [
     a.promptId,
@@ -337,8 +337,8 @@ export function modeCost(plan: Pick<PromptRetryPlan, 'answerCosts'> | undefined,
 /** Why some missing answers of a run cannot be asked again, or null when every one can. */
 export function unknownLine(unknown: number): string | null {
   if (unknown === 0) return null
-  const answers = unknown === 1 ? '1 missing answer' : `${String(unknown)} missing answers`
-  return `${answers} cannot be asked again. This run used an earlier set of questions, and no answers were saved for them.`
+  const missing = unknown === 1 ? '1 missing response' : `${String(unknown)} missing responses`
+  return `${missing} cannot be asked again. This run used an earlier set of questions, and no responses were saved for them.`
 }
 
 /** Whether the answer was given but could not be read, so it can be read again without asking again. */
@@ -350,7 +350,7 @@ export function unread(a: PromptAnswer | undefined): boolean {
 export function runFigures(run: Pick<PromptRun, 'answered' | 'models' | 'costUsd'>): { big: string; text: string }[] {
   const names = run.models.map((m) => providerName(m.provider))
   return [
-    { big: String(run.answered), text: run.answered === 1 ? 'answer in the newest run' : 'answers in the newest run' },
+    { big: String(run.answered), text: run.answered === 1 ? 'response in the newest run' : 'responses in the newest run' },
     { big: String(names.length), text: `${names.length === 1 ? 'provider' : 'providers'} asked: ${oxford(names)}` },
     { big: costLabel(run.costUsd), text: 'about what one run costs' },
   ]

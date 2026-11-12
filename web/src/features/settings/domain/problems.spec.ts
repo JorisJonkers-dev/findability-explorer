@@ -18,8 +18,8 @@ describe('settings problems', () => {
   })
 
   it('says when the provider did not answer, or the key is gone', () => {
-    expect(settingsProblem(problem(502), 'models')).toBe('The provider did not answer. Try again in a minute.')
-    expect(settingsProblem(problem(502, 'timeout'), 'models')).toBe('The provider did not answer: timeout Try again in a minute.')
+    expect(settingsProblem(problem(502), 'models')).toBe('The provider did not reply. Try again in a minute.')
+    expect(settingsProblem(problem(502, 'timeout'), 'models')).toBe('The provider did not reply: timeout Try again in a minute.')
     expect(settingsProblem(problem(404), 'test')).toBe('That key no longer exists. Reload the page.')
   })
 

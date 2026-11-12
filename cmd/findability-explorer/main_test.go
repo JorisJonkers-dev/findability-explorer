@@ -10,11 +10,18 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/JorisJonkers-dev/findability-explorer/internal/analysis/adapters/persistence"
+	claudestepapp "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/app"
+	claudestepdomain "github.com/JorisJonkers-dev/findability-explorer/internal/claudestep/domain"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/identity/adapters/oidc/oidctest"
+	insightpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/insight/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/llm/adapters/providers"
 	llmapp "github.com/JorisJonkers-dev/findability-explorer/internal/llm/app"
 	llmdomain "github.com/JorisJonkers-dev/findability-explorer/internal/llm/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
+	prompttestpersistence "github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
+	terminologypersistence "github.com/JorisJonkers-dev/findability-explorer/internal/terminology/adapters/persistence"
 )
 
 var sessionKeyValue = strings.Repeat("k", 32)
@@ -46,19 +53,12 @@ func TestStartWithADatabase(t *testing.T) {
 			t.Fatalf("start with an invalid ADDR = %d, want 1", code)
 		}
 	})
-	for _, key := range []string{"LLM_MONTHLY_TOKENS"} {
-		t.Run("bad "+key, func(t *testing.T) {
-			if code := start(t.Context(), env(map[string]string{"DATABASE_URL": url, "DEV_USER": "dev", key: "lots"})); code != 1 {
-				t.Fatalf("start with %s=lots = %d, want 1", key, code)
-			}
-		})
-	}
 	t.Run("serves with matching enabled until cancelled", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 		defer cancel()
 		vars := map[string]string{
 			"DATABASE_URL": url, "ADDR": "127.0.0.1:0", "ANTHROPIC_API_KEY": "test-key", "DEV_USER": "dev",
-			"DEV_ROLES": "ROLE_ADMIN", "SESSION_KEY": sessionKeyValue, "LLM_MONTHLY_TOKENS": "1000",
+			"DEV_ROLES": "ROLE_ADMIN", "SESSION_KEY": sessionKeyValue,
 		}
 		if code := start(ctx, env(vars)); code != 0 {
 			t.Fatalf("start after a clean shutdown = %d, want 0", code)
@@ -157,11 +157,62 @@ func (s *settings) Events(context.Context, int) ([]llmdomain.Event, error) { ret
 func (s *settings) LastTests(context.Context) (map[string]llmdomain.Test, error) {
 	return map[string]llmdomain.Test{}, nil
 }
+func (s *settings) Budget(context.Context) (llmdomain.Micros, error) { return 0, nil }
+func (s *settings) SaveBudget(context.Context, llmdomain.Micros, string, time.Time) error {
+	return nil
+}
+
+func TestTheMonthsSpendingPricesEachScanAtItsModelAndTheOtherJobsAsHaiku(t *testing.T) {
+	store, err := pg.Open(t.Context(), pgtest.URL(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sp := spenders{persistence.New(store), terminologypersistence.New(store), prompttestpersistence.New(store), insightpersistence.New(store)}
+	s, err := spending(t.Context(), sp, monthStart(time.Now()))
+	if err != nil || len(s.ThisMonth) != 3 || s.ScansMatched != 0 || s.AveragePerScan.Tokens() != 0 {
+		t.Fatalf("spending of an empty month = %+v, %v", s, err)
+	}
+	for _, u := range s.ThisMonth {
+		if u.Model != llmdomain.DefaultModel || u.Tokens() != 0 {
+			t.Fatalf("use = %+v", u)
+		}
+	}
+	store.Close()
+	if _, err := spending(t.Context(), sp, monthStart(time.Now())); err == nil {
+		t.Fatal("spending without a database did not fail")
+	}
+}
+
+// stepVersions is the Claude steps' store in memory.
+type stepVersions struct {
+	saved []claudestepdomain.Version
+	err   error
+}
+
+func (s *stepVersions) Versions(context.Context, claudestepdomain.ID) ([]claudestepdomain.Version, error) {
+	return s.saved, s.err
+}
+
+func (s *stepVersions) Save(_ context.Context, v claudestepdomain.Version, original *claudestepdomain.Version) error {
+	if original != nil {
+		s.saved = append(s.saved, *original)
+	}
+	s.saved = append(s.saved, v)
+	return nil
+}
+
+func TestScansArePricedAtTheClaudeModelTheyRecord(t *testing.T) {
+	if claudeModelOf("anthropic: claude-sonnet-5-5") != "claude-sonnet-5-5" || claudeModelOf("openrouter: mistral/small") != llmdomain.DefaultModel {
+		t.Error("claudeModelOf")
+	}
+}
 
 func TestMatchersPreferHaikuUnlessMatchingIsOff(t *testing.T) {
 	repo := &settings{}
+	versions := &stepVersions{}
+	steps := claudestepapp.New(versions, func(context.Context, claudestepdomain.ID) (llmdomain.Micros, error) { return 0, nil }, time.Now)
 	svc := func(vault string) matchers {
-		return matchers{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
+		return matchers{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString), steps: steps}
 	}
 	if m, label, err := svc("").Current(t.Context()); m != nil || label != "" || err != nil {
 		t.Fatalf("without a key: %v %q %v", m, label, err)
@@ -174,6 +225,18 @@ func TestMatchersPreferHaikuUnlessMatchingIsOff(t *testing.T) {
 	if m, label, err := svc("sk-ant").Current(t.Context()); m == nil || label != "anthropic: claude-haiku-5-5" || err != nil {
 		t.Fatalf("with another model chosen: %v %q %v", m, label, err)
 	}
+	// The step matching products names another Claude model: the Anthropic key asks that one.
+	if _, err := steps.Save(t.Context(), claudestepdomain.Matching, "Joris", claudestepdomain.Change{Model: "claude-sonnet-5-5", Instructions: "Match."}); err != nil {
+		t.Fatal(err)
+	}
+	if m, label, err := svc("sk-ant").Current(t.Context()); m == nil || label != "anthropic: claude-sonnet-5-5" || err != nil {
+		t.Fatalf("with the step on Sonnet: %v %q %v", m, label, err)
+	}
+	versions.err = errors.New("database down")
+	if m, _, err := svc("sk-ant").Current(t.Context()); m != nil || err == nil {
+		t.Fatalf("a step that cannot be read: %v %v", m, err)
+	}
+	versions.err = nil
 	// Matching turned off stays off, Haiku or not.
 	repo.setting = llmdomain.Setting{Mode: llmdomain.ModeOff}
 	if m, label, err := svc("sk-ant").Current(t.Context()); m != nil || label != "" || err != nil {
@@ -190,16 +253,56 @@ func TestMatchersPreferHaikuUnlessMatchingIsOff(t *testing.T) {
 	}
 }
 
-func TestExtractorsAreHaikuOnAnAnthropicKey(t *testing.T) {
+// stepsOn returns the Claude steps over versions in memory.
+func stepsOn(versions *stepVersions) *claudestepapp.Service {
+	return claudestepapp.New(versions, func(context.Context, claudestepdomain.ID) (llmdomain.Micros, error) { return 0, nil }, time.Now)
+}
+
+func TestTheClaudeJobsOnAnAnthropicKeyUseTheirStepsNewestVersions(t *testing.T) {
 	repo := &settings{}
-	svc := func(vault string) extractors {
-		return extractors{llm: llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)}
+	versions := &stepVersions{}
+	steps := stepsOn(versions)
+	llm := func(vault string) *llmapp.Service {
+		return llmapp.New(repo, providers.New(), nil, nil, llmapp.Config{VaultKey: vault}, time.Now, uuid.NewString)
 	}
-	if x, model, err := svc("").Current(t.Context()); x != nil || model != "" || err != nil {
-		t.Fatalf("without a key: %v %q %v", x, model, err)
+	type job func(vault string) (bool, string, error)
+	jobs := map[string]job{
+		"reading": func(v string) (bool, string, error) {
+			x, label, err := extractors{llm: llm(v), steps: steps}.Current(t.Context())
+			return x != nil, label, err
+		},
+		"reviewing terms": func(v string) (bool, string, error) {
+			j, label, err := judges{llm: llm(v), steps: steps}.Current(t.Context())
+			return j != nil, label, err
+		},
+		"checking companies": func(v string) (bool, string, error) {
+			r, label, err := reviewers{llm: llm(v), steps: steps}.Current(t.Context())
+			return r != nil, label, err
+		},
 	}
-	if x, model, err := svc("sk-ant").Current(t.Context()); x == nil || model != "anthropic: claude-haiku-5-5" || err != nil {
-		t.Fatalf("with the Vault key: %v %q %v", x, model, err)
+	for name, run := range jobs {
+		if ok, label, err := run(""); ok || label != "" || err != nil {
+			t.Errorf("%s without a key: %v %q %v", name, ok, label, err)
+		}
+		if ok, label, err := run("sk-ant"); !ok || label != "anthropic: claude-haiku-5-5" || err != nil {
+			t.Errorf("%s by default: %v %q %v", name, ok, label, err)
+		}
+	}
+	// Each step on another model: its job asks that one. The versions here are one list, so every
+	// step reads the newest of it.
+	if _, err := steps.Save(t.Context(), claudestepdomain.ReviewingTerms, "Joris", claudestepdomain.Change{Model: "claude-sonnet-5-5", Instructions: "Review."}); err != nil {
+		t.Fatal(err)
+	}
+	for name, run := range jobs {
+		if ok, label, err := run("sk-ant"); !ok || label != "anthropic: claude-sonnet-5-5" || err != nil {
+			t.Errorf("%s on Sonnet: %v %q %v", name, ok, label, err)
+		}
+	}
+	versions.err = errors.New("database down")
+	for name, run := range jobs {
+		if ok, _, err := run("sk-ant"); ok || err == nil {
+			t.Errorf("%s with steps that cannot be read: %v %v", name, ok, err)
+		}
 	}
 }
 
@@ -222,5 +325,22 @@ func TestDatabaseOf(t *testing.T) {
 	}
 	if _, err := databaseOf(env(nil)); err == nil {
 		t.Fatal("no database settings were accepted")
+	}
+}
+
+func TestAScansMatchingIsEstimatedFromTheAverageScan(t *testing.T) {
+	spent := func(context.Context) (llmapp.Spending, error) {
+		return llmapp.Spending{AveragePerScan: llmdomain.TokenUse{Model: llmdomain.DefaultModel, Input: 10_000, Output: 1_000}, ScansMatched: 2}, nil
+	}
+	b := stepBase{llm: llmapp.New(&settings{}, providers.New(), nil, spent, llmapp.Config{}, time.Now, uuid.NewString)}
+	if got, err := b.Of(t.Context(), claudestepdomain.Matching); err != nil || got != 1_500 {
+		t.Errorf("matching = %d %v", got, err)
+	}
+	if got, err := b.Of(t.Context(), "other"); err != nil || got != 0 {
+		t.Errorf("another step = %d %v", got, err)
+	}
+	broken := stepBase{llm: llmapp.New(&settings{listErr: errors.New("boom")}, providers.New(), nil, spent, llmapp.Config{}, time.Now, uuid.NewString)}
+	if _, err := broken.Of(t.Context(), claudestepdomain.Matching); err == nil {
+		t.Error("a failure was not reported")
 	}
 }

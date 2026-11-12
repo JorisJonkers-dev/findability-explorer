@@ -74,7 +74,7 @@ const model = computed(() => matchedBy(props.scan.matchingModel))
       <p v-if="model !== null" class="m-0 mt-2 text-muted">{{ model }}</p>
     </details>
 
-    <div role="group" aria-label="Which phrases" class="flex flex-wrap gap-2">
+    <div role="group" aria-label="Which terms" class="flex flex-wrap gap-2">
       <PillButton v-for="k in PHRASE_KINDS" :key="k.value" size="sm" :pressed="kind === k.value" @click="kind = k.value">
         {{ k.label }}
       </PillButton>
@@ -83,7 +83,7 @@ const model = computed(() => matchedBy(props.scan.matchingModel))
     <ol
       v-if="ranked.length > 0"
       v-scroll-hint
-      aria-label="Ranked phrases"
+      aria-label="Ranked terms"
       tabindex="0"
       class="scroll-hint m-0 max-h-[28rem] list-none overflow-y-auto p-0"
     >
@@ -107,6 +107,6 @@ const model = computed(() => matchedBy(props.scan.matchingModel))
         </span>
       </li>
     </ol>
-    <p v-else class="m-0 text-sm text-muted">No phrases of this kind.</p>
+    <p v-else class="m-0 text-sm text-muted">No terms of this kind.</p>
   </div>
 </template>

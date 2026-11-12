@@ -46,7 +46,7 @@ func (r *Repository) Settings(ctx context.Context) (domain.Settings, bool, error
 	}
 	row := rows[0]
 	return domain.Settings{
-		CredentialID: row.CredentialID, Providers: row.Providers, MonthlyBudget: domain.Micros(row.MonthlyBudgetMicros),
+		CredentialID: row.CredentialID, Providers: row.Providers, Models: row.Models, MonthlyBudget: domain.Micros(row.MonthlyBudgetMicros),
 		Cadence: domain.Cadence(row.Cadence), NextDue: row.NextDue.UTC(),
 		FactSheet: domain.FactSheet{
 			Text: row.FactSheet, Version: int(row.FactSheetVersion), UpdatedBy: row.FactSheetUpdatedBy, UpdatedAt: timeOf(row.FactSheetUpdatedAt),
@@ -57,7 +57,7 @@ func (r *Repository) Settings(ctx context.Context) (domain.Settings, bool, error
 // SaveSettings stores the settings in place of the earlier ones.
 func (r *Repository) SaveSettings(ctx context.Context, s domain.Settings, by string, at time.Time) error {
 	if err := r.store.Queries().SavePromptSettings(ctx, queries.SavePromptSettingsParams{
-		CredentialID: optionalText(s.CredentialID), Providers: s.Providers, MonthlyBudgetMicros: int64(s.MonthlyBudget),
+		CredentialID: optionalText(s.CredentialID), Providers: s.Providers, Models: append([]string{}, s.Models...), MonthlyBudgetMicros: int64(s.MonthlyBudget),
 		Cadence: string(s.Cadence), NextDue: s.NextDue, FactSheet: s.FactSheet.Text, FactSheetVersion: int64(s.FactSheet.Version),
 		FactSheetUpdatedBy: optionalText(s.FactSheet.UpdatedBy), FactSheetUpdatedAt: optionalTime(s.FactSheet.UpdatedAt),
 		UpdatedBy: by, UpdatedAt: at,
@@ -146,6 +146,29 @@ func (r *Repository) Heartbeat(ctx context.Context, id uuid.UUID, owner string, 
 	return n > 0, nil
 }
 
+// RequestStop stores that an administrator asked a running run to stop; false when the run is not
+// running.
+func (r *Repository) RequestStop(ctx context.Context, id uuid.UUID, at time.Time) (bool, error) {
+	n, err := r.store.Queries().RequestPromptRunStop(ctx, queries.RequestPromptRunStopParams{ID: id, At: optionalTime(at)})
+	if err != nil {
+		return false, fmt.Errorf("request a stop of the prompt run: %w", err)
+	}
+	return n > 0, nil
+}
+
+// StopRequested reports whether a stop of the run was asked for since it last started; false for
+// a run there is not.
+func (r *Repository) StopRequested(ctx context.Context, id uuid.UUID) (bool, error) {
+	stop, err := r.store.Queries().PromptRunStopRequested(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("read the stop request of the prompt run: %w", err)
+	}
+	return stop, nil
+}
+
 // FinishRun ends a running run.
 func (r *Repository) FinishRun(ctx context.Context, id uuid.UUID, status domain.RunStatus, failure string, at time.Time) error {
 	if err := r.store.Queries().FinishPromptRun(ctx, queries.FinishPromptRunParams{
@@ -230,7 +253,7 @@ func (r *Repository) AddAnswer(ctx context.Context, a domain.Answer) error {
 			ID: a.ID, RunID: a.RunID, PromptID: a.Prompt.ID, Family: string(a.Prompt.Family), Kind: string(a.Prompt.Kind),
 			Scope: string(a.Prompt.Scope), Language: a.Prompt.Language, PromptText: clip(a.Prompt.Text, 1000),
 			PromptSetVersion: int64(a.PromptSetVersion), Provider: a.Provider, Model: clip(a.Model, 200), Mode: string(a.Mode),
-			Answer: clip(clean(a.Text), 100_000), Citations: clipAll(a.Citations, 100, 500), InputTokens: a.InputTokens,
+			Answer: clip(clean(a.Text), 100_000), Citations: clipAll(a.Citations, 100), InputTokens: a.InputTokens,
 			OutputTokens: a.OutputTokens, CostMicros: max(int64(a.Cost), 0), Failure: optionalText(clip(a.Failure, 300)),
 			AnsweredAt: a.At,
 		})
@@ -247,6 +270,20 @@ func (r *Repository) AddAnswer(ctx context.Context, a domain.Answer) error {
 	})
 }
 
+// ReadingModels returns, per run, the model that read most of its responses; a run whose readings
+// recorded no model is left out.
+func (r *Repository) ReadingModels(ctx context.Context) (map[uuid.UUID]string, error) {
+	rows, err := r.store.Queries().PromptRunReadingModels(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select reading models: %w", err)
+	}
+	out := make(map[uuid.UUID]string, len(rows))
+	for _, row := range rows {
+		out[row.RunID] = row.Model
+	}
+	return out, nil
+}
+
 // SetExtraction stores the extraction of an answer stored without one, or replaces a failed one,
 // adding to what it used; an answer read already is domain.ErrRead.
 func (r *Repository) SetExtraction(ctx context.Context, answerID uuid.UUID, x domain.Extraction, at time.Time) error {
@@ -255,10 +292,11 @@ func (r *Repository) SetExtraction(ctx context.Context, answerID uuid.UUID, x do
 
 func addExtraction(ctx context.Context, q *queries.Queries, id uuid.UUID, x domain.Extraction, at time.Time) error {
 	n, err := q.AddPromptExtraction(ctx, queries.AddPromptExtractionParams{
-		AnswerID: id, Failed: x.Failed, Addresses: clipAll(x.Addresses, 200, 500), NamesTribelt: x.NamesTribelt,
-		CitesTribelt: x.CitesTribelt, Correctness: string(x.Correctness), WrongClaims: clipAll(x.WrongClaims, 10, 500),
+		AnswerID: id, Failed: x.Failed, Addresses: clipAll(x.Addresses, 200), NamesTribelt: x.NamesTribelt,
+		CitesTribelt: x.CitesTribelt, Correctness: string(x.Correctness), WrongClaims: clipAll(x.WrongClaims, 10),
+		LeftOut:     clipAll(x.LeftOut, 10),
 		InputTokens: x.InputTokens, OutputTokens: x.OutputTokens, CostMicros: max(int64(x.Cost), 0),
-		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at,
+		HaikuTokens: max(x.HaikuTokens, 0), ExtractedAt: at, Model: clip(x.Model, 200),
 	})
 	if err != nil {
 		return fmt.Errorf("insert prompt extraction: %w", err)
@@ -310,7 +348,9 @@ func (r *Repository) Answers(ctx context.Context, runID uuid.UUID, withText bool
 			a.Extraction = &domain.Extraction{
 				Failed: row.ExtractionFailed, Companies: named[row.ID], Addresses: row.Addresses, NamesTribelt: row.NamesTribelt,
 				CitesTribelt: row.CitesTribelt, Correctness: domain.Correctness(row.Correctness), WrongClaims: row.WrongClaims,
+				LeftOut:     row.LeftOut,
 				InputTokens: row.ExtractionInputTokens, OutputTokens: row.ExtractionOutputTokens, Cost: domain.Micros(row.ExtractionCostMicros),
+				Model: row.ReadingModel,
 			}
 		}
 		out = append(out, a)
@@ -515,22 +555,44 @@ func (r *Repository) SaveReviewUsage(ctx context.Context, usage []domain.ReviewU
 	})
 }
 
-// ReviewTokensSince is how many tokens the review of the candidates used since t.
-func (r *Repository) ReviewTokensSince(ctx context.Context, t time.Time) (int64, error) {
-	n, err := r.store.Queries().PromptReviewTokensSince(ctx, t)
+// ReviewTokensSince is how many tokens in and out the review of the candidates used since t.
+func (r *Repository) ReviewTokensSince(ctx context.Context, t time.Time) (input, output int64, err error) {
+	row, err := r.store.Queries().PromptReviewTokensSince(ctx, t)
 	if err != nil {
-		return 0, fmt.Errorf("sum review tokens: %w", err)
+		return 0, 0, fmt.Errorf("sum review tokens: %w", err)
 	}
-	return n, nil
+	return row.Input, row.Output, nil
 }
 
-// ReadingTokensSince is how many tokens Claude Haiku on an Anthropic key used reading answers since t.
-func (r *Repository) ReadingTokensSince(ctx context.Context, t time.Time) (int64, error) {
-	n, err := r.store.Queries().PromptReadingTokensSince(ctx, t)
+// ReadingTokensSince is how many tokens in and out Claude Haiku on an Anthropic key used reading
+// answers since t.
+func (r *Repository) ReadingTokensSince(ctx context.Context, t time.Time) (input, output int64, err error) {
+	row, err := r.store.Queries().PromptReadingTokensSince(ctx, t)
 	if err != nil {
-		return 0, fmt.Errorf("sum reading tokens: %w", err)
+		return 0, 0, fmt.Errorf("sum reading tokens: %w", err)
 	}
-	return n, nil
+	return row.Input, row.Output, nil
+}
+
+// ModelTokens is what one model used: its name as the readings record it, and its tokens.
+type ModelTokens struct {
+	Model  string
+	Input  int64
+	Output int64
+}
+
+// ReadingTokensSinceByModel is ReadingTokensSince per model that read, so each is priced at its own
+// list price; readings from before they recorded their model have an empty model.
+func (r *Repository) ReadingTokensSinceByModel(ctx context.Context, t time.Time) ([]ModelTokens, error) {
+	rows, err := r.store.Queries().PromptReadingTokensSinceByModel(ctx, t)
+	if err != nil {
+		return nil, fmt.Errorf("sum reading tokens per model: %w", err)
+	}
+	out := make([]ModelTokens, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, ModelTokens{Model: row.Model, Input: row.Input, Output: row.Output})
+	}
+	return out, nil
 }
 
 // optionalText is s, or NULL when s is empty.
@@ -556,11 +618,15 @@ func clip(s string, n int) string {
 	return s
 }
 
-// clipAll keeps at most n items, each at most chars characters.
-func clipAll(items []string, n, chars int) []string {
+// maxItem is how many characters an address, a cited source, a wrong claim or a fact left out
+// keeps.
+const maxItem = 500
+
+// clipAll keeps at most n items, each at most maxItem characters.
+func clipAll(items []string, n int) []string {
 	out := make([]string, 0, min(len(items), n))
 	for _, s := range items[:min(len(items), n)] {
-		out = append(out, clip(s, chars))
+		out = append(out, clip(s, maxItem))
 	}
 	return out
 }
@@ -572,4 +638,41 @@ func clean(s string) string { return strings.ReplaceAll(strings.ToValidUTF8(s, "
 func isUniqueViolation(err error) bool {
 	var pg *pgconn.PgError
 	return errors.As(err, &pg) && pg.Code == "23505"
+}
+
+// Definitions returns every version of the competitor definition, the newest first.
+func (r *Repository) Definitions(ctx context.Context) ([]domain.Definition, error) {
+	rows, err := r.store.Queries().ListCompetitorDefinitions(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("select competitor definitions: %w", err)
+	}
+	out := make([]domain.Definition, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, domain.Definition{
+			Version: int(row.Version), Text: row.Text, SavedAt: row.SavedAt.UTC(), SavedBy: row.SavedBy, RestoredFrom: int(row.RestoredFrom),
+		})
+	}
+	return out, nil
+}
+
+// AddDefinition stores text as the next version of the competitor definition and returns it.
+func (r *Repository) AddDefinition(ctx context.Context, text, by string, restoredFrom int, at time.Time) (domain.Definition, error) {
+	from := pgtype.Int8{Int64: int64(restoredFrom), Valid: restoredFrom > 0}
+	version, err := r.store.Queries().AddCompetitorDefinition(ctx, queries.AddCompetitorDefinitionParams{
+		Text: text, SavedAt: at, SavedBy: by, RestoredFrom: from,
+	})
+	if err != nil {
+		return domain.Definition{}, fmt.Errorf("insert competitor definition: %w", err)
+	}
+	return domain.Definition{Version: int(version), Text: text, SavedAt: at.UTC(), SavedBy: by, RestoredFrom: restoredFrom}, nil
+}
+
+// CheckUsage sums what every request of the reviews and checks used, and counts the companies
+// they checked.
+func (r *Repository) CheckUsage(ctx context.Context) (domain.ReviewUsage, int, error) {
+	row, err := r.store.Queries().PromptCheckUsage(ctx)
+	if err != nil {
+		return domain.ReviewUsage{}, 0, fmt.Errorf("sum what the checks used: %w", err)
+	}
+	return domain.ReviewUsage{InputTokens: row.Input, OutputTokens: row.Output}, int(row.Checked), nil
 }

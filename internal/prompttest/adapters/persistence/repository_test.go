@@ -12,6 +12,7 @@ import (
 	"github.com/JorisJonkers-dev/findability-explorer/internal/platform/pg/pgtest"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/persistence"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
 
 func repository(t *testing.T) *persistence.Repository {
@@ -44,19 +45,21 @@ func TestSettingsRoundTrip(t *testing.T) {
 	s := domain.DefaultSettings(at)
 	s.CredentialID = "3f2a9c4e-7d1b-4c6a-9e8f-1a2b3c4d5e6f"
 	s.FactSheet = domain.FactSheet{Text: "Tribelt makes belts.", Version: 2, UpdatedBy: "joris", UpdatedAt: at}
+	s.Models = []string{"openai/gpt-oss-20b", "google/gemma:free"}
 	if err := repo.SaveSettings(ctx, s, "joris", at); err != nil {
 		t.Fatal(err)
 	}
 	got, ok, err := repo.Settings(ctx)
-	if err != nil || !ok || got.CredentialID != s.CredentialID || !slices.Equal(got.Providers, s.Providers) || got.MonthlyBudget != s.MonthlyBudget ||
+	if err != nil || !ok || got.CredentialID != s.CredentialID || !slices.Equal(got.Providers, s.Providers) || !slices.Equal(got.Models, s.Models) ||
+		got.MonthlyBudget != s.MonthlyBudget ||
 		got.Cadence != s.Cadence || !got.NextDue.Equal(s.NextDue) || got.FactSheet != s.FactSheet {
 		t.Errorf("settings = %+v, %v, %v", got, ok, err)
 	}
-	s.CredentialID, s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt = "", "", time.Time{}
+	s.CredentialID, s.FactSheet.UpdatedBy, s.FactSheet.UpdatedAt, s.Models = "", "", time.Time{}, nil
 	if err := repo.SaveSettings(ctx, s, "joris", at); err != nil {
 		t.Fatal(err)
 	}
-	if got, _, _ := repo.Settings(ctx); got.CredentialID != "" || !got.FactSheet.UpdatedAt.IsZero() {
+	if got, _, _ := repo.Settings(ctx); got.CredentialID != "" || !got.FactSheet.UpdatedAt.IsZero() || len(got.Models) != 0 {
 		t.Errorf("cleared settings = %+v", got)
 	}
 }
@@ -154,7 +157,7 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if err := repo.CreateRun(ctx, r, "a", at); err != nil {
 		t.Fatal(err)
 	}
-	prompt := domain.CurrentPromptSet().Prompts[0]
+	prompt := domaintest.Version2().PromptSet().Prompts[0]
 	read := domain.Answer{
 		ID: uuid.New(), RunID: r.ID, Prompt: prompt, PromptSetVersion: 1, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeWeb,
 		Reply: domain.Reply{Text: "Twentebelt and Ashworth.\x00", Citations: []string{"https://twentebelt.com"}, InputTokens: 10, OutputTokens: 20, Cost: 1500},
@@ -163,6 +166,7 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 			Companies:    []domain.Company{{Name: "Twentebelt", CompetitorID: "twentebelt", Position: 1}, {Name: "Ashworth", URL: "https://ashworth.com", Position: 2}},
 			Addresses:    []string{"https://twentebelt.com"},
 			NamesTribelt: true, CitesTribelt: true, Correctness: domain.CorrectnessWrong, WrongClaims: []string{"Tribelt is in Hengelo."},
+			LeftOut:     []string{"Tribelt makes eyelink belts to measure.", "Tribelt is in Haaksbergen."},
 			InputTokens: 5, OutputTokens: 6, Cost: 200,
 		},
 	}
@@ -183,7 +187,10 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 		t.Fatalf("a failed reading = %+v", answers[1].Extraction)
 	}
 	// A failed reading is replaced by the next, and what both used counts.
-	again := domain.Extraction{Companies: []domain.Company{{Name: "Twentebelt", CompetitorID: "twentebelt", Position: 1}}, InputTokens: 4, OutputTokens: 5, Cost: 3, HaikuTokens: 9}
+	again := domain.Extraction{Companies: []domain.Company{{Name: "Twentebelt", CompetitorID: "twentebelt", Position: 1}}, InputTokens: 4, OutputTokens: 5, Cost: 3, HaikuTokens: 9, Model: "anthropic: claude-sonnet-5-5"}
+	for range 12 {
+		again.LeftOut = append(again.LeftOut, "Tribelt makes eyelink belts to measure.")
+	}
 	if err := repo.SetExtraction(ctx, unread.ID, again, at); err != nil {
 		t.Fatal(err)
 	}
@@ -193,30 +200,45 @@ func TestAnswersExtractionsSpendAndCandidates(t *testing.T) {
 	if err := repo.SetExtraction(ctx, read.ID, domain.Extraction{}, at); !errors.Is(err, domain.ErrRead) {
 		t.Fatalf("an answer read already = %v", err)
 	}
-	if n, err := repo.ReadingTokensSince(ctx, at); err != nil || n != 10 {
-		t.Errorf("reading tokens = %d, %v", n, err)
+	// Only Claude Haiku's readings count, not the one OpenRouter read.
+	if in, out, err := repo.ReadingTokensSince(ctx, at); err != nil || in != 5 || out != 5 {
+		t.Errorf("reading tokens = %d in, %d out, %v", in, out, err)
 	}
-	if n, _ := repo.ReadingTokensSince(ctx, at.Add(time.Hour)); n != 0 {
-		t.Errorf("reading tokens later = %d", n)
+	if m, err := repo.ReadingTokensSinceByModel(ctx, at); err != nil || len(m) != 1 ||
+		m[0] != (persistence.ModelTokens{Model: "anthropic: claude-sonnet-5-5", Input: 5, Output: 5}) {
+		t.Errorf("reading tokens per model = %+v, %v", m, err)
+	}
+	if in, out, _ := repo.ReadingTokensSince(ctx, at.Add(time.Hour)); in != 0 || out != 0 {
+		t.Errorf("reading tokens later = %d in, %d out", in, out)
 	}
 	answers, err := repo.Answers(ctx, r.ID, true)
 	if err != nil || len(answers) != 3 {
 		t.Fatalf("answers = %d, %v", len(answers), err)
 	}
+	// Each reading keeps the model that read it; the run is read by the model that read most.
+	if x := answers[1].Extraction; x == nil || x.Model != "anthropic: claude-sonnet-5-5" {
+		t.Errorf("the reading model = %+v", x)
+	}
+	if models, err := repo.ReadingModels(ctx); err != nil || models[r.ID] != "anthropic: claude-sonnet-5-5" {
+		t.Errorf("reading models = %v, %v", models, err)
+	}
 	got := answers[0]
 	if got.Text != "Twentebelt and Ashworth." || got.Prompt != prompt || got.Cost != 1500 || !slices.Equal(got.Citations, read.Citations) ||
 		got.Extraction == nil || !slices.Equal(got.Extraction.Companies, read.Extraction.Companies) || got.Extraction.Correctness != domain.CorrectnessWrong ||
-		!slices.Equal(got.Extraction.WrongClaims, read.Extraction.WrongClaims) || got.Extraction.Cost != 200 {
+		!slices.Equal(got.Extraction.WrongClaims, read.Extraction.WrongClaims) || !slices.Equal(got.Extraction.LeftOut, read.Extraction.LeftOut) ||
+		got.Extraction.Cost != 200 {
 		t.Errorf("answer = %+v, extraction %+v", got, got.Extraction)
 	}
-	if x := answers[1].Extraction; x == nil || x.Failed || len(x.Companies) != 1 || x.InputTokens != 5 || x.OutputTokens != 5 || x.Cost != 10 ||
+	if x := answers[1].Extraction; x == nil || x.Failed || len(x.Companies) != 1 || len(x.LeftOut) != 10 || x.InputTokens != 5 || x.OutputTokens != 5 || x.Cost != 10 ||
 		answers[2].Failure != "Rate limited." || answers[2].Extraction != nil {
 		t.Errorf("read again %+v, failed %+v", answers[1].Extraction, answers[2])
 	}
 	if bare, _ := repo.Answers(ctx, r.ID, false); bare[0].Text != "" || bare[0].Extraction == nil {
 		t.Errorf("answers without text = %+v", bare[0])
 	}
-	if spent, err := repo.SpentSince(ctx, at); err != nil || spent != 1500+200+7+3 {
+	// The OpenRouter key paid for the answers and the reading OpenRouter did; Claude Haiku's
+	// reading is the Anthropic key's, counted there only.
+	if spent, err := repo.SpentSince(ctx, at); err != nil || spent != 1500+200 {
 		t.Errorf("spent = %d, %v", spent, err)
 	}
 	if spent, _ := repo.SpentSince(ctx, at.Add(time.Hour)); spent != 0 {
@@ -269,7 +291,7 @@ func TestAFinishedRunIsAskedAgainUnderTheLock(t *testing.T) {
 	if err := repo.ReopenRun(ctx, r.ID, "a", at); !errors.Is(err, domain.ErrRunActive) {
 		t.Fatalf("reopening a running run = %v", err)
 	}
-	prompt := domain.CurrentPromptSet().Prompts[0]
+	prompt := domaintest.Version2().PromptSet().Prompts[0]
 	failed := domain.Answer{
 		ID: uuid.New(), RunID: r.ID, Prompt: prompt, PromptSetVersion: 2, Provider: "openai", Model: "openai/gpt-oss-20b", Mode: domain.ModeWeb,
 		Reply: domain.Reply{InputTokens: 10, Cost: 300}, Failure: "Rate limited.", At: at,
@@ -342,7 +364,7 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 
 	checks := []domain.CompanyVerdict{
 		{CandidateID: "00000000000000a1", Competitor: true, Sure: true, Reason: "Makes metal belts.", Model: "anthropic: claude-haiku-5-5", Version: 1, At: at},
-		{CandidateID: "00000000000000b1", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: at},
+		{CandidateID: "00000000000000b1", Model: "anthropic: claude-haiku-5-5", Version: 2, At: at},
 	}
 	if err := r.SaveCompanyVerdicts(ctx, checks); err != nil {
 		t.Fatal(err)
@@ -362,14 +384,14 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 
 	// The checks of the companies on the list.
 	list := []domain.ListCheck{
-		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting.", Model: "anthropic: claude-haiku-5-5", Version: domain.CheckVersion, At: at},
+		{CompanyID: "fenner-dunlop", Sure: true, Reason: "Makes rubber belting.", Model: "anthropic: claude-haiku-5-5", Version: 2, At: at},
 		{CompanyID: "wire-belt", Competitor: true, Model: "anthropic: claude-haiku-5-5", Version: 1, At: at.Add(time.Minute)},
 	}
 	if err := r.SaveListChecks(ctx, list); err != nil {
 		t.Fatal(err)
 	}
 	redone := list[1]
-	redone.Sure, redone.Version, redone.At = true, domain.CheckVersion, at.Add(time.Hour)
+	redone.Sure, redone.Version, redone.At = true, 2, at.Add(time.Hour)
 	if err := r.SaveListChecks(ctx, []domain.ListCheck{redone}); err != nil {
 		t.Fatal(err)
 	}
@@ -384,10 +406,48 @@ func TestMergesAndChecksOfCandidates(t *testing.T) {
 	if err := r.SaveReviewUsage(ctx, []domain.ReviewUsage{{InputTokens: 900, OutputTokens: 100, At: at}, {InputTokens: 5, OutputTokens: 5, At: at.Add(time.Hour)}}); err != nil {
 		t.Fatal(err)
 	}
-	if n, err := r.ReviewTokensSince(ctx, at); err != nil || n != 1010 {
-		t.Errorf("tokens = %d, %v", n, err)
+	if in, out, err := r.ReviewTokensSince(ctx, at); err != nil || in != 905 || out != 105 {
+		t.Errorf("tokens = %d in, %d out, %v", in, out, err)
 	}
-	if n, _ := r.ReviewTokensSince(ctx, at.Add(time.Minute)); n != 10 {
-		t.Errorf("tokens later = %d", n)
+	if in, out, _ := r.ReviewTokensSince(ctx, at.Add(time.Minute)); in != 5 || out != 5 {
+		t.Errorf("tokens later = %d in, %d out", in, out)
+	}
+}
+
+func TestAStopIsStoredForARunningRunAndClearedWhenTheRunIsAskedAgain(t *testing.T) {
+	t.Parallel()
+	repo := repository(t)
+	ctx := t.Context()
+	r := run(domain.TriggerManual)
+	if err := repo.CreateRun(ctx, r, "a", at); err != nil {
+		t.Fatal(err)
+	}
+	if stop, err := repo.StopRequested(ctx, r.ID); stop || err != nil {
+		t.Fatalf("a new run's stop = %v, %v", stop, err)
+	}
+	if ok, err := repo.RequestStop(ctx, r.ID, at.Add(time.Minute)); !ok || err != nil {
+		t.Fatalf("stopping a running run = %v, %v", ok, err)
+	}
+	if stop, err := repo.StopRequested(ctx, r.ID); !stop || err != nil {
+		t.Fatalf("the stop asked for = %v, %v", stop, err)
+	}
+	if err := repo.FinishRun(ctx, r.ID, domain.RunStopped, domain.StoppedByHand, at.Add(2*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := repo.RequestStop(ctx, r.ID, at.Add(3*time.Minute)); ok || err != nil {
+		t.Errorf("stopping a finished run = %v, %v", ok, err)
+	}
+	if ok, err := repo.RequestStop(ctx, uuid.New(), at); ok || err != nil {
+		t.Errorf("stopping no run = %v, %v", ok, err)
+	}
+	if stop, err := repo.StopRequested(ctx, uuid.New()); stop || err != nil {
+		t.Errorf("the stop of no run = %v, %v", stop, err)
+	}
+	// A retry runs the run again, and the stop of before does not stop it.
+	if err := repo.ReopenRun(ctx, r.ID, "a", at.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if stop, err := repo.StopRequested(ctx, r.ID); stop || err != nil {
+		t.Errorf("the reopened run's stop = %v, %v", stop, err)
 	}
 }

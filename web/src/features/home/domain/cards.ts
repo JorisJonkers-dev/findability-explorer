@@ -1,34 +1,27 @@
 import type { Overview, Plan } from '../../../infrastructure/api/types.gen'
-import type { Section, SectionId } from '../../shell/domain/sections'
-import { section } from '../../shell/domain/sections'
+import { formatValue } from '../../catching-up/domain/standings'
+import { section, type SectionId } from '../../shell/domain/sections'
 
-/** One of the section cards under the numbers: a figure from that section and the way in. */
-export type SectionCard = { id: SectionId; number: string; label: string; big: string; text: string; cta: string; path: string }
+/** A numbered tile of the Overview: one part of the app, its key figure, and the way in. */
+export type SectionTile = { id: SectionId; number: string; label: string; big: string; text: string; path: string }
 
-function card(id: SectionId, big: string, text: string): SectionCard {
-  const s: Section = section(id)
-  return { id, number: s.number, label: s.label.toUpperCase(), big, text, cta: `Open ${s.label}`, path: s.path }
+function tile(id: SectionId, big: string, text: string): SectionTile {
+  const s = section(id)
+  return { id, number: s.number, label: s.label, big, text, path: s.path }
 }
 
-/** A title as the middle of a sentence: "Submit tribelt.nl" becomes "submit tribelt.nl". */
-export function lowerFirst(text: string): string {
-  return text.charAt(0).toLowerCase() + text.slice(1)
-}
-
-/** The four section cards, with their figures from the overview and the plan. */
-export function sectionCards(overview: Overview, plan: Plan): SectionCard[] {
+/** The five tiles, one per part of the app, with their figures from the overview and the plan. */
+export function sectionTiles(overview: Overview, plan: Plan): SectionTile[] {
   const named = overview.aiSearch.companies.find((c) => c.role === 'tribelt')?.share
-  const first = plan.improvements[0]
+  const score = plan.watched.find((w) => w.target === 'readinessChecks')?.now
+  const open = plan.improvements.filter((i) => !i.done).length
   return [
-    named === undefined
-      ? card('ai-search', '–', 'No Prompt run has finished yet. Open it to see how AI answers name Tribelt.')
-      : card('ai-search', `${String(Math.round(named * 100))}%`, 'of AI answers name Tribelt. Open it to see who they name instead.'),
-    card('competitors', String(overview.competitors.makers), 'competitors on the list. Open one to see how AI answers name it.'),
-    card('terms', String(overview.terms.tribelt), `of the ${String(overview.terms.total)} terms buyers search with appear on tribelt.nl.`),
-    card(
-      'recommendations',
-      String(plan.improvements.length),
-      first ? `changes to tribelt.nl, ranked. The first is to ${lowerFirst(first.title)}.` : 'changes to tribelt.nl, ranked.',
-    ),
+    named === undefined ? tile('ai-responses', '–', 'No Prompt run has finished yet.') : tile('ai-responses', formatValue('aiShareOfVoice', named), 'of AI responses name Tribelt.'),
+    score === undefined
+      ? tile('ai-readiness', '–', 'tribelt.nl has not been checked for AI readiness yet.')
+      : tile('ai-readiness', `${formatValue('readinessChecks', score)} of ${String(plan.readinessChecks)}`, 'AI readiness checks passed by tribelt.nl.'),
+    tile('terms', formatValue('termsUsed', overview.terms.tribelt), `of the ${formatValue('termsUsed', overview.terms.total)} search terms appear on tribelt.nl.`),
+    tile('competitors', formatValue('termsUsed', overview.competitors.makers), 'competitors make metal belts buyers could choose instead.'),
+    tile('recommendations', String(open), 'changes to make on tribelt.nl, ranked by value.'),
   ]
 }

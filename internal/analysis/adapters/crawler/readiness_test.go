@@ -2,6 +2,7 @@ package crawler_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -59,6 +60,10 @@ func TestReadinessFetchesTheFilesBeforeTheCrawl(t *testing.T) {
 	if len(files.Sitemaps) != 2 || len(files.Sitemaps[1].Pages) != 2 {
 		t.Errorf("sitemaps = %+v (the index and one sitemap, the other host's left out)", files.Sitemaps)
 	}
+	// Each sitemap keeps its address and its text as served, for the files viewer.
+	if s := files.Sitemaps[0]; !strings.HasSuffix(s.URL, "/sitemap_index.xml") || !strings.HasPrefix(s.Text, "<sitemapindex><sitemap><loc>/pages.xml") {
+		t.Errorf("first sitemap = %q, %q", s.URL, s.Text)
+	}
 	if files.LLMs.Status != 200 || files.LLMsFull.Status != 200 || files.HomeMarkdown.Status != 404 {
 		t.Errorf("llms %d, llms-full %d, home twin %d", files.LLMs.Status, files.LLMsFull.Status, files.HomeMarkdown.Status)
 	}
@@ -104,5 +109,31 @@ func TestReadinessStopsWhenCtxEnds(t *testing.T) {
 	defer cancel()
 	if _, err := c.Readiness(ctx, localTarget(t, srv, "/")); err == nil {
 		t.Fatal("Readiness went on after ctx ended")
+	}
+}
+
+// A sitemap longer than a scan keeps is read in full for its pages, and its text kept only as far
+// as a scan stores it, and a byte more, so it shows cut.
+func TestReadinessKeepsTheStartOfALongSitemap(t *testing.T) {
+	var urls strings.Builder
+	urls.WriteString("<urlset>")
+	for i := range 3000 {
+		fmt.Fprintf(&urls, "<url><loc>http://belts.test/p/%d-%s</loc></url>", i, strings.Repeat("x", 30))
+	}
+	urls.WriteString("</urlset>")
+	mux := http.NewServeMux()
+	mux.HandleFunc("/sitemap.xml", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(urls.String())) })
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	c := crawler.New(options(srv, crawler.Options{AllowAddr: loopback, AllowHost: anyHost}))
+	files, err := c.Readiness(t.Context(), localTarget(t, srv, "/"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files.Sitemaps) != 1 || len(files.Sitemaps[0].Pages) != 3000 || len(files.Sitemaps[0].Text) != domain.MaxRawFile+1 {
+		t.Fatalf("sitemaps = %d, pages %d, text %d bytes", len(files.Sitemaps), len(files.Sitemaps[0].Pages), len(files.Sitemaps[0].Text))
+	}
+	if raw := domain.RawFilesOf(files); !raw.SitemapTruncated || len(raw.Sitemap) != domain.MaxRawFile {
+		t.Errorf("kept %d bytes, truncated %v", len(raw.Sitemap), raw.SitemapTruncated)
 	}
 }

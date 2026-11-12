@@ -10,50 +10,8 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain"
+	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/domain/domaintest"
 )
-
-func TestThePromptSetAsksTwentyApplicationQuestionsInGeneralTerms(t *testing.T) {
-	set := domain.CurrentPromptSet()
-	if domain.PromptSetVersion != 2 || set.Version != domain.PromptSetVersion || len(set.Prompts) != 20 {
-		t.Fatalf("set v%d has %d prompts", set.Version, len(set.Prompts))
-	}
-	ids := map[string]bool{}
-	languages := map[string]int{}
-	for _, p := range set.Prompts {
-		if ids[p.ID] {
-			t.Errorf("duplicate id %s", p.ID)
-		}
-		ids[p.ID] = true
-		languages[p.Language]++
-		if p.Kind != domain.KindApplication || p.Language != domain.LanguageOf(p.Scope) || !slices.Contains(domain.SetScopes(), p.Scope) {
-			t.Errorf("prompt %s = %+v", p.ID, p)
-		}
-		if lower := strings.ToLower(p.Text); strings.Contains(lower, "tribelt") || strings.Contains(lower, "tri-flex") || strings.Contains(lower, "(") {
-			t.Errorf("prompt %s names Tribelt or its products, or explains a term: %s", p.ID, p.Text)
-		}
-	}
-	if languages["nl"] != 10 || languages["de"] != 5 || languages["en"] != 5 {
-		t.Errorf("languages = %v", languages)
-	}
-	byID := func(id string) string {
-		i := slices.IndexFunc(set.Prompts, func(p domain.Prompt) bool { return p.ID == id })
-		if i < 0 {
-			t.Fatalf("no prompt %s", id)
-		}
-		return set.Prompts[i].Text
-	}
-	want := map[string]string{
-		"eyelink-application-english":            "We are building a tunnel oven for an industrial bakery. What kind of conveyor belt should we use, and which manufacturers can supply it?",
-		"eyelink-application-twente":             "We bouwen een doorloopoven voor een industriële bakkerij. Wat voor transportband moeten we daarvoor gebruiken, en welke fabrikanten in de regio Twente kunnen die leveren?",
-		"tri_flex_turn_curve-application-german": "Wir installieren einen Spiralfroster für Tiefkühlprodukte. Welches Förderband sollten wir dafür einsetzen, und welche Hersteller können es liefern?",
-		"other-application-dutch":                "We moeten zware, hete onderdelen door een hardingsoven transporteren. Wat voor transportband moeten we daarvoor gebruiken, en welke fabrikanten kunnen die leveren?",
-	}
-	for id, text := range want {
-		if got := byID(id); got != text {
-			t.Errorf("%s = %q", id, got)
-		}
-	}
-}
 
 func model(id string, prompt, completion float64, out ...string) domain.CatalogueModel {
 	if len(out) == 0 {
@@ -94,7 +52,7 @@ func TestChooseModelsTakesTheCheapestTextModelOfEachProvider(t *testing.T) {
 
 func TestTasksAskEveryPromptOfEveryModelInBothModes(t *testing.T) {
 	models := []domain.ModelChoice{{Provider: "openai"}, {Provider: "google"}}
-	tasks := domain.Tasks(domain.CurrentPromptSet(), models)
+	tasks := domain.Tasks(domaintest.Version2().PromptSet(), models)
 	if len(tasks) != 80 {
 		t.Fatalf("%d tasks", len(tasks))
 	}
@@ -357,7 +315,7 @@ func TestCitedAndNamedCompaniesAreOnTheListEachOnce(t *testing.T) {
 }
 
 func TestUnansweredAndWhatAskingAgainCosts(t *testing.T) {
-	set := domain.CurrentPromptSet()
+	set := domaintest.Version2().PromptSet()
 	models := []domain.ModelChoice{{Provider: "openai"}, {Provider: "google"}}
 	p := set.Prompts[0]
 	answers := []domain.Answer{
@@ -440,7 +398,7 @@ func TestAWebSearchCostsItsFee(t *testing.T) {
 }
 
 func TestPricesFromARun(t *testing.T) {
-	p := domain.CurrentPromptSet().Prompts[0]
+	p := domaintest.Version2().PromptSet().Prompts[0]
 	answers := []domain.Answer{
 		{Prompt: p, Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 100}, Extraction: &domain.Extraction{Cost: 10}},
 		{Prompt: p, Provider: "openai", Mode: domain.ModeKnowledge, Reply: domain.Reply{Cost: 300}, Extraction: &domain.Extraction{Cost: 30}},
@@ -521,10 +479,10 @@ func TestPricesFollowTheProvidersSetNow(t *testing.T) {
 	}
 }
 
-func TestQuestionsOfARunAreItsSetOrWhatItsAnswersKept(t *testing.T) {
-	current := domain.Run{PromptSetVersion: domain.PromptSetVersion}
-	if set := domain.QuestionsOf(current, nil); set.Version != domain.PromptSetVersion || len(set.Prompts) != 20 {
-		t.Fatalf("the current set = %+v", set)
+func TestQuestionsOfARunAreItsPublishedSetOrWhatItsAnswersKept(t *testing.T) {
+	stored := []domain.PublishedSet{domaintest.Version2()}
+	if set := domain.QuestionsOf(domain.Run{PromptSetVersion: 2}, stored, nil); set.Version != 2 || len(set.Prompts) != 20 {
+		t.Fatalf("the stored set = %+v", set)
 	}
 	supplier := domain.Prompt{ID: "eyelink-supplier-twente", Family: domain.FamilyEyelink, Kind: domain.KindSupplier, Scope: domain.ScopeTwente, Language: "nl", Text: "Wie levert oogjesbanden?"}
 	problem := domain.Prompt{ID: "eyelink-problem-germany", Family: domain.FamilyEyelink, Kind: domain.KindProblem, Scope: domain.ScopeGermany, Language: "de", Text: "Unser Band reißt."}
@@ -535,7 +493,7 @@ func TestQuestionsOfARunAreItsSetOrWhatItsAnswersKept(t *testing.T) {
 		{Prompt: problem, Provider: "google", Mode: domain.ModeKnowledge, Failure: "Rate limited."},
 		{Prompt: supplier, Provider: "google", Mode: domain.ModeWeb},
 	}
-	set := domain.QuestionsOf(earlier, answers)
+	set := domain.QuestionsOf(earlier, stored, answers)
 	if set.Version != 1 || len(set.Prompts) != 2 || set.Prompts[0] != supplier || set.Prompts[1] != problem {
 		t.Fatalf("an earlier set = %+v", set)
 	}
@@ -548,5 +506,28 @@ func TestQuestionsOfARunAreItsSetOrWhatItsAnswersKept(t *testing.T) {
 	}
 	if missing := domain.Unanswered(set, models, answers); len(missing) != 6 {
 		t.Errorf("unanswered = %d", len(missing))
+	}
+}
+
+func TestAReadingKeepsClaimsWrongAboutTribeltApartFromFactsLeftOut(t *testing.T) {
+	x := domain.Extracted{
+		Companies: []domain.Named{{Name: "Tribelt"}}, Correctness: domain.CorrectnessPartly,
+		WrongClaims: []string{"Tribelt is in Hengelo."}, LeftOut: []string{"Tribelt makes eyelink belts."},
+	}
+	got := domain.Read(x, nil, directory())
+	if !slices.Equal(got.WrongClaims, []string{"Tribelt is in Hengelo."}) || !slices.Equal(got.LeftOut, []string{"Tribelt makes eyelink belts."}) {
+		t.Errorf("a response naming Tribelt = wrong %v, left out %v", got.WrongClaims, got.LeftOut)
+	}
+	x.Companies = []domain.Named{{Name: "Twentebelt"}}
+	if got := domain.Read(x, nil, directory()); got.WrongClaims != nil || got.LeftOut != nil {
+		t.Errorf("a response not naming Tribelt leaves nothing out, yet wrong %v, left out %v", got.WrongClaims, got.LeftOut)
+	}
+	// Only claims wrong about Tribelt are listed as wrong; a fact left out never is.
+	read := domain.Read(domain.Extracted{
+		Companies: []domain.Named{{Name: "Tribelt"}}, Correctness: domain.CorrectnessCorrect, LeftOut: []string{"Tribelt is in Haaksbergen."},
+	}, nil, directory())
+	claims := domain.WrongClaims([]domain.Answer{answer("openai", domain.ScopeTwente, domain.ModeWeb, &read)})
+	if len(claims) != 0 {
+		t.Errorf("a fact left out became a wrong claim: %+v", claims)
 	}
 }

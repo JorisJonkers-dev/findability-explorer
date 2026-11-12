@@ -49,6 +49,7 @@ type Analysis struct {
 	MatchingModel   pgtype.Text
 	ScanNumber      pgtype.Int8
 	Rescan          bool
+	StopRequestedAt pgtype.Timestamptz
 }
 
 type AnalysisBotRule struct {
@@ -97,6 +98,7 @@ type AnalysisKnownTerm struct {
 	Tier          string
 	Occurrences   int64
 	UsedByTribelt bool
+	Pages         []int64
 }
 
 type AnalysisPage struct {
@@ -108,6 +110,7 @@ type AnalysisPage struct {
 	Language    string
 	WordCount   int64
 	Family      pgtype.Text
+	Body        string
 }
 
 type AnalysisReadiness struct {
@@ -141,6 +144,19 @@ type AnalysisReadinessFile struct {
 	LlmsTruncated     bool
 	LlmsFullTxt       string
 	LlmsFullTruncated bool
+	SitemapUrl        string
+	SitemapTxt        string
+	SitemapTruncated  bool
+}
+
+type ClaudeStepVersion struct {
+	Step         string
+	Number       int64
+	Model        string
+	Instructions string
+	Note         string
+	CreatedBy    string
+	CreatedAt    time.Time
 }
 
 type Company struct {
@@ -169,6 +185,23 @@ type CompanyOverride struct {
 	KeptAt     pgtype.Timestamptz
 }
 
+type CompetitorDefinition struct {
+	Version      int64
+	Text         string
+	SavedAt      time.Time
+	SavedBy      string
+	RestoredFrom pgtype.Int8
+}
+
+type HandTerm struct {
+	Term     string
+	Language string
+	Family   string
+	Tier     string
+	AddedBy  string
+	AddedAt  time.Time
+}
+
 type LlmActive struct {
 	Singleton    bool
 	Mode         string
@@ -176,6 +209,13 @@ type LlmActive struct {
 	Model        pgtype.Text
 	UpdatedBy    string
 	UpdatedAt    time.Time
+}
+
+type LlmBudget struct {
+	Singleton           bool
+	MonthlyBudgetMicros int64
+	UpdatedBy           string
+	UpdatedAt           time.Time
 }
 
 type LlmCredential struct {
@@ -296,6 +336,8 @@ type PromptExtraction struct {
 	CostMicros   int64
 	ExtractedAt  time.Time
 	HaikuTokens  int64
+	LeftOut      []string
+	Model        string
 }
 
 type PromptReviewUsage struct {
@@ -319,6 +361,7 @@ type PromptRun struct {
 	Tasks            int64
 	Owner            string
 	HeartbeatAt      time.Time
+	StopRequestedAt  pgtype.Timestamptz
 }
 
 type PromptRunModel struct {
@@ -328,6 +371,31 @@ type PromptRunModel struct {
 	Model    string
 	Free     bool
 	Fallback string
+}
+
+type PromptScope struct {
+	ID       string
+	Language string
+	Region   pgtype.Text
+	Name     string
+}
+
+type PromptSet struct {
+	Version     int64
+	PublishedAt time.Time
+	PublishedBy string
+	Note        string
+}
+
+type PromptSetQuestion struct {
+	Version  int64
+	Position int64
+	PromptID string
+	Family   string
+	Intent   string
+	ScopeID  string
+	Text     string
+	English  pgtype.Text
 }
 
 type PromptSetting struct {
@@ -343,6 +411,54 @@ type PromptSetting struct {
 	FactSheetUpdatedAt  pgtype.Timestamptz
 	UpdatedBy           string
 	UpdatedAt           time.Time
+	Models              []string
+}
+
+type Recommendation struct {
+	ID          string
+	RunID       uuid.UUID
+	GapKey      string
+	Kind        string
+	Language    string
+	Family      string
+	Specifics   []string
+	RuleBenefit int64
+	RuleEffort  int64
+	Title       string
+	WhereUrl    string
+	WhereNote   string
+	Why         string
+	Steps       []string
+	DoneWhen    string
+	Benefit     int64
+	Effort      int64
+	ScoreReason string
+	CreatedAt   time.Time
+	DoneBy      pgtype.Text
+	DoneAt      pgtype.Timestamptz
+	EditedAt    pgtype.Timestamptz
+}
+
+type RecommendationRun struct {
+	ID           uuid.UUID
+	StartedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	Ending       pgtype.Text
+	StartedBy    string
+	Model        string
+	Gaps         int64
+	Added        int64
+	Replaced     int64
+	Kept         int64
+	InputTokens  int64
+	OutputTokens int64
+}
+
+type RemovedTerm struct {
+	Term      string
+	Language  string
+	RemovedBy string
+	RemovedAt time.Time
 }
 
 type Session struct {
@@ -365,6 +481,13 @@ type TermDecision struct {
 	DecidedAt   time.Time
 }
 
+type TermReviewSwitch struct {
+	Singleton bool
+	ReviewOn  bool
+	UpdatedBy string
+	UpdatedAt time.Time
+}
+
 type TermReviewUsage struct {
 	ID           int64
 	InputTokens  int64
@@ -384,4 +507,18 @@ type TermVerdict struct {
 	Tier        string
 	Model       string
 	ReviewedAt  time.Time
+}
+
+type WorkRun struct {
+	ID           uuid.UUID
+	Kind         string
+	StartedBy    string
+	StartedAt    time.Time
+	FinishedAt   pgtype.Timestamptz
+	Ending       pgtype.Text
+	Done         int64
+	Total        int64
+	Failed       int64
+	InputTokens  int64
+	OutputTokens int64
 }

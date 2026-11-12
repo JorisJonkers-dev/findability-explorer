@@ -1,21 +1,21 @@
 -- name: GetPromptSettings :many
 -- The settings, or no row before an administrator saved any.
-SELECT coalesce(credential_id, '')::text AS credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet,
+SELECT coalesce(credential_id, '')::text AS credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet,
     fact_sheet_version, coalesce(fact_sheet_updated_by, '')::text AS fact_sheet_updated_by, fact_sheet_updated_at
 FROM prompt_settings
 WHERE singleton;
 
 -- name: SavePromptSettings :exec
 INSERT INTO prompt_settings (
-    singleton, credential_id, providers, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
+    singleton, credential_id, providers, models, monthly_budget_micros, cadence, next_due, fact_sheet, fact_sheet_version,
     fact_sheet_updated_by, fact_sheet_updated_at, updated_by, updated_at
 )
 VALUES (
-    true, sqlc.narg(credential_id), @providers, @monthly_budget_micros, @cadence, @next_due, @fact_sheet, @fact_sheet_version,
+    true, sqlc.narg(credential_id), @providers, @models::text [], @monthly_budget_micros, @cadence, @next_due, @fact_sheet, @fact_sheet_version,
     sqlc.narg(fact_sheet_updated_by), sqlc.narg(fact_sheet_updated_at), @updated_by, @updated_at
 )
 ON CONFLICT (singleton) DO UPDATE
-SET credential_id = excluded.credential_id, providers = excluded.providers,
+SET credential_id = excluded.credential_id, providers = excluded.providers, models = excluded.models,
     monthly_budget_micros = excluded.monthly_budget_micros, cadence = excluded.cadence, next_due = excluded.next_due,
     fact_sheet = excluded.fact_sheet, fact_sheet_version = excluded.fact_sheet_version,
     fact_sheet_updated_by = excluded.fact_sheet_updated_by, fact_sheet_updated_at = excluded.fact_sheet_updated_at,
@@ -57,6 +57,17 @@ UPDATE prompt_runs
 SET heartbeat_at = @at
 WHERE id = @id AND owner = @owner AND status = 'running';
 
+-- name: RequestPromptRunStop :execrows
+-- An administrator asks a running run to stop; the instance running it reads this at its heartbeat.
+UPDATE prompt_runs
+SET stop_requested_at = @at
+WHERE id = @id AND status = 'running';
+
+-- name: PromptRunStopRequested :one
+SELECT (stop_requested_at IS NOT NULL)::boolean AS requested
+FROM prompt_runs
+WHERE id = @id;
+
 -- name: FinishPromptRun :exec
 UPDATE prompt_runs
 SET status = @status, failure = sqlc.narg(failure), finished_at = @finished_at
@@ -65,7 +76,7 @@ WHERE id = @id AND status = 'running';
 -- name: ReopenPromptRun :execrows
 -- Runs a finished run again, held by owner, unless any run is running: the run lock.
 UPDATE prompt_runs AS p
-SET status = 'running', finished_at = NULL, failure = NULL, owner = @owner, heartbeat_at = @at
+SET status = 'running', finished_at = NULL, failure = NULL, stop_requested_at = NULL, owner = @owner, heartbeat_at = @at
 WHERE p.id = @id AND p.status <> 'running' AND NOT EXISTS (SELECT 1 FROM prompt_runs AS r WHERE r.status = 'running');
 
 -- name: GetPromptRun :one
@@ -109,20 +120,21 @@ RETURNING id;
 -- An extraction, or, for an answer whose reading failed, that reading replaced: what the failed
 -- reading used stays counted. An answer read already keeps its reading, and no row is touched.
 INSERT INTO prompt_extractions (
-    answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, input_tokens, output_tokens,
-    cost_micros, haiku_tokens, extracted_at
+    answer_id, failed, addresses, names_tribelt, cites_tribelt, correctness, wrong_claims, left_out, input_tokens,
+    output_tokens, cost_micros, haiku_tokens, extracted_at, model
 )
 VALUES (
-    @answer_id, @failed, @addresses, @names_tribelt, @cites_tribelt, @correctness, @wrong_claims, @input_tokens,
-    @output_tokens, @cost_micros, @haiku_tokens, @extracted_at
+    @answer_id, @failed, @addresses, @names_tribelt, @cites_tribelt, @correctness, @wrong_claims, @left_out, @input_tokens,
+    @output_tokens, @cost_micros, @haiku_tokens, @extracted_at, @model
 )
 ON CONFLICT (answer_id) DO UPDATE
 SET failed = excluded.failed, addresses = excluded.addresses, names_tribelt = excluded.names_tribelt,
     cites_tribelt = excluded.cites_tribelt, correctness = excluded.correctness, wrong_claims = excluded.wrong_claims,
-    input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
+    left_out = excluded.left_out, input_tokens = prompt_extractions.input_tokens + excluded.input_tokens,
     output_tokens = prompt_extractions.output_tokens + excluded.output_tokens,
     cost_micros = prompt_extractions.cost_micros + excluded.cost_micros,
-    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at
+    haiku_tokens = prompt_extractions.haiku_tokens + excluded.haiku_tokens, extracted_at = excluded.extracted_at,
+    model = excluded.model
 WHERE prompt_extractions.failed;
 
 -- name: AddPromptAnswerCompany :exec
@@ -137,8 +149,10 @@ SELECT a.id, a.prompt_id, a.family, a.kind, a.scope, a.language, a.prompt_text, 
     (x.answer_id IS NOT NULL)::boolean AS extracted, coalesce(x.failed, false)::boolean AS extraction_failed,
     coalesce(x.addresses, '{}')::text [] AS addresses, coalesce(x.names_tribelt, false)::boolean AS names_tribelt,
     coalesce(x.cites_tribelt, false)::boolean AS cites_tribelt, coalesce(x.correctness, '')::text AS correctness,
-    coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
-    coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros
+    coalesce(x.wrong_claims, '{}')::text [] AS wrong_claims, coalesce(x.left_out, '{}')::text [] AS left_out,
+    coalesce(x.input_tokens, 0)::bigint AS extraction_input_tokens,
+    coalesce(x.output_tokens, 0)::bigint AS extraction_output_tokens, coalesce(x.cost_micros, 0)::bigint AS extraction_cost_micros,
+    coalesce(x.model, '')::text AS reading_model
 FROM prompt_answers AS a
 LEFT JOIN prompt_extractions AS x ON x.answer_id = a.id
 WHERE a.run_id = @run_id
@@ -152,10 +166,11 @@ WHERE a.run_id = @run_id
 ORDER BY c.answer_id, c.position;
 
 -- name: PromptSpentSince :one
--- What answers and extractions cost since a moment, in millionths of a dollar.
+-- What the OpenRouter key paid since a moment, in millionths of a dollar: the answers, and the
+-- readings OpenRouter did. Claude Haiku's readings are the Anthropic key's (PromptReadingTokensSince).
 SELECT (
     coalesce((SELECT sum(cost_micros) FROM prompt_answers WHERE answered_at >= @since), 0)
-    + coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= @since), 0)
+    + coalesce((SELECT sum(cost_micros) FROM prompt_extractions WHERE extracted_at >= @since AND haiku_tokens = 0), 0)
 )::bigint AS spent;
 
 -- name: PromptSightings :many
@@ -215,7 +230,7 @@ INSERT INTO prompt_review_usage (input_tokens, output_tokens, used_at)
 VALUES (@input_tokens, @output_tokens, @used_at);
 
 -- name: PromptReviewTokensSince :one
-SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_review_usage
 WHERE used_at >= @since;
 
@@ -240,7 +255,82 @@ JOIN prompt_answers AS a ON a.id = c.answer_id
 ORDER BY a.answered_at DESC, c.answer_id, c.position;
 
 -- name: PromptReadingTokensSince :one
--- The tokens Claude Haiku on an Anthropic key used reading answers since a moment.
-SELECT coalesce(sum(haiku_tokens), 0)::bigint AS tokens
+-- The tokens in and out Claude Haiku on an Anthropic key used reading answers since a moment: the
+-- readings whose tokens count as Haiku's.
+SELECT coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
 FROM prompt_extractions
-WHERE extracted_at >= @since;
+WHERE extracted_at >= @since AND haiku_tokens > 0;
+
+-- name: PromptReadingTokensSinceByModel :many
+-- The same per model that read, so each is priced at its own list price; a reading from before
+-- readings recorded their model has none.
+SELECT model, coalesce(sum(input_tokens), 0)::bigint AS input, coalesce(sum(output_tokens), 0)::bigint AS output
+FROM prompt_extractions
+WHERE extracted_at >= @since AND haiku_tokens > 0
+GROUP BY model
+ORDER BY model;
+
+-- name: ListPromptSets :many
+-- Every published Prompt set, newest first.
+SELECT version, published_at, published_by, note
+FROM prompt_sets
+ORDER BY version DESC;
+
+-- name: ListPromptSetQuestions :many
+-- Every question of every published set with its scope, the newest set first, each set in order.
+SELECT q.version, q.prompt_id, q.family, q.intent, q.text, coalesce(q.english, '')::text AS english,
+    s.id AS scope_id, s.language, coalesce(s.region, '')::text AS region, s.name AS scope_name
+FROM prompt_set_questions q
+JOIN prompt_scopes s ON s.id = q.scope_id
+ORDER BY q.version DESC, q.position;
+
+-- name: ListPromptScopes :many
+-- Every scope a question can be asked in, by name.
+SELECT id, language, coalesce(region, '')::text AS region, name
+FROM prompt_scopes
+ORDER BY name;
+
+-- name: InsertPromptScope :exec
+-- A scope a newly published version asks in.
+INSERT INTO prompt_scopes (id, language, region, name)
+VALUES (@id, @language, nullif(@region::text, ''), @name);
+
+-- name: InsertPromptSet :execrows
+-- A newly published version; no row when another publication took the number first.
+INSERT INTO prompt_sets (version, published_at, published_by, note)
+VALUES (@version, @published_at, @published_by, @note)
+ON CONFLICT (version) DO NOTHING;
+
+-- name: InsertPromptSetQuestion :exec
+-- A question of a newly published version, at its position.
+INSERT INTO prompt_set_questions (version, position, prompt_id, family, intent, scope_id, text, english)
+VALUES (@version, @position, @prompt_id, @family, @intent, @scope_id, @text, nullif(@english::text, ''));
+
+-- name: ListCompetitorDefinitions :many
+-- Every version of the competitor definition, the newest first.
+SELECT version, text, saved_at, saved_by, coalesce(restored_from, 0)::bigint AS restored_from
+FROM competitor_definitions
+ORDER BY version DESC;
+
+-- name: AddCompetitorDefinition :one
+-- The next version of the competitor definition.
+INSERT INTO competitor_definitions (version, text, saved_at, saved_by, restored_from)
+SELECT coalesce(max(version), 0) + 1, @text, @saved_at, @saved_by, sqlc.narg(restored_from)
+FROM competitor_definitions
+RETURNING version;
+
+-- name: PromptCheckUsage :one
+-- What every request of the reviews and checks used, and how many companies they checked.
+SELECT
+    coalesce((SELECT sum(input_tokens) FROM prompt_review_usage), 0)::bigint AS input,
+    coalesce((SELECT sum(output_tokens) FROM prompt_review_usage), 0)::bigint AS output,
+    ((SELECT count(*) FROM prompt_candidate_checks) + (SELECT count(*) FROM prompt_company_checks))::bigint AS checked;
+
+-- name: PromptRunReadingModels :many
+-- The model that read most of each run's responses, for the runs whose readings recorded one.
+SELECT DISTINCT ON (a.run_id) a.run_id, x.model
+FROM prompt_answers AS a
+JOIN prompt_extractions AS x ON x.answer_id = a.id
+WHERE x.model <> '' AND NOT x.failed
+GROUP BY a.run_id, x.model
+ORDER BY a.run_id, count(*) DESC, x.model;

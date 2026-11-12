@@ -35,7 +35,7 @@ describe('useReadinessFiles', () => {
       () => useReadinessFiles(scan, enabled),
       routes({
         [`GET /api/v1/analyses/${SCAN}/readiness-files`]: () =>
-          json({ robotsTxt: 'User-agent: *', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false }),
+          json({ robotsTxt: 'User-agent: *', robotsTruncated: false, llmsTxt: '', llmsTruncated: false, llmsFullTxt: '', llmsFullTruncated: false, sitemapUrl: '', sitemapTxt: '', sitemapTruncated: false }),
       }),
     )
     await flushPromises()

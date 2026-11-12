@@ -1,237 +1,179 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import type { Plan, PlanImprovement } from '../../../infrastructure/api/types.gen'
+import { usesOldWord } from '../../../shared/words'
 import { details, me } from '../../../testing/fixtures'
-import { type Handler, json, mountApp, routes, settle } from '../../../testing/mountApp'
+import { json, mountApp, routes } from '../../../testing/mountApp'
 
-const leader = { competitorId: 'ashworth', name: 'Ashworth', value: 0.57 }
+const leader = { competitorId: 'example-belts', name: 'Example Belts', value: 0.3 }
 
 function imp(id: string, benefit: number, effort: number, extra: Partial<PlanImprovement> = {}): PlanImprovement {
-  return { id, title: `Title ${id}`, moves: `Moves ${id}.`, measure: 'aiShareOfVoice', auto: false, done: false, ...details, why: `Why ${id}.`, benefit, effort, tribelt: 0.24, leader, ...extra }
+  return { id, title: `Title ${id}`, moves: `Moves ${id}.`, measure: 'aiShareOfVoice', auto: false, done: false, ...details, why: `Why ${id}.`, benefit, effort, tribelt: 0.2, leader, ...extra }
 }
 
 function plan(improvements: PlanImprovement[]): Plan {
   return {
     catalogueVersion: 2,
     improvements,
-    watched: [
-      { target: 'aiShareOfVoice', now: 0.24, goal: 0.4, max: 1, met: false },
-      { target: 'citationShare', goal: 20 },
-      { target: 'termsUsed', now: 45, goal: 35, met: true },
-    ],
+    watched: [{ target: 'aiShareOfVoice', now: 0.2, goal: 0.4, max: 1, met: false }],
     tribeltTermsFrom: 'scan',
     readinessChecks: 8,
     eyeOn: [],
   }
 }
 
-// Best value first, as the server sends them: a (4, 1), b (3, 1) scanned, c (4, 3), and d done.
-const three = (): PlanImprovement[] => [
+// Best value first, as the server sends them: a (4, 1), b (3, 1) scanned, c (4, 3), e (4, 1), and d done.
+const four = (): PlanImprovement[] => [
   imp('a', 4, 1),
-  imp('b', 3, 1, { auto: true, measure: 'readinessChecks', tribelt: 3, leader: { ...leader, value: 8 } }),
+  imp('b', 3, 1, { auto: true, kind: 'readiness', measure: 'readinessChecks', tribelt: 3 }),
   imp('c', 4, 3, { measure: 'termsUsed', tribelt: 20 }),
+  imp('e', 4, 1),
   imp('d', 5, 5, { done: true, tickedBy: 'joris', tickedAt: '2026-11-02T09:00:00Z' }),
 ]
 
-function api(admin: boolean, current: Plan, extra: Record<string, Handler> = {}) {
-  return routes({ 'GET /api/v1/me': () => json(me({ isAdmin: admin })), 'GET /api/v1/plan': () => json(current), ...extra })
+function api(admin: boolean, current: Plan) {
+  return routes({ 'GET /api/v1/me': () => json(me({ isAdmin: admin })), 'GET /api/v1/plan': () => json(current) })
 }
 
 const rows = (w: VueWrapper) => w.findAll('ul[aria-label="Recommendations"] > li')
+const titles = (w: VueWrapper) => rows(w).map((r) => r.get('a').text())
+const bubbles = (w: VueWrapper) => w.findAll('[role="group"][aria-label="Benefit against effort"] button')
 const button = (w: VueWrapper, text: string) => w.findAll('button').find((b) => b.text() === text)
 
 describe('the recommendations', () => {
-  it('starts with the best value, and lists the rest in order', async () => {
-    const { wrapper } = await mountApp(api(false, plan(three())), '/recommendations')
+  it('opens with the frame, the chart, the ranked list, and Done', async () => {
+    const { wrapper } = await mountApp(api(false, plan(four())), '/recommendations')
     expect(document.title).toBe('Recommendations · Findability Explorer')
-    expect(wrapper.get('h1').text()).toBe('Start with the changes that help Tribelt most.')
-    const first = wrapper.get('section[aria-labelledby="first-title"] article')
-    expect(first.get('h2').text()).toBe('Title a')
-    expect(first.text()).toContain('Do this first')
-    expect(first.text()).toContain('Why a.')
-    expect(first.text()).toContain('A few hours')
-    expect(first.text()).toContain('Large benefit')
-    expect(first.text()).toContain('Ashworth')
-    expect(first.text()).toContain('Target')
-    expect(first.get('a[href="/recommendations/a"]').text()).toBe('Open the recommendation')
-    expect(rows(wrapper).map((r) => r.get('a').text())).toEqual(['Title b', 'Title c'])
-    expect(rows(wrapper)[0]?.text()).toContain('AI readiness checks passed: 3 of eight, Ashworth 8 of eight')
-    // The chart has one dot per open recommendation, ranked.
-    expect(wrapper.findAll('[aria-label="Benefit against effort"] button').map((b) => b.text())).toEqual(['1', '2', '3'])
-    expect(wrapper.text()).toContain('1 recommendation done')
-  })
-
-  it('ranks by the sort that is picked', async () => {
-    const { wrapper } = await mountApp(api(false, plan(three())), '/recommendations')
-    const pill = (name: string) => wrapper.findAll('[aria-label="Rank by"] button').find((b) => b.text() === name)
-    expect(pill('Best value')?.attributes('aria-pressed')).toBe('true')
-    await pill('Biggest benefit')?.trigger('click')
-    expect(pill('Biggest benefit')?.attributes('aria-pressed')).toBe('true')
-    expect(rows(wrapper).map((r) => r.get('a').text())).toEqual(['Title c', 'Title b'])
-    await pill('Least work')?.trigger('click')
-    expect(wrapper.get('section[aria-labelledby="first-title"] h2').text()).toBe('Title a')
-    expect(rows(wrapper).map((r) => r.get('a').text())).toEqual(['Title b', 'Title c'])
-  })
-
-  it('shows another recommendation at the top when its dot is picked', async () => {
-    const { wrapper } = await mountApp(api(false, plan(three())), '/recommendations')
-    await wrapper.findAll('[aria-label="Benefit against effort"] button')[2]?.trigger('click')
-    expect(wrapper.get('section[aria-labelledby="first-title"] h2').text()).toBe('Title c')
-    expect(wrapper.get('section[aria-labelledby="first-title"]').text()).toContain('You picked this one')
-    expect(rows(wrapper).map((r) => r.get('a').text())).toEqual(['Title a', 'Title b'])
-    // Picking the best one again is just the best one.
-    await wrapper.findAll('[aria-label="Benefit against effort"] button')[0]?.trigger('click')
-    expect(wrapper.get('section[aria-labelledby="first-title"]').text()).toContain('Do this first')
-    // So is picking from the list.
-    await rows(wrapper)[1]?.findAll('button')[0]?.trigger('click')
-    await rows(wrapper)[1]?.findAll('button').find((b) => b.text() === 'Show at the top')?.trigger('click')
-    expect(wrapper.get('section[aria-labelledby="first-title"] h2').text()).toBe('Title c')
-  })
-
-  it('shows and hides the steps of the top one and of each listed one', async () => {
-    const { wrapper } = await mountApp(api(false, plan(three())), '/recommendations')
-    const top = wrapper.get('section[aria-labelledby="first-title"]')
-    expect(top.text()).not.toContain('Do the first thing.')
-    await top.findAll('button').find((b) => b.text() === 'Show the steps')?.trigger('click')
-    expect(top.text()).toContain('Do the first thing.')
-    expect(top.text()).toContain('Done when It is in place.')
-    await top.findAll('button').find((b) => b.text() === 'Hide the steps')?.trigger('click')
-    expect(top.text()).not.toContain('Do the first thing.')
-    const second = rows(wrapper)[0]
-    await second?.get('button').trigger('click')
-    expect(second?.text()).toContain('Why b.')
-    expect(second?.text()).toContain('Do the second thing.')
-    expect(second?.find('a[href="/recommendations/b"]').exists()).toBe(true)
-    await second?.get('button').trigger('click')
-    expect(second?.text()).not.toContain('Do the second thing.')
-  })
-
-  it('marks as done and undoes, as an administrator, and not for a scanned one', async () => {
-    const sent: { url: string; body: unknown }[] = []
-    let current = plan(three())
-    const put: Handler = async (r) => {
-      sent.push({ url: new URL(r.url).pathname, body: await r.json() })
-      const id = new URL(r.url).pathname.split('/').pop()
-      current = plan(current.improvements.map((i) => (i.id === id ? { ...i, done: (sent.at(-1)?.body as { done: boolean }).done } : i)))
-      return json(current)
-    }
-    const { wrapper } = await mountApp(
-      routes({
-        'GET /api/v1/me': () => json(me({ isAdmin: true })),
-        'GET /api/v1/plan': () => json(current),
-        'PUT /api/v1/admin/plan/improvements/a': put,
-        'PUT /api/v1/admin/plan/improvements/d': put,
-        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 8 }),
-      }),
-      '/recommendations',
+    expect(wrapper.get('h1').text()).toBe('Recommendations')
+    expect(wrapper.get('[data-part="purpose"]').text()).toBe(
+      'Changes to make on tribelt.nl, ranked by benefit against effort. Some apply in general. The rest come from the latest Recommendation run and name a page, search term, or site.',
     )
-    // The scanned one offers no button, even when opened.
-    await rows(wrapper)[0]?.get('button').trigger('click')
-    expect(rows(wrapper)[0]?.findAll('button').map((b) => b.text())).toEqual(['Hide the steps', 'Show at the top'])
-    await button(wrapper, 'Mark as done')?.trigger('click')
-    await settle()
-    expect(sent).toEqual([{ url: '/api/v1/admin/plan/improvements/a', body: { done: true } }])
-    expect(wrapper.get('section[aria-labelledby="first-title"] h2').text()).toBe('Title b')
-    expect(wrapper.text()).toContain('2 recommendations done')
-    // Undo is there for the hand-ticked one only.
-    const undo = wrapper.findAll('section[aria-labelledby="done-title"] button')
-    expect(undo.map((b) => b.text())).toEqual(['Undo', 'Undo'])
-    await undo[1]?.trigger('click')
-    await settle()
-    expect(sent[1]).toEqual({ url: '/api/v1/admin/plan/improvements/d', body: { done: false } })
-    expect(wrapper.text()).toContain('1 recommendation done')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('Written by hand, version 2 of the catalogue. No Recommendation run has written any yet.')
+    expect(wrapper.findAll('h2').map((h) => h.text())).toEqual(['Benefit against effort', 'Ranked list', 'Done'])
+    expect(wrapper.find('a[href="/manage/recommendations"]').exists()).toBe(false)
+    expect(wrapper.get('a[href="/help/recommendations"]').text()).toBe('How this is measured, in Help')
   })
 
-  it('marks one done from the list, and forgets a pick it was showing', async () => {
-    let current = plan(three())
-    const { wrapper } = await mountApp(
-      routes({
-        'GET /api/v1/me': () => json(me({ isAdmin: true })),
-        'GET /api/v1/plan': () => json(current),
-        'PUT /api/v1/admin/plan/improvements/c': () => {
-          current = plan(current.improvements.map((i) => (i.id === 'c' ? { ...i, done: true } : i)))
-          return json(current)
-        },
-        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 8 }),
-      }),
-      '/recommendations',
-    )
-    await wrapper.findAll('[aria-label="Benefit against effort"] button')[2]?.trigger('click')
-    await button(wrapper, 'Mark as done')?.trigger('click')
-    await settle()
-    expect(wrapper.get('section[aria-labelledby="first-title"] h2').text()).toBe('Title a')
-    // From the list, with another one picked.
-    await rows(wrapper)[0]?.get('button').trigger('click')
-    expect(button(wrapper, 'Mark as done')).toBeDefined()
-    await button(wrapper, 'Mark as done')?.trigger('click')
+  it('ranks the open ones best value first, each with its kind, where, scores, and goal', async () => {
+    const { wrapper } = await mountApp(api(false, plan(four())), '/recommendations')
+    const list = wrapper.get('section[aria-labelledby="list-title"]')
+    expect(list.text()).toContain('4 recommendations. Best value is benefit divided by effort. Ties go to the larger benefit.')
+    expect(titles(wrapper)).toEqual(['1. Title a', '2. Title b', '3. Title c', '4. Title e'])
+    expect(rows(wrapper)[0]?.get('a').attributes('href')).toBe('/recommendations/a')
+    const second = rows(wrapper)[1]?.text() ?? ''
+    expect(second).toContain('AI readiness')
+    expect(second).toContain('The whole site')
+    expect(second).toContain('Benefit 3 of 5, effort 1 of 5')
+    // "AI" keeps its capitals inside the sentence; other measures do not.
+    expect(second).toContain('Improves AI readiness checks passed')
+    expect(rows(wrapper)[2]?.text()).toContain('Improves search terms tribelt.nl uses')
+    // Five rows show at a time, so four need no cue.
+    expect(list.text()).not.toContain('Scroll inside the list')
+    expect(list.get('ul[aria-label="Recommendations"]').classes()).toContain('overflow-y-auto')
   })
 
-  it('shows a viewer no way to change anything', async () => {
-    const { wrapper } = await mountApp(api(false, plan(three())), '/recommendations')
+  it('says to scroll when the list holds more than five', async () => {
+    const many = Array.from({ length: 7 }, (_, i) => imp(`r${String(i)}`, 3, 2))
+    const { wrapper } = await mountApp(api(false, plan(many)), '/recommendations')
+    expect(wrapper.text()).toContain('Scroll inside the list to see all 7.')
+  })
+
+  it('sorts by the column picked, and the other way round when picked again', async () => {
+    const { wrapper } = await mountApp(api(false, plan(four())), '/recommendations')
+    const sort = (name: string) => wrapper.findAll('[role="group"][aria-label="Sort by"] button').find((b) => b.text().startsWith(name))
+    expect(sort('Best value')?.attributes('aria-pressed')).toBe('true')
+    await sort('Effort')?.trigger('click')
+    expect(sort('Effort')?.attributes('aria-pressed')).toBe('true')
+    expect(titles(wrapper)).toEqual(['1. Title a', '2. Title b', '3. Title e', '4. Title c'])
+    await sort('Effort')?.trigger('click')
+    expect(titles(wrapper)).toEqual(['1. Title c', '2. Title e', '3. Title b', '4. Title a'])
+    await sort('Name')?.trigger('click')
+    expect(titles(wrapper)).toEqual(['1. Title a', '2. Title b', '3. Title c', '4. Title e'])
+  })
+
+  it('narrows the list to a bubble, and back to every bubble', async () => {
+    const { wrapper } = await mountApp(api(false, plan(four())), '/recommendations')
+    expect(bubbles(wrapper).map((b) => b.text())).toEqual(['2', '1', '1'])
+    expect(bubbles(wrapper)[0]?.attributes('aria-label')).toBe('2 recommendations with benefit 4 of 5 and effort 1 of 5')
+    await bubbles(wrapper)[0]?.trigger('click')
+    expect(bubbles(wrapper)[0]?.attributes('aria-pressed')).toBe('true')
+    expect(titles(wrapper)).toEqual(['1. Title a', '2. Title e'])
+    expect(wrapper.get('section[aria-labelledby="list-title"]').text()).toContain('2 recommendations.')
+    await button(wrapper, 'Show every bubble')?.trigger('click')
+    expect(titles(wrapper)).toHaveLength(4)
+    // Picking the same bubble twice lets it go.
+    await bubbles(wrapper)[1]?.trigger('click')
+    expect(titles(wrapper)).toEqual(['1. Title c'])
+    await bubbles(wrapper)[1]?.trigger('click')
+    expect(titles(wrapper)).toHaveLength(4)
+    expect(button(wrapper, 'Show every bubble')).toBeUndefined()
+  })
+
+  it('filters by kind, and counts what it shows', async () => {
+    const { wrapper } = await mountApp(api(false, plan(four())), '/recommendations')
+    const show = wrapper.get('[role="group"][aria-label="Show"]')
+    expect(show.findAll('button').map((b) => b.text())).toEqual(['All', 'AI readiness', 'General'])
+    expect(wrapper.text()).toContain('4 open recommendations')
+    await bubbles(wrapper)[0]?.trigger('click')
+    await show.findAll('button')[1]?.trigger('click')
+    expect(show.findAll('button')[1]?.attributes('aria-pressed')).toBe('true')
+    expect(titles(wrapper)).toEqual(['1. Title b'])
+    expect(wrapper.text()).toContain('1 open recommendation of this kind')
+    expect(bubbles(wrapper).map((b) => b.text())).toEqual(['1'])
+  })
+
+  it('has no kind filter while every recommendation is of one kind', async () => {
+    const { wrapper } = await mountApp(api(false, plan([imp('a', 4, 1)])), '/recommendations')
+    expect(wrapper.find('[role="group"][aria-label="Show"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('1 open recommendation')
+  })
+
+  it('folds Done away, with when and by whom', async () => {
+    const { wrapper } = await mountApp(api(false, plan(four())), '/recommendations')
+    const done = wrapper.get('section[aria-labelledby="done-title"] details')
+    expect(done.attributes('open')).toBeUndefined()
+    expect(done.get('summary').text()).toBe('Done (1)')
+    expect(done.get('a[href="/recommendations/d"]').text()).toBe('Title d')
+    expect(done.text()).toContain('Marked done on 2 November 2026, by joris.')
+  })
+
+  it('says when nothing is done yet, and when everything is', async () => {
+    const none = await mountApp(api(false, plan([imp('a', 4, 1)])), '/recommendations')
+    expect(none.wrapper.get('section[aria-labelledby="done-title"]').text()).toContain('Nothing is marked done yet.')
+    const all = await mountApp(api(false, plan([imp('d', 5, 5, { done: true })])), '/recommendations')
+    expect(all.wrapper.text()).toContain('Every recommendation is done.')
+    expect(all.wrapper.find('ul[aria-label="Recommendations"]').exists()).toBe(false)
+  })
+
+  it('gives an administrator the link to Manage, and nothing to change here', async () => {
+    const { wrapper } = await mountApp(api(true, plan(four())), '/recommendations')
+    expect(wrapper.get('a[href="/manage/recommendations"]').text()).toBe('Manage the recommendations')
     expect(button(wrapper, 'Mark as done')).toBeUndefined()
     expect(button(wrapper, 'Undo')).toBeUndefined()
-    expect(wrapper.find('section[aria-labelledby="targets-title"]').exists()).toBe(false)
+    expect(usesOldWord(wrapper.text())).toBe(false)
   })
 
-  it('says when every recommendation is done', async () => {
-    const { wrapper } = await mountApp(api(false, plan([imp('d', 5, 5, { done: true })])), '/recommendations')
-    expect(wrapper.get('#all-done').text()).toBe('Every recommendation is done.')
-    expect(wrapper.find('ul[aria-label="Recommendations"]').exists()).toBe(false)
-    expect(wrapper.text()).toContain('1 recommendation done')
-  })
-
-  it('has no done list while nothing is done', async () => {
-    const { wrapper } = await mountApp(api(false, plan([imp('a', 4, 1)])), '/recommendations')
-    expect(wrapper.find('section[aria-labelledby="done-title"]').exists()).toBe(false)
-    expect(wrapper.find('section[aria-labelledby="next-title"]').exists()).toBe(false)
-  })
-
-  it('lets an administrator change the targets', async () => {
-    const sent: unknown[] = []
-    const { wrapper } = await mountApp(
-      api(true, plan(three()), {
-        'PUT /api/v1/admin/plan/targets': async (r) => {
-          sent.push(await r.json())
-          return json(plan(three()))
-        },
-        'GET /api/v1/standings': () => json({ measures: [], trailing: 0, open: [], readinessChecks: 8 }),
-      }),
-      '/recommendations',
-    )
-    expect(wrapper.get('section[aria-labelledby="targets-title"]').text()).toContain('The targets are shown on the overview.')
-    await button(wrapper, 'Change the targets')?.trigger('click')
-    const inputs = wrapper.findAll('form[aria-label="Targets"] input')
-    expect((inputs[0]?.element as HTMLInputElement).value).toBe('0.4')
-    await inputs[1]?.setValue('25')
-    await inputs[2]?.setValue('')
-    await wrapper.get('form[aria-label="Targets"]').trigger('submit')
-    await settle()
-    expect(sent).toEqual([
-      {
-        targets: [
-          { target: 'aiShareOfVoice', value: 0.4 },
-          { target: 'citationShare', value: 25 },
-        ],
-      },
-    ])
-    expect(wrapper.find('form[aria-label="Targets"]').exists()).toBe(false)
-    await button(wrapper, 'Change the targets')?.trigger('click')
-    await button(wrapper, 'Cancel')?.trigger('click')
-    expect(wrapper.find('form[aria-label="Targets"]').exists()).toBe(false)
-  })
-
-  it('says when it cannot load, and while it loads', async () => {
+  it('says when it cannot load', async () => {
     const failed = await mountApp(routes({ 'GET /api/v1/me': () => json(me()), 'GET /api/v1/plan': () => json({ title: 'Down', status: 500 }, 500) }), '/recommendations')
     expect(failed.wrapper.find('[role="alert"]').exists()).toBe(true)
   })
+})
 
-  it('says when a change could not be saved', async () => {
-    const { wrapper } = await mountApp(
-      api(true, plan(three()), { 'PUT /api/v1/admin/plan/improvements/a': () => json({ title: 'Down', status: 500 }, 500) }),
-      '/recommendations',
-    )
-    await button(wrapper, 'Mark as done')?.trigger('click')
-    await settle()
-    expect(wrapper.find('p[role="alert"]').exists()).toBe(true)
+describe('the recommendations a run wrote', () => {
+  it('marks the new ones, says where each goes, and counts them in the data line', async () => {
+    const written = [
+      imp('g1', 5, 1, { generated: true, new: true, kind: 'term', where: 'https://www.tribelt.nl/spiraalbanden' }),
+      imp('g2', 3, 1, { generated: true, kind: 'listing', whereNote: 'Where to put this is for the web agency to decide.' }),
+      imp('a', 2, 2),
+    ]
+    const { wrapper } = await mountApp(api(false, plan(written)), '/recommendations')
+    expect(wrapper.get('[data-part="data-line"]').text()).toBe('Written by hand, version 2 of the catalogue, and by Recommendation runs: 2 of them.')
+    const [first, second, third] = rows(wrapper).map((r) => r.text())
+    expect(first).toContain('Search term')
+    expect(first).toContain('New')
+    expect(first).toContain('www.tribelt.nl/spiraalbanden')
+    expect(second).toContain('From a Recommendation run')
+    expect(second).toContain('For the web agency to place')
+    expect(third).toContain('The whole site')
   })
 })

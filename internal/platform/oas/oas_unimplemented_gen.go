@@ -67,6 +67,17 @@ func (UnimplementedHandler) AddLlmCredential(ctx context.Context, req *NewLlmCre
 	return r, ht.ErrNotImplemented
 }
 
+// AddTerm implements addTerm operation.
+//
+// Administrators only. Adds the term to the list, marked as added by hand; search, the figures and the
+// next scans find it. 409 when the list has the term in that language, or had it and it was removed
+// (put it back instead).
+//
+// POST /api/v1/admin/terms/hand
+func (UnimplementedHandler) AddTerm(ctx context.Context, req *NewTerm) (r AddTermRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ClearActiveLlm implements clearActiveLlm operation.
 //
 // Turns product matching off until a credential and model are chosen again.
@@ -130,6 +141,34 @@ func (UnimplementedHandler) DismissCompetitorCandidate(ctx context.Context, para
 	return r, ht.ErrNotImplemented
 }
 
+// EditRecommendation implements editRecommendation operation.
+//
+// Administrators only. Stores the wording and scores of a recommendation a Recommendation run wrote,
+// and when it was edited; an edited one is kept when the next run replaces the others. A blank page
+// leaves it for the web agency to place. 404 for an unknown recommendation; 422 for one written by
+// hand, which stays in code, or for an edit out of bounds.
+//
+// PUT /api/v1/admin/recommendations/{recommendationId}
+func (UnimplementedHandler) EditRecommendation(ctx context.Context, req *RecommendationEdit, params EditRecommendationParams) (r EditRecommendationRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetActivity implements getActivity operation.
+//
+// Administrators only. Every piece of background work - Prompt runs, scans, re-scans, AI readiness
+// checks, the term review, reviews of the competitor candidates, checks of the competitor list, and
+// Recommendation runs - running now, newest first, and the last 20 ended, the last ended first, each
+// with how it ended, what it did, and what it cost on each key. A running piece is stopped by its own
+// operation - stopPromptRun and stopAnalysis take its id, stopRescan, stopReadinessCheck,
+// stopTermReview, stopCandidateReview and stopCompetitorCheck none. With this month's spending by kind
+// of work and the key that paid; the Anthropic key's is priced at the model's list price from the
+// stored tokens.
+//
+// GET /api/v1/admin/activity
+func (UnimplementedHandler) GetActivity(ctx context.Context) (r GetActivityRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAiReadiness implements getAiReadiness operation.
 //
 // Returns every company that is not archived with the AI readiness its newest scan recorded: Tribelt
@@ -162,12 +201,36 @@ func (UnimplementedHandler) GetAnalysis(ctx context.Context, params GetAnalysisP
 	return r, ht.ErrNotImplemented
 }
 
+// GetClaudeStep implements getClaudeStep operation.
+//
+// Administrators only. One step: the instructions the tool came with, every saved version (model and
+// instructions) oldest first, the newest of which the step uses, and the Claude models it may use,
+// cheapest first, each with what one job of the step costs with it. 404 for a step that does not
+// exist.
+//
+// GET /api/v1/admin/claude-steps/{stepId}
+func (UnimplementedHandler) GetClaudeStep(ctx context.Context, params GetClaudeStepParams) (r GetClaudeStepRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetCompetitor implements getCompetitor operation.
 //
 // Returns the company and its scans, newest first, each with its number.
 //
 // GET /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) GetCompetitor(ctx context.Context, params GetCompetitorParams) (r GetCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetCompetitorDefinition implements getCompetitorDefinition operation.
+//
+// Administrators only. The definition of who competes with Tribelt that every check of a company is
+// made against (the newest version), every version, newest first, and what checking again against it
+// would take - the competitors on the list and the waiting candidates checked against an older
+// version, and what checking them again should cost on the Anthropic key.
+//
+// GET /api/v1/admin/competitor-definition
+func (UnimplementedHandler) GetCompetitorDefinition(ctx context.Context) (r GetCompetitorDefinitionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -196,8 +259,9 @@ func (UnimplementedHandler) GetLlmKeyUsage(ctx context.Context, params GetLlmKey
 
 // GetLlmSettings implements getLlmSettings operation.
 //
-// Returns every credential (never a secret), the model product matching uses now, the token budget,
-// and the latest 50 changes and tests, newest first.
+// Returns every credential (never a secret), the model product matching uses now, the Anthropic key's
+// monthly budget in dollars with what was spent and is left of it, and the latest 50 changes and
+// tests, newest first.
 //
 // GET /api/v1/admin/llm
 func (UnimplementedHandler) GetLlmSettings(ctx context.Context) (r GetLlmSettingsRes, _ error) {
@@ -252,6 +316,19 @@ func (UnimplementedHandler) GetProducts(ctx context.Context) (r GetProductsRes, 
 	return r, ht.ErrNotImplemented
 }
 
+// GetPromptModelCatalogue implements getPromptModelCatalogue operation.
+//
+// Administrators only. Lists every text model on OpenRouter's catalogue (no routers or aliases), read
+// with the Prompt test's key at most once a day; a read that fails keeps the last list. The cheapest
+// model of OpenAI, Google, Anthropic, Mistral, and DeepSeek is recommended and listed first, the rest
+// cheapest first. A model the latest run asked is priced by its responses, the others by their list
+// price for a typical response with the web search fee. 422 without a working OpenRouter key.
+//
+// GET /api/v1/admin/prompt-test/catalogue
+func (UnimplementedHandler) GetPromptModelCatalogue(ctx context.Context) (r GetPromptModelCatalogueRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetPromptRetryPlan implements getPromptRetryPlan operation.
 //
 // Administrators only. Says how many of a run's failed and missing answers asking again would ask, how
@@ -262,6 +339,19 @@ func (UnimplementedHandler) GetProducts(ctx context.Context) (r GetProductsRes, 
 //
 // GET /api/v1/admin/prompt-runs/{runId}/retry-plan
 func (UnimplementedHandler) GetPromptRetryPlan(ctx context.Context, params GetPromptRetryPlanParams) (r GetPromptRetryPlanRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetPromptTestHistory implements getPromptTestHistory operation.
+//
+// Returns the published Prompt sets, oldest first, and every one of the latest runs with at least one
+// response read, oldest first: its Prompt set version, whether it is partial (it got fewer than half
+// its responses) and, for a partial run, the reason most of its failed responses give, and the shares
+// of the responses read that name Tribelt, overall, per language, and for Twente, with the share of
+// web responses that cite tribelt.nl.
+//
+// GET /api/v1/prompt-test/history
+func (UnimplementedHandler) GetPromptTestHistory(ctx context.Context) (r GetPromptTestHistoryRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -298,6 +388,19 @@ func (UnimplementedHandler) GetReadinessFiles(ctx context.Context, params GetRea
 	return r, ht.ErrNotImplemented
 }
 
+// GetRecommendationRuns implements getRecommendationRuns operation.
+//
+// Administrators only. Whether a Recommendation run runs; what a new one would read (the newest Prompt
+// run, the tribelt.nl scan, the search term list), how many gaps its rules find, how many open
+// recommendations it would replace, whether tribelt.nl was last scanned before the newest Prompt run,
+// and its estimate on the Anthropic key; and the last 20 runs, each with what it added, replaced and
+// kept.
+//
+// GET /api/v1/admin/recommendation-runs
+func (UnimplementedHandler) GetRecommendationRuns(ctx context.Context) (r GetRecommendationRunsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetStandings implements getStandings operation.
 //
 // Compares Tribelt with its competitors on each measure, from the newest Prompt run and each company's
@@ -310,12 +413,32 @@ func (UnimplementedHandler) GetStandings(ctx context.Context) (r GetStandingsRes
 	return r, ht.ErrNotImplemented
 }
 
+// GetTermPages implements getTermPages operation.
+//
+// Returns, for each company whose newest finished scan found the term, the pages of that scan that use
+// it, at most ten each. The term matches without regard to case.
+//
+// GET /api/v1/term-pages
+func (UnimplementedHandler) GetTermPages(ctx context.Context, params GetTermPagesParams) (r GetTermPagesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListAnalyses implements listAnalyses operation.
 //
 // Returns at most `limit` analyses, newest first, without their results.
 //
 // GET /api/v1/analyses
 func (UnimplementedHandler) ListAnalyses(ctx context.Context, params ListAnalysesParams) (r ListAnalysesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListClaudeSteps implements listClaudeSteps operation.
+//
+// Administrators only. Every step that asks a Claude model, paid by the Anthropic key, with the model
+// and the version of the instructions it uses now and what one job of it costs with that model.
+//
+// GET /api/v1/admin/claude-steps
+func (UnimplementedHandler) ListClaudeSteps(ctx context.Context) (r ListClaudeStepsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -352,6 +475,16 @@ func (UnimplementedHandler) ListCompetitors(ctx context.Context) (r ListCompetit
 	return r, ht.ErrNotImplemented
 }
 
+// ListHandTerms implements listHandTerms operation.
+//
+// Administrators only. Returns the terms administrators added to the list by hand, and the terms they
+// removed from it, each with who did it and when, oldest first.
+//
+// GET /api/v1/admin/terms/hand
+func (UnimplementedHandler) ListHandTerms(ctx context.Context) (r ListHandTermsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListLlmModels implements listLlmModels operation.
 //
 // Asks the provider for its models with this key. 502 when the provider fails or refuses; 422 when the
@@ -372,6 +505,18 @@ func (UnimplementedHandler) ListPromptAnswers(ctx context.Context, params ListPr
 	return r, ht.ErrNotImplemented
 }
 
+// ListPromptSets implements listPromptSets operation.
+//
+// Returns every published version of the Prompt set, newest first, each with when it was published,
+// its note, and its questions in order: belt family, buyer intent, scope, and text, with an English
+// translation when one is known. Also returns every scope a question can be asked in: a language, with
+// or without a region.
+//
+// GET /api/v1/prompt-test/prompt-sets
+func (UnimplementedHandler) ListPromptSets(ctx context.Context) (r ListPromptSetsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListTermCandidates implements listTermCandidates operation.
 //
 // Administrators only. Every phrase a finished scan found that the terminology map did not hold in its
@@ -384,6 +529,29 @@ func (UnimplementedHandler) ListTermCandidates(ctx context.Context, params ListT
 	return r, ht.ErrNotImplemented
 }
 
+// PublishPromptSet implements publishPromptSet operation.
+//
+// Administrators only. Publishes an edited draft of the Prompt set as the next version: its questions
+// in order, each keeping the id of the published question it keeps or getting a new one no version has
+// used, and the new scopes it asks in (a language with or without a region). The note says what
+// changed against the newest version, and from which version the draft was restored. The next Prompt
+// run asks it, and the charts mark the date. 409 when the draft asks what the newest version asks, or
+// another publication took the number first; 422 when a question or scope cannot be asked.
+//
+// POST /api/v1/admin/prompt-sets
+func (UnimplementedHandler) PublishPromptSet(ctx context.Context, req *PromptSetDraft) (r PublishPromptSetRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PutBackTerm implements putBackTerm operation.
+//
+// Administrators only. Puts a removed term back on the list. 404 when it was not removed.
+//
+// DELETE /api/v1/admin/terms/removed
+func (UnimplementedHandler) PutBackTerm(ctx context.Context, params PutBackTermParams) (r PutBackTermRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RejectTermCandidate implements rejectTermCandidate operation.
 //
 // Administrators only. Marks the candidate rejected; it stays rejected until the decision is undone.
@@ -391,6 +559,27 @@ func (UnimplementedHandler) ListTermCandidates(ctx context.Context, params ListT
 //
 // POST /api/v1/admin/term-candidates/{candidateId}/reject
 func (UnimplementedHandler) RejectTermCandidate(ctx context.Context, params RejectTermCandidateParams) (r RejectTermCandidateRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RemoveQueuedAnalyses implements removeQueuedAnalyses operation.
+//
+// Administrators only. Takes every scan that waits off the queue, each recorded as stopped by hand;
+// the running ones run on. 404 when no scan waits.
+//
+// DELETE /api/v1/admin/analyses/queue
+func (UnimplementedHandler) RemoveQueuedAnalyses(ctx context.Context) (r RemoveQueuedAnalysesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RemoveTerm implements removeTerm operation.
+//
+// Administrators only. Takes the term off the list, whatever its origin; it is no longer counted or
+// looked for until it is put back. The text matches without regard to case or accents. 404 when the
+// list has no such term.
+//
+// POST /api/v1/admin/terms/removed
+func (UnimplementedHandler) RemoveTerm(ctx context.Context, req *TermRef) (r RemoveTermRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -408,6 +597,17 @@ func (UnimplementedHandler) RereadPromptRun(ctx context.Context, req *PromptRetr
 	return r, ht.ErrNotImplemented
 }
 
+// RestoreCompetitorDefinition implements restoreCompetitorDefinition operation.
+//
+// Administrators only. Saves the text of an older version as a new version, recording which it
+// restored and who; as with saving, no check starts. 404 for an unknown version; 409 when its text is
+// the one in use.
+//
+// POST /api/v1/admin/competitor-definition/versions/{version}/restore
+func (UnimplementedHandler) RestoreCompetitorDefinition(ctx context.Context, params RestoreCompetitorDefinitionParams) (r RestoreCompetitorDefinitionRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RetryPromptRun implements retryPromptRun operation.
 //
 // Administrators only. Asks a finished run's failed and missing answers again, or only the one
@@ -420,6 +620,32 @@ func (UnimplementedHandler) RereadPromptRun(ctx context.Context, req *PromptRetr
 //
 // POST /api/v1/admin/prompt-runs/{runId}/retry
 func (UnimplementedHandler) RetryPromptRun(ctx context.Context, req *PromptRetryRequest, params RetryPromptRunParams) (r RetryPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SaveClaudeStepVersion implements saveClaudeStepVersion operation.
+//
+// Administrators only. Saves the model and the instructions as the step's next version, which its next
+// job uses; the versions before it stay, to restore. A step whose instructions are set in the code
+// takes only a new model: its instructions must be the ones it has. 422 for a model that is no Claude
+// model listed, empty or too long instructions, or a version the same as the newest; 404 for a step
+// that does not exist.
+//
+// POST /api/v1/admin/claude-steps/{stepId}/versions
+func (UnimplementedHandler) SaveClaudeStepVersion(ctx context.Context, req *ClaudeStepChange, params SaveClaudeStepVersionParams) (r SaveClaudeStepVersionRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SaveCompetitorDefinition implements saveCompetitorDefinition operation.
+//
+// Administrators only. Stores the text as a new version, which every check from now on is made
+// against, and records who saved it. It starts no check - what was checked against an older version is
+// checked again by the next check of the candidates or of the list (startCandidateReview,
+// startCompetitorCheck). Returns the definition with what checking again would take. 409 when the text
+// is the one in use; 422 when it is empty or longer than 8,000 characters.
+//
+// PUT /api/v1/admin/competitor-definition
+func (UnimplementedHandler) SaveCompetitorDefinition(ctx context.Context, req *CompetitorDefinitionText) (r SaveCompetitorDefinitionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -452,6 +678,18 @@ func (UnimplementedHandler) SetActiveLlm(ctx context.Context, req *ActiveLlm) (r
 //
 // PUT /api/v1/admin/plan/targets
 func (UnimplementedHandler) SetPlanTargets(ctx context.Context, req *PlanTargetsChange) (r SetPlanTargetsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SetTermReview implements setTermReview operation.
+//
+// Administrators only. On, the language model reviews the waiting candidates by itself every ten
+// minutes; off, it reviews only when an administrator asks (startTermReview). A review that runs goes
+// on until it ends or is stopped. The review is on until it is first switched off. Records who
+// switched it. Returns the review's state.
+//
+// PUT /api/v1/admin/term-candidates/review/switch
+func (UnimplementedHandler) SetTermReview(ctx context.Context, req *TermReviewSwitch) (r SetTermReviewRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -531,6 +769,20 @@ func (UnimplementedHandler) StartReadinessCheck(ctx context.Context) (r StartRea
 	return r, ht.ErrNotImplemented
 }
 
+// StartRecommendationRun implements startRecommendationRun operation.
+//
+// Administrators only. In the background, the rules find the gaps from the newest Prompt run, each
+// company's newest scan and the search term list, and the Claude step writing recommendations places
+// and words them from tribelt.nl's page text, a batch at a time. A run that ends replaces the open
+// recommendations an earlier run wrote, and keeps the done and edited ones and those written by hand;
+// one stopped, cut short by the budget, or failed changes nothing. 409 when one runs already or no
+// Anthropic key is set up.
+//
+// POST /api/v1/admin/recommendation-runs
+func (UnimplementedHandler) StartRecommendationRun(ctx context.Context) (r StartRecommendationRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // StartRescans implements startRescans operation.
 //
 // Administrators only. Queues one scan for each named company with a website, or with `all`, for every
@@ -556,6 +808,96 @@ func (UnimplementedHandler) StartTermReview(ctx context.Context) (r StartTermRev
 	return r, ht.ErrNotImplemented
 }
 
+// StopAnalysis implements stopAnalysis operation.
+//
+// Administrators only. A waiting scan is taken off the queue; a running one ends after the page it
+// reads, on whichever instance runs it, and keeps the pages it read so far. Either is recorded as
+// stopped by hand. 404 when no waiting or running scan has this id.
+//
+// POST /api/v1/admin/analyses/{analysisId}/stop
+func (UnimplementedHandler) StopAnalysis(ctx context.Context, params StopAnalysisParams) (r StopAnalysisRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopCandidateReview implements stopCandidateReview operation.
+//
+// Administrators only. Stops the review of the competitor candidates that runs, after the step it is
+// on (the merge, or a batch of checks), which it keeps, as it keeps every decision made before. The
+// review's state says it was stopped by hand (problem stopped). 404 when no review runs.
+//
+// POST /api/v1/admin/competitor-candidates/review/stop
+func (UnimplementedHandler) StopCandidateReview(ctx context.Context) (r StopCandidateReviewRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopCompetitorCheck implements stopCompetitorCheck operation.
+//
+// Administrators only. Stops the check of the companies on the competitor list that runs, after the
+// batch it is on, which it keeps, as it keeps every company archived before. The check's state says it
+// was stopped by hand (problem stopped). 404 when no check runs.
+//
+// POST /api/v1/admin/competitor-checks/stop
+func (UnimplementedHandler) StopCompetitorCheck(ctx context.Context) (r StopCompetitorCheckRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopPromptRun implements stopPromptRun operation.
+//
+// Administrators only. Asks a running run to stop. The request is stored, so the instance running the
+// run, whichever it is, stops it at its next heartbeat, within a minute: no question is asked after
+// it, the responses so far are kept, and the run is recorded as stopped by hand. retryPromptRun
+// finishes it, asking only the questions it did not get. 404 when no run with this id is running.
+//
+// POST /api/v1/admin/prompt-runs/{runId}/stop
+func (UnimplementedHandler) StopPromptRun(ctx context.Context, params StopPromptRunParams) (r StopPromptRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopReadinessCheck implements stopReadinessCheck operation.
+//
+// Administrators only. Stops the check of every company's AI readiness that runs: it reads no further
+// site. The sites it checked keep what it recorded, the others what their scan recorded, and the
+// check's state says it was stopped. 404 when no check runs.
+//
+// POST /api/v1/admin/readiness-checks/stop
+func (UnimplementedHandler) StopReadinessCheck(ctx context.Context) (r StopReadinessCheckRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopRecommendationRun implements stopRecommendationRun operation.
+//
+// Administrators only. Stops the Recommendation run that runs after the batch it writes; the
+// recommendations stay as they were, and the run is recorded as stopped by hand. 404 when none runs.
+//
+// POST /api/v1/admin/recommendation-runs/stop
+func (UnimplementedHandler) StopRecommendationRun(ctx context.Context) (r StopRecommendationRunRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopRescan implements stopRescan operation.
+//
+// Administrators only. Stops every scan a re-scan queued that still waits or runs: a waiting one is
+// taken off the queue, a running one ends after the page it reads and keeps the pages it read so far.
+// Each is recorded as stopped by hand. A scan started on its own runs on. 404 when no scan of a
+// re-scan waits or runs.
+//
+// POST /api/v1/admin/rescans/stop
+func (UnimplementedHandler) StopRescan(ctx context.Context) (r StopRescanRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopTermReview implements stopTermReview operation.
+//
+// Administrators only. Stops the review of the waiting candidates that runs, after the batch it asks
+// about, which it keeps, as it keeps every decision made before; a review asked for that has not
+// started does not start. The review's state says it was stopped by hand (problem stopped). Whether
+// the review is on does not change. 404 when no review runs or is asked for.
+//
+// POST /api/v1/admin/term-candidates/review/stop
+func (UnimplementedHandler) StopTermReview(ctx context.Context) (r StopTermReviewRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // TestLlmCredential implements testLlmCredential operation.
 //
 // Asks the provider whether it accepts the key (by listing its models) and records the outcome on the
@@ -570,7 +912,8 @@ func (UnimplementedHandler) TestLlmCredential(ctx context.Context, params TestLl
 // TickImprovement implements tickImprovement operation.
 //
 // Administrators only. Marks an improvement no scan can check as done, recording who and when, or as
-// not done again. 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
+// not done again; a recommendation a run wrote too, when no rule decides it (a fact sheet correction).
+// 404 for an unknown improvement; 422 for one a scan of tribelt.nl checks.
 //
 // PUT /api/v1/admin/plan/improvements/{improvementId}
 func (UnimplementedHandler) TickImprovement(ctx context.Context, req *ImprovementTick, params TickImprovementParams) (r TickImprovementRes, _ error) {
@@ -607,6 +950,17 @@ func (UnimplementedHandler) UndoTermDecision(ctx context.Context, params UndoTer
 //
 // PATCH /api/v1/competitors/{competitorId}
 func (UnimplementedHandler) UpdateCompetitor(ctx context.Context, req *CompetitorUpdate, params UpdateCompetitorParams) (r UpdateCompetitorRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateLlmBudget implements updateLlmBudget operation.
+//
+// Administrators only. Sets what every job a Claude model does may spend in a month together, in
+// dollars, from one cent to $1,000, and records the change in the events. Work already spent past a
+// lower budget stops at its next step and keeps what it did.
+//
+// PATCH /api/v1/admin/llm/budget
+func (UnimplementedHandler) UpdateLlmBudget(ctx context.Context, req *LlmBudgetChange) (r UpdateLlmBudgetRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

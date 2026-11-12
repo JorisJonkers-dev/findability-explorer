@@ -24,8 +24,12 @@ const PROVIDERS: Record<string, string> = {
   deepseek: 'DeepSeek',
 }
 
+/** A column's name: its provider's, and for a column keyed by a model id, the model after it. */
 export function providerName(id: string): string {
-  return PROVIDERS[id] ?? id
+  const cut = id.indexOf('/')
+  if (cut < 0) return PROVIDERS[id] ?? id
+  const provider = id.slice(0, cut)
+  return `${PROVIDERS[provider] ?? provider}, ${id.slice(cut + 1)}`
 }
 
 export const SCOPES: readonly { value: PromptScope; label: string }[] = [
@@ -109,10 +113,10 @@ export function runLine(run: Pick<PromptRun, 'startedAt' | 'status'>): string {
   return `Prompt run of ${runDate(run)}. ${how}.`
 }
 
-/** How far a run got: "640 of 1,260 answers", with failures when there were any. */
+/** How far a run got: "640 of 1,260 responses", with failures when there were any. */
 export function progressLabel(run: Pick<PromptRun, 'answered' | 'failed' | 'tasks'>): string {
-  const failed = run.failed > 0 ? `, ${NUMBER.format(run.failed)} without an answer` : ''
-  return `${NUMBER.format(run.answered + run.failed)} of ${NUMBER.format(run.tasks)} answers${failed}`
+  const failed = run.failed > 0 ? `, ${NUMBER.format(run.failed)} without a response` : ''
+  return `${NUMBER.format(run.answered + run.failed)} of ${NUMBER.format(run.tasks)} responses${failed}`
 }
 
 /** A run's cost in dollars: "$2.75". */
@@ -131,9 +135,9 @@ export function mentionLine(results: PromptTestResults | undefined, companyId: s
   if (!results || !run) return null
   const answers = tally(run.cells).answers
   const m = results.mentions.find((x) => x.competitorId === companyId)
-  if (!m) return `Named in none of the ${NUMBER.format(answers)} answers of the Prompt run of ${runDate(run)}.`
+  if (!m) return `Named in none of the ${NUMBER.format(answers)} responses of the Prompt run of ${runDate(run)}.`
   const first = m.first > 0 ? `, first in ${NUMBER.format(m.first)}` : ''
-  return `Named in ${NUMBER.format(m.answers)} of ${NUMBER.format(answers)} answers of the Prompt run of ${runDate(run)}${first}.`
+  return `Named in ${NUMBER.format(m.answers)} of ${NUMBER.format(answers)} responses of the Prompt run of ${runDate(run)}${first}.`
 }
 
 /** How what an answer says of Tribelt holds against the fact sheet, in words. */

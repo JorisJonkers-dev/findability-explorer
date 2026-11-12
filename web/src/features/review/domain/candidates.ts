@@ -80,7 +80,7 @@ export function checkDraft(draft: AcceptDraft): { kind: 'ok'; body: TermAcceptan
   const term = draft.term.trim()
   if (term === '') return { kind: 'invalid', message: 'Enter the term as the map should show it.' }
   if (term.length > MAX_TERM_LENGTH) return { kind: 'invalid', message: `A term has at most ${String(MAX_TERM_LENGTH)} characters.` }
-  if (draft.language === '') return { kind: 'invalid', message: 'Choose the language the phrase is in.' }
+  if (draft.language === '') return { kind: 'invalid', message: 'Choose the language the term is in.' }
   const usedBy = [...new Set(draft.usedBy.split(',').map((u) => u.trim()).filter((u) => u !== ''))]
   if (usedBy.length > MAX_USED_BY) return { kind: 'invalid', message: `Name at most ${String(MAX_USED_BY)} companies.` }
   return { kind: 'ok', body: { term, language: draft.language, family: draft.family, tier: draft.tier, usedBy } }
@@ -128,15 +128,16 @@ export function verdictLine(candidate: TermCandidate): string | null {
   return v.reason
 }
 
-/** How far the language model is with the waiting phrases. */
+/** How far Claude Haiku is with the waiting search terms. */
 export function reviewLine(state: TermReviewState): string {
-  const phrases = (n: number) => (n === 1 ? '1 phrase' : `${String(n)} phrases`)
-  if (state.running) return state.waiting > 0 ? `The language model is reviewing ${phrases(state.waiting)}.` : 'The language model is reviewing the phrases.'
-  if (state.problem === 'noModel') return 'No Anthropic key is set up, so every phrase waits for you.'
-  if (state.problem === 'budget') return "This month's language-model budget is used up, so the phrases wait for you or for next month."
-  if (state.problem === 'failed') return 'The language model failed on its last try. It tries again within ten minutes.'
-  if (state.waiting > 0) return `${phrases(state.waiting)} ${state.waiting === 1 ? 'waits' : 'wait'} for the language model.`
-  return 'The language model has reviewed every phrase.'
+  const terms = (n: number) => (n === 1 ? '1 search term' : `${String(n)} search terms`)
+  if (state.running) return state.waiting > 0 ? `Claude Haiku is reviewing ${terms(state.waiting)}.` : 'Claude Haiku is reviewing the search terms.'
+  if (state.problem === 'noModel') return 'No Anthropic key is set up, so every search term waits for you.'
+  if (state.problem === 'budget') return "This month's language-model budget is used up, so the search terms wait for you or for next month."
+  if (state.problem === 'failed') return 'Claude Haiku failed on its last try. It tries again within ten minutes.'
+  if (state.problem === 'stopped') return 'An administrator stopped the review. What Claude Haiku decided is kept.'
+  if (state.waiting > 0) return `${terms(state.waiting)} ${state.waiting === 1 ? 'waits' : 'wait'} for Claude Haiku.`
+  return 'Claude Haiku has reviewed every search term.'
 }
 
 /** A refused review action in words. */

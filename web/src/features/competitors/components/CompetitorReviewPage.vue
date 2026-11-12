@@ -4,7 +4,12 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { CompetitorCandidate, CompetitorCandidateStatus } from '../../../infrastructure/api/types.gen'
 import { useCandidateDecision, useCompetitorCandidates } from '../../prompt-test/composables/usePromptTest'
 import { CANDIDATE_STATUSES, candidateTab, parseCandidateStatus } from '../../prompt-test/domain/settings'
-import SettingsShell from '../../shell/components/SettingsShell.vue'
+import BigFigure from '../../manage/components/widgets/BigFigure.vue'
+import ManageWidget from '../../manage/components/widgets/ManageWidget.vue'
+import WidgetGrid from '../../manage/components/widgets/WidgetGrid.vue'
+import { CHOICE, CHOICE_OFF, CHOICE_ON, DANGER, FIELD, LABEL, PRIMARY } from '../../manage/components/widgets/look'
+import ManageLayout from '../../shell/components/ManageLayout.vue'
+import { useStopHaiku } from '../composables/useCompetitorChecks'
 import { CHECK_FILTERS, type CheckFilter, idsOf, keptBy, matchesSearch, reviewLine } from '../domain/candidates'
 import CandidateRow from './CandidateRow.vue'
 
@@ -22,6 +27,7 @@ const status = computed<CompetitorCandidateStatus>(() => parseCandidateStatus(ro
 const { candidates, counts, review, isLoading, forbidden, error } = useCompetitorCandidates(status)
 const { isDeciding, notice, results, error: decisionError, add, dismiss, undo, decideMany, split, startReview } = useCandidateDecision()
 
+const haiku = useStopHaiku()
 const search = ref('')
 const filter = ref<CheckFilter>('all')
 const shown = computed(() => candidates.value.filter((c) => matchesSearch(c, search.value) && keptBy(c, filter.value)))
@@ -96,128 +102,139 @@ function onKey(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <SettingsShell title="Competitor review">
-    <template #lead>
-      <p class="m-0 max-w-[62ch] text-lg text-ink-2">
-        Companies the AI answers name that are not on the competitor list yet, the most named first. Names on one website
-        are one company, and Haiku merges the other duplicates. Haiku adds the companies it is sure make metal process belts
-        like Tribelt's, and dismisses the ones it is sure do not. You decide the rest, and you can undo any of its decisions.
-      </p>
-    </template>
-
+  <ManageLayout
+    title="Candidates"
+    purpose="Review every company the AI responses named that is not on the list yet."
+    :back="{ to: '/manage/competitors', label: 'Back to Competitor list' }"
+    :results="{ to: '/competitors', label: 'See the competitors' }"
+  >
     <div v-if="forbidden" role="alert" class="flex flex-col gap-2 rounded-2xl bg-mist p-6">
       <p class="m-0 text-xl font-semibold">Only administrators can review competitors.</p>
       <p class="m-0 text-ink-2">Ask an administrator for the admin role in auth-api, then sign in again.</p>
     </div>
-    <template v-else>
-      <section v-if="review && counts" aria-label="Haiku's review" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-mist p-4">
-        <p class="m-0 font-medium">{{ reviewLine(review, counts.unchecked) }}</p>
-        <RouterLink v-if="review.problem === 'noKey'" to="/settings" class="font-medium">Add one in Language models</RouterLink>
-        <button
-          v-else
-          type="button"
-          :disabled="review.running || isDeciding"
-          class="min-h-11 rounded-full border-0 bg-black px-5 font-semibold text-white hover:bg-ink-2 disabled:opacity-60"
-          @click="startReview"
-        >
-          Review with Haiku
-        </button>
-      </section>
+    <WidgetGrid v-else>
+      <ManageWidget title="Waiting" :span="4">
+        <BigFigure :value="String(counts?.pending ?? 0)" label="Not decided yet." />
+      </ManageWidget>
+      <ManageWidget title="Added" :span="4">
+        <BigFigure :value="String(counts?.added ?? 0)" label="On the competitor list." />
+      </ManageWidget>
+      <ManageWidget title="Dismissed" :span="4">
+        <BigFigure :value="String(counts?.dismissed ?? 0)" label="Not competitors." />
+      </ManageWidget>
 
-      <div class="flex flex-wrap items-end gap-3">
-        <label :for="`${id}-search`" class="flex min-w-60 flex-1 flex-col gap-1.5 text-sm font-medium">
-          Search names and websites
-          <input :id="`${id}-search`" v-model="search" type="search" class="h-11 rounded-xl border-2 border-silver bg-white px-3 text-base font-normal" />
-        </label>
-        <div role="group" aria-label="Show" class="flex flex-wrap gap-2">
+      <ManageWidget title="Classify automatically" :span="12">
+        <p class="m-0 max-w-[70ch] text-ink-2">
+          Names on one website are one company, and Haiku merges the other duplicates. Haiku adds the companies it is sure make metal
+          process belts like Tribelt's, and dismisses the ones it is sure do not. You decide the rest, and you can undo any of its decisions.
+        </p>
+        <p v-if="review && counts" class="m-0 font-medium" aria-live="polite" data-part="review-line">{{ reviewLine(review, counts.unchecked) }}</p>
+        <p v-if="haiku.error.value" role="alert" class="m-0 font-medium text-orange-ink">{{ haiku.error.value }}</p>
+        <template v-if="review" #foot>
+          <RouterLink v-if="review.problem === 'noKey'" to="/manage/keys/anthropic" class="font-medium">Add an Anthropic key in Keys and spending</RouterLink>
+          <button v-else-if="review.running" type="button" :class="DANGER" :disabled="haiku.isStopping.value" @click="haiku.stopReview()">Stop classifying</button>
+          <button v-else type="button" :class="PRIMARY" :disabled="isDeciding" @click="startReview">Classify automatically</button>
+        </template>
+      </ManageWidget>
+
+      <ManageWidget title="All candidates" :span="12">
+        <p class="m-0 text-ink-2">
+          Change any decision here. Add, Dismiss, and Back to waiting work on every row, and Split divides one entry that holds two companies.
+        </p>
+        <div class="flex flex-wrap items-end gap-3">
+          <label :for="`${id}-search`" :class="LABEL" class="min-w-60 flex-1">
+            Search names and websites
+            <input :id="`${id}-search`" v-model="search" type="search" :class="FIELD" />
+          </label>
+          <div role="group" aria-label="Show" class="flex flex-wrap gap-2">
+            <button
+              v-for="s in CANDIDATE_STATUSES"
+              :key="s"
+              type="button"
+              :aria-pressed="status === s"
+              :class="[CHOICE, status === s ? CHOICE_ON : CHOICE_OFF]"
+              @click="show(s)"
+            >
+              {{ candidateTab(s, counts) }}
+            </button>
+          </div>
+        </div>
+        <div role="group" aria-label="Haiku's check" class="flex flex-wrap gap-2">
           <button
-            v-for="s in CANDIDATE_STATUSES"
-            :key="s"
+            v-for="f in CHECK_FILTERS"
+            :key="f.value"
             type="button"
-            :aria-pressed="status === s"
-            class="inline-flex min-h-11 items-center rounded-full border-2 px-4 text-sm font-medium"
-            :class="status === s ? 'border-black bg-black text-white' : 'border-grey bg-white text-black hover:border-black'"
-            @click="show(s)"
+            :aria-pressed="filter === f.value"
+            class="inline-flex min-h-9 items-center rounded-full border px-3 text-sm"
+            :class="filter === f.value ? 'border-orange-ink bg-orange-pale font-semibold' : 'border-grey bg-white hover:border-black'"
+            @click="filter = f.value"
           >
-            {{ candidateTab(s, counts) }}
+            {{ f.label }}
           </button>
         </div>
-      </div>
-      <div role="group" aria-label="Haiku's check" class="flex flex-wrap gap-2">
-        <button
-          v-for="f in CHECK_FILTERS"
-          :key="f.value"
-          type="button"
-          :aria-pressed="filter === f.value"
-          class="inline-flex min-h-9 items-center rounded-full border px-3 text-sm"
-          :class="filter === f.value ? 'border-orange-ink bg-orange-pale font-semibold' : 'border-grey bg-white hover:border-black'"
-          @click="filter = f.value"
-        >
-          {{ f.label }}
-        </button>
-      </div>
 
-      <p class="m-0 font-medium" aria-live="polite">{{ notice }}</p>
-      <ul v-if="results.length > 0" aria-label="Skipped" class="m-0 flex list-none flex-col gap-1 p-0 text-sm text-ink-2">
-        <li v-for="r in results" :key="r.id">{{ r.name ?? 'One company' }}. {{ r.reason }}</li>
-      </ul>
-      <p v-if="decisionError" role="alert" class="m-0 font-medium text-orange-ink">{{ decisionError }}</p>
-      <p v-if="error" role="alert" class="m-0 rounded-2xl bg-mist p-6 text-lg">{{ error }}</p>
-      <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the companies…</p>
-      <p v-else-if="shown.length === 0" class="m-0 text-lg text-ink-2">Nothing here.</p>
-      <template v-else>
-        <div class="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b-2 border-black bg-white py-2">
-          <label class="inline-flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" class="size-4 accent-orange-ink" :checked="allShownSelected" @change="selectAllShown(($event.target as HTMLInputElement).checked)" />
-            Select all {{ shown.length }} shown
-          </label>
-          <template v-if="chosen.length > 0">
-            <span class="text-sm font-semibold">{{ chosen.length }} selected</span>
-            <button
-              v-if="status === 'pending'"
-              type="button"
-              :disabled="isDeciding"
-              class="min-h-10 rounded-full border-0 bg-orange px-4 text-sm font-semibold text-black hover:bg-orange-soft disabled:opacity-70"
-              @click="many('add')"
-            >
-              Add with their websites
-            </button>
-            <button
-              v-if="status === 'pending'"
-              type="button"
-              :disabled="isDeciding"
-              class="min-h-10 rounded-full border-2 border-grey bg-white px-4 text-sm font-medium hover:border-black disabled:opacity-70"
-              @click="many('dismiss')"
-            >
-              Dismiss
-            </button>
-            <button type="button" class="border-0 bg-transparent p-0 text-sm font-medium underline underline-offset-4" @click="selected = new Set()">Clear</button>
-          </template>
-          <span class="ml-auto hidden text-xs text-muted sm:inline">Keys: ↑ and ↓ move, A adds, D dismisses, X selects, U undoes.</span>
-        </div>
-        <ul
-          aria-label="Companies"
-          class="m-0 flex list-none flex-col p-0"
-          @focusin="listHasFocus = true"
-          @focusout="listHasFocus = false"
-        >
-          <CandidateRow
-            v-for="(c, i) in shown"
-            :key="c.id"
-            ref="rows"
-            :candidate="c"
-            :busy="isDeciding"
-            :selected="selected.has(c.id)"
-            :active="i === active"
-            @focus="active = i"
-            @select="(on) => select(c, on)"
-            @add="(name, website) => add(c.id, name, website)"
-            @dismiss="dismiss(c.id, c.name)"
-            @undo="undo(c.id, c.name)"
-            @split="(memberId, name) => split(memberId, name)"
-          />
+        <p class="m-0 font-medium" aria-live="polite">{{ notice }}</p>
+        <ul v-if="results.length > 0" aria-label="Skipped" class="m-0 flex list-none flex-col gap-1 p-0 text-sm text-ink-2">
+          <li v-for="r in results" :key="r.id">{{ r.name ?? 'One company' }}. {{ r.reason }}</li>
         </ul>
-      </template>
-    </template>
-  </SettingsShell>
+        <p v-if="decisionError" role="alert" class="m-0 font-medium text-orange-ink">{{ decisionError }}</p>
+        <p v-if="error" role="alert" class="m-0 rounded-2xl bg-white p-6 text-lg">{{ error }}</p>
+        <p v-else-if="isLoading" class="m-0 text-lg text-muted">Loading the companies…</p>
+        <p v-else-if="shown.length === 0" class="m-0 text-lg text-ink-2">Nothing here.</p>
+        <div v-else class="flex min-w-0 flex-col rounded-2xl bg-white px-3 sm:px-4">
+          <div class="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b-2 border-black bg-white py-2">
+            <label class="inline-flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" class="size-4 accent-orange-ink" :checked="allShownSelected" @change="selectAllShown(($event.target as HTMLInputElement).checked)" />
+              Select all {{ shown.length }} shown
+            </label>
+            <template v-if="chosen.length > 0">
+              <span class="text-sm font-semibold">{{ chosen.length }} selected</span>
+              <button
+                v-if="status === 'pending'"
+                type="button"
+                :disabled="isDeciding"
+                class="min-h-10 rounded-full border-0 bg-orange px-4 text-sm font-semibold text-black hover:bg-orange-soft disabled:opacity-70"
+                @click="many('add')"
+              >
+                Add with their websites
+              </button>
+              <button
+                v-if="status === 'pending'"
+                type="button"
+                :disabled="isDeciding"
+                class="min-h-10 rounded-full border-2 border-grey bg-white px-4 text-sm font-medium hover:border-black disabled:opacity-70"
+                @click="many('dismiss')"
+              >
+                Dismiss
+              </button>
+              <button type="button" class="border-0 bg-transparent p-0 text-sm font-medium underline underline-offset-4" @click="selected = new Set()">Clear</button>
+            </template>
+            <span class="ml-auto hidden text-xs text-muted sm:inline">Keys: ↑ and ↓ move, A adds, D dismisses, X selects, U undoes.</span>
+          </div>
+          <ul
+            aria-label="Companies"
+            class="m-0 flex list-none flex-col p-0"
+            @focusin="listHasFocus = true"
+            @focusout="listHasFocus = false"
+          >
+            <CandidateRow
+              v-for="(c, i) in shown"
+              :key="c.id"
+              ref="rows"
+              :candidate="c"
+              :busy="isDeciding"
+              :selected="selected.has(c.id)"
+              :active="i === active"
+              @focus="active = i"
+              @select="(on) => select(c, on)"
+              @add="(name, website) => add(c.id, name, website)"
+              @dismiss="dismiss(c.id, c.name)"
+              @undo="undo(c.id, c.name)"
+              @split="(memberId, name) => split(memberId, name)"
+            />
+          </ul>
+        </div>
+      </ManageWidget>
+    </WidgetGrid>
+  </ManageLayout>
 </template>

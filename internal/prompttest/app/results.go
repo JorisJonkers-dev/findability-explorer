@@ -16,20 +16,24 @@ const MaxRuns = 24
 // MaxWrongClaims is how many wrong claims the results list.
 const MaxWrongClaims = 1000
 
-// RunResult is one run with how far it got and its measures.
+// RunResult is one run with how far it got, its measures, and the reason most of its failed
+// answers give ("" when none failed).
 type RunResult struct {
-	Run      domain.Run
-	Progress domain.Progress
-	Cells    []domain.Cell
+	Run           domain.Run
+	Progress      domain.Progress
+	Cells         []domain.Cell
+	CommonFailure string
 }
 
 // Results are the Prompt test's results: the latest runs, newest first, each with its measures
 // (the trends); how often the answers of the newest run with any name each company; and the
 // claims about Tribelt the answers got wrong, newest first.
 type Results struct {
-	Runs        []RunResult
-	Mentions    []NamedMention
-	WrongClaims []domain.WrongClaim
+	// PromptSetVersion is the newest published Prompt set's version, the one a new run asks.
+	PromptSetVersion int
+	Runs             []RunResult
+	Mentions         []NamedMention
+	WrongClaims      []domain.WrongClaim
 }
 
 // NamedMention is a mention with the name and role of the company it counts, and its share of
@@ -69,11 +73,15 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 	if err != nil {
 		return Results{}, fmt.Errorf("list the runs: %w", err)
 	}
+	set, err := s.newestSet(ctx)
+	if err != nil {
+		return Results{}, err
+	}
 	m, companies, err := s.matcher(ctx)
 	if err != nil {
 		return Results{}, err
 	}
-	out := Results{Runs: make([]RunResult, 0, len(runs)), Mentions: []NamedMention{}, WrongClaims: []domain.WrongClaim{}}
+	out := Results{PromptSetVersion: set.Version, Runs: make([]RunResult, 0, len(runs)), Mentions: []NamedMention{}, WrongClaims: []domain.WrongClaim{}}
 	mentioned := false
 	for _, r := range runs {
 		answers, err := s.repo.Answers(ctx, r.ID, false)
@@ -82,7 +90,7 @@ func (s *Service) Results(ctx context.Context) (Results, error) {
 		}
 		answers = rematched(answers, m)
 		cells := domain.Cells(answers)
-		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells})
+		out.Runs = append(out.Runs, RunResult{Run: r, Progress: domain.Progressed(answers, r.Models), Cells: cells, CommonFailure: domain.CommonestFailure(answers)})
 		if !mentioned && len(cells) > 0 {
 			out.Mentions, mentioned = named(domain.WithTribelt(domain.Mentions(answers), answers, companies), answers, companies), true
 		}
@@ -127,7 +135,9 @@ func (s *Service) Answers(ctx context.Context, runID uuid.UUID, filter AnswerFil
 			kept = append(kept, a)
 		}
 	}
-	return RunResult{Run: run, Progress: domain.Progressed(answers, run.Models), Cells: domain.Cells(answers)}, kept, nil
+	return RunResult{
+		Run: run, Progress: domain.Progressed(answers, run.Models), Cells: domain.Cells(answers), CommonFailure: domain.CommonestFailure(answers),
+	}, kept, nil
 }
 
 // RunAnswers is a run with the answers that count, without their text.

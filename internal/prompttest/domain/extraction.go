@@ -37,7 +37,12 @@ type Extracted struct {
 	NamesTribelt bool
 	CitesTribelt bool
 	Correctness  Correctness
-	WrongClaims  []string
+	// WrongClaims are the claims about Tribelt the fact sheet contradicts, quoted; only they
+	// become fact sheet corrections.
+	WrongClaims []string
+	// LeftOut are the facts from the fact sheet a response naming Tribelt does not mention; never
+	// a correction.
+	LeftOut []string
 }
 
 // Company is a company an answer named, matched to the company list when it is on it.
@@ -59,13 +64,19 @@ type Extraction struct {
 	NamesTribelt bool
 	CitesTribelt bool
 	Correctness  Correctness
+	// WrongClaims are the claims about Tribelt the fact sheet contradicts; LeftOut the facts from
+	// it the response does not mention, empty for a reading made before they were told apart.
 	WrongClaims  []string
+	LeftOut      []string
 	InputTokens  int64
 	OutputTokens int64
 	Cost         Micros
 	// HaikuTokens are the tokens Claude Haiku on an Anthropic key used reading the answer; they
-	// count towards the month's language-model tokens. 0 when OpenRouter read it.
+	// count towards the month's Anthropic budget. 0 when OpenRouter read it.
 	HaikuTokens int64
+	// Model is the model that read it, as the reader names it ("anthropic: claude-haiku-5-5", or
+	// OpenRouter's model id); empty for a reading made before readings recorded it.
+	Model string
 }
 
 // Role is what a company is to Tribelt.
@@ -178,7 +189,7 @@ func Match(n Named, directory []DirectoryCompany) string {
 func Read(x Extracted, citations []string, directory []DirectoryCompany) Extraction {
 	out := Extraction{
 		NamesTribelt: x.NamesTribelt, CitesTribelt: x.CitesTribelt, Correctness: x.Correctness,
-		WrongClaims: x.WrongClaims,
+		WrongClaims: x.WrongClaims, LeftOut: x.LeftOut,
 	}
 	role := map[string]Role{}
 	tribeltHosts := []string{}
@@ -202,7 +213,7 @@ func Read(x Extracted, citations []string, directory []DirectoryCompany) Extract
 		out.CitesTribelt = out.CitesTribelt || slices.ContainsFunc(tribeltHosts, func(t string) bool { return sameCompany(a, t) })
 	}
 	if !out.NamesTribelt {
-		out.Correctness, out.WrongClaims = CorrectnessNone, nil
+		out.Correctness, out.WrongClaims, out.LeftOut = CorrectnessNone, nil, nil
 	}
 	return out
 }

@@ -2,10 +2,10 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { competitor } from '../../../testing/fixtures'
-import { json, problem } from '../../../testing/mountApp'
+import { json, problem, routes } from '../../../testing/mountApp'
 import { mountComposable } from '../../../testing/mountComposable'
 import { REVIEW_POLL_MS } from '../../review/domain/candidates'
-import { useCompetitorChecks, useListDecision } from './useCompetitorChecks'
+import { useCompetitorChecks, useListDecision, useStopHaiku } from './useCompetitorChecks'
 import { useCompetitors } from './useCompetitors'
 
 afterEach(() => {
@@ -87,5 +87,26 @@ describe('useListDecision', () => {
     expect(state.notice.value).toBe('Intralox is back on the list, and Haiku will not archive it again.')
     expect(bodies).toEqual([{ kept: true }, { archived: true }, { archived: false }])
     expect(sent.filter((s) => s.startsWith('PATCH'))).toHaveLength(3)
+  })
+})
+
+describe('useStopHaiku', () => {
+  it('stops the check of the list and the review of the candidates', async () => {
+    const gone = () => new Response(null, { status: 204 })
+    const { state, sent } = mountComposable(useStopHaiku, routes({ 'POST /api/v1/admin/competitor-checks/stop': gone, 'POST /api/v1/admin/competitor-candidates/review/stop': gone }))
+    state.stopCheck()
+    expect(state.isStopping.value).toBe(true)
+    await flushPromises()
+    state.stopReview()
+    await flushPromises()
+    expect(sent).toEqual(['POST /api/v1/admin/competitor-checks/stop', 'POST /api/v1/admin/competitor-candidates/review/stop'])
+    expect(state.error.value).toBeNull()
+  })
+
+  it('says why it could not stop', async () => {
+    const { state } = mountComposable(useStopHaiku, () => problem(404, 'Not Found', 'No check runs.'))
+    state.stopCheck()
+    await flushPromises()
+    expect(state.error.value).toBe('No check runs.')
   })
 })

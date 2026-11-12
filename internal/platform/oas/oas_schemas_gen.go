@@ -67,6 +67,48 @@ func (s *ActiveLlm) SetModel(val string) {
 	s.Model = val
 }
 
+// The work running now, the last pieces ended, and this month's spending.
+// Ref: #/components/schemas/Activity
+type Activity struct {
+	// The work running now, or waiting to, newest first.
+	Running []Work `json:"running"`
+	// The last 20 pieces of work ended, the last ended first.
+	Recent   []Work   `json:"recent"`
+	Spending Spending `json:"spending"`
+}
+
+// GetRunning returns the value of Running.
+func (s *Activity) GetRunning() []Work {
+	return s.Running
+}
+
+// GetRecent returns the value of Recent.
+func (s *Activity) GetRecent() []Work {
+	return s.Recent
+}
+
+// GetSpending returns the value of Spending.
+func (s *Activity) GetSpending() Spending {
+	return s.Spending
+}
+
+// SetRunning sets the value of Running.
+func (s *Activity) SetRunning(val []Work) {
+	s.Running = val
+}
+
+// SetRecent sets the value of Recent.
+func (s *Activity) SetRecent(val []Work) {
+	s.Recent = val
+}
+
+// SetSpending sets the value of Spending.
+func (s *Activity) SetSpending(val Spending) {
+	s.Spending = val
+}
+
+func (*Activity) getActivityRes() {}
+
 type AddCompetitorBadRequest ProblemStatusCode
 
 func (*AddCompetitorBadRequest) addCompetitorRes() {}
@@ -142,6 +184,26 @@ func (*AddLlmCredentialUnauthorized) addLlmCredentialRes() {}
 type AddLlmCredentialUnprocessableEntity ProblemStatusCode
 
 func (*AddLlmCredentialUnprocessableEntity) addLlmCredentialRes() {}
+
+type AddTermBadRequest ProblemStatusCode
+
+func (*AddTermBadRequest) addTermRes() {}
+
+type AddTermConflict ProblemStatusCode
+
+func (*AddTermConflict) addTermRes() {}
+
+type AddTermForbidden ProblemStatusCode
+
+func (*AddTermForbidden) addTermRes() {}
+
+type AddTermUnauthorized ProblemStatusCode
+
+func (*AddTermUnauthorized) addTermRes() {}
+
+type AddTermUnprocessableEntity ProblemStatusCode
+
+func (*AddTermUnprocessableEntity) addTermRes() {}
 
 // What a site tells search engines and AI assistants about itself, read by a scan before its page
 // crawl, held against the report's recommendations.
@@ -757,8 +819,11 @@ type AnalysisSummary struct {
 	// True when the analysis failed because its site turned automated readers away (bot protection)
 	// although people can open it; only then is it present. The scan still records the site's AI
 	// readiness.
-	Blocked     OptBool             `json:"blocked"`
-	AiReadiness OptAiReadinessBrief `json:"aiReadiness"`
+	Blocked OptBool `json:"blocked"`
+	// True when an administrator stopped the scan, or took it off the queue; only then is it present. Its
+	// status is failed, and it keeps the pages it read.
+	StoppedByHand OptBool             `json:"stoppedByHand"`
+	AiReadiness   OptAiReadinessBrief `json:"aiReadiness"`
 	// The most pages the crawl fetches.
 	MaxPages int32 `json:"maxPages"`
 	// How many pages were fetched so far.
@@ -807,6 +872,11 @@ func (s *AnalysisSummary) GetFailure() OptString {
 // GetBlocked returns the value of Blocked.
 func (s *AnalysisSummary) GetBlocked() OptBool {
 	return s.Blocked
+}
+
+// GetStoppedByHand returns the value of StoppedByHand.
+func (s *AnalysisSummary) GetStoppedByHand() OptBool {
+	return s.StoppedByHand
 }
 
 // GetAiReadiness returns the value of AiReadiness.
@@ -872,6 +942,11 @@ func (s *AnalysisSummary) SetFailure(val OptString) {
 // SetBlocked sets the value of Blocked.
 func (s *AnalysisSummary) SetBlocked(val OptBool) {
 	s.Blocked = val
+}
+
+// SetStoppedByHand sets the value of StoppedByHand.
+func (s *AnalysisSummary) SetStoppedByHand(val OptBool) {
+	s.StoppedByHand = val
 }
 
 // SetAiReadiness sets the value of AiReadiness.
@@ -1459,8 +1534,8 @@ type CandidateReviewState struct {
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-	// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
-	// well.
+	// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+	// stopped it; what it decided is kept). Absent when it went well.
 	Problem OptCandidateReviewStateProblem `json:"problem"`
 }
 
@@ -1488,14 +1563,15 @@ func (*CandidateReviewState) startCandidateReviewRes() {}
 func (*CandidateReviewState) startCompetitorCheckRes() {}
 
 // Why its last review stopped short - noKey (no Anthropic key is set up), budget (the month's
-// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
-// well.
+// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+// stopped it; what it decided is kept). Absent when it went well.
 type CandidateReviewStateProblem string
 
 const (
-	CandidateReviewStateProblemNoKey  CandidateReviewStateProblem = "noKey"
-	CandidateReviewStateProblemBudget CandidateReviewStateProblem = "budget"
-	CandidateReviewStateProblemFailed CandidateReviewStateProblem = "failed"
+	CandidateReviewStateProblemNoKey   CandidateReviewStateProblem = "noKey"
+	CandidateReviewStateProblemBudget  CandidateReviewStateProblem = "budget"
+	CandidateReviewStateProblemFailed  CandidateReviewStateProblem = "failed"
+	CandidateReviewStateProblemStopped CandidateReviewStateProblem = "stopped"
 )
 
 // AllValues returns all CandidateReviewStateProblem values.
@@ -1504,6 +1580,7 @@ func (CandidateReviewStateProblem) AllValues() []CandidateReviewStateProblem {
 		CandidateReviewStateProblemNoKey,
 		CandidateReviewStateProblemBudget,
 		CandidateReviewStateProblemFailed,
+		CandidateReviewStateProblemStopped,
 	}
 }
 
@@ -1515,6 +1592,8 @@ func (s CandidateReviewStateProblem) MarshalText() ([]byte, error) {
 	case CandidateReviewStateProblemBudget:
 		return []byte(s), nil
 	case CandidateReviewStateProblemFailed:
+		return []byte(s), nil
+	case CandidateReviewStateProblemStopped:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1533,9 +1612,440 @@ func (s *CandidateReviewStateProblem) UnmarshalText(data []byte) error {
 	case CandidateReviewStateProblemFailed:
 		*s = CandidateReviewStateProblemFailed
 		return nil
+	case CandidateReviewStateProblemStopped:
+		*s = CandidateReviewStateProblemStopped
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// One Claude step: its versions, oldest first, the newest of which it uses; the instructions it came
+// with; and the models it may use, cheapest first, with the cost of one job with each. A job's cost is
+// the tool's estimate with Claude Haiku 5.5, scaled by each model's price for the step's typical mix
+// of tokens read and written.
+// Ref: #/components/schemas/ClaudeStep
+type ClaudeStep struct {
+	ID ClaudeStepId `json:"id"`
+	// The step's name.
+	Title string `json:"title"`
+	// True when the instructions are set in the code and only the model can be chosen.
+	FixedInstructions bool `json:"fixedInstructions"`
+	// The instructions the tool came with.
+	Original string            `json:"original"`
+	Current  ClaudeStepVersion `json:"current"`
+	// Every version, oldest first.
+	Versions []ClaudeStepVersion `json:"versions"`
+	// The Claude models the step may use, cheapest first.
+	Models     []ClaudeStepModel `json:"models"`
+	JobCostUsd Usd               `json:"jobCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *ClaudeStep) GetID() ClaudeStepId {
+	return s.ID
+}
+
+// GetTitle returns the value of Title.
+func (s *ClaudeStep) GetTitle() string {
+	return s.Title
+}
+
+// GetFixedInstructions returns the value of FixedInstructions.
+func (s *ClaudeStep) GetFixedInstructions() bool {
+	return s.FixedInstructions
+}
+
+// GetOriginal returns the value of Original.
+func (s *ClaudeStep) GetOriginal() string {
+	return s.Original
+}
+
+// GetCurrent returns the value of Current.
+func (s *ClaudeStep) GetCurrent() ClaudeStepVersion {
+	return s.Current
+}
+
+// GetVersions returns the value of Versions.
+func (s *ClaudeStep) GetVersions() []ClaudeStepVersion {
+	return s.Versions
+}
+
+// GetModels returns the value of Models.
+func (s *ClaudeStep) GetModels() []ClaudeStepModel {
+	return s.Models
+}
+
+// GetJobCostUsd returns the value of JobCostUsd.
+func (s *ClaudeStep) GetJobCostUsd() Usd {
+	return s.JobCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *ClaudeStep) SetID(val ClaudeStepId) {
+	s.ID = val
+}
+
+// SetTitle sets the value of Title.
+func (s *ClaudeStep) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetFixedInstructions sets the value of FixedInstructions.
+func (s *ClaudeStep) SetFixedInstructions(val bool) {
+	s.FixedInstructions = val
+}
+
+// SetOriginal sets the value of Original.
+func (s *ClaudeStep) SetOriginal(val string) {
+	s.Original = val
+}
+
+// SetCurrent sets the value of Current.
+func (s *ClaudeStep) SetCurrent(val ClaudeStepVersion) {
+	s.Current = val
+}
+
+// SetVersions sets the value of Versions.
+func (s *ClaudeStep) SetVersions(val []ClaudeStepVersion) {
+	s.Versions = val
+}
+
+// SetModels sets the value of Models.
+func (s *ClaudeStep) SetModels(val []ClaudeStepModel) {
+	s.Models = val
+}
+
+// SetJobCostUsd sets the value of JobCostUsd.
+func (s *ClaudeStep) SetJobCostUsd(val Usd) {
+	s.JobCostUsd = val
+}
+
+func (*ClaudeStep) getClaudeStepRes()         {}
+func (*ClaudeStep) saveClaudeStepVersionRes() {}
+
+// A new version of a Claude step.
+// Ref: #/components/schemas/ClaudeStepChange
+type ClaudeStepChange struct {
+	// The Claude model's id.
+	Model string `json:"model"`
+	// The system message.
+	Instructions string `json:"instructions"`
+	// The version this one restores, when it does; it is noted on the new version.
+	RestoredFrom OptInt32 `json:"restoredFrom"`
+}
+
+// GetModel returns the value of Model.
+func (s *ClaudeStepChange) GetModel() string {
+	return s.Model
+}
+
+// GetInstructions returns the value of Instructions.
+func (s *ClaudeStepChange) GetInstructions() string {
+	return s.Instructions
+}
+
+// GetRestoredFrom returns the value of RestoredFrom.
+func (s *ClaudeStepChange) GetRestoredFrom() OptInt32 {
+	return s.RestoredFrom
+}
+
+// SetModel sets the value of Model.
+func (s *ClaudeStepChange) SetModel(val string) {
+	s.Model = val
+}
+
+// SetInstructions sets the value of Instructions.
+func (s *ClaudeStepChange) SetInstructions(val string) {
+	s.Instructions = val
+}
+
+// SetRestoredFrom sets the value of RestoredFrom.
+func (s *ClaudeStepChange) SetRestoredFrom(val OptInt32) {
+	s.RestoredFrom = val
+}
+
+// A Claude step - reading (reading a Prompt run's responses, its instructions set in the code),
+// matching (matching products in scans), candidateMerge (tidying the names of the competitor
+// candidates), candidateCheck (checking companies against the competitor definition), termReview
+// (reviewing the search terms the scans found), or recommendations (writing recommendations).
+// Ref: #/components/schemas/ClaudeStepId
+type ClaudeStepId string
+
+const (
+	ClaudeStepIdReading         ClaudeStepId = "reading"
+	ClaudeStepIdMatching        ClaudeStepId = "matching"
+	ClaudeStepIdCandidateMerge  ClaudeStepId = "candidateMerge"
+	ClaudeStepIdCandidateCheck  ClaudeStepId = "candidateCheck"
+	ClaudeStepIdTermReview      ClaudeStepId = "termReview"
+	ClaudeStepIdRecommendations ClaudeStepId = "recommendations"
+)
+
+// AllValues returns all ClaudeStepId values.
+func (ClaudeStepId) AllValues() []ClaudeStepId {
+	return []ClaudeStepId{
+		ClaudeStepIdReading,
+		ClaudeStepIdMatching,
+		ClaudeStepIdCandidateMerge,
+		ClaudeStepIdCandidateCheck,
+		ClaudeStepIdTermReview,
+		ClaudeStepIdRecommendations,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ClaudeStepId) MarshalText() ([]byte, error) {
+	switch s {
+	case ClaudeStepIdReading:
+		return []byte(s), nil
+	case ClaudeStepIdMatching:
+		return []byte(s), nil
+	case ClaudeStepIdCandidateMerge:
+		return []byte(s), nil
+	case ClaudeStepIdCandidateCheck:
+		return []byte(s), nil
+	case ClaudeStepIdTermReview:
+		return []byte(s), nil
+	case ClaudeStepIdRecommendations:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ClaudeStepId) UnmarshalText(data []byte) error {
+	switch ClaudeStepId(data) {
+	case ClaudeStepIdReading:
+		*s = ClaudeStepIdReading
+		return nil
+	case ClaudeStepIdMatching:
+		*s = ClaudeStepIdMatching
+		return nil
+	case ClaudeStepIdCandidateMerge:
+		*s = ClaudeStepIdCandidateMerge
+		return nil
+	case ClaudeStepIdCandidateCheck:
+		*s = ClaudeStepIdCandidateCheck
+		return nil
+	case ClaudeStepIdTermReview:
+		*s = ClaudeStepIdTermReview
+		return nil
+	case ClaudeStepIdRecommendations:
+		*s = ClaudeStepIdRecommendations
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Every Claude step.
+// Ref: #/components/schemas/ClaudeStepList
+type ClaudeStepList struct {
+	Items []ClaudeStepSummary `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *ClaudeStepList) GetItems() []ClaudeStepSummary {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *ClaudeStepList) SetItems(val []ClaudeStepSummary) {
+	s.Items = val
+}
+
+func (*ClaudeStepList) listClaudeStepsRes() {}
+
+// A Claude model a step may use, with what one job of the step costs with it.
+// Ref: #/components/schemas/ClaudeStepModel
+type ClaudeStepModel struct {
+	// The model's id on Anthropic's API.
+	ID string `json:"id"`
+	// The model's name.
+	Name       string `json:"name"`
+	JobCostUsd Usd    `json:"jobCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *ClaudeStepModel) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ClaudeStepModel) GetName() string {
+	return s.Name
+}
+
+// GetJobCostUsd returns the value of JobCostUsd.
+func (s *ClaudeStepModel) GetJobCostUsd() Usd {
+	return s.JobCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *ClaudeStepModel) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ClaudeStepModel) SetName(val string) {
+	s.Name = val
+}
+
+// SetJobCostUsd sets the value of JobCostUsd.
+func (s *ClaudeStepModel) SetJobCostUsd(val Usd) {
+	s.JobCostUsd = val
+}
+
+// A Claude step as the overview lists it.
+// Ref: #/components/schemas/ClaudeStepSummary
+type ClaudeStepSummary struct {
+	ID ClaudeStepId `json:"id"`
+	// The step's name.
+	Title string `json:"title"`
+	// True when the instructions are set in the code and only the model can be chosen.
+	FixedInstructions bool              `json:"fixedInstructions"`
+	Current           ClaudeStepVersion `json:"current"`
+	JobCostUsd        Usd               `json:"jobCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *ClaudeStepSummary) GetID() ClaudeStepId {
+	return s.ID
+}
+
+// GetTitle returns the value of Title.
+func (s *ClaudeStepSummary) GetTitle() string {
+	return s.Title
+}
+
+// GetFixedInstructions returns the value of FixedInstructions.
+func (s *ClaudeStepSummary) GetFixedInstructions() bool {
+	return s.FixedInstructions
+}
+
+// GetCurrent returns the value of Current.
+func (s *ClaudeStepSummary) GetCurrent() ClaudeStepVersion {
+	return s.Current
+}
+
+// GetJobCostUsd returns the value of JobCostUsd.
+func (s *ClaudeStepSummary) GetJobCostUsd() Usd {
+	return s.JobCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *ClaudeStepSummary) SetID(val ClaudeStepId) {
+	s.ID = val
+}
+
+// SetTitle sets the value of Title.
+func (s *ClaudeStepSummary) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetFixedInstructions sets the value of FixedInstructions.
+func (s *ClaudeStepSummary) SetFixedInstructions(val bool) {
+	s.FixedInstructions = val
+}
+
+// SetCurrent sets the value of Current.
+func (s *ClaudeStepSummary) SetCurrent(val ClaudeStepVersion) {
+	s.Current = val
+}
+
+// SetJobCostUsd sets the value of JobCostUsd.
+func (s *ClaudeStepSummary) SetJobCostUsd(val Usd) {
+	s.JobCostUsd = val
+}
+
+// One saved version of a Claude step - the model it uses and its instructions.
+// Ref: #/components/schemas/ClaudeStepVersion
+type ClaudeStepVersion struct {
+	// The version's number, from 1 for the instructions the tool came with.
+	Number int32 `json:"number"`
+	// The Claude model's id on Anthropic's API.
+	Model string `json:"model"`
+	// The model's name for people.
+	ModelName string `json:"modelName"`
+	// The system message the step sends; the data follows it in a separate message.
+	Instructions string `json:"instructions"`
+	// Where the version came from, such as "Restored from version 2.", or empty.
+	Note string `json:"note"`
+	// Who saved it; "the tool" for version 1.
+	CreatedBy string `json:"createdBy"`
+	// When it was saved.
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// GetNumber returns the value of Number.
+func (s *ClaudeStepVersion) GetNumber() int32 {
+	return s.Number
+}
+
+// GetModel returns the value of Model.
+func (s *ClaudeStepVersion) GetModel() string {
+	return s.Model
+}
+
+// GetModelName returns the value of ModelName.
+func (s *ClaudeStepVersion) GetModelName() string {
+	return s.ModelName
+}
+
+// GetInstructions returns the value of Instructions.
+func (s *ClaudeStepVersion) GetInstructions() string {
+	return s.Instructions
+}
+
+// GetNote returns the value of Note.
+func (s *ClaudeStepVersion) GetNote() string {
+	return s.Note
+}
+
+// GetCreatedBy returns the value of CreatedBy.
+func (s *ClaudeStepVersion) GetCreatedBy() string {
+	return s.CreatedBy
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ClaudeStepVersion) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetNumber sets the value of Number.
+func (s *ClaudeStepVersion) SetNumber(val int32) {
+	s.Number = val
+}
+
+// SetModel sets the value of Model.
+func (s *ClaudeStepVersion) SetModel(val string) {
+	s.Model = val
+}
+
+// SetModelName sets the value of ModelName.
+func (s *ClaudeStepVersion) SetModelName(val string) {
+	s.ModelName = val
+}
+
+// SetInstructions sets the value of Instructions.
+func (s *ClaudeStepVersion) SetInstructions(val string) {
+	s.Instructions = val
+}
+
+// SetNote sets the value of Note.
+func (s *ClaudeStepVersion) SetNote(val string) {
+	s.Note = val
+}
+
+// SetCreatedBy sets the value of CreatedBy.
+func (s *ClaudeStepVersion) SetCreatedBy(val string) {
+	s.CreatedBy = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ClaudeStepVersion) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
 }
 
 type ClearActiveLlmForbidden ProblemStatusCode
@@ -1603,6 +2113,57 @@ func (s *CompanyRole) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// One company's pages that use the term. A scan made before scans recorded the pages of a term has
+// none; the company uses the term all the same.
+// Ref: #/components/schemas/CompanyTermPages
+type CompanyTermPages struct {
+	CompetitorId CompetitorId `json:"competitorId"`
+	// The company's name.
+	Name  string      `json:"name"`
+	Role  CompanyRole `json:"role"`
+	Pages []TermPage  `json:"pages"`
+}
+
+// GetCompetitorId returns the value of CompetitorId.
+func (s *CompanyTermPages) GetCompetitorId() CompetitorId {
+	return s.CompetitorId
+}
+
+// GetName returns the value of Name.
+func (s *CompanyTermPages) GetName() string {
+	return s.Name
+}
+
+// GetRole returns the value of Role.
+func (s *CompanyTermPages) GetRole() CompanyRole {
+	return s.Role
+}
+
+// GetPages returns the value of Pages.
+func (s *CompanyTermPages) GetPages() []TermPage {
+	return s.Pages
+}
+
+// SetCompetitorId sets the value of CompetitorId.
+func (s *CompanyTermPages) SetCompetitorId(val CompetitorId) {
+	s.CompetitorId = val
+}
+
+// SetName sets the value of Name.
+func (s *CompanyTermPages) SetName(val string) {
+	s.Name = val
+}
+
+// SetRole sets the value of Role.
+func (s *CompanyTermPages) SetRole(val CompanyRole) {
+	s.Role = val
+}
+
+// SetPages sets the value of Pages.
+func (s *CompanyTermPages) SetPages(val []TermPage) {
+	s.Pages = val
 }
 
 type CompareScansBadRequest ProblemStatusCode
@@ -2542,6 +3103,155 @@ func (s *CompetitorCheckList) SetReview(val CandidateReviewState) {
 
 func (*CompetitorCheckList) listCompetitorChecksRes() {}
 
+// The competitor definition in use, its versions, and what checking again against it would take.
+// Ref: #/components/schemas/CompetitorDefinition
+type CompetitorDefinition struct {
+	Current CompetitorDefinitionVersion `json:"current"`
+	// Every version, the newest first.
+	Versions []CompetitorDefinitionVersion `json:"versions"`
+	// Competitors on the list the model checks whose check was made against an older version.
+	OutdatedCompetitors int32 `json:"outdatedCompetitors"`
+	// Waiting candidates whose check was made against an older version.
+	OutdatedCandidates int32 `json:"outdatedCandidates"`
+	RecheckCostUsd     Usd   `json:"recheckCostUsd"`
+}
+
+// GetCurrent returns the value of Current.
+func (s *CompetitorDefinition) GetCurrent() CompetitorDefinitionVersion {
+	return s.Current
+}
+
+// GetVersions returns the value of Versions.
+func (s *CompetitorDefinition) GetVersions() []CompetitorDefinitionVersion {
+	return s.Versions
+}
+
+// GetOutdatedCompetitors returns the value of OutdatedCompetitors.
+func (s *CompetitorDefinition) GetOutdatedCompetitors() int32 {
+	return s.OutdatedCompetitors
+}
+
+// GetOutdatedCandidates returns the value of OutdatedCandidates.
+func (s *CompetitorDefinition) GetOutdatedCandidates() int32 {
+	return s.OutdatedCandidates
+}
+
+// GetRecheckCostUsd returns the value of RecheckCostUsd.
+func (s *CompetitorDefinition) GetRecheckCostUsd() Usd {
+	return s.RecheckCostUsd
+}
+
+// SetCurrent sets the value of Current.
+func (s *CompetitorDefinition) SetCurrent(val CompetitorDefinitionVersion) {
+	s.Current = val
+}
+
+// SetVersions sets the value of Versions.
+func (s *CompetitorDefinition) SetVersions(val []CompetitorDefinitionVersion) {
+	s.Versions = val
+}
+
+// SetOutdatedCompetitors sets the value of OutdatedCompetitors.
+func (s *CompetitorDefinition) SetOutdatedCompetitors(val int32) {
+	s.OutdatedCompetitors = val
+}
+
+// SetOutdatedCandidates sets the value of OutdatedCandidates.
+func (s *CompetitorDefinition) SetOutdatedCandidates(val int32) {
+	s.OutdatedCandidates = val
+}
+
+// SetRecheckCostUsd sets the value of RecheckCostUsd.
+func (s *CompetitorDefinition) SetRecheckCostUsd(val Usd) {
+	s.RecheckCostUsd = val
+}
+
+func (*CompetitorDefinition) getCompetitorDefinitionRes()     {}
+func (*CompetitorDefinition) restoreCompetitorDefinitionRes() {}
+func (*CompetitorDefinition) saveCompetitorDefinitionRes()    {}
+
+// A new text for the competitor definition.
+// Ref: #/components/schemas/CompetitorDefinitionText
+type CompetitorDefinitionText struct {
+	// Who competes with Tribelt, and who does not.
+	Text string `json:"text"`
+}
+
+// GetText returns the value of Text.
+func (s *CompetitorDefinitionText) GetText() string {
+	return s.Text
+}
+
+// SetText sets the value of Text.
+func (s *CompetitorDefinitionText) SetText(val string) {
+	s.Text = val
+}
+
+// One version of the competitor definition.
+// Ref: #/components/schemas/CompetitorDefinitionVersion
+type CompetitorDefinitionVersion struct {
+	// The version's number; checks record it.
+	Version int32 `json:"version"`
+	// Who competes with Tribelt, and who does not.
+	Text string `json:"text"`
+	// When it was saved.
+	SavedAt time.Time `json:"savedAt"`
+	// Who saved it; import for the version the code held.
+	SavedBy string `json:"savedBy"`
+	// The version whose text it restored; absent for a new text.
+	RestoredFrom OptInt32 `json:"restoredFrom"`
+}
+
+// GetVersion returns the value of Version.
+func (s *CompetitorDefinitionVersion) GetVersion() int32 {
+	return s.Version
+}
+
+// GetText returns the value of Text.
+func (s *CompetitorDefinitionVersion) GetText() string {
+	return s.Text
+}
+
+// GetSavedAt returns the value of SavedAt.
+func (s *CompetitorDefinitionVersion) GetSavedAt() time.Time {
+	return s.SavedAt
+}
+
+// GetSavedBy returns the value of SavedBy.
+func (s *CompetitorDefinitionVersion) GetSavedBy() string {
+	return s.SavedBy
+}
+
+// GetRestoredFrom returns the value of RestoredFrom.
+func (s *CompetitorDefinitionVersion) GetRestoredFrom() OptInt32 {
+	return s.RestoredFrom
+}
+
+// SetVersion sets the value of Version.
+func (s *CompetitorDefinitionVersion) SetVersion(val int32) {
+	s.Version = val
+}
+
+// SetText sets the value of Text.
+func (s *CompetitorDefinitionVersion) SetText(val string) {
+	s.Text = val
+}
+
+// SetSavedAt sets the value of SavedAt.
+func (s *CompetitorDefinitionVersion) SetSavedAt(val time.Time) {
+	s.SavedAt = val
+}
+
+// SetSavedBy sets the value of SavedBy.
+func (s *CompetitorDefinitionVersion) SetSavedBy(val string) {
+	s.SavedBy = val
+}
+
+// SetRestoredFrom sets the value of RestoredFrom.
+func (s *CompetitorDefinitionVersion) SetRestoredFrom(val OptInt32) {
+	s.RestoredFrom = val
+}
+
 // A company with its most recent scans.
 // Ref: #/components/schemas/CompetitorDetail
 type CompetitorDetail struct {
@@ -3009,6 +3719,26 @@ type DismissCompetitorCandidateUnauthorized ProblemStatusCode
 
 func (*DismissCompetitorCandidateUnauthorized) dismissCompetitorCandidateRes() {}
 
+type EditRecommendationBadRequest ProblemStatusCode
+
+func (*EditRecommendationBadRequest) editRecommendationRes() {}
+
+type EditRecommendationForbidden ProblemStatusCode
+
+func (*EditRecommendationForbidden) editRecommendationRes() {}
+
+type EditRecommendationNotFound ProblemStatusCode
+
+func (*EditRecommendationNotFound) editRecommendationRes() {}
+
+type EditRecommendationUnauthorized ProblemStatusCode
+
+func (*EditRecommendationUnauthorized) editRecommendationRes() {}
+
+type EditRecommendationUnprocessableEntity ProblemStatusCode
+
+func (*EditRecommendationUnprocessableEntity) editRecommendationRes() {}
+
 // A product on the site matched to a Tribelt belt family by the language model.
 // Ref: #/components/schemas/Equivalent
 type Equivalent struct {
@@ -3247,6 +3977,14 @@ func (s *FollowedCompany) SetRole(val CompanyRole) {
 	s.Role = val
 }
 
+type GetActivityForbidden ProblemStatusCode
+
+func (*GetActivityForbidden) getActivityRes() {}
+
+type GetActivityUnauthorized ProblemStatusCode
+
+func (*GetActivityUnauthorized) getActivityRes() {}
+
 type GetAnalysisBadRequest ProblemStatusCode
 
 func (*GetAnalysisBadRequest) getAnalysisRes() {}
@@ -3255,9 +3993,29 @@ type GetAnalysisNotFound ProblemStatusCode
 
 func (*GetAnalysisNotFound) getAnalysisRes() {}
 
+type GetClaudeStepForbidden ProblemStatusCode
+
+func (*GetClaudeStepForbidden) getClaudeStepRes() {}
+
+type GetClaudeStepNotFound ProblemStatusCode
+
+func (*GetClaudeStepNotFound) getClaudeStepRes() {}
+
+type GetClaudeStepUnauthorized ProblemStatusCode
+
+func (*GetClaudeStepUnauthorized) getClaudeStepRes() {}
+
 type GetCompetitorBadRequest ProblemStatusCode
 
 func (*GetCompetitorBadRequest) getCompetitorRes() {}
+
+type GetCompetitorDefinitionForbidden ProblemStatusCode
+
+func (*GetCompetitorDefinitionForbidden) getCompetitorDefinitionRes() {}
+
+type GetCompetitorDefinitionUnauthorized ProblemStatusCode
+
+func (*GetCompetitorDefinitionUnauthorized) getCompetitorDefinitionRes() {}
 
 type GetCompetitorNotFound ProblemStatusCode
 
@@ -3303,6 +4061,18 @@ type GetLlmSettingsUnauthorized ProblemStatusCode
 
 func (*GetLlmSettingsUnauthorized) getLlmSettingsRes() {}
 
+type GetPromptModelCatalogueForbidden ProblemStatusCode
+
+func (*GetPromptModelCatalogueForbidden) getPromptModelCatalogueRes() {}
+
+type GetPromptModelCatalogueUnauthorized ProblemStatusCode
+
+func (*GetPromptModelCatalogueUnauthorized) getPromptModelCatalogueRes() {}
+
+type GetPromptModelCatalogueUnprocessableEntity ProblemStatusCode
+
+func (*GetPromptModelCatalogueUnprocessableEntity) getPromptModelCatalogueRes() {}
+
 type GetPromptRetryPlanBadRequest ProblemStatusCode
 
 func (*GetPromptRetryPlanBadRequest) getPromptRetryPlanRes() {}
@@ -3342,6 +4112,91 @@ func (*GetReadinessFilesNotFound) getReadinessFilesRes() {}
 type GetReadinessFilesUnauthorized ProblemStatusCode
 
 func (*GetReadinessFilesUnauthorized) getReadinessFilesRes() {}
+
+type GetRecommendationRunsForbidden ProblemStatusCode
+
+func (*GetRecommendationRunsForbidden) getRecommendationRunsRes() {}
+
+type GetRecommendationRunsUnauthorized ProblemStatusCode
+
+func (*GetRecommendationRunsUnauthorized) getRecommendationRunsRes() {}
+
+type GetTermPagesBadRequest ProblemStatusCode
+
+func (*GetTermPagesBadRequest) getTermPagesRes() {}
+
+type GetTermPagesUnauthorized ProblemStatusCode
+
+func (*GetTermPagesUnauthorized) getTermPagesRes() {}
+
+// A term added or removed by hand, with who did it and when.
+// Ref: #/components/schemas/HandTerm
+type HandTerm struct {
+	Term Term `json:"term"`
+	// Who added or removed it.
+	By string `json:"by"`
+	// When.
+	At time.Time `json:"at"`
+}
+
+// GetTerm returns the value of Term.
+func (s *HandTerm) GetTerm() Term {
+	return s.Term
+}
+
+// GetBy returns the value of By.
+func (s *HandTerm) GetBy() string {
+	return s.By
+}
+
+// GetAt returns the value of At.
+func (s *HandTerm) GetAt() time.Time {
+	return s.At
+}
+
+// SetTerm sets the value of Term.
+func (s *HandTerm) SetTerm(val Term) {
+	s.Term = val
+}
+
+// SetBy sets the value of By.
+func (s *HandTerm) SetBy(val string) {
+	s.By = val
+}
+
+// SetAt sets the value of At.
+func (s *HandTerm) SetAt(val time.Time) {
+	s.At = val
+}
+
+// The terms added by hand and the terms removed, oldest first.
+// Ref: #/components/schemas/HandTermList
+type HandTermList struct {
+	Added   []HandTerm `json:"added"`
+	Removed []HandTerm `json:"removed"`
+}
+
+// GetAdded returns the value of Added.
+func (s *HandTermList) GetAdded() []HandTerm {
+	return s.Added
+}
+
+// GetRemoved returns the value of Removed.
+func (s *HandTermList) GetRemoved() []HandTerm {
+	return s.Removed
+}
+
+// SetAdded sets the value of Added.
+func (s *HandTermList) SetAdded(val []HandTerm) {
+	s.Added = val
+}
+
+// SetRemoved sets the value of Removed.
+func (s *HandTermList) SetRemoved(val []HandTerm) {
+	s.Removed = val
+}
+
+func (*HandTermList) listHandTermsRes() {}
 
 // Whether an improvement is done.
 // Ref: #/components/schemas/ImprovementTick
@@ -3740,6 +4595,14 @@ func (s *Language) UnmarshalText(data []byte) error {
 	}
 }
 
+type ListClaudeStepsForbidden ProblemStatusCode
+
+func (*ListClaudeStepsForbidden) listClaudeStepsRes() {}
+
+type ListClaudeStepsUnauthorized ProblemStatusCode
+
+func (*ListClaudeStepsUnauthorized) listClaudeStepsRes() {}
+
 type ListCompetitorCandidatesBadRequest ProblemStatusCode
 
 func (*ListCompetitorCandidatesBadRequest) listCompetitorCandidatesRes() {}
@@ -3759,6 +4622,14 @@ func (*ListCompetitorChecksForbidden) listCompetitorChecksRes() {}
 type ListCompetitorChecksUnauthorized ProblemStatusCode
 
 func (*ListCompetitorChecksUnauthorized) listCompetitorChecksRes() {}
+
+type ListHandTermsForbidden ProblemStatusCode
+
+func (*ListHandTermsForbidden) listHandTermsRes() {}
+
+type ListHandTermsUnauthorized ProblemStatusCode
+
+func (*ListHandTermsUnauthorized) listHandTermsRes() {}
 
 type ListLlmModelsBadGateway ProblemStatusCode
 
@@ -3808,30 +4679,44 @@ type ListTermCandidatesUnauthorized ProblemStatusCode
 
 func (*ListTermCandidatesUnauthorized) listTermCandidatesRes() {}
 
-// What every job on the language model may spend in a month together - the scans' product matching,
-// the term review, the competitor review and Claude Haiku's reading of Prompt answers. Each stops when
-// the month's tokens are spent.
+// What the Anthropic key may spend in a calendar month (UTC) on every job a Claude model does - the
+// scans' product matching, the term review, the competitor review and Claude Haiku's reading of Prompt
+// answers - and what they spent, priced at the models' list prices from their stored token counts.
+// Each job stops once the month's spend reaches the budget, and keeps what it did. The OpenRouter
+// key's budget is the Prompt test's (PromptTestSettings).
 // Ref: #/components/schemas/LlmBudget
 type LlmBudget struct {
-	// The tokens every job together may use in a calendar month (UTC).
-	MonthlyTokens int64 `json:"monthlyTokens"`
-	// The tokens every job used this month so far.
-	UsedThisMonth int64 `json:"usedThisMonth"`
+	MonthlyBudgetUsd  Usd `json:"monthlyBudgetUsd"`
+	SpentThisMonthUsd Usd `json:"spentThisMonthUsd"`
+	LeftUsd           Usd `json:"leftUsd"`
+	// The tokens, in and out, every job used this month so far.
+	TokensThisMonth int64 `json:"tokensThisMonth"`
 	// The tokens one scan's product matching used on average, over every scan the language model answered
 	// for; 0 before the first.
 	AverageTokensPerScan int64 `json:"averageTokensPerScan"`
+	AverageScanUsd       Usd   `json:"averageScanUsd"`
 	// How many scans the average is over.
 	ScansMatched int64 `json:"scansMatched"`
 }
 
-// GetMonthlyTokens returns the value of MonthlyTokens.
-func (s *LlmBudget) GetMonthlyTokens() int64 {
-	return s.MonthlyTokens
+// GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
+func (s *LlmBudget) GetMonthlyBudgetUsd() Usd {
+	return s.MonthlyBudgetUsd
 }
 
-// GetUsedThisMonth returns the value of UsedThisMonth.
-func (s *LlmBudget) GetUsedThisMonth() int64 {
-	return s.UsedThisMonth
+// GetSpentThisMonthUsd returns the value of SpentThisMonthUsd.
+func (s *LlmBudget) GetSpentThisMonthUsd() Usd {
+	return s.SpentThisMonthUsd
+}
+
+// GetLeftUsd returns the value of LeftUsd.
+func (s *LlmBudget) GetLeftUsd() Usd {
+	return s.LeftUsd
+}
+
+// GetTokensThisMonth returns the value of TokensThisMonth.
+func (s *LlmBudget) GetTokensThisMonth() int64 {
+	return s.TokensThisMonth
 }
 
 // GetAverageTokensPerScan returns the value of AverageTokensPerScan.
@@ -3839,19 +4724,34 @@ func (s *LlmBudget) GetAverageTokensPerScan() int64 {
 	return s.AverageTokensPerScan
 }
 
+// GetAverageScanUsd returns the value of AverageScanUsd.
+func (s *LlmBudget) GetAverageScanUsd() Usd {
+	return s.AverageScanUsd
+}
+
 // GetScansMatched returns the value of ScansMatched.
 func (s *LlmBudget) GetScansMatched() int64 {
 	return s.ScansMatched
 }
 
-// SetMonthlyTokens sets the value of MonthlyTokens.
-func (s *LlmBudget) SetMonthlyTokens(val int64) {
-	s.MonthlyTokens = val
+// SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
+func (s *LlmBudget) SetMonthlyBudgetUsd(val Usd) {
+	s.MonthlyBudgetUsd = val
 }
 
-// SetUsedThisMonth sets the value of UsedThisMonth.
-func (s *LlmBudget) SetUsedThisMonth(val int64) {
-	s.UsedThisMonth = val
+// SetSpentThisMonthUsd sets the value of SpentThisMonthUsd.
+func (s *LlmBudget) SetSpentThisMonthUsd(val Usd) {
+	s.SpentThisMonthUsd = val
+}
+
+// SetLeftUsd sets the value of LeftUsd.
+func (s *LlmBudget) SetLeftUsd(val Usd) {
+	s.LeftUsd = val
+}
+
+// SetTokensThisMonth sets the value of TokensThisMonth.
+func (s *LlmBudget) SetTokensThisMonth(val int64) {
+	s.TokensThisMonth = val
 }
 
 // SetAverageTokensPerScan sets the value of AverageTokensPerScan.
@@ -3859,9 +4759,31 @@ func (s *LlmBudget) SetAverageTokensPerScan(val int64) {
 	s.AverageTokensPerScan = val
 }
 
+// SetAverageScanUsd sets the value of AverageScanUsd.
+func (s *LlmBudget) SetAverageScanUsd(val Usd) {
+	s.AverageScanUsd = val
+}
+
 // SetScansMatched sets the value of ScansMatched.
 func (s *LlmBudget) SetScansMatched(val int64) {
 	s.ScansMatched = val
+}
+
+// The Anthropic key's new monthly budget.
+// Ref: #/components/schemas/LlmBudgetChange
+type LlmBudgetChange struct {
+	// The month's budget in dollars.
+	MonthlyBudgetUsd float64 `json:"monthlyBudgetUsd"`
+}
+
+// GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
+func (s *LlmBudgetChange) GetMonthlyBudgetUsd() float64 {
+	return s.MonthlyBudgetUsd
+}
+
+// SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
+func (s *LlmBudgetChange) SetMonthlyBudgetUsd(val float64) {
+	s.MonthlyBudgetUsd = val
 }
 
 // How the active model was decided - `default` (nobody chose; the Vault key with claude-haiku-5-5 when
@@ -4180,6 +5102,7 @@ const (
 	LlmEventActionCredentialTested  LlmEventAction = "credential_tested"
 	LlmEventActionActiveSet         LlmEventAction = "active_set"
 	LlmEventActionActiveCleared     LlmEventAction = "active_cleared"
+	LlmEventActionBudgetSet         LlmEventAction = "budget_set"
 )
 
 // AllValues returns all LlmEventAction values.
@@ -4190,6 +5113,7 @@ func (LlmEventAction) AllValues() []LlmEventAction {
 		LlmEventActionCredentialTested,
 		LlmEventActionActiveSet,
 		LlmEventActionActiveCleared,
+		LlmEventActionBudgetSet,
 	}
 }
 
@@ -4205,6 +5129,8 @@ func (s LlmEventAction) MarshalText() ([]byte, error) {
 	case LlmEventActionActiveSet:
 		return []byte(s), nil
 	case LlmEventActionActiveCleared:
+		return []byte(s), nil
+	case LlmEventActionBudgetSet:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -4228,6 +5154,9 @@ func (s *LlmEventAction) UnmarshalText(data []byte) error {
 		return nil
 	case LlmEventActionActiveCleared:
 		*s = LlmEventActionActiveCleared
+		return nil
+	case LlmEventActionBudgetSet:
+		*s = LlmEventActionBudgetSet
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4685,9 +5614,10 @@ func (s *LlmSettings) SetEvents(val []LlmEvent) {
 	s.Events = val
 }
 
-func (*LlmSettings) clearActiveLlmRes() {}
-func (*LlmSettings) getLlmSettingsRes() {}
-func (*LlmSettings) setActiveLlmRes()   {}
+func (*LlmSettings) clearActiveLlmRes()  {}
+func (*LlmSettings) getLlmSettingsRes()  {}
+func (*LlmSettings) setActiveLlmRes()    {}
+func (*LlmSettings) updateLlmBudgetRes() {}
 
 // The outcome of asking the provider whether it accepts a key.
 // Ref: #/components/schemas/LlmTest
@@ -5134,6 +6064,56 @@ func (s *NewLlmCredential) SetLabel(val string) {
 // SetApiKey sets the value of ApiKey.
 func (s *NewLlmCredential) SetApiKey(val string) {
 	s.ApiKey = val
+}
+
+// A search term an administrator adds by hand.
+// Ref: #/components/schemas/NewTerm
+type NewTerm struct {
+	// The term as the list shows it.
+	Term     string     `json:"term"`
+	Language Language   `json:"language"`
+	Family   BeltFamily `json:"family"`
+	Tier     IntentTier `json:"tier"`
+}
+
+// GetTerm returns the value of Term.
+func (s *NewTerm) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *NewTerm) GetLanguage() Language {
+	return s.Language
+}
+
+// GetFamily returns the value of Family.
+func (s *NewTerm) GetFamily() BeltFamily {
+	return s.Family
+}
+
+// GetTier returns the value of Tier.
+func (s *NewTerm) GetTier() IntentTier {
+	return s.Tier
+}
+
+// SetTerm sets the value of Term.
+func (s *NewTerm) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *NewTerm) SetLanguage(val Language) {
+	s.Language = val
+}
+
+// SetFamily sets the value of Family.
+func (s *NewTerm) SetFamily(val BeltFamily) {
+	s.Family = val
+}
+
+// SetTier sets the value of Tier.
+func (s *NewTerm) SetTier(val IntentTier) {
+	s.Tier = val
 }
 
 // NewOptActiveLlm returns new OptActiveLlm with value set to v.
@@ -6470,6 +7450,52 @@ func (o OptPromptScope) Or(d PromptScope) PromptScope {
 	return d
 }
 
+// NewOptRecommendationRunEnding returns new OptRecommendationRunEnding with value set to v.
+func NewOptRecommendationRunEnding(v RecommendationRunEnding) OptRecommendationRunEnding {
+	return OptRecommendationRunEnding{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptRecommendationRunEnding is optional RecommendationRunEnding.
+type OptRecommendationRunEnding struct {
+	Value RecommendationRunEnding
+	Set   bool
+}
+
+// IsSet returns true if OptRecommendationRunEnding was set.
+func (o OptRecommendationRunEnding) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptRecommendationRunEnding) Reset() {
+	var v RecommendationRunEnding
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptRecommendationRunEnding) SetTo(v RecommendationRunEnding) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptRecommendationRunEnding) Get() (v RecommendationRunEnding, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptRecommendationRunEnding) Or(d RecommendationRunEnding) RecommendationRunEnding {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptSitemapCoverage returns new OptSitemapCoverage with value set to v.
 func NewOptSitemapCoverage(v SitemapCoverage) OptSitemapCoverage {
 	return OptSitemapCoverage{
@@ -6976,6 +8002,52 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// NewOptWorkEnding returns new OptWorkEnding with value set to v.
+func NewOptWorkEnding(v WorkEnding) OptWorkEnding {
+	return OptWorkEnding{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptWorkEnding is optional WorkEnding.
+type OptWorkEnding struct {
+	Value WorkEnding
+	Set   bool
+}
+
+// IsSet returns true if OptWorkEnding was set.
+func (o OptWorkEnding) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptWorkEnding) Reset() {
+	var v WorkEnding
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptWorkEnding) SetTo(v WorkEnding) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptWorkEnding) Get() (v WorkEnding, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptWorkEnding) Or(d WorkEnding) WorkEnding {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // The figures of the home page.
 // Ref: #/components/schemas/Overview
 type Overview struct {
@@ -7390,13 +8462,30 @@ func (s *Plan) SetReadinessChecks(val ReadinessCheckCount) {
 	s.ReadinessChecks = val
 }
 
-func (*Plan) getPlanRes()         {}
-func (*Plan) setPlanTargetsRes()  {}
-func (*Plan) tickImprovementRes() {}
+func (*Plan) editRecommendationRes() {}
+func (*Plan) getPlanRes()            {}
+func (*Plan) setPlanTargetsRes()     {}
+func (*Plan) tickImprovementRes()    {}
 
 // One improvement of the plan.
 // Ref: #/components/schemas/PlanImprovement
 type PlanImprovement struct {
+	Kind RecommendationKind `json:"kind"`
+	// True for one a Recommendation run wrote, false for one written by hand.
+	Generated bool `json:"generated"`
+	// True for an open one the newest Recommendation run wrote.
+	New bool `json:"new"`
+	// The tribelt.nl page it belongs on; absent when it applies to the whole site or the model could not
+	// place it.
+	Where OptString `json:"where"`
+	// Present instead of where when the model could not place it.
+	WhereNote OptString `json:"whereNote"`
+	// Why the model moved a score from the rules' by a point; absent when it did not.
+	ScoreReason OptString `json:"scoreReason"`
+	// When an administrator edited a generated one; absent when nobody did.
+	EditedAt OptDateTime `json:"editedAt"`
+	// The facts behind a generated one, as the rules found them.
+	Facts []string `json:"facts"`
 	// Its id.
 	ID string `json:"id"`
 	// What to do.
@@ -7428,6 +8517,46 @@ type PlanImprovement struct {
 	// Tribelt's value on the measure it moves; absent without data.
 	Tribelt OptFloat64       `json:"tribelt"`
 	Leader  OptMeasureLeader `json:"leader"`
+}
+
+// GetKind returns the value of Kind.
+func (s *PlanImprovement) GetKind() RecommendationKind {
+	return s.Kind
+}
+
+// GetGenerated returns the value of Generated.
+func (s *PlanImprovement) GetGenerated() bool {
+	return s.Generated
+}
+
+// GetNew returns the value of New.
+func (s *PlanImprovement) GetNew() bool {
+	return s.New
+}
+
+// GetWhere returns the value of Where.
+func (s *PlanImprovement) GetWhere() OptString {
+	return s.Where
+}
+
+// GetWhereNote returns the value of WhereNote.
+func (s *PlanImprovement) GetWhereNote() OptString {
+	return s.WhereNote
+}
+
+// GetScoreReason returns the value of ScoreReason.
+func (s *PlanImprovement) GetScoreReason() OptString {
+	return s.ScoreReason
+}
+
+// GetEditedAt returns the value of EditedAt.
+func (s *PlanImprovement) GetEditedAt() OptDateTime {
+	return s.EditedAt
+}
+
+// GetFacts returns the value of Facts.
+func (s *PlanImprovement) GetFacts() []string {
+	return s.Facts
 }
 
 // GetID returns the value of ID.
@@ -7508,6 +8637,46 @@ func (s *PlanImprovement) GetTribelt() OptFloat64 {
 // GetLeader returns the value of Leader.
 func (s *PlanImprovement) GetLeader() OptMeasureLeader {
 	return s.Leader
+}
+
+// SetKind sets the value of Kind.
+func (s *PlanImprovement) SetKind(val RecommendationKind) {
+	s.Kind = val
+}
+
+// SetGenerated sets the value of Generated.
+func (s *PlanImprovement) SetGenerated(val bool) {
+	s.Generated = val
+}
+
+// SetNew sets the value of New.
+func (s *PlanImprovement) SetNew(val bool) {
+	s.New = val
+}
+
+// SetWhere sets the value of Where.
+func (s *PlanImprovement) SetWhere(val OptString) {
+	s.Where = val
+}
+
+// SetWhereNote sets the value of WhereNote.
+func (s *PlanImprovement) SetWhereNote(val OptString) {
+	s.WhereNote = val
+}
+
+// SetScoreReason sets the value of ScoreReason.
+func (s *PlanImprovement) SetScoreReason(val OptString) {
+	s.ScoreReason = val
+}
+
+// SetEditedAt sets the value of EditedAt.
+func (s *PlanImprovement) SetEditedAt(val OptDateTime) {
+	s.EditedAt = val
+}
+
+// SetFacts sets the value of Facts.
+func (s *PlanImprovement) SetFacts(val []string) {
+	s.Facts = val
 }
 
 // SetID sets the value of ID.
@@ -7815,10 +8984,12 @@ func (*ProblemStatusCode) getMeRes()                {}
 func (*ProblemStatusCode) getOverviewRes()          {}
 func (*ProblemStatusCode) getPlanRes()              {}
 func (*ProblemStatusCode) getProductsRes()          {}
+func (*ProblemStatusCode) getPromptTestHistoryRes() {}
 func (*ProblemStatusCode) getPromptTestResultsRes() {}
 func (*ProblemStatusCode) getStandingsRes()         {}
 func (*ProblemStatusCode) listAnalysesRes()         {}
 func (*ProblemStatusCode) listCompetitorsRes()      {}
+func (*ProblemStatusCode) listPromptSetsRes()       {}
 func (*ProblemStatusCode) searchTermsRes()          {}
 
 // One belt family against the field.
@@ -8817,6 +9988,116 @@ func (s *PromptCadence) UnmarshalText(data []byte) error {
 	}
 }
 
+// One text model on OpenRouter, with what one response costs.
+// Ref: #/components/schemas/PromptCatalogueModel
+type PromptCatalogueModel struct {
+	// Its OpenRouter id.
+	ID string `json:"id"`
+	// Its name on OpenRouter.
+	Name string `json:"name"`
+	// Its provider's OpenRouter id.
+	Provider string `json:"provider"`
+	// When OpenRouter listed it; absent when OpenRouter does not say.
+	ListedAt OptDateTime `json:"listedAt"`
+	// True when its tokens cost nothing.
+	Free bool `json:"free"`
+	// True for the cheapest model of OpenAI, Google, Anthropic, Mistral, and DeepSeek.
+	Recommended  bool             `json:"recommended"`
+	Basis        PromptPriceBasis `json:"basis"`
+	KnowledgeUsd Usd              `json:"knowledgeUsd"`
+	WebUsd       Usd              `json:"webUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptCatalogueModel) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *PromptCatalogueModel) GetName() string {
+	return s.Name
+}
+
+// GetProvider returns the value of Provider.
+func (s *PromptCatalogueModel) GetProvider() string {
+	return s.Provider
+}
+
+// GetListedAt returns the value of ListedAt.
+func (s *PromptCatalogueModel) GetListedAt() OptDateTime {
+	return s.ListedAt
+}
+
+// GetFree returns the value of Free.
+func (s *PromptCatalogueModel) GetFree() bool {
+	return s.Free
+}
+
+// GetRecommended returns the value of Recommended.
+func (s *PromptCatalogueModel) GetRecommended() bool {
+	return s.Recommended
+}
+
+// GetBasis returns the value of Basis.
+func (s *PromptCatalogueModel) GetBasis() PromptPriceBasis {
+	return s.Basis
+}
+
+// GetKnowledgeUsd returns the value of KnowledgeUsd.
+func (s *PromptCatalogueModel) GetKnowledgeUsd() Usd {
+	return s.KnowledgeUsd
+}
+
+// GetWebUsd returns the value of WebUsd.
+func (s *PromptCatalogueModel) GetWebUsd() Usd {
+	return s.WebUsd
+}
+
+// SetID sets the value of ID.
+func (s *PromptCatalogueModel) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *PromptCatalogueModel) SetName(val string) {
+	s.Name = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *PromptCatalogueModel) SetProvider(val string) {
+	s.Provider = val
+}
+
+// SetListedAt sets the value of ListedAt.
+func (s *PromptCatalogueModel) SetListedAt(val OptDateTime) {
+	s.ListedAt = val
+}
+
+// SetFree sets the value of Free.
+func (s *PromptCatalogueModel) SetFree(val bool) {
+	s.Free = val
+}
+
+// SetRecommended sets the value of Recommended.
+func (s *PromptCatalogueModel) SetRecommended(val bool) {
+	s.Recommended = val
+}
+
+// SetBasis sets the value of Basis.
+func (s *PromptCatalogueModel) SetBasis(val PromptPriceBasis) {
+	s.Basis = val
+}
+
+// SetKnowledgeUsd sets the value of KnowledgeUsd.
+func (s *PromptCatalogueModel) SetKnowledgeUsd(val Usd) {
+	s.KnowledgeUsd = val
+}
+
+// SetWebUsd sets the value of WebUsd.
+func (s *PromptCatalogueModel) SetWebUsd(val Usd) {
+	s.WebUsd = val
+}
+
 // The answers of one provider, scope, belt family and mode that were read, and how many name and cite
 // Tribelt.
 // Ref: #/components/schemas/PromptCell
@@ -8954,9 +10235,86 @@ func (s *PromptCorrectness) UnmarshalText(data []byte) error {
 	}
 }
 
+// One question of a draft.
+// Ref: #/components/schemas/PromptDraftQuestion
+type PromptDraftQuestion struct {
+	// The id of the published question it keeps, changed or not; absent for a new question.
+	ID     OptString        `json:"id"`
+	Family PromptFamily     `json:"family"`
+	Intent IntentTier       `json:"intent"`
+	Scope  PromptSetScopeId `json:"scope"`
+	// The question, as it is asked.
+	Text string `json:"text"`
+	// Its English translation, when one is known.
+	English OptString `json:"english"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptDraftQuestion) GetID() OptString {
+	return s.ID
+}
+
+// GetFamily returns the value of Family.
+func (s *PromptDraftQuestion) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetIntent returns the value of Intent.
+func (s *PromptDraftQuestion) GetIntent() IntentTier {
+	return s.Intent
+}
+
+// GetScope returns the value of Scope.
+func (s *PromptDraftQuestion) GetScope() PromptSetScopeId {
+	return s.Scope
+}
+
+// GetText returns the value of Text.
+func (s *PromptDraftQuestion) GetText() string {
+	return s.Text
+}
+
+// GetEnglish returns the value of English.
+func (s *PromptDraftQuestion) GetEnglish() OptString {
+	return s.English
+}
+
+// SetID sets the value of ID.
+func (s *PromptDraftQuestion) SetID(val OptString) {
+	s.ID = val
+}
+
+// SetFamily sets the value of Family.
+func (s *PromptDraftQuestion) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetIntent sets the value of Intent.
+func (s *PromptDraftQuestion) SetIntent(val IntentTier) {
+	s.Intent = val
+}
+
+// SetScope sets the value of Scope.
+func (s *PromptDraftQuestion) SetScope(val PromptSetScopeId) {
+	s.Scope = val
+}
+
+// SetText sets the value of Text.
+func (s *PromptDraftQuestion) SetText(val string) {
+	s.Text = val
+}
+
+// SetEnglish sets the value of English.
+func (s *PromptDraftQuestion) SetEnglish(val OptString) {
+	s.English = val
+}
+
 // How the extractor read an answer; failed when it could not, after a retry.
 // Ref: #/components/schemas/PromptExtraction
 type PromptExtraction struct {
+	// The model that read the response, by its name for people, such as "Claude Haiku 5.5"; absent for a
+	// reading made before readings recorded it.
+	ReadBy OptString `json:"readBy"`
 	// True when the extractor could not read it.
 	Failed bool `json:"failed"`
 	// The companies named, in order.
@@ -8968,9 +10326,18 @@ type PromptExtraction struct {
 	// True when it cites a Tribelt address.
 	CitesTribelt bool                 `json:"citesTribelt"`
 	Correctness  OptPromptCorrectness `json:"correctness"`
-	// Each claim about Tribelt the fact sheet contradicts, quoted.
+	// Each claim about Tribelt the fact sheet contradicts, quoted: what the response got wrong about
+	// Tribelt, and the only claims that become fact sheet corrections.
 	WrongClaims []string `json:"wrongClaims"`
-	CostUsd     Usd      `json:"costUsd"`
+	// Each fact from the fact sheet a response naming Tribelt does not mention; empty when it does not
+	// name Tribelt, and for a response read before wrong claims and facts left out were told apart.
+	LeftOut []string `json:"leftOut"`
+	CostUsd Usd      `json:"costUsd"`
+}
+
+// GetReadBy returns the value of ReadBy.
+func (s *PromptExtraction) GetReadBy() OptString {
+	return s.ReadBy
 }
 
 // GetFailed returns the value of Failed.
@@ -9008,9 +10375,19 @@ func (s *PromptExtraction) GetWrongClaims() []string {
 	return s.WrongClaims
 }
 
+// GetLeftOut returns the value of LeftOut.
+func (s *PromptExtraction) GetLeftOut() []string {
+	return s.LeftOut
+}
+
 // GetCostUsd returns the value of CostUsd.
 func (s *PromptExtraction) GetCostUsd() Usd {
 	return s.CostUsd
+}
+
+// SetReadBy sets the value of ReadBy.
+func (s *PromptExtraction) SetReadBy(val OptString) {
+	s.ReadBy = val
 }
 
 // SetFailed sets the value of Failed.
@@ -9046,6 +10423,11 @@ func (s *PromptExtraction) SetCorrectness(val OptPromptCorrectness) {
 // SetWrongClaims sets the value of WrongClaims.
 func (s *PromptExtraction) SetWrongClaims(val []string) {
 	s.WrongClaims = val
+}
+
+// SetLeftOut sets the value of LeftOut.
+func (s *PromptExtraction) SetLeftOut(val []string) {
+	s.LeftOut = val
 }
 
 // SetCostUsd sets the value of CostUsd.
@@ -9350,6 +10732,49 @@ func (s *PromptMode) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// Every text model on OpenRouter, as Add a model lists it.
+// Ref: #/components/schemas/PromptModelCatalogue
+type PromptModelCatalogue struct {
+	// When the catalogue was read from OpenRouter.
+	ReadAt time.Time `json:"readAt"`
+	// How many questions a run asks, for the cost of a run.
+	Questions int32 `json:"questions"`
+	// The models, the recommended first, then cheapest first.
+	Models []PromptCatalogueModel `json:"models"`
+}
+
+// GetReadAt returns the value of ReadAt.
+func (s *PromptModelCatalogue) GetReadAt() time.Time {
+	return s.ReadAt
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PromptModelCatalogue) GetQuestions() int32 {
+	return s.Questions
+}
+
+// GetModels returns the value of Models.
+func (s *PromptModelCatalogue) GetModels() []PromptCatalogueModel {
+	return s.Models
+}
+
+// SetReadAt sets the value of ReadAt.
+func (s *PromptModelCatalogue) SetReadAt(val time.Time) {
+	s.ReadAt = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PromptModelCatalogue) SetQuestions(val int32) {
+	s.Questions = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptModelCatalogue) SetModels(val []PromptCatalogueModel) {
+	s.Models = val
+}
+
+func (*PromptModelCatalogue) getPromptModelCatalogueRes() {}
 
 // The model a run asks for one provider, and the paid fallback of a free one.
 // Ref: #/components/schemas/PromptModelChoice
@@ -10208,6 +11633,207 @@ func (s *PromptRun) SetCells(val []PromptCell) {
 
 func (*PromptRun) startPromptRunRes() {}
 
+// One run's figures: the share of the responses read that name Tribelt, overall, per language, and for
+// Twente, and the share of web responses that cite tribelt.nl. A share is absent when the run read no
+// response to measure it on.
+// Ref: #/components/schemas/PromptRunFigures
+type PromptRunFigures struct {
+	// The model that read most of the run's responses, by its name for people, such as "Claude Haiku 5.5";
+	// absent when its readings recorded none. A change of it between runs breaks the charts, as the
+	// responses were read another way.
+	ReadingModel OptString `json:"readingModel"`
+	// The run's id.
+	RunId uuid.UUID `json:"runId"`
+	// The models the run asked, by OpenRouter id; the charts break where they changed.
+	Models []string `json:"models"`
+	// When it started.
+	StartedAt time.Time `json:"startedAt"`
+	// The version of the Prompt set it asked.
+	PromptSetVersion int32 `json:"promptSetVersion"`
+	// How many responses it asked for.
+	Tasks int32 `json:"tasks"`
+	// How many requests got a response.
+	Answered int32 `json:"answered"`
+	// How many responses were read, which the shares count.
+	Read int32 `json:"read"`
+	// Whether it got fewer than half its responses.
+	Partial bool `json:"partial"`
+	// The reason most of a partial run's failed responses give; absent for a run that is not partial.
+	Failure OptString `json:"failure"`
+	// The share of the responses read that name Tribelt.
+	All OptFloat64 `json:"all"`
+	// The share of the Dutch responses read that name Tribelt.
+	Dutch OptFloat64 `json:"dutch"`
+	// The share of the German responses read that name Tribelt.
+	German OptFloat64 `json:"german"`
+	// The share of the English responses read that name Tribelt.
+	English OptFloat64 `json:"english"`
+	// The share of the responses read to the Twente questions that name Tribelt.
+	Twente OptFloat64 `json:"twente"`
+	// The share of the web responses read that cite tribelt.nl.
+	Citation OptFloat64 `json:"citation"`
+}
+
+// GetReadingModel returns the value of ReadingModel.
+func (s *PromptRunFigures) GetReadingModel() OptString {
+	return s.ReadingModel
+}
+
+// GetRunId returns the value of RunId.
+func (s *PromptRunFigures) GetRunId() uuid.UUID {
+	return s.RunId
+}
+
+// GetModels returns the value of Models.
+func (s *PromptRunFigures) GetModels() []string {
+	return s.Models
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *PromptRunFigures) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetPromptSetVersion returns the value of PromptSetVersion.
+func (s *PromptRunFigures) GetPromptSetVersion() int32 {
+	return s.PromptSetVersion
+}
+
+// GetTasks returns the value of Tasks.
+func (s *PromptRunFigures) GetTasks() int32 {
+	return s.Tasks
+}
+
+// GetAnswered returns the value of Answered.
+func (s *PromptRunFigures) GetAnswered() int32 {
+	return s.Answered
+}
+
+// GetRead returns the value of Read.
+func (s *PromptRunFigures) GetRead() int32 {
+	return s.Read
+}
+
+// GetPartial returns the value of Partial.
+func (s *PromptRunFigures) GetPartial() bool {
+	return s.Partial
+}
+
+// GetFailure returns the value of Failure.
+func (s *PromptRunFigures) GetFailure() OptString {
+	return s.Failure
+}
+
+// GetAll returns the value of All.
+func (s *PromptRunFigures) GetAll() OptFloat64 {
+	return s.All
+}
+
+// GetDutch returns the value of Dutch.
+func (s *PromptRunFigures) GetDutch() OptFloat64 {
+	return s.Dutch
+}
+
+// GetGerman returns the value of German.
+func (s *PromptRunFigures) GetGerman() OptFloat64 {
+	return s.German
+}
+
+// GetEnglish returns the value of English.
+func (s *PromptRunFigures) GetEnglish() OptFloat64 {
+	return s.English
+}
+
+// GetTwente returns the value of Twente.
+func (s *PromptRunFigures) GetTwente() OptFloat64 {
+	return s.Twente
+}
+
+// GetCitation returns the value of Citation.
+func (s *PromptRunFigures) GetCitation() OptFloat64 {
+	return s.Citation
+}
+
+// SetReadingModel sets the value of ReadingModel.
+func (s *PromptRunFigures) SetReadingModel(val OptString) {
+	s.ReadingModel = val
+}
+
+// SetRunId sets the value of RunId.
+func (s *PromptRunFigures) SetRunId(val uuid.UUID) {
+	s.RunId = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptRunFigures) SetModels(val []string) {
+	s.Models = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *PromptRunFigures) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetPromptSetVersion sets the value of PromptSetVersion.
+func (s *PromptRunFigures) SetPromptSetVersion(val int32) {
+	s.PromptSetVersion = val
+}
+
+// SetTasks sets the value of Tasks.
+func (s *PromptRunFigures) SetTasks(val int32) {
+	s.Tasks = val
+}
+
+// SetAnswered sets the value of Answered.
+func (s *PromptRunFigures) SetAnswered(val int32) {
+	s.Answered = val
+}
+
+// SetRead sets the value of Read.
+func (s *PromptRunFigures) SetRead(val int32) {
+	s.Read = val
+}
+
+// SetPartial sets the value of Partial.
+func (s *PromptRunFigures) SetPartial(val bool) {
+	s.Partial = val
+}
+
+// SetFailure sets the value of Failure.
+func (s *PromptRunFigures) SetFailure(val OptString) {
+	s.Failure = val
+}
+
+// SetAll sets the value of All.
+func (s *PromptRunFigures) SetAll(val OptFloat64) {
+	s.All = val
+}
+
+// SetDutch sets the value of Dutch.
+func (s *PromptRunFigures) SetDutch(val OptFloat64) {
+	s.Dutch = val
+}
+
+// SetGerman sets the value of German.
+func (s *PromptRunFigures) SetGerman(val OptFloat64) {
+	s.German = val
+}
+
+// SetEnglish sets the value of English.
+func (s *PromptRunFigures) SetEnglish(val OptFloat64) {
+	s.English = val
+}
+
+// SetTwente sets the value of Twente.
+func (s *PromptRunFigures) SetTwente(val OptFloat64) {
+	s.Twente = val
+}
+
+// SetCitation sets the value of Citation.
+func (s *PromptRunFigures) SetCitation(val OptFloat64) {
+	s.Citation = val
+}
+
 // Where a Prompt run is - running, done, stopped (the month's budget was reached; its answers are
 // kept) or failed.
 // Ref: #/components/schemas/PromptRunStatus
@@ -10266,77 +11892,7 @@ func (s *PromptRunStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Where and in which language a prompt asks - Twente, the Netherlands or Germany in that region's
-// language, or Dutch, German or English with no region.
-// Ref: #/components/schemas/PromptScope
 type PromptScope string
-
-const (
-	PromptScopeTwente      PromptScope = "twente"
-	PromptScopeNetherlands PromptScope = "netherlands"
-	PromptScopeGermany     PromptScope = "germany"
-	PromptScopeDutch       PromptScope = "dutch"
-	PromptScopeGerman      PromptScope = "german"
-	PromptScopeEnglish     PromptScope = "english"
-)
-
-// AllValues returns all PromptScope values.
-func (PromptScope) AllValues() []PromptScope {
-	return []PromptScope{
-		PromptScopeTwente,
-		PromptScopeNetherlands,
-		PromptScopeGermany,
-		PromptScopeDutch,
-		PromptScopeGerman,
-		PromptScopeEnglish,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PromptScope) MarshalText() ([]byte, error) {
-	switch s {
-	case PromptScopeTwente:
-		return []byte(s), nil
-	case PromptScopeNetherlands:
-		return []byte(s), nil
-	case PromptScopeGermany:
-		return []byte(s), nil
-	case PromptScopeDutch:
-		return []byte(s), nil
-	case PromptScopeGerman:
-		return []byte(s), nil
-	case PromptScopeEnglish:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PromptScope) UnmarshalText(data []byte) error {
-	switch PromptScope(data) {
-	case PromptScopeTwente:
-		*s = PromptScopeTwente
-		return nil
-	case PromptScopeNetherlands:
-		*s = PromptScopeNetherlands
-		return nil
-	case PromptScopeGermany:
-		*s = PromptScopeGermany
-		return nil
-	case PromptScopeDutch:
-		*s = PromptScopeDutch
-		return nil
-	case PromptScopeGerman:
-		*s = PromptScopeGerman
-		return nil
-	case PromptScopeEnglish:
-		*s = PromptScopeEnglish
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // The fixed, versioned prompt set runs ask.
 // Ref: #/components/schemas/PromptSet
@@ -10366,6 +11922,327 @@ func (s *PromptSet) SetVersion(val int32) {
 func (s *PromptSet) SetPrompts(val []PromptQuestion) {
 	s.Prompts = val
 }
+
+// An edited Prompt set to publish - its questions in order, the new scopes they ask in, and the
+// version it was restored from, if any.
+// Ref: #/components/schemas/PromptSetDraft
+type PromptSetDraft struct {
+	// Its questions, in order.
+	Questions []PromptDraftQuestion `json:"questions"`
+	// The new scopes its questions ask in, which no version asked in yet.
+	Scopes []PromptSetScope `json:"scopes"`
+	// The version the draft was restored from, if it was.
+	RestoredFrom OptInt32 `json:"restoredFrom"`
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PromptSetDraft) GetQuestions() []PromptDraftQuestion {
+	return s.Questions
+}
+
+// GetScopes returns the value of Scopes.
+func (s *PromptSetDraft) GetScopes() []PromptSetScope {
+	return s.Scopes
+}
+
+// GetRestoredFrom returns the value of RestoredFrom.
+func (s *PromptSetDraft) GetRestoredFrom() OptInt32 {
+	return s.RestoredFrom
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PromptSetDraft) SetQuestions(val []PromptDraftQuestion) {
+	s.Questions = val
+}
+
+// SetScopes sets the value of Scopes.
+func (s *PromptSetDraft) SetScopes(val []PromptSetScope) {
+	s.Scopes = val
+}
+
+// SetRestoredFrom sets the value of RestoredFrom.
+func (s *PromptSetDraft) SetRestoredFrom(val OptInt32) {
+	s.RestoredFrom = val
+}
+
+// One question of a published Prompt set.
+// Ref: #/components/schemas/PromptSetQuestion
+type PromptSetQuestion struct {
+	// Its id, which the responses to it record.
+	ID     string           `json:"id"`
+	Family PromptFamily     `json:"family"`
+	Intent IntentTier       `json:"intent"`
+	Scope  PromptSetScopeId `json:"scope"`
+	// Its scope's name.
+	ScopeName string `json:"scopeName"`
+	// The language it is asked in, its scope's.
+	Language string `json:"language"`
+	// The region it asks about, its scope's; absent for none.
+	Region OptString `json:"region"`
+	// The question, as it is asked.
+	Text string `json:"text"`
+	// Its English translation; absent when it is in English or none is known.
+	English OptString `json:"english"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptSetQuestion) GetID() string {
+	return s.ID
+}
+
+// GetFamily returns the value of Family.
+func (s *PromptSetQuestion) GetFamily() PromptFamily {
+	return s.Family
+}
+
+// GetIntent returns the value of Intent.
+func (s *PromptSetQuestion) GetIntent() IntentTier {
+	return s.Intent
+}
+
+// GetScope returns the value of Scope.
+func (s *PromptSetQuestion) GetScope() PromptSetScopeId {
+	return s.Scope
+}
+
+// GetScopeName returns the value of ScopeName.
+func (s *PromptSetQuestion) GetScopeName() string {
+	return s.ScopeName
+}
+
+// GetLanguage returns the value of Language.
+func (s *PromptSetQuestion) GetLanguage() string {
+	return s.Language
+}
+
+// GetRegion returns the value of Region.
+func (s *PromptSetQuestion) GetRegion() OptString {
+	return s.Region
+}
+
+// GetText returns the value of Text.
+func (s *PromptSetQuestion) GetText() string {
+	return s.Text
+}
+
+// GetEnglish returns the value of English.
+func (s *PromptSetQuestion) GetEnglish() OptString {
+	return s.English
+}
+
+// SetID sets the value of ID.
+func (s *PromptSetQuestion) SetID(val string) {
+	s.ID = val
+}
+
+// SetFamily sets the value of Family.
+func (s *PromptSetQuestion) SetFamily(val PromptFamily) {
+	s.Family = val
+}
+
+// SetIntent sets the value of Intent.
+func (s *PromptSetQuestion) SetIntent(val IntentTier) {
+	s.Intent = val
+}
+
+// SetScope sets the value of Scope.
+func (s *PromptSetQuestion) SetScope(val PromptSetScopeId) {
+	s.Scope = val
+}
+
+// SetScopeName sets the value of ScopeName.
+func (s *PromptSetQuestion) SetScopeName(val string) {
+	s.ScopeName = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *PromptSetQuestion) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetRegion sets the value of Region.
+func (s *PromptSetQuestion) SetRegion(val OptString) {
+	s.Region = val
+}
+
+// SetText sets the value of Text.
+func (s *PromptSetQuestion) SetText(val string) {
+	s.Text = val
+}
+
+// SetEnglish sets the value of English.
+func (s *PromptSetQuestion) SetEnglish(val OptString) {
+	s.English = val
+}
+
+// A scope - a language a question is asked in, with or without a region.
+// Ref: #/components/schemas/PromptSetScope
+type PromptSetScope struct {
+	ID PromptSetScopeId `json:"id"`
+	// Its name.
+	Name string `json:"name"`
+	// The language it asks in.
+	Language string `json:"language"`
+	// The region it asks about; absent for none.
+	Region OptString `json:"region"`
+}
+
+// GetID returns the value of ID.
+func (s *PromptSetScope) GetID() PromptSetScopeId {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *PromptSetScope) GetName() string {
+	return s.Name
+}
+
+// GetLanguage returns the value of Language.
+func (s *PromptSetScope) GetLanguage() string {
+	return s.Language
+}
+
+// GetRegion returns the value of Region.
+func (s *PromptSetScope) GetRegion() OptString {
+	return s.Region
+}
+
+// SetID sets the value of ID.
+func (s *PromptSetScope) SetID(val PromptSetScopeId) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *PromptSetScope) SetName(val string) {
+	s.Name = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *PromptSetScope) SetLanguage(val string) {
+	s.Language = val
+}
+
+// SetRegion sets the value of Region.
+func (s *PromptSetScope) SetRegion(val OptString) {
+	s.Region = val
+}
+
+type PromptSetScopeId string
+
+// One published Prompt set.
+// Ref: #/components/schemas/PromptSetVersionInfo
+type PromptSetVersionInfo struct {
+	// The version.
+	Version int32 `json:"version"`
+	// When it was published.
+	PublishedAt time.Time `json:"publishedAt"`
+	// How many questions it asks.
+	Questions int32 `json:"questions"`
+	// What it asks, or what it changed.
+	Note string `json:"note"`
+}
+
+// GetVersion returns the value of Version.
+func (s *PromptSetVersionInfo) GetVersion() int32 {
+	return s.Version
+}
+
+// GetPublishedAt returns the value of PublishedAt.
+func (s *PromptSetVersionInfo) GetPublishedAt() time.Time {
+	return s.PublishedAt
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PromptSetVersionInfo) GetQuestions() int32 {
+	return s.Questions
+}
+
+// GetNote returns the value of Note.
+func (s *PromptSetVersionInfo) GetNote() string {
+	return s.Note
+}
+
+// SetVersion sets the value of Version.
+func (s *PromptSetVersionInfo) SetVersion(val int32) {
+	s.Version = val
+}
+
+// SetPublishedAt sets the value of PublishedAt.
+func (s *PromptSetVersionInfo) SetPublishedAt(val time.Time) {
+	s.PublishedAt = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PromptSetVersionInfo) SetQuestions(val int32) {
+	s.Questions = val
+}
+
+// SetNote sets the value of Note.
+func (s *PromptSetVersionInfo) SetNote(val string) {
+	s.Note = val
+}
+
+// The published Prompt sets, newest first, and every scope.
+// Ref: #/components/schemas/PromptSets
+type PromptSets struct {
+	// Every published version, newest first.
+	Versions []PublishedPromptSet `json:"versions"`
+	// Every scope a question can be asked in, by name.
+	Scopes []PromptSetScope `json:"scopes"`
+}
+
+// GetVersions returns the value of Versions.
+func (s *PromptSets) GetVersions() []PublishedPromptSet {
+	return s.Versions
+}
+
+// GetScopes returns the value of Scopes.
+func (s *PromptSets) GetScopes() []PromptSetScope {
+	return s.Scopes
+}
+
+// SetVersions sets the value of Versions.
+func (s *PromptSets) SetVersions(val []PublishedPromptSet) {
+	s.Versions = val
+}
+
+// SetScopes sets the value of Scopes.
+func (s *PromptSets) SetScopes(val []PromptSetScope) {
+	s.Scopes = val
+}
+
+func (*PromptSets) listPromptSetsRes() {}
+
+// The Prompt test's figures per run, with the Prompt set versions they asked.
+// Ref: #/components/schemas/PromptTestHistory
+type PromptTestHistory struct {
+	// The published Prompt sets, oldest first.
+	Versions []PromptSetVersionInfo `json:"versions"`
+	// Every run of the latest with at least one response read, oldest first.
+	Runs []PromptRunFigures `json:"runs"`
+}
+
+// GetVersions returns the value of Versions.
+func (s *PromptTestHistory) GetVersions() []PromptSetVersionInfo {
+	return s.Versions
+}
+
+// GetRuns returns the value of Runs.
+func (s *PromptTestHistory) GetRuns() []PromptRunFigures {
+	return s.Runs
+}
+
+// SetVersions sets the value of Versions.
+func (s *PromptTestHistory) SetVersions(val []PromptSetVersionInfo) {
+	s.Versions = val
+}
+
+// SetRuns sets the value of Runs.
+func (s *PromptTestHistory) SetRuns(val []PromptRunFigures) {
+	s.Runs = val
+}
+
+func (*PromptTestHistory) getPromptTestHistoryRes() {}
 
 // The Prompt test's results.
 // Ref: #/components/schemas/PromptTestResults
@@ -10426,8 +12303,11 @@ func (*PromptTestResults) getPromptTestResultsRes() {}
 // Ref: #/components/schemas/PromptTestSettings
 type PromptTestSettings struct {
 	CredentialId OptLlmCredentialId `json:"credentialId"`
-	// The providers whose cheapest model runs ask, by OpenRouter id.
-	Providers         []string      `json:"providers"`
+	// The providers whose cheapest model runs ask until a Model list is saved, by OpenRouter id.
+	Providers []string `json:"providers"`
+	// The Model list, the OpenRouter models every run asks, each its own column; empty until one is saved,
+	// when runs ask the cheapest model of each provider.
+	ModelList         []string      `json:"modelList"`
 	MonthlyBudgetUsd  Usd           `json:"monthlyBudgetUsd"`
 	SpentThisMonthUsd Usd           `json:"spentThisMonthUsd"`
 	Cadence           PromptCadence `json:"cadence"`
@@ -10453,6 +12333,11 @@ func (s *PromptTestSettings) GetCredentialId() OptLlmCredentialId {
 // GetProviders returns the value of Providers.
 func (s *PromptTestSettings) GetProviders() []string {
 	return s.Providers
+}
+
+// GetModelList returns the value of ModelList.
+func (s *PromptTestSettings) GetModelList() []string {
+	return s.ModelList
 }
 
 // GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
@@ -10515,6 +12400,11 @@ func (s *PromptTestSettings) SetProviders(val []string) {
 	s.Providers = val
 }
 
+// SetModelList sets the value of ModelList.
+func (s *PromptTestSettings) SetModelList(val []string) {
+	s.ModelList = val
+}
+
 // SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
 func (s *PromptTestSettings) SetMonthlyBudgetUsd(val Usd) {
 	s.MonthlyBudgetUsd = val
@@ -10574,6 +12464,8 @@ type PromptTestSettingsChange struct {
 	CredentialId OptLlmCredentialId `json:"credentialId"`
 	// The providers whose cheapest model runs ask.
 	Providers []string `json:"providers"`
+	// The Model list, by OpenRouter model id.
+	Models []string `json:"models"`
 	// The month's budget in dollars.
 	MonthlyBudgetUsd OptFloat64       `json:"monthlyBudgetUsd"`
 	Cadence          OptPromptCadence `json:"cadence"`
@@ -10589,6 +12481,11 @@ func (s *PromptTestSettingsChange) GetCredentialId() OptLlmCredentialId {
 // GetProviders returns the value of Providers.
 func (s *PromptTestSettingsChange) GetProviders() []string {
 	return s.Providers
+}
+
+// GetModels returns the value of Models.
+func (s *PromptTestSettingsChange) GetModels() []string {
+	return s.Models
 }
 
 // GetMonthlyBudgetUsd returns the value of MonthlyBudgetUsd.
@@ -10614,6 +12511,11 @@ func (s *PromptTestSettingsChange) SetCredentialId(val OptLlmCredentialId) {
 // SetProviders sets the value of Providers.
 func (s *PromptTestSettingsChange) SetProviders(val []string) {
 	s.Providers = val
+}
+
+// SetModels sets the value of Models.
+func (s *PromptTestSettingsChange) SetModels(val []string) {
+	s.Models = val
 }
 
 // SetMonthlyBudgetUsd sets the value of MonthlyBudgetUsd.
@@ -10784,6 +12686,102 @@ func (s *PromptWrongClaim) SetCorrectness(val OptPromptCorrectness) {
 func (s *PromptWrongClaim) SetClaim(val string) {
 	s.Claim = val
 }
+
+type PublishPromptSetBadRequest ProblemStatusCode
+
+func (*PublishPromptSetBadRequest) publishPromptSetRes() {}
+
+type PublishPromptSetConflict ProblemStatusCode
+
+func (*PublishPromptSetConflict) publishPromptSetRes() {}
+
+type PublishPromptSetForbidden ProblemStatusCode
+
+func (*PublishPromptSetForbidden) publishPromptSetRes() {}
+
+type PublishPromptSetUnauthorized ProblemStatusCode
+
+func (*PublishPromptSetUnauthorized) publishPromptSetRes() {}
+
+type PublishPromptSetUnprocessableEntity ProblemStatusCode
+
+func (*PublishPromptSetUnprocessableEntity) publishPromptSetRes() {}
+
+// One published version of the Prompt set, with its questions.
+// Ref: #/components/schemas/PublishedPromptSet
+type PublishedPromptSet struct {
+	// The version.
+	Version int32 `json:"version"`
+	// When it was published.
+	PublishedAt time.Time `json:"publishedAt"`
+	// What it asks, or what it changed.
+	Note string `json:"note"`
+	// Its questions, in order.
+	Questions []PromptSetQuestion `json:"questions"`
+}
+
+// GetVersion returns the value of Version.
+func (s *PublishedPromptSet) GetVersion() int32 {
+	return s.Version
+}
+
+// GetPublishedAt returns the value of PublishedAt.
+func (s *PublishedPromptSet) GetPublishedAt() time.Time {
+	return s.PublishedAt
+}
+
+// GetNote returns the value of Note.
+func (s *PublishedPromptSet) GetNote() string {
+	return s.Note
+}
+
+// GetQuestions returns the value of Questions.
+func (s *PublishedPromptSet) GetQuestions() []PromptSetQuestion {
+	return s.Questions
+}
+
+// SetVersion sets the value of Version.
+func (s *PublishedPromptSet) SetVersion(val int32) {
+	s.Version = val
+}
+
+// SetPublishedAt sets the value of PublishedAt.
+func (s *PublishedPromptSet) SetPublishedAt(val time.Time) {
+	s.PublishedAt = val
+}
+
+// SetNote sets the value of Note.
+func (s *PublishedPromptSet) SetNote(val string) {
+	s.Note = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *PublishedPromptSet) SetQuestions(val []PromptSetQuestion) {
+	s.Questions = val
+}
+
+func (*PublishedPromptSet) publishPromptSetRes() {}
+
+type PutBackTermBadRequest ProblemStatusCode
+
+func (*PutBackTermBadRequest) putBackTermRes() {}
+
+type PutBackTermForbidden ProblemStatusCode
+
+func (*PutBackTermForbidden) putBackTermRes() {}
+
+// PutBackTermNoContent is response for PutBackTerm operation.
+type PutBackTermNoContent struct{}
+
+func (*PutBackTermNoContent) putBackTermRes() {}
+
+type PutBackTermNotFound ProblemStatusCode
+
+func (*PutBackTermNotFound) putBackTermRes() {}
+
+type PutBackTermUnauthorized ProblemStatusCode
+
+func (*PutBackTermUnauthorized) putBackTermRes() {}
 
 // Whether a site follows one recommendation.
 // Ref: #/components/schemas/ReadinessAdvice
@@ -11043,6 +13041,9 @@ type ReadinessCheckState struct {
 	Failed int32 `json:"failed"`
 	// How many sites it checks.
 	Total int32 `json:"total"`
+	// True when an administrator stopped the check; only then is it present. The sites it checked keep
+	// what it recorded, the others what their scan recorded.
+	Stopped OptBool `json:"stopped"`
 }
 
 // GetRunning returns the value of Running.
@@ -11065,6 +13066,11 @@ func (s *ReadinessCheckState) GetTotal() int32 {
 	return s.Total
 }
 
+// GetStopped returns the value of Stopped.
+func (s *ReadinessCheckState) GetStopped() OptBool {
+	return s.Stopped
+}
+
 // SetRunning sets the value of Running.
 func (s *ReadinessCheckState) SetRunning(val bool) {
 	s.Running = val
@@ -11083,6 +13089,11 @@ func (s *ReadinessCheckState) SetFailed(val int32) {
 // SetTotal sets the value of Total.
 func (s *ReadinessCheckState) SetTotal(val int32) {
 	s.Total = val
+}
+
+// SetStopped sets the value of Stopped.
+func (s *ReadinessCheckState) SetStopped(val OptBool) {
+	s.Stopped = val
 }
 
 func (*ReadinessCheckState) startReadinessCheckRes() {}
@@ -11154,6 +13165,13 @@ type ReadinessFiles struct {
 	LlmsFullTxt string `json:"llmsFullTxt"`
 	// True when llms-full.txt was cut at 100 KB.
 	LlmsFullTruncated bool `json:"llmsFullTruncated"`
+	// The address of the first sitemap the scan read (the one robots.txt lists, or /sitemap.xml); empty
+	// when it read none, or was made before scans kept the sitemap.
+	SitemapUrl string `json:"sitemapUrl"`
+	// That sitemap's text, as served.
+	SitemapTxt string `json:"sitemapTxt"`
+	// True when the sitemap was cut at 100 KB.
+	SitemapTruncated bool `json:"sitemapTruncated"`
 }
 
 // GetRobotsTxt returns the value of RobotsTxt.
@@ -11186,6 +13204,21 @@ func (s *ReadinessFiles) GetLlmsFullTruncated() bool {
 	return s.LlmsFullTruncated
 }
 
+// GetSitemapUrl returns the value of SitemapUrl.
+func (s *ReadinessFiles) GetSitemapUrl() string {
+	return s.SitemapUrl
+}
+
+// GetSitemapTxt returns the value of SitemapTxt.
+func (s *ReadinessFiles) GetSitemapTxt() string {
+	return s.SitemapTxt
+}
+
+// GetSitemapTruncated returns the value of SitemapTruncated.
+func (s *ReadinessFiles) GetSitemapTruncated() bool {
+	return s.SitemapTruncated
+}
+
 // SetRobotsTxt sets the value of RobotsTxt.
 func (s *ReadinessFiles) SetRobotsTxt(val string) {
 	s.RobotsTxt = val
@@ -11214,6 +13247,21 @@ func (s *ReadinessFiles) SetLlmsFullTxt(val string) {
 // SetLlmsFullTruncated sets the value of LlmsFullTruncated.
 func (s *ReadinessFiles) SetLlmsFullTruncated(val bool) {
 	s.LlmsFullTruncated = val
+}
+
+// SetSitemapUrl sets the value of SitemapUrl.
+func (s *ReadinessFiles) SetSitemapUrl(val string) {
+	s.SitemapUrl = val
+}
+
+// SetSitemapTxt sets the value of SitemapTxt.
+func (s *ReadinessFiles) SetSitemapTxt(val string) {
+	s.SitemapTxt = val
+}
+
+// SetSitemapTruncated sets the value of SitemapTruncated.
+func (s *ReadinessFiles) SetSitemapTruncated(val bool) {
+	s.SitemapTruncated = val
 }
 
 func (*ReadinessFiles) getReadinessFilesRes() {}
@@ -11269,6 +13317,506 @@ func (s *ReadinessRank) SetScore(val float64) {
 	s.Score = val
 }
 
+// An administrator's wording and scores of a recommendation a run wrote.
+// Ref: #/components/schemas/RecommendationEdit
+type RecommendationEdit struct {
+	// What to do.
+	Title string `json:"title"`
+	// The tribelt.nl page it belongs on; absent or blank for the web agency to place.
+	Where OptString `json:"where"`
+	// Why it matters.
+	Why string `json:"why"`
+	// How to do it.
+	Steps []string `json:"steps"`
+	// When it counts as done.
+	DoneWhen string `json:"doneWhen"`
+	// How much it helps.
+	Benefit int32 `json:"benefit"`
+	// How much work it takes.
+	Effort int32 `json:"effort"`
+}
+
+// GetTitle returns the value of Title.
+func (s *RecommendationEdit) GetTitle() string {
+	return s.Title
+}
+
+// GetWhere returns the value of Where.
+func (s *RecommendationEdit) GetWhere() OptString {
+	return s.Where
+}
+
+// GetWhy returns the value of Why.
+func (s *RecommendationEdit) GetWhy() string {
+	return s.Why
+}
+
+// GetSteps returns the value of Steps.
+func (s *RecommendationEdit) GetSteps() []string {
+	return s.Steps
+}
+
+// GetDoneWhen returns the value of DoneWhen.
+func (s *RecommendationEdit) GetDoneWhen() string {
+	return s.DoneWhen
+}
+
+// GetBenefit returns the value of Benefit.
+func (s *RecommendationEdit) GetBenefit() int32 {
+	return s.Benefit
+}
+
+// GetEffort returns the value of Effort.
+func (s *RecommendationEdit) GetEffort() int32 {
+	return s.Effort
+}
+
+// SetTitle sets the value of Title.
+func (s *RecommendationEdit) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetWhere sets the value of Where.
+func (s *RecommendationEdit) SetWhere(val OptString) {
+	s.Where = val
+}
+
+// SetWhy sets the value of Why.
+func (s *RecommendationEdit) SetWhy(val string) {
+	s.Why = val
+}
+
+// SetSteps sets the value of Steps.
+func (s *RecommendationEdit) SetSteps(val []string) {
+	s.Steps = val
+}
+
+// SetDoneWhen sets the value of DoneWhen.
+func (s *RecommendationEdit) SetDoneWhen(val string) {
+	s.DoneWhen = val
+}
+
+// SetBenefit sets the value of Benefit.
+func (s *RecommendationEdit) SetBenefit(val int32) {
+	s.Benefit = val
+}
+
+// SetEffort sets the value of Effort.
+func (s *RecommendationEdit) SetEffort(val int32) {
+	s.Effort = val
+}
+
+// What kind of change a recommendation asks for - term (a search term to add), page (a page to add),
+// listing (a site to get listed on), fact (a fact sheet correction), readiness (AI readiness), or
+// general (written by hand for the whole site).
+// Ref: #/components/schemas/RecommendationKind
+type RecommendationKind string
+
+const (
+	RecommendationKindTerm      RecommendationKind = "term"
+	RecommendationKindPage      RecommendationKind = "page"
+	RecommendationKindListing   RecommendationKind = "listing"
+	RecommendationKindFact      RecommendationKind = "fact"
+	RecommendationKindReadiness RecommendationKind = "readiness"
+	RecommendationKindGeneral   RecommendationKind = "general"
+)
+
+// AllValues returns all RecommendationKind values.
+func (RecommendationKind) AllValues() []RecommendationKind {
+	return []RecommendationKind{
+		RecommendationKindTerm,
+		RecommendationKindPage,
+		RecommendationKindListing,
+		RecommendationKindFact,
+		RecommendationKindReadiness,
+		RecommendationKindGeneral,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RecommendationKind) MarshalText() ([]byte, error) {
+	switch s {
+	case RecommendationKindTerm:
+		return []byte(s), nil
+	case RecommendationKindPage:
+		return []byte(s), nil
+	case RecommendationKindListing:
+		return []byte(s), nil
+	case RecommendationKindFact:
+		return []byte(s), nil
+	case RecommendationKindReadiness:
+		return []byte(s), nil
+	case RecommendationKindGeneral:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RecommendationKind) UnmarshalText(data []byte) error {
+	switch RecommendationKind(data) {
+	case RecommendationKindTerm:
+		*s = RecommendationKindTerm
+		return nil
+	case RecommendationKindPage:
+		*s = RecommendationKindPage
+		return nil
+	case RecommendationKindListing:
+		*s = RecommendationKindListing
+		return nil
+	case RecommendationKindFact:
+		*s = RecommendationKindFact
+		return nil
+	case RecommendationKindReadiness:
+		*s = RecommendationKindReadiness
+		return nil
+	case RecommendationKindGeneral:
+		*s = RecommendationKindGeneral
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One Recommendation run.
+// Ref: #/components/schemas/RecommendationRun
+type RecommendationRun struct {
+	// The run's id.
+	ID uuid.UUID `json:"id"`
+	// When it started.
+	StartedAt time.Time `json:"startedAt"`
+	// When it ended; absent while it runs.
+	FinishedAt OptDateTime `json:"finishedAt"`
+	// How it ended; absent while it runs.
+	Ending OptRecommendationRunEnding `json:"ending"`
+	// Who started it.
+	StartedBy string `json:"startedBy"`
+	// The model that wrote.
+	Model string `json:"model"`
+	// How many gaps it wrote recommendations for.
+	Gaps int32 `json:"gaps"`
+	// How many recommendations it added.
+	Added int32 `json:"added"`
+	// How many open recommendations it replaced.
+	Replaced int32 `json:"replaced"`
+	// How many done or edited recommendations it kept.
+	Kept    int32 `json:"kept"`
+	CostUsd Usd   `json:"costUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *RecommendationRun) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *RecommendationRun) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetFinishedAt returns the value of FinishedAt.
+func (s *RecommendationRun) GetFinishedAt() OptDateTime {
+	return s.FinishedAt
+}
+
+// GetEnding returns the value of Ending.
+func (s *RecommendationRun) GetEnding() OptRecommendationRunEnding {
+	return s.Ending
+}
+
+// GetStartedBy returns the value of StartedBy.
+func (s *RecommendationRun) GetStartedBy() string {
+	return s.StartedBy
+}
+
+// GetModel returns the value of Model.
+func (s *RecommendationRun) GetModel() string {
+	return s.Model
+}
+
+// GetGaps returns the value of Gaps.
+func (s *RecommendationRun) GetGaps() int32 {
+	return s.Gaps
+}
+
+// GetAdded returns the value of Added.
+func (s *RecommendationRun) GetAdded() int32 {
+	return s.Added
+}
+
+// GetReplaced returns the value of Replaced.
+func (s *RecommendationRun) GetReplaced() int32 {
+	return s.Replaced
+}
+
+// GetKept returns the value of Kept.
+func (s *RecommendationRun) GetKept() int32 {
+	return s.Kept
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *RecommendationRun) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// SetID sets the value of ID.
+func (s *RecommendationRun) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *RecommendationRun) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetFinishedAt sets the value of FinishedAt.
+func (s *RecommendationRun) SetFinishedAt(val OptDateTime) {
+	s.FinishedAt = val
+}
+
+// SetEnding sets the value of Ending.
+func (s *RecommendationRun) SetEnding(val OptRecommendationRunEnding) {
+	s.Ending = val
+}
+
+// SetStartedBy sets the value of StartedBy.
+func (s *RecommendationRun) SetStartedBy(val string) {
+	s.StartedBy = val
+}
+
+// SetModel sets the value of Model.
+func (s *RecommendationRun) SetModel(val string) {
+	s.Model = val
+}
+
+// SetGaps sets the value of Gaps.
+func (s *RecommendationRun) SetGaps(val int32) {
+	s.Gaps = val
+}
+
+// SetAdded sets the value of Added.
+func (s *RecommendationRun) SetAdded(val int32) {
+	s.Added = val
+}
+
+// SetReplaced sets the value of Replaced.
+func (s *RecommendationRun) SetReplaced(val int32) {
+	s.Replaced = val
+}
+
+// SetKept sets the value of Kept.
+func (s *RecommendationRun) SetKept(val int32) {
+	s.Kept = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *RecommendationRun) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// How it ended; absent while it runs.
+type RecommendationRunEnding string
+
+const (
+	RecommendationRunEndingDone             RecommendationRunEnding = "done"
+	RecommendationRunEndingDoneWithFailures RecommendationRunEnding = "doneWithFailures"
+	RecommendationRunEndingStoppedByHand    RecommendationRunEnding = "stoppedByHand"
+	RecommendationRunEndingStoppedByBudget  RecommendationRunEnding = "stoppedByBudget"
+	RecommendationRunEndingFailed           RecommendationRunEnding = "failed"
+)
+
+// AllValues returns all RecommendationRunEnding values.
+func (RecommendationRunEnding) AllValues() []RecommendationRunEnding {
+	return []RecommendationRunEnding{
+		RecommendationRunEndingDone,
+		RecommendationRunEndingDoneWithFailures,
+		RecommendationRunEndingStoppedByHand,
+		RecommendationRunEndingStoppedByBudget,
+		RecommendationRunEndingFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RecommendationRunEnding) MarshalText() ([]byte, error) {
+	switch s {
+	case RecommendationRunEndingDone:
+		return []byte(s), nil
+	case RecommendationRunEndingDoneWithFailures:
+		return []byte(s), nil
+	case RecommendationRunEndingStoppedByHand:
+		return []byte(s), nil
+	case RecommendationRunEndingStoppedByBudget:
+		return []byte(s), nil
+	case RecommendationRunEndingFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RecommendationRunEnding) UnmarshalText(data []byte) error {
+	switch RecommendationRunEnding(data) {
+	case RecommendationRunEndingDone:
+		*s = RecommendationRunEndingDone
+		return nil
+	case RecommendationRunEndingDoneWithFailures:
+		*s = RecommendationRunEndingDoneWithFailures
+		return nil
+	case RecommendationRunEndingStoppedByHand:
+		*s = RecommendationRunEndingStoppedByHand
+		return nil
+	case RecommendationRunEndingStoppedByBudget:
+		*s = RecommendationRunEndingStoppedByBudget
+		return nil
+	case RecommendationRunEndingFailed:
+		*s = RecommendationRunEndingFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The Recommendation run, what starting one would do, and the past runs.
+// Ref: #/components/schemas/RecommendationRuns
+type RecommendationRuns struct {
+	// Whether a run runs now.
+	Running bool `json:"running"`
+	// True when no Anthropic key is set up, so no run can start.
+	NoKey bool `json:"noKey"`
+	// The model the step writing recommendations uses now; absent without a key.
+	Model OptString `json:"model"`
+	// How many open recommendations an earlier run wrote that a new run replaces.
+	Replaces int32 `json:"replaces"`
+	// True when tribelt.nl was last scanned before the newest Prompt run started.
+	Stale bool `json:"stale"`
+	// When the newest Prompt run started; absent before any.
+	PromptRunAt OptDateTime `json:"promptRunAt"`
+	// When the newest scan of tribelt.nl finished; absent before any.
+	ScanAt OptDateTime `json:"scanAt"`
+	// How many terms the search term list holds.
+	Terms int32 `json:"terms"`
+	// How many gaps the rules find now, at most 40.
+	Gaps             int32 `json:"gaps"`
+	EstimatedCostUsd Usd   `json:"estimatedCostUsd"`
+	// The last runs, the newest first.
+	Runs []RecommendationRun `json:"runs"`
+}
+
+// GetRunning returns the value of Running.
+func (s *RecommendationRuns) GetRunning() bool {
+	return s.Running
+}
+
+// GetNoKey returns the value of NoKey.
+func (s *RecommendationRuns) GetNoKey() bool {
+	return s.NoKey
+}
+
+// GetModel returns the value of Model.
+func (s *RecommendationRuns) GetModel() OptString {
+	return s.Model
+}
+
+// GetReplaces returns the value of Replaces.
+func (s *RecommendationRuns) GetReplaces() int32 {
+	return s.Replaces
+}
+
+// GetStale returns the value of Stale.
+func (s *RecommendationRuns) GetStale() bool {
+	return s.Stale
+}
+
+// GetPromptRunAt returns the value of PromptRunAt.
+func (s *RecommendationRuns) GetPromptRunAt() OptDateTime {
+	return s.PromptRunAt
+}
+
+// GetScanAt returns the value of ScanAt.
+func (s *RecommendationRuns) GetScanAt() OptDateTime {
+	return s.ScanAt
+}
+
+// GetTerms returns the value of Terms.
+func (s *RecommendationRuns) GetTerms() int32 {
+	return s.Terms
+}
+
+// GetGaps returns the value of Gaps.
+func (s *RecommendationRuns) GetGaps() int32 {
+	return s.Gaps
+}
+
+// GetEstimatedCostUsd returns the value of EstimatedCostUsd.
+func (s *RecommendationRuns) GetEstimatedCostUsd() Usd {
+	return s.EstimatedCostUsd
+}
+
+// GetRuns returns the value of Runs.
+func (s *RecommendationRuns) GetRuns() []RecommendationRun {
+	return s.Runs
+}
+
+// SetRunning sets the value of Running.
+func (s *RecommendationRuns) SetRunning(val bool) {
+	s.Running = val
+}
+
+// SetNoKey sets the value of NoKey.
+func (s *RecommendationRuns) SetNoKey(val bool) {
+	s.NoKey = val
+}
+
+// SetModel sets the value of Model.
+func (s *RecommendationRuns) SetModel(val OptString) {
+	s.Model = val
+}
+
+// SetReplaces sets the value of Replaces.
+func (s *RecommendationRuns) SetReplaces(val int32) {
+	s.Replaces = val
+}
+
+// SetStale sets the value of Stale.
+func (s *RecommendationRuns) SetStale(val bool) {
+	s.Stale = val
+}
+
+// SetPromptRunAt sets the value of PromptRunAt.
+func (s *RecommendationRuns) SetPromptRunAt(val OptDateTime) {
+	s.PromptRunAt = val
+}
+
+// SetScanAt sets the value of ScanAt.
+func (s *RecommendationRuns) SetScanAt(val OptDateTime) {
+	s.ScanAt = val
+}
+
+// SetTerms sets the value of Terms.
+func (s *RecommendationRuns) SetTerms(val int32) {
+	s.Terms = val
+}
+
+// SetGaps sets the value of Gaps.
+func (s *RecommendationRuns) SetGaps(val int32) {
+	s.Gaps = val
+}
+
+// SetEstimatedCostUsd sets the value of EstimatedCostUsd.
+func (s *RecommendationRuns) SetEstimatedCostUsd(val Usd) {
+	s.EstimatedCostUsd = val
+}
+
+// SetRuns sets the value of Runs.
+func (s *RecommendationRuns) SetRuns(val []RecommendationRun) {
+	s.Runs = val
+}
+
+func (*RecommendationRuns) getRecommendationRunsRes()  {}
+func (*RecommendationRuns) startRecommendationRunRes() {}
+
 type RejectTermCandidateBadRequest ProblemStatusCode
 
 func (*RejectTermCandidateBadRequest) rejectTermCandidateRes() {}
@@ -11288,6 +13836,44 @@ func (*RejectTermCandidateNotFound) rejectTermCandidateRes() {}
 type RejectTermCandidateUnauthorized ProblemStatusCode
 
 func (*RejectTermCandidateUnauthorized) rejectTermCandidateRes() {}
+
+type RemoveQueuedAnalysesForbidden ProblemStatusCode
+
+func (*RemoveQueuedAnalysesForbidden) removeQueuedAnalysesRes() {}
+
+// RemoveQueuedAnalysesNoContent is response for RemoveQueuedAnalyses operation.
+type RemoveQueuedAnalysesNoContent struct{}
+
+func (*RemoveQueuedAnalysesNoContent) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesNotFound ProblemStatusCode
+
+func (*RemoveQueuedAnalysesNotFound) removeQueuedAnalysesRes() {}
+
+type RemoveQueuedAnalysesUnauthorized ProblemStatusCode
+
+func (*RemoveQueuedAnalysesUnauthorized) removeQueuedAnalysesRes() {}
+
+type RemoveTermBadRequest ProblemStatusCode
+
+func (*RemoveTermBadRequest) removeTermRes() {}
+
+type RemoveTermForbidden ProblemStatusCode
+
+func (*RemoveTermForbidden) removeTermRes() {}
+
+// RemoveTermNoContent is response for RemoveTerm operation.
+type RemoveTermNoContent struct{}
+
+func (*RemoveTermNoContent) removeTermRes() {}
+
+type RemoveTermNotFound ProblemStatusCode
+
+func (*RemoveTermNotFound) removeTermRes() {}
+
+type RemoveTermUnauthorized ProblemStatusCode
+
+func (*RemoveTermUnauthorized) removeTermRes() {}
 
 type RereadPromptRunBadRequest ProblemStatusCode
 
@@ -11439,6 +14025,26 @@ func (s *RescanSkip) SetReason(val string) {
 	s.Reason = val
 }
 
+type RestoreCompetitorDefinitionBadRequest ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionBadRequest) restoreCompetitorDefinitionRes() {}
+
+type RestoreCompetitorDefinitionConflict ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionConflict) restoreCompetitorDefinitionRes() {}
+
+type RestoreCompetitorDefinitionForbidden ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionForbidden) restoreCompetitorDefinitionRes() {}
+
+type RestoreCompetitorDefinitionNotFound ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionNotFound) restoreCompetitorDefinitionRes() {}
+
+type RestoreCompetitorDefinitionUnauthorized ProblemStatusCode
+
+func (*RestoreCompetitorDefinitionUnauthorized) restoreCompetitorDefinitionRes() {}
+
 type RetryPromptRunBadRequest ProblemStatusCode
 
 func (*RetryPromptRunBadRequest) retryPromptRunRes() {}
@@ -11513,6 +14119,46 @@ func (s *RobotsStatus) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+type SaveClaudeStepVersionBadRequest ProblemStatusCode
+
+func (*SaveClaudeStepVersionBadRequest) saveClaudeStepVersionRes() {}
+
+type SaveClaudeStepVersionForbidden ProblemStatusCode
+
+func (*SaveClaudeStepVersionForbidden) saveClaudeStepVersionRes() {}
+
+type SaveClaudeStepVersionNotFound ProblemStatusCode
+
+func (*SaveClaudeStepVersionNotFound) saveClaudeStepVersionRes() {}
+
+type SaveClaudeStepVersionUnauthorized ProblemStatusCode
+
+func (*SaveClaudeStepVersionUnauthorized) saveClaudeStepVersionRes() {}
+
+type SaveClaudeStepVersionUnprocessableEntity ProblemStatusCode
+
+func (*SaveClaudeStepVersionUnprocessableEntity) saveClaudeStepVersionRes() {}
+
+type SaveCompetitorDefinitionBadRequest ProblemStatusCode
+
+func (*SaveCompetitorDefinitionBadRequest) saveCompetitorDefinitionRes() {}
+
+type SaveCompetitorDefinitionConflict ProblemStatusCode
+
+func (*SaveCompetitorDefinitionConflict) saveCompetitorDefinitionRes() {}
+
+type SaveCompetitorDefinitionForbidden ProblemStatusCode
+
+func (*SaveCompetitorDefinitionForbidden) saveCompetitorDefinitionRes() {}
+
+type SaveCompetitorDefinitionUnauthorized ProblemStatusCode
+
+func (*SaveCompetitorDefinitionUnauthorized) saveCompetitorDefinitionRes() {}
+
+type SaveCompetitorDefinitionUnprocessableEntity ProblemStatusCode
+
+func (*SaveCompetitorDefinitionUnprocessableEntity) saveCompetitorDefinitionRes() {}
 
 // Two finished scans of a company compared, per group. A term moved when its score changed by at least
 // a quarter and 5 points, or its page count by at least 2.
@@ -11658,6 +14304,18 @@ func (*SetPlanTargetsUnauthorized) setPlanTargetsRes() {}
 type SetPlanTargetsUnprocessableEntity ProblemStatusCode
 
 func (*SetPlanTargetsUnprocessableEntity) setPlanTargetsRes() {}
+
+type SetTermReviewBadRequest ProblemStatusCode
+
+func (*SetTermReviewBadRequest) setTermReviewRes() {}
+
+type SetTermReviewForbidden ProblemStatusCode
+
+func (*SetTermReviewForbidden) setTermReviewRes() {}
+
+type SetTermReviewUnauthorized ProblemStatusCode
+
+func (*SetTermReviewUnauthorized) setTermReviewRes() {}
 
 // One Prompt run in the trend.
 // Ref: #/components/schemas/ShareTrendPoint
@@ -11836,6 +14494,189 @@ func (s *SitemapSummary) SetLanguages(val []string) {
 // SetCoverage sets the value of Coverage.
 func (s *SitemapSummary) SetCoverage(val OptSitemapCoverage) {
 	s.Coverage = val
+}
+
+// What one kind of work cost on one key this month.
+// Ref: #/components/schemas/SpendLine
+type SpendLine struct {
+	// The kind of work.
+	Kind SpendLineKind `json:"kind"`
+	// The key that paid.
+	Key     SpendLineKey `json:"key"`
+	CostUsd Usd          `json:"costUsd"`
+}
+
+// GetKind returns the value of Kind.
+func (s *SpendLine) GetKind() SpendLineKind {
+	return s.Kind
+}
+
+// GetKey returns the value of Key.
+func (s *SpendLine) GetKey() SpendLineKey {
+	return s.Key
+}
+
+// GetCostUsd returns the value of CostUsd.
+func (s *SpendLine) GetCostUsd() Usd {
+	return s.CostUsd
+}
+
+// SetKind sets the value of Kind.
+func (s *SpendLine) SetKind(val SpendLineKind) {
+	s.Kind = val
+}
+
+// SetKey sets the value of Key.
+func (s *SpendLine) SetKey(val SpendLineKey) {
+	s.Key = val
+}
+
+// SetCostUsd sets the value of CostUsd.
+func (s *SpendLine) SetCostUsd(val Usd) {
+	s.CostUsd = val
+}
+
+// The key that paid.
+type SpendLineKey string
+
+const (
+	SpendLineKeyOpenRouter SpendLineKey = "openRouter"
+	SpendLineKeyAnthropic  SpendLineKey = "anthropic"
+)
+
+// AllValues returns all SpendLineKey values.
+func (SpendLineKey) AllValues() []SpendLineKey {
+	return []SpendLineKey{
+		SpendLineKeyOpenRouter,
+		SpendLineKeyAnthropic,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SpendLineKey) MarshalText() ([]byte, error) {
+	switch s {
+	case SpendLineKeyOpenRouter:
+		return []byte(s), nil
+	case SpendLineKeyAnthropic:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SpendLineKey) UnmarshalText(data []byte) error {
+	switch SpendLineKey(data) {
+	case SpendLineKeyOpenRouter:
+		*s = SpendLineKeyOpenRouter
+		return nil
+	case SpendLineKeyAnthropic:
+		*s = SpendLineKeyAnthropic
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The kind of work.
+type SpendLineKind string
+
+const (
+	SpendLineKindPromptRuns         SpendLineKind = "promptRuns"
+	SpendLineKindScans              SpendLineKind = "scans"
+	SpendLineKindReadingResponses   SpendLineKind = "readingResponses"
+	SpendLineKindTermReview         SpendLineKind = "termReview"
+	SpendLineKindCandidateChecks    SpendLineKind = "candidateChecks"
+	SpendLineKindRecommendationRuns SpendLineKind = "recommendationRuns"
+)
+
+// AllValues returns all SpendLineKind values.
+func (SpendLineKind) AllValues() []SpendLineKind {
+	return []SpendLineKind{
+		SpendLineKindPromptRuns,
+		SpendLineKindScans,
+		SpendLineKindReadingResponses,
+		SpendLineKindTermReview,
+		SpendLineKindCandidateChecks,
+		SpendLineKindRecommendationRuns,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SpendLineKind) MarshalText() ([]byte, error) {
+	switch s {
+	case SpendLineKindPromptRuns:
+		return []byte(s), nil
+	case SpendLineKindScans:
+		return []byte(s), nil
+	case SpendLineKindReadingResponses:
+		return []byte(s), nil
+	case SpendLineKindTermReview:
+		return []byte(s), nil
+	case SpendLineKindCandidateChecks:
+		return []byte(s), nil
+	case SpendLineKindRecommendationRuns:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SpendLineKind) UnmarshalText(data []byte) error {
+	switch SpendLineKind(data) {
+	case SpendLineKindPromptRuns:
+		*s = SpendLineKindPromptRuns
+		return nil
+	case SpendLineKindScans:
+		*s = SpendLineKindScans
+		return nil
+	case SpendLineKindReadingResponses:
+		*s = SpendLineKindReadingResponses
+		return nil
+	case SpendLineKindTermReview:
+		*s = SpendLineKindTermReview
+		return nil
+	case SpendLineKindCandidateChecks:
+		*s = SpendLineKindCandidateChecks
+		return nil
+	case SpendLineKindRecommendationRuns:
+		*s = SpendLineKindRecommendationRuns
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// This month's spending by kind of work, with the key that paid.
+// Ref: #/components/schemas/Spending
+type Spending struct {
+	// When the month began (UTC).
+	Since time.Time `json:"since"`
+	// One line per kind of work and key - Prompt runs on OpenRouter; scans, the term review, candidate
+	// checks (reviews of the candidates and checks of the list) and Recommendation runs on Anthropic;
+	// reading responses on both, as OpenRouter reads them when no Anthropic key is set up.
+	Lines []SpendLine `json:"lines"`
+}
+
+// GetSince returns the value of Since.
+func (s *Spending) GetSince() time.Time {
+	return s.Since
+}
+
+// GetLines returns the value of Lines.
+func (s *Spending) GetLines() []SpendLine {
+	return s.Lines
+}
+
+// SetSince sets the value of Since.
+func (s *Spending) SetSince(val time.Time) {
+	s.Since = val
+}
+
+// SetLines sets the value of Lines.
+func (s *Spending) SetLines(val []SpendLine) {
+	s.Lines = val
 }
 
 type SplitCompetitorCandidateBadRequest ProblemStatusCode
@@ -12156,6 +14997,18 @@ type StartReadinessCheckUnauthorized ProblemStatusCode
 
 func (*StartReadinessCheckUnauthorized) startReadinessCheckRes() {}
 
+type StartRecommendationRunConflict ProblemStatusCode
+
+func (*StartRecommendationRunConflict) startRecommendationRunRes() {}
+
+type StartRecommendationRunForbidden ProblemStatusCode
+
+func (*StartRecommendationRunForbidden) startRecommendationRunRes() {}
+
+type StartRecommendationRunUnauthorized ProblemStatusCode
+
+func (*StartRecommendationRunUnauthorized) startRecommendationRunRes() {}
+
 type StartRescansBadRequest ProblemStatusCode
 
 func (*StartRescansBadRequest) startRescansRes() {}
@@ -12179,6 +15032,150 @@ func (*StartTermReviewForbidden) startTermReviewRes() {}
 type StartTermReviewUnauthorized ProblemStatusCode
 
 func (*StartTermReviewUnauthorized) startTermReviewRes() {}
+
+type StopAnalysisBadRequest ProblemStatusCode
+
+func (*StopAnalysisBadRequest) stopAnalysisRes() {}
+
+type StopAnalysisForbidden ProblemStatusCode
+
+func (*StopAnalysisForbidden) stopAnalysisRes() {}
+
+// StopAnalysisNoContent is response for StopAnalysis operation.
+type StopAnalysisNoContent struct{}
+
+func (*StopAnalysisNoContent) stopAnalysisRes() {}
+
+type StopAnalysisNotFound ProblemStatusCode
+
+func (*StopAnalysisNotFound) stopAnalysisRes() {}
+
+type StopAnalysisUnauthorized ProblemStatusCode
+
+func (*StopAnalysisUnauthorized) stopAnalysisRes() {}
+
+type StopCandidateReviewForbidden ProblemStatusCode
+
+func (*StopCandidateReviewForbidden) stopCandidateReviewRes() {}
+
+// StopCandidateReviewNoContent is response for StopCandidateReview operation.
+type StopCandidateReviewNoContent struct{}
+
+func (*StopCandidateReviewNoContent) stopCandidateReviewRes() {}
+
+type StopCandidateReviewNotFound ProblemStatusCode
+
+func (*StopCandidateReviewNotFound) stopCandidateReviewRes() {}
+
+type StopCandidateReviewUnauthorized ProblemStatusCode
+
+func (*StopCandidateReviewUnauthorized) stopCandidateReviewRes() {}
+
+type StopCompetitorCheckForbidden ProblemStatusCode
+
+func (*StopCompetitorCheckForbidden) stopCompetitorCheckRes() {}
+
+// StopCompetitorCheckNoContent is response for StopCompetitorCheck operation.
+type StopCompetitorCheckNoContent struct{}
+
+func (*StopCompetitorCheckNoContent) stopCompetitorCheckRes() {}
+
+type StopCompetitorCheckNotFound ProblemStatusCode
+
+func (*StopCompetitorCheckNotFound) stopCompetitorCheckRes() {}
+
+type StopCompetitorCheckUnauthorized ProblemStatusCode
+
+func (*StopCompetitorCheckUnauthorized) stopCompetitorCheckRes() {}
+
+type StopPromptRunBadRequest ProblemStatusCode
+
+func (*StopPromptRunBadRequest) stopPromptRunRes() {}
+
+type StopPromptRunForbidden ProblemStatusCode
+
+func (*StopPromptRunForbidden) stopPromptRunRes() {}
+
+// StopPromptRunNoContent is response for StopPromptRun operation.
+type StopPromptRunNoContent struct{}
+
+func (*StopPromptRunNoContent) stopPromptRunRes() {}
+
+type StopPromptRunNotFound ProblemStatusCode
+
+func (*StopPromptRunNotFound) stopPromptRunRes() {}
+
+type StopPromptRunUnauthorized ProblemStatusCode
+
+func (*StopPromptRunUnauthorized) stopPromptRunRes() {}
+
+type StopReadinessCheckForbidden ProblemStatusCode
+
+func (*StopReadinessCheckForbidden) stopReadinessCheckRes() {}
+
+// StopReadinessCheckNoContent is response for StopReadinessCheck operation.
+type StopReadinessCheckNoContent struct{}
+
+func (*StopReadinessCheckNoContent) stopReadinessCheckRes() {}
+
+type StopReadinessCheckNotFound ProblemStatusCode
+
+func (*StopReadinessCheckNotFound) stopReadinessCheckRes() {}
+
+type StopReadinessCheckUnauthorized ProblemStatusCode
+
+func (*StopReadinessCheckUnauthorized) stopReadinessCheckRes() {}
+
+type StopRecommendationRunForbidden ProblemStatusCode
+
+func (*StopRecommendationRunForbidden) stopRecommendationRunRes() {}
+
+// StopRecommendationRunNoContent is response for StopRecommendationRun operation.
+type StopRecommendationRunNoContent struct{}
+
+func (*StopRecommendationRunNoContent) stopRecommendationRunRes() {}
+
+type StopRecommendationRunNotFound ProblemStatusCode
+
+func (*StopRecommendationRunNotFound) stopRecommendationRunRes() {}
+
+type StopRecommendationRunUnauthorized ProblemStatusCode
+
+func (*StopRecommendationRunUnauthorized) stopRecommendationRunRes() {}
+
+type StopRescanForbidden ProblemStatusCode
+
+func (*StopRescanForbidden) stopRescanRes() {}
+
+// StopRescanNoContent is response for StopRescan operation.
+type StopRescanNoContent struct{}
+
+func (*StopRescanNoContent) stopRescanRes() {}
+
+type StopRescanNotFound ProblemStatusCode
+
+func (*StopRescanNotFound) stopRescanRes() {}
+
+type StopRescanUnauthorized ProblemStatusCode
+
+func (*StopRescanUnauthorized) stopRescanRes() {}
+
+type StopTermReviewForbidden ProblemStatusCode
+
+func (*StopTermReviewForbidden) stopTermReviewRes() {}
+
+// StopTermReviewNoContent is response for StopTermReview operation.
+type StopTermReviewNoContent struct{}
+
+func (*StopTermReviewNoContent) stopTermReviewRes() {}
+
+type StopTermReviewNotFound ProblemStatusCode
+
+func (*StopTermReviewNotFound) stopTermReviewRes() {}
+
+type StopTermReviewUnauthorized ProblemStatusCode
+
+func (*StopTermReviewUnauthorized) stopTermReviewRes() {}
 
 // One name for a belt, material or specification, as a company uses it.
 // Ref: #/components/schemas/Term
@@ -12307,6 +15304,8 @@ func (s *Term) SetTribeltUses(val OptBool) {
 func (s *Term) SetSource(val string) {
 	s.Source = val
 }
+
+func (*Term) addTermRes() {}
 
 // A candidate as it joins the terminology map.
 // Ref: #/components/schemas/TermAcceptance
@@ -12869,14 +15868,15 @@ func (s *TermMaker) SetFromScan(val bool) {
 	s.FromScan = val
 }
 
-// Where a term comes from - the desk research of 22 October 2026, or a scan's phrase an administrator
-// accepted from the review queue.
+// Where a term comes from - the desk research of 22 October 2026, a scan's phrase an administrator
+// accepted from the review queue, or a term an administrator added by hand.
 // Ref: #/components/schemas/TermOrigin
 type TermOrigin string
 
 const (
 	TermOriginResearch TermOrigin = "research"
 	TermOriginReview   TermOrigin = "review"
+	TermOriginHand     TermOrigin = "hand"
 )
 
 // AllValues returns all TermOrigin values.
@@ -12884,6 +15884,7 @@ func (TermOrigin) AllValues() []TermOrigin {
 	return []TermOrigin{
 		TermOriginResearch,
 		TermOriginReview,
+		TermOriginHand,
 	}
 }
 
@@ -12893,6 +15894,8 @@ func (s TermOrigin) MarshalText() ([]byte, error) {
 	case TermOriginResearch:
 		return []byte(s), nil
 	case TermOriginReview:
+		return []byte(s), nil
+	case TermOriginHand:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -12908,22 +15911,112 @@ func (s *TermOrigin) UnmarshalText(data []byte) error {
 	case TermOriginReview:
 		*s = TermOriginReview
 		return nil
+	case TermOriginHand:
+		*s = TermOriginHand
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// How far the language model is with the waiting candidates.
+// A page that uses the term.
+// Ref: #/components/schemas/TermPage
+type TermPage struct {
+	// The page's address.
+	URL string `json:"url"`
+	// The page's title; empty when it has none.
+	Title string `json:"title"`
+}
+
+// GetURL returns the value of URL.
+func (s *TermPage) GetURL() string {
+	return s.URL
+}
+
+// GetTitle returns the value of Title.
+func (s *TermPage) GetTitle() string {
+	return s.Title
+}
+
+// SetURL sets the value of URL.
+func (s *TermPage) SetURL(val string) {
+	s.URL = val
+}
+
+// SetTitle sets the value of Title.
+func (s *TermPage) SetTitle(val string) {
+	s.Title = val
+}
+
+// The pages that use one search term on each company's newest finished scan that found it, Tribelt
+// first, then the competitors and the group by name.
+// Ref: #/components/schemas/TermPages
+type TermPages struct {
+	Items []CompanyTermPages `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TermPages) GetItems() []CompanyTermPages {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TermPages) SetItems(val []CompanyTermPages) {
+	s.Items = val
+}
+
+func (*TermPages) getTermPagesRes() {}
+
+// A search term on the list, by its text and language.
+// Ref: #/components/schemas/TermRef
+type TermRef struct {
+	// The term's text; case and accents do not matter.
+	Term     string   `json:"term"`
+	Language Language `json:"language"`
+}
+
+// GetTerm returns the value of Term.
+func (s *TermRef) GetTerm() string {
+	return s.Term
+}
+
+// GetLanguage returns the value of Language.
+func (s *TermRef) GetLanguage() Language {
+	return s.Language
+}
+
+// SetTerm sets the value of Term.
+func (s *TermRef) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetLanguage sets the value of Language.
+func (s *TermRef) SetLanguage(val Language) {
+	s.Language = val
+}
+
+// Whether the language model reviews the waiting candidates by itself, how far it is with them, and
+// what it used this month.
 // Ref: #/components/schemas/TermReviewState
 type TermReviewState struct {
+	// Whether it reviews by itself every ten minutes; off, only when asked.
+	On bool `json:"on"`
 	// Whether it is reviewing now.
 	Running bool `json:"running"`
 	// How many waiting candidates it has not reviewed yet.
 	Waiting int32 `json:"waiting"`
 	// Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-	// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
-	// well.
+	// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+	// stopped it; what it decided is kept). Absent when it went well.
 	Problem OptTermReviewStateProblem `json:"problem"`
+	// The tokens it used this month, input and output together.
+	MonthTokens  int64 `json:"monthTokens"`
+	MonthCostUsd Usd   `json:"monthCostUsd"`
+}
+
+// GetOn returns the value of On.
+func (s *TermReviewState) GetOn() bool {
+	return s.On
 }
 
 // GetRunning returns the value of Running.
@@ -12941,6 +16034,21 @@ func (s *TermReviewState) GetProblem() OptTermReviewStateProblem {
 	return s.Problem
 }
 
+// GetMonthTokens returns the value of MonthTokens.
+func (s *TermReviewState) GetMonthTokens() int64 {
+	return s.MonthTokens
+}
+
+// GetMonthCostUsd returns the value of MonthCostUsd.
+func (s *TermReviewState) GetMonthCostUsd() Usd {
+	return s.MonthCostUsd
+}
+
+// SetOn sets the value of On.
+func (s *TermReviewState) SetOn(val bool) {
+	s.On = val
+}
+
 // SetRunning sets the value of Running.
 func (s *TermReviewState) SetRunning(val bool) {
 	s.Running = val
@@ -12956,17 +16064,29 @@ func (s *TermReviewState) SetProblem(val OptTermReviewStateProblem) {
 	s.Problem = val
 }
 
+// SetMonthTokens sets the value of MonthTokens.
+func (s *TermReviewState) SetMonthTokens(val int64) {
+	s.MonthTokens = val
+}
+
+// SetMonthCostUsd sets the value of MonthCostUsd.
+func (s *TermReviewState) SetMonthCostUsd(val Usd) {
+	s.MonthCostUsd = val
+}
+
+func (*TermReviewState) setTermReviewRes()   {}
 func (*TermReviewState) startTermReviewRes() {}
 
 // Why its last review stopped short - noModel (no Anthropic key is set up), budget (the month's
-// language-model tokens are spent) or failed (the model or its provider failed). Absent when it went
-// well.
+// Anthropic budget is spent), failed (the model or its provider failed) or stopped (an administrator
+// stopped it; what it decided is kept). Absent when it went well.
 type TermReviewStateProblem string
 
 const (
 	TermReviewStateProblemNoModel TermReviewStateProblem = "noModel"
 	TermReviewStateProblemBudget  TermReviewStateProblem = "budget"
 	TermReviewStateProblemFailed  TermReviewStateProblem = "failed"
+	TermReviewStateProblemStopped TermReviewStateProblem = "stopped"
 )
 
 // AllValues returns all TermReviewStateProblem values.
@@ -12975,6 +16095,7 @@ func (TermReviewStateProblem) AllValues() []TermReviewStateProblem {
 		TermReviewStateProblemNoModel,
 		TermReviewStateProblemBudget,
 		TermReviewStateProblemFailed,
+		TermReviewStateProblemStopped,
 	}
 }
 
@@ -12986,6 +16107,8 @@ func (s TermReviewStateProblem) MarshalText() ([]byte, error) {
 	case TermReviewStateProblemBudget:
 		return []byte(s), nil
 	case TermReviewStateProblemFailed:
+		return []byte(s), nil
+	case TermReviewStateProblemStopped:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -13004,9 +16127,29 @@ func (s *TermReviewStateProblem) UnmarshalText(data []byte) error {
 	case TermReviewStateProblemFailed:
 		*s = TermReviewStateProblemFailed
 		return nil
+	case TermReviewStateProblemStopped:
+		*s = TermReviewStateProblemStopped
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Whether the term review runs by itself.
+// Ref: #/components/schemas/TermReviewSwitch
+type TermReviewSwitch struct {
+	// On, it reviews every ten minutes; off, only when an administrator asks.
+	On bool `json:"on"`
+}
+
+// GetOn returns the value of On.
+func (s *TermReviewSwitch) GetOn() bool {
+	return s.On
+}
+
+// SetOn sets the value of On.
+func (s *TermReviewSwitch) SetOn(val bool) {
+	s.On = val
 }
 
 // A page of matching terms.
@@ -13405,6 +16548,22 @@ type UpdateCompetitorUnprocessableEntity ProblemStatusCode
 
 func (*UpdateCompetitorUnprocessableEntity) updateCompetitorRes() {}
 
+type UpdateLlmBudgetBadRequest ProblemStatusCode
+
+func (*UpdateLlmBudgetBadRequest) updateLlmBudgetRes() {}
+
+type UpdateLlmBudgetForbidden ProblemStatusCode
+
+func (*UpdateLlmBudgetForbidden) updateLlmBudgetRes() {}
+
+type UpdateLlmBudgetUnauthorized ProblemStatusCode
+
+func (*UpdateLlmBudgetUnauthorized) updateLlmBudgetRes() {}
+
+type UpdateLlmBudgetUnprocessableEntity ProblemStatusCode
+
+func (*UpdateLlmBudgetUnprocessableEntity) updateLlmBudgetRes() {}
+
 type UpdatePromptTestSettingsBadRequest ProblemStatusCode
 
 func (*UpdatePromptTestSettingsBadRequest) updatePromptTestSettingsRes() {}
@@ -13487,4 +16646,280 @@ func (s *WatchedNumber) SetMax(val OptFloat64) {
 // SetMet sets the value of Met.
 func (s *WatchedNumber) SetMet(val OptBool) {
 	s.Met = val
+}
+
+// One piece of background work. Running while finishedAt is absent; otherwise ended as ending says.
+// done of total is what it did - responses of a Prompt run, pages of a scan, scans of a re-scan, sites
+// of a readiness check, search terms of the term review, companies of a candidate review or list check
+// - and failed how many of those failed.
+// Ref: #/components/schemas/Work
+type Work struct {
+	// The work's id: a Prompt run's or a scan's, which their stops take; a re-scan's first scan's; or the
+	// work journal's.
+	ID   string   `json:"id"`
+	Kind WorkKind `json:"kind"`
+	// When it began, or was queued.
+	StartedAt time.Time `json:"startedAt"`
+	// When it ended; absent while it runs.
+	FinishedAt OptDateTime `json:"finishedAt"`
+	// How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand, stoppedByBudget, or
+	// failed. Absent while it runs.
+	Ending OptWorkEnding `json:"ending"`
+	// How many of its parts it did.
+	Done int32 `json:"done"`
+	// How many parts it has; 0 when that is not known yet.
+	Total int32 `json:"total"`
+	// How many of the parts it did failed.
+	Failed            int32 `json:"failed"`
+	OpenRouterCostUsd Usd   `json:"openRouterCostUsd"`
+	AnthropicCostUsd  Usd   `json:"anthropicCostUsd"`
+}
+
+// GetID returns the value of ID.
+func (s *Work) GetID() string {
+	return s.ID
+}
+
+// GetKind returns the value of Kind.
+func (s *Work) GetKind() WorkKind {
+	return s.Kind
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *Work) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetFinishedAt returns the value of FinishedAt.
+func (s *Work) GetFinishedAt() OptDateTime {
+	return s.FinishedAt
+}
+
+// GetEnding returns the value of Ending.
+func (s *Work) GetEnding() OptWorkEnding {
+	return s.Ending
+}
+
+// GetDone returns the value of Done.
+func (s *Work) GetDone() int32 {
+	return s.Done
+}
+
+// GetTotal returns the value of Total.
+func (s *Work) GetTotal() int32 {
+	return s.Total
+}
+
+// GetFailed returns the value of Failed.
+func (s *Work) GetFailed() int32 {
+	return s.Failed
+}
+
+// GetOpenRouterCostUsd returns the value of OpenRouterCostUsd.
+func (s *Work) GetOpenRouterCostUsd() Usd {
+	return s.OpenRouterCostUsd
+}
+
+// GetAnthropicCostUsd returns the value of AnthropicCostUsd.
+func (s *Work) GetAnthropicCostUsd() Usd {
+	return s.AnthropicCostUsd
+}
+
+// SetID sets the value of ID.
+func (s *Work) SetID(val string) {
+	s.ID = val
+}
+
+// SetKind sets the value of Kind.
+func (s *Work) SetKind(val WorkKind) {
+	s.Kind = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *Work) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetFinishedAt sets the value of FinishedAt.
+func (s *Work) SetFinishedAt(val OptDateTime) {
+	s.FinishedAt = val
+}
+
+// SetEnding sets the value of Ending.
+func (s *Work) SetEnding(val OptWorkEnding) {
+	s.Ending = val
+}
+
+// SetDone sets the value of Done.
+func (s *Work) SetDone(val int32) {
+	s.Done = val
+}
+
+// SetTotal sets the value of Total.
+func (s *Work) SetTotal(val int32) {
+	s.Total = val
+}
+
+// SetFailed sets the value of Failed.
+func (s *Work) SetFailed(val int32) {
+	s.Failed = val
+}
+
+// SetOpenRouterCostUsd sets the value of OpenRouterCostUsd.
+func (s *Work) SetOpenRouterCostUsd(val Usd) {
+	s.OpenRouterCostUsd = val
+}
+
+// SetAnthropicCostUsd sets the value of AnthropicCostUsd.
+func (s *Work) SetAnthropicCostUsd(val Usd) {
+	s.AnthropicCostUsd = val
+}
+
+// How it ended - done, doneWithFailures (some of its parts failed), stoppedByHand, stoppedByBudget, or
+// failed. Absent while it runs.
+type WorkEnding string
+
+const (
+	WorkEndingDone             WorkEnding = "done"
+	WorkEndingDoneWithFailures WorkEnding = "doneWithFailures"
+	WorkEndingStoppedByHand    WorkEnding = "stoppedByHand"
+	WorkEndingStoppedByBudget  WorkEnding = "stoppedByBudget"
+	WorkEndingFailed           WorkEnding = "failed"
+)
+
+// AllValues returns all WorkEnding values.
+func (WorkEnding) AllValues() []WorkEnding {
+	return []WorkEnding{
+		WorkEndingDone,
+		WorkEndingDoneWithFailures,
+		WorkEndingStoppedByHand,
+		WorkEndingStoppedByBudget,
+		WorkEndingFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkEnding) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkEndingDone:
+		return []byte(s), nil
+	case WorkEndingDoneWithFailures:
+		return []byte(s), nil
+	case WorkEndingStoppedByHand:
+		return []byte(s), nil
+	case WorkEndingStoppedByBudget:
+		return []byte(s), nil
+	case WorkEndingFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkEnding) UnmarshalText(data []byte) error {
+	switch WorkEnding(data) {
+	case WorkEndingDone:
+		*s = WorkEndingDone
+		return nil
+	case WorkEndingDoneWithFailures:
+		*s = WorkEndingDoneWithFailures
+		return nil
+	case WorkEndingStoppedByHand:
+		*s = WorkEndingStoppedByHand
+		return nil
+	case WorkEndingStoppedByBudget:
+		*s = WorkEndingStoppedByBudget
+		return nil
+	case WorkEndingFailed:
+		*s = WorkEndingFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A kind of background work.
+// Ref: #/components/schemas/WorkKind
+type WorkKind string
+
+const (
+	WorkKindPromptRun         WorkKind = "promptRun"
+	WorkKindScan              WorkKind = "scan"
+	WorkKindRescan            WorkKind = "rescan"
+	WorkKindReadinessCheck    WorkKind = "readinessCheck"
+	WorkKindTermReview        WorkKind = "termReview"
+	WorkKindCandidateReview   WorkKind = "candidateReview"
+	WorkKindCompetitorCheck   WorkKind = "competitorCheck"
+	WorkKindRecommendationRun WorkKind = "recommendationRun"
+)
+
+// AllValues returns all WorkKind values.
+func (WorkKind) AllValues() []WorkKind {
+	return []WorkKind{
+		WorkKindPromptRun,
+		WorkKindScan,
+		WorkKindRescan,
+		WorkKindReadinessCheck,
+		WorkKindTermReview,
+		WorkKindCandidateReview,
+		WorkKindCompetitorCheck,
+		WorkKindRecommendationRun,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkKind) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkKindPromptRun:
+		return []byte(s), nil
+	case WorkKindScan:
+		return []byte(s), nil
+	case WorkKindRescan:
+		return []byte(s), nil
+	case WorkKindReadinessCheck:
+		return []byte(s), nil
+	case WorkKindTermReview:
+		return []byte(s), nil
+	case WorkKindCandidateReview:
+		return []byte(s), nil
+	case WorkKindCompetitorCheck:
+		return []byte(s), nil
+	case WorkKindRecommendationRun:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkKind) UnmarshalText(data []byte) error {
+	switch WorkKind(data) {
+	case WorkKindPromptRun:
+		*s = WorkKindPromptRun
+		return nil
+	case WorkKindScan:
+		*s = WorkKindScan
+		return nil
+	case WorkKindRescan:
+		*s = WorkKindRescan
+		return nil
+	case WorkKindReadinessCheck:
+		*s = WorkKindReadinessCheck
+		return nil
+	case WorkKindTermReview:
+		*s = WorkKindTermReview
+		return nil
+	case WorkKindCandidateReview:
+		*s = WorkKindCandidateReview
+		return nil
+	case WorkKindCompetitorCheck:
+		*s = WorkKindCompetitorCheck
+		return nil
+	case WorkKindRecommendationRun:
+		*s = WorkKindRecommendationRun
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }

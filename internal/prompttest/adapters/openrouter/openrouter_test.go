@@ -6,9 +6,11 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/adapters/openrouter"
 	"github.com/JorisJonkers-dev/findability-explorer/internal/prompttest/app"
@@ -26,7 +28,7 @@ func server(t *testing.T, reply func(w http.ResponseWriter, body map[string]any)
 		switch r.URL.Path {
 		case "/models":
 			_, _ = io.WriteString(w, `{"data":[
-				{"id":"openai/gpt-oss-20b","name":"gpt-oss","architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{"prompt":"0.00000003","completion":"0.00000014","web_search":"0.01"}},
+				{"id":"openai/gpt-oss-20b","name":"gpt-oss","created":1754414229,"architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{"prompt":"0.00000003","completion":"0.00000014","web_search":"0.01"}},
 				{"id":"openrouter/auto","architecture":{},"pricing":{"prompt":"-1","completion":"-1"}},
 				{"id":"broken","pricing":{"prompt":"x","completion":"0"}},
 				{"id":"","pricing":{"prompt":"0","completion":"0"}}]}`)
@@ -49,11 +51,43 @@ func TestModelsReadsThePriceList(t *testing.T) {
 	if err != nil || len(models) != 2 {
 		t.Fatalf("models = %+v, %v", models, err)
 	}
-	if m := models[0]; m.ID != "openai/gpt-oss-20b" || m.PromptPrice != 0.00000003 || m.WebSearchPrice != 0.01 || !slices.Equal(m.OutputModalities, []string{"text"}) {
+	if m := models[0]; m.ID != "openai/gpt-oss-20b" || m.PromptPrice != 0.00000003 || m.WebSearchPrice != 0.01 || !slices.Equal(m.OutputModalities, []string{"text"}) ||
+		!m.Created.Equal(time.Unix(1754414229, 0).UTC()) {
 		t.Errorf("model = %+v", m)
 	}
-	if models[1].PromptPrice != -1 || models[1].WebSearchPrice != 0 {
+	if models[1].PromptPrice != -1 || models[1].WebSearchPrice != 0 || !models[1].Created.IsZero() {
 		t.Errorf("router = %+v", models[1])
+	}
+}
+
+// TestTheCatalogueFromOpenRoutersOwnResponse reads a trimmed copy of OpenRouter's /models
+// response: every text model is listed, no image model, router, alias, or moderation model, and
+// the cheapest of the five large providers come first.
+func TestTheCatalogueFromOpenRoutersOwnResponse(t *testing.T) {
+	fixture, err := os.ReadFile("testdata/models.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(fixture) }))
+	t.Cleanup(srv.Close)
+	models, err := openrouter.New(srv.URL, "sk-or-test", nil).Models(t.Context())
+	if err != nil || len(models) != 12 {
+		t.Fatalf("models = %d, %v", len(models), err)
+	}
+	var got []string
+	for _, e := range domain.Catalogue(models, nil) {
+		got = append(got, e.Model.ID)
+	}
+	want := []string{
+		"openai/gpt-oss-20b", "google/gemma-3-27b-it:free", "anthropic/claude-haiku-4.5", "mistralai/mistral-small-3.2-24b-instruct", "deepseek/deepseek-chat-v3.1",
+		// Then the cheapest: GPT-5 Nano's own search costs a cent, the others pay OpenRouter's two.
+		"openai/gpt-5-nano", "qwen/qwen3-8b:free", "google/gemini-2.5-flash-lite",
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("catalogue = %v\nwant %v", got, want)
+	}
+	if !models[0].Created.Equal(time.Date(2025, 8, 7, 17, 23, 33, 0, time.UTC)) || models[0].Name != "OpenAI: GPT-5 Nano" {
+		t.Errorf("first = %+v", models[0])
 	}
 }
 
@@ -81,6 +115,19 @@ func TestAskReadsTheAnswerItsCitationsAndCost(t *testing.T) {
 	}
 }
 
+func TestAskTellsAnAnswerWithNoTextAsAnEmptyAnswerAndStillCountsWhatItUsed(t *testing.T) {
+	srv, _ := server(t, func(w http.ResponseWriter, _ map[string]any) {
+		_, _ = io.WriteString(w, `{"choices":[{"message":{"content":" \n "}}],"usage":{"prompt_tokens":20,"completion_tokens":2000,"cost":0.0001}}`)
+	})
+	reply, err := openrouter.New(srv.URL, "sk-or-test", nil).Ask(t.Context(), "openai/gpt-oss-20b", "Who makes eyelink belts?", false)
+	if !errors.Is(err, domain.ErrEmptyAnswer) {
+		t.Fatalf("err = %v, want the empty answer", err)
+	}
+	if reply.InputTokens != 20 || reply.OutputTokens != 2000 || reply.Cost != 100 {
+		t.Errorf("the tokens and cost of an empty answer are still counted: %+v", reply)
+	}
+}
+
 func TestAskTellsARateLimitFromOtherFailures(t *testing.T) {
 	cases := map[string]struct {
 		status  int
@@ -94,7 +141,7 @@ func TestAskTellsARateLimitFromOtherFailures(t *testing.T) {
 		"an error in a body": {200, `{"error":{"code":502,"message":"bad gateway"}}`, false, "bad gateway"},
 		"no choice":          {200, `{"choices":[]}`, false, "without a choice"},
 		"a 500":              {500, `not json`, false, "answered 500: not json"},
-		"not json":           {200, `not json`, false, "read OpenRouter's answer"},
+		"not json":           {200, `not json`, false, "read OpenRouter's response"},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -119,7 +166,7 @@ func TestAskTellsARateLimitFromOtherFailures(t *testing.T) {
 func TestExtractReadsTheStrictFormat(t *testing.T) {
 	content := `{"companies":[{"name":" Twentebelt ","url":"https://twentebelt.com"},{"name":"","url":""},{"name":"Tribelt","url":""}],
 		"addresses":["https://twentebelt.com"],"namesTribelt":true,"citesTribelt":false,"correctness":"partly",
-		"wrongClaims":["Tribelt is in Hengelo."]}`
+		"wrongClaims":["Tribelt is in Hengelo."],"leftOut":["Tribelt is in Haaksbergen."]}`
 	srv, bodies := server(t, func(w http.ResponseWriter, _ map[string]any) {
 		raw, _ := json.Marshal(map[string]any{
 			"choices": []any{map[string]any{"message": map[string]any{"content": content}}},
@@ -138,9 +185,10 @@ func TestExtractReadsTheStrictFormat(t *testing.T) {
 		Companies:    []domain.Named{{Name: "Twentebelt", URL: "https://twentebelt.com"}, {Name: "Tribelt"}},
 		Addresses:    []string{"https://twentebelt.com"},
 		NamesTribelt: true, Correctness: domain.CorrectnessPartly, WrongClaims: []string{"Tribelt is in Hengelo."},
+		LeftOut: []string{"Tribelt is in Haaksbergen."},
 	}
 	if !slices.Equal(x.Companies, want.Companies) || !slices.Equal(x.Addresses, want.Addresses) || x.NamesTribelt != want.NamesTribelt ||
-		x.Correctness != want.Correctness || !slices.Equal(x.WrongClaims, want.WrongClaims) {
+		x.Correctness != want.Correctness || !slices.Equal(x.WrongClaims, want.WrongClaims) || !slices.Equal(x.LeftOut, want.LeftOut) {
 		t.Errorf("extracted = %+v", x)
 	}
 	if usage.InputTokens != 300 || usage.Cost != 50 {

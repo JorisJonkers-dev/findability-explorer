@@ -271,7 +271,7 @@ const heatGrid =
               <SortButton label="Company" :direction="directionOf(heatSort, 'company')" class="text-xs font-medium text-muted" @sort="sortHeat('company', 'asc')" />
               <template v-for="(column, index) in HEAT_COLUMNS" :key="column.key">
                 <span v-if="index === 3"></span>
-                <SortButton :label="column.label" :direction="directionOf(heatSort, column.key)" align="center" @sort="sortHeat(column.key, 'desc')">{{ column.short }}</SortButton>
+                <SortButton :label="column.label" :direction="directionOf(heatSort, column.key)" align="center" :short="column.short" @sort="sortHeat(column.key, 'desc')" />
               </template>
               <SortButton label="Total" :direction="directionOf(heatSort, 'total')" align="center" @sort="sortHeat('total', 'desc')" />
             </div>

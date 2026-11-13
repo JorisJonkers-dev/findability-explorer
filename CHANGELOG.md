@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.3](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.12.2...v1.12.3) (2026-11-13)
+
+
+### Bug Fixes
+
+* **deps:** update minor and patch dependencies ([#131](https://github.com/JorisJonkers-dev/findability-explorer/issues/131)) ([0dd9943](https://github.com/JorisJonkers-dev/findability-explorer/commit/0dd9943730a969407013779ae0776bff5a49c753))
+* **hygiene:** never cancel a run of the required hygiene checks ([#136](https://github.com/JorisJonkers-dev/findability-explorer/issues/136)) ([d62139a](https://github.com/JorisJonkers-dev/findability-explorer/commit/d62139a433c0e68643fed5d65236c9c3fc07bf84))
+
 ## [1.12.2](https://github.com/JorisJonkers-dev/findability-explorer/compare/v1.12.1...v1.12.2) (2026-11-11)
 
 
